@@ -33,6 +33,36 @@ const vcdm2Credential = {
     credentialSubject: { id: 'did:example:holder' },
 };
 
+describe('managed VC v1 public status context', () => {
+    it('adds scoped status terms without changing status shape and is idempotent', () => {
+        const status = {
+            id: 'https://example.com/status-lists/1#0',
+            type: 'BitstringStatusListEntry',
+            statusPurpose: 'revocation',
+            statusListCredential: 'https://example.com/status-lists/1',
+            statusListIndex: '0',
+        };
+        for (const credentialStatus of [status, [status]]) {
+            const credential = injectManagedRefreshService(
+                { ...vcdm11Credential, credentialStatus },
+                {
+                    id: 'https://example.com/refresh/1',
+                    type: 'LearnCardCredentialRefresh2026',
+                }
+            );
+            expect(credential.credentialStatus).toEqual(credentialStatus);
+            expect(credential['@context']).toContainEqual(
+                expect.objectContaining({
+                    BitstringStatusListEntry: expect.objectContaining({
+                        '@id': 'https://www.w3.org/ns/credentials/status#BitstringStatusListEntry',
+                    }),
+                })
+            );
+            expect(prepareManagedRefreshContext(credential)).toBe(credential);
+        }
+    });
+});
+
 describe('getCredentialIssuerId', () => {
     it('returns a string issuer unchanged', () => {
         expect(getCredentialIssuerId(vcdm11Credential)).toBe(issuerDid);

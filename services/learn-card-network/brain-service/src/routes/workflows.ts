@@ -56,6 +56,7 @@ import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.hel
 import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
 import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 import { getBitstringStatusListEntries } from '@learncard/helpers';
+import { neogma } from '@instance';
 import {
     EXHAUSTED,
     exhaustExchangeChallengeForToken,
@@ -716,16 +717,56 @@ async function handleInboxClaimPresentation(
                     deliveryEncryptionFailed = true;
                     throw error;
                 }
-                const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id, {
-                    recipientDid: holderDid,
-                    credential: encryptedDelivery,
+                const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+                if (!issuerProfile) throw new Error('Issuer profile not found');
+                const boost = inboxCredential.boostUri
+                    ? await getBoostByUri(inboxCredential.boostUri)
+                    : undefined;
+                // Reservation is part of delivery, not best-effort indexing. A conflict
+                // must leave escrow pending and must never return the reused credential.
+                const delivery = encryptedDelivery;
+                await neogma.getTransaction(null, async tx => {
+                    const finalized = await finalizeAndWipeInboxCredential(
+                        inboxCredential.id,
+                        {
+                            recipientDid: holderDid,
+                            credential: delivery,
+                        },
+                        {},
+                        tx
+                    );
+                    if (!finalized) throw new Error('Inbox credential is no longer pending');
+                    const credentialInstance = await storeCredential(
+                        {
+                            kind: 'issued-credential',
+                            credential: delivery,
+                            statusEntries: getBitstringStatusListEntries(finalCredential),
+                        },
+                        tx,
+                        issuerProfile.profileId
+                    );
+                    if (holderProfile) {
+                        await createClaimedRelationship(
+                            holderProfile.profileId,
+                            inboxCredential.id,
+                            claimToken,
+                            tx
+                        );
+                        if (boost) {
+                            await createBoostInstanceOfRelationship(credentialInstance, boost, tx);
+                            await createSentCredentialRelationship(
+                                { type: 'profile', profile: issuerProfile },
+                                holderProfile,
+                                credentialInstance,
+                                undefined,
+                                undefined,
+                                undefined,
+                                tx
+                            );
+                        }
+                    }
                 });
-                if (!finalized) throw new Error('Inbox credential is no longer pending');
-            }
-
-            // Record the claim only after finalization succeeds so failed compare-and-swap
-            // attempts cannot leave a misleading audit relationship behind.
-            if (holderProfile) {
+            } else if (holderProfile) {
                 await createClaimedRelationship(
                     holderProfile.profileId,
                     inboxCredential.id,
@@ -733,38 +774,8 @@ async function handleInboxClaimPresentation(
                 );
             }
 
-            // Store credential and create boost relationship if this was a boost issuance
-            const boostUri = inboxCredential.boostUri;
-            if (!inboxCredential.refreshId && holderProfile && boostUri) {
-                try {
-                    const boost = await getBoostByUri(boostUri);
-                    const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
-
-                    if (boost && issuerProfile) {
-                        // Store the credential in the database
-                        const credentialInstance = await storeCredential({
-                            kind: 'issued-credential',
-                            credential: encryptedDelivery!,
-                            statusEntries: getBitstringStatusListEntries(finalCredential),
-                        });
-
-                        // Create the boost instance relationship
-                        await createBoostInstanceOfRelationship(credentialInstance, boost);
-
-                        // Create the sent/received credential relationship
-                        await createSentCredentialRelationship(
-                            { type: 'profile', profile: issuerProfile },
-                            holderProfile,
-                            credentialInstance
-                        );
-                    }
-                } catch {
-                    // Escrow is already wiped; preserve delivery even if indexing fails.
-                    console.error('Failed to index claimed inbox boost', inboxCredential.id);
-                }
-            }
-
             // Log CLAIMED activity - chain to original activityId/integrationId if available
+            const boostUri = inboxCredential.boostUri;
             // activityId and integrationId are stored on the inbox credential
             const activityId = inboxCredential.activityId;
             const integrationId = inboxCredential.integrationId;

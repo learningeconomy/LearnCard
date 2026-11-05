@@ -48,6 +48,7 @@ import {
     getCredentialRefreshDigestSecret,
     computeCredentialMaterialDigest,
     computeCredentialStatusDigest,
+    matchesCredentialStatusDigest,
     computeCredentialSubjectDigest,
 } from './credential-refresh-materiality.helpers';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
@@ -220,7 +221,7 @@ export const publishPendingInboxRefresh = async (
         computeCredentialSubjectDigest(body.credentialSubject) !==
             computeCredentialSubjectDigest(previous.credentialSubject) ||
         body.boostId !== previous.boostId ||
-        computeCredentialStatusDigest(body.credentialStatus) !== aggregate.credentialStatusDigest ||
+        !matchesCredentialStatusDigest(body.credentialStatus, aggregate.credentialStatusDigest) ||
         canonicalizeCredentialJson(body.refreshService) !==
             canonicalizeCredentialJson(previous.refreshService)
     )
@@ -328,8 +329,10 @@ export const finalizeInboxRefresh = async (params: {
             getCredentialIssuerId(credential) !== aggregate.issuerDid ||
             computeCredentialSubjectDigest(credential.credentialSubject) !==
                 computeCredentialSubjectDigest(unsigned.credentialSubject) ||
-            computeCredentialStatusDigest(credential.credentialStatus) !==
-                aggregate.credentialStatusDigest ||
+            !matchesCredentialStatusDigest(
+                credential.credentialStatus,
+                aggregate.credentialStatusDigest
+            ) ||
             canonicalizeCredentialJson(credential.refreshService) !==
                 canonicalizeCredentialJson(unsigned.refreshService) ||
             computeCredentialMaterialDigest(credential) !==

@@ -212,6 +212,9 @@ import {
     type RefreshSendIntent,
 } from '@helpers/refresh-send-intent.helpers';
 import { getCredentialRefreshRuntimeEnvironment } from '@environment';
+import { getCredentialRefresh } from '@accesslayer/credential-refresh';
+import { prepareRefreshStatusEntries } from '@helpers/managed-status.helpers';
+import { getCredentialStatusRootId } from '@helpers/status-list.helpers';
 import { ensureCredentialRefreshConstraints } from '../models/credential-refresh-constraints';
 import { userHasRequiredScopes } from '@helpers/auth-grant.helpers';
 import { AUTH_GRANT_NO_ACCESS_SCOPE } from 'src/constants/auth-grant';
@@ -252,12 +255,16 @@ const resolveBoostCredentialInstance = async ({
 }) => {
     const {
         getCredentialByUri,
+        getCredentialById,
         getCredentialInstanceForBoostAndProfile,
         isCredentialInstanceOfBoost,
     } = await import('@accesslayer/credential/read');
 
     if (credentialUri) {
-        const resolvedCredential = await getCredentialByUri(decodeURIComponent(credentialUri));
+        const version = await getCredentialByUri(decodeURIComponent(credentialUri));
+        const resolvedCredential = version
+            ? await getCredentialById(await getCredentialStatusRootId(version.id))
+            : null;
 
         if (!resolvedCredential) {
             throw new TRPCError({
@@ -447,6 +454,7 @@ const managedRefreshServiceFor = (refreshId: string, domain: string) => ({
  * retried call reuses the same boost/allocation, or returns the completed result.
  */
 const prepareManagedRefreshSend = async (params: {
+    statusPurposes?: ('revocation' | 'suspension')[];
     profile: ProfileType;
     /** Returned by validateRefreshSendRecipient in this request, before any mutation. */
     targetProfile: ProfileType;
@@ -478,13 +486,19 @@ const prepareManagedRefreshSend = async (params: {
                 display: params.display,
                 contractUri,
                 integrationId: params.integrationId,
+                credentialId: params.credentialId,
+                statusPurposes: params.statusPurposes,
             }),
         });
 
         intent = claim.intent;
 
         if (claim.kind !== 'owned') {
+            const refresh = await getCredentialRefresh(intent.refreshId!);
             const prepared = {
+                ...(refresh?.statusEntries
+                    ? { statusEntries: JSON.parse(refresh.statusEntries) }
+                    : {}),
                 boostUri: intent.boostUri!,
                 credentialId: intent.credentialId!,
                 refreshId: intent.refreshId!,
@@ -565,6 +579,12 @@ const prepareManagedRefreshSend = async (params: {
         refreshId = allocation.refreshId;
     }
 
+    const statusEntries = await prepareRefreshStatusEntries(
+        refreshId,
+        profile.profileId,
+        domain,
+        params.statusPurposes
+    );
     if (intent) {
         intent = await recordRefreshSendIntent(intent, {
             boostUri,
@@ -577,6 +597,7 @@ const prepareManagedRefreshSend = async (params: {
 
     return {
         boostUri,
+        statusEntries,
         credentialId,
         refreshId,
         refreshService: managedRefreshServiceFor(refreshId, domain),
@@ -1248,6 +1269,7 @@ export const boostsRouter = t.router({
                                   templateData: input.templateData,
                                   integrationId: input.integrationId,
                                   idempotencyKey: input.idempotencyKey,
+                                  statusPurposes: input.statusPurposes,
                               })
                             : undefined;
 
@@ -1560,6 +1582,18 @@ export const boostsRouter = t.router({
 
                                 refreshId = allocation.refreshId;
 
+                                const statusEntries = await prepareRefreshStatusEntries(
+                                    refreshId,
+                                    profile.profileId,
+                                    domain,
+                                    input.statusPurposes
+                                );
+                                unsignedVc.credentialStatus =
+                                    statusEntries.length === 1 &&
+                                    !Array.isArray(unsignedVc.credentialStatus)
+                                        ? statusEntries[0]
+                                        : statusEntries;
+
                                 const prepared = injectManagedRefreshService(
                                     unsignedVc,
                                     allocation.refreshService
@@ -1574,6 +1608,8 @@ export const boostsRouter = t.router({
                                                 prepared,
                                                 signingAuthority,
                                                 domain,
+                                                false,
+                                                undefined,
                                                 false
                                             )
                                         ).credential as VC

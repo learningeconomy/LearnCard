@@ -14,6 +14,7 @@ import {
     UnsignedVC,
     VC,
     BitstringCredentialStatusEntry,
+    BitstringStatusListEntry,
     BitstringCredentialStatusPurpose,
     AllocateCredentialRefreshResult,
     ManagedCredentialRefreshReceipt,
@@ -29,6 +30,7 @@ import {
     getCredentialIssuerId,
     getCredentialStatusArray,
     injectManagedRefreshService as injectSharedManagedRefreshService,
+    prepareManagedRefreshContext,
     isVC2Format,
     materializeCredentialFields,
     isEncrypted,
@@ -443,8 +445,19 @@ const issueCredentialWithNetworkStatus = async (
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     client: any,
     credential: UnsignedVC,
-    statusPurposes?: BitstringCredentialStatusPurpose[]
+    statusPurposes?: BitstringCredentialStatusPurpose[],
+    statusEntries?: BitstringStatusListEntry[]
 ): Promise<VC> => {
+    if (statusEntries) {
+        const prepared = UnsignedVCValidator.parse({
+            ...materializeCredentialFields(credential),
+            credentialStatus:
+                statusEntries.length === 1 && !Array.isArray(credential.credentialStatus)
+                    ? statusEntries[0]
+                    : statusEntries,
+        });
+        return learnCard.invoke.issueCredential(prepareManagedRefreshContext(prepared));
+    }
     return learnCard.invoke.issueCredential(
         await appendNetworkCredentialStatus(
             client,
@@ -2109,6 +2122,9 @@ export async function getLearnCardNetworkPlugin(
                         }
 
                         const prepared = await client.boost.prepareRefreshableSend.mutate({
+                            ...(input.statusPurposes
+                                ? { statusPurposes: input.statusPurposes }
+                                : {}),
                             recipient: input.recipient,
                             templateUri: input.templateUri,
                             display: input.display,
@@ -2181,7 +2197,16 @@ export async function getLearnCardNetworkPlugin(
                         const signedCredential = await issueCredentialWithNetworkStatus(
                             _learnCard,
                             client,
-                            boost
+                            boost,
+                            input.statusPurposes
+                                ? [
+                                      ...new Set<BitstringCredentialStatusPurpose>([
+                                          'revocation',
+                                          ...input.statusPurposes,
+                                      ]),
+                                  ]
+                                : undefined,
+                            prepared.statusEntries
                         );
 
                         // Validated handoff: the server re-derives the refresh ID from the

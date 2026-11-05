@@ -334,6 +334,11 @@ export const getNotificationRuntimeEnvironment = (): NotificationRuntimeEnvironm
 
 const credentialRefreshRuntimeEnvironmentSchema = z
     .object({
+        CREDENTIAL_REFRESH_DIGEST_KEY_VERSION: z
+            .string()
+            .regex(/^[A-Za-z0-9_-]+$/)
+            .default('v1'),
+        CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS: z.string().default('{}'),
         NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
         DOMAIN_NAME: brainServiceEnvironmentShape.DOMAIN_NAME,
         CREDENTIAL_REFRESH_DIGEST_SECRET:
