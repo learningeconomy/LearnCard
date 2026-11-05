@@ -15,9 +15,11 @@ const PROVIDER_SECRETS = [
     // details stay out of the repository.
     'CLASSLINK_CLIENT_ID',
     'CLASSLINK_TENANTS',
+    // TRANSCRIPT_ISSUER_* are deprecated in favor of TRANSCRIPT_ISSUERS (registers "default").
     'TRANSCRIPT_ISSUER_ENDPOINT',
     'TRANSCRIPT_ISSUER_AUDIENCE',
     'TRANSCRIPT_ISSUER_DID',
+    'TRANSCRIPT_ISSUERS',
     'SENTRY_DSN',
     'LEARN_CLOUD_URL',
 ];

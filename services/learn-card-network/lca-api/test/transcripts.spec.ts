@@ -3,7 +3,6 @@ import { exportJWK, generateKeyPair, jwtVerify } from 'jose';
 import axios from 'axios';
 import mongodb from '@mongo';
 import cache from '@cache';
-import { environment } from '@environment';
 import { transcriptsRouter } from '../src/routes/transcripts';
 import { getClassLinkConfig, getTranscriptIssuerConfig } from '../src/helpers/classlink.config';
 import {
@@ -13,7 +12,7 @@ import {
 } from '../src/models/ClassLinkIdentity';
 import { getTranscriptRequestsCollection } from '../src/models/TranscriptRequest';
 import { getStateStudentId, sealStateStudentId } from '../src/helpers/classlinkPii.helpers';
-import type { ClassLinkConfig } from '../src/types/classlink';
+import type { ClassLinkConfig, ResolvedTranscriptIssuer } from '../src/types/classlink';
 
 const mocks = vi.hoisted(() => ({ keypair: vi.fn() }));
 vi.mock('axios', () => ({ default: { post: vi.fn() } }));
@@ -42,6 +41,9 @@ const caller = (
     });
 let publicKey: Awaited<ReturnType<typeof generateKeyPair>>['publicKey'];
 let config: ClassLinkConfig;
+let issuerRegistry: Record<string, ResolvedTranscriptIssuer>;
+const resolveIssuer = (tenant?: { transcriptIssuer?: string } | null) =>
+    issuerRegistry[tenant?.transcriptIssuer ?? 'default'] ?? null;
 
 beforeAll(async () => {
     const pair = await generateKeyPair('EdDSA', { extractable: true });
@@ -49,7 +51,6 @@ beforeAll(async () => {
     mocks.keypair.mockReturnValue(await exportJWK(pair.privateKey));
 });
 beforeEach(async () => {
-    environment.TRANSCRIPT_ISSUER_DID = 'did:web:issuer.example';
     vi.mocked(axios.post).mockReset();
     await cache.node.flushall();
     await mongodb.collection('userkeys').deleteMany({});
@@ -92,11 +93,16 @@ beforeEach(async () => {
             },
         },
     };
+    issuerRegistry = {
+        default: {
+            key: 'default',
+            endpoint: 'https://issuer.example/transcripts',
+            audience: 'issuer-test',
+            did: 'did:web:issuer.example',
+        },
+    };
     vi.mocked(getClassLinkConfig).mockImplementation(() => config);
-    vi.mocked(getTranscriptIssuerConfig).mockReturnValue({
-        endpoint: 'https://issuer.example/transcripts',
-        audience: 'issuer-test',
-    });
+    vi.mocked(getTranscriptIssuerConfig).mockImplementation(resolveIssuer);
     vi.mocked(axios.post).mockResolvedValue({ status: 202, data: { status: 'accepted' } });
 });
 afterEach(() => vi.restoreAllMocks());
@@ -111,12 +117,88 @@ describe('transcript requests', () => {
         expect(status.latest?.receivedAt).toBeUndefined();
     });
     it('prefers the district issuer override', async () => {
-        config.tenants['tenant-test']!.transcriptIssuerDid = 'did:web:district.example';
+        config.tenants['tenant-test']!.transcriptIssuer = 'district-issuer';
+        issuerRegistry['district-issuer'] = {
+            key: 'district-issuer',
+            endpoint: 'https://district.example/transcripts',
+            audience: 'district-audience',
+            did: 'did:web:district.example',
+        };
         expect((await caller().getStatus()).issuerDid).toBe('did:web:district.example');
     });
     it('leaves issuer identity unset when no default or override is configured', async () => {
-        environment.TRANSCRIPT_ISSUER_DID = undefined;
+        delete issuerRegistry.default!.did;
         expect((await caller().getStatus()).issuerDid).toBeUndefined();
+    });
+    it('routes each district to its own transcript issuer endpoint, audience, and DID', async () => {
+        const didTwo = 'did:key:caller-two';
+        const identityKeyTwo = 'classlink:tenant-two:source-2';
+        await mongodb.collection('userkeys').insertOne({
+            primaryDid: didTwo,
+            authProviders: [{ type: 'firebase', id: 'uid-two' }],
+        });
+        await upsertClassLinkIdentity({
+            identityKey: identityKeyTwo,
+            firebaseUid: 'uid-two',
+            subject: 'subject-two',
+            tenantId: 'tenant-two',
+            sourcedId: 'source-2',
+            sub: 'upstream-sub-two',
+            role: 'student',
+            email: 'student2@example.edu',
+            state: 'YY',
+            sealedStateStudentId: sealStateStudentId(
+                'private-student-id-two',
+                identityKeyTwo,
+                new Date(),
+                86400
+            ),
+            lastAuthTime: new Date(),
+        });
+        config.tenants['tenant-test']!.transcriptIssuer = 'issuer-a';
+        config.tenants['tenant-two'] = {
+            displayName: 'Second District',
+            state: 'YY',
+            stateStudentIdField: 'student_id',
+            allowedEmailDomains: ['example.edu'],
+            transcriptEnabled: true,
+            transcriptIssuer: 'issuer-b',
+        };
+        issuerRegistry['issuer-a'] = {
+            key: 'issuer-a',
+            endpoint: 'https://issuer-a.example/transcripts',
+            audience: 'audience-a',
+            did: 'did:web:issuer-a.example',
+        };
+        issuerRegistry['issuer-b'] = {
+            key: 'issuer-b',
+            endpoint: 'https://issuer-b.example/transcripts',
+            audience: 'audience-b',
+            did: 'did:web:issuer-b.example',
+        };
+        const callerTwo = caller({ did: didTwo, isChallengeValid: true });
+
+        await caller().request({ consent: true });
+        await callerTwo.request({ consent: true });
+
+        const [urlA, bodyA] = vi.mocked(axios.post).mock.calls[0]!;
+        const [urlB, bodyB] = vi.mocked(axios.post).mock.calls[1]!;
+        expect(urlA).toBe('https://issuer-a.example/transcripts');
+        expect(urlB).toBe('https://issuer-b.example/transcripts');
+        await expect(
+            jwtVerify((bodyA as { assertion: string }).assertion, publicKey, {
+                audience: 'audience-a',
+                issuer: 'did:web:api.example',
+            })
+        ).resolves.toBeDefined();
+        await expect(
+            jwtVerify((bodyB as { assertion: string }).assertion, publicKey, {
+                audience: 'audience-b',
+                issuer: 'did:web:api.example',
+            })
+        ).resolves.toBeDefined();
+        expect((await caller().getStatus()).issuerDid).toBe('did:web:issuer-a.example');
+        expect((await callerTwo.getStatus()).issuerDid).toBe('did:web:issuer-b.example');
     });
     it('marks an owned request received with an ISO timestamp', async () => {
         await caller().request({ consent: true });

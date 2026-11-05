@@ -67,9 +67,11 @@ export const lcaApiEnvironmentShape = {
     CLASSLINK_MAX_AUTH_AGE_SECONDS: optionalEnvironmentString
         .transform(value => (value === undefined ? 86_400 : Number(value)))
         .pipe(z.number().int().positive()),
+    // Deprecated: use TRANSCRIPT_ISSUERS (registers the "default" issuer key) instead.
     TRANSCRIPT_ISSUER_ENDPOINT: optionalEnvironmentString,
     TRANSCRIPT_ISSUER_AUDIENCE: optionalEnvironmentString,
     TRANSCRIPT_ISSUER_DID: optionalEnvironmentString,
+    TRANSCRIPT_ISSUERS: optionalEnvironmentString,
     KEYCLOAK_ISSUERS: optionalEnvironmentString,
     KEYCLOAK_AUDIENCES: optionalEnvironmentString,
     KEYCLOAK_JWKS_URL_OVERRIDES: optionalEnvironmentString,

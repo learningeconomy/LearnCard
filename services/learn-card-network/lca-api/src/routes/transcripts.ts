@@ -3,7 +3,6 @@ import axios from 'axios';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import cache from '@cache';
-import { environment } from '@environment';
 import { t, didAndChallengeRoute } from '@routes';
 import { getClassLinkConfig, getTranscriptIssuerConfig } from '@helpers/classlink.config';
 import { resolveClassLinkContext, type ClassLinkContext } from '@helpers/classlinkContext.helpers';
@@ -42,7 +41,7 @@ const eligibility = ({ tenant, identity }: ClassLinkContext) => {
     if (
         !tenant?.transcriptEnabled ||
         !config ||
-        !getTranscriptIssuerConfig() ||
+        !getTranscriptIssuerConfig(tenant) ||
         tenant.state !== identity.state
     )
         return 'not_enabled' as const;
@@ -80,6 +79,7 @@ export const transcriptsRouter = t.router({
                 if (context.identity.isMinorHint && !(await getPreferencesForDid(ctx.user.did)))
                     await createMinorPreferencesIfAbsent(ctx.user.did);
                 const reason = eligibility(context);
+                const issuer = getTranscriptIssuerConfig(context.tenant);
                 const latest = await findLatestTranscriptRequest(
                     context.firebaseUid,
                     context.identity.state
@@ -88,8 +88,7 @@ export const transcriptsRouter = t.router({
                     eligible: !reason,
                     reason,
                     stateDisplayName: context.tenant?.displayName ?? '',
-                    issuerDid:
-                        context.tenant?.transcriptIssuerDid ?? environment.TRANSCRIPT_ISSUER_DID,
+                    issuerDid: issuer?.did,
                     latest: latest
                         ? {
                               ...project(latest),
@@ -129,7 +128,7 @@ export const transcriptsRouter = t.router({
             try {
                 const context = await resolveClassLinkContext(ctx.user.did);
                 const reason = eligibility(context);
-                const issuer = getTranscriptIssuerConfig();
+                const issuer = getTranscriptIssuerConfig(context.tenant);
                 const { identity, firebaseUid } = context;
                 const stateStudentId = getStateStudentId(identity);
                 if (reason || !issuer || !stateStudentId) {

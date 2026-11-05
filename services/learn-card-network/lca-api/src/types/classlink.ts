@@ -1,13 +1,48 @@
 import { z } from 'zod';
 import type { JWTPayload } from 'jose';
 
+/** Lowercase alphanumeric plus hyphens, 1-64 chars, starting with a letter or digit. */
+export const TRANSCRIPT_ISSUER_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+export const TranscriptIssuerValidator = z
+    .object({
+        endpoint: z.string().url(),
+        audience: z.string().trim().min(1),
+        did: z
+            .string()
+            .trim()
+            .regex(/^did:[a-z0-9]+:.+/),
+    })
+    .strict();
+
+export const TranscriptIssuersValidator = z.record(
+    z.string().regex(TRANSCRIPT_ISSUER_KEY_PATTERN),
+    TranscriptIssuerValidator
+);
+
+export type TranscriptIssuer = z.infer<typeof TranscriptIssuerValidator>;
+export type TranscriptIssuers = z.infer<typeof TranscriptIssuersValidator>;
+
+/**
+ * A transcript issuer resolved from TRANSCRIPT_ISSUERS (or the legacy TRANSCRIPT_ISSUER_* env
+ * vars, which resolve to `key: 'default'`). `did` is only optional for that legacy path; every
+ * TRANSCRIPT_ISSUERS entry requires one (see TranscriptIssuerValidator).
+ */
+export type ResolvedTranscriptIssuer = {
+    key: string;
+    endpoint: string;
+    audience: string;
+    did?: string;
+};
+
 export const ClassLinkTenantConfigValidator = z.object({
     displayName: z.string().min(1),
     state: z.string().regex(/^[A-Z]{2}$/),
     stateStudentIdField: z.string().min(1),
     allowedEmailDomains: z.array(z.string().min(1)),
     transcriptEnabled: z.boolean(),
-    transcriptIssuerDid: z.string().trim().min(1).optional(),
+    /** Selects a TRANSCRIPT_ISSUERS key for this district; falls back to `default` when unset. */
+    transcriptIssuer: z.string().regex(TRANSCRIPT_ISSUER_KEY_PATTERN).optional(),
     /**
      * Test stages only: when the district sends no state ID, use a stable fake `TEST…` ID
      * per student so the transcript flow can be tested end to end. Ignored in production.

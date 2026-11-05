@@ -1,9 +1,12 @@
+import { EnvironmentConfigurationError } from '@learncard/helpers';
 import { environment } from '@environment';
 import {
     ClassLinkTenantsValidator,
     DEFAULT_CLASSLINK_TENANT,
+    TranscriptIssuersValidator,
     type ClassLinkConfig,
     type ClassLinkTenantConfig,
+    type ResolvedTranscriptIssuer,
 } from 'types/classlink';
 
 const splitCommaList = (value: string | undefined): string[] =>
@@ -11,6 +14,85 @@ const splitCommaList = (value: string | undefined): string[] =>
         .split(',')
         .map(entry => entry.trim())
         .filter(Boolean);
+
+const LOCAL_HTTP_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
+const stripBrackets = (hostname: string): string => hostname.replace(/^\[|\]$/g, '');
+
+/**
+ * https is always allowed. http is only allowed to localhost/127.0.0.1/::1, and only outside
+ * production, so a misconfigured endpoint can never receive a signed assertion (it carries a
+ * state student ID) over plaintext in production. Unparseable URLs are rejected.
+ */
+const isAllowedTranscriptIssuerEndpoint = (url: string): boolean => {
+    let parsed: URL;
+    try {
+        parsed = new URL(url);
+    } catch {
+        return false;
+    }
+    if (parsed.protocol === 'https:') return true;
+    if (parsed.protocol === 'http:') {
+        return (
+            LOCAL_HTTP_HOSTNAMES.has(stripBrackets(parsed.hostname)) &&
+            environment.NODE_ENV !== 'production'
+        );
+    }
+    return false;
+};
+
+// Once per container, like services/escrow-enclave/index.ts's remoteConfigMissingReported.
+let explicitDefaultOverridesLegacyWarned = false;
+
+/**
+ * Every configured transcript issuer, keyed by TRANSCRIPT_ISSUERS key (or `default` for the
+ * legacy TRANSCRIPT_ISSUER_* vars). Never throws: any problem with TRANSCRIPT_ISSUERS is logged
+ * and the whole value is dropped, so one typo can't take down every district's transcript flow.
+ */
+const getTranscriptIssuerRegistry = (): Record<string, ResolvedTranscriptIssuer> => {
+    const registry: Record<string, ResolvedTranscriptIssuer> = {};
+    const legacyEndpoint = environment.TRANSCRIPT_ISSUER_ENDPOINT;
+    const legacyAudience = environment.TRANSCRIPT_ISSUER_AUDIENCE;
+    const hasLegacyDefault = Boolean(legacyEndpoint && legacyAudience);
+
+    if (hasLegacyDefault) {
+        registry.default = {
+            key: 'default',
+            endpoint: legacyEndpoint as string,
+            audience: legacyAudience as string,
+            ...(environment.TRANSCRIPT_ISSUER_DID
+                ? { did: environment.TRANSCRIPT_ISSUER_DID }
+                : {}),
+        };
+    }
+
+    if (environment.TRANSCRIPT_ISSUERS) {
+        try {
+            const parsed = TranscriptIssuersValidator.parse(
+                JSON.parse(environment.TRANSCRIPT_ISSUERS)
+            );
+            for (const issuer of Object.values(parsed)) {
+                if (!isAllowedTranscriptIssuerEndpoint(issuer.endpoint)) {
+                    throw new Error('Disallowed transcript issuer endpoint');
+                }
+            }
+            if (
+                hasLegacyDefault &&
+                Object.hasOwn(parsed, 'default') &&
+                !explicitDefaultOverridesLegacyWarned
+            ) {
+                explicitDefaultOverridesLegacyWarned = true;
+                console.warn(
+                    'TRANSCRIPT_ISSUERS defines "default" while legacy TRANSCRIPT_ISSUER_* variables are also set; the explicit entry takes precedence.'
+                );
+            }
+            for (const [key, issuer] of Object.entries(parsed)) registry[key] = { key, ...issuer };
+        } catch {
+            console.warn('TRANSCRIPT_ISSUERS is invalid and will be ignored');
+        }
+    }
+
+    return registry;
+};
 
 export const getClassLinkConfig = (): ClassLinkConfig | null => {
     const clientId = environment.CLASSLINK_CLIENT_ID;
@@ -26,6 +108,15 @@ export const getClassLinkConfig = (): ClassLinkConfig | null => {
     } catch {
         console.warn('ClassLink configuration disabled: CLASSLINK_TENANTS is invalid');
         return null;
+    }
+
+    const transcriptIssuers = getTranscriptIssuerRegistry();
+    for (const tenant of Object.values(tenants)) {
+        if (tenant.transcriptIssuer && !Object.hasOwn(transcriptIssuers, tenant.transcriptIssuer)) {
+            throw new EnvironmentConfigurationError(
+                'A ClassLink district references a transcript issuer that is not defined in TRANSCRIPT_ISSUERS.'
+            );
+        }
     }
 
     return {
@@ -49,8 +140,14 @@ export const getClassLinkTenant = (
 ): ClassLinkTenantConfig =>
     Object.hasOwn(config.tenants, tenantId) ? config.tenants[tenantId]! : DEFAULT_CLASSLINK_TENANT;
 
-export const getTranscriptIssuerConfig = (): { endpoint: string; audience: string } | null => {
-    const endpoint = environment.TRANSCRIPT_ISSUER_ENDPOINT;
-    const audience = environment.TRANSCRIPT_ISSUER_AUDIENCE;
-    return endpoint && audience ? { endpoint, audience } : null;
+/**
+ * Resolves a district's transcript issuer: `tenant.transcriptIssuer` selects a TRANSCRIPT_ISSUERS
+ * key, defaulting to `default` (the legacy TRANSCRIPT_ISSUER_* vars, or an explicit `default`
+ * entry in TRANSCRIPT_ISSUERS). Returns null when no matching issuer is configured.
+ */
+export const getTranscriptIssuerConfig = (
+    tenant?: { transcriptIssuer?: string } | null
+): ResolvedTranscriptIssuer | null => {
+    const key = tenant?.transcriptIssuer ?? 'default';
+    return getTranscriptIssuerRegistry()[key] ?? null;
 };

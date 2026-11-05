@@ -1,13 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     getClassLinkConfig,
     getClassLinkTenant,
     getTranscriptIssuerConfig,
 } from '../src/helpers/classlink.config';
-import { ClassLinkTenantsValidator, DEFAULT_CLASSLINK_TENANT } from '../src/types/classlink';
+import {
+    ClassLinkTenantsValidator,
+    DEFAULT_CLASSLINK_TENANT,
+    TranscriptIssuerValidator,
+    TranscriptIssuersValidator,
+} from '../src/types/classlink';
 
 const { env } = vi.hoisted(() => ({
     env: {
+        NODE_ENV: 'test' as string,
         CLASSLINK_CLIENT_ID: undefined as string | undefined,
         CLASSLINK_CLIENT_SECRET: undefined as string | undefined,
         CLASSLINK_DISCOVERY_URL:
@@ -18,6 +24,8 @@ const { env } = vi.hoisted(() => ({
         CLASSLINK_MAX_AUTH_AGE_SECONDS: 86_400,
         TRANSCRIPT_ISSUER_ENDPOINT: undefined as string | undefined,
         TRANSCRIPT_ISSUER_AUDIENCE: undefined as string | undefined,
+        TRANSCRIPT_ISSUER_DID: undefined as string | undefined,
+        TRANSCRIPT_ISSUERS: undefined as string | undefined,
     },
 }));
 
@@ -33,8 +41,15 @@ const validTenants = {
     },
 };
 
+const exampleRecordsIssuer = {
+    endpoint: 'https://records.example.org/transcript-requests',
+    audience: 'records-service',
+    did: 'did:web:records.example.org',
+};
+
 beforeEach(() => {
     Object.assign(env, {
+        NODE_ENV: 'test',
         CLASSLINK_CLIENT_ID: 'client-id',
         CLASSLINK_CLIENT_SECRET: 'client-secret',
         CLASSLINK_DISCOVERY_URL: 'https://launchpad.classlink.com/.well-known/openid-configuration',
@@ -43,24 +58,33 @@ beforeEach(() => {
         CLASSLINK_MAX_AUTH_AGE_SECONDS: 86_400,
         TRANSCRIPT_ISSUER_ENDPOINT: undefined,
         TRANSCRIPT_ISSUER_AUDIENCE: undefined,
+        TRANSCRIPT_ISSUER_DID: undefined,
+        TRANSCRIPT_ISSUERS: undefined,
     });
 });
 
+afterEach(() => vi.restoreAllMocks());
+
 describe('ClassLink configuration', () => {
-    it('validates the optional district transcript issuer identity', () => {
+    it('validates the optional district transcript issuer key', () => {
         const tenant = validTenants['tenant-test'];
-        const tenants = {
-            'tenant-test': { ...tenant, transcriptIssuerDid: 'did:web:issuer.example' },
-        };
+        const tenants = { 'tenant-test': { ...tenant, transcriptIssuer: 'example-records' } };
         expect(ClassLinkTenantsValidator.parse(tenants)).toEqual(tenants);
-        for (const transcriptIssuerDid of ['', '   ', false, 42]) {
+        for (const transcriptIssuer of [
+            '',
+            'UPPER',
+            'has space',
+            '-leading-dash',
+            'a'.repeat(65),
+        ]) {
             expect(
                 ClassLinkTenantsValidator.safeParse({
-                    'tenant-test': { ...tenant, transcriptIssuerDid },
+                    'tenant-test': { ...tenant, transcriptIssuer },
                 }).success
             ).toBe(false);
         }
     });
+
     it('parses valid tenant configuration and redirect URIs', () => {
         expect(ClassLinkTenantsValidator.parse(validTenants)).toEqual(validTenants);
         expect(getClassLinkConfig()).toMatchObject({
@@ -115,13 +139,175 @@ describe('ClassLink configuration', () => {
         expect(getClassLinkConfig()).toBeNull();
     });
 
-    it('returns transcript issuer configuration only when both values are set', () => {
-        expect(getTranscriptIssuerConfig()).toBeNull();
-        env.TRANSCRIPT_ISSUER_ENDPOINT = 'https://issuer.example/issue';
-        env.TRANSCRIPT_ISSUER_AUDIENCE = 'transcript-service';
-        expect(getTranscriptIssuerConfig()).toEqual({
-            endpoint: 'https://issuer.example/issue',
-            audience: 'transcript-service',
+    it('throws when a district references a transcript issuer key that is not registered', () => {
+        env.CLASSLINK_TENANTS = JSON.stringify({
+            'tenant-test': { ...validTenants['tenant-test'], transcriptIssuer: 'missing-issuer' },
+        });
+        expect(() => getClassLinkConfig()).toThrow(
+            'A ClassLink district references a transcript issuer that is not defined in TRANSCRIPT_ISSUERS.'
+        );
+    });
+
+    it('allows a district that references a registered transcript issuer key', () => {
+        env.TRANSCRIPT_ISSUERS = JSON.stringify({ 'example-records': exampleRecordsIssuer });
+        env.CLASSLINK_TENANTS = JSON.stringify({
+            'tenant-test': { ...validTenants['tenant-test'], transcriptIssuer: 'example-records' },
+        });
+        expect(getClassLinkConfig()).toMatchObject({ clientId: 'client-id' });
+    });
+
+    describe('transcript issuer registry', () => {
+        it('returns null for both the default and a keyed issuer when nothing is configured', () => {
+            expect(getTranscriptIssuerConfig()).toBeNull();
+            expect(getTranscriptIssuerConfig({ transcriptIssuer: 'example-records' })).toBeNull();
+        });
+
+        it('resolves the legacy env vars as the "default" issuer', () => {
+            env.TRANSCRIPT_ISSUER_ENDPOINT = 'https://issuer.example/issue';
+            env.TRANSCRIPT_ISSUER_AUDIENCE = 'transcript-service';
+            env.TRANSCRIPT_ISSUER_DID = 'did:web:issuer.example';
+            expect(getTranscriptIssuerConfig()).toEqual({
+                key: 'default',
+                endpoint: 'https://issuer.example/issue',
+                audience: 'transcript-service',
+                did: 'did:web:issuer.example',
+            });
+        });
+
+        it('registers explicit TRANSCRIPT_ISSUERS entries by key', () => {
+            env.TRANSCRIPT_ISSUERS = JSON.stringify({ 'example-records': exampleRecordsIssuer });
+            expect(getTranscriptIssuerConfig({ transcriptIssuer: 'example-records' })).toEqual({
+                key: 'example-records',
+                ...exampleRecordsIssuer,
+            });
+            expect(getTranscriptIssuerConfig()).toBeNull();
+        });
+
+        it('lets an explicit "default" entry override the legacy env vars and warns once', () => {
+            env.TRANSCRIPT_ISSUER_ENDPOINT = 'https://legacy.example/issue';
+            env.TRANSCRIPT_ISSUER_AUDIENCE = 'legacy-service';
+            env.TRANSCRIPT_ISSUERS = JSON.stringify({
+                default: {
+                    endpoint: 'https://explicit.example/issue',
+                    audience: 'explicit-service',
+                    did: 'did:web:explicit.example',
+                },
+            });
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            expect(getTranscriptIssuerConfig()).toEqual({
+                key: 'default',
+                endpoint: 'https://explicit.example/issue',
+                audience: 'explicit-service',
+                did: 'did:web:explicit.example',
+            });
+            getTranscriptIssuerConfig();
+            expect(warn).toHaveBeenCalledTimes(1);
+            expect(warn).toHaveBeenCalledWith(
+                expect.stringContaining('TRANSCRIPT_ISSUERS defines "default"')
+            );
+        });
+
+        it('ignores TRANSCRIPT_ISSUERS and keeps the legacy default on invalid JSON', () => {
+            env.TRANSCRIPT_ISSUER_ENDPOINT = 'https://legacy.example/issue';
+            env.TRANSCRIPT_ISSUER_AUDIENCE = 'legacy-service';
+            env.TRANSCRIPT_ISSUERS = '{not json';
+            vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            expect(getTranscriptIssuerConfig()).toEqual({
+                key: 'default',
+                endpoint: 'https://legacy.example/issue',
+                audience: 'legacy-service',
+            });
+        });
+
+        it('ignores TRANSCRIPT_ISSUERS when an endpoint is http and not localhost in production', () => {
+            env.NODE_ENV = 'production';
+            env.TRANSCRIPT_ISSUERS = JSON.stringify({
+                'example-records': {
+                    ...exampleRecordsIssuer,
+                    endpoint: 'http://records.example.org/transcript-requests',
+                },
+            });
+            vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            expect(getTranscriptIssuerConfig({ transcriptIssuer: 'example-records' })).toBeNull();
+        });
+
+        it('allows an http localhost endpoint outside production', () => {
+            env.TRANSCRIPT_ISSUERS = JSON.stringify({
+                local: {
+                    endpoint: 'http://localhost:4000/transcript-requests',
+                    audience: 'local-service',
+                    did: 'did:web:localhost',
+                },
+            });
+            expect(getTranscriptIssuerConfig({ transcriptIssuer: 'local' })).toEqual({
+                key: 'local',
+                endpoint: 'http://localhost:4000/transcript-requests',
+                audience: 'local-service',
+                did: 'did:web:localhost',
+            });
+        });
+
+        it('rejects an http localhost endpoint in production', () => {
+            env.NODE_ENV = 'production';
+            env.TRANSCRIPT_ISSUERS = JSON.stringify({
+                local: {
+                    endpoint: 'http://localhost:4000/transcript-requests',
+                    audience: 'local-service',
+                    did: 'did:web:localhost',
+                },
+            });
+            vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            expect(getTranscriptIssuerConfig({ transcriptIssuer: 'local' })).toBeNull();
+        });
+
+        it('district with no issuer and no default reports unavailable', () => {
+            expect(getTranscriptIssuerConfig({})).toBeNull();
+        });
+    });
+
+    describe('TranscriptIssuerValidator', () => {
+        it('accepts a valid issuer', () => {
+            expect(TranscriptIssuerValidator.parse(exampleRecordsIssuer)).toEqual(
+                exampleRecordsIssuer
+            );
+        });
+
+        it('rejects a non-URL endpoint', () => {
+            expect(
+                TranscriptIssuerValidator.safeParse({
+                    ...exampleRecordsIssuer,
+                    endpoint: 'not-a-url',
+                }).success
+            ).toBe(false);
+        });
+
+        it('rejects a malformed DID', () => {
+            expect(
+                TranscriptIssuerValidator.safeParse({ ...exampleRecordsIssuer, did: 'not-a-did' })
+                    .success
+            ).toBe(false);
+        });
+
+        it('rejects unknown fields', () => {
+            expect(
+                TranscriptIssuerValidator.safeParse({ ...exampleRecordsIssuer, extra: 'nope' })
+                    .success
+            ).toBe(false);
+        });
+    });
+
+    describe('TranscriptIssuersValidator', () => {
+        it('accepts a map of valid keys to valid issuers', () => {
+            const value = { 'example-records': exampleRecordsIssuer };
+            expect(TranscriptIssuersValidator.parse(value)).toEqual(value);
+        });
+
+        it('rejects an invalid issuer key', () => {
+            for (const key of ['', 'UPPER', 'has space', '-leading-dash']) {
+                expect(
+                    TranscriptIssuersValidator.safeParse({ [key]: exampleRecordsIssuer }).success
+                ).toBe(false);
+            }
         });
     });
 });
