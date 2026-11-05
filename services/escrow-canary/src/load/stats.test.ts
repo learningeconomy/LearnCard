@@ -37,6 +37,7 @@ describe('Recorder', () => {
         r.scenario(1, 'enrol', 300);
         r.scenario(1, 'enrol', 200, 'http_5xx');
         r.scenario(1, 'pinRecovery', 50, 'rate_limit');
+        r.scenario(1, 'pinRecovery', 5, 'throttled_by_client_ip');
         r.step(1, 'login', 10);
         r.step(1, 'enroll', 90, 'http_5xx');
         const [setup, s1] = r.summary();
@@ -50,23 +51,27 @@ describe('Recorder', () => {
             late: 2,
             maxLateMs: 900,
             achievedStartRate: 2,
-            completed: 4,
+            completed: 5,
             ok: 2,
             failed: 2,
+            throttledByClientIp: 1,
             achievedOkRate: 0.5,
         });
         expect(s1.scenarios).toEqual({
+            // Ok-only percentiles; the failure's latency is kept apart.
             enrol: {
                 count: 3,
                 ok: 2,
                 errors: { http_5xx: 1 },
-                latencyMs: { p50: 200, p95: 300, p99: 300, max: 300 },
+                latencyMs: { p50: 100, p95: 300, p99: 300, max: 300 },
+                failedLatencyMs: { p50: 200, p95: 200, p99: 200, max: 200 },
             },
             pinRecovery: {
-                count: 1,
+                count: 2,
                 ok: 0,
-                errors: { rate_limit: 1 },
-                latencyMs: { p50: 50, p95: 50, p99: 50, max: 50 },
+                errors: { rate_limit: 1, throttled_by_client_ip: 1 },
+                latencyMs: null,
+                failedLatencyMs: { p50: 5, p95: 50, p99: 50, max: 50 },
             },
         });
         expect(s1.steps).toMatchObject({
@@ -83,12 +88,26 @@ describe('Recorder', () => {
         expect(r.errorRate(1)).toBe(19 / 20);
     });
 
+    it('does not count client-IP throttling as failure', () => {
+        const r = recorder();
+        for (let i = 0; i < 20; i += 1) r.scenario(1, 'pinRecovery', 1, 'throttled_by_client_ip');
+        expect(r.errorRate(1)).toBe(0);
+    });
+
     it('prints a fixed-format progress line', () => {
         const r = recorder();
         r.started(1);
         r.scenario(1, 'enrol', 120);
         expect(r.progressLine(1, 3, 12.4)).toBe(
-            'progress stage=s1 t=12s started=1/8 in_flight=3 ok=1 failed=0 dropped=0 late=0 p50_ms=120 p95_ms=120'
+            'progress stage=s1 t=12s started=1/8 in_flight=3 ok=1 failed=0 throttled_by_client_ip=0 ' +
+                'dropped=0 late=0 ok_p50_ms=120 ok_p95_ms=120 ok_p99_ms=120 ok_max_ms=120 ' +
+                'failed_p50_ms=- failed_p95_ms=-'
+        );
+        r.scenario(1, 'enrol', 5, 'http_5xx');
+        r.scenario(1, 'pinRecovery', 2, 'throttled_by_client_ip');
+        expect(r.progressLine(1, 0, 13)).toContain(
+            'ok=1 failed=1 throttled_by_client_ip=1 dropped=0 late=0 ok_p50_ms=120 ok_p95_ms=120 ' +
+                'ok_p99_ms=120 ok_max_ms=120 failed_p50_ms=2 failed_p95_ms=5'
         );
     });
 });

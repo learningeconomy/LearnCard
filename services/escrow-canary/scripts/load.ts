@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
@@ -28,8 +29,14 @@ import {
     runEmailMatcher,
     type AdminAuth,
 } from '../src/load/identity';
-import { buildPlan, parseStages } from '../src/load/plan';
-import { instrumentFetch, newRequestCounters } from '../src/load/requests';
+import {
+    buildPlan,
+    parseStages,
+    PIN_CLIENT_IP_LIMIT,
+    PIN_CLIENT_IP_WINDOW_SEC,
+    pinRateOverClientIpLimit,
+} from '../src/load/plan';
+import { instrumentFetch, newRequestCounters, type EscrowObserver } from '../src/load/requests';
 import { runLoad, type StopSignal } from '../src/load/run';
 import { narrowLoadStrategy } from '../src/load/scenarios';
 
@@ -45,6 +52,7 @@ import { narrowLoadStrategy } from '../src/load/scenarios';
  *     --stages <rate:sec,...> --max-in-flight <n> --pin-ratio <0..1> --pin-pool <n> \
  *     --max-users <n> --max-emails <n> --i-understand-roughtime [--dry-run] > summary.json
  *
+ *   GOOGLE_APPLICATION_CREDENTIALS=<staging service-account json> \
  *   node services/escrow-canary/dist/load.mjs cleanup --run <id> --domain <domain> \
  *     --firebase-project <id> [--prefix <p>] [--dry-run]
  *
@@ -52,9 +60,10 @@ import { narrowLoadStrategy } from '../src/load/scenarios';
  * Nothing prints keys, PINs, tokens, shares or email addresses (counts and run id only).
  *
  * EMAIL FINDINGS (read from code, 2026-11-05; re-check if these files change):
- * - Enrolment sends NO email. `POST /keys/escrow/opt-in` only records the opt-in
- *   (lca-api `src/routes/escrow.ts:940-950`); `POST /keys/escrow` (enroll) has no
- *   notification call (`escrow.ts:668-926`); the enclave's only email messages are
+ * - Enrolment sends NO email. Automatic enrolment (`ensureEscrowEnrollment`) enrols
+ *   through `POST /keys/escrow`; the `--enrol-opt-in` path also calls
+ *   `POST /keys/escrow/opt-in`, which only records the opt-in (lca-api
+ *   `src/routes/escrow.ts:940-950`); `POST /keys/escrow` (enroll) has no notification call (`escrow.ts:668-926`); the enclave's only email messages are
  *   `OneTimeCode`, `RecoveryStarted` and `ReleaseWarning`
  *   (escrow-enclave-app `src/authority/email.rs:98-107`), sent from create-hold,
  *   confirm-hold, release-warning and resend-code (`src/policy/authority.rs:595,1123,1200,1347`),
@@ -87,7 +96,8 @@ const USAGE =
     'Usage: node dist/load.mjs --lca-api-url <url> --staging-host <host> --tenant-id <id> ' +
     '--firebase-project <id> --domain <inbox domain> --stages <rate:sec,...> --max-users <n> ' +
     '--max-emails <n> --i-understand-roughtime [--prefix <p>] [--run-id <id>] [--max-in-flight <n>] ' +
-    '[--pin-ratio <0..1>] [--pin-pool <n>] [--enrol-with-pin] [--setup-rate <n/s>] ' +
+    '[--pin-ratio <0..1>] [--pin-pool <n>] [--enrol-with-pin] [--enrol-opt-in] ' +
+    '[--pin-reset-after-recovery] [--setup-rate <n/s>] ' +
     '[--progress-sec <n>] [--stop-error-rate <0..1>] [--late-ms <n>] [--dry-run]\n' +
     '       node dist/load.mjs cleanup --run <id> --domain <domain> --firebase-project <id> [--prefix <p>] [--dry-run]';
 
@@ -108,6 +118,8 @@ const parsed = (() => {
                 'pin-ratio': { type: 'string', default: '0' },
                 'pin-pool': { type: 'string', default: '0' },
                 'enrol-with-pin': { type: 'boolean', default: false },
+                'enrol-opt-in': { type: 'boolean', default: false },
+                'pin-reset-after-recovery': { type: 'boolean', default: false },
                 'setup-rate': { type: 'string', default: '2' },
                 'progress-sec': { type: 'string', default: '10' },
                 'stop-error-rate': { type: 'string', default: '0.5' },
@@ -221,8 +233,12 @@ const run = async (): Promise<number> => {
         `plan stages=${plan.stages.map(s => `${s.rate}/s x ${s.durationSec}s`).join(', ')} duration=${plan.durationSec}s setup-rate=${setupRate}/s max-in-flight=${maxInFlight}`
     );
     write(
-        `plan operations: arrivals=${plan.arrivals} enrol=${plan.enrolOps}${flags['enrol-with-pin'] ? ' (+PIN)' : ''} pin-recovery=${plan.pinOps} pin-pool=${plan.pinPool} firebase-users=${plan.users} (max-users ${maxUsers})`
+        `plan operations: arrivals=${plan.arrivals} enrol=${plan.enrolOps} (${flags['enrol-opt-in'] ? 'explicit opt-in' : 'automatic'}${flags['enrol-with-pin'] ? ' +PIN' : ''}) pin-recovery=${plan.pinOps}${flags['pin-reset-after-recovery'] ? ' (+same-PIN re-set)' : ''} pin-pool=${plan.pinPool} firebase-users=${plan.users} (max-users ${maxUsers})`
     );
+    for (const over of pinRateOverClientIpLimit(plan.stages, pinRatio))
+        write(
+            `plan WARNING stage s${over.stage + 1}: ${over.pinPerWindow} PIN recoveries per ${PIN_CLIENT_IP_WINDOW_SEC}s from this one egress IP exceeds lca-api's per-IP PIN limit (${PIN_CLIENT_IP_LIMIT} starts and ${PIN_CLIENT_IP_LIMIT} completions per ${PIN_CLIENT_IP_WINDOW_SEC}s); PIN results above it measure the limiter, not capacity (reported as throttled_by_client_ip)`
+        );
     write(
         `plan emails: expected=${plan.expectedEmails} upper-bound=${plan.maxEmails} (max-emails ${maxEmails}); enrolment sends none, each PIN recovery sends 2 via lca-api delivery`
     );
@@ -236,7 +252,11 @@ const run = async (): Promise<number> => {
 
     // ---- Run ----
     const counters = newRequestCounters();
-    globalThis.fetch = instrumentFetch(globalThis.fetch, serverUrl.data, counters);
+    // Attributes escrow responses to the scenario that made them (route + status only).
+    const escrowObserver = new AsyncLocalStorage<EscrowObserver>();
+    globalThis.fetch = instrumentFetch(globalThis.fetch, serverUrl.data, counters, () =>
+        escrowObserver.getStore()
+    );
     const sdk = createSdk({
         serverUrl: serverUrl.data,
         tenantId: tenantId.data,
@@ -261,6 +281,8 @@ const run = async (): Promise<number> => {
             address: { prefix: flags.prefix!, runId, domain },
             pinRatio,
             enrolWithPin: flags['enrol-with-pin']!,
+            enrolOptIn: flags['enrol-opt-in']!,
+            resetPinAfterRecovery: flags['pin-reset-after-recovery']!,
             maxInFlight,
             lateMs,
             setupRate,
@@ -276,6 +298,7 @@ const run = async (): Promise<number> => {
             strategy: storage => narrowLoadStrategy(sdk.strategy(storage)),
             randomKey: generateEd25519PrivateKey,
             randomPin,
+            observeEscrow: (observer, operation) => escrowObserver.run(observer, operation),
             now: () => performance.now(),
             sleep: ms => new Promise(resolve => setTimeout(resolve, ms)),
             every: (ms, callback) => {

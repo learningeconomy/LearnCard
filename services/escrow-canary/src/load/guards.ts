@@ -18,19 +18,25 @@ export const PRODUCTION_API_HOSTS = new Set([
 /** Known production Firebase projects (app Firebase config). Refused outright. */
 export const PRODUCTION_FIREBASE_PROJECTS = new Set(['learncard', 'scoutpass-9a67e']);
 
-/** Public mailbox providers: synthetic addresses there could reach real people. */
-const PUBLIC_MAIL_DOMAINS = new Set([
-    'gmail.com',
-    'googlemail.com',
-    'outlook.com',
-    'hotmail.com',
-    'live.com',
-    'yahoo.com',
-    'icloud.com',
-    'me.com',
-    'aol.com',
-    'proton.me',
-    'protonmail.com',
+/**
+ * The canary's receive-only SES inbox zone (`infra/escrow-canary-inbox`, e.g.
+ * `canary.notify.learncard.com`). Only its subdomains are accepted as `--domain`.
+ */
+export const INBOX_PARENT_DOMAIN = 'notify.learncard.com';
+
+/**
+ * Organisation mail domains (from app/tenant config under `apps/<app>/environments`):
+ * real staff and user mailboxes. Refused explicitly, with their own reason.
+ */
+export const ORG_MAIL_DOMAINS = new Set([
+    'learningeconomy.io',
+    'learncard.com',
+    'learncard.app',
+    'learncard.ai',
+    'learncloud.ai',
+    'vetpass.app',
+    'scoutnetwork.org',
+    INBOX_PARENT_DOMAIN,
 ]);
 
 const HOSTNAME =
@@ -93,12 +99,17 @@ export const checkFirebaseProject = (
     if (/(^|-)prod(uction)?(-|$)/.test(expected)) throw refuse('firebase_project_production');
 };
 
-/** Must be the canary receive-only inbox domain. Public mail providers are refused. */
+/**
+ * Allowlist: must be a subdomain of the canary inbox zone. Bare organisation
+ * domains are refused by name; anything else (public providers included) is
+ * simply not allowlisted.
+ */
 export const checkDomain = (domain: string | undefined): string => {
     if (!domain) throw refuse('domain_required');
     const value = domain.toLowerCase();
     if (!HOSTNAME.test(value)) throw refuse('domain_format');
-    if (PUBLIC_MAIL_DOMAINS.has(value)) throw refuse('domain_public_mailbox');
+    if (ORG_MAIL_DOMAINS.has(value)) throw refuse('domain_org_mailbox');
+    if (!value.endsWith(`.${INBOX_PARENT_DOMAIN}`)) throw refuse('domain_not_allowlisted');
     return value;
 };
 

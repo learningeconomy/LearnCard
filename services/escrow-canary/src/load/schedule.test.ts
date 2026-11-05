@@ -69,6 +69,36 @@ describe('runOpenLoop', () => {
         expect(finished).toBe(2);
     });
 
+    it('yields each iteration when behind schedule, so finished work frees in-flight slots', async () => {
+        let t = 0;
+        const sleeps: number[] = [];
+        const deps: ScheduleDeps = {
+            now: () => t,
+            // Like setTimeout(0): a macrotask turn, during which I/O callbacks run.
+            sleep: async ms => {
+                sleeps.push(ms);
+                await new Promise(resolve => setImmediate(resolve));
+                t += ms;
+            },
+        };
+        const dropped: string[] = [];
+        const result = await runOpenLoop(
+            [0, 0, 0, 0].map(atMs => ({ atMs })),
+            { maxInFlight: 1, lateMs: 1_000 },
+            deps,
+            {
+                // Completes on the next macrotask, as a network response would.
+                start: () => new Promise(resolve => setImmediate(resolve)),
+                dropped: (_item, reason) => dropped.push(reason),
+                late: () => undefined,
+                shouldStop: () => false,
+            }
+        );
+        expect(sleeps).toEqual([0, 0, 0, 0]);
+        expect(dropped).toEqual([]);
+        expect(result).toEqual({ started: 4, dropped: 0, late: 0 });
+    });
+
     it('counts late starts when the generator falls behind', async () => {
         const { deps, advance } = clock();
         const late: number[] = [];

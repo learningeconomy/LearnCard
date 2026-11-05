@@ -489,14 +489,28 @@ It is an operator tool: nothing in CI runs it, and its tests are offline.
 through the same Firebase REST custom-token exchange the provisioning tool uses
 (`src/provision/login.ts`). No login codes are sent. Per arrival:
 
-- `enrol`: new key (`atomicUpdateShares`, as the app's `setupNewKey`) then
-  `enableEscrowRecovery` (opt-in, as automatic enrolment). With
-  `--enrol-with-pin`, also `setEscrowPin` and activation, as the app's PIN setup.
-- `pin` (fraction `--pin-ratio`): a new-device PIN sign-in, as canary tier 2:
-  fresh sign-in, empty memory storage, `executeRecovery({ method: 'escrow-pin' })`,
-  an independent DID check, then the same-PIN re-set. Uses users from a PIN pool
+- `enrol`: new key (`atomicUpdateShares`, as the app's `setupNewKey`), then the
+  app's **automatic** enrolment, as `AuthCoordinator.refreshEscrow` runs it on
+  reaching `ready` (learn-card-base `src/auth-coordinator/AuthCoordinator.ts`):
+  the rollout-gate `getEscrowEnrollmentState` read, `ensureEscrowEnrollment`
+  with the recovery contact options (login email + locale), then
+  `getEscrowEnrollmentState` and `getEscrowRecoveryStatus`. The rollout gate
+  itself is assumed open for these accounts. `--enrol-opt-in` uses the explicit
+  settings opt-in (`enableEscrowRecovery`) instead. With `--enrol-with-pin`,
+  also `setEscrowPin` and activation, as the app's PIN setup.
+- `pin` (fraction `--pin-ratio`): a new-device PIN sign-in, as the coordinator
+  does it: fresh sign-in, empty memory storage, the status read that lands a new
+  device in `needs_recovery`, `executeRecovery({ method: 'escrow-pin' })` with
+  the own-typos attempt context from that status and the recovery contact
+  options, an independent DID check, then the same `refreshEscrow` as above.
+  The scenario latency therefore includes that post-`ready` refresh; the
+  `recovery` step is the user's wait. The canary's same-PIN re-set is off by
+  default (the SDK's PIN sign-in already refreshes the PIN budget);
+  `--pin-reset-after-recovery` adds it. Uses users from a PIN pool
   (`--pin-pool`) prepared before the stages; one operation per pool user at a
-  time. A pool user whose recovery fails is retired, not reused.
+  time. A pool user whose recovery fails is retired, not reused, except when
+  lca-api refused the **start** with a 429: no hold exists then (both start-time
+  429s are raised before a hold is created), so the user goes back to the pool.
 
 All Firebase users are created in an unmeasured **setup** phase (`--setup-rate`,
 default 2/s) before the stages, so account creation (which real users already
@@ -512,14 +526,38 @@ is counted **late**: the generator itself (one Node process doing DIDKit and SSS
 work) is then the limit, not the server. If you see late starts, split the load
 across several processes or hosts, each with its own `--run-id`.
 
+**PIN recovery is rate-limited per client IP.** lca-api (`limitPinCompletion` in
+`services/learn-card-network/lca-api/src/routes/escrow.ts`) counts, in Redis per
+client IP, every PIN-policy hold start (`escrow:pin-start:<ip>`) and every
+completion with a PIN proof (`escrow:pin-complete:<ip>`): a fixed 60 s window
+(`EXPIRE` set on the first hit) and a 429 once a count exceeds **20**. Each PIN
+recovery makes one of each, so one egress IP sustains at most 20 PIN recoveries
+per minute (a burst straddling two windows can pass up to 40). The client IP is
+the API Gateway source IP (or the first `X-Forwarded-For` hop), so several
+processes on one host share one budget. The plan prints a WARNING for any stage
+whose PIN rate (`rate x --pin-ratio x 60`) exceeds 20: PIN results above it
+measure the limiter, not escrow capacity. Measuring higher PIN rates needs
+multiple egress IPs, or a staging allowlist / raised limit for the load
+generator, which is a decision to record (with its owner) before such a run; it
+is not something to work around from one host. Enrolment and PIN setup are not
+limited this way.
+
 **Output.** Plan and progress lines (every `--progress-sec`) go to stderr; the
 final JSON summary is the only stdout. Per stage (`setup`, `s1`, ...) and per
 scenario/step: count, ok, errors by safe reason (the canary's `safeReason` plus
-HTTP status class, timeout, Firebase Admin code and SDK error class),
-p50/p95/p99/max latency, achieved start and success rates, dropped and late
-starts, plus request counts by class (escrow / other keys / Firebase) with
-409/429/4xx/5xx/transport buckets. It never prints keys, PINs, tokens, shares or
-email addresses: counts and the run id only.
+HTTP status class, timeout, Firebase Admin code and SDK error class), latency
+p50/p95/p99/max over **ok** operations (`latencyMs`, the primary series) and,
+separately, over failed ones (`failedLatencyMs`), achieved start and success
+rates, dropped and late starts, plus request counts by class (escrow / other
+keys / Firebase) with 409/429/4xx/5xx/transport buckets. A 429 whose body is
+lca-api's per-IP PIN limiter message is counted as `throttledByClientIp` and
+the operation's outcome is `throttled_by_client_ip`, reported apart from
+capacity failures: it is not in `failed`, not in the stop-on-error ratio, and
+progress lines show it as its own count next to ok-only latency. The `firebase`
+request bucket covers only the custom-token exchange (Firebase REST); the Admin
+SDK's `createUser` volume is in `stages.setup` (`createUser` / `pinSetup`). It
+never prints keys, PINs, tokens, shares or email addresses: counts and the run
+id only.
 
 ### Guards (fail closed; `--dry-run` runs them all and sends nothing)
 
@@ -530,11 +568,21 @@ email addresses: counts and the run id only.
   that look like production are refused. Each ID token's audience is also
   checked against `--firebase-project`; a mismatch stops the run (exit 3).
   If staging shares a Firebase project with production, the tool cannot be used.
-- `--domain` is required and **must be the canary receive-only inbox domain,
-  never a real mailbox domain** (public mail providers are refused). Addresses
-  are `<prefix>+<runId>-<n>@<domain>`. Per `infra/escrow-canary/inbox.tf`, mail
-  to addresses without a receipt rule is dropped; check how the sender treats
-  that before a large PIN run.
+- `--domain` is required and is an **allowlist**: only subdomains of
+  `notify.learncard.com`, where the canary's receive-only SES inbox lives (e.g.
+  `canary.notify.learncard.com`), are accepted. The bare organisation domains
+  (`learningeconomy.io`, `learncard.com`, `learncard.app`, `learncard.ai`,
+  `learncloud.ai`, `vetpass.app`, `scoutnetwork.org`, and `notify.learncard.com`
+  itself) are refused by name; anything else is not allowlisted. Addresses are
+  `<prefix>+<runId>-<n>@<domain>`.
+- The canary inbox stores only its 12 fixed pool addresses (exact-recipient
+  receipt rules, `infra/escrow-canary/inbox.tf`) and drops everything else, so
+  the PIN-recovery emails to these synthetic addresses are **not read** by
+  anyone. Before a large PIN run, confirm with whoever owns the mail provider
+  that staging delivery to them won't bounce or hurt sender reputation, or
+  that staging lca-api has no `POSTMARK_SERVER_TOKEN`/`POSTMARK_FROM_EMAIL`, in
+  which case lca-api only logs emails
+  (`lca-api/src/services/delivery/delivery.factory.ts`).
 - `--i-understand-roughtime` is required: every enclave time sample queries the
   three third-party Roughtime servers (Cloudflare, int08h, time.txryan.com; see
   `services/escrow-enclave-app/LAUNCH-DECISIONS.md` "RT"). The plan prints an
@@ -547,13 +595,23 @@ email addresses: counts and the run id only.
   The file:line evidence is in the header of `scripts/load.ts`.
 - Scheduling stops (remaining starts counted as `stopped`) on Ctrl-C (a second
   Ctrl-C aborts), on a fatal token guard, or when a stage's failure ratio exceeds
-  `--stop-error-rate` (default 0.5) after 20 completions.
+  `--stop-error-rate` (default 0.5) after 20 completions (client-IP throttling
+  does not count). The summary's `stopped` records the reason, including a fatal
+  guard or Ctrl-C that arrives while in-flight work drains after the last start;
+  a fatal stop exits 3.
 
 ### Usage
 
-Build as in step 4 above, then run with Node 22 from the repo (firebase-admin is
-external to the bundle and resolves from the workspace). Non-secret trust
-configuration comes from the same environment variables as the canary:
+Build from the repo root (as in "Staging operator setup" step 4):
+
+```sh
+NX_DAEMON=false bunx nx run-many -t build -p init sss-key-manager --parallel=3
+bun run --cwd services/escrow-canary build
+```
+
+Then run with Node 22 from the repo (firebase-admin is external to the bundle
+and resolves from the workspace). Non-secret trust configuration comes from the
+same environment variables as the canary:
 
 ```sh
 export GOOGLE_APPLICATION_CREDENTIALS=<staging service-account JSON path>
@@ -564,12 +622,14 @@ node services/escrow-canary/dist/load.mjs \
   --firebase-project <staging project> --domain <canary inbox domain> \
   --stages <rate:sec,...> --max-in-flight <n> --pin-ratio <0..1> --pin-pool <n> \
   --max-users <n> --max-emails <n> --i-understand-roughtime --dry-run
+# optional: --enrol-with-pin, --enrol-opt-in, --pin-reset-after-recovery
 # then without --dry-run, redirecting stdout to keep the JSON summary
 ```
 
 ### Cleanup
 
 ```sh
+export GOOGLE_APPLICATION_CREDENTIALS=<staging service-account JSON path>
 node services/escrow-canary/dist/load.mjs cleanup --run <run id> --domain <domain> \
   --firebase-project <staging project> [--prefix <prefix>] [--dry-run]
 ```
@@ -592,6 +652,8 @@ reviewed staging operation.
   `LearnCard/Escrow / EnclaveFailure` EMF reasons.
 - MongoDB: connections, operation latency, queueing.
 - Roughtime: per-source failures on the host probes (2 of 3 needed).
+- lca-api 429s on PIN routes: `throttledByClientIp` in progress lines and the
+  summary means the per-IP limiter answered (see above), not capacity.
 - Email: lca-api delivery sends/bounces for PIN notices; SES sends, bounces and
   complaints on the recovery configuration set (hold-policy mail only).
 - The escrow canary itself (tiers 1 and 2) for user-visible impact.

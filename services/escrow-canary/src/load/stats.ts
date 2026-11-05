@@ -1,6 +1,14 @@
 /**
  * In-memory latency/outcome recorder. Holds numbers and fixed labels only.
+ *
+ * Latency is kept as separate ok and failed series: a fast refusal (a 429, a 503
+ * from a shed request) must not pull the ok percentiles down. Outcomes labelled
+ * `throttled_by_client_ip` are lca-api's per-IP PIN limiter answering, not a
+ * capacity failure: they are counted on their own and excluded from `failed` and
+ * from the stop-on-error ratio.
  */
+export const THROTTLED_BY_CLIENT_IP = 'throttled_by_client_ip';
+
 export interface LatencySummary {
     p50: number;
     p95: number;
@@ -12,7 +20,10 @@ export interface OutcomeSummary {
     count: number;
     ok: number;
     errors: Record<string, number>;
+    /** Successful operations only. */
     latencyMs: LatencySummary | null;
+    /** Every non-ok outcome (capacity errors and client-IP throttling). */
+    failedLatencyMs: LatencySummary | null;
 }
 
 /** Nearest-rank percentile of an ascending array. */
@@ -37,23 +48,24 @@ export const summarizeLatency = (values: number[]): LatencySummary | null => {
 };
 
 class Outcome {
-    latencies: number[] = [];
-    ok = 0;
+    okLatencies: number[] = [];
+    failedLatencies: number[] = [];
     errors: Record<string, number> = {};
     add(ms: number, reason?: string): void {
-        this.latencies.push(ms);
-        if (reason === undefined) this.ok += 1;
-        else this.errors[reason] = (this.errors[reason] ?? 0) + 1;
-    }
-    get count(): number {
-        return this.latencies.length;
+        if (reason === undefined) {
+            this.okLatencies.push(ms);
+            return;
+        }
+        this.failedLatencies.push(ms);
+        this.errors[reason] = (this.errors[reason] ?? 0) + 1;
     }
     summary(): OutcomeSummary {
         return {
-            count: this.count,
-            ok: this.ok,
+            count: this.okLatencies.length + this.failedLatencies.length,
+            ok: this.okLatencies.length,
             errors: { ...this.errors },
-            latencyMs: summarizeLatency(this.latencies),
+            latencyMs: summarizeLatency(this.okLatencies),
+            failedLatencyMs: summarizeLatency(this.failedLatencies),
         };
     }
 }
@@ -68,7 +80,9 @@ class StageStats {
     scenarios = new Map<string, Outcome>();
     steps = new Map<string, Outcome>();
     completed = 0;
+    /** Non-ok outcomes other than client-IP throttling. */
     failed = 0;
+    throttled = 0;
 }
 
 export interface StageInfo {
@@ -109,33 +123,40 @@ export class Recorder {
         const stats = this.stats[stage];
         this.outcome(stats.scenarios, name).add(ms, reason);
         stats.completed += 1;
-        if (reason !== undefined) stats.failed += 1;
+        if (reason === THROTTLED_BY_CLIENT_IP) stats.throttled += 1;
+        else if (reason !== undefined) stats.failed += 1;
     }
 
-    /** Fraction of failed scenarios in a stage, once it has `minimum` completions. */
+    /**
+     * Fraction of failed scenarios in a stage, once it has `minimum` completions.
+     * Client-IP throttling is not a failure here (see the file header).
+     */
     errorRate(stage: number, minimum = 20): number {
         const stats = this.stats[stage];
         return stats.completed < minimum ? 0 : stats.failed / stats.completed;
     }
 
-    /** One fixed-format progress line (counts and latencies only). */
+    /** One fixed-format progress line (counts and latencies only; ok latency first). */
     progressLine(stage: number, inFlight: number, elapsedSec: number): string {
         const stats = this.stats[stage];
-        const all = [...stats.scenarios.values()].flatMap(outcome => outcome.latencies);
-        const latency = summarizeLatency(all);
+        const outcomes = [...stats.scenarios.values()];
+        const ok = summarizeLatency(outcomes.flatMap(outcome => outcome.okLatencies));
+        const failed = summarizeLatency(outcomes.flatMap(outcome => outcome.failedLatencies));
         const dropped = Object.values(stats.dropped).reduce((sum, n) => sum + (n ?? 0), 0);
         return (
             `progress stage=${this.stages[stage].label} t=${Math.round(elapsedSec)}s ` +
             `started=${stats.started}/${this.stages[stage].scheduled} in_flight=${inFlight} ` +
-            `ok=${stats.completed - stats.failed} failed=${stats.failed} dropped=${dropped} late=${stats.late} ` +
-            `p50_ms=${latency?.p50 ?? '-'} p95_ms=${latency?.p95 ?? '-'}`
+            `ok=${stats.completed - stats.failed - stats.throttled} failed=${stats.failed} ` +
+            `throttled_by_client_ip=${stats.throttled} dropped=${dropped} late=${stats.late} ` +
+            `ok_p50_ms=${ok?.p50 ?? '-'} ok_p95_ms=${ok?.p95 ?? '-'} ok_p99_ms=${ok?.p99 ?? '-'} ` +
+            `ok_max_ms=${ok?.max ?? '-'} failed_p50_ms=${failed?.p50 ?? '-'} failed_p95_ms=${failed?.p95 ?? '-'}`
         );
     }
 
     summary(): Record<string, unknown>[] {
         return this.stages.map((info, index) => {
             const stats = this.stats[index];
-            const ok = stats.completed - stats.failed;
+            const ok = stats.completed - stats.failed - stats.throttled;
             const map = (outcomes: Map<string, Outcome>) =>
                 Object.fromEntries(
                     [...outcomes.entries()].map(([name, outcome]) => [name, outcome.summary()])
@@ -154,6 +175,7 @@ export class Recorder {
                 completed: stats.completed,
                 ok,
                 failed: stats.failed,
+                throttledByClientIp: stats.throttled,
                 achievedOkRate: info.durationSec > 0 ? roundRate(ok / info.durationSec) : null,
                 scenarios: map(stats.scenarios),
                 steps: map(stats.steps),

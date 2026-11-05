@@ -29,6 +29,31 @@ export const EMAILS_PER_PIN_RECOVERY = 2;
 export const EMAILS_PER_PIN_RECOVERY_MAX = 3;
 
 /**
+ * lca-api's per-client-IP PIN limiter (`limitPinCompletion`, `src/routes/escrow.ts`):
+ * Redis `INCR` on `escrow:pin-start:<client ip>` (every PIN-policy hold start) and
+ * `escrow:pin-complete:<client ip>` (every completion with a PIN proof), `EXPIRE`
+ * 60 s set on the first hit, 429 once the count exceeds 20. A fixed window, so a
+ * burst straddling two windows can pass up to 40. Each PIN recovery makes one of
+ * each, so ONE egress IP sustains at most 20 PIN recoveries per minute.
+ */
+export const PIN_CLIENT_IP_LIMIT = 20;
+export const PIN_CLIENT_IP_WINDOW_SEC = 60;
+
+/**
+ * Stages whose planned PIN arrival rate, all from this generator's single egress
+ * IP, exceeds the per-IP limit. Results above it measure the limiter, not capacity.
+ */
+export const pinRateOverClientIpLimit = (
+    stages: Stage[],
+    pinRatio: number
+): { stage: number; pinPerWindow: number }[] =>
+    stages.flatMap((stage, index) => {
+        const pinPerWindow =
+            Math.round(stage.rate * pinRatio * PIN_CLIENT_IP_WINDOW_SEC * 100) / 100;
+        return pinPerWindow > PIN_CLIENT_IP_LIMIT ? [{ stage: index, pinPerWindow }] : [];
+    });
+
+/**
  * Roughtime requests PER SERVER, rough upper estimates derived from the
  * LAUNCH-DECISIONS.md "RT" table, which is itself an estimate (not measured).
  * Printed so the operator sees the third-party volume before starting.

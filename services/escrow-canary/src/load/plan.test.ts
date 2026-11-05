@@ -5,6 +5,7 @@ import {
     isPinArrival,
     parseStages,
     pinCount,
+    pinRateOverClientIpLimit,
     scheduleArrivals,
     stageArrivals,
 } from './plan';
@@ -140,5 +141,23 @@ describe('buildPlan', () => {
                 })
             )
         ).toBe('no_arrivals');
+    });
+});
+
+describe('pinRateOverClientIpLimit', () => {
+    it('flags stages whose PIN rate from one IP exceeds 20 per 60 s', () => {
+        const stages = [
+            { rate: 1, durationSec: 60 },
+            { rate: 4, durationSec: 60 },
+            { rate: 2, durationSec: 60 },
+        ];
+        // 1/s x 0.25 = 15/min; 4/s x 0.25 = 60/min; 2/s x 0.25 = 30/min.
+        expect(pinRateOverClientIpLimit(stages, 0.25)).toEqual([
+            { stage: 1, pinPerWindow: 60 },
+            { stage: 2, pinPerWindow: 30 },
+        ]);
+        // Exactly at the limit is allowed (lca-api refuses only above 20).
+        expect(pinRateOverClientIpLimit([{ rate: 1 / 3, durationSec: 60 }], 1)).toEqual([]);
+        expect(pinRateOverClientIpLimit(stages, 0)).toEqual([]);
     });
 });

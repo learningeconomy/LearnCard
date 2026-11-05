@@ -18,6 +18,7 @@ export interface ScheduleOptions {
 
 export interface ScheduleDeps {
     now(): number;
+    /** Called with 0 when behind schedule: must still yield a macrotask (e.g. setTimeout). */
     sleep(ms: number): Promise<void>;
 }
 
@@ -50,8 +51,9 @@ export const runOpenLoop = async <T extends Scheduled>(
     let stopped = false;
     for (const item of items) {
         if (!stopped) {
-            const wait = origin + item.atMs - deps.now();
-            if (wait > 0) await deps.sleep(wait);
+            // Always yield, even when behind schedule: completions settle (and free
+            // in-flight slots) only when the loop gives the event loop a turn.
+            await deps.sleep(Math.max(0, origin + item.atMs - deps.now()));
             stopped = hooks.shouldStop(item);
         }
         if (stopped) {

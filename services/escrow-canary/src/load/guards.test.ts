@@ -94,10 +94,31 @@ describe('Firebase project', () => {
 });
 
 describe('addresses', () => {
-    it('requires a non-public inbox domain', () => {
-        expect(checkDomain('Canary.Example.org')).toBe('canary.example.org');
+    it('accepts only subdomains of the canary inbox zone', () => {
+        expect(checkDomain('Canary.Notify.LearnCard.com')).toBe('canary.notify.learncard.com');
+        expect(checkDomain('load.canary.notify.learncard.com')).toBe(
+            'load.canary.notify.learncard.com'
+        );
         expect(refusal(() => checkDomain(undefined))).toBe('domain_required');
-        expect(refusal(() => checkDomain('gmail.com'))).toBe('domain_public_mailbox');
+        for (const domain of [
+            'learningeconomy.io',
+            'learncard.com',
+            'LearnCard.app',
+            'learncard.ai',
+            'learncloud.ai',
+            'vetpass.app',
+            'scoutnetwork.org',
+            'notify.learncard.com',
+        ])
+            expect(refusal(() => checkDomain(domain))).toBe('domain_org_mailbox');
+        for (const domain of [
+            'gmail.com',
+            'canary.example.org',
+            'mail.learncard.com',
+            'notify.learncard.com.evil.test',
+            'evilnotify.learncard.com',
+        ])
+            expect(refusal(() => checkDomain(domain))).toBe('domain_not_allowlisted');
         expect(refusal(() => checkDomain('localhost'))).toBe('domain_format');
         expect(refusal(() => checkDomain('a@b.org'))).toBe('domain_format');
     });

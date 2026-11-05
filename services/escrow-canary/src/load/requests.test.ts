@@ -43,6 +43,7 @@ describe('instrumentFetch', () => {
             ok: 1,
             status409: 1,
             status429: 1,
+            throttledByClientIp: 0,
             status4xx: 1,
             status5xx: 1,
             transport: 1,
@@ -50,5 +51,34 @@ describe('instrumentFetch', () => {
         expect(counters.keys.count).toBe(1);
         expect(base).toHaveBeenCalledTimes(7);
         expect(base.mock.calls[0][1]).toEqual({ method: 'POST' });
+    });
+
+    it("tells lca-api's per-IP PIN limiter apart from other 429s and reports escrow routes", async () => {
+        const counters = newRequestCounters();
+        const seen: unknown[] = [];
+        const bodies = [
+            { message: 'Please wait before trying again.' },
+            { message: 'Automatic recovery is being updated. Please try again in a moment.' },
+        ];
+        const base = vi.fn<typeof fetch>(async () => {
+            const body = bodies.shift();
+            return body
+                ? new Response(JSON.stringify(body), { status: 429 })
+                : new Response('not json', { status: 429 });
+        });
+        const wrapped = instrumentFetch(base, server, counters, () => event => seen.push(event));
+        const first = await wrapped(`${server}/keys/escrow/recover`, { method: 'POST' });
+        await wrapped(`${server}/keys/escrow/complete`, { method: 'POST' });
+        await wrapped(`${server}/keys/escrow/status?holdId=x`);
+        await wrapped(`${server}/keys/auth-share`);
+        // The body is still readable by the SDK.
+        expect(await first.json()).toEqual({ message: 'Please wait before trying again.' });
+        expect(counters.escrow).toMatchObject({ status429: 3, throttledByClientIp: 1 });
+        expect(counters.keys).toMatchObject({ status429: 1, throttledByClientIp: 0 });
+        expect(seen).toEqual([
+            { path: '/recover', status: 429, throttledByClientIp: true },
+            { path: '/complete', status: 429, throttledByClientIp: false },
+            { path: '/status', status: 429, throttledByClientIp: false },
+        ]);
     });
 });

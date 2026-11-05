@@ -12,6 +12,7 @@ import {
 } from './scenarios';
 import { Recorder, type DropReason } from './stats';
 import { syntheticEmail, type AdminAuth, type RunAddress } from './identity';
+import { LoadError } from './errors';
 
 /**
  * Orchestrates one load run:
@@ -23,17 +24,25 @@ import { syntheticEmail, type AdminAuth, type RunAddress } from './identity';
  * 2. **stages**: open-loop arrivals. `enrol` takes the next fresh user;
  *    `pin` leases a free PIN-pool user (one operation per user at a time, since
  *    the server allows one pending PIN hold per account). A user whose PIN
- *    recovery fails is retired rather than reused.
+ *    recovery fails is retired rather than reused, except when the server
+ *    refused the START with a 429 (no hold was created): that user goes back to
+ *    the pool.
  *
  * Stops scheduling (remaining arrivals counted as dropped/stopped) on operator
  * interrupt, on a fatal token guard, or when a stage's failure ratio exceeds
- * `stopErrorRate` after 20 completions.
+ * `stopErrorRate` after 20 completions (client-IP throttling is not counted as
+ * failure). A fatal guard or interrupt raised by an operation still in flight
+ * when the stages end is recorded too.
  */
 export interface RunOptions {
     plan: LoadPlan;
     address: RunAddress;
     pinRatio: number;
     enrolWithPin: boolean;
+    /** Explicit opt-in (`enableEscrowRecovery`) instead of the app's automatic enrolment. */
+    enrolOptIn?: boolean;
+    /** Re-set the same PIN after each PIN recovery, as the canary does. */
+    resetPinAfterRecovery?: boolean;
     maxInFlight: number;
     lateMs: number;
     setupRate: number;
@@ -92,6 +101,7 @@ export const runLoad = async (
     let pinPrepared = 0;
     let pinRetired = 0;
     let pinStarted = 0;
+    let pinStartRefused = 0;
 
     const scenarioDeps = (stage: number): ScenarioDeps => ({
         ...deps,
@@ -114,7 +124,7 @@ export const runLoad = async (
         stage: number,
         name: string,
         operation: (deps: ScenarioDeps) => Promise<T>
-    ): Promise<{ ok: true; value: T } | { ok: false }> => {
+    ): Promise<{ ok: true; value: T } | { ok: false; noHold: boolean }> => {
         recorder.started(stage);
         inFlight += 1;
         const begin = deps.now();
@@ -129,7 +139,7 @@ export const runLoad = async (
                 fatal = reason;
                 stop.requested = true;
             }
-            return { ok: false };
+            return { ok: false, noHold: error instanceof LoadError && !!error.detail.noHold };
         } finally {
             inFlight -= 1;
         }
@@ -220,10 +230,15 @@ export const runLoad = async (
                         }
                         pinStarted += 1;
                         const result = await measured(stage, 'pinRecovery', scenario =>
-                            pinRecovery(scenario, user)
+                            pinRecovery(scenario, user, {
+                                resetPin: options.resetPinAfterRecovery,
+                            })
                         );
                         if (result.ok) freePin.push(user);
-                        else pinRetired += 1;
+                        else if (result.noHold) {
+                            pinStartRefused += 1;
+                            freePin.push(user);
+                        } else pinRetired += 1;
                         return;
                     }
                     const user = freshUsers.shift();
@@ -232,7 +247,10 @@ export const runLoad = async (
                         return;
                     }
                     const result = await measured(stage, 'enrol', scenario =>
-                        enrol(scenario, user, { withPin: options.enrolWithPin })
+                        enrol(scenario, user, {
+                            withPin: options.enrolWithPin,
+                            optIn: options.enrolOptIn,
+                        })
                     );
                     if (result.ok && result.value) freePin.push(result.value);
                 },
@@ -247,6 +265,10 @@ export const runLoad = async (
     } finally {
         cancelProgress();
     }
+    // An operation still in flight after the last start can hit the token guard, and
+    // Ctrl-C can arrive while waiting for it: neither went through `shouldStop`.
+    if (fatal) stopReason = `fatal_${fatal}`;
+    else if (stop.requested) stopReason ??= 'interrupted';
 
     return {
         runId: options.address.runId,
@@ -259,12 +281,19 @@ export const runLoad = async (
             users: plan.users,
             durationSec: plan.durationSec,
         },
-        pinPool: { prepared: pinPrepared, retired: pinRetired, free: freePin.length },
+        pinPool: {
+            prepared: pinPrepared,
+            retired: pinRetired,
+            returnedAfterStartRefused: pinStartRefused,
+            free: freePin.length,
+        },
         emails: {
             plannedExpected: plan.expectedEmails,
             plannedUpperBound: plan.maxEmails,
             pinRecoveriesStarted: pinStarted,
-            estimatedSent: pinStarted * EMAILS_PER_PIN_RECOVERY,
+            pinStartsRefused: pinStartRefused,
+            // A start refused with 429 created no hold, so sent no notice.
+            estimatedSent: (pinStarted - pinStartRefused) * EMAILS_PER_PIN_RECOVERY,
         },
         stages: recorder.summary(),
     };

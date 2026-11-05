@@ -1,5 +1,10 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { describe, expect, it } from 'vitest';
-import { EscrowPinMismatchError, EscrowRequestError } from '@learncard/sss-key-manager';
+import {
+    EscrowPinMismatchError,
+    EscrowPinThrottledError,
+    EscrowRequestError,
+} from '@learncard/sss-key-manager';
 import { ProvisionError } from '../provision/errors';
 import { buildPlan, type Stage } from './plan';
 import { runLoad, type RunDeps, type RunOptions } from './run';
@@ -11,8 +16,12 @@ import {
     type ScenarioDeps,
 } from './scenarios';
 import { LoadError } from './errors';
+import type { EscrowObserver } from './requests';
 
 const PIN = '13572468';
+
+/** A scripted escrow response for the fake PIN release (429s throw as the SDK does). */
+type PinResponse = { status: number; clientIp?: boolean };
 
 /** Offline fake of lca-api + SDK strategy, keyed by Firebase uid via the ID token. */
 const world = () => {
@@ -24,9 +33,13 @@ const world = () => {
     let keys = 0;
     let createdUsers = 0;
     const failures: Partial<Record<string, () => Error>> = {};
+    const pinResponses: { recover?: PinResponse; complete?: PinResponse } = {};
+    const params: Record<string, unknown[]> = {};
+    const observers = new AsyncLocalStorage<EscrowObserver>();
     const uidOf = (token: string) => token.replace(/^id:/, '');
-    const maybeFail = (name: string) => {
+    const maybeFail = (name: string, args?: unknown) => {
         calls.push(name);
+        (params[name] ??= []).push(args);
         const failure = failures[name];
         if (failure) throw failure();
     };
@@ -40,6 +53,9 @@ const world = () => {
                     primaryDid: entry?.did ?? null,
                     sssActivationState: entry?.active ? 'active' : 'provisional',
                     shareVersion: 1,
+                    ...(entry?.pin
+                        ? { escrowPin: { state: 'enabled', salt: 'salt-1', wrongAttempts: 0 } }
+                        : {}),
                 };
             },
             atomicUpdateShares: async ({ token, did }: { token: string; did: string }) => {
@@ -68,18 +84,45 @@ const world = () => {
                 server.get(uidOf(token))!.active = true;
             },
             getFreshDidAuthVp: async () => 'vp',
-            getEscrowEnrollmentState: async () => ({ state: 'enrolled' }),
-            executeRecovery: async ({
-                token,
-                input,
-            }: {
+            getEscrowEnrollmentState: async () => {
+                maybeFail('enrolState');
+                return { state: 'enrolled' };
+            },
+            ensureEscrowEnrollment: async (args: {
+                token: string;
+                options: { recoveryEmail: string };
+            }) => {
+                maybeFail('ensure', args);
+                if (!args.options.recoveryEmail.includes('@')) throw new Error('contact');
+                server.get(uidOf(args.token))!.optIn = true;
+                return { enrolled: true, changed: true };
+            },
+            getEscrowRecoveryStatus: async () => {
+                maybeFail('holdStatus');
+                return null;
+            },
+            executeRecovery: async (args: {
                 token: string;
                 input: { pin: string; expectedDid: string };
             }) => {
-                maybeFail('recover');
-                const entry = server.get(uidOf(token))!;
-                if (entry.pin !== input.pin) throw new EscrowPinMismatchError(9);
-                return { did: entry.did, privateKey: entry.did.replace('did:key:', '') };
+                maybeFail('recover', args);
+                const respond = (path: string, response: PinResponse = { status: 200 }) => {
+                    observers.getStore()?.({
+                        path,
+                        status: response.status,
+                        throttledByClientIp: response.clientIp === true,
+                    });
+                    if (response.status === 429) throw new EscrowPinThrottledError();
+                };
+                respond('/recover', pinResponses.recover);
+                respond('/complete', pinResponses.complete);
+                const entry = server.get(uidOf(args.token))!;
+                if (entry.pin !== args.input.pin) throw new EscrowPinMismatchError(9);
+                return {
+                    did: entry.did,
+                    privateKey: entry.did.replace('did:key:', ''),
+                    escrowEnrolled: true,
+                };
             },
         }) as unknown as LoadStrategy;
     let t = 0;
@@ -100,6 +143,7 @@ const world = () => {
         strategy,
         randomKey: async () => `key${(keys += 1)}`,
         randomPin: () => PIN,
+        observeEscrow: (observer, operation) => observers.run(observer, operation),
         now: () => t,
         // Yield a macrotask so started scenarios settle before the next arrival.
         sleep: async ms => {
@@ -109,7 +153,16 @@ const world = () => {
         every: () => () => undefined,
         out: line => out.push(line),
     };
-    return { server, calls, deps, failures, out, created: () => createdUsers };
+    return {
+        server,
+        calls,
+        params,
+        deps,
+        failures,
+        pinResponses,
+        out,
+        created: () => createdUsers,
+    };
 };
 
 const options = (
@@ -137,6 +190,7 @@ type StageSummary = {
     started: number;
     ok: number;
     failed: number;
+    throttledByClientIp: number;
     dropped: Record<string, number>;
     scenarios: Record<string, { count: number; ok: number; errors: Record<string, number> }>;
     steps: Record<string, { count: number; ok: number; errors: Record<string, number> }>;
@@ -151,15 +205,30 @@ describe('scenarios', () => {
     });
     const user = { n: 1, email: 'escrow-load+a1b2c3d4-1@inbox.example.org', uid: 'uid-1' };
 
-    it('enrol follows the app path: status, shares, opt-in, then optional PIN + activation', async () => {
+    const refresh = ['enrolState', 'ensure', 'enrolState', 'holdStatus'];
+
+    it('enrol follows the app path: shares, then automatic enrolment as refreshEscrow', async () => {
         const w = world();
         expect(await enrol(scenarioDeps(w), user, { withPin: false })).toBeUndefined();
-        expect(w.calls).toEqual(['status', 'shares', 'optIn']);
+        expect(w.calls).toEqual(['status', 'shares', ...refresh]);
+        expect(w.params.ensure[0]).toMatchObject({
+            token: 'id:uid-1',
+            providerType: 'firebase',
+            privateKey: 'key1',
+            signDidAuthVp: w.deps.sdk.sign,
+            options: { recoveryEmail: user.email, recoveryLanguage: 'en' },
+        });
         const w2 = world();
         const pinUser = await enrol(scenarioDeps(w2), user, { withPin: true });
-        expect(w2.calls).toEqual(['status', 'shares', 'optIn', 'setPin', 'status', 'activate']);
+        expect(w2.calls).toEqual(['status', 'shares', ...refresh, 'setPin', 'status', 'activate']);
         expect(pinUser).toMatchObject({ uid: 'uid-1', did: 'did:key:key1', pin: PIN });
         expect(w2.server.get('uid-1')).toMatchObject({ active: true, optIn: true, pin: PIN });
+    });
+
+    it('enrol uses the explicit opt-in only when asked', async () => {
+        const w = world();
+        await enrol(scenarioDeps(w), user, { withPin: false, optIn: true });
+        expect(w.calls).toEqual(['status', 'shares', 'optIn']);
     });
 
     it('refuses an account that already has a server key', async () => {
@@ -171,15 +240,54 @@ describe('scenarios', () => {
         expect(w.calls).toEqual(['status']);
     });
 
-    it('PIN recovery recovers, checks the DID and re-sets the same PIN', async () => {
+    it('PIN recovery passes what the app passes, checks the DID, then refreshes escrow', async () => {
         const w = world();
         const pinUser = await enrol(scenarioDeps(w), user, { withPin: true });
         w.calls.length = 0;
         await pinRecovery(scenarioDeps(w), pinUser!);
-        expect(w.calls).toEqual(['recover', 'setPin']);
+        expect(w.calls).toEqual(['status', 'recover', ...refresh]);
+        expect(w.params.recover[0]).toMatchObject({
+            token: 'id:uid-1',
+            providerType: 'firebase',
+            input: {
+                method: 'escrow-pin',
+                pin: PIN,
+                expectedDid: 'did:key:key1',
+                pinAttempts: { priorWrongAttempts: 0, ownWrongAttempts: 0, pinSalt: 'salt-1' },
+            },
+            options: { recoveryEmail: user.email, recoveryLanguage: 'en' },
+        });
+        expect(w.params.ensure.at(-1)).toMatchObject({ privateKey: 'key1' });
+        w.calls.length = 0;
+        await pinRecovery(scenarioDeps(w), pinUser!, { resetPin: true });
+        expect(w.calls).toEqual(['status', 'recover', 'setPin', ...refresh]);
         await expect(
             pinRecovery(scenarioDeps(w), { ...pinUser!, did: 'did:key:someone-else' })
         ).rejects.toEqual(new LoadError('did_mismatch'));
+    });
+
+    it('classifies PIN throttling by where it happened and by limiter', async () => {
+        const w = world();
+        const pinUser = (await enrol(scenarioDeps(w), user, { withPin: true }))!;
+        w.pinResponses.recover = { status: 429, clientIp: true };
+        await expect(pinRecovery(scenarioDeps(w), pinUser)).rejects.toEqual(
+            new LoadError('throttled_by_client_ip', { noHold: true })
+        );
+        // Another 429 at start (e.g. a held PIN-operation lease): still no hold.
+        w.pinResponses.recover = { status: 429 };
+        await expect(pinRecovery(scenarioDeps(w), pinUser)).rejects.toEqual(
+            new LoadError('rate_limit', { noHold: true })
+        );
+        // At completion a hold exists: not reusable.
+        w.pinResponses.recover = undefined;
+        w.pinResponses.complete = { status: 429, clientIp: true };
+        await expect(pinRecovery(scenarioDeps(w), pinUser)).rejects.toEqual(
+            new LoadError('throttled_by_client_ip')
+        );
+        w.pinResponses.complete = { status: 429 };
+        await expect(pinRecovery(scenarioDeps(w), pinUser)).rejects.toBeInstanceOf(
+            EscrowPinThrottledError
+        );
     });
 
     it('narrowLoadStrategy fails closed when a method is missing', () => {
@@ -207,7 +315,15 @@ describe('runLoad', () => {
         expect(setup.scenarios.createUser).toMatchObject({ count: 15, ok: 15 });
         expect(s1).toMatchObject({ stage: 's1', started: 5, ok: 5, failed: 0 });
         expect(s2).toMatchObject({ stage: 's2', started: 10, ok: 10, failed: 0 });
-        expect(Object.keys(s2.steps).sort()).toEqual(['enroll', 'login', 'shares', 'status']);
+        expect(Object.keys(s2.steps).sort()).toEqual([
+            'enrolGate',
+            'enrolState',
+            'enroll',
+            'holdStatus',
+            'login',
+            'shares',
+            'status',
+        ]);
         expect(summary.stopped).toBeNull();
         expect(summary.emails).toMatchObject({ plannedExpected: 0, pinRecoveriesStarted: 0 });
     });
@@ -229,8 +345,14 @@ describe('runLoad', () => {
         expect(setup.scenarios.pinSetup).toMatchObject({ count: 2, ok: 2 });
         expect(s1.scenarios.pinRecovery).toMatchObject({ count: 5, ok: 5 });
         expect(s1.scenarios.enrol).toMatchObject({ count: 15, ok: 15 });
-        expect(s1.steps.resetPin).toMatchObject({ count: 5, ok: 5 });
-        expect(summary.pinPool).toEqual({ prepared: 2, retired: 0, free: 2 });
+        expect(s1.steps.recovery).toMatchObject({ count: 5, ok: 5 });
+        expect(s1.steps.resetPin).toBeUndefined();
+        expect(summary.pinPool).toEqual({
+            prepared: 2,
+            retired: 0,
+            returnedAfterStartRefused: 0,
+            free: 2,
+        });
         expect(summary.emails).toMatchObject({
             plannedExpected: 10,
             plannedUpperBound: 15,
@@ -262,9 +384,53 @@ describe('runLoad', () => {
         expect(summary.pinPool).toMatchObject({ prepared: 1, retired: 1, free: 0 });
     });
 
+    it('returns a pool user whose PIN start was throttled; reports it apart from failures', async () => {
+        const w = world();
+        w.pinResponses.recover = { status: 429, clientIp: true };
+        const summary = await runLoad(
+            options([{ rate: 1, durationSec: 4 }], { pinRatio: 0.5, pinPool: 1 }),
+            w.deps,
+            { requested: false }
+        );
+        const [, s1] = stagesOf(summary);
+        expect(s1).toMatchObject({ ok: 2, failed: 0, throttledByClientIp: 2 });
+        expect(s1.scenarios.pinRecovery).toMatchObject({
+            count: 2,
+            ok: 0,
+            errors: { throttled_by_client_ip: 2 },
+        });
+        expect(s1.steps.recovery.errors).toEqual({ throttled_by_client_ip: 2 });
+        expect(s1.dropped).toEqual({});
+        expect(summary.pinPool).toEqual({
+            prepared: 1,
+            retired: 0,
+            returnedAfterStartRefused: 2,
+            free: 1,
+        });
+        expect(summary.emails).toMatchObject({
+            pinRecoveriesStarted: 2,
+            pinStartsRefused: 2,
+            estimatedSent: 0,
+        });
+    });
+
+    it('retires a pool user throttled at completion (a hold exists)', async () => {
+        const w = world();
+        w.pinResponses.complete = { status: 429, clientIp: true };
+        const summary = await runLoad(
+            options([{ rate: 1, durationSec: 4 }], { pinRatio: 0.5, pinPool: 1 }),
+            w.deps,
+            { requested: false }
+        );
+        const [, s1] = stagesOf(summary);
+        expect(s1).toMatchObject({ failed: 0, throttledByClientIp: 1 });
+        expect(s1.dropped).toEqual({ pin_pool_busy: 1 });
+        expect(summary.pinPool).toMatchObject({ retired: 1, returnedAfterStartRefused: 0 });
+    });
+
     it('stops scheduling when a stage error ratio exceeds the threshold', async () => {
         const w = world();
-        w.failures.optIn = () => new EscrowRequestError(503);
+        w.failures.ensure = () => new EscrowRequestError(503);
         const stop = { requested: false };
         const summary = await runLoad(options([{ rate: 5, durationSec: 20 }]), w.deps, stop);
         const [, s1] = stagesOf(summary);
@@ -291,6 +457,40 @@ describe('runLoad', () => {
         expect(summary.stopped).toBe('fatal_token_project');
         expect(s1.started).toBe(1);
         expect(s1.dropped).toEqual({ stopped: 4 });
+    });
+
+    it('records a fatal guard hit by an operation still in flight after the last start', async () => {
+        const w = world();
+        const summary = await runLoad(
+            options([{ rate: 1, durationSec: 1 }]),
+            {
+                ...w.deps,
+                checkToken: () => {
+                    throw new ProvisionError('token', 'project');
+                },
+            },
+            { requested: false }
+        );
+        const [, s1] = stagesOf(summary);
+        expect(s1.started).toBe(1);
+        expect(summary.stopped).toBe('fatal_token_project');
+    });
+
+    it('records a Ctrl-C that arrives while waiting for in-flight work', async () => {
+        const w = world();
+        const stop = { requested: false };
+        const summary = await runLoad(
+            options([{ rate: 1, durationSec: 1 }]),
+            {
+                ...w.deps,
+                exchange: async custom => {
+                    stop.requested = true;
+                    return w.deps.exchange(custom);
+                },
+            },
+            stop
+        );
+        expect(summary.stopped).toBe('interrupted');
     });
 
     it('an operator interrupt stops new starts', async () => {
