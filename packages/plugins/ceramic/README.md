@@ -34,6 +34,7 @@ const ceramicLearnCard = await learnCard.addPlugin(
     })
 );
 
+const vc = await ceramicLearnCard.invoke.issueCredential(ceramicLearnCard.invoke.getTestVc());
 const uri = await ceramicLearnCard.store.Ceramic.upload(vc);
 const resolved = await ceramicLearnCard.read.get(uri);
 ```

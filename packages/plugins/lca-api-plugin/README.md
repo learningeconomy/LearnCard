@@ -26,11 +26,20 @@ This package exports `getLCAPlugin`.
 import { initLearnCard } from '@learncard/init';
 import { getLCAPlugin } from '@learncard/lca-api-plugin';
 
-const learnCard = await initLearnCard({ seed: 'a'.repeat(64) });
+// getLCAPlugin calls getProfile on construction, so the wallet needs LearnCard Network
+const learnCard = await initLearnCard({ seed: 'a'.repeat(64), network: true });
 const lcaLearnCard = await learnCard.addPlugin(await getLCAPlugin(learnCard, '<LCA API URL>'));
 ```
 
 Optional args after the URL: `useCustomHash` (default `false`) and `extraHeaders`.
+
+Or let the package build the whole thing for you (network wallet + LCA plugin, defaulting to `https://api.learncard.app/trpc`):
+
+```ts
+import { initLCALearnCard } from '@learncard/lca-api-plugin';
+
+const lcaLearnCard = await initLCALearnCard({ seed: 'a'.repeat(64) });
+```
 
 ## Contributing
 

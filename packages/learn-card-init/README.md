@@ -49,10 +49,12 @@ Adding a plugin to any wallet:
 
 ```ts
 import { initLearnCard } from '@learncard/init';
-import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
+import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
 
 const learnCard = await initLearnCard({ custom: true });
-const withTemplates = await learnCard.addPlugin(getVCTemplatesPlugin());
+// DynamicLoaderPlugin has no dependencies. Most plugins need others first
+// (e.g. templates need an ID plane), so check each plugin's README.
+const withLoader = await learnCard.addPlugin(DynamicLoaderPlugin);
 ```
 
 ## Contributing
