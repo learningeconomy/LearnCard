@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { TRPCError } from '@trpc/server';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { resolveTenantFromRequest } from '@learncard/email-templates';
 
@@ -170,18 +171,39 @@ describe('claim-link reconciliation transport and compatibility', () => {
         ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR', cause: issuanceFailure });
     });
 
-    it('returns a legacy credential URI when usage accounting fails', async () => {
-        const credentialUri = 'lc:credential:issued';
-        mocks.issue.mockResolvedValue(credentialUri);
-        mocks.use.mockRejectedValue(new Error('private redis details'));
-        const result = await boostsRouter.createCaller(context()).claimBoostWithLink({
-            boostUri: input.boostUri,
-            challenge: input.challenge,
-        });
-        expect(result).toBe(credentialUri);
-        expect(mocks.claimed).toHaveBeenCalledOnce();
-        expect(mocks.failed).not.toHaveBeenCalled();
-    });
+    it.each([
+        {
+            failure: new TypeError('private redis payload'),
+            diagnostics: { name: 'TypeError' },
+        },
+        {
+            failure: new TRPCError({
+                code: 'TIMEOUT',
+                message: 'private redis payload',
+                cause: Object.assign(new Error('private signing seed'), {
+                    credential: 'private credential payload',
+                }),
+            }),
+            diagnostics: { name: 'TRPCError', code: 'TIMEOUT' },
+        },
+    ])(
+        'returns a legacy credential URI with safe $diagnostics.name accounting diagnostics',
+        async ({ failure, diagnostics }) => {
+            const credentialUri = 'lc:credential:issued';
+            mocks.issue.mockResolvedValue(credentialUri);
+            mocks.use.mockRejectedValue(failure);
+            const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const result = await boostsRouter.createCaller(context()).claimBoostWithLink({
+                boostUri: input.boostUri,
+                challenge: input.challenge,
+            });
+            expect(result).toBe(credentialUri);
+            expect(mocks.claimed).toHaveBeenCalledOnce();
+            expect(mocks.failed).not.toHaveBeenCalled();
+            expect(log).toHaveBeenCalledWith(expect.any(String), diagnostics);
+            expect(JSON.stringify(log.mock.calls)).not.toContain('private');
+        }
+    );
 
     it('records a correlated failure for definite issuance rejection', async () => {
         const issuanceFailure = new Error('signing authority unavailable');
@@ -221,7 +243,12 @@ describe('claim-link reconciliation transport and compatibility', () => {
 
     it('records failure for rejected storage and preserves error on cleanup failure', async () => {
         const { ClaimLinkStorageRejectedError } = await import('@helpers/boost.helpers');
-        const rejection = new ClaimLinkStorageRejectedError(new Error('storage rejected'));
+        const rejection = new ClaimLinkStorageRejectedError(
+            Object.assign(new Error('private storage details'), {
+                credential: 'private credential payload',
+            })
+        );
+        const log = vi.spyOn(console, 'error').mockImplementation(() => {});
         mocks.issue.mockImplementation(
             async (_boost, _domain, _issuer, _profile, _sa, _id, started) => {
                 started();
@@ -235,5 +262,10 @@ describe('claim-link reconciliation transport and compatibility', () => {
         expect(mocks.failed).toHaveBeenCalledWith(
             expect.objectContaining({ activityId: 'activity', source: 'claimLink' })
         );
+        expect(log).toHaveBeenCalledWith(expect.any(String), {
+            name: 'ClaimLinkStorageRejectedError',
+            message: rejection.message,
+        });
+        expect(JSON.stringify(log.mock.calls)).not.toContain('private');
     });
 });

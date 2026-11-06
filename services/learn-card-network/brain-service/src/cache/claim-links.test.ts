@@ -4,6 +4,7 @@ import Redis from 'ioredis-mock';
 vi.mock('@cache', () => ({ default: { node: undefined } }));
 import cache from '@cache';
 import {
+    ClaimLinkUsageContentionError,
     getClaimLinkAvailability,
     getClaimLinkCacheKey,
     getClaimLinkGeneration,
@@ -129,7 +130,7 @@ describe('claim-link outcome evidence and retry-safe usage', () => {
             'contended-request',
             generation
         ).catch(error => error);
-        expect(failure).toBeInstanceOf(Error);
+        expect(failure).toBeInstanceOf(ClaimLinkUsageContentionError);
         expect(failure).not.toBe(exhaustedBudget);
         expect(await getClaimLinkOptionsInfoForBoost(boostUri, challenge)).toMatchObject({
             totalUses: 3,

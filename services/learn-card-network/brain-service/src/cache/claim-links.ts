@@ -32,6 +32,14 @@ const OutcomeValidator = z.object({
 export const VALID = 'valid';
 export type ClaimLinkAvailability = 'available' | ClaimLinkTerminalReason;
 
+/** Usage accounting exhausted its bounded retry budget without confirming an update. */
+export class ClaimLinkUsageContentionError extends Error {
+    constructor() {
+        super('Claim-link usage contention; retry reconciliation');
+        this.name = 'ClaimLinkUsageContentionError';
+    }
+}
+
 export const stringifyClaimLinkValue = (
     claimLinkSA: BoostClaimLinkSigningAuthorityType,
     options: BoostClaimLinkOptionsType,
@@ -202,7 +210,7 @@ export const useClaimLinkForBoost = async (
         );
         if (updated === 1 || updated === 2) return true;
     }
-    throw new Error('Claim-link usage contention; retry reconciliation');
+    throw new ClaimLinkUsageContentionError();
 };
 
 const INVALIDATE_LINK = `
