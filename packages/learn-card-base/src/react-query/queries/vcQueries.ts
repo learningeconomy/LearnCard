@@ -221,6 +221,12 @@ export const useGetRecordForUri = (uri?: string, enabled = true) => {
     });
 };
 
+// Single source for the managed-boosts key so mutation writes hit the list the screen reads (LC-2349).
+export const getPaginatedManagedBoostsKey = (
+    category?: CredentialCategory | CredentialCategory[] | string,
+    didWeb: string | null | undefined = switchedProfileStore.get.switchedDid()
+) => ['useGetPaginatedManagedBoosts', didWeb ?? '', category ?? ''];
+
 /* Use 'useGetPaginatedManagedBoostsQuery' instead - deprecated in favor of useGetPaginatedManagedBoostsQuery*/
 export const useGetPaginatedManagedBoosts = (
     category?: CredentialCategory | CredentialCategory[],
@@ -232,7 +238,7 @@ export const useGetPaginatedManagedBoosts = (
     const { limit, ...restOptions } = options ?? {};
 
     return useInfiniteQuery({
-        queryKey: ['useGetPaginatedManagedBoosts', didWeb ?? '', category ?? ''],
+        queryKey: getPaginatedManagedBoostsKey(category, didWeb ?? ''),
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
 

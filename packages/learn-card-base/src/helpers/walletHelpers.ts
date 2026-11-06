@@ -151,15 +151,28 @@ const buildBespokeLearnCard = async (
     return renderMethodAugmented as BespokeLearnCard;
 };
 
+// Query key prefixes that are not scoped by the switched profile DID. Their cached data belongs to
+// whichever profile fetched it, so a profile switch must reset them (LC-2354).
+export const PROFILE_UNSCOPED_QUERY_KEYS = [
+    ['useGetPaginatedManagedBoostsQuery'],
+    ['paginatedBoostRecipients'],
+    ['passportActivities'],
+    ['useTermsTransactions'],
+] as const;
+
 // tip: the useSwitchProfile hook will do this while also updating currentUserStore
-export const switchProfile = async (didWeb?: string) => {
-    const queryClient = new QueryClient();
+export const switchProfile = async (didWeb?: string, queryClient?: QueryClient) => {
     const pk = await requireCurrentUserPrivateKey();
 
     walletStore.set.wallet(await getBespokeLearnCard(pk, didWeb));
     switchedProfileStore.set.switchedDid(didWeb);
 
-    // await queryClient.resetQueries();
+    // Reset after the wallet and DID move so active observers refetch as the new profile.
+    if (queryClient) {
+        for (const queryKey of PROFILE_UNSCOPED_QUERY_KEYS) {
+            void queryClient.resetQueries({ queryKey: [...queryKey] });
+        }
+    }
 };
 
 // returns emoji 🔑 , 🌐, based on did:web or did:key

@@ -7,7 +7,7 @@ import {
     type CredentialSharePreview,
     type PublishCredentialSharePreview,
 } from '@learncard/types';
-import { QueryClient, InfiniteData } from '@tanstack/react-query';
+import { QueryClient, InfiniteData, QueryKey } from '@tanstack/react-query';
 
 /** Preserve encoded URI components when the recipient parses the share query once. */
 export const buildCredentialShareUrl = (
@@ -133,7 +133,7 @@ export const publishSharePreview = async (
 // Helper to insert an object and update the react infinite query cache
 export const insertItem = <GenericObject extends Record<string, any>>(
     queryClient: QueryClient,
-    queryKey: string[],
+    queryKey: QueryKey,
     newItem: GenericObject
 ) => {
     queryClient.setQueryData<
