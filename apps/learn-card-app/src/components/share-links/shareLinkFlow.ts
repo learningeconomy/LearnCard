@@ -188,7 +188,14 @@ export const findSavedSharePresentation = async (
         )
             continue;
         expected ??= stringify(payload.presentation);
-        if (stringify(await wallet.read.get(record.uri)) === expected) return record;
+        let stored: unknown;
+        try {
+            stored = await wallet.read.get(record.uri);
+        } catch {
+            // An unreadable older snapshot must not block saving the current one.
+            continue;
+        }
+        if (stringify(stored) === expected) return record;
     }
     return undefined;
 };

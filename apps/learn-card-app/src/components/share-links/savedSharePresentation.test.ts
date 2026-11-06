@@ -77,8 +77,16 @@ describe('saved share presentation identity', () => {
     it('does not report saved when retained content cannot be read', async () => {
         const wallet = walletFor(null);
         vi.mocked(wallet.read.get).mockRejectedValue(new Error('unavailable'));
-        await expect(findSavedSharePresentation(wallet, [record], payload, 'bob')).rejects.toThrow(
-            'unavailable'
-        );
+        await expect(
+            findSavedSharePresentation(wallet, [record], payload, 'bob')
+        ).resolves.toBeUndefined();
+    });
+    it('finds a readable matching snapshot after an unreadable earlier save', async () => {
+        const matching = { ...record, uri: 'lc:network:matching' };
+        const wallet = walletFor(payload.presentation);
+        vi.mocked(wallet.read.get).mockRejectedValueOnce(new Error('old snapshot unavailable'));
+        await expect(
+            findSavedSharePresentation(wallet, [record, matching], payload, 'bob')
+        ).resolves.toEqual(matching);
     });
 });
