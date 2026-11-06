@@ -1,10 +1,14 @@
+import type { CampaignAudienceResult } from '@learncard/types';
 import type { SendContractRequest, ConsentFlowContractRequestForProfile } from '@learncard/types';
 import type { LCNClient } from '@learncard/network-brain-client';
 import type {
     Campaign,
     CampaignAudienceInput,
+    AnnouncementPreferences,
     CampaignEvent,
     CampaignStats,
+    CampaignDispatchPreview,
+    CampaignDispatchOptions,
     CampaignStatus,
     CreateCampaignInput,
     UpdateCampaignInput,
@@ -84,7 +88,6 @@ import {
     PaginatedConsentFlowDataForDid,
     PaginatedContractCredentials,
     AutoBoostConfig,
-    SendInput,
     SendResponse,
     AuthGrantType,
     AuthGrantQuery,
@@ -159,7 +162,11 @@ import {
     PublishCredentialRefreshInput,
     PublishCredentialRefreshResult,
     GetCredentialRefreshHistoryInput,
+    type GetCredentialRefreshReceiptInput,
+    type CredentialRefreshReceipt,
     GetCredentialRefreshHistoryResult,
+    type SendBoostInput,
+    type CredentialRefreshUpdateReason,
 } from '@learncard/types';
 import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -217,6 +224,32 @@ export type SendBoostResultFor<Options> = [EnableRefreshOf<Options>] extends [tr
       ? string | SendBoostRefreshResult
       : string;
 
+/**
+ * `send` input extended with the LC-2345 holder-mode `encryption` field. A local
+ * intersection rather than a `@learncard/types` edit, because today the field is
+ * validated and enforced entirely client-side (rejected for inbox recipients,
+ * `signedCredential`, and servers that don't return `recipientKeyIds`).
+ */
+export type SendBoostInputWithEncryption = SendBoostInput & {
+    /**
+     * `'holder'` requests student-only encryption: the SDK signs and encrypts
+     * locally so the server never receives plaintext. Requires `refresh: true` and a
+     * profile or DID recipient. Defaults to `'network'`.
+     */
+    encryption?: 'network' | 'holder';
+};
+
+/** Options for {@link LearnCardNetworkPluginMethods.publishHolderEncryptedRefreshable}. */
+export type PublishHolderEncryptedRefreshableOptions = {
+    /** Applied locally with the same templating `send` uses; never sent to the server. */
+    templateData?: Record<string, unknown>;
+    /** Replaces server-inferred materiality: the server cannot compare encrypted content across versions. */
+    notify: boolean;
+    updateSummary?: string;
+    updateReason?: CredentialRefreshUpdateReason;
+    idempotencyKey?: string;
+};
+
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
@@ -226,6 +259,8 @@ export type LearnCardNetworkPluginDependentMethods = {
     ) => Promise<VC>;
     clearDidWebCache?: () => Promise<void>;
     createDagJwe: (cleartext: any, recipients: string[]) => Promise<JWE>;
+    /** Encrypts only to explicit recipients, without adding the caller. */
+    createDagJweExact?: <T>(cleartext: T, recipients: string[]) => Promise<JWE>;
     decryptDagJwe: (jwe: JWE, jwks: any[]) => Promise<any>;
     resolveDid: (did: string) => Promise<DidDocument>;
 };
@@ -616,12 +651,27 @@ export type LearnCardNetworkPluginMethods = {
         input: PublishCredentialRefreshInput
     ) => Promise<PublishCredentialRefreshResult>;
     /**
+     * Holder-mode (LC-2345) counterpart of `publishCredentialRefresh`: builds and
+     * signs a new version locally from `receipt`'s bindings, encrypts it exactly to
+     * the current holder + manager recipients, and sends only the ciphertext
+     * handoff. Rejects when local signing is unavailable.
+     */
+    publishHolderEncryptedRefreshable: (
+        receipt: ManagedCredentialRefreshReceipt,
+        credential: UnsignedVC,
+        options: PublishHolderEncryptedRefreshableOptions
+    ) => Promise<PublishCredentialRefreshResult>;
+    /**
      * Cursor-paginated, metadata-only issuer audit history for a managed refresh.
      * Never includes credential bodies or encrypted payloads.
      */
     getCredentialRefreshHistory: (
         input: GetCredentialRefreshHistoryInput
     ) => Promise<GetCredentialRefreshHistoryResult>;
+    /** Read the authenticated public binding for a pending managed delivery. */
+    getCredentialRefreshReceipt: (
+        input: GetCredentialRefreshReceiptInput
+    ) => Promise<CredentialRefreshReceipt | null>;
     revokeBoostRecipient: (
         boostUri: string,
         recipientProfileId: string,
@@ -672,7 +722,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<{ boostUri: string; challenge: string }>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
 
-    send: (input: SendInput) => Promise<SendResponse>;
+    send: (input: SendBoostInputWithEncryption) => Promise<SendResponse>;
 
     createContract: (contract: {
         contract: ConsentFlowContract;
@@ -1173,6 +1223,11 @@ export type LearnCardNetworkPluginMethods = {
     }>;
 
     isAppStoreAdmin: () => Promise<boolean>;
+    getAnnouncementPreferences: () => Promise<AnnouncementPreferences>;
+    updateAnnouncementPreferences: (
+        updates: Partial<AnnouncementPreferences>
+    ) => Promise<AnnouncementPreferences>;
+    unsubscribeFromAnnouncements: (token: string) => Promise<boolean>;
     campaignsIsAdmin: () => Promise<boolean>;
     campaignsCreate: (input: CreateCampaignInput) => Promise<Campaign>;
     campaignsUpdate: (input: UpdateCampaignInput) => Promise<Campaign>;
@@ -1180,12 +1235,26 @@ export type LearnCardNetworkPluginMethods = {
     campaignsList: (input?: ListCampaignsInput) => Promise<PaginatedCampaigns>;
     campaignsDelete: (campaignId: string) => Promise<boolean>;
     campaignsSetStatus: (campaignId: string, status: CampaignStatus) => Promise<Campaign>;
-    campaignsPreviewAudience: (input: CampaignAudienceInput) => Promise<{ count: number }>;
-    campaignsAddAudience: (input: CampaignAudienceInput) => Promise<{ count: number }>;
+    campaignsPreviewAudience: (input: CampaignAudienceInput) => Promise<CampaignAudienceResult>;
+    campaignsAddAudience: (input: CampaignAudienceInput) => Promise<CampaignAudienceResult>;
     campaignsPageAudience: (input: PageCampaignAudienceInput) => Promise<PaginatedCampaignAudience>;
     campaignsGetStats: (campaignId: string) => Promise<CampaignStats>;
+    /** Test selected channels only for the signed-in administrator, regardless of campaign status. */
+    campaignsSendTestToMe: (campaignId: string) => Promise<boolean>;
+    /** Start paced notification delivery for an eligible live campaign. */
+    /** Preview eligible inbox recipients before confirming an audience notification send. */
+    campaignsPreviewDispatch: (campaignId: string) => Promise<CampaignDispatchPreview>;
+    /** Supply the preview token to reject stale or repeated confirmations. */
+    campaignsDispatch: (
+        campaignId: string,
+        options?: CampaignDispatchOptions
+    ) => Promise<{ dispatchId: string }>;
     getMyCampaigns: () => Promise<MyCampaign[]>;
-    recordCampaignEvent: (campaignId: string, event: CampaignEvent) => Promise<boolean>;
+    recordCampaignEvent: (
+        campaignId: string,
+        event: CampaignEvent,
+        testId?: string
+    ) => Promise<boolean>;
     enrollInCampaign: (campaignId: string) => Promise<boolean>;
     adminUpdateListingStatus: (listingId: string, status: AppListingStatus) => Promise<boolean>;
     adminUpdatePromotionLevel: (

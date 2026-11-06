@@ -13,13 +13,15 @@ import { campaignProperties } from './shared';
 
 export const createCampaign = async (
     input: CreateCampaignInput,
-    createdByProfileId: string
+    createdByProfileId: string,
+    tenantId?: string
 ): Promise<Campaign> => {
     const parsed = CreateCampaignInputValidator.parse(input);
     const now = new Date().toISOString();
     const campaign = CampaignValidator.parse({
         ...parsed,
-        message: { ...parsed.message, id: parsed.id },
+        message: parsed.message ? { ...parsed.message, id: parsed.id } : undefined,
+        tenantId,
         createdAt: now,
         updatedAt: now,
     });

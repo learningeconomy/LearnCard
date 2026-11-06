@@ -2734,6 +2734,15 @@
         }
     },
     "alerts": {
+        "announcement": "Anuncio",
+        "newAlert": "Nuevo",
+        "markRead": "Marcar como leído",
+        "read": "Leído",
+        "markingRead": "Marcando como leído…",
+        "archiving": "Archivando…",
+        "restore": "Restaurar",
+        "restoring": "Restaurando…",
+        "updateFailed": "No se pudo actualizar esta alerta. Inténtalo de nuevo.",
         "title": "Alertas",
         "notifications": "Notificaciones",
         "markAllRead": "Marcar todo como leído",
@@ -2840,6 +2849,8 @@
     "error": {
         "generic": "Algo salió mal. Inténtalo de nuevo.",
         "network": "Problema de conexión. Verifica tu internet e inténtalo de nuevo.",
+        "updateRequired": "Tu cuenta usa una forma más nueva de iniciar sesión. Actualiza la aplicación a la última versión (a menudo basta con cerrarla y volver a abrirla) y vuelve a iniciar sesión.",
+        "updateRequiredTitle": "Actualización necesaria",
         "notFound": "Página no encontrada.",
         "unauthorized": "No tienes permiso para hacer esto.",
         "sessionExpired": "Tu sesión ha expirado. Inicia sesión de nuevo.",
@@ -3348,6 +3359,7 @@
         "modal": {
             "earnedTitle": "¡Has obtenido una credencial!",
             "claimedTitle": "¡Credencial reclamada!",
+            "verificationFailed": "No pudimos verificar esto",
             "claimedBody": "La credencial se ha añadido a tu cartera.",
             "loadingCredential": "Cargando credencial...",
             "loadErrorTitle": "No se pudo cargar la credencial",
@@ -5014,6 +5026,7 @@
         }
     },
     "notifications": {
+        "viewCampaign": "Ver",
         "contract": "tu contrato",
         "loadErr": "No se pudo cargar la actividad",
         "updates": "Actualizaciones",
@@ -10306,5 +10319,16 @@
         "revocationCheck": "Comprobación de revocación disponible",
         "evidenceCount": "Elementos de evidencia: {{count}}",
         "evidence": "Evidencia de apoyo"
+    },
+    "announcements": {
+        "title": "Anuncios del producto",
+        "email": "Correo electrónico",
+        "push": "Notificaciones push",
+        "loading": "Cargando preferencias…",
+        "saving": "Guardando preferencias…",
+        "error": "Algo salió mal. Inténtalo de nuevo.",
+        "retry": "Reintentar",
+        "unsubscribing": "Cancelando la suscripción…",
+        "unsubscribed": "Ya no recibirás anuncios."
     }
 }

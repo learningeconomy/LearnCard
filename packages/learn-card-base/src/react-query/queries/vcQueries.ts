@@ -56,6 +56,24 @@ const useCredentialReader = () => {
  * missing index metadata. Existing server authorization still applies; a rejected
  * metadata write never prevents the credential from being displayed.
  */
+import { resolveCredentialForClaim } from '../../helpers/ingestManagedCredential';
+
+/** Claim previews must not reuse the unverified document-resolution cache. */
+export const useGetClaimCredential = (uri: string | undefined) => {
+    const wallet = useCredentialReader();
+    return useQuery({
+        queryKey: ['verified-claim', wallet?.id.did(), uri],
+        enabled: Boolean(wallet && uri),
+        staleTime: 0,
+        gcTime: 0,
+        retry: false,
+        queryFn: async () => {
+            if (!wallet || !uri) throw new Error('CLAIM_READER_UNAVAILABLE');
+            return (await resolveCredentialForClaim(wallet, uri)).credential as VC;
+        },
+    });
+};
+
 export const useGetResolvedCredential = (uri: string | undefined, enabled = true) => {
     const wallet = useCredentialReader();
     const queryClient = useQueryClient();
@@ -221,6 +239,12 @@ export const useGetRecordForUri = (uri?: string, enabled = true) => {
     });
 };
 
+// Single source for the managed-boosts key so mutation writes hit the list the screen reads (LC-2349).
+export const getPaginatedManagedBoostsKey = (
+    category?: CredentialCategory | CredentialCategory[] | string,
+    didWeb: string | null | undefined = switchedProfileStore.get.switchedDid()
+) => ['useGetPaginatedManagedBoosts', didWeb ?? '', category ?? ''];
+
 /* Use 'useGetPaginatedManagedBoostsQuery' instead - deprecated in favor of useGetPaginatedManagedBoostsQuery*/
 export const useGetPaginatedManagedBoosts = (
     category?: CredentialCategory | CredentialCategory[],
@@ -232,7 +256,7 @@ export const useGetPaginatedManagedBoosts = (
     const { limit, ...restOptions } = options ?? {};
 
     return useInfiniteQuery({
-        queryKey: ['useGetPaginatedManagedBoosts', didWeb ?? '', category ?? ''],
+        queryKey: getPaginatedManagedBoostsKey(category, didWeb ?? ''),
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
 

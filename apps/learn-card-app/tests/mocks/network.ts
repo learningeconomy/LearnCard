@@ -46,6 +46,11 @@ export const installNetwork = async (page: Page): Promise<TrpcMock> => {
                 () => `mock-challenge-${++challenge}`
             ) satisfies BrainOutputs['utilities']['getChallenges'];
         });
+        // The global learner source can share a tRPC batch with boot/profile reads.
+        trpc.on(
+            'campaigns.getMyCampaigns',
+            () => [] satisfies BrainOutputs['campaigns']['getMyCampaigns']
+        );
         await trpc.install();
     }
 

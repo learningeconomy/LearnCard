@@ -93,5 +93,6 @@ That last one matters. A `refreshService` URL is data from a credential, which i
 ## Where to go next
 
 - [Issue and Refresh a Managed Credential](../how-to-guides/issue-and-refresh-a-managed-credential.md)
+- [Send a Private, Refreshable Credential](../how-to-guides/send-a-private-refreshable-credential.md): encrypt the credential so only the recipient can read it
 - [Credentials & Data](credentials-and-data/verifiable-credentials-vcs.md)
 - [Credential Status & Revocation](credentials-and-data/credential-status-and-bitstring-status-lists.md)

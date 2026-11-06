@@ -91,6 +91,7 @@ jobs:
             affected: ${{ steps.affected.outputs.affected }}
             base: ${{ steps.range.outputs.base }}
             head: ${{ steps.range.outputs.head }}
+            tests_reused: ${{ steps.test-proof.outputs.reused || 'false' }}
             # always()-based publishers must not run after range selection fails.
             is_release: ${{ job.status == 'success' && steps.check_release.outputs.is_release || 'false' }}
             is_manual: ${{ steps.check_manual.outputs.is_manual }}
@@ -199,6 +200,38 @@ jobs:
                   affected="$(bunx nx show projects --affected --base="$NX_BASE" --head="$NX_HEAD" | paste -sd, -)"
                   echo "affected=$affected" >> "$GITHUB_OUTPUT"
                   echo "Affected projects: $affected"
+
+            - name: Check merge-queue test proof
+              id: test-proof
+              if: github.event_name == 'push' && steps.check_release.outputs.is_release != 'true' && steps.affected.outputs.affected != ''
+              uses: actions/github-script@v8
+              env:
+                  NX_BASE: ${{ steps.range.outputs.base }}
+                  NX_HEAD: ${{ steps.range.outputs.head }}
+              with:
+                  retries: 0
+                  script: |
+                      const { execFileSync } = require('node:child_process');
+                      const fs = require('node:fs');
+                      const path = require('node:path');
+                      let result = { reused: false, reason: 'selection-unavailable' };
+                      try {
+                        const file = path.join(process.env.RUNNER_TEMP, 'deploy-test-selection.json');
+                        execFileSync('bunx', ['nx', 'affected', '--target=test', `--base=${process.env.NX_BASE}`, `--head=${process.env.NX_HEAD}`, `--graph=${file}`], { timeout: 20000, maxBuffer: 1024 * 1024 });
+                        const { resolveReuse } = require('./scripts/deploy-test-proof.cjs');
+                        result = await resolveReuse({ github, repo: context.repo,
+                          repositoryId: context.payload.repository.id,
+                          base: process.env.NX_BASE, head: process.env.NX_HEAD,
+                          graph: JSON.parse(fs.readFileSync(file, 'utf8')) });
+                      } catch {
+                        // Optional evidence lookup cannot replace the fallback test gate.
+                      }
+                      core.setOutput('reused', String(result.reused));
+                      try {
+                        await core.summary.addHeading('Deploy test reuse').addCodeBlock(JSON.stringify(result, null, 2)).write();
+                      } catch {
+                        core.warning('Deploy test-reuse summary unavailable.');
+                      }
 
             - name: Check version changes for release
               if: github.event_name != 'workflow_dispatch'
@@ -468,34 +501,45 @@ jobs:
         runs-on: ubuntu-latest
         environment: ci-tests
         steps:
+            - name: Record reused queue tests
+              if: needs.determine-affected.outputs.tests_reused == 'true'
+              run: echo 'The exact deployment range passed audited queue tests; see Determine Affected Projects for proof.' >> "$GITHUB_STEP_SUMMARY"
+
             - name: Checkout Repo
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
             # Ensure the full-tree fallback also resolves in this runner's clone.
             - name: Prepare full-tree comparison fallback
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               run: git hash-object -t tree -w --stdin </dev/null
 
             - name: Download native plugin binary
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               uses: actions/download-artifact@v4
               with:
                   name: didkit-native-linux-x64
                   path: packages/plugins/didkit-plugin-node
 
             - name: Use Composite Setup Action
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               uses: ./.github/actions/setup
 
             # Same as test.yml: install the escrow crates' pinned toolchain once, so
             # nx's parallel `cargo test` runs don't race to install it (rustfmt conflict).
             - name: Install pinned Rust toolchain
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               working-directory: services/escrow-enclave-app
               run: rustup toolchain install
 
             - name: Test retry reporting contract
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               run: node --test scripts/ci-test-retries/retry.test.cjs
 
             - name: Run tests
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               id: tests
               timeout-minutes: 20
               run: bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"
@@ -504,11 +548,11 @@ jobs:
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   NX_BASE: ${{ needs.determine-affected.outputs.base }}
                   NX_HEAD: ${{ needs.determine-affected.outputs.head }}
-                  SEED: ${{ secrets.SEED }}
-                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+                  SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
             - name: Summarize test retries
-              if: always()
+              if: ${{ always() && needs.determine-affected.outputs.tests_reused != 'true' }}
               env:
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   LC_CI_NX_OUTCOME: ${{ steps.tests.outcome }}

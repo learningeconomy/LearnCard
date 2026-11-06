@@ -575,6 +575,8 @@ export const getLearnCloudPlugin = async (
 
                 const options = {
                     ...paginationOptions,
+                    // JSON-persisted infinite-query page parameters may restore as null.
+                    cursor: paginationOptions?.cursor ?? undefined,
                     sort: ['newestFirst', 'oldestFirst'].includes(paginationOptions?.sort ?? '')
                         ? (paginationOptions?.sort as 'newestFirst' | 'oldestFirst')
                         : undefined,
