@@ -63,7 +63,7 @@ import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import { FeedbackProvider } from './feedback/reporting';
 import { useInitializeTheme } from './theme/hooks/useTheme';
 import type { LearnCardAppEnvironment } from './config/buildEnvironment';
-import { persister } from './helpers/queryPersistence';
+import { persister, QUERY_CACHE_BUSTER } from './helpers/queryPersistence';
 
 declare const __APP_BUILD_ENV__: LearnCardAppEnvironment;
 
@@ -205,7 +205,7 @@ const FullApp: React.FC = () => {
     return (
         <PersistQueryClientProvider
             client={client}
-            persistOptions={{ persister, maxAge: CACHE_TTL }}
+            persistOptions={{ persister, maxAge: CACHE_TTL, buster: QUERY_CACHE_BUSTER }}
         >
             <AnalyticsContextProvider>
                 <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />

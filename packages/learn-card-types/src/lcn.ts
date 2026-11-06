@@ -5,6 +5,10 @@ import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
 import {
+    BitstringStatusListEntryValidator,
+    BitstringStatusPurposeValidator,
+} from './bitstring-status-list';
+import {
     ManagedCredentialRefreshReceiptValidator,
     InboxCredentialRefreshReceiptValidator,
     ManagedCredentialRefreshServiceValidator,
@@ -477,6 +481,19 @@ export const AutoBoostConfigValidator = z.object({
 });
 export type AutoBoostConfig = z.infer<typeof AutoBoostConfigValidator>;
 
+/** Public metadata: never include private credential claims in these fields. */
+export const CredentialDisplayValidator = z.object({
+    name: z.string().trim().min(1).max(280).optional(),
+    category: z.string().max(280).optional(),
+    image: z
+        .string()
+        .max(2048)
+        .url()
+        .refine(url => url.startsWith('https://'), { message: 'Image URL must use https' })
+        .optional(),
+});
+export type CredentialDisplay = z.infer<typeof CredentialDisplayValidator>;
+
 export const SendBoostTemplateValidator = BoostValidator.partial()
     .omit({ uri: true, claimPermissions: true })
     .extend({
@@ -544,6 +561,10 @@ export const SendBoostInputValidator = z
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
         signedCredential: VCValidator.optional(),
+        display: CredentialDisplayValidator.optional().describe(
+            "Public display metadata for managed and signed-only sends. Nothing is inferred from credential content; omitted names use generic copy. The exception is category: when display.category is omitted for an inline template, the template's category is copied, since consent-flow write authorization is keyed on it."
+        ),
+        statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         options: SendOptionsValidator.optional().describe(
             'Options for email/phone recipients (Universal Inbox)'
         ),
@@ -598,7 +619,13 @@ export const SendInboxResponseValidator = z.object({
 });
 export type SendInboxResponse = z.infer<typeof SendInboxResponseValidator>;
 
+/** Where public status is controlled; not part of the holder's signed refresh receipt. */
+export const StatusManagementValidator = z.enum(['network', 'external', 'mixed', 'none']);
+export type StatusManagement = z.infer<typeof StatusManagementValidator>;
+
 export const SendBoostResponseValidator = z.object({
+    /** Public status providers for a managed send; external entries require provider-side updates. */
+    statusManagement: StatusManagementValidator.optional(),
     type: z.literal('boost'),
     credentialUri: z.string(),
     uri: z.string(),
@@ -614,22 +641,36 @@ export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
 
 export const PrepareRefreshableSendInputValidator = z
     .object({
+        /** Opt in to signing the server-bound statusEntries; omission preserves client allocation. */
+        statusBinding: z.literal('server').optional(),
+        statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         recipient: z.string(),
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
+        display: CredentialDisplayValidator.optional().describe('Public display metadata only'),
         contractUri: z.string().optional(),
         templateData: z.record(z.string(), z.unknown()).optional(),
         integrationId: z.string().optional(),
         /** Credential ID to allocate for; generated server-side when omitted. */
         credentialId: z.string().min(1).optional(),
         idempotencyKey: z.string().min(1).max(200).optional(),
+        /**
+         * `'holder'` requests student-only encryption (LC-2345): the SDK signs and
+         * encrypts locally and the server never receives plaintext. Requires a
+         * profile or DID recipient; rejected for signedCredential-only sends and for
+         * inbox (email/phone) recipients. Defaults to `'network'`.
+         */
+        encryption: z.enum(['network', 'holder']).optional(),
     })
-    .refine(data => Boolean(data.templateUri) !== Boolean(data.template), {
-        message: 'Provide exactly one of templateUri or template.',
+    .refine(data => !(data.templateUri && data.template), {
+        message: 'Provide at most one of templateUri or template.',
     });
 export type PrepareRefreshableSendInput = z.infer<typeof PrepareRefreshableSendInputValidator>;
 
 export const PrepareRefreshableSendResultValidator = z.object({
+    /** Public status providers known at preparation; final send reports the signed entries. */
+    statusManagement: StatusManagementValidator.optional(),
+    statusEntries: z.array(BitstringStatusListEntryValidator).optional(),
     boostUri: z.string(),
     credentialId: z.string(),
     refreshId: z.string(),
@@ -638,6 +679,14 @@ export const PrepareRefreshableSendResultValidator = z.object({
     holderDid: z.string(),
     /** Present when this idempotencyKey already completed: return it without signing. */
     completed: SendBoostResponseValidator.optional(),
+    /**
+     * Present only when `encryption: 'holder'` was requested: the exact
+     * key-agreement verification-method ids (holder + current managers) the SDK
+     * must encrypt to. Recomputed on every call, so a later manager change can
+     * make a previously-prepared set stale (see `credentialRefresh.sendHolderEncryptedRefreshable`
+     * and `credentialRefresh.getEncryptionRecipients`).
+     */
+    recipientKeyIds: z.array(z.string()).optional(),
 });
 export type PrepareRefreshableSendResult = z.infer<typeof PrepareRefreshableSendResultValidator>;
 

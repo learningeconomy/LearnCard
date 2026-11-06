@@ -79,7 +79,7 @@ const result = await learnCard.invoke.send({
 });
 ```
 
-Your proof is kept as-is all the way to the recipient. `send()` also saves the credential as a template (`result.uri`) so you can send the same badge again with `templateUri`.
+Your proof is kept as-is all the way to the recipient. Signed-only sends create a display-only anchor (`result.uri`), not a reusable copy of your credential. Pass optional top-level `display: { name, category, image }` for public metadata. Without a public name, the anchor is labeled "Credential" and update notices use generic copy. To issue again, supply your credential again or explicitly create a reusable public Boost template.
 
 {% endtab %}
 {% tab title="LearnCard signs (template)" %}

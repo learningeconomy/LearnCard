@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { getCurrentProfile } from '@helpers/currentProfile';
+import { isAnalyticsRestricted } from '@helpers/analyticsEligibility';
+
 import { t, didAndChallengeRoute } from '@routes';
 import { createPreferences } from '@accesslayer/preferences/create';
 import { TRPCError } from '@trpc/server';
@@ -71,7 +74,27 @@ export const preferencesRouter = t.router({
         .input(preferencesInputSchema)
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            const success = await updatePreferences(ctx.user.did, input);
+            const profile = await getCurrentProfile(ctx);
+            const restricted = profile !== null && isAnalyticsRestricted(profile);
+            // Age-derived metadata is server-owned, not a caller assertion.
+            const safeInput: typeof input = { ...input };
+            if (profile !== null) {
+                safeInput.isMinor = restricted;
+                safeInput.analyticsAutoDisabled = restricted;
+                if (restricted) safeInput.analyticsEnabled = false;
+            } else {
+                // Unknown authority cannot grant opt-in or persist fabricated age metadata.
+                delete safeInput.isMinor;
+                delete safeInput.analyticsAutoDisabled;
+                if (safeInput.analyticsEnabled === true) {
+                    throw new TRPCError({
+                        code: 'SERVICE_UNAVAILABLE',
+                        message:
+                            'Analytics settings are temporarily unavailable. Please try again.',
+                    });
+                }
+            }
+            const success = await updatePreferences(ctx.user.did, safeInput);
 
             if (!success) {
                 throw new TRPCError({
@@ -96,16 +119,43 @@ export const preferencesRouter = t.router({
         .input(z.void())
         .output(preferencesOutputSchema)
         .query(async ({ ctx }) => {
+            const profile = await getCurrentProfile(ctx);
+            const restricted = profile !== null && isAnalyticsRestricted(profile);
             const preferences = await getPreferencesForDid(ctx.user.did);
+
+            if (
+                preferences &&
+                profile !== null &&
+                ((restricted && preferences.analyticsEnabled === true) ||
+                    preferences.isMinor !== restricted ||
+                    (restricted && preferences.analyticsAutoDisabled !== true))
+            ) {
+                try {
+                    const repaired = await updatePreferences(ctx.user.did, {
+                        ...(restricted ? { analyticsEnabled: false } : {}),
+                        isMinor: restricted,
+                        ...(restricted ? { analyticsAutoDisabled: true } : {}),
+                    });
+                    if (!repaired) console.error('Failed to persist age-based preference repair');
+                } catch {
+                    console.error('Failed to persist age-based preference repair');
+                }
+            }
 
             return {
                 theme: preferences?.theme,
                 aiEnabled: preferences?.aiEnabled,
                 aiAutoDisabled: preferences?.aiAutoDisabled,
-                analyticsEnabled: preferences?.analyticsEnabled,
-                analyticsAutoDisabled: preferences?.analyticsAutoDisabled,
+                analyticsEnabled:
+                    profile === null || restricted ? false : preferences?.analyticsEnabled,
+                analyticsAutoDisabled:
+                    profile === null
+                        ? preferences?.analyticsAutoDisabled
+                        : restricted
+                          ? true
+                          : preferences?.analyticsAutoDisabled,
                 bugReportsEnabled: preferences?.bugReportsEnabled,
-                isMinor: preferences?.isMinor,
+                ...(profile === null ? {} : { isMinor: restricted }),
             };
         }),
 });

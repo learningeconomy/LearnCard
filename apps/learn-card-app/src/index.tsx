@@ -6,6 +6,7 @@ import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
+import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { TenantConfigProvider, renderConfigurationError } from 'learn-card-base';
 import { registerExternalUrlOpener } from 'learn-card-base/helpers/externalUrlOpener';
@@ -35,6 +36,11 @@ installInsetSimulator();
 markStartupPhase('entry');
 
 (async () => {
+    // Native analytics can collect independently of React. On web this call
+    // would itself initialize analytics through getAnalytics().
+    if (Capacitor.isNativePlatform()) {
+        await FirebaseAnalytics.setEnabled({ enabled: false }).catch(() => undefined);
+    }
     // Route external links through Capacitor's in-app browser when running natively.
     registerExternalUrlOpener();
 
@@ -73,6 +79,10 @@ markStartupPhase('entry');
         options: {
             logger: basicLogger({ level: 'none' }),
             diagnosticOptOut: true,
+            sendEvents: false,
+        },
+        reactOptions: {
+            sendEventsOnFlagRead: false,
         },
     };
 

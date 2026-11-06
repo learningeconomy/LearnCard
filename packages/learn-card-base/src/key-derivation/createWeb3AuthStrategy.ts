@@ -366,6 +366,9 @@ export const createWeb3AuthStrategy = (
             },
         });
 
+        const isLocalhost =
+            typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
         const web3auth = new Web3Auth({
             clientId: config.clientId,
             web3AuthNetwork: config.web3AuthNetwork as Parameters<
@@ -373,11 +376,12 @@ export const createWeb3AuthStrategy = (
             >[0]['web3AuthNetwork'],
             privateKeyProvider,
             usePnPKey: config.usePnPKey ?? true,
-            // session.web3auth.io rejects CORS from Capacitor's localhost origins,
-            // so web-mode connect() fails after the key is derived. Native never
-            // restores that session anyway (the read is blocked too); node mode
-            // skips the session server and keeps derivation identical.
-            ...(Capacitor.isNativePlatform() ? { mode: SDK_MODE.NODE } : {}),
+            // session.web3auth.io rejects localhost CORS, including browser dev
+            // servers, so connect() fails while saving the already-derived key.
+            // Node mode skips new session writes and keeps derivation identical.
+            // An old SDK session can still attempt a restore in init(); the SDK
+            // catches that read failure. Other web hosts keep session persistence.
+            ...(Capacitor.isNativePlatform() || isLocalhost ? { mode: SDK_MODE.NODE } : {}),
         });
 
         progress.stage = 'init';
