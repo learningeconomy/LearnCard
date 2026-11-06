@@ -1,3 +1,4 @@
+import * as notificationTransport from '@helpers/notification-webhook-fetch.helpers';
 import type { Context, SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -93,12 +94,7 @@ const invokeWorker = async (...records: SQSRecord[]): Promise<SQSBatchResponse> 
     return result as SQSBatchResponse;
 };
 
-const fetchResponse = (stored: boolean): Response =>
-    ({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(stored),
-    } as Response);
+const fetchResponse = (stored: boolean): Response => new Response(JSON.stringify(stored));
 
 const getSenderDeliveryState = async (): Promise<{
     delivered: boolean;
@@ -139,18 +135,20 @@ describe('notifications SQS worker', () => {
         profileB = (await getProfileByProfileId('userb'))!;
         vi.spyOn(LearnCardHelpers, 'getDidWebLearnCard').mockResolvedValue({
             invoke: { getDidAuthVp: async () => 'test-did-auth-vp' },
-        } as any);
+        } as unknown as Awaited<ReturnType<typeof LearnCardHelpers.getDidWebLearnCard>>);
     });
 
     it('returns independent batch failures for downstream false and transport errors', async () => {
-        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
-            const body = JSON.parse(String(init?.body)) as LCNNotification;
+        const fetchSpy = vi
+            .spyOn(notificationTransport, 'fetchNotificationWebhook')
+            .mockImplementation(async (_url, init) => {
+                const body = JSON.parse(String(init?.body)) as LCNNotification;
 
-            if (body.message?.title === 'not-stored') return fetchResponse(false);
-            if (body.message?.title === 'transport-error') throw new Error('network failure');
+                if (body.message?.title === 'not-stored') return fetchResponse(false);
+                if (body.message?.title === 'transport-error') throw new Error('network failure');
 
-            return fetchResponse(true);
-        });
+                return fetchResponse(true);
+            });
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
         try {
@@ -191,7 +189,9 @@ describe('notifications SQS worker', () => {
                 attemptedAt: new Date().toISOString(),
             }
         );
-        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(fetchResponse(true));
+        const fetchSpy = vi
+            .spyOn(notificationTransport, 'fetchNotificationWebhook')
+            .mockResolvedValue(fetchResponse(true));
 
         try {
             await expect(
@@ -222,11 +222,13 @@ describe('notifications SQS worker', () => {
             sender: profileA,
             triggerId: 'credential:worker-unknown-ack',
         });
-        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-            ok: true,
-            status: 200,
-            text: async () => JSON.stringify({ status: 'ok' }),
-        } as Response);
+        const fetchSpy = vi
+            .spyOn(notificationTransport, 'fetchNotificationWebhook')
+            .mockResolvedValue({
+                ok: true,
+                status: 200,
+                text: async () => JSON.stringify({ status: 'ok' }),
+            } as Response);
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
         try {
@@ -251,11 +253,13 @@ describe('notifications SQS worker', () => {
     });
 
     it('preserves compatible unrecognized 2xx handling for legacy queue records', async () => {
-        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-            ok: true,
-            status: 200,
-            text: async () => JSON.stringify({ status: 'ok' }),
-        } as Response);
+        const fetchSpy = vi
+            .spyOn(notificationTransport, 'fetchNotificationWebhook')
+            .mockResolvedValue({
+                ok: true,
+                status: 200,
+                text: async () => JSON.stringify({ status: 'ok' }),
+            } as Response);
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
         try {
@@ -281,7 +285,9 @@ describe('notifications SQS worker', () => {
                 counterpartProfileId: profileB.profileId,
             })
         );
-        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(fetchResponse(true));
+        const fetchSpy = vi
+            .spyOn(notificationTransport, 'fetchNotificationWebhook')
+            .mockResolvedValue(fetchResponse(true));
         const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
         const queryRunnerSpy = vi
             .spyOn(neogma.queryRunner, 'run')

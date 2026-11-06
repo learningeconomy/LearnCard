@@ -24,6 +24,7 @@ import { SHARED, htmlLang, htmlDir, interpolate, resolveCatalogLocale } from '..
 interface LayoutProps {
     branding: TenantBranding;
     preview: string;
+    disclaimer?: string;
     children: React.ReactNode;
     /** Show the brand icon at the top of the card. Defaults to true.
      *  Set to false when the template already has an IssuerLogo. */
@@ -35,12 +36,14 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({
     branding,
     preview,
+    disclaimer,
     children,
     showHeaderLogo = true,
     locale,
 }) => {
     const chrome = SHARED[resolveCatalogLocale(locale)];
-    const disclaimerText = interpolate(chrome.footerDisclaimer, { brandName: branding.brandName });
+    const disclaimerText =
+        disclaimer ?? interpolate(chrome.footerDisclaimer, { brandName: branding.brandName });
 
     return (
         <Html lang={htmlLang(locale)} dir={htmlDir(locale)}>

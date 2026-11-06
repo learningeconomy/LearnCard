@@ -1,7 +1,8 @@
 import { waitForInboxCredentialBatch } from './inbox-batch';
-import { getClient, getApiTokenClient } from '@learncard/network-brain-client';
+import { getClient, getApiTokenClient, getAnonymousClient } from '@learncard/network-brain-client';
 import {
     JWEValidator,
+    MyCampaignValidator,
     LCNProfile,
     LCNVisibleProfile,
     UnsignedVCValidator,
@@ -3365,9 +3366,32 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.isAdmin.query();
             },
 
+            getAnnouncementPreferences: async _learnCard => {
+                await ensureUser();
+                return client.campaigns.getAnnouncementPreferences.query();
+            },
+            updateAnnouncementPreferences: async (_learnCard, updates) => {
+                await ensureUser();
+                return client.campaigns.updateAnnouncementPreferences.mutate(updates);
+            },
+            unsubscribeFromAnnouncements: async (_learnCard, token) => {
+                return getAnonymousClient(url).campaigns.unsubscribe.mutate({ token });
+            },
             campaignsIsAdmin: async _learnCard => {
                 await ensureUser();
                 return client.campaigns.isAdmin.query();
+            },
+            campaignsSendTestToMe: async (_learnCard, campaignId) => {
+                await ensureUser();
+                return client.campaigns.sendTestToMe.mutate({ campaignId });
+            },
+            campaignsPreviewDispatch: async (_learnCard, campaignId) => {
+                await ensureUser();
+                return client.campaigns.previewDispatch.query({ campaignId });
+            },
+            campaignsDispatch: async (_learnCard, campaignId, options = {}) => {
+                await ensureUser();
+                return client.campaigns.dispatch.mutate({ campaignId, ...options });
             },
             campaignsCreate: async (_learnCard, input) => {
                 await ensureUser();
@@ -3411,11 +3435,21 @@ export async function getLearnCardNetworkPlugin(
             },
             getMyCampaigns: async _learnCard => {
                 await ensureUser();
-                return client.campaigns.getMyCampaigns.query();
+                const response = await client.campaigns.getMyCampaigns.query();
+                if (!Array.isArray(response))
+                    throw new Error('Invalid campaigns response: expected an array');
+                return response.flatMap(item => {
+                    const result = MyCampaignValidator.safeParse(item);
+                    return result.success ? [result.data] : [];
+                });
             },
-            recordCampaignEvent: async (_learnCard, campaignId, event) => {
+            recordCampaignEvent: async (_learnCard, campaignId, event, testId) => {
                 await ensureUser();
-                return client.campaigns.recordEvent.mutate({ campaignId, event });
+                return client.campaigns.recordEvent.mutate({
+                    campaignId,
+                    event,
+                    ...(testId ? { testId } : {}),
+                });
             },
             enrollInCampaign: async (_learnCard, campaignId) => {
                 await ensureUser();

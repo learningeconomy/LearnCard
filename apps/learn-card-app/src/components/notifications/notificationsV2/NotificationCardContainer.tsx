@@ -23,6 +23,7 @@ import NotificationGuardianOutcomeCard from './NotificationGuardianOutcomeCard';
 import NotificationAppNotificationCard from './NotificationAppNotificationCard';
 import NotificationCredentialStatusCard from './NotificationCredentialStatusCard';
 import NotificationCredentialRefreshedCard from './NotificationCredentialRefreshedCard';
+import { NotificationAnnouncementCard } from './NotificationAnnouncementCard';
 import { useQueryClient } from '@tanstack/react-query';
 
 type NotificationCardProps = {
@@ -57,6 +58,7 @@ export const NOTIFICATION_TYPES = {
     GUARDIAN_APPROVED: 'GUARDIAN_APPROVED',
     GUARDIAN_REJECTED: 'GUARDIAN_REJECTED',
     APP_NOTIFICATION: 'APP_NOTIFICATION',
+    ANNOUNCEMENT: 'ANNOUNCEMENT',
     CREDENTIAL_REVOKED: 'CREDENTIAL_REVOKED',
     CREDENTIAL_SUSPENDED: 'CREDENTIAL_SUSPENDED',
     CREDENTIAL_UNSUSPENDED: 'CREDENTIAL_UNSUSPENDED',
@@ -66,7 +68,7 @@ export const NOTIFICATION_TYPES = {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('notification-card-container');
 
-export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
+const StandardNotificationCardContainer: React.FC<NotificationCardProps> = ({
     className,
     notification: _notification,
 }) => {
@@ -463,5 +465,14 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
         <div className={`${notificationCardStyles.fallbackShell} ${className}`}>Notification</div>
     );
 };
+
+// Announcements carry authored copy and may come from a service DID. Do not resolve a
+// sender profile or run the legacy sender-name substitution on their title/body.
+export const NotificationCardContainer: React.FC<NotificationCardProps> = props =>
+    props.notification.type === NOTIFICATION_TYPES.ANNOUNCEMENT ? (
+        <NotificationAnnouncementCard {...props} />
+    ) : (
+        <StandardNotificationCardContainer {...props} />
+    );
 
 export default NotificationCardContainer;
