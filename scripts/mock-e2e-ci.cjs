@@ -89,7 +89,7 @@ const validatePreflightVersions = (versions, manifest) => {
     }
 };
 
-const loadNxGraph = cwd => {
+const loadNxGraph = (cwd, graphArgs = ['run', 'learn-card-app:test-mock']) => {
     // A fresh runner has no workspace install. Never replace an existing install.
     if (existsSync(join(cwd, 'node_modules'))) throw new Error('Workspace already installed');
     const versions = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8')).devDependencies;
@@ -123,17 +123,13 @@ const loadNxGraph = cwd => {
         if (nx.version !== versions.nx) throw new Error('Unexpected Nx version');
         const file = join(tools, 'graph.json');
         // --graph plans tasks; it does not execute builds or browser tests.
-        run(
-            process.execPath,
-            [join(modules, 'nx', nx.bin.nx), 'run', 'learn-card-app:test-mock', `--graph=${file}`],
-            {
-                ...process.env,
-                NODE_PATH: modules,
-                NX_DAEMON: 'false',
-                NX_ISOLATE_PLUGINS: 'false',
-                NX_CACHE_PROJECT_GRAPH: 'false',
-            }
-        );
+        run(process.execPath, [join(modules, 'nx', nx.bin.nx), ...graphArgs, `--graph=${file}`], {
+            ...process.env,
+            NODE_PATH: modules,
+            NX_DAEMON: 'false',
+            NX_ISOLATE_PLUGINS: 'false',
+            NX_CACHE_PROJECT_GRAPH: 'false',
+        });
         return JSON.parse(readFileSync(file, 'utf8'));
     } finally {
         rmSync(tools, { recursive: true, force: true });
