@@ -441,4 +441,20 @@ describe('MCP answer/context consistency', () => {
         await expect(answer()).rejects.toMatchObject({ code: 'learner_context_unavailable' });
         expect(answerInputs).toHaveLength(0);
     });
+
+    it('keeps the 501st consented credential through shared context before search and answer', async () => {
+        const uris = Array.from({ length: 501 }, (_, i) => `lc:network:hist-${i}`);
+        const marker = 'Deep history design studio';
+        currentReceipt = { ...receipt, credentialUris: uris };
+        for (let i = 0; i < 500; i++) projections.set(uris[i]!, source);
+        projections.set(uris[500]!, {
+            ...source,
+            facts: [{ kind: 'achievement', value: marker }],
+        });
+        searchResults = [arithmetic];
+        await answer();
+        expect(answerInputs).toHaveLength(1);
+        expect(answerInputs[0]).toContain(marker);
+        expect(searchCredentialsByTopic).toHaveBeenCalled();
+    });
 });
