@@ -1,10 +1,14 @@
+import type { CampaignAudienceResult } from '@learncard/types';
 import type { SendContractRequest, ConsentFlowContractRequestForProfile } from '@learncard/types';
 import type { LCNClient } from '@learncard/network-brain-client';
 import type {
     Campaign,
     CampaignAudienceInput,
+    AnnouncementPreferences,
     CampaignEvent,
     CampaignStats,
+    CampaignDispatchPreview,
+    CampaignDispatchOptions,
     CampaignStatus,
     CreateCampaignInput,
     UpdateCampaignInput,
@@ -1173,6 +1177,11 @@ export type LearnCardNetworkPluginMethods = {
     }>;
 
     isAppStoreAdmin: () => Promise<boolean>;
+    getAnnouncementPreferences: () => Promise<AnnouncementPreferences>;
+    updateAnnouncementPreferences: (
+        updates: Partial<AnnouncementPreferences>
+    ) => Promise<AnnouncementPreferences>;
+    unsubscribeFromAnnouncements: (token: string) => Promise<boolean>;
     campaignsIsAdmin: () => Promise<boolean>;
     campaignsCreate: (input: CreateCampaignInput) => Promise<Campaign>;
     campaignsUpdate: (input: UpdateCampaignInput) => Promise<Campaign>;
@@ -1180,12 +1189,26 @@ export type LearnCardNetworkPluginMethods = {
     campaignsList: (input?: ListCampaignsInput) => Promise<PaginatedCampaigns>;
     campaignsDelete: (campaignId: string) => Promise<boolean>;
     campaignsSetStatus: (campaignId: string, status: CampaignStatus) => Promise<Campaign>;
-    campaignsPreviewAudience: (input: CampaignAudienceInput) => Promise<{ count: number }>;
-    campaignsAddAudience: (input: CampaignAudienceInput) => Promise<{ count: number }>;
+    campaignsPreviewAudience: (input: CampaignAudienceInput) => Promise<CampaignAudienceResult>;
+    campaignsAddAudience: (input: CampaignAudienceInput) => Promise<CampaignAudienceResult>;
     campaignsPageAudience: (input: PageCampaignAudienceInput) => Promise<PaginatedCampaignAudience>;
     campaignsGetStats: (campaignId: string) => Promise<CampaignStats>;
+    /** Test selected channels only for the signed-in administrator, regardless of campaign status. */
+    campaignsSendTestToMe: (campaignId: string) => Promise<boolean>;
+    /** Start paced notification delivery for an eligible live campaign. */
+    /** Preview eligible inbox recipients before confirming an audience notification send. */
+    campaignsPreviewDispatch: (campaignId: string) => Promise<CampaignDispatchPreview>;
+    /** Supply the preview token to reject stale or repeated confirmations. */
+    campaignsDispatch: (
+        campaignId: string,
+        options?: CampaignDispatchOptions
+    ) => Promise<{ dispatchId: string }>;
     getMyCampaigns: () => Promise<MyCampaign[]>;
-    recordCampaignEvent: (campaignId: string, event: CampaignEvent) => Promise<boolean>;
+    recordCampaignEvent: (
+        campaignId: string,
+        event: CampaignEvent,
+        testId?: string
+    ) => Promise<boolean>;
     enrollInCampaign: (campaignId: string) => Promise<boolean>;
     adminUpdateListingStatus: (listingId: string, status: AppListingStatus) => Promise<boolean>;
     adminUpdatePromotionLevel: (

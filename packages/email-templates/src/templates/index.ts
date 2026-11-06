@@ -122,3 +122,5 @@ export {
     getAccountSecuredSubject,
     type AccountSecuredProps,
 } from './account-secured';
+
+export { Announcement, getAnnouncementSubject, type AnnouncementProps } from './announcement';

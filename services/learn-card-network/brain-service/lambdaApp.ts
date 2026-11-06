@@ -13,9 +13,11 @@ import app from './src/openapi';
 import skillsViewerApp from './src/skills-viewer';
 import statusListsApp from './src/status-lists';
 import credentialRefreshApp from './src/credential-refresh';
+import campaignUnsubscribeApp from './src/campaign-unsubscribe';
 import { appRouter, createContext } from './src/app';
 import { publicShareLinkCacheControlHeaders } from './src/routes';
 import { deliverQueuedNotification } from './src/helpers/notificationQueue.helpers';
+import { processCampaignDispatchJob } from './src/helpers/campaign-queue.helpers';
 import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
 import {
@@ -62,6 +64,17 @@ const credentialRefreshProxy = serverlessHttp(toServerlessApplication(credential
 export const credentialRefreshHandler: typeof credentialRefreshProxy = async (event, context) => {
     await credentialRefreshApp.ready();
     return credentialRefreshProxy(event, context);
+};
+
+const campaignUnsubscribeProxy = serverlessHttp(
+    toServerlessApplication(campaignUnsubscribeApp.server)
+);
+export const campaignUnsubscribeHandler: typeof campaignUnsubscribeProxy = async (
+    event,
+    context
+) => {
+    await campaignUnsubscribeApp.ready();
+    return campaignUnsubscribeProxy(event, context);
 };
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
@@ -195,6 +208,13 @@ export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(asyn
             (failure): failure is { itemIdentifier: string } => failure !== undefined
         ),
     } satisfies SQSBatchResponse;
+});
+
+export const campaignDispatchWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
+    // batchSize=1; throwing lets SQS apply the construct's retry/DLQ policy.
+    for (const record of event.Records) {
+        await processCampaignDispatchJob(JSON.parse(record.body));
+    }
 });
 
 export const inboxMaintenanceHandler = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
