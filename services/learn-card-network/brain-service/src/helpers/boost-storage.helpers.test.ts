@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { JWE, VC } from '@learncard/types';
+import type { Transaction } from 'neo4j-driver';
 
 const mocks = vi.hoisted(() => ({
     decrypt: vi.fn(),
@@ -12,6 +13,17 @@ const mocks = vi.hoisted(() => ({
     accept: vi.fn(),
     notify: vi.fn(async () => undefined),
     signingAuthority: vi.fn(),
+    release: vi.fn(),
+    transaction: { run: vi.fn() },
+}));
+
+vi.mock('@instance', () => ({
+    neogma: {
+        getTransaction: async (
+            _transaction: Transaction | null,
+            action: (transaction: unknown) => Promise<unknown>
+        ) => action(mocks.transaction),
+    },
 }));
 
 vi.mock('@models', () => ({}));
@@ -24,6 +36,7 @@ vi.mock('./uri.helpers', () => ({
         `lc:network:${domain}/${kind}:${id}`,
 }));
 vi.mock('@accesslayer/credential/create', () => ({ storeCredential: mocks.store }));
+vi.mock('@accesslayer/credential/delete', () => ({ releaseUnlinkedCredential: mocks.release }));
 vi.mock('@accesslayer/boost/relationships/create', () => ({
     createBoostInstanceOfRelationship: mocks.instanceOf,
 }));
@@ -166,6 +179,47 @@ describe('boost payload storage', () => {
         listing.resolve();
         await expect(result).resolves.toBe('lc:network:network.example/credential:stored');
         expect(mocks.contract).not.toHaveBeenCalled();
+        expect(mocks.instanceOf.mock.calls[0]?.[2]).toBe(mocks.transaction);
+        expect(mocks.sent.mock.calls[0]?.[6]).toBe(mocks.transaction);
+        expect(mocks.listing.mock.calls[0]?.[6]).toBe(mocks.transaction);
+    });
+
+    it('releases a failed contract send so the same signed payload can be retried', async () => {
+        let reserved = false;
+        mocks.store
+            .mockImplementationOnce(async () => {
+                reserved = true;
+                return { id: 'stored' };
+            })
+            .mockImplementationOnce(async () => {
+                if (reserved) throw new Error('Status list index is already bound');
+                return { id: 'retried' };
+            });
+        mocks.release.mockImplementationOnce(async () => {
+            reserved = false;
+        });
+        const error = new Error('contract not approved');
+        mocks.contract.mockRejectedValueOnce(error);
+        await expect(sendBoost({ ...options, credential: vc })).rejects.toBe(error);
+        expect(mocks.release).toHaveBeenCalledWith('stored');
+        await expect(sendBoost({ ...options, credential: vc })).resolves.toBe(
+            'lc:network:network.example/credential:retried'
+        );
+        expect(mocks.store.mock.calls[0]?.[0]).toBe(vc);
+        expect(mocks.store.mock.calls[1]?.[0]).toBe(vc);
+    });
+
+    it('preserves the relationship error when cleanup fails', async () => {
+        const error = new Error('relationship failed');
+        mocks.contract.mockRejectedValueOnce(error);
+        mocks.release.mockRejectedValueOnce(new Error('cleanup failed'));
+        const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        try {
+            await expect(sendBoost(options)).rejects.toBe(error);
+            expect(log).toHaveBeenCalledWith('BOOST_UNLINKED_CREDENTIAL_CLEANUP_FAILED');
+        } finally {
+            log.mockRestore();
+        }
     });
 
     it.each(['instanceOf', 'sent', 'listing', 'contract'] as const)(
@@ -264,7 +318,7 @@ describe('boost payload storage', () => {
             } else {
                 expect(unsigned).not.toHaveProperty('boostId');
             }
-            expect(mocks.store).toHaveBeenCalledWith(issued);
+            expect(mocks.store).toHaveBeenCalledWith(issued, mocks.transaction, 'org');
         }
     );
 

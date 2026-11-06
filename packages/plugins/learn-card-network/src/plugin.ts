@@ -15,6 +15,7 @@ import {
     UnsignedVC,
     VC,
     BitstringCredentialStatusEntry,
+    type BitstringStatusListEntry,
     BitstringCredentialStatusPurpose,
     AllocateCredentialRefreshResult,
     ManagedCredentialRefreshReceipt,
@@ -30,6 +31,7 @@ import {
     getCredentialIssuerId,
     getCredentialStatusArray,
     injectManagedRefreshService as injectSharedManagedRefreshService,
+    prepareManagedRefreshContext,
     isVC2Format,
     materializeCredentialFields,
     isEncrypted,
@@ -444,8 +446,19 @@ const issueCredentialWithNetworkStatus = async (
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     client: any,
     credential: UnsignedVC,
-    statusPurposes?: BitstringCredentialStatusPurpose[]
+    statusPurposes?: BitstringCredentialStatusPurpose[],
+    statusEntries?: BitstringStatusListEntry[]
 ): Promise<VC> => {
+    if (statusEntries) {
+        const prepared = UnsignedVCValidator.parse({
+            ...materializeCredentialFields(credential),
+            credentialStatus:
+                statusEntries.length === 1 && !Array.isArray(credential.credentialStatus)
+                    ? statusEntries[0]
+                    : statusEntries,
+        });
+        return learnCard.invoke.issueCredential(prepareManagedRefreshContext(prepared));
+    }
     return learnCard.invoke.issueCredential(
         await appendNetworkCredentialStatus(
             client,
@@ -2090,6 +2103,10 @@ export async function getLearnCardNetworkPlugin(
                         }
 
                         const prepared = await client.boost.prepareRefreshableSend.mutate({
+                            ...(boost.credentialStatus ? {} : { statusBinding: 'server' as const }),
+                            ...(input.statusPurposes
+                                ? { statusPurposes: input.statusPurposes }
+                                : {}),
                             recipient: input.recipient,
                             ...(input.templateUri
                                 ? { templateUri: input.templateUri }
@@ -2161,11 +2178,26 @@ export async function getLearnCardNetworkPlugin(
                         // Signing goes through the vc-plugin boundary, which prepares the
                         // managed inline JSON-LD context — the service and its terms are
                         // signed in one proof, never mutated afterwards.
-                        const signedCredential = await issueCredentialWithNetworkStatus(
-                            _learnCard,
-                            client,
-                            boost
-                        );
+                        const signedCredential = boost.credentialStatus
+                            ? await _learnCard.invoke.issueCredential(
+                                  prepareManagedRefreshContext(
+                                      UnsignedVCValidator.parse(materializeCredentialFields(boost))
+                                  )
+                              )
+                            : await issueCredentialWithNetworkStatus(
+                                  _learnCard,
+                                  client,
+                                  boost,
+                                  input.statusPurposes
+                                      ? [
+                                            ...new Set<BitstringCredentialStatusPurpose>([
+                                                'revocation',
+                                                ...input.statusPurposes,
+                                            ]),
+                                        ]
+                                      : undefined,
+                                  prepared.statusEntries
+                              );
 
                         // Validated handoff: the server re-derives the refresh ID from the
                         // signed service, re-validates ownership/holder/proof, records the
@@ -2896,7 +2928,13 @@ export async function getLearnCardNetworkPlugin(
                     );
                     return [];
                 });
-                return { ...result, records, failed: results.length - records.length };
+                const { cursor, ...page } = result;
+                return {
+                    ...page,
+                    ...(cursor === undefined ? {} : { cursor }),
+                    records,
+                    failed: results.length - records.length,
+                };
             },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
                 await ensureUser();

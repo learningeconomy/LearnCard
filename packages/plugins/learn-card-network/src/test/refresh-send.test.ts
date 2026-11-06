@@ -43,6 +43,8 @@ vi.mock('@learncard/types', async importOriginal => ({
         },
     },
     UnsignedVCValidator: {
+        parse: (await importOriginal<typeof import('@learncard/types')>()).UnsignedVCValidator
+            .parse,
         spa: async (value: any) => ({
             success: true,
             data: typeof value === 'string' ? JSON.parse(value) : value,
@@ -174,6 +176,56 @@ const getPlugin = async (learnCard: any, client: any) => {
 };
 
 describe('unified send with refresh: true (managed branch)', () => {
+    it('includes revocation when an old server requires fallback suspension allocation', async () => {
+        const client = getMockClient();
+        const learnCard = getMockIssuingLearnCard();
+        const plugin = await getPlugin(learnCard, client);
+        await plugin.methods?.send(learnCard, {
+            type: 'boost',
+            recipient: 'userb',
+            templateUri: 'did:web:network.example:boost:1',
+            refresh: true,
+            statusPurposes: ['suspension'],
+        });
+        expect(client.boost.allocateCredentialStatus.mutate).toHaveBeenCalledWith({
+            statusPurposes: ['revocation', 'suspension'],
+        });
+    });
+
+    it.each([false, true])(
+        'uses server-bound status without allocating again (array=%s)',
+        async arrayShape => {
+            const client = getMockClient();
+            const learnCard = getMockIssuingLearnCard();
+            const entry = SERVER_MANAGED_RESPONSE.refresh.credentialStatus;
+            client.boost.prepareRefreshableSend.mutate.mockResolvedValue(
+                Object.assign(
+                    {},
+                    {
+                        ...defaultPrepared,
+                        statusEntries: [entry],
+                    }
+                )
+            );
+            client.boost.getBoost.query.mockResolvedValue({
+                boost: getUnsignedBoostTemplate({ credentialStatus: arrayShape ? [entry] : entry }),
+            });
+            const plugin = await getPlugin(learnCard, client);
+            await plugin.methods?.send(learnCard, {
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: 'did:web:network.example:boost:1',
+                refresh: true,
+            });
+            expect(client.boost.allocateCredentialStatus.mutate).not.toHaveBeenCalled();
+            expect(learnCard.invoke.issueCredential).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    credentialStatus: arrayShape ? [entry] : entry,
+                })
+            );
+        }
+    );
+
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -219,6 +271,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         // The server runs every guard, creates/reuses the boost and allocates the
         // refresh in one call; the SDK never allocates client-side.
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
+            statusBinding: 'server',
             recipient: 'userb',
             templateUri: 'did:web:network.example:boost:1',
             templateData: { name: 'Refreshable Badge' },
@@ -272,6 +325,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         const forwarded = client.boost.send.mutate.mock.calls[0]?.[0] as any;
 
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
+            statusBinding: 'server',
             recipient: 'userb',
             template,
             contractUri: 'contract:1',
@@ -295,6 +349,34 @@ describe('unified send with refresh: true (managed branch)', () => {
 
         expect(client.credentialRefresh.allocateCredentialRefresh.mutate).not.toHaveBeenCalled();
         expect(client.credentialRefresh.sendRefreshableCredential.mutate).not.toHaveBeenCalled();
+    });
+
+    it('preserves inline external status without requesting server binding or allocating indexes', async () => {
+        const client = getMockClient();
+        const learnCard = getMockIssuingLearnCard();
+        const plugin = await getPlugin(learnCard, client);
+        const credentialStatus = {
+            ...SERVER_MANAGED_RESPONSE.refresh.credentialStatus,
+            id: 'https://provider.example/list#94567',
+            statusListCredential: 'https://provider.example/list',
+        };
+        const response = { ...SERVER_MANAGED_RESPONSE, statusManagement: 'external' as const };
+        client.boost.send.mutate.mockResolvedValue(response);
+        const result = await plugin.methods?.send(learnCard, {
+            type: 'boost',
+            recipient: 'userb',
+            template: { credential: getUnsignedBoostTemplate({ credentialStatus }) },
+            refresh: true,
+            statusPurposes: ['suspension'],
+        });
+        expect(client.boost.prepareRefreshableSend.mutate.mock.calls[0]?.[0]).not.toHaveProperty(
+            'statusBinding'
+        );
+        expect(client.boost.allocateCredentialStatus.mutate).not.toHaveBeenCalled();
+        expect(learnCard.invoke.issueCredential).toHaveBeenCalledWith(
+            expect.objectContaining({ credentialStatus })
+        );
+        expect(result).toEqual(response);
     });
 
     it('signs with the prepared credential ID, refresh service and holder DID', async () => {

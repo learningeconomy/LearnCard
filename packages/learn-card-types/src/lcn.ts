@@ -5,6 +5,10 @@ import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
 import {
+    BitstringStatusListEntryValidator,
+    BitstringStatusPurposeValidator,
+} from './bitstring-status-list';
+import {
     ManagedCredentialRefreshReceiptValidator,
     InboxCredentialRefreshReceiptValidator,
     ManagedCredentialRefreshServiceValidator,
@@ -544,6 +548,7 @@ export const SendBoostInputValidator = z
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
         signedCredential: VCValidator.optional(),
+        statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         options: SendOptionsValidator.optional().describe(
             'Options for email/phone recipients (Universal Inbox)'
         ),
@@ -598,7 +603,13 @@ export const SendInboxResponseValidator = z.object({
 });
 export type SendInboxResponse = z.infer<typeof SendInboxResponseValidator>;
 
+/** Where public status is controlled; not part of the holder's signed refresh receipt. */
+export const StatusManagementValidator = z.enum(['network', 'external', 'mixed', 'none']);
+export type StatusManagement = z.infer<typeof StatusManagementValidator>;
+
 export const SendBoostResponseValidator = z.object({
+    /** Public status providers for a managed send; external entries require provider-side updates. */
+    statusManagement: StatusManagementValidator.optional(),
     type: z.literal('boost'),
     credentialUri: z.string(),
     uri: z.string(),
@@ -614,6 +625,9 @@ export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
 
 export const PrepareRefreshableSendInputValidator = z
     .object({
+        /** Opt in to signing the server-bound statusEntries; omission preserves client allocation. */
+        statusBinding: z.literal('server').optional(),
+        statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         recipient: z.string(),
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
@@ -630,6 +644,9 @@ export const PrepareRefreshableSendInputValidator = z
 export type PrepareRefreshableSendInput = z.infer<typeof PrepareRefreshableSendInputValidator>;
 
 export const PrepareRefreshableSendResultValidator = z.object({
+    /** Public status providers known at preparation; final send reports the signed entries. */
+    statusManagement: StatusManagementValidator.optional(),
+    statusEntries: z.array(BitstringStatusListEntryValidator).optional(),
     boostUri: z.string(),
     credentialId: z.string(),
     refreshId: z.string(),

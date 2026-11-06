@@ -1,4 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep';
+import type { Transaction } from 'neo4j-driver';
+import { neogma } from '@instance';
 import {
     CredentialFieldError,
     isEncrypted,
@@ -31,9 +33,10 @@ import {
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
-import { BoostInstance } from '@models';
+import { BoostInstance, CredentialInstance } from '@models';
 import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
+import { releaseUnlinkedCredential } from '@accesslayer/credential/delete';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import {
     createSentCredentialRelationship,
@@ -85,7 +88,7 @@ export const isEditableBoost = (boost: BoostInstance): boolean => {
  */
 export const isBoostViewableByClaimLink = async (boost: BoostInstance): Promise<boolean> => {
     const defaultRoles = await boost.findRelationships({ alias: 'defaultRole' });
-    const defaultRole = defaultRoles[0]?.target as any;
+    const defaultRole = defaultRoles[0]?.target;
     const canView = defaultRole?.canView ?? defaultRole?.dataValues?.canView;
 
     if (typeof canView === 'boolean') return canView;
@@ -183,56 +186,77 @@ export const sendBoost = async ({
             }
 
             // Preserve the issuer's payload without decrypting or counter-signing it.
-            const credentialInstance = await traceDb('storeCredential', () =>
-                storeCredential(credential)
-            );
-
-            if (contractTerms) {
-                await traceDb('createRelationships', () =>
-                    createContractCredentialRelationships({
-                        issuer: from,
-                        writerProfileId: contractWriterProfileId ?? fromProfile.profileId,
-                        recipient: to,
-                        credential: credentialInstance,
-                        boost,
-                        terms: contractTerms,
-                        metadata,
-                        activityId,
-                        integrationId,
-                        listingId,
-                        allowConsumedOneTime,
-                    })
+            // Contract auto-boosts are signed by the writer, whose profile owns the status list.
+            const persistDelivery = async (
+                transaction?: Transaction
+            ): Promise<CredentialInstance> => {
+                const stored = await traceDb('storeCredential', () =>
+                    storeCredential(
+                        credential,
+                        transaction,
+                        contractWriterProfileId ?? fromProfile.profileId
+                    )
                 );
-            } else {
-                // These writes share Credential/Profile/Listing nodes. Separate concurrent
-                // auto-commit transactions can deadlock on Neo4j relationship-chain locks.
-                await traceDb('createRelationships', async () => {
-                    await createBoostInstanceOfRelationship(credentialInstance, boost);
-                    await createSentCredentialRelationship(
-                        from,
-                        to,
-                        credentialInstance,
-                        metadata,
-                        activityId,
-                        integrationId
-                    );
-
-                    // Listing issuers already create this edge inside createSentCredentialRelationship.
-                    // Keep explicit attribution for profile/integration issuers or another listing.
-                    if (
-                        listingId &&
-                        (!isAppStoreListingIssuer(from) || from.listing.listing_id !== listingId)
-                    ) {
-                        await createListingSentCredentialRelationship(
-                            listingId,
+                if (!contractTerms) {
+                    await traceDb('createRelationships', async () => {
+                        await createBoostInstanceOfRelationship(stored, boost, transaction);
+                        await createSentCredentialRelationship(
+                            from,
                             to,
-                            credentialInstance,
+                            stored,
                             metadata,
                             activityId,
-                            integrationId
+                            integrationId,
+                            transaction
                         );
-                    }
-                });
+                        if (
+                            listingId &&
+                            (!isAppStoreListingIssuer(from) ||
+                                from.listing.listing_id !== listingId)
+                        ) {
+                            await createListingSentCredentialRelationship(
+                                listingId,
+                                to,
+                                stored,
+                                metadata,
+                                activityId,
+                                integrationId,
+                                transaction
+                            );
+                        }
+                    });
+                }
+                return stored;
+            };
+            const credentialInstance = contractTerms
+                ? await persistDelivery()
+                : await neogma.getTransaction(null, persistDelivery);
+
+            try {
+                if (contractTerms) {
+                    await traceDb('createRelationships', () =>
+                        createContractCredentialRelationships({
+                            issuer: from,
+                            writerProfileId: contractWriterProfileId ?? fromProfile.profileId,
+                            recipient: to,
+                            credential: credentialInstance,
+                            boost,
+                            terms: contractTerms,
+                            metadata,
+                            activityId,
+                            integrationId,
+                            listingId,
+                            allowConsumedOneTime,
+                        })
+                    );
+                }
+            } catch (error) {
+                try {
+                    await releaseUnlinkedCredential(credentialInstance.id);
+                } catch {
+                    console.error('BOOST_UNLINKED_CREDENTIAL_CLEANUP_FAILED');
+                }
+                throw error;
             }
             if (autoAcceptCredential) {
                 await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
@@ -543,7 +567,6 @@ const credentialContextSupportsDynamicEvidence = (credential: UnsignedVC): boole
  * Throws TRPCError if not found.
  */
 export const resolveBoostByUri = async (boostUri: string): Promise<BoostInstance> => {
-    const { TRPCError } = await import('@trpc/server');
     const { getBoostByUri } = await import('@accesslayer/boost/read');
 
     const boost = await getBoostByUri(boostUri);

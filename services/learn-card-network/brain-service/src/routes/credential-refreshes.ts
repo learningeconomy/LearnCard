@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
     AllocateCredentialRefreshInputValidator,
+    AttachCredentialRefreshStatusEntriesInputValidator,
     AllocateCredentialRefreshResultValidator,
     GetCredentialRefreshHistoryInputValidator,
     GetCredentialRefreshHistoryResultValidator,
@@ -26,6 +27,10 @@ import {
 import { getDidWeb } from '@helpers/did.helpers';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
 import { ensureCredentialRefreshConstraints } from '../models/credential-refresh-constraints';
+import { getBitstringStatusListEntries } from '@learncard/helpers';
+import { neogma } from '@instance';
+import { matchesCredentialStatusDigest } from '@helpers/credential-refresh-materiality.helpers';
+import { bindRefreshStatusEntries } from '@helpers/managed-status.helpers';
 
 const credentialRefreshRoute = profileRoute.use(async ({ ctx, next }) => {
     if (!getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_ENABLED) {
@@ -41,6 +46,59 @@ const credentialRefreshRoute = profileRoute.use(async ({ ctx, next }) => {
 });
 
 export const credentialRefreshesRouter = t.router({
+    attachStatusEntries: credentialRefreshRoute
+        .meta({ requiredScope: 'credentials:write' })
+        .input(AttachCredentialRefreshStatusEntriesInputValidator)
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const refresh = await getCredentialRefresh(input.refreshId);
+            if (!refresh || refresh.issuerProfileId !== ctx.user.profile.profileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential refresh not found' });
+            }
+            if (
+                !matchesCredentialStatusDigest(
+                    input.credentialStatus,
+                    refresh.credentialStatusDigest
+                )
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Credential status does not match the original credential',
+                });
+            }
+            const entries = getBitstringStatusListEntries({
+                credentialStatus: input.credentialStatus,
+            });
+            if (entries.length === 0) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Credential has no supported public status entries',
+                });
+            }
+            await neogma.getTransaction(null, async tx => {
+                const result = await tx.run(
+                    `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
+                 SET root._statusMutationLock = true REMOVE root._statusMutationLock
+                 RETURN root.id AS id`,
+                    { refreshId: input.refreshId }
+                );
+                const root = result.records[0];
+                if (!root)
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message: 'Credential has no original delivery',
+                    });
+                await bindRefreshStatusEntries(
+                    input.refreshId,
+                    entries,
+                    refresh.issuerProfileId,
+                    ctx.domain,
+                    tx
+                );
+            });
+            return true;
+        }),
+
     allocateCredentialRefresh: credentialRefreshRoute
         .meta({
             openapi: {

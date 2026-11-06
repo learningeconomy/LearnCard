@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'crypto';
 import { TRPCError } from '@trpc/server';
 import type { ManagedCredentialRefreshReceipt, SendBoostResponse } from '@learncard/types';
+import { getStatusEntriesForCredential, getStatusManagement } from './status-list.helpers';
 import { canonicalizeCredentialJson } from '@learncard/helpers';
 
 import { neogma } from '@instance';
@@ -42,6 +43,8 @@ const getIntentKey = (issuerProfileId: string, idempotencyKey: string): string =
 
 /** Digest of everything that defines a prepare request; a reused key must match it. */
 export const computeRefreshSendRequestDigest = (request: {
+    statusBinding?: 'server';
+    statusPurposes?: ('revocation' | 'suspension')[];
     recipientProfileId: string;
     holderDid: string;
     templateUri?: string;
@@ -62,6 +65,10 @@ export const computeRefreshSendRequestDigest = (request: {
                 templateData: request.templateData ?? {},
                 integrationId: request.integrationId ?? null,
                 credentialId: request.credentialId ?? null,
+                ...(request.statusBinding ? { statusBinding: request.statusBinding } : {}),
+                ...(request.statusPurposes?.includes('suspension')
+                    ? { suspensionRequested: true }
+                    : {}),
             })
         )
         .digest('base64url');
@@ -265,6 +272,10 @@ export const reconcileBoundRefreshSendIntent = async (
         credentialUri: getManagedCredentialUri(root.rootId, domain),
         activityId: intent.pendingActivityId ?? '',
         refresh: intent.pendingReceipt,
+        statusManagement: getStatusManagement(
+            await getStatusEntriesForCredential(root.rootId),
+            domain
+        ),
     };
 
     await markRefreshSendIntentDelivered(intent, result);

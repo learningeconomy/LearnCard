@@ -14,6 +14,7 @@ import {
 } from '@learncard/types';
 import {
     getCredentialEffectiveTime,
+    getBitstringStatusListEntries,
     getCredentialIssuerId,
     getManagedRefreshServices,
     prepareManagedRefreshContext,
@@ -54,13 +55,17 @@ import { verifyManagedRefreshProof } from './credential-refresh-proof.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import {
     computeCredentialMaterialDigest,
+    matchesCredentialMaterialDigest,
+    matchesCredentialSubjectDigest,
     computeCredentialStatusDigest,
+    matchesCredentialStatusDigest,
     computeCredentialSubjectDigest,
     decideCredentialRefreshNotification,
 } from './credential-refresh-materiality.helpers';
 import { isInitialRefreshVersionUniquenessRace } from './credential-refresh-initial-binding.helpers';
 import { ensureInitialNotificationPolicy } from './credential-refresh-notification-policy.helpers';
-import { getStatusListBaseUrl } from './status-list.helpers';
+import { getStatusListBaseUrl, getStatusManagement } from './status-list.helpers';
+import { bindRefreshStatusEntries } from './managed-status.helpers';
 import { constructUri } from './uri.helpers';
 import {
     addNotificationToQueue,
@@ -239,10 +244,8 @@ export const peekCredentialRefreshInitialBinding = async (params: {
 
     assertInitialCredentialMatches(
         root,
-        computeCredentialMaterialDigest(credential as unknown as Record<string, unknown>),
-        computeCredentialStatusDigest(
-            (credential as unknown as Record<string, unknown>).credentialStatus
-        ),
+        credential as unknown as Record<string, unknown>,
+        credential.credentialStatus,
         boostId
     );
 
@@ -315,6 +318,8 @@ export type SendRefreshableCredentialParams = {
 export type SendRefreshableCredentialResult = {
     uri: string;
     receipt: ManagedCredentialRefreshReceipt;
+    /** Public status providers; external entries require provider-side lifecycle updates. */
+    statusManagement?: ReturnType<typeof getStatusManagement>;
 };
 
 type InitialRefreshRoot = {
@@ -359,15 +364,15 @@ export const getBoundRefreshBoostId = async (refreshId: string): Promise<string 
 
 const assertInitialCredentialMatches = (
     root: InitialRefreshRoot,
-    materialDigest: string,
-    credentialStatusDigest: string,
+    credential: Record<string, unknown>,
+    credentialStatus: unknown,
     boostId?: string
 ): void => {
     if (
         !root.materialDigest ||
         !root.credentialStatusDigest ||
-        root.materialDigest !== materialDigest ||
-        root.credentialStatusDigest !== credentialStatusDigest
+        !matchesCredentialMaterialDigest(credential, root.materialDigest) ||
+        !matchesCredentialStatusDigest(credentialStatus, root.credentialStatusDigest)
     ) {
         throw new TRPCError({
             code: 'CONFLICT',
@@ -680,9 +685,15 @@ export const sendRefreshableCredential = async (
     if (existingRoot) {
         assertInitialCredentialMatches(
             existingRoot,
-            rootMaterialDigest,
-            credentialStatusDigest,
+            credential as unknown as Record<string, unknown>,
+            credential.credentialStatus,
             boost?.id
+        );
+        await bindRefreshStatusEntries(
+            refreshId,
+            getBitstringStatusListEntries(credential),
+            issuerProfile.profileId,
+            domain
         );
         const rootId = await ensureInitialRefreshRelationships({
             refreshId,
@@ -713,8 +724,22 @@ export const sendRefreshableCredential = async (
             holderProfile,
             initialNotificationSuppressed,
         });
-        return { uri, receipt: buildReceipt() };
+        return {
+            uri,
+            receipt: buildReceipt(),
+            statusManagement: getStatusManagement(
+                getBitstringStatusListEntries(credential),
+                domain
+            ),
+        };
     }
+
+    await bindRefreshStatusEntries(
+        refreshId,
+        getBitstringStatusListEntries(credential),
+        issuerProfile.profileId,
+        domain
+    );
 
     // Holder-side encryption only (never the brain DID): the holder's did:key plus its
     // managers' did:keys — see getHolderEncryptionRecipients.
@@ -860,8 +885,8 @@ export const sendRefreshableCredential = async (
         }
         assertInitialCredentialMatches(
             concurrentlyBoundRoot,
-            rootMaterialDigest,
-            credentialStatusDigest,
+            credential as unknown as Record<string, unknown>,
+            credential.credentialStatus,
             boost?.id
         );
 
@@ -894,7 +919,14 @@ export const sendRefreshableCredential = async (
             holderProfile,
             initialNotificationSuppressed,
         });
-        return { uri, receipt: buildReceipt() };
+        return {
+            uri,
+            receipt: buildReceipt(),
+            statusManagement: getStatusManagement(
+                getBitstringStatusListEntries(credential),
+                domain
+            ),
+        };
     }
 
     // Contract-linked root history was committed atomically with the root binding.
@@ -912,7 +944,11 @@ export const sendRefreshableCredential = async (
         initialNotificationSuppressed,
     });
 
-    return { uri, receipt: buildReceipt() };
+    return {
+        uri,
+        receipt: buildReceipt(),
+        statusManagement: getStatusManagement(getBitstringStatusListEntries(credential), domain),
+    };
 };
 
 // --- Publication (LC-2135) -----------------------------------------------------
@@ -1058,11 +1094,11 @@ export const deliverPendingCredentialRefreshNotificationForAcceptedCredential = 
  * (signing-authority mode). Error messages are deliberately generic — credential
  * content must never appear in exception messages, tracing attributes, or logs.
  */
-const assertRefreshVersionInvariants = (
+const assertRefreshVersionInvariants = async (
     credential: VC,
     aggregate: CredentialRefreshRecord,
     domain: string
-): void => {
+): Promise<void> => {
     if (credential.id !== aggregate.credentialId) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -1089,8 +1125,10 @@ const assertRefreshVersionInvariants = (
 
     if (
         !aggregate.credentialSubjectDigest ||
-        computeCredentialSubjectDigest(credential.credentialSubject) !==
+        !matchesCredentialSubjectDigest(
+            credential.credentialSubject,
             aggregate.credentialSubjectDigest
+        )
     ) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -1108,15 +1146,22 @@ const assertRefreshVersionInvariants = (
 
     if (
         !aggregate.credentialStatusDigest ||
-        computeCredentialStatusDigest(
-            (credential as unknown as Record<string, unknown>).credentialStatus
-        ) !== aggregate.credentialStatusDigest
+        !matchesCredentialStatusDigest(
+            credential.credentialStatus,
+            aggregate.credentialStatusDigest
+        )
     ) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Credential status does not match the original credential',
         });
     }
+    await bindRefreshStatusEntries(
+        aggregate.refreshId,
+        getBitstringStatusListEntries(credential),
+        aggregate.issuerProfileId,
+        domain
+    );
 };
 
 export type PublishCredentialRefreshParams = {
@@ -1230,7 +1275,7 @@ export const publishCredentialRefresh = async (
         signedCredential = input.signedCredential;
         signingMode = 'issuer-signed';
 
-        assertRefreshVersionInvariants(signedCredential, aggregate, domain);
+        await assertRefreshVersionInvariants(signedCredential, aggregate, domain);
         await verifyManagedRefreshProof(
             (await getLearnCard()).invoke,
             signedCredential,
@@ -1262,7 +1307,7 @@ export const publishCredentialRefresh = async (
         // Enforce the full invariant set on the unsigned body before proof creation.
         // The signing authority is the issuer's own registered delegate and signs the
         // body as supplied, so the completed credential is rechecked in full plus proof.
-        assertRefreshVersionInvariants(input.credential as VC, aggregate, domain);
+        await assertRefreshVersionInvariants(input.credential as VC, aggregate, domain);
 
         // Managed refresh services require their inline JSON-LD context terms to be
         // defined or signing fails (LC-2198): prepare the context exactly as the SDK
@@ -1285,7 +1330,7 @@ export const publishCredentialRefresh = async (
         ).credential as VC;
         signingMode = 'signing-authority';
 
-        assertRefreshVersionInvariants(signedCredential, aggregate, domain);
+        await assertRefreshVersionInvariants(signedCredential, aggregate, domain);
         await verifyManagedRefreshProof(
             (await getLearnCard()).invoke,
             signedCredential,
@@ -1318,7 +1363,12 @@ export const publishCredentialRefresh = async (
     const activeNotification = decideCredentialRefreshNotification({
         state: 'active',
         notifyHolder,
-        previousDigest: aggregate.materialDigest,
+        previousDigest: matchesCredentialMaterialDigest(
+            signedCredential as unknown as Record<string, unknown>,
+            aggregate.materialDigest
+        )
+            ? nextDigest
+            : aggregate.materialDigest,
         nextDigest,
     });
     const notification: PublishCredentialRefreshNotification =

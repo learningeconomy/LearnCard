@@ -43,6 +43,7 @@ import { getCredentialRefresh, getCredentialRefreshHead } from '@accesslayer/cre
 import { testUnsignedBoost } from './helpers/send';
 import {
     claimRefreshSendIntent,
+    computeRefreshSendRequestDigest,
     getRefreshSendIntent,
     recordRefreshSendIntent,
     recordRefreshSendIntentPending,
@@ -242,6 +243,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             });
             const baseline = await getMutationBaseline();
             const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                statusBinding: 'server',
                 recipient: HOLDER_PROFILE_ID,
                 contractUri,
                 template: {
@@ -281,6 +283,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     {
                         ...testUnsignedBoost,
                         id: prepared.credentialId,
+                        credentialStatus: prepared.statusEntries,
                         issuer: issuer.learnCard.id.did(),
                         credentialSubject: {
                             ...testUnsignedBoost.credentialSubject,
@@ -468,6 +471,16 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             };
 
             const first = (await issuer.clients.fullAuth.boost.send(input)) as SendResult;
+            // Direct signing-authority requests retain their pre-capability fingerprint.
+            expect(
+                (await getRefreshSendIntent(ISSUER_PROFILE_ID, input.idempotencyKey))?.requestDigest
+            ).toBe(
+                computeRefreshSendRequestDigest({
+                    recipientProfileId: HOLDER_PROFILE_ID,
+                    holderDid: getDidWeb(DOMAIN, HOLDER_PROFILE_ID),
+                    template: input.template,
+                })
+            );
             const second = (await issuer.clients.fullAuth.boost.send(input)) as SendResult;
 
             expect(second).toEqual(first);
@@ -481,6 +494,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
         it('completes an abandoned prepare on the next send with the same key', async () => {
             // Simulates the SDK failing after prepare (e.g. while signing).
             const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                statusBinding: 'server',
                 recipient: HOLDER_PROFILE_ID,
                 template: inlineTemplate(),
                 idempotencyKey: 'abandoned-1',
@@ -491,6 +505,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     {
                         ...testUnsignedVcV2,
                         id: prepared.credentialId,
+                        credentialStatus: prepared.statusEntries,
                         issuer: issuer.learnCard.id.did(),
                         validFrom: '2026-01-01T00:00:00Z',
                         credentialSubject: { id: prepared.holderDid },
@@ -515,6 +530,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             // A later prepare with the same key reports the completed result: the SDK
             // returns it without signing again.
             const again = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                statusBinding: 'server',
                 recipient: HOLDER_PROFILE_ID,
                 template: inlineTemplate(),
                 idempotencyKey: 'abandoned-1',
@@ -527,6 +543,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             async materialChange => {
                 const idempotencyKey = 'pre-signed-post-bind';
                 const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    statusBinding: 'server',
                     recipient: HOLDER_PROFILE_ID,
                     template: inlineTemplate(),
                     idempotencyKey,
@@ -535,6 +552,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     {
                         ...testUnsignedVcV2,
                         id: prepared.credentialId,
+                        credentialStatus: prepared.statusEntries,
                         issuer: issuer.learnCard.id.did(),
                         validFrom: '2026-01-01T00:00:00Z',
                         credentialSubject: { id: prepared.holderDid },
@@ -676,6 +694,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             const intent = await getRefreshSendIntent(ISSUER_PROFILE_ID, input.idempotencyKey);
             const receipt = first.refresh!;
             const reordered = {
+                statusManagement: first.statusManagement,
                 refresh: {
                     holderDid: receipt.holderDid,
                     issuerDid: receipt.issuerDid,
@@ -1723,6 +1742,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                 type: ['VerifiableCredential'],
                 issuer: receipt.issuerDid,
                 name: 'SA Updated Badge',
+                credentialStatus: receipt.credentialStatus,
                 credentialSubject: { id: receipt.holderDid },
                 refreshService: receipt.refreshService,
                 validFrom: new Date().toISOString(),

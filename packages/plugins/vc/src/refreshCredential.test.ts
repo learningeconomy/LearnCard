@@ -405,6 +405,31 @@ describe('refreshCredential', () => {
             expect(fetchMock).not.toHaveBeenCalled();
         });
 
+        it('reports REVOKED without fetching when the held credential is revoked', async () => {
+            learnCard.invoke.verifyCredential.mockResolvedValue({
+                checks: ['proof', 'credentialStatus'],
+                warnings: [],
+                errors: ['Credential is revoked.'],
+            });
+
+            const result = await runRefresh();
+
+            expect(result).toEqual({ status: 'failed', code: 'REVOKED', retryable: false });
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it('keeps INVALID_PROOF when a revocation error comes with another failure', async () => {
+            learnCard.invoke.verifyCredential.mockResolvedValue({
+                checks: ['proof'],
+                warnings: [],
+                errors: ['Credential is revoked.', 'signature error'],
+            });
+
+            const result = await runRefresh();
+
+            expect(result).toEqual({ status: 'failed', code: 'INVALID_PROOF', retryable: false });
+        });
+
         it('rejects a current credential whose proof verification reports a warning', async () => {
             learnCard.invoke.verifyCredential.mockResolvedValue({
                 checks: ['proof'],

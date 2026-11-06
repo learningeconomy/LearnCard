@@ -3,6 +3,14 @@ import { z } from 'zod/v4';
 import { CredentialStatusValidator, UnsignedVCValidator, VCValidator } from './vc';
 import { JWEValidator } from './crypto';
 
+export const AttachCredentialRefreshStatusEntriesInputValidator = z.object({
+    refreshId: z.string().min(1),
+    credentialStatus: CredentialStatusValidator.or(CredentialStatusValidator.array()),
+});
+export type AttachCredentialRefreshStatusEntriesInput = z.infer<
+    typeof AttachCredentialRefreshStatusEntriesInputValidator
+>;
+
 /**
  * Shared contracts for managed credential refresh (LC-2117, LC-2135, LC-2136).
  *

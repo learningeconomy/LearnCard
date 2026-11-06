@@ -4,6 +4,12 @@ import {
     type ManagedCredentialRefreshService,
     type SupportedCredentialRefreshService,
 } from '@learncard/types';
+import { getBitstringStatusListEntries } from './bitstring-status-list';
+
+// VC v1 credentials need the Bitstring Status List context URI for verifiers to accept a
+// status entry. DIDKit (and most JSON-LD loaders) cache this context, so no remote fetch.
+const BITSTRING_STATUS_LIST_CONTEXT = 'https://www.w3.org/ns/credentials/status/v1';
+const VC_V2_CONTEXT = 'https://www.w3.org/ns/credentials/v2';
 
 /**
  * Canonical helpers for credential refresh (LC-2117, LC-2135, LC-2136).
@@ -240,6 +246,22 @@ export const prepareManagedRefreshContext = <T>(credential: T): T => {
               : [existingContext];
     const inlineObjects = contextList.filter(isPlainObject);
 
+    let addedStatusContext = false;
+    if (
+        getBitstringStatusListEntries(credential).length > 0 &&
+        !contextList.some(
+            context => context === VC_V2_CONTEXT || context === BITSTRING_STATUS_LIST_CONTEXT
+        )
+    ) {
+        const firstInline = contextList.findIndex(isPlainObject);
+        contextList.splice(
+            firstInline === -1 ? contextList.length : firstInline,
+            0,
+            BITSTRING_STATUS_LIST_CONTEXT
+        );
+        addedStatusContext = true;
+    }
+
     const fragment: Record<string, unknown> = {};
 
     // Managed refresh service type term
@@ -305,11 +327,12 @@ export const prepareManagedRefreshContext = <T>(credential: T): T => {
         }
     }
 
-    if (Object.keys(fragment).length === 0) return credential;
+    const hasFragment = Object.keys(fragment).length > 0;
+    if (!hasFragment && !addedStatusContext) return credential;
 
     return {
         ...credential,
-        '@context': [...contextList, fragment],
+        '@context': hasFragment ? [...contextList, fragment] : contextList,
     } as T;
 };
 
