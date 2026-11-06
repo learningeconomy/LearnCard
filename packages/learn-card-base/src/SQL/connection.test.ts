@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SQLiteDBConnection } from '@capacitor-community/sqlite';
-import { ensureSQLiteSchema, withSQLiteDatabase } from './connection';
+import { ensureSQLiteSchema, markSQLiteReloadedOnOpen, withSQLiteDatabase } from './connection';
 
 const log = vi.hoisted(() => ({ warn: vi.fn() }));
 vi.mock('../logging/logger', () => ({ getLogger: () => log }));
@@ -152,5 +152,25 @@ describe('shared SQLite connection ownership', () => {
         expect(methods.execute).toHaveBeenCalledTimes(2);
         expect(methods.execute).toHaveBeenLastCalledWith(sql);
         expect(methods.close).toHaveBeenCalledTimes(2);
+    });
+
+    it('re-checks schemas after a reloaded-on-open connection closes', async () => {
+        const { db, methods } = database();
+        markSQLiteReloadedOnOpen(db);
+        const sql = 'CREATE TABLE IF NOT EXISTS users (uid TEXT);';
+        await ensureSQLiteSchema(db, 'users', sql);
+        await withSQLiteDatabase(db, async () => {
+            await ensureSQLiteSchema(db, 'users', sql);
+            await ensureSQLiteSchema(db, 'users', sql);
+        });
+        expect(methods.execute).toHaveBeenCalledTimes(2);
+    });
+
+    it('keeps schemas ensured across closes for other connections', async () => {
+        const { db, methods } = database();
+        const sql = 'CREATE TABLE IF NOT EXISTS users (uid TEXT);';
+        await ensureSQLiteSchema(db, 'users', sql);
+        await withSQLiteDatabase(db, () => ensureSQLiteSchema(db, 'users', sql));
+        expect(methods.execute).toHaveBeenCalledOnce();
     });
 });
