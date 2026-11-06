@@ -19,6 +19,7 @@ on:
             - CodeQL full comparison
             - CodeQL
             - Deploy
+            - AI Agent Staging
             - DIDKit Plugin Node Prebuilds
             - Docs Link Integrity
             - E2E
