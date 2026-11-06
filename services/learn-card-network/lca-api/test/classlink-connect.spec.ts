@@ -355,6 +355,62 @@ describe('School Connect', () => {
         });
     });
 
+    it('gives a fresh wallet made for the owner stale uid no access, and the owner keeps working', async () => {
+        await caller().connect(exchange);
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey },
+            {
+                $set: {
+                    personalEmail: 'me@personal.example',
+                    personalEmailVerifiedAt: new Date(),
+                },
+            }
+        );
+        // Recovery/revoke moved the owner off `uid`; a still-valid session for `uid` then
+        // created a fresh wallet through keys.storeAuthShare.
+        await mongodb
+            .collection('userkeys')
+            .updateOne(
+                { primaryDid: did },
+                { $set: { authProviders: [{ type: 'firebase', id: 'rebound-uid' }] } }
+            );
+        const fresh = 'did:key:fresh-wallet';
+        await mongodb.collection('userkeys').insertOne({
+            primaryDid: fresh,
+            linkedDids: [],
+            authProviders: [{ type: 'firebase', id: uid }],
+        });
+        const owned = { firebaseUid: uid, primaryDid: did, personalEmail: 'me@personal.example' };
+
+        expect(await caller(fresh).getConnection()).toMatchObject({ connected: false });
+        await expect(caller(fresh).getPersonalEmail()).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        await expect(caller(fresh).connect(exchange)).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject(owned);
+        await expect(caller(fresh).deleteMyData({})).resolves.toEqual({ deleted: 0 });
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject(owned);
+        expect(await findAuthSubjectByIdentityKey(identityKey)).not.toBeNull();
+        // ClassLink sign-in must not treat the fresh wallet as the identity's account.
+        firebase.createCustomToken.mockClear();
+        await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+        });
+        expect(firebase.createCustomToken).not.toHaveBeenCalled();
+
+        // The owner still sees its connection and email, and re-links from School Connect.
+        expect(await caller().getConnection()).toMatchObject({ connected: true, isStudent: true });
+        expect(await caller().getPersonalEmail()).toEqual({
+            email: 'me@personal.example',
+            verified: true,
+        });
+        await expect(caller().connect(exchange)).resolves.toMatchObject({ isStudent: true });
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+            firebaseUid: 'rebound-uid',
+            primaryDid: did,
+        });
+    });
+
     it('moving an identity off its ClassLink Firebase user releases the school email, and sign-in still works', async () => {
         const classLinkUid = classLinkFirebaseUid(identityKey);
         // First signed in with ClassLink, then a recovery rebind moved the account to `uid`.

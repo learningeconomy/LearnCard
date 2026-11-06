@@ -42,6 +42,14 @@ export const POLL_WINDOW_MS = 30 * 60_000;
 export const ISSUANCE_SKEW_MS = 5 * 60_000;
 const NOT_VALID_YET_ERROR = 'expiration error: Credential is not valid yet';
 
+/** Restoring an accepted transcript's wallet entry failed; retried with backoff. */
+class TranscriptWalletRestoreError extends Error {
+    constructor(cause: unknown) {
+        super('Failed to restore the accepted transcript to the wallet', { cause });
+        this.name = 'TranscriptWalletRestoreError';
+    }
+}
+
 export type TranscriptRequestStatus = 'requested' | 'none_yet' | 'failed' | undefined;
 
 /**
@@ -259,7 +267,10 @@ export type UseTranscriptArrivalResult = {
  * rejected for a request are never re-read. Never accepts more than one credential
  * per request, across every mounted instance (see `claimTranscriptOnce`). A matching
  * transcript the student already accepted by hand (it is no longer incoming) is found
- * via `getReceivedCredentials` and only acknowledged, never claimed again.
+ * via `getReceivedCredentials` and only acknowledged, never claimed again; if its wallet
+ * index entry is still missing on a later check (network accept succeeded, wallet write
+ * failed) it is re-added first, and the request is acknowledged only once the
+ * transcript is in the wallet.
  */
 export const useTranscriptArrival = ({
     status,
@@ -283,6 +294,12 @@ export const useTranscriptArrival = ({
     const rerunRef = useRef(false);
     const checkCredentialsRef = useRef<() => Promise<void>>(async () => undefined);
     const retryRef = useRef({ delay: INITIAL_POLL_MS, at: 0 });
+    /**
+     * When an accepted transcript's wallet entry was first seen missing, by URI. A hand
+     * claim (e.g. the generic claim modal) accepts on the network before its own wallet
+     * write lands, so a single miss is not proof the write failed.
+     */
+    const walletMissAtRef = useRef(new Map<string, number>());
     const [isVisible, setIsVisible] = useState(
         typeof document === 'undefined' ? true : document.visibilityState === 'visible'
     );
@@ -349,6 +366,38 @@ export const useTranscriptArrival = ({
             } catch (error) {
                 log.warn('transcript-arrival.pending-storage.failed', error);
             }
+            /**
+             * Makes sure the transcript is in the wallet index, re-adding it (which re-runs
+             * managed verification) when a network accept outlived a failed wallet write.
+             *
+             * With `confirmMiss`, a missing entry is only re-added once it is still missing
+             * at least `INITIAL_POLL_MS` after it was first seen missing; until then this
+             * throws so the check is retried with backoff. That keeps a hand claim whose
+             * network accept finished before its wallet write from being saved twice.
+             */
+            const ensureInWallet = async (
+                uri: string,
+                { confirmMiss = false }: { confirmMiss?: boolean } = {}
+            ): Promise<void> => {
+                const records = await wallet.index.LearnCloud.get({ uri }, { cache: 'skip-cache' });
+                if (records && records.length > 0) {
+                    walletMissAtRef.current.delete(uri);
+                    return;
+                }
+                if (confirmMiss) {
+                    const firstMissAt = walletMissAtRef.current.get(uri);
+                    if (firstMissAt === undefined) {
+                        walletMissAtRef.current.set(uri, Date.now());
+                        throw new Error('The transcript is not in the wallet yet');
+                    }
+                    if (Date.now() - firstMissAt < INITIAL_POLL_MS) {
+                        throw new Error('The transcript is not in the wallet yet');
+                    }
+                }
+                log.warn('transcript-arrival.wallet-entry.missing');
+                const added = await addToWallet({ uri });
+                if (!added) throw new Error('The transcript could not be added to the wallet');
+            };
             const markReceived = async (): Promise<void> => {
                 await wallet.invoke.transcriptsMarkReceived({ requestId });
                 pendingMarkRef.current = undefined;
@@ -404,12 +453,15 @@ export const useTranscriptArrival = ({
                     let claimedHere: boolean;
                     try {
                         claimedHere = await claimTranscriptOnce(requestId, async () => {
-                            await claimIncomingCredential({
+                            const { added } = await claimIncomingCredential({
                                 uri: credInfo.uri,
                                 wallet,
                                 addVCtoWallet: addToWallet,
                                 queryClient,
                             });
+                            // The write reported nothing added without throwing: confirm
+                            // the entry exists (or add it) before acknowledging.
+                            if (!added) await ensureInWallet(credInfo.uri);
                         });
                     } catch (error) {
                         hasAcceptedRef.current = false;
@@ -466,13 +518,35 @@ export const useTranscriptArrival = ({
 
                     log.info('transcript-arrival.accepted-elsewhere.found');
                     hasAcceptedRef.current = true;
+                    // Accepted on the network is not the same as saved: a claim whose
+                    // network accept succeeded but whose wallet write failed lands here
+                    // too, and the received card only reads the wallet index. Restore the
+                    // entry first (single-flight, like a claim) and acknowledge only once
+                    // it is in the wallet; a failed restore is retried with backoff. A
+                    // first miss only schedules a re-check: a hand claim still writing
+                    // its entry must not be raced into a duplicate wallet record.
+                    let restoredHere: boolean;
+                    try {
+                        restoredHere = await claimTranscriptOnce(requestId, () =>
+                            ensureInWallet(credInfo.uri, { confirmMiss: true })
+                        );
+                    } catch (error) {
+                        hasAcceptedRef.current = false;
+                        throw new TranscriptWalletRestoreError(error);
+                    }
+                    if (!restoredHere) break;
                     pendingMarkRef.current = requestId;
                     persistPending(true);
                     await markReceived();
                     break;
                 }
             } catch (error) {
-                if (pendingMarkRef.current === requestId) throw error;
+                if (
+                    pendingMarkRef.current === requestId ||
+                    error instanceof TranscriptWalletRestoreError
+                ) {
+                    throw error;
+                }
                 log.warn('transcript-arrival.received-check.failed', error);
             }
         } catch (error) {

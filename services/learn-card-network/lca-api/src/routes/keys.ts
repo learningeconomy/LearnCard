@@ -19,6 +19,7 @@ import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.hel
 import { maskEmail } from '@helpers/maskEmail';
 import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
 import { deleteClassLinkDataForAccount } from '@helpers/classlinkDeletion.helpers';
+import { pinClassLinkIdentitiesToAccount } from '@helpers/classlinkContext.helpers';
 import cache from '@cache';
 import { setValidChallengeForDid } from '@cache/challenges';
 import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
@@ -703,6 +704,9 @@ export const keysRouter = t.router({
                 });
             }
 
+            // Record the account's DID on its ClassLink identities before the old login is
+            // removed, so a wallet later created with that uid cannot claim them.
+            await pinClassLinkIdentitiesToAccount(oldUserKey);
             const result = await completeIdentityRebind({
                 oldAuthProvider,
                 newAuthProvider: { type: input.providerType, id: newUser.id },
@@ -953,6 +957,8 @@ export const keysRouter = t.router({
                 });
             }
 
+            // Same as the rebind: pin ClassLink identities before other logins are unlinked.
+            await pinClassLinkIdentitiesToAccount(userKey);
             const result = await revokeOtherDeviceShares({
                 authProvider,
                 primaryDid: input.primaryDid,

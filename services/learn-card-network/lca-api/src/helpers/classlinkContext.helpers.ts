@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import type { Filter } from 'mongodb';
 import { findUserKeyByDid, type MongoUserKeyType } from '../models/UserKey';
 import {
     clearStateStudentIdIfUnchanged,
@@ -8,6 +9,7 @@ import {
     setClassLinkIdentityPrimaryDid,
     type MongoClassLinkIdentityType,
 } from '../models/ClassLinkIdentity';
+import { getTranscriptRequestsCollection } from '../models/TranscriptRequest';
 import { hasExpiredStateStudentId } from '@helpers/classlinkPii.helpers';
 import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.config';
 import { maybeClearExpiredStateStudentIds } from '@helpers/classlinkCleanup.helpers';
@@ -33,6 +35,60 @@ export const getAccountDids = (userKey: Pick<MongoUserKeyType, 'primaryDid' | 'l
         (did): did is string => typeof did === 'string' && did.length > 0
     );
 
+export interface AccountClassLinkIdentities {
+    /** Identities the account owns, in the order described on `findClassLinkIdentitiesForAccount`. */
+    identities: MongoClassLinkIdentityType[];
+    /**
+     * Identities that matched only by a Firebase uid or Keycloak subject while their recorded
+     * DID belongs to a different live account (e.g. a fresh wallet made for a uid that a
+     * recovery rebind or "Secure my account" removed from its owner). They grant nothing.
+     */
+    heldElsewhere: MongoClassLinkIdentityType[];
+}
+
+/**
+ * Whether an identity matched by uid/subject is owned by another live account: its recorded
+ * DID is not one of this account's DIDs and some account still holds it.
+ */
+const isHeldByOtherAccount = async (
+    identity: MongoClassLinkIdentityType,
+    accountDids: string[]
+): Promise<boolean> => {
+    const recorded = identity.primaryDid;
+    if (!recorded || accountDids.includes(recorded)) return false;
+    return Boolean(await findUserKeyByDid(recorded));
+};
+
+/** See `findClassLinkIdentitiesForAccount`; also returns the matches held elsewhere. */
+export const matchClassLinkIdentitiesForAccount = async (
+    userKey: AccountKey
+): Promise<AccountClassLinkIdentities> => {
+    const providers = userKey.authProviders ?? [];
+    const firebaseUids = providers.filter(p => p.type === 'firebase').map(p => p.id);
+    const keycloakIds = providers.filter(p => p.type === 'keycloak').map(p => p.id);
+    const accountDids = getAccountDids(userKey);
+    const [byFirebase, byKeycloak, byDid] = await Promise.all([
+        firebaseUids.length
+            ? getClassLinkIdentitiesCollection()
+                  .find({ firebaseUid: { $in: firebaseUids } })
+                  .toArray()
+            : Promise.resolve([]),
+        findClassLinkIdentitiesBySubjects(keycloakIds),
+        findClassLinkIdentitiesByPrimaryDids(accountDids),
+    ]);
+    const found = new Map<string, MongoClassLinkIdentityType>();
+    for (const group of [byFirebase, byKeycloak, byDid])
+        for (const identity of [...group].sort(byCreatedAt))
+            if (!found.has(identity.identityKey)) found.set(identity.identityKey, identity);
+    const all = [...found.values()];
+    // Lookup errors propagate: callers fail closed (no access, privacy lock kept).
+    const held = await Promise.all(all.map(item => isHeldByOtherAccount(item, accountDids)));
+    return {
+        identities: all.filter((_, index) => !held[index]),
+        heldElsewhere: all.filter((_, index) => held[index]),
+    };
+};
+
 /**
  * Every ClassLink identity linked to an account, in a deterministic order:
  *
@@ -45,28 +101,76 @@ export const getAccountDids = (userKey: Pick<MongoUserKeyType, 'primaryDid' | 'l
  *    for an authenticated DID, which survives a recovery rebind that drops the Firebase
  *    provider.
  *
- * Within each step, older identities come first.
+ * Within each step, older identities come first. A uid/subject match whose recorded DID
+ * belongs to a different live account is left out (see `matchClassLinkIdentitiesForAccount`):
+ * after a recovery rebind or revoke, a fresh wallet made for the stale Firebase uid must not
+ * reach the owner's school data. School Connect from the owner is the way to move an identity.
  */
 export const findClassLinkIdentitiesForAccount = async (
     userKey: AccountKey
-): Promise<MongoClassLinkIdentityType[]> => {
-    const providers = userKey.authProviders ?? [];
-    const firebaseUids = providers.filter(p => p.type === 'firebase').map(p => p.id);
-    const keycloakIds = providers.filter(p => p.type === 'keycloak').map(p => p.id);
-    const [byFirebase, byKeycloak, byDid] = await Promise.all([
-        firebaseUids.length
-            ? getClassLinkIdentitiesCollection()
-                  .find({ firebaseUid: { $in: firebaseUids } })
-                  .toArray()
-            : Promise.resolve([]),
-        findClassLinkIdentitiesBySubjects(keycloakIds),
-        findClassLinkIdentitiesByPrimaryDids(getAccountDids(userKey)),
-    ]);
-    const found = new Map<string, MongoClassLinkIdentityType>();
-    for (const group of [byFirebase, byKeycloak, byDid])
-        for (const identity of [...group].sort(byCreatedAt))
-            if (!found.has(identity.identityKey)) found.set(identity.identityKey, identity);
-    return [...found.values()];
+): Promise<MongoClassLinkIdentityType[]> =>
+    (await matchClassLinkIdentitiesForAccount(userKey)).identities;
+
+/**
+ * The account's Firebase uids that may prove ownership of ClassLink-era records (e.g.
+ * transcript requests): every Firebase provider except a uid that another live account owns.
+ * A uid is foreign when
+ *
+ * - it only belongs to an identity held by another live account, or
+ * - a transcript request stored under it records a DID (`primaryDid` or `did`) that another
+ *   live account holds. This covers the history left on a stale uid after its owner re-links
+ *   from School Connect: the identity then moves to the owner's new uid, so the first check
+ *   no longer sees the stale uid, but the owner's requests still carry it.
+ *
+ * Lookup errors propagate, so callers fail closed.
+ */
+export const getOwningFirebaseUids = async (
+    userKey: Pick<MongoUserKeyType, 'authProviders' | 'primaryDid' | 'linkedDids'>,
+    { identities, heldElsewhere }: AccountClassLinkIdentities
+): Promise<string[]> => {
+    const owned = new Set(identities.map(identity => identity.firebaseUid));
+    const foreign = new Set(
+        heldElsewhere.map(identity => identity.firebaseUid).filter(uid => !owned.has(uid))
+    );
+    const candidates = (userKey.authProviders ?? [])
+        .filter(provider => provider.type === 'firebase' && !foreign.has(provider.id))
+        .map(provider => provider.id);
+    if (candidates.length === 0) return [];
+
+    const accountDids = getAccountDids(userKey);
+    const rows = await getTranscriptRequestsCollection()
+        .find(
+            {
+                firebaseUid: { $in: candidates },
+                $or: [
+                    { primaryDid: { $exists: true, $nin: accountDids } },
+                    { did: { $nin: accountDids } },
+                ],
+            },
+            { projection: { firebaseUid: 1, primaryDid: 1, did: 1 } }
+        )
+        .toArray();
+    const liveElsewhere = new Map<string, Promise<boolean>>();
+    const isLiveElsewhere = (did: string): Promise<boolean> => {
+        if (!liveElsewhere.has(did))
+            liveElsewhere.set(
+                did,
+                findUserKeyByDid(did).then(holder => Boolean(holder))
+            );
+        return liveElsewhere.get(did)!;
+    };
+    for (const row of rows) {
+        if (foreign.has(row.firebaseUid)) continue;
+        const dids = [row.primaryDid, row.did].filter(
+            (did): did is string => Boolean(did) && !accountDids.includes(did as string)
+        );
+        for (const did of dids)
+            if (await isLiveElsewhere(did)) {
+                foreign.add(row.firebaseUid);
+                break;
+            }
+    }
+    return candidates.filter(uid => !foreign.has(uid));
 };
 
 /** The account's ClassLink identity (see `findClassLinkIdentitiesForAccount`), or null. */
@@ -114,13 +218,15 @@ export const getClassLinkStudentStatus = async (did: string): Promise<ClassLinkS
     try {
         const userKey = await findUserKeyByDid(did);
         if (!userKey) return 'no_account';
-        const identities = await findClassLinkIdentitiesForAccount(userKey);
-        if (!identities.length) return 'not_student';
+        const { identities, heldElsewhere } = await matchClassLinkIdentitiesForAccount(userKey);
         await Promise.all(
             identities.map(identity => recordClassLinkIdentityDid(identity, userKey))
         );
-        // Any student identity locks the account, so a second link can never unlock it.
-        return identities.some(identity => identity.isMinorHint === true)
+        // Any student identity locks the account, so a second link can never unlock it. An
+        // identity held by another account grants no access, but it still marks the same
+        // person (same sign-in) as a student: a fresh wallet made for the owner's old uid
+        // stays locked rather than escaping the lock.
+        return [...identities, ...heldElsewhere].some(identity => identity.isMinorHint === true)
             ? 'student'
             : 'not_student';
     } catch {
@@ -144,6 +250,11 @@ export interface ClassLinkContext {
     firebaseUid: string;
     identity: MongoClassLinkIdentityType;
     tenant: ClassLinkTenantConfig | undefined;
+    /**
+     * Firebase uids that prove ownership of the account's ClassLink-era records: the
+     * identity's uid plus the account's own (see `getOwningFirebaseUids`).
+     */
+    ownerFirebaseUids: string[];
 }
 
 /** Resolve account ownership from the authenticated DID, never a client-supplied identity. */
@@ -155,7 +266,8 @@ export const resolveClassLinkContext = async (did: string): Promise<ClassLinkCon
             message: 'Finish setting up your account first.',
         });
     }
-    const identity = await findClassLinkIdentityForAccount(userKey);
+    const matched = await matchClassLinkIdentitiesForAccount(userKey);
+    const identity = matched.identities[0];
     if (!identity) {
         throw new TRPCError({
             code: 'FORBIDDEN',
@@ -172,5 +284,40 @@ export const resolveClassLinkContext = async (did: string): Promise<ClassLinkCon
     await maybeClearExpiredStateStudentIds();
     const config = getClassLinkConfig();
     const tenant = config ? getClassLinkTenant(config, identity.tenantId) : undefined;
-    return { userKey, firebaseUid: identity.firebaseUid, identity, tenant };
+    return {
+        userKey,
+        firebaseUid: identity.firebaseUid,
+        identity,
+        tenant,
+        ownerFirebaseUids: [
+            ...new Set([identity.firebaseUid, ...(await getOwningFirebaseUids(userKey, matched))]),
+        ],
+    };
+};
+
+/**
+ * Record the account's DID on its ClassLink identities that do not have one yet (fill-only).
+ * Called before a recovery rebind or "Secure my account" removes a Firebase login, so a later
+ * wallet created with that stale uid is recognised as not owning the identity (see
+ * `findClassLinkIdentitiesForAccount`). Best effort: never blocks the key operation.
+ */
+export const pinClassLinkIdentitiesToAccount = async (
+    userKey: Pick<MongoUserKeyType, 'authProviders' | 'primaryDid'>
+): Promise<void> => {
+    const did = userKey.primaryDid;
+    const uids = (userKey.authProviders ?? [])
+        .filter(provider => provider.type === 'firebase' && provider.id)
+        .map(provider => provider.id);
+    if (!did || !uids.length) return;
+    try {
+        await getClassLinkIdentitiesCollection().updateMany(
+            {
+                firebaseUid: { $in: uids },
+                $or: [{ primaryDid: { $exists: false } }, { primaryDid: null }],
+            } as Filter<MongoClassLinkIdentityType>,
+            { $set: { primaryDid: did, updatedAt: new Date() } }
+        );
+    } catch {
+        console.error('classlink.identity.pin_failed');
+    }
 };

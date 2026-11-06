@@ -7,6 +7,8 @@ import { t, didAndChallengeRoute } from '@routes';
 import { getClassLinkConfig, getTranscriptIssuerConfig } from '@helpers/classlink.config';
 import {
     getAccountDids,
+    getOwningFirebaseUids,
+    matchClassLinkIdentitiesForAccount,
     resolveClassLinkContext,
     type ClassLinkContext,
 } from '@helpers/classlinkContext.helpers';
@@ -87,16 +89,16 @@ const issuerBody = (assertion: string, requestId: string) => ({
 });
 
 /**
- * Every identifier of the caller's account: all of its Firebase uids and DIDs. Requests are
- * owned by the account, so a ClassLink rebind to another Firebase uid keeps their history.
+ * Every identifier of the caller's account: its owning Firebase uids (see
+ * `getOwningFirebaseUids`) and DIDs. Requests are owned by the account, so a ClassLink rebind
+ * to another Firebase uid keeps their history, while a fresh wallet made for a uid that its
+ * owner's ClassLink identity was moved away from does not inherit that history.
  */
-const accountOwner = (userKey: MongoUserKeyType, firebaseUid?: string): TranscriptRequestOwner => ({
-    firebaseUids: [
-        ...(firebaseUid ? [firebaseUid] : []),
-        ...userKey.authProviders
-            .filter(provider => provider.type === 'firebase')
-            .map(provider => provider.id),
-    ],
+const accountOwner = (
+    userKey: MongoUserKeyType,
+    firebaseUids: string[]
+): TranscriptRequestOwner => ({
+    firebaseUids,
     dids: getAccountDids(userKey),
 });
 
@@ -147,7 +149,7 @@ export const transcriptsRouter = t.router({
                 const reason = eligibility(context);
                 const issuer = getTranscriptIssuerConfig(context.tenant);
                 const latest = await findLatestTranscriptRequest(
-                    accountOwner(context.userKey, context.firebaseUid),
+                    accountOwner(context.userKey, context.ownerFirebaseUids),
                     context.identity.state
                 );
                 return {
@@ -177,7 +179,16 @@ export const transcriptsRouter = t.router({
                 // Ownership is the caller's account (every uid and DID), never the input.
                 const userKey = await findUserKeyByDid(ctx.user.did);
                 const record = userKey
-                    ? await markTranscriptRequestReceived(input.requestId, accountOwner(userKey))
+                    ? await markTranscriptRequestReceived(
+                          input.requestId,
+                          accountOwner(
+                              userKey,
+                              await getOwningFirebaseUids(
+                                  userKey,
+                                  await matchClassLinkIdentitiesForAccount(userKey)
+                              )
+                          )
+                      )
                     : null;
                 if (!record)
                     throw new TRPCError({
@@ -207,7 +218,7 @@ export const transcriptsRouter = t.router({
                 const context = await resolveClassLinkContext(ctx.user.did);
                 const reason = eligibility(context);
                 const issuer = getTranscriptIssuerConfig(context.tenant);
-                const { identity, firebaseUid, userKey } = context;
+                const { identity, firebaseUid, userKey, ownerFirebaseUids } = context;
                 const stateStudentId = getStateStudentId(identity);
                 const requesterDid = getTranscriptRequesterDid();
                 if (!requesterDid) {
@@ -236,7 +247,7 @@ export const transcriptsRouter = t.router({
                 const acquired = await redis.set(key, lockToken, 'EX', DEDUPE_SECONDS, 'NX');
                 if (acquired) lockKey = key;
                 const latest = await findLatestTranscriptRequest(
-                    accountOwner(userKey, firebaseUid),
+                    accountOwner(userKey, ownerFirebaseUids),
                     identity.state
                 );
                 if (recent(latest)) return project(latest);

@@ -246,6 +246,8 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
         setSubmitError('');
         try {
             const result = await request.mutateAsync();
+            // Each request (including a retry after `none_yet`) needs its own consent.
+            setConsent(false);
             setRequestResult(result);
             if (result.status === 'requested') {
                 void track(AnalyticsEvents.TRANSCRIPT_REQUESTED, { source });
@@ -279,20 +281,14 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
 
     let content: React.ReactNode;
 
-    if (status.isError) {
-        content = (
-            <div className="space-y-4">
-                <ErrorBanner message={errorMessage(status.error)} />
-                <PrimaryButton onClick={() => status.refetch()}>
-                    {m['transcriptOptIn.tryAgain']()}
-                </PrimaryButton>
-            </div>
-        );
-    } else {
-        if (!data || data.reason === 'not_enabled') return null;
-
-        if (data.reason === 'reauth_required') {
-            content = (
+    /**
+     * Fresh ClassLink authentication (and a state student ID) is only needed to send a
+     * NEW request, so this gate is applied where a request would be offered, never in
+     * front of an already received or outstanding transcript.
+     */
+    const renderNewRequestGate = (): React.ReactNode => {
+        if (data?.reason === 'reauth_required') {
+            return (
                 <div className="space-y-4">
                     <h2 className="text-xl font-semibold text-grayscale-900">
                         {m['transcriptOptIn.reauthRequired']()}
@@ -309,13 +305,55 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                     </PrimaryButton>
                 </div>
             );
-        } else if (data.reason === 'no_state_id') {
-            content = (
+        }
+        if (data?.reason === 'no_state_id') {
+            return (
                 <p className="text-sm text-grayscale-600 leading-relaxed">
                     {m['transcriptOptIn.noStateId']()}
                 </p>
             );
-        } else if (latest?.receivedAt) {
+        }
+        return null;
+    };
+
+    /** Consent + submit, shared by the first request and every retry. */
+    const renderRequestControls = (retry: boolean): React.ReactNode => (
+        <>
+            {submitError && <ErrorBanner message={submitError} />}
+            <TranscriptConsentCheckbox
+                checked={consent}
+                onChange={setConsent}
+                stateDisplayName={data?.stateDisplayName ?? ''}
+            />
+            <div>
+                <PrimaryButton
+                    data-testid="transcript-optin-submit"
+                    disabled={!consent || request.isPending}
+                    busy={request.isPending}
+                    busyText={m['transcriptOptIn.requesting']()}
+                    onClick={submit}
+                >
+                    {retry || submitError
+                        ? m['transcriptOptIn.tryAgain']()
+                        : m['transcriptOptIn.submit']()}
+                </PrimaryButton>
+            </div>
+        </>
+    );
+
+    if (status.isError) {
+        content = (
+            <div className="space-y-4">
+                <ErrorBanner message={errorMessage(status.error)} />
+                <PrimaryButton onClick={() => status.refetch()}>
+                    {m['transcriptOptIn.tryAgain']()}
+                </PrimaryButton>
+            </div>
+        );
+    } else {
+        if (!data || data.reason === 'not_enabled') return null;
+
+        if (latest?.receivedAt) {
             content = (
                 <ReceivedTranscript
                     issuerDid={data.issuerDid}
@@ -369,15 +407,20 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                 </div>
             );
         } else if (latest?.status === 'none_yet') {
+            // `none_yet` never expires server-side, so the student needs an explicit retry
+            // (with the same consent as a first request). The server budget throttles it.
             content = (
-                <p className="text-sm text-grayscale-600 leading-relaxed">
-                    {m['transcriptOptIn.noneYet']()}
-                </p>
+                <div data-testid="transcript-optin-none-yet" className="space-y-4">
+                    <p className="text-sm text-grayscale-600 leading-relaxed">
+                        {m['transcriptOptIn.noneYet']()}
+                    </p>
+                    {renderNewRequestGate() ?? renderRequestControls(true)}
+                </div>
             );
         } else {
-            // Eligible: no outstanding request (or the last attempt failed, which
-            // simply re-shows the opt-in so the user can retry).
-            content = (
+            // No outstanding request (or the last attempt failed, which simply re-shows
+            // the opt-in so the user can retry), once eligible to request.
+            content = renderNewRequestGate() ?? (
                 <div className="space-y-4">
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
                         {m['transcriptOptIn.title']({ state: data.stateDisplayName })}
@@ -385,25 +428,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                     <p className="text-sm text-grayscale-600 leading-relaxed">
                         {m['transcriptOptIn.body']()}
                     </p>
-                    {submitError && <ErrorBanner message={submitError} />}
-                    <TranscriptConsentCheckbox
-                        checked={consent}
-                        onChange={setConsent}
-                        stateDisplayName={data.stateDisplayName}
-                    />
-                    <div>
-                        <PrimaryButton
-                            data-testid="transcript-optin-submit"
-                            disabled={!consent || request.isPending}
-                            busy={request.isPending}
-                            busyText={m['transcriptOptIn.requesting']()}
-                            onClick={submit}
-                        >
-                            {submitError
-                                ? m['transcriptOptIn.tryAgain']()
-                                : m['transcriptOptIn.submit']()}
-                        </PrimaryButton>
-                    </div>
+                    {renderRequestControls(false)}
                 </div>
             );
         }

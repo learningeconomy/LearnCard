@@ -18,6 +18,7 @@ import {
     getTranscriptRequestsCollection,
 } from '../src/models/TranscriptRequest';
 import { PREFERENCES_COLLECTION } from '../src/models/Preferences';
+import { deleteClassLinkDataForAccount } from '../src/helpers/classlinkDeletion.helpers';
 import { getStateStudentId, sealStateStudentId } from '../src/helpers/classlinkPii.helpers';
 import type { ClassLinkConfig, ResolvedTranscriptIssuer } from '../src/types/classlink';
 
@@ -634,6 +635,74 @@ describe('transcript requests', () => {
             expect(
                 (await getTranscriptRequestsCollection().findOne({ jti: requestId }))?.receivedAt
             ).toBeUndefined();
+        });
+
+        it('gives a fresh wallet made for the owner stale uid no access to its transcripts', async () => {
+            const { requestId } = await caller().request({ consent: true });
+            // Recovery/revoke moved the owner off uid-test; a fresh wallet was made for it.
+            await mongodb
+                .collection('userkeys')
+                .updateOne(
+                    { primaryDid: did },
+                    { $set: { authProviders: [{ type: 'firebase', id: 'uid-rebound' }] } }
+                );
+            await mongodb.collection('userkeys').insertOne({
+                primaryDid: 'did:key:fresh',
+                linkedDids: [],
+                authProviders: [{ type: 'firebase', id: 'uid-test' }],
+            });
+            const fresh = caller({ did: 'did:key:fresh', isChallengeValid: true });
+            await expect(fresh.getStatus()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+            await expect(fresh.request({ consent: true })).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+            });
+            await expect(fresh.markReceived({ requestId })).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+            expect(axios.post).toHaveBeenCalledTimes(1);
+            expect(
+                (await getTranscriptRequestsCollection().findOne({ jti: requestId }))?.receivedAt
+            ).toBeUndefined();
+            // The owner keeps its identity, state ID and history.
+            expect((await caller().getStatus()).latest?.requestId).toBe(requestId);
+            await expect(caller().markReceived({ requestId })).resolves.toEqual({
+                success: true,
+            });
+        });
+
+        it('gives a stale-uid wallet no access to the owner history after the owner re-links', async () => {
+            const { requestId } = await caller().request({ consent: true });
+            // Recovery/revoke moved the owner to uid-rebound, and the owner re-linked from
+            // School Connect, which moved the identity there too. The request still carries
+            // the old uid-test.
+            await mongodb
+                .collection('userkeys')
+                .updateOne(
+                    { primaryDid: did },
+                    { $set: { authProviders: [{ type: 'firebase', id: 'uid-rebound' }] } }
+                );
+            await getClassLinkIdentitiesCollection().updateOne(
+                { identityKey },
+                { $set: { firebaseUid: 'uid-rebound' } }
+            );
+            const freshKey = {
+                primaryDid: 'did:key:fresh',
+                linkedDids: [],
+                authProviders: [{ type: 'firebase', id: 'uid-test' }],
+            };
+            await mongodb.collection('userkeys').insertOne({ ...freshKey });
+            const fresh = caller({ did: 'did:key:fresh', isChallengeValid: true });
+            await expect(fresh.markReceived({ requestId })).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+            await expect(fresh.getStatus()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+            expect(await deleteClassLinkDataForAccount(freshKey as never)).toMatchObject({
+                transcriptRequests: 0,
+            });
+            const stored = await getTranscriptRequestsCollection().findOne({ jti: requestId });
+            expect(stored).not.toBeNull();
+            expect(stored?.receivedAt).toBeUndefined();
+            expect((await caller().getStatus()).latest?.requestId).toBe(requestId);
         });
 
         it('keeps transcript history after the ClassLink identity is rebound to a new uid', async () => {

@@ -110,7 +110,9 @@ export const connectProcedures = {
             try {
                 const userKey = await findUserKeyByDid(ctx.user.did);
                 const firebaseUid = getFirebaseUid(userKey);
-                // Identities already linked to this account by uid, Keycloak subject or DID.
+                // Identities already linked to this account by uid, Keycloak subject or DID. A
+                // uid/subject match whose recorded DID belongs to another live account is not
+                // included, so a fresh wallet made for a stale uid cannot take the identity.
                 const accountIdentities = userKey
                     ? await findClassLinkIdentitiesForAccount(userKey)
                     : [];
@@ -126,8 +128,7 @@ export const connectProcedures = {
                 const existing = await findClassLinkIdentityByIdentityKey(identityKey);
                 const ownsExisting =
                     existing !== null &&
-                    ((firebaseUid !== undefined && existing.firebaseUid === firebaseUid) ||
-                        accountIdentities.some(item => item.identityKey === identityKey));
+                    accountIdentities.some(item => item.identityKey === identityKey);
                 if (existing && !ownsExisting) {
                     console.warn('classlink.connect.conflict', {
                         tenantId,

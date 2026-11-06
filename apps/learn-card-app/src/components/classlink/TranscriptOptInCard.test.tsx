@@ -11,6 +11,7 @@ type Latest = {
 
 const mocks = vi.hoisted(() => ({
     latest: undefined as Latest | undefined,
+    reason: undefined as 'no_state_id' | 'reauth_required' | 'not_enabled' | undefined,
     flagOn: true,
     request: vi.fn(),
     arrival: vi.fn(),
@@ -51,7 +52,8 @@ vi.mock('learn-card-base', () => ({
         mocks.useTranscriptStatus(enabled);
         return {
             data: {
-                eligible: true,
+                eligible: !mocks.reason,
+                reason: mocks.reason,
                 issuerDid: 'did:issuer',
                 issuerProfileId: 'issuer-profile',
                 stateDisplayName: 'Example',
@@ -108,6 +110,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
     mocks.latest = undefined;
+    mocks.reason = undefined;
     mocks.arrived = false;
     mocks.flagOn = true;
     mocks.isPollingExhausted = false;
@@ -208,5 +211,104 @@ describe('TranscriptOptInCard', () => {
         };
         render(<TranscriptOptInCard source="wallet" />);
         expect(screen.getByTestId('transcript-optin-stale')).toBeTruthy();
+    });
+
+    describe('after a none_yet response', () => {
+        const noneYet = (): Latest => ({
+            status: 'none_yet',
+            requestId: 'r-none',
+            requestedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        });
+
+        it('offers a consented retry through the same request path', async () => {
+            mocks.latest = noneYet();
+            mocks.request.mockResolvedValue({
+                status: 'requested',
+                requestId: 'r2',
+                requestedAt: new Date().toISOString(),
+            });
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.getByText(/no transcript for you yet/)).toBeTruthy();
+            const retry = screen.getByTestId('transcript-optin-submit') as HTMLButtonElement;
+            expect(retry.textContent).toBe('Try Again');
+            expect(retry.disabled).toBe(true);
+            fireEvent.click(retry);
+            expect(mocks.request).not.toHaveBeenCalled();
+
+            fireEvent.click(screen.getByRole('checkbox'));
+            fireEvent.click(retry);
+            await waitFor(() => expect(mocks.request).toHaveBeenCalledTimes(1));
+        });
+
+        it('surfaces the server budget error without losing the retry', async () => {
+            mocks.latest = noneYet();
+            mocks.request.mockRejectedValue(
+                new Error('Please wait before requesting your transcript again.')
+            );
+            render(<TranscriptOptInCard source="wallet" />);
+            fireEvent.click(screen.getByRole('checkbox'));
+            fireEvent.click(screen.getByTestId('transcript-optin-submit'));
+            expect(await screen.findByRole('alert')).toBeTruthy();
+            expect(screen.getByText(/Please wait before requesting/)).toBeTruthy();
+            expect(screen.getByTestId('transcript-optin-submit')).toBeTruthy();
+        });
+
+        it('offers reconnect instead of a retry when ClassLink auth has aged out', () => {
+            mocks.latest = noneYet();
+            mocks.reason = 'reauth_required';
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.getByText(/no transcript for you yet/)).toBeTruthy();
+            expect(screen.getByTestId('transcript-optin-reauth')).toBeTruthy();
+            expect(screen.queryByTestId('transcript-optin-submit')).toBeNull();
+        });
+    });
+
+    describe('when ClassLink auth has aged out (reauth_required)', () => {
+        beforeEach(() => {
+            mocks.reason = 'reauth_required';
+        });
+
+        it('still shows a received transcript instead of a reconnect prompt', () => {
+            mocks.latest = {
+                status: 'requested',
+                requestId: 'r1',
+                requestedAt: new Date().toISOString(),
+                receivedAt: new Date().toISOString(),
+            };
+            mocks.arrived = true;
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.getByText('Added to your account')).toBeTruthy();
+            expect(screen.getByText('View Transcript')).toBeTruthy();
+            expect(screen.queryByTestId('transcript-optin-reauth')).toBeNull();
+        });
+
+        it('still shows stale-request recovery controls', () => {
+            mocks.latest = {
+                status: 'requested',
+                requestId: 'r1',
+                requestedAt: new Date(Date.now() - TRANSCRIPT_STALE_AFTER_MS - 1000).toISOString(),
+            };
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.getByTestId('transcript-optin-stale')).toBeTruthy();
+            expect(screen.queryByTestId('transcript-optin-reauth')).toBeNull();
+        });
+
+        it('asks to reconnect before a first request', () => {
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.getByTestId('transcript-optin-reauth')).toBeTruthy();
+            expect(screen.queryByTestId('transcript-optin-submit')).toBeNull();
+        });
+    });
+
+    it('renders nothing when not enabled, even with a received transcript', () => {
+        mocks.reason = 'not_enabled';
+        mocks.latest = {
+            status: 'requested',
+            requestId: 'r1',
+            requestedAt: new Date().toISOString(),
+            receivedAt: new Date().toISOString(),
+        };
+        const { container } = render(<TranscriptOptInCard source="wallet" />);
+        expect(container.innerHTML).toBe('');
     });
 });

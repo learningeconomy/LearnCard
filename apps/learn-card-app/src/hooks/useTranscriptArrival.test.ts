@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     wallet: {
         id: { did: () => 'did:user' },
         read: { get: vi.fn() },
+        index: { LearnCloud: { get: vi.fn() } },
         invoke: {
             verifyCredential: vi.fn(),
             transcriptsMarkReceived: vi.fn().mockResolvedValue(undefined),
@@ -327,13 +328,19 @@ describe('useTranscriptArrival', () => {
             }));
         mocks.initWallet.mockReset().mockResolvedValue(wallet);
         mocks.wallet.read.get.mockReset();
+        // By default the claimed transcript is in the wallet index.
+        mocks.wallet.index.LearnCloud.get
+            .mockReset()
+            .mockImplementation(async ({ uri }: { uri: string }) => [{ id: 'rec', uri }]);
         mocks.wallet.invoke.verifyCredential
             .mockReset()
             .mockResolvedValue({ warnings: [], errors: [] });
         mocks.wallet.invoke.transcriptsMarkReceived.mockClear();
         mocks.wallet.invoke.getReceivedCredentials.mockReset().mockResolvedValue([]);
-        mocks.addVCtoWallet.mockClear();
-        mocks.claimIncomingCredential.mockClear();
+        mocks.addVCtoWallet.mockReset().mockResolvedValue(true);
+        mocks.claimIncomingCredential
+            .mockReset()
+            .mockResolvedValue({ added: true, accepted: true });
         mocks.track.mockClear();
         mocks.invalidateQueries.mockClear();
         mocks.incomingCredentials.data = undefined;
@@ -494,6 +501,19 @@ describe('useTranscriptArrival', () => {
         await Promise.resolve();
 
         expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1);
+    });
+
+    it('confirms the wallet entry when the claim reports nothing added, before acknowledging', async () => {
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
+        mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+        mocks.claimIncomingCredential.mockResolvedValueOnce({ added: false, accepted: true });
+        mocks.wallet.index.LearnCloud.get.mockResolvedValue([]);
+
+        renderHook(() => useTranscriptArrival(activeParams));
+        await vi.waitFor(() =>
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1)
+        );
+        expect(mocks.addVCtoWallet).toHaveBeenCalledWith({ uri: 'u1' });
     });
 
     it('claims once across two mounted instances (e.g. WalletPage and SchoolConnect)', async () => {
@@ -781,6 +801,94 @@ describe('useTranscriptArrival', () => {
             await vi.advanceTimersByTimeAsync(5_000);
             expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(2);
             expect(localStorage.getItem('transcript_pending_received:did:user:req-1')).toBeNull();
+        });
+
+        it('restores a missing wallet entry (network accepted, wallet write failed) before acknowledging', async () => {
+            mocks.incomingCredentials.data = [];
+            mocks.wallet.invoke.getReceivedCredentials.mockResolvedValue([
+                { uri: 'u1', from: ISSUER_PROFILE_ID, to: 'me', sent: SENT_AFTER_REQUEST },
+            ]);
+            mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+            mocks.wallet.index.LearnCloud.get.mockResolvedValue([]);
+
+            renderHook(() => useTranscriptArrival(activeParams));
+            // A first miss is only re-checked later: the write may still be landing.
+            await vi.advanceTimersByTimeAsync(0);
+            expect(mocks.addVCtoWallet).not.toHaveBeenCalled();
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
+
+            // Still missing on the next check: the entry is restored, then acknowledged.
+            await vi.advanceTimersByTimeAsync(5_000);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
+
+            expect(mocks.wallet.index.LearnCloud.get).toHaveBeenCalledWith(
+                { uri: 'u1' },
+                { cache: 'skip-cache' }
+            );
+            expect(mocks.addVCtoWallet).toHaveBeenCalledWith({ uri: 'u1' });
+            expect(mocks.addVCtoWallet.mock.invocationCallOrder[0]).toBeLessThan(
+                mocks.wallet.invoke.transcriptsMarkReceived.mock.invocationCallOrder[0]!
+            );
+            expect(mocks.addVCtoWallet).toHaveBeenCalledTimes(1);
+            expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+        });
+
+        it('does not re-add a hand-claimed transcript whose wallet write is still landing', async () => {
+            // Generic claim modal: the network accept finished, its own wallet write has
+            // not yet, so the first index lookup is empty and the next one finds it.
+            mocks.incomingCredentials.data = [];
+            mocks.wallet.invoke.getReceivedCredentials.mockResolvedValue([
+                { uri: 'u1', from: ISSUER_PROFILE_ID, to: 'me', sent: SENT_AFTER_REQUEST },
+            ]);
+            mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+            mocks.wallet.index.LearnCloud.get
+                .mockResolvedValueOnce([])
+                .mockResolvedValue([{ id: 'rec', uri: 'u1' }]);
+
+            renderHook(() => useTranscriptArrival(activeParams));
+            await vi.advanceTimersByTimeAsync(0);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
+
+            await vi.advanceTimersByTimeAsync(5_000);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
+            expect(mocks.addVCtoWallet).not.toHaveBeenCalled();
+
+            await vi.advanceTimersByTimeAsync(60_000);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
+            expect(mocks.addVCtoWallet).not.toHaveBeenCalled();
+        });
+
+        it('does not acknowledge while the wallet entry cannot be restored, and retries later', async () => {
+            mocks.incomingCredentials.data = [];
+            mocks.wallet.invoke.getReceivedCredentials.mockResolvedValue([
+                { uri: 'u1', from: ISSUER_PROFILE_ID, to: 'me', sent: SENT_AFTER_REQUEST },
+            ]);
+            mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+            mocks.wallet.index.LearnCloud.get.mockResolvedValue([]);
+            mocks.addVCtoWallet
+                .mockRejectedValueOnce(new Error('index.add failed'))
+                .mockResolvedValueOnce(false);
+
+            renderHook(() => useTranscriptArrival(activeParams));
+            // First miss: re-checked later, nothing written or acknowledged yet.
+            await vi.advanceTimersByTimeAsync(0);
+            expect(mocks.addVCtoWallet).not.toHaveBeenCalled();
+
+            // Still missing: the restore is attempted and fails.
+            await vi.advanceTimersByTimeAsync(5_000);
+            expect(mocks.addVCtoWallet).toHaveBeenCalledTimes(1);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
+            expect(localStorage.getItem('transcript_pending_received:did:user:req-1')).toBeNull();
+
+            // Retried with backoff; an add reporting `false` still fails.
+            await vi.advanceTimersByTimeAsync(10_000);
+            expect(mocks.addVCtoWallet).toHaveBeenCalledTimes(2);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
+
+            // The write succeeds on a later retry; only then is the request acknowledged.
+            await vi.advanceTimersByTimeAsync(20_000);
+            expect(mocks.addVCtoWallet).toHaveBeenCalledTimes(3);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
         });
 
         it('ignores accepted credentials sent long before the request, without reading them', async () => {

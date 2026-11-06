@@ -269,6 +269,28 @@ describe('ClassLink sign-in broker', () => {
             ])
         );
     });
+    it('records the joined account DID at sign-in, so a later stale-uid wallet cannot claim it', async () => {
+        await getUserKeysCollection().insertOne({
+            primaryDid: 'did:key:existing',
+            linkedDids: [],
+            authProviders: [{ type: 'firebase', id: 'existing-user' }],
+        } as unknown as MongoUserKeyType);
+        firebase.getUserByEmail.mockResolvedValue({ uid: 'existing-user', emailVerified: true });
+        await caller().exchangeCode(exchange);
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+            firebaseUid: 'existing-user',
+            primaryDid: 'did:key:existing',
+        });
+        // A later sign-in (hint unchanged) fills a DID left unset by an older sign-in.
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey },
+            { $unset: { primaryDid: '' } }
+        );
+        await caller().exchangeCode(exchange);
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+            primaryDid: 'did:key:existing',
+        });
+    });
     it.each(['disallowed', 'empty', 'firebase-unverified', 'claim-unverified'])(
         'refuses unsafe linking: %s',
         async reason => {

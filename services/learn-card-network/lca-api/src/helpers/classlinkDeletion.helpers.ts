@@ -3,7 +3,11 @@ import { deleteClassLinkIdentitiesByIdentityKeys } from '../models/ClassLinkIden
 import { CLASSLINK_PRIVACY_LOCK_SOURCE, clearPrivacyLocks } from '../models/Preferences';
 import { deleteTranscriptRequestsForAccount } from '../models/TranscriptRequest';
 import { findUserKeyByContactMethod, type MongoUserKeyType } from '../models/UserKey';
-import { findClassLinkIdentitiesForAccount, getAccountDids } from './classlinkContext.helpers';
+import {
+    getAccountDids,
+    getOwningFirebaseUids,
+    matchClassLinkIdentitiesForAccount,
+} from './classlinkContext.helpers';
 
 export type ClassLinkDeletionAccount = Pick<
     MongoUserKeyType,
@@ -40,7 +44,8 @@ export const canDeletePersonalEmailSubject = async (
 
 /**
  * Server-side cascade for deleting an account's ClassLink data. Removes every ClassLink
- * identity linked to the account (by Firebase uid, Keycloak subject or recorded DID), the
+ * identity the account owns (by Firebase uid, Keycloak subject or recorded DID; never one whose
+ * recorded DID belongs to another live account, see `findClassLinkIdentitiesForAccount`), the
  * `classlink:` AuthSubjects for those identities, the `email:` AuthSubject the
  * personal-email flow created (only when no account signs in with that address), the
  * account's transcript requests, and (with `clearPrivacyLock`, only when the account itself
@@ -54,7 +59,8 @@ export const deleteClassLinkDataForAccount = async (
     account: ClassLinkDeletionAccount,
     options: { clearPrivacyLock?: boolean } = {}
 ): Promise<ClassLinkDeletionResult> => {
-    const identities = await findClassLinkIdentitiesForAccount(account);
+    const matched = await matchClassLinkIdentitiesForAccount(account);
+    const { identities } = matched;
     let authSubjects = 0;
     for (const identity of identities) {
         const address = identity.personalEmail?.trim().toLowerCase();
@@ -73,7 +79,8 @@ export const deleteClassLinkDataForAccount = async (
         ).deletedCount;
 
     const firebaseUids = [
-        ...account.authProviders.filter(p => p.type === 'firebase').map(p => p.id),
+        // A uid whose identity another live account owns proves nothing about its history.
+        ...(await getOwningFirebaseUids(account, matched)),
         ...identities.map(identity => identity.firebaseUid),
     ];
     const dids = [

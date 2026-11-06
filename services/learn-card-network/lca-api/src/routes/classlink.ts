@@ -38,7 +38,11 @@ import { ClassLinkProviderUnavailable, ClassLinkTokenInvalid } from '@helpers/cl
 import { resolveStateStudentId } from '@helpers/classlink.stateId';
 import { classLinkFirebaseUid, sealStateStudentId } from '@helpers/classlinkPii.helpers';
 import { maybeClearExpiredStateStudentIds } from '@helpers/classlinkCleanup.helpers';
-import { findClassLinkIdentityForAccount, getAccountDids } from '@helpers/classlinkContext.helpers';
+import {
+    findClassLinkIdentityForAccount,
+    getAccountDids,
+    recordClassLinkIdentityDid,
+} from '@helpers/classlinkContext.helpers';
 import { clearNotStudentCache } from '@accesslayer/preferences/privacyLock';
 import { deleteClassLinkDataForAccount } from '@helpers/classlinkDeletion.helpers';
 import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
@@ -146,8 +150,9 @@ const assertNoOtherClassLinkIdentity = async (
  * Fail closed when a known identity's Firebase uid was deliberately unlinked from its account.
  * A recovery rebind or "Secure my account" (`keys.revokeOtherDevices`) removes the
  * deterministic uid from the UserKey. If the account recorded in `primaryDid` still exists,
- * signing in to the orphaned uid would mint an empty wallet, and signing in to the account's
- * current uid would silently undo the owner's revoke. Neither happens: no token is minted and
+ * signing in to the orphaned uid would mint an empty wallet (or reach a fresh wallet someone
+ * already made for that uid, which must not be treated as the identity's account), and
+ * signing in to the account's current uid would silently undo the owner's revoke. Neither happens: no token is minted and
  * the identity is left as is. The owner re-links from School Connect while signed in.
  */
 const assertIdentityAccountNotMoved = async (
@@ -155,7 +160,10 @@ const assertIdentityAccountNotMoved = async (
     tenantId: string
 ): Promise<void> => {
     if (!identity.primaryDid) return;
-    if (await findUserKeyByAuthProvider('firebase', identity.firebaseUid)) return;
+    const uidAccount = await findUserKeyByAuthProvider('firebase', identity.firebaseUid);
+    if (uidAccount && getAccountDids(uidAccount).includes(identity.primaryDid)) return;
+    // The uid has no account, or a different one (a fresh wallet made for the uid after the
+    // owner's rebind/revoke): either way the uid no longer leads to the recorded account.
     const account = await findUserKeyByDid(identity.primaryDid);
     if (!account) return;
     const hasFirebase = account.authProviders?.some(provider => provider.type === 'firebase');
@@ -341,11 +349,20 @@ export const classlinkRouter = t.router({
                     // Preferences require a DID; apply this hint when the account first binds one.
                     isMinorHint: isStudent,
                 });
-                if (!existing || existing.isMinorHint !== isStudent) {
+                const hintChanged = !existing || existing.isMinorHint !== isStudent;
+                const accountKey =
+                    hintChanged || !existing?.primaryDid
+                        ? await findUserKeyByAuthProvider('firebase', uid)
+                        : null;
+                // Record the account's DID now (fill-only), rather than on first use of a
+                // ClassLink feature: once recorded, a fresh wallet made for this uid after a
+                // later recovery rebind or revoke is not treated as the identity's owner.
+                if (accountKey && !existing?.primaryDid)
+                    await recordClassLinkIdentityDid({ identityKey }, accountKey);
+                if (hintChanged) {
                     // The account gained a ClassLink identity (new, joined or re-created after
                     // deleteMyData) or its student hint changed: drop any cached "not a student"
                     // answer so its privacy lock applies on the next read.
-                    const accountKey = await findUserKeyByAuthProvider('firebase', uid);
                     if (accountKey) {
                         const accountDids = getAccountDids(accountKey);
                         // A stored lock, not an empty cache, is the guarantee: a preferences
