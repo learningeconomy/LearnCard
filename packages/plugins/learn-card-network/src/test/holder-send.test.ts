@@ -454,6 +454,34 @@ describe('unified send with encryption: "holder"', () => {
         ).not.toHaveBeenCalled();
     });
 
+    it('preserves external template status without requiring allocated entries', async () => {
+        const client = getMockClient();
+        const credentialStatus = {
+            ...STATUS_ENTRY,
+            id: 'https://external.example/status#7',
+            statusListCredential: 'https://external.example/status',
+            statusListIndex: '7',
+        };
+        client.boost.prepareRefreshableSend.mutate.mockResolvedValue({
+            ...defaultPreparedHolder,
+            statusEntries: undefined,
+        });
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({ credentialStatus }),
+        });
+        client.credentialRefresh.sendHolderEncryptedRefreshable.mutate.mockResolvedValue({
+            uri: 'did:web:network.example:credentials:holder-1',
+            activityId: 'activity-holder-1',
+            statusManagement: 'external',
+        });
+        const learnCard = getMockIssuingLearnCard();
+        const plugin = await getPlugin(learnCard, client);
+        const result = await plugin.methods?.send(learnCard, HOLDER_SEND_INPUT);
+        expect(result?.statusManagement).toBe('external');
+        expect(result?.refresh?.credentialStatus).toEqual(credentialStatus);
+        expect(client.boost.allocateCredentialStatus.mutate).not.toHaveBeenCalled();
+    });
+
     it('aborts before sending when the produced JWE recipient set does not match recipientKeyIds', async () => {
         const client = getMockClient();
         const learnCard = getMockIssuingLearnCard({

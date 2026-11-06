@@ -39,3 +39,13 @@ method does the same for later versions with an explicit `notify` flag. Both rej
 client-side for inbox recipients, a caller-supplied `signedCredential`, and wallets
 without local signing or the Encryption plugin; an old server response missing
 `recipientKeyIds` is rejected rather than silently sent in network mode.
+
+Recover authenticated absent-status bindings lazily for legacy deliveries, using the
+stored JSON string `null` to distinguish verified absence from a missing binding.
+Allow explicit null status repair only when it matches the original status digest.
+Legacy receipts without a stored refresh descriptor explicitly bind only the unique
+allocated managed entry; exact receipts continue to bind the entire signed shape.
+Holder publishing preserves a supplied original refresh descriptor in legacy mode,
+and fails with repair/reissue guidance when that descriptor is unavailable.
+Holder sends also preserve template-supplied external status entries instead of
+forcing new server status allocation.

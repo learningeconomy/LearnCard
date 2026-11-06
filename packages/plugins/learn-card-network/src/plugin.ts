@@ -557,9 +557,11 @@ const buildManagedRefreshReceipt = (
  */
 type HolderEncryptionClient = {
     sendHolderEncryptedRefreshable: {
-        mutate: (
-            input: SendHolderEncryptedRefreshableInput
-        ) => Promise<{ uri: string; activityId: string }>;
+        mutate: (input: SendHolderEncryptedRefreshableInput) => Promise<{
+            uri: string;
+            activityId: string;
+            statusManagement?: 'network' | 'external' | 'mixed' | 'none';
+        }>;
     };
     publishHolderEncryptedRefreshable: {
         mutate: (
@@ -2036,11 +2038,24 @@ export async function getLearnCardNetworkPlugin(
                     boost.credentialSubject = { ...boost.credentialSubject, id: receipt.holderDid };
                 }
 
+                if (
+                    receipt.refreshServiceBinding === 'managed-entry' &&
+                    !credential.refreshService
+                ) {
+                    throw new Error(
+                        'This legacy receipt does not include the original refresh service descriptor. Repair the receipt or reissue the credential before publishing.'
+                    );
+                }
+
                 boost = prepareManagedRefreshContext({
                     ...boost,
-                    refreshService: receipt.refreshService,
+                    refreshService:
+                        receipt.refreshServiceBinding === 'managed-entry'
+                            ? credential.refreshService
+                            : receipt.refreshService,
                 });
                 boost.credentialStatus = receipt.credentialStatus;
+                assertManagedCredentialBinding(boost, { ...receipt, encryptionMode: 'holder' });
 
                 const signedCredential = await issueCredentialWithNetworkStatus(
                     _learnCard,
@@ -2055,7 +2070,9 @@ export async function getLearnCardNetworkPlugin(
                     credentialId: receipt.credentialId,
                     holderDid: receipt.holderDid,
                     issuerDid: receipt.issuerDid,
-                    refreshService: receipt.refreshService,
+                    refreshService: ManagedCredentialRefreshBindingValidator.parse(
+                        boost.refreshService
+                    ),
                     credentialStatus: BitstringStatusListEntryValidator.or(
                         BitstringStatusListEntryValidator.array()
                     ).parse(receipt.credentialStatus),
@@ -2063,7 +2080,9 @@ export async function getLearnCardNetworkPlugin(
 
                 assertManagedCredentialBinding(signedCredential, {
                     ...holderBindings,
-                    refreshService: receipt.refreshService,
+                    refreshService: ManagedCredentialRefreshBindingValidator.parse(
+                        boost.refreshService
+                    ),
                     encryptionMode: 'holder',
                 });
 
@@ -2540,6 +2559,16 @@ export async function getLearnCardNetworkPlugin(
 
                         boost = injectManagedRefreshService(boost, prepared.refreshService);
 
+                        if (
+                            isHolderEncryption &&
+                            !prepared.statusEntries?.length &&
+                            !boost.credentialStatus
+                        ) {
+                            throw new Error(
+                                'Server did not bind status entries for this holder-mode send; refusing to send a managed credential without a public status binding.'
+                            );
+                        }
+
                         // Signing goes through the vc-plugin boundary, which prepares the
                         // managed inline JSON-LD context — the service and its terms are
                         // signed in one proof, never mutated afterwards.
@@ -2597,12 +2626,6 @@ export async function getLearnCardNetworkPlugin(
                             throw new Error(HOLDER_MODE_PREPARE_UNSUPPORTED);
                         }
 
-                        if (!prepared.statusEntries || prepared.statusEntries.length === 0) {
-                            throw new Error(
-                                'Server did not bind status entries for this holder-mode send; refusing to send a managed credential without a public status binding.'
-                            );
-                        }
-
                         const boundCredentialStatus = BitstringStatusListEntryValidator.or(
                             BitstringStatusListEntryValidator.array()
                         ).parse(signedCredential.credentialStatus);
@@ -2648,6 +2671,7 @@ export async function getLearnCardNetworkPlugin(
                             uri: prepared.boostUri,
                             credentialUri: delivered.uri,
                             activityId: delivered.activityId,
+                            statusManagement: delivered.statusManagement,
                             refresh: holderBindings,
                         };
                     }

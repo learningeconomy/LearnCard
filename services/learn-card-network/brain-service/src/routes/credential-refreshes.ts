@@ -41,6 +41,7 @@ import { getBitstringStatusListEntries } from '@learncard/helpers';
 import { neogma } from '@instance';
 import { matchesCredentialStatusDigest } from '@helpers/credential-refresh-materiality.helpers';
 import { bindRefreshStatusEntries } from '@helpers/managed-status.helpers';
+import { getStatusManagement } from '@helpers/status-list.helpers';
 import { constructUri, getUriParts } from '@helpers/uri.helpers';
 import { getCredentialRefreshServiceUrl } from '@helpers/credential-refresh.helpers';
 
@@ -81,7 +82,38 @@ export const credentialRefreshesRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Delivery not found' });
             }
             // Coordinates alone cannot reconstruct the exact signed descriptor of legacy sends.
-            const binding = refresh.credentialStatusBinding ?? refresh.inboxCredentialStatus;
+            let binding = refresh.credentialStatusBinding ?? refresh.inboxCredentialStatus;
+            if (binding === undefined) {
+                binding = await neogma.getTransaction(null, async tx => {
+                    const result = await tx.run(
+                        `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+                         SET refresh._statusBindingLock = true
+                         REMOVE refresh._statusBindingLock
+                         RETURN refresh.credentialStatusBinding AS binding,
+                                refresh.inboxCredentialStatus AS inboxBinding,
+                                refresh.credentialStatusDigest AS digest`,
+                        { refreshId: refresh.refreshId }
+                    );
+                    const row = result.records[0];
+                    const existing: unknown = row?.get('binding') ?? row?.get('inboxBinding');
+                    if (typeof existing === 'string') return existing;
+                    const digest: unknown = row?.get('digest');
+                    if (
+                        typeof digest !== 'string' ||
+                        !matchesCredentialStatusDigest(null, digest)
+                    ) {
+                        return undefined;
+                    }
+                    // The JSON string "null" authenticates absence; an unset property
+                    // means an unknown legacy descriptor. Never store Neo4j null.
+                    await tx.run(
+                        `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+                         SET refresh.credentialStatusBinding = 'null'`,
+                        { refreshId: refresh.refreshId }
+                    );
+                    return 'null';
+                });
+            }
             if (binding === undefined) {
                 throw new TRPCError({
                     code: 'PRECONDITION_FAILED',
@@ -94,6 +126,9 @@ export const credentialRefreshesRouter = t.router({
                 credentialId: refresh.credentialId,
                 issuerDid: refresh.issuerDid,
                 holderDid: refresh.holderDid,
+                ...(refresh.refreshServiceBinding
+                    ? {}
+                    : { refreshServiceBinding: 'managed-entry' }),
                 refreshService: refresh.refreshServiceBinding
                     ? JSON.parse(refresh.refreshServiceBinding)
                     : {
@@ -127,9 +162,9 @@ export const credentialRefreshesRouter = t.router({
                 });
             }
             const entries = getBitstringStatusListEntries({
-                credentialStatus: input.credentialStatus,
+                credentialStatus: input.credentialStatus ?? undefined,
             });
-            if (entries.length === 0) {
+            if (entries.length === 0 && input.credentialStatus !== null) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Credential has no supported public status entries',
@@ -282,7 +317,13 @@ export const credentialRefreshesRouter = t.router({
             requiredScope: 'credentials:write',
         })
         .input(SendHolderEncryptedRefreshableInputValidator)
-        .output(z.object({ uri: z.string(), activityId: z.string() }))
+        .output(
+            z.object({
+                uri: z.string(),
+                activityId: z.string(),
+                statusManagement: z.enum(['network', 'external', 'mixed', 'none']),
+            })
+        )
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
@@ -296,7 +337,14 @@ export const credentialRefreshesRouter = t.router({
                 onBehalfOf: ctx.user.onBehalfOf,
             });
 
-            return { uri, activityId };
+            return {
+                uri,
+                activityId,
+                statusManagement: getStatusManagement(
+                    getBitstringStatusListEntries(input.handoff),
+                    ctx.domain
+                ),
+            };
         }),
 
     /** Issuer-only: the current recipient set a holder-mode handoff must encrypt to. */

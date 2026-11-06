@@ -10,7 +10,7 @@ import { JWEValidator } from './crypto';
 
 export const AttachCredentialRefreshStatusEntriesInputValidator = z.object({
     refreshId: z.string().min(1),
-    credentialStatus: CredentialStatusValidator.or(CredentialStatusValidator.array()),
+    credentialStatus: CredentialStatusValidator.or(CredentialStatusValidator.array()).nullable(),
 });
 export type AttachCredentialRefreshStatusEntriesInput = z.infer<
     typeof AttachCredentialRefreshStatusEntriesInputValidator
@@ -113,6 +113,8 @@ export const ManagedCredentialRefreshReceiptValidator = z
     .object({
         refreshId: z.string().min(1),
         refreshService: ManagedCredentialRefreshBindingValidator,
+        /** Legacy receipts authenticate only the allocated managed entry, not other services. */
+        refreshServiceBinding: z.literal('managed-entry').optional(),
         credentialId: z.string().min(1),
         issuerDid: z.string().min(1),
         holderDid: z.string().min(1),

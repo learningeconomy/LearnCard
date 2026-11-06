@@ -425,11 +425,10 @@ const prepareManagedRefreshSend = async (params: {
     // including when the caller addressed them by their controller did:key.
     const holderDid = getDidWeb(domain, targetProfile.profileId);
     const holderMode = params.encryption === 'holder';
-    // Holder mode is new, so every client using it signs the server-bound entries.
+    // Holder and network sends share the same explicit status-allocation contract.
     let preallocateStatus =
         (params.serverSigning && !template?.credential.credentialStatus) ||
-        params.statusBinding === 'server' ||
-        holderMode;
+        params.statusBinding === 'server';
     // Computed once and reused for both the request digest and anchor creation below,
     // so a retried/keyed request can never digest a different display than the one
     // actually stored on the anchor.

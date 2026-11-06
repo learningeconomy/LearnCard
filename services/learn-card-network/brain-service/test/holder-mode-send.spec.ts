@@ -85,6 +85,7 @@ const prepareHolderSend = async (
         recipient: HOLDER_PROFILE_ID,
         display: { name: 'Official Transcript', category: 'Learning History' },
         encryption: 'holder',
+        statusBinding: 'server',
         ...overrides,
     } as Parameters<
         typeof issuer.clients.fullAuth.boost.prepareRefreshableSend
@@ -220,6 +221,29 @@ describe('Holder-mode managed sends (LC-2345)', () => {
     });
 
     describe('sendHolderEncryptedRefreshable: success', () => {
+        it('binds external template status without server allocation', async () => {
+            const credentialStatus = {
+                id: 'https://external.example/status#7',
+                type: 'BitstringStatusListEntry',
+                statusPurpose: 'revocation',
+                statusListIndex: '7',
+                statusListCredential: 'https://external.example/status',
+            };
+            const prepared = await prepareHolderSend({ statusBinding: undefined });
+            expect(prepared.statusEntries).toBeUndefined();
+            const credential = await signHolderCredential(prepared, { credentialStatus });
+            const { handoff } = await buildHandoff(prepared, { credential });
+            const result =
+                await issuer.clients.fullAuth.credentialRefresh.sendHolderEncryptedRefreshable({
+                    handoff,
+                });
+            expect(result.statusManagement).toBe('external');
+            const receipt = await holder.clients.fullAuth.credentialRefresh.getReceipt({
+                uri: result.uri,
+            });
+            expect(receipt?.credentialStatus).toEqual(credentialStatus);
+        });
+
         it('completes the intent and replays fresh ciphertext without another activity or delivery', async () => {
             const idempotencyKey = 'holder-send-replay';
             const prepared = await prepareHolderSend({ idempotencyKey });

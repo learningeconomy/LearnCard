@@ -141,7 +141,10 @@ export const credentialRefreshBindingsEqual = (
     canonicalizeCredentialJson(credential.refreshService) ===
         canonicalizeCredentialJson(baseline.refreshService);
 
-/** Checks signed identity and public bindings. This does not replace proof/status verification. */
+/** Checks signed identity and public bindings. Legacy managed-entry receipts bind only the
+ * unique managed service; exact receipts also bind additional services and array shape.
+ * This does not replace proof/status verification.
+ */
 export const assertManagedCredentialBinding = (
     credential: RefreshableCredential,
     receipt: CredentialRefreshReceipt
@@ -158,11 +161,27 @@ export const assertManagedCredentialBinding = (
                 'id' in subject &&
                 subject.id === receipt.holderDid
         );
+    const managedServices = getManagedRefreshServices(credential);
+    const services = Array.isArray(credential.refreshService)
+        ? credential.refreshService
+        : [credential.refreshService];
+    const managedEntryCount = services.filter(
+        service => service?.type === 'LearnCardCredentialRefresh2026'
+    ).length;
+    const bindingsMatch =
+        receipt.refreshServiceBinding === 'managed-entry'
+            ? managedServices.length === 1 &&
+              managedEntryCount === 1 &&
+              credentialRefreshBindingsEqual(
+                  { ...credential, refreshService: managedServices[0] },
+                  receipt
+              )
+            : credentialRefreshBindingsEqual(credential, receipt);
     if (
         credential.id !== receipt.credentialId ||
         getCredentialIssuerId(credential) !== receipt.issuerDid ||
         !holderMatches ||
-        !credentialRefreshBindingsEqual(credential, receipt)
+        !bindingsMatch
     ) {
         throw new Error('MANAGED_CREDENTIAL_BINDING_MISMATCH');
     }

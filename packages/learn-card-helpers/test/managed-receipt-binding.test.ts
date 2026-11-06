@@ -15,6 +15,38 @@ const credential = {
 };
 
 describe('exact receipt refresh binding', () => {
+    const legacyReceipt = CredentialRefreshReceiptValidator.parse({
+        refreshId: 'one',
+        credentialId: credential.id,
+        issuerDid: credential.issuer,
+        holderDid: credential.credentialSubject.id,
+        encryptionMode: 'network',
+        refreshService: managed,
+        refreshServiceBinding: 'managed-entry',
+    });
+
+    it.each([managed, [managed], [managed, other]].map(refreshService => ({ refreshService })))(
+        'accepts legacy managed entry %#',
+        ({ refreshService }) => {
+            expect(() =>
+                assertManagedCredentialBinding({ ...credential, refreshService }, legacyReceipt)
+            ).not.toThrow();
+        }
+    );
+
+    it.each([
+        { refreshService: [managed, managed] },
+        { refreshService: [managed, { type: managed.type }] },
+        { refreshService: [other] },
+        { refreshService: { ...managed, id: 'https://different.example' } },
+        { refreshService: { ...managed, authorization: { type: 'Other' } } },
+        { refreshService: undefined },
+    ])('rejects invalid legacy managed binding %#', ({ refreshService }) => {
+        expect(() =>
+            assertManagedCredentialBinding({ ...credential, refreshService }, legacyReceipt)
+        ).toThrow('MANAGED_CREDENTIAL_BINDING_MISMATCH');
+    });
+
     it.each([managed, [managed], [managed, other]].map(refreshService => ({ refreshService })))(
         'round-trips the signed shape %#',
         ({ refreshService }) => {
