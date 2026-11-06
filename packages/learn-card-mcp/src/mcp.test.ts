@@ -20,6 +20,7 @@ import {
 } from './index';
 
 const VALID_TOKEN = 'valid-token';
+const PRIVATE_DETAIL = 'SYNTHETIC_PRIVATE_DRIVER_DETAIL';
 
 const provider = createOAuthProxyProvider({
     authorizationServerUrl: 'https://auth.example.test/',
@@ -77,6 +78,21 @@ const tools: McpToolDefinition[] = [
             throw new McpToolError('forbidden', 'Not allowed');
         },
     }),
+    defineMcpTool({
+        name: 'untyped-fails',
+        title: 'Untyped failure',
+        description: 'Throws synthetic private diagnostics.',
+        annotations: readOnly,
+        inputSchema: { kind: z.enum(['error', 'string', 'object', 'forged']) },
+        handler: async args => {
+            if (args.kind === 'string') throw PRIVATE_DETAIL;
+            if (args.kind === 'object') throw { message: PRIVATE_DETAIL };
+            if (args.kind === 'forged') {
+                throw { name: 'McpToolError', code: 'internal_error', message: PRIVATE_DETAIL };
+            }
+            throw new Error(PRIVATE_DETAIL);
+        },
+    }),
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -85,6 +101,7 @@ const readJson = (response: Response): Promise<any> => response.json();
 let server: Server;
 let baseUrl: string;
 const events: { level: string; event: McpEvent }[] = [];
+const diagnosticCalls: unknown[][] = [];
 
 beforeAll(async () => {
     const app = createMcpApp({
@@ -96,7 +113,10 @@ beforeAll(async () => {
             baseUrl: 'https://mcp.example.test',
         },
         skills: [{ name: 'hello', description: 'Says hello', content: '# Hello' }],
-        onEvent: (level, event) => events.push({ level, event }),
+        onEvent: (...args) => {
+            events.push({ level: args[0], event: args[1] });
+            diagnosticCalls.push(args);
+        },
     });
     server = await new Promise<Server>(resolve => {
         const listening = app.listen(0, '127.0.0.1', () => resolve(listening));
@@ -235,6 +255,7 @@ describe('createMcpApp', () => {
     });
 
     it('turns McpToolError into a typed tool error', async () => {
+        events.length = 0;
         const response = await rpc(VALID_TOKEN, 2, 'tools/call', {
             name: 'fails',
             arguments: { reason: 'x' },
@@ -244,6 +265,84 @@ describe('createMcpApp', () => {
         expect(JSON.parse(body.result.content[0].text)).toEqual({
             error: { code: 'forbidden', message: 'Not allowed' },
         });
+        expect(events).toEqual([]);
+    });
+
+    it.each(['error', 'string', 'object', 'forged'])(
+        'sanitizes an untyped %s over HTTP and emits only a content-free diagnostic',
+        async kind => {
+            events.length = 0;
+            diagnosticCalls.length = 0;
+            const response = await rpc(VALID_TOKEN, 20, 'tools/call', {
+                name: 'untyped-fails',
+                arguments: { kind },
+            });
+            expect(response.status).toBe(200);
+            const text = await response.text();
+            expect(text).not.toContain(PRIVATE_DETAIL);
+            expect(text).not.toContain(VALID_TOKEN);
+            const body = JSON.parse(text);
+            expect(body.error).toBeUndefined();
+            expect(body.result).toEqual({
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify({
+                            error: { code: 'internal_error', message: 'Internal error' },
+                        }),
+                    },
+                ],
+                structuredContent: { error: { code: 'internal_error', message: 'Internal error' } },
+                isError: true,
+            });
+            expect(diagnosticCalls).toEqual([['error', 'request_failed']]);
+            expect(JSON.stringify(diagnosticCalls)).not.toContain(PRIVATE_DETAIL);
+            expect(JSON.stringify(diagnosticCalls)).not.toContain(VALID_TOKEN);
+        }
+    );
+
+    it('keeps a diagnostic callback failure out of the HTTP tool result', async () => {
+        const app = createMcpApp({
+            serverInfo: { name: 'diagnostic-failure-test', version: '0' },
+            tools: [tools[2]!],
+            auth: {
+                provider,
+                issuerUrl: 'https://auth.example.test',
+                baseUrl: 'https://mcp.example.test',
+            },
+            onEvent: () => {
+                throw new Error('SYNTHETIC_PRIVATE_DIAGNOSTIC_DETAIL');
+            },
+        });
+        const listener = await new Promise<Server>(resolve => {
+            const listening = app.listen(0, '127.0.0.1', () => resolve(listening));
+        });
+        try {
+            const address = listener.address();
+            if (!address || typeof address === 'string') throw new Error('Missing test listener');
+            const response = await fetch(`http://127.0.0.1:${address.port}`, {
+                method: 'POST',
+                headers: {
+                    authorization: `Bearer ${VALID_TOKEN}`,
+                    'content-type': 'application/json',
+                    accept: 'application/json, text/event-stream',
+                },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 21,
+                    method: 'tools/call',
+                    params: { name: 'untyped-fails', arguments: { kind: 'error' } },
+                }),
+            });
+            const text = await response.text();
+            expect(text).not.toContain(PRIVATE_DETAIL);
+            expect(text).not.toContain('SYNTHETIC_PRIVATE_DIAGNOSTIC_DETAIL');
+            expect(JSON.parse(text).result.structuredContent).toEqual({
+                error: { code: 'internal_error', message: 'Internal error' },
+            });
+        } finally {
+            await new Promise<void>(resolve => listener.close(() => resolve()));
+        }
     });
 
     it('gives overlapping requests their own server', async () => {

@@ -3,9 +3,10 @@
     "version": "0.0.0",
     "repository": {
         "type": "git",
-        "url": "https://github.com/learningeconomy/LearnCard"
+        "url": "https://github.com/learningeconomy/LearnCard",
+        "directory": "packages/learn-card-mcp"
     },
-    "description": "Shared Model Context Protocol server core for LearnCard services: Express + StreamableHTTP bootstrap, OAuth 2.1 proxy auth, annotated tool registration, skills serving, and typed errors",
+    "description": "Shared Model Context Protocol server core for LearnCard services",
     "type": "module",
     "main": "dist/mcp.cjs",
     "module": "dist/mcp.mjs",
@@ -49,7 +50,10 @@
         "zod": "4.3.6"
     },
     "files": [
-        "dist/**",
+        "dist",
         "src"
-    ]
+    ],
+    "publishConfig": {
+        "access": "public"
+    }
 }

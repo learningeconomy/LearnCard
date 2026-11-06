@@ -74,7 +74,10 @@ export const app = createMcpApp({
     },
     onEvent: (level, event) => {
         logSafeEvent(level, event);
-        if (level === 'error' && event === 'auth_verification_failed') {
+        if (
+            level === 'error' &&
+            (event === 'auth_verification_failed' || event === 'request_failed')
+        ) {
             Sentry.captureMessage(event, { level: 'error' });
         }
     },

@@ -57,10 +57,11 @@ const resolveTools = (tools: CreateMcpAppOptions['tools']) =>
  */
 export const createMcpServer = (
     serverInfo: McpServerInfo,
-    tools: readonly McpToolDefinition[]
+    tools: readonly McpToolDefinition[],
+    onToolError?: () => void
 ): McpServer => {
     const server = new McpServer(serverInfo);
-    registerMcpTools(server, tools);
+    registerMcpTools(server, tools, onToolError);
     return server;
 };
 
@@ -120,7 +121,11 @@ export const createMcpApp = (options: CreateMcpAppOptions): express.Express => {
                     sessionIdGenerator: undefined,
                     enableJsonResponse: true,
                 });
-                const server = createMcpServer(options.serverInfo, resolveTools(options.tools));
+                const server = createMcpServer(
+                    options.serverInfo,
+                    resolveTools(options.tools),
+                    () => emit('error', 'request_failed')
+                );
 
                 res.on('close', () => {
                     // Closing the server closes its transport; close the transport too in

@@ -22,6 +22,8 @@ const pending: Deferred[] = [];
 let calls = 0;
 let notifyCall: (() => void) | undefined;
 
+const answerAboutUser = mock(async () => 'unused');
+
 mock.module('../controllers', () => ({
     getLatestUserSummary: () => {
         const gate = deferred();
@@ -30,7 +32,7 @@ mock.module('../controllers', () => ({
         notifyCall?.();
         return gate.promise;
     },
-    getAnswerAboutUser: async () => 'unused',
+    getAnswerAboutUser: answerAboutUser,
     saveSessionSummary: async () => undefined,
 }));
 mock.module('../ownerOperation', () => ({
@@ -41,6 +43,7 @@ mock.module('../oauth/clients', () => ({
 }));
 
 const { app } = await import('../app');
+const { getAnswerAboutUserTool } = await import('../tools');
 const { JWT_SECRET } = await import('../../constants/env');
 
 let server: Server;
@@ -235,4 +238,101 @@ test.each([
     expect(body.error).toBeUndefined();
     expect(body.result.isError).toBe(true);
     expect(body.result.content[0].text).toContain('Input validation error');
+});
+
+const callAnswerTool = (token: string, question: string) =>
+    fetch(baseUrl, {
+        method: 'POST',
+        headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+            accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 6,
+            method: 'tools/call',
+            params: { name: 'get_answer_about_user', arguments: { question } },
+        }),
+    });
+
+test('sanitizes an unexpected tool error and keeps both diagnostics content-free', async () => {
+    const privateDetail = 'SYNTHETIC_PRIVATE_BACKEND_DETAIL';
+    const privateInput = 'SYNTHETIC_PRIVATE_QUESTION';
+    const token = jwt.sign({ sub: 'did:example:private-subject', aud: 'test-client' }, JWT_SECRET, {
+        expiresIn: '5m',
+    });
+    const capture = spyOn(Sentry, 'captureMessage').mockImplementation(() => 'test-event');
+    const log = spyOn(console, 'error').mockImplementation(() => undefined);
+    const handler = spyOn(getAnswerAboutUserTool, 'handler').mockImplementation(async () => {
+        throw new Error(privateDetail);
+    });
+    try {
+        const response = await callAnswerTool(token, privateInput);
+        expect(response.status).toBe(200);
+        const text = await response.text();
+        for (const value of [privateDetail, privateInput, token, 'did:example:private-subject']) {
+            expect(text).not.toContain(value);
+            expect(JSON.stringify(capture.mock.calls)).not.toContain(value);
+            expect(JSON.stringify(log.mock.calls)).not.toContain(value);
+        }
+        expect(JSON.parse(text).result).toEqual({
+            content: [
+                {
+                    type: 'text',
+                    text: JSON.stringify({
+                        error: { code: 'internal_error', message: 'Internal error' },
+                    }),
+                },
+            ],
+            structuredContent: { error: { code: 'internal_error', message: 'Internal error' } },
+            isError: true,
+        });
+        expect(capture.mock.calls).toEqual([['request_failed', { level: 'error' }]]);
+        expect(log.mock.calls).toEqual([[{ event: 'request_failed' }]]);
+    } finally {
+        handler.mockRestore();
+        capture.mockRestore();
+        log.mockRestore();
+    }
+});
+
+test('preserves the intended AIP error message without exposing its cause', async () => {
+    const privateDetail = 'SYNTHETIC_PRIVATE_OPERATION_DETAIL';
+    answerAboutUser.mockRejectedValueOnce(new Error(privateDetail));
+    const capture = spyOn(Sentry, 'captureMessage').mockImplementation(() => 'test-event');
+    try {
+        const token = jwt.sign({ sub: 'did:example:alice', aud: 'test-client' }, JWT_SECRET, {
+            expiresIn: '5m',
+        });
+        const response = await callAnswerTool(token, 'fixture question');
+        const text = await response.text();
+        expect(text).not.toContain(privateDetail);
+        expect(JSON.parse(text).result.structuredContent).toEqual({
+            error: { code: 'internal_error', message: 'Unable to answer learning question' },
+        });
+        expect(capture.mock.calls).toEqual([
+            [
+                'backend_operation_failed',
+                { level: 'error', tags: { tool: 'get_answer_about_user' } },
+            ],
+        ]);
+        expect(JSON.stringify(capture.mock.calls)).not.toContain(privateDetail);
+    } finally {
+        capture.mockRestore();
+    }
+});
+
+test('returns the intended typed unauthorized tool error when a token has no DID', async () => {
+    const token = jwt.sign({ aud: 'test-client' }, JWT_SECRET, { expiresIn: '5m' });
+    const response = await callAnswerTool(token, 'fixture question');
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.result.isError).toBe(true);
+    expect(body.result.structuredContent).toEqual({
+        error: {
+            code: 'unauthorized',
+            message: 'Unauthorized: No DID found in authentication token',
+        },
+    });
 });

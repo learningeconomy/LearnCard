@@ -4,6 +4,7 @@ import {
     defineMcpTool,
     getAuthenticatedDid,
     jsonToolResponse,
+    McpToolError,
     type McpToolContext,
 } from '@learncard/mcp';
 import { getLatestUserSummary, getAnswerAboutUser, saveSessionSummary } from './controllers';
@@ -14,7 +15,10 @@ const requireDid = (context: McpToolContext): string => {
     const did = getAuthenticatedDid(context);
     if (!did) {
         logSafeEvent('warn', 'auth_verification_failed');
-        throw new Error('Unauthorized: No DID found in authentication token');
+        throw new McpToolError(
+            'unauthorized',
+            'Unauthorized: No DID found in authentication token'
+        );
     }
     return did;
 };
@@ -71,7 +75,7 @@ export const getAnswerAboutUserTool = defineMcpTool({
             return jsonToolResponse({ answer });
         } catch {
             reportToolFailure('get_answer_about_user');
-            throw new Error('Unable to answer learning question');
+            throw new McpToolError('internal_error', 'Unable to answer learning question');
         }
     },
 });

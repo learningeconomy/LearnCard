@@ -83,8 +83,13 @@ type LooseRegisterTool = (
     callback: (args: Record<string, unknown>, extra: McpToolContext) => Promise<McpToolResponse>
 ) => unknown;
 
-/** Registers validated tools on a server. `McpToolError`s become typed tool errors. */
-export const registerMcpTools = (server: McpServer, tools: readonly McpToolDefinition[]): void => {
+/** Registers tools, preserving intended McpToolError messages and sanitizing unknown failures. */
+export const registerMcpTools = (
+    server: McpServer,
+    tools: readonly McpToolDefinition[],
+    /** Content-free notification. Never receives errors, arguments, or auth context. */
+    onToolError?: () => void
+): void => {
     const seen = new Set<string>();
     const registerTool = server.registerTool.bind(server) as unknown as LooseRegisterTool;
 
@@ -112,7 +117,12 @@ export const registerMcpTools = (server: McpServer, tools: readonly McpToolDefin
                     if (error instanceof McpToolError) {
                         return toolErrorResponse(error.code, error.message);
                     }
-                    throw error;
+                    try {
+                        onToolError?.();
+                    } catch {
+                        // A diagnostic failure must not replace the client-safe tool result.
+                    }
+                    return toolErrorResponse('internal_error', 'Internal error');
                 }
             }
         );
