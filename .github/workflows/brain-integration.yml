@@ -1,0 +1,100 @@
+name: Brain integration suites
+
+on:
+    workflow_call:
+        inputs:
+            group:
+                description: 'Production group (graph/delivery) or a single suite for benchmarking'
+                required: true
+                type: string
+            ref:
+                description: 'Exact tested revision (or explicitly selected manual branch)'
+                required: true
+                type: string
+            run_brain:
+                type: boolean
+                default: true
+            run_campaigns:
+                type: boolean
+                default: true
+        secrets:
+            DOCKERHUB_PULL_USERNAME:
+                required: false
+            DOCKERHUB_PULL_TOKEN:
+                required: false
+
+permissions:
+    contents: read
+
+jobs:
+    integration:
+        name: ${{ inputs.group }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        env:
+            # Sequential commands must still get separate disposable databases.
+            TESTCONTAINERS_REUSE_ENABLE: 'false'
+        steps:
+            - name: Validate group
+              env:
+                  GROUP: ${{ inputs.group }}
+                  RUN_BRAIN: ${{ inputs.run_brain }}
+                  RUN_CAMPAIGNS: ${{ inputs.run_campaigns }}
+              run: |
+                  case "$GROUP" in
+                    graph|share-links|profile-search|boost-recipients|inbox)
+                      [[ "$RUN_BRAIN" == true ]] || exit 1 ;;
+                    campaigns)
+                      [[ "$RUN_CAMPAIGNS" == true ]] || exit 1 ;;
+                    delivery)
+                      [[ "$RUN_BRAIN" == true || "$RUN_CAMPAIGNS" == true ]] || exit 1 ;;
+                    *) echo 'Unknown integration group' >&2; exit 1 ;;
+                  esac
+
+            - name: Checkout tested revision
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ inputs.ref }}
+                  fetch-depth: 0
+
+            - name: Setup workspace
+              id: setup
+              uses: ./.github/actions/setup
+
+            - name: Authenticate Docker Hub pulls
+              id: docker
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+            # Explicit status conditions keep later selected suites running after
+            # a test failure, while the job still fails. Setup failures/cancellation
+            # stop execution; there is no continue-on-error or summary runner.
+            - name: Run share-link security
+              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.run_brain && contains(fromJSON('["graph","share-links"]'), inputs.group) }}
+              working-directory: services/learn-card-network/brain-service
+              run: bunx vitest run --config vitest.share-links-neo4j.config.ts
+
+            - name: Run profile search
+              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.run_brain && contains(fromJSON('["graph","profile-search"]'), inputs.group) }}
+              run: bunx nx run network-brain-service:test:profile-search
+
+            - name: Run boost recipients
+              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.run_brain && contains(fromJSON('["graph","boost-recipients"]'), inputs.group) }}
+              run: bunx nx run network-brain-service:test:boost-recipients
+
+            - name: Run inbox security
+              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.run_brain && contains(fromJSON('["delivery","inbox"]'), inputs.group) }}
+              run: bunx nx run network-brain-service:test:inbox:e2e
+
+            - name: Run campaign permissions
+              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.run_campaigns && contains(fromJSON('["delivery","campaigns"]'), inputs.group) }}
+              run: bunx nx run network-brain-service:test:campaigns
+
+            - name: Run campaign notifications
+              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.run_campaigns && contains(fromJSON('["delivery","campaigns"]'), inputs.group) }}
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run --config vitest.integration.config.ts
+                  test/notifications.spec.ts -t 'deduplicates concurrent campaign'

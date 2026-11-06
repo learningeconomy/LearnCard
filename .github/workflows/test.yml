@@ -238,106 +238,33 @@ jobs:
             - name: Lint CloudFormation template
               run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
 
-    share-link-security:
+    brain-graph:
+        name: Brain graph integration
         needs: integration-selection
         if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false') }}
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v7
-              with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
-                  fetch-depth: 0
-            - uses: ./.github/actions/setup
-            - name: Test share lifecycle and attachment publication races with Neo4j
-              working-directory: services/learn-card-network/brain-service
-              run: bunx vitest run --config vitest.share-links-neo4j.config.ts
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            group: graph
+            ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+            run_brain: true
+            run_campaigns: false
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
-    profile-search:
+    brain-delivery:
+        name: Inbox and campaigns integration
         needs: integration-selection
-        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false') }}
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v7
-              with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
-                  fetch-depth: 0
-            - uses: ./.github/actions/setup
-            - name: Authenticate Docker Hub pulls
-              uses: ./.github/actions/dockerhub-login
-              with:
-                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
-            - name: Test profile search normalization and filters with Neo4j
-              run: bunx nx run network-brain-service:test:profile-search
-
-    inbox-security:
-        needs: integration-selection
-        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false') }}
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v7
-              with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
-                  fetch-depth: 0
-            - uses: ./.github/actions/setup
-            - name: Authenticate Docker Hub pulls
-              uses: ./.github/actions/dockerhub-login
-              with:
-                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
-            - name: Test inbox security and queued issuance with Neo4j, Redis, and SQS
-              run: bunx nx run network-brain-service:test:inbox:e2e
-
-    boost-recipients:
-        needs: integration-selection
-        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false') }}
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v7
-              with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
-                  fetch-depth: 0
-            - uses: ./.github/actions/setup
-            - name: Authenticate Docker Hub pulls
-              uses: ./.github/actions/dockerhub-login
-              with:
-                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
-            - name: Test boost recipient lists, counts and pagination with Neo4j
-              run: bunx nx run network-brain-service:test:boost-recipients
-
-    campaigns:
-        needs: integration-selection
-        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.campaigns != 'false') }}
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v7
-              with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
-                  fetch-depth: 0
-            - uses: actions/setup-node@v6
-              with:
-                  node-version-file: .nvmrc
-            - uses: ./.github/actions/setup
-            - name: Authenticate Docker Hub pulls
-              uses: ./.github/actions/dockerhub-login
-              with:
-                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
-            - name: Test campaign permissions, audiences and concurrent engagement with Neo4j
-              run: bunx nx run network-brain-service:test:campaigns
-              env:
-                  TESTCONTAINERS_REUSE_ENABLE: 'false'
-            - name: Test campaign inbox deduplication and push suppression with MongoDB
-              working-directory: services/learn-card-network/lca-api
-              run: >-
-                  bunx vitest run --config vitest.integration.config.ts
-                  test/notifications.spec.ts -t 'deduplicates concurrent campaign'
+        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false' || needs.integration-selection.outputs.campaigns != 'false') }}
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            group: delivery
+            ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+            run_brain: ${{ needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false' }}
+            run_campaigns: ${{ needs.integration-selection.result != 'success' || needs.integration-selection.outputs.campaigns != 'false' }}
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
     # Temporary manual fallback during the hosted-runner cutover.
     # Remove after one sprint of stable GitHub-hosted E2E operation.
