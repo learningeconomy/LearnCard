@@ -4,14 +4,53 @@ The `E2E` workflow runs the browser job and three service-test shards concurrent
 Each job owns its Docker stack. Within the browser job, functional tests run before
 accessibility tests so legacy database resets cannot interrupt another suite.
 
-## When full E2E runs
+## Required checks without a summary runner
 
-Full browser and service E2E run automatically in the merge queue. Documentation-only
-queue entries retain their existing exemption. PR updates (including draft PRs)
-only report the required `E2E` check with a summary explaining that full E2E is
-deferred; a green PR check is not evidence that the suites ran. Keep the merge queue
-required on `main`: the queue's `E2E` check must pass before merging code changes.
-Unit tests, mock tests, and verification keep their existing triggers.
+The workflow reports the browser and each service shard directly. There is no
+final `E2E` job that waits for all suites and requests another runner just to
+combine their results. The three service jobs have explicit names and share the
+same steps through a YAML anchor. Their names therefore remain present when
+eligibility skips execution; job-level conditions run before matrix expansion.
+
+The intended required-check set on `main` is:
+
+- `Test` (unchanged)
+- `Workflow validation` (unchanged)
+- `Typecheck ratchet` (unchanged)
+- `Determine E2E eligibility`
+- `Playwright E2E`
+- `tests/e2e (1)`
+- `tests/e2e (2)`
+- `tests/e2e (3)`
+
+Eligibility is required too: a failed dependency can skip its children, and
+GitHub accepts skipped job checks. The eligibility job validates its decision
+before reporting success. All PR updates, including drafts, defer full E2E to
+the merge queue. Their eligibility summary explains the deferral; the four suite
+checks report skipped. Merge groups run the full suites except for the existing
+documentation-only exemption. Manual dispatch always runs them. Failed or cancelled
+required jobs, and absent required check names, block merging. Unit tests, mock
+tests and Verification Catalog retain their existing triggers.
+
+### Coordinated settings rollout
+
+This workflow change does **not** update repository protection. Until the coordinated
+cutover, `main` requires `Test`, `Workflow validation`, `Typecheck ratchet` and the
+old aggregate `E2E`. This PR will wait for that removed aggregate status until
+the matching protection change.
+
+Before merging, validate the exact new names on a PR and their skipped states,
+plus a full manual suite run. Then drain the existing merge queue so old
+candidates are not left waiting for new check names. Replace the old `E2E`
+requirement with **all five** E2E checks listed above in one coordinated settings
+update, preserving `Test`, `Workflow validation`, `Typecheck ratchet`, the merge
+queue and every other protection. Enqueue
+the approved workflow change normally and verify the new required checks on its
+actual `merge_group` revision. Do not remove the old requirement on its own.
+
+Restoring only the old `E2E` requirement after its job is gone would block future
+merges. A rollback must restore the aggregate workflow job and its matching
+required-check settings together.
 
 ### Run full E2E on a PR before queuing
 
