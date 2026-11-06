@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/node';
 import jwt from 'jsonwebtoken';
+import { InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import {
     createMcpApp,
     createMcpServer as createSharedMcpServer,
@@ -23,6 +24,7 @@ const oauthProvider = createOAuthProxyProvider({
     authorizePath: OAUTH_ENDPOINTS.AUTHORIZE,
     tokenPath: OAUTH_ENDPOINTS.TOKEN,
     verifyAccessToken: async (token: string) => {
+        if (!JWT_SECRET) throw new Error('JWT verification is not configured');
         try {
             const decoded = jwt.verify(token, JWT_SECRET) as {
                 sub: string;
@@ -36,9 +38,12 @@ const oauthProvider = createOAuthProxyProvider({
                 expiresAt: decoded.exp,
                 extra: { did: decoded.sub },
             };
-        } catch {
-            logSafeEvent('warn', 'auth_verification_failed');
-            throw new Error('Invalid or expired token');
+        } catch (error) {
+            if (error instanceof jwt.JsonWebTokenError) {
+                logSafeEvent('warn', 'auth_verification_failed');
+                throw new InvalidTokenError('Invalid or expired token');
+            }
+            throw error;
         }
     },
     getClient: async (clientId: string) => {
@@ -67,7 +72,12 @@ export const app = createMcpApp({
         scopesSupported: ['mcp:read', 'mcp:write'],
         protectedResourceMetadataPath: OAUTH_ENDPOINTS.PROTECTED_RESOURCE_METADATA,
     },
-    onEvent: (level, event) => logSafeEvent(level, event),
+    onEvent: (level, event) => {
+        logSafeEvent(level, event);
+        if (level === 'error' && event === 'auth_verification_failed') {
+            Sentry.captureMessage(event, { level: 'error' });
+        }
+    },
     // Sentry's handler must follow every route and precede the final error middleware.
     beforeErrorHandler: expressApp => Sentry.setupExpressErrorHandler(expressApp),
 });

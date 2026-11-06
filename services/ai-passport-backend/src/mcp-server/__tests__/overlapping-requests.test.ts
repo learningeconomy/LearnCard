@@ -1,7 +1,8 @@
-import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
+import { afterAll, beforeAll, expect, mock, spyOn, test } from 'bun:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import jwt from 'jsonwebtoken';
+import * as Sentry from '@sentry/node';
 
 // The MCP endpoint is stateless: every POST gets its own StreamableHTTPServerTransport.
 // McpServer.connect() refuses a second transport while one is attached, so a server
@@ -142,4 +143,96 @@ test('mounts the AI Passport tools with their behavior annotations', async () =>
         readOnlyHint: false,
         destructiveHint: false,
     });
+});
+
+const listToolsWithToken = (token?: string) =>
+    fetch(baseUrl, {
+        method: 'POST',
+        headers: {
+            ...(token ? { authorization: `Bearer ${token}` } : {}),
+            'content-type': 'application/json',
+            accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 4, method: 'tools/list', params: {} }),
+    });
+
+test.each([
+    ['missing', undefined],
+    ['malformed', 'not-a-token'],
+    [
+        'wrong signature',
+        jwt.sign({ sub: 'did:example:alice', aud: 'test-client' }, 'wrong-secret', {
+            expiresIn: '5m',
+        }),
+    ],
+    [
+        'expired',
+        jwt.sign({ sub: 'did:example:alice', aud: 'test-client' }, JWT_SECRET, { expiresIn: -1 }),
+    ],
+    [
+        'not active',
+        jwt.sign({ sub: 'did:example:alice', aud: 'test-client' }, JWT_SECRET, {
+            notBefore: '5m',
+            expiresIn: '10m',
+        }),
+    ],
+])('returns 401 for a %s token', async (_label, token) => {
+    const capture = spyOn(Sentry, 'captureMessage').mockImplementation(() => 'test-event');
+    try {
+        const response = await listToolsWithToken(token);
+        expect(response.status).toBe(401);
+        expect(response.headers.get('www-authenticate')).toContain('invalid_token');
+        expect(capture).not.toHaveBeenCalled();
+    } finally {
+        capture.mockRestore();
+    }
+});
+
+test('returns 500 and reports a safe event for an unexpected JWT verifier failure', async () => {
+    const capture = spyOn(Sentry, 'captureMessage').mockImplementation(() => 'test-event');
+    const verify = spyOn(jwt, 'verify').mockImplementation(() => {
+        throw new Error('private verifier detail');
+    });
+    try {
+        const response = await listToolsWithToken('token');
+        expect(response.status).toBe(500);
+        expect(response.headers.get('www-authenticate')).toBeNull();
+        expect(await response.json()).toEqual({
+            error: 'server_error',
+            error_description: 'Internal Server Error',
+        });
+        expect(capture).toHaveBeenCalledTimes(1);
+        expect(capture).toHaveBeenCalledWith('auth_verification_failed', { level: 'error' });
+    } finally {
+        verify.mockRestore();
+        capture.mockRestore();
+    }
+});
+
+test.each([
+    ['get_answer_about_user', { question: 123 }],
+    ['save_session_summary', { summary: 123 }],
+])('rejects malformed %s arguments as a tool error, not a protocol error', async (name, args) => {
+    const token = jwt.sign({ sub: 'did:example:alice', aud: 'test-client' }, JWT_SECRET, {
+        expiresIn: '5m',
+    });
+    const response = await fetch(baseUrl, {
+        method: 'POST',
+        headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+            accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 5,
+            method: 'tools/call',
+            params: { name, arguments: args },
+        }),
+    });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.error).toBeUndefined();
+    expect(body.result.isError).toBe(true);
+    expect(body.result.content[0].text).toContain('Input validation error');
 });

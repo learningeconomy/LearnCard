@@ -4,6 +4,7 @@ import type { Server } from 'node:http';
 import express from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { OAuthError, ServerError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import type { ProxyOAuthServerProvider } from '@modelcontextprotocol/sdk/server/auth/providers/proxyProvider.js';
@@ -16,7 +17,8 @@ import { registerMcpTools, type McpToolDefinition } from './tools';
 export type McpLogLevel = 'info' | 'warn' | 'error';
 
 /** Content-free lifecycle events. Hosts map them onto their own (privacy-safe) logger. */
-export type McpEvent = 'request_failed' | 'service_started' | 'service_start_failed';
+export type McpEvent =
+    'auth_verification_failed' | 'request_failed' | 'service_started' | 'service_start_failed';
 
 export type McpServerInfo = { name: string; version: string };
 
@@ -69,6 +71,7 @@ export const createMcpApp = (options: CreateMcpAppOptions): express.Express => {
     const { auth } = options;
 
     // Fail at startup, not on the first request, when a tool is missing annotations.
+    // This validation-only server never connects, so it owns no transport to close.
     createMcpServer(options.serverInfo, resolveTools(options.tools));
 
     const app = express();
@@ -93,7 +96,19 @@ export const createMcpApp = (options: CreateMcpAppOptions): express.Express => {
     app.post(
         mcpPath,
         requireBearerAuth({
-            verifier: auth.provider,
+            verifier: {
+                verifyAccessToken: async token => {
+                    try {
+                        return await auth.provider.verifyAccessToken(token);
+                    } catch (error) {
+                        // The SDK writes auth error responses without calling Express's error handler.
+                        if (error instanceof ServerError || !(error instanceof OAuthError)) {
+                            emit('error', 'auth_verification_failed');
+                        }
+                        throw error;
+                    }
+                },
+            },
             requiredScopes: auth.requiredScopes ?? [],
             // Clients discover this server's OAuth configuration from here.
             resourceMetadataUrl: `${trimTrailingSlashes(auth.baseUrl)}${metadataPath}`,

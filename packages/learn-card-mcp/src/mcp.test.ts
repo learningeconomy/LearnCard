@@ -2,6 +2,11 @@ import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 
 import { z } from 'zod';
+import {
+    InsufficientScopeError,
+    InvalidTokenError,
+    ServerError,
+} from '@modelcontextprotocol/sdk/server/auth/errors.js';
 
 import {
     createMcpApp,
@@ -11,6 +16,7 @@ import {
     jsonToolResponse,
     McpToolError,
     type McpToolDefinition,
+    type McpEvent,
 } from './index';
 
 const VALID_TOKEN = 'valid-token';
@@ -18,7 +24,10 @@ const VALID_TOKEN = 'valid-token';
 const provider = createOAuthProxyProvider({
     authorizationServerUrl: 'https://auth.example.test/',
     verifyAccessToken: async token => {
-        if (!token.startsWith(VALID_TOKEN)) throw new Error('bad token');
+        if (token === 'verifier-outage') throw new Error('private database connection detail');
+        if (token === 'server-error') throw new ServerError('Verifier unavailable');
+        if (token === 'insufficient-scope') throw new InsufficientScopeError('Insufficient scope');
+        if (!token.startsWith(VALID_TOKEN)) throw new InvalidTokenError('Invalid access token');
         return {
             token,
             clientId: 'client',
@@ -75,6 +84,7 @@ const readJson = (response: Response): Promise<any> => response.json();
 
 let server: Server;
 let baseUrl: string;
+const events: { level: string; event: McpEvent }[] = [];
 
 beforeAll(async () => {
     const app = createMcpApp({
@@ -86,6 +96,7 @@ beforeAll(async () => {
             baseUrl: 'https://mcp.example.test',
         },
         skills: [{ name: 'hello', description: 'Says hello', content: '# Hello' }],
+        onEvent: (level, event) => events.push({ level, event }),
     });
     server = await new Promise<Server>(resolve => {
         const listening = app.listen(0, '127.0.0.1', () => resolve(listening));
@@ -135,6 +146,24 @@ describe('defineMcpTool', () => {
     });
 });
 
+describe('createOAuthProxyProvider', () => {
+    it.each([
+        new InvalidTokenError('Invalid access token'),
+        new InsufficientScopeError('Insufficient scope'),
+        new ServerError('Verifier unavailable'),
+        new Error('private database connection detail'),
+    ])('preserves the verifier error: %s', async error => {
+        const failingProvider = createOAuthProxyProvider({
+            authorizationServerUrl: 'https://auth.example.test',
+            verifyAccessToken: async () => {
+                throw error;
+            },
+            getClient: async () => undefined,
+        });
+        await expect(failingProvider.verifyAccessToken('token')).rejects.toBe(error);
+    });
+});
+
 describe('createMcpApp', () => {
     it('requires a bearer token and points at protected resource metadata', async () => {
         const response = await rpc(undefined, 1, 'tools/list');
@@ -152,6 +181,39 @@ describe('createMcpApp', () => {
         expect(challenge).toContain(
             'https://mcp.example.test/.well-known/oauth-protected-resource'
         );
+    });
+
+    it.each([
+        ['verifier-outage', 500, 'server_error', 'Internal Server Error'],
+        ['server-error', 500, 'server_error', 'Verifier unavailable'],
+        ['insufficient-scope', 403, 'insufficient_scope', 'Insufficient scope'],
+    ])('returns the correct HTTP status for %s', async (token, status, code, message) => {
+        events.length = 0;
+        const response = await rpc(token, 1, 'tools/list');
+        expect(response.status).toBe(status);
+        expect(await response.json()).toEqual({ error: code, error_description: message });
+        if (status === 500) {
+            expect(response.headers.get('www-authenticate')).toBeNull();
+            expect(events).toEqual([{ level: 'error', event: 'auth_verification_failed' }]);
+        } else {
+            expect(response.headers.get('www-authenticate')).toContain(
+                'error="insufficient_scope"'
+            );
+            expect(events).toEqual([]);
+        }
+    });
+
+    it('rejects invalid tool arguments before the handler runs', async () => {
+        const response = await rpc(VALID_TOKEN, 2, 'tools/call', {
+            name: 'fails',
+            arguments: { reason: 123 },
+        });
+        expect(response.status).toBe(200);
+        const body = await readJson(response);
+        expect(body.error).toBeUndefined();
+        expect(body.result.isError).toBe(true);
+        expect(body.result.content[0].text).toContain('Input validation error');
+        expect(body.result.content[0].text).not.toContain('Not allowed');
     });
 
     it('serves OAuth metadata naming the authorization server', async () => {

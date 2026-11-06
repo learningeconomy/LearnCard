@@ -1,5 +1,4 @@
 import { trimTrailingSlashes } from './url';
-import { InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import { ProxyOAuthServerProvider } from '@modelcontextprotocol/sdk/server/auth/providers/proxyProvider.js';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth.js';
@@ -20,7 +19,11 @@ export type OAuthProxyOptions = {
     tokenPath?: string;
     revocationPath?: string;
     registrationPath?: string;
-    /** Verify a bearer token. Throw (any error) to reject it. */
+    /**
+     * Verify a bearer token. Throw the SDK's InvalidTokenError for invalid tokens (401).
+     * Other errors remain service failures (500); OAuthError subclasses keep their SDK status.
+     * OAuthError messages reach the client, so use client-safe text.
+     */
     verifyAccessToken: (token: string) => Promise<AuthInfo>;
     /** Look up a registered client. Throw or return undefined when unknown. */
     getClient: (clientId: string) => Promise<OAuthClientInformationFull | undefined>;
@@ -41,15 +44,7 @@ export const createOAuthProxyProvider = (options: OAuthProxyOptions): ProxyOAuth
                 ? { registrationUrl: `${base}${options.registrationPath}` }
                 : {}),
         },
-        // The SDK's bearer middleware only maps InvalidTokenError to 401; anything else is a 500.
-        verifyAccessToken: async token => {
-            try {
-                return await options.verifyAccessToken(token);
-            } catch (error) {
-                if (error instanceof InvalidTokenError) throw error;
-                throw new InvalidTokenError('Invalid access token');
-            }
-        },
+        verifyAccessToken: options.verifyAccessToken,
         getClient: options.getClient,
     });
 };
