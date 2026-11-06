@@ -146,6 +146,14 @@ flowchart LR
 The success message appears only after saving is confirmed. If saving fails, the
 collection stays open with an error and the option to try again.
 
+Saved status belongs to the signed collection contents and the account that saved
+them, not to every collection from the same sender. If the sender replaces a link's
+contents, you can save the new selection too. Distinct shared links remain separate
+in the saved list, even when they contain the same presentation.
+
+The sender bubble uses the sender's current profile photo when available, with
+initials as a fallback. Saving a collection does not copy the viewer's or issuer's photo.
+
 Saved collections remain available under **Data & Sharing → Shared with you**, even
 when creating shared links is not enabled for your account. **View saved collections**
 opens that list once; closing it does not make it reopen on later Back/Forward visits.

@@ -10184,7 +10184,7 @@
         "viewNotificationsHint": "Get a private notification with the view count and time. Off by default.",
         "saveToLearnCard": "Save collection",
         "savingToLearnCard": "Saving collection…",
-        "savedCollectionStatus": "Collection saved for reference.",
+        "savedCollectionStatus": "Collection saved.",
         "savedCollectionDestination": "Find it in Data & Sharing under Shared with you.",
         "viewSavedCollections": "View saved collections",
         "saveError": "Could not save this collection. Please try again.",
