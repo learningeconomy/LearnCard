@@ -180,7 +180,12 @@ production host has run the brand-aware image since 2026-11-05 02:36Z (pins
       writes 21:55–22:14Z). Threshold raised to 4 (#1965) on 2026-11-05; OK since
       16:55Z. Follow-up: deploy the account-count monitor build from #1965, set the
       threshold to 1, then to 0 after ~2026-11-29.
-- [ ] DMARC for `learncard.com` (production login mail is scored as spam by SES).
+- [x] DMARC for `learncard.com`: `_dmarc` record published (`p=none`, aggregate
+      reports to `dmarc@learningeconomy.io`); a login-code email on 2026-11-06 passed
+      SPF, DKIM (`learncard.com`) and DMARC at Gmail. The earlier SES spam verdict
+      on production login mail came with `dmarc=none` in both environments, so it may
+      be sending-pool reputation rather than DMARC; production canary provisioning
+      keeps `--allow-login-spam-fail` until a fresh production login mail scores PASS.
 - [ ] lca-api production deploy current with `main`.
 
 ### Switch
