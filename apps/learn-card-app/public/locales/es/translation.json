@@ -3428,6 +3428,7 @@
         "modal": {
             "earnedTitle": "¡Has obtenido una credencial!",
             "claimedTitle": "¡Credencial reclamada!",
+            "verificationFailed": "No pudimos verificar esto",
             "claimedBody": "La credencial se ha añadido a tu cartera.",
             "loadingCredential": "Cargando credencial...",
             "loadErrorTitle": "No se pudo cargar la credencial",

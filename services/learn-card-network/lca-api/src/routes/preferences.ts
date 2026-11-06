@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { getCurrentProfile } from '@helpers/currentProfile';
+import { isAnalyticsRestricted } from '@helpers/analyticsEligibility';
+
 import { t, didAndChallengeRoute } from '@routes';
 import { createPreferences } from '@accesslayer/preferences/create';
 import { TRPCError } from '@trpc/server';
@@ -96,9 +99,31 @@ export const preferencesRouter = t.router({
             // Persist the lock first so later calls skip the student lookup entirely.
             if (lock === 'student') await enforceMinorPreferences(ctx.user.did);
             const locked = lock === 'locked' || lock === 'student';
+            const profile = await getCurrentProfile(ctx);
+            const restricted = profile !== null && isAnalyticsRestricted(profile);
+            // Age-derived metadata is server-owned, not a caller assertion.
+            const safeInput: typeof input = { ...input };
+            if (profile !== null) {
+                safeInput.isMinor = restricted;
+                safeInput.analyticsAutoDisabled = restricted;
+                if (restricted) safeInput.analyticsEnabled = false;
+            } else {
+                // Unknown authority cannot grant opt-in or persist fabricated age metadata.
+                delete safeInput.isMinor;
+                delete safeInput.analyticsAutoDisabled;
+                // A privacy lock forces analytics off below, so there is nothing to refuse.
+                if (!locked && safeInput.analyticsEnabled === true) {
+                    throw new TRPCError({
+                        code: 'SERVICE_UNAVAILABLE',
+                        message:
+                            'Analytics settings are temporarily unavailable. Please try again.',
+                    });
+                }
+            }
+            // The privacy lock wins over age-derived values.
             const success = await updatePreferences(
                 ctx.user.did,
-                locked ? { ...input, ...MINOR_PREFERENCE_VALUES } : input
+                locked ? { ...safeInput, ...MINOR_PREFERENCE_VALUES } : safeInput
             );
 
             if (!success) {
@@ -133,16 +158,45 @@ export const preferencesRouter = t.router({
             // Locked values always win; on a failed lookup they are reported without being saved.
             const isLocked = lock !== 'unlocked';
             const locked = isLocked ? MINOR_PREFERENCE_VALUES : {};
+            const profile = await getCurrentProfile(ctx);
+            const restricted = profile !== null && isAnalyticsRestricted(profile);
+
+            // A privacy lock owns these fields; an age-based repair must not overwrite it.
+            if (
+                !isLocked &&
+                preferences &&
+                profile !== null &&
+                ((restricted && preferences.analyticsEnabled === true) ||
+                    preferences.isMinor !== restricted ||
+                    (restricted && preferences.analyticsAutoDisabled !== true))
+            ) {
+                try {
+                    const repaired = await updatePreferences(ctx.user.did, {
+                        ...(restricted ? { analyticsEnabled: false } : {}),
+                        isMinor: restricted,
+                        ...(restricted ? { analyticsAutoDisabled: true } : {}),
+                    });
+                    if (!repaired) console.error('Failed to persist age-based preference repair');
+                } catch {
+                    console.error('Failed to persist age-based preference repair');
+                }
+            }
 
             return {
                 theme: preferences?.theme,
                 aiEnabled: preferences?.aiEnabled,
                 aiAutoDisabled: preferences?.aiAutoDisabled,
-                analyticsEnabled: preferences?.analyticsEnabled,
-                analyticsAutoDisabled: preferences?.analyticsAutoDisabled,
+                analyticsEnabled:
+                    profile === null || restricted ? false : preferences?.analyticsEnabled,
+                analyticsAutoDisabled:
+                    profile === null
+                        ? preferences?.analyticsAutoDisabled
+                        : restricted
+                          ? true
+                          : preferences?.analyticsAutoDisabled,
                 bugReportsEnabled: preferences?.bugReportsEnabled,
                 bugReportsAutoDisabled: preferences?.bugReportsAutoDisabled,
-                isMinor: preferences?.isMinor,
+                ...(profile === null ? {} : { isMinor: restricted }),
                 ...locked,
                 ...(isLocked ? { locked: true } : {}),
             };

@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import { getLogger } from '../logging/logger';
+import { resolveCredentialForClaim } from './ingestManagedCredential';
 import { connectionPromptKeys } from '../react-query/connectionPrompts';
 import type { BespokeLearnCard } from '../types/learn-card';
 
@@ -31,6 +32,8 @@ export type ClaimIncomingCredentialResult = {
  * cannot drift apart in behaviour.
  *
  * Mirrors `CredentialClaimModal.handleClaim`'s original inline logic exactly:
+ * - A managed network delivery is verified first (`resolveCredentialForClaim`); a failed
+ *   check throws before anything is accepted or saved.
  * - A rejected `addVCtoWallet` call is fatal and re-thrown (it's the user-perceived
  *   "credential claimed" event).
  * - A rejected/failed server accept is logged but non-fatal.
@@ -42,6 +45,12 @@ export const claimIncomingCredential = async ({
     addVCtoWallet,
     queryClient,
 }: ClaimIncomingCredentialParams): Promise<ClaimIncomingCredentialResult> => {
+    // Managed network deliveries must verify (decrypt, proof, status, receipt binding)
+    // before anything is accepted or saved; a failed check throws and nothing is claimed.
+    if (wallet && uri.startsWith('lc:network:') && uri.includes(':credential:')) {
+        await resolveCredentialForClaim(wallet, uri);
+    }
+
     const [addResult, acceptResult, queryResult] = await Promise.allSettled([
         addVCtoWallet({ uri }),
         wallet ? wallet.invoke.acceptCredential(uri) : Promise.resolve(undefined),

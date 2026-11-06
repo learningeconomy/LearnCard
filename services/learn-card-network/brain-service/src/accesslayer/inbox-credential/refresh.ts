@@ -32,12 +32,13 @@ export const createPendingInboxRefresh = async (params: {
     aggregate: Record<string, unknown>;
     issueKey: string;
     requestDigest: string;
+    requestDigestCandidates?: string[];
 }): Promise<InboxCredentialType> => {
     const result = await neogma.queryRunner.run(
         `MATCH (issuer:Profile {profileId: $issuerProfileId})
          MERGE (ic:InboxCredential {refreshIssueKey: $issueKey})
          ON CREATE SET ic += $inbox, ic.refreshRequestDigest = $requestDigest
-         WITH issuer, ic WHERE ic.refreshRequestDigest = $requestDigest
+          WITH issuer, ic WHERE ic.refreshRequestDigest IN $requestDigestCandidates
          MERGE (refresh:CredentialRefresh {refreshId: ic.refreshId})
          ON CREATE SET refresh += $aggregate
          MERGE (issuer)-[:ISSUED_REFRESH]->(refresh)
@@ -46,7 +47,11 @@ export const createPendingInboxRefresh = async (params: {
          ON CREATE SET p.id = ic.refreshId, p.refreshId = ic.refreshId, p.version = 1,
                        p.publishedAt = ic.createdAt, p.signingMode = 'signing-authority'
          RETURN ic`,
-        { ...params, issuerProfileId: params.aggregate.issuerProfileId }
+        {
+            ...params,
+            requestDigestCandidates: params.requestDigestCandidates ?? [params.requestDigest],
+            issuerProfileId: params.aggregate.issuerProfileId,
+        }
     );
     const props = result.records[0]?.get('ic')?.properties;
     if (!props)
@@ -87,6 +92,7 @@ export const advancePendingInboxRefresh = async (params: {
     materialDigest: string;
     idempotencyKey?: string;
     updateSummary?: string;
+    updateReason?: import('@learncard/types').CredentialRefreshUpdateReason;
 }): Promise<PublishCredentialRefreshResult | null> => {
     const { refreshId, expectedVersion, idempotencyKey } = params;
     const replay = await getPendingInboxPublication(refreshId, idempotencyKey);
@@ -101,11 +107,13 @@ export const advancePendingInboxRefresh = async (params: {
            AND ic.currentStatus = 'PENDING' AND datetime(ic.expiresAt) > datetime()
            AND ($key IS NULL OR NOT EXISTS { MATCH (:InboxRefreshPublication {refreshIdempotencyKey: $key}) })
          CREATE (p:InboxRefreshPublication $publication)
-         SET ic.credential = $credential, ic.credentialName = $credentialName,
+         SET ic.credential = $credential,
+             ic.credentialName = coalesce($credentialName, ic.credentialName),
              refresh.currentVersion = $version, refresh.materialDigest = $materialDigest,
              refresh.credentialDisplayName = coalesce($credentialName, refresh.credentialDisplayName),
              refresh.lastPublishedAt = $publishedAt, refresh.updatedAt = $publishedAt,
-             refresh.updateSummary = $updateSummary
+              refresh.updateSummary = $updateSummary,
+              refresh.updateReason = $updateReason
          RETURN p`,
         {
             ...params,
@@ -113,6 +121,7 @@ export const advancePendingInboxRefresh = async (params: {
             publishedAt,
             credentialName: params.credentialName ?? null,
             updateSummary: params.updateSummary ?? null,
+            updateReason: params.updateReason ?? null,
             key: idempotencyKey ? `${refreshId}:${idempotencyKey}` : null,
             publication: Object.fromEntries(
                 Object.entries({
@@ -123,6 +132,7 @@ export const advancePendingInboxRefresh = async (params: {
                     publishedAt,
                     signingMode: 'signing-authority',
                     updateSummary: params.updateSummary,
+                    updateReason: params.updateReason,
                     refreshIdempotencyKey: idempotencyKey
                         ? `${refreshId}:${idempotencyKey}`
                         : undefined,

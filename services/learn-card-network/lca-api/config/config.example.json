@@ -6,6 +6,7 @@
     "CLASSLINK_REDIRECT_URIS": "https://app.example.com/auth/classlink/callback",
     "CLASSLINK_TENANTS": "{\"tenant-test\":{\"displayName\":\"Example District\",\"state\":\"XX\",\"stateStudentIdField\":\"studentId\",\"allowedEmailDomains\":[\"example.edu\"],\"transcriptEnabled\":false}}",
     "DOMAIN_NAME": "api.example.com",
+    "NETWORK_BRAIN_SERVICE_URL": "https://network.example.com/trpc",
     "ESCROW_ENCLAVE_ACTIVE_KEY_ID": "example-2026-01",
     "ESCROW_HOLD_DURATION_MS": "604800000",
     "ESCROW_HOLD_RESTART_MIN_AGE_MS": "86400000",

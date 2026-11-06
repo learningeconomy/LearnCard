@@ -17,7 +17,7 @@ export const backfillResolvedCredentialRecord = async (
     });
     const records = new Map<string, LCR>();
     for (const [, data] of queries) {
-        for (const page of data?.pages ?? []) {
+        for (const page of Array.isArray(data?.pages) ? data.pages : []) {
             for (const record of page.records) {
                 if (record.uri === uri && record.id && !record.boostUri && !record.__v) {
                     records.set(record.id, record);
@@ -34,15 +34,17 @@ export const backfillResolvedCredentialRecord = async (
                 predicate: query => query.queryKey[3] === accountDid,
             },
             data =>
-                data && {
-                    ...data,
-                    pages: data.pages.map(page => ({
-                        ...page,
-                        records: page.records.map(row =>
-                            row.id === record.id ? { ...row, ...metadata } : row
-                        ),
-                    })),
-                }
+                data && Array.isArray(data.pages)
+                    ? {
+                          ...data,
+                          pages: data.pages.map(page => ({
+                              ...page,
+                              records: page.records.map(row =>
+                                  row.id === record.id ? { ...row, ...metadata } : row
+                              ),
+                          })),
+                      }
+                    : data
         );
     }
 };

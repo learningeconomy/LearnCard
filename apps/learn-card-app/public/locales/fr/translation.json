@@ -3428,6 +3428,7 @@
         "modal": {
             "earnedTitle": "Vous avez obtenu un justificatif !",
             "claimedTitle": "Justificatif réclamé !",
+            "verificationFailed": "Nous n’avons pas pu vérifier cet élément",
             "claimedBody": "Le justificatif a été ajouté à votre portefeuille.",
             "loadingCredential": "Chargement du justificatif...",
             "loadErrorTitle": "Impossible de charger le justificatif",

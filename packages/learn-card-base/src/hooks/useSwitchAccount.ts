@@ -31,7 +31,7 @@ export const useSwitchProfile = (options?: { onSwitch?: () => void }) => {
                 cachedParent?.did === currentUserStore.get.parentUserDid()
                     ? cachedParent
                     : undefined;
-            await switchProfile();
+            await switchProfile(undefined, queryClient);
             currentUserStore.set.updateCurrentUserNameAndImage(
                 parentProfile?.displayName || parentUser?.name || '',
                 parentProfile?.image || parentUser?.profileImage || ''
@@ -77,7 +77,7 @@ export const useSwitchProfile = (options?: { onSwitch?: () => void }) => {
                 currentUserStore.set.parentUserDid(parentDid ?? null);
                 currentUserStore.set.parentLDFlags(cloneDeep(flags));
             }
-            await switchProfile(account.did);
+            await switchProfile(account.did, queryClient);
             switchedProfileStore.set.profileType(
                 account.type === 'child' ? 'child' : account.isServiceProfile ? 'service' : 'child'
             );

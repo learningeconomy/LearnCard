@@ -671,12 +671,22 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     : selectedPrivacyPreferences.aiEnabled;
                 let preferencesInitialized = false;
 
-                await updatePreferences({
+                const preferencesToSave = {
                     ...selectedPrivacyPreferences,
                     aiEnabled,
                     aiAutoDisabled: selectedPrivacyPreferences.isMinor,
                     analyticsAutoDisabled: false,
-                })
+                };
+                await updatePreferences(preferencesToSave)
+                    .catch(async (error: unknown) => {
+                        const code = (error as { data?: { code?: string } } | null)?.data?.code;
+                        if (code !== 'SERVICE_UNAVAILABLE') throw error;
+                        // Unknown age authority rejects the entire analytics opt-in write.
+                        // Preserve explicit AI/bug-report choices without granting analytics.
+                        const { analyticsEnabled: _analyticsEnabled, ...ordinaryPreferences } =
+                            preferencesToSave;
+                        return updatePreferences(ordinaryPreferences);
+                    })
                     .then(() => {
                         preferencesInitialized = true;
                     })

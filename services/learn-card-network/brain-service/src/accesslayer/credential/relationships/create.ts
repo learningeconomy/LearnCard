@@ -104,7 +104,8 @@ export const createListingSentCredentialRelationship = async (
     credential: CredentialInstance,
     metadata?: Record<string, unknown>,
     activityId?: string,
-    integrationId?: string
+    integrationId?: string,
+    transaction?: Transaction
 ): Promise<void> => {
     const properties = flattenObject({
         to: to.profileId,
@@ -135,7 +136,7 @@ export const createListingSentCredentialRelationship = async (
             }]->(credential)`
         )
         .set('r = $params')
-        .run();
+        .run(transaction);
 };
 
 export const createReceivedCredentialRelationship = async (

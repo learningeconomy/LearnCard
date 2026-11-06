@@ -7,7 +7,7 @@ const database = client.db(process.env.MONGO_DB!);
 const applyJobs = database.collection<any>('embedding_backfill_jobs'),
     repairJobs = database.collection<any>('embedding_legacy_repair_jobs'),
     runs = database.collection<any>('embedding_admin_batches');
-let entered = false;
+let onStepEntered: (() => void) | undefined;
 let calls = 0,
     unavailable = false,
     hold: Promise<void> | undefined,
@@ -18,7 +18,7 @@ mock.module('./backfill', () => ({
     stepJob: async (id: string, _limit: number, active: () => Promise<void>, batchId: string) => {
         const before = await applyJobs.findOne({ _id: id, batchId });
         if (!before) throw new Error('ownership');
-        entered = true;
+        onStepEntered?.();
         if (hold) await hold;
         await active();
         calls += 1;
@@ -86,7 +86,7 @@ beforeEach(async () => {
     ]);
     process.env.BEDROCK_EMBEDDINGS_ENABLED = 'true';
     process.env.EMBEDDINGS_DUAL_WRITE = 'true';
-    entered = false;
+    onStepEntered = undefined;
     calls = 0;
     unavailable = false;
     hold = undefined;
@@ -167,21 +167,35 @@ test('unavailable repair and apply evidence pause instead of advancing again', a
 });
 test('pause/cancel while in flight prevents calls; ownership remains until worker drains', async () => {
     for (const cancel of [false, true]) {
-        entered = false;
+        const entered = new Promise<void>(resolve => {
+            onStepEntered = resolve;
+        });
         let resolve!: () => void;
         hold = new Promise<void>(r => {
             resolve = r;
         });
         const b = await startBatch(randomUUID(), jobId, 'apply', 2, true);
         const advancing = advanceBatch(b._id, 0);
-        for (let i = 0; i < 100 && !entered; i += 1) await new Promise(r => setTimeout(r, 1));
-        expect((await stopBatch(b._id, cancel)).state).toBe(cancel ? 'cancelled' : 'paused');
-        await expect(startBatch(randomUUID(), jobId, 'apply', 1, true)).rejects.toThrow();
-        await expect(assertNoBatch(jobId, 'apply')).rejects.toThrow();
-        resolve();
+        try {
+            // Wait for the worker to hold its lease and reach the provider boundary,
+            // not a wall-clock estimate of how long Mongo operations should take.
+            await Promise.race([
+                entered,
+                advancing.then(() => {
+                    throw new Error('Batch finished before entering the held step');
+                }),
+            ]);
+            expect((await stopBatch(b._id, cancel)).state).toBe(cancel ? 'cancelled' : 'paused');
+            await expect(startBatch(randomUUID(), jobId, 'apply', 1, true)).rejects.toThrow();
+            await expect(assertNoBatch(jobId, 'apply')).rejects.toThrow();
+        } finally {
+            resolve();
+            await advancing;
+            hold = undefined;
+            onStepEntered = undefined;
+        }
         expect((await advancing).state).toBe(cancel ? 'cancelled' : 'paused');
         expect(calls).toBe(0);
-        hold = undefined;
     }
 });
 test('page interruption waits for unexpired lease, reconciles committed source counters, never dispatches', async () => {

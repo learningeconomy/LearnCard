@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
     add: vi.fn(),
     upload: vi.fn(),
     read: vi.fn(),
+    receipt: vi.fn(),
+    verify: vi.fn(),
     getConsentedContracts: vi.fn(),
     getBespoke: vi.fn(),
     logError: vi.fn(),
@@ -110,6 +112,7 @@ beforeEach(async () => {
         store: { LearnCloud: { uploadEncrypted: mocks.upload } },
         index: { LearnCloud: { get: mocks.get, add: mocks.add } },
         read: { get: mocks.read },
+        invoke: { getCredentialRefreshReceipt: mocks.receipt, verifyCredential: mocks.verify },
     };
     mocks.getBespoke.mockResolvedValue(mocks.wallet);
     mocks.saveFact.mockReset();
@@ -117,6 +120,8 @@ beforeEach(async () => {
     mocks.getConsentedContracts.mockReset().mockResolvedValue([]);
     mocks.upload.mockResolvedValue('encrypted-uri');
     mocks.read.mockResolvedValue(credential);
+    mocks.receipt.mockResolvedValue(null);
+    mocks.verify.mockResolvedValue({ checks: ['proof'], errors: [], warnings: [] });
     mocks.get.mockImplementation(async (query: Record<string, string>) =>
         records.filter(record =>
             Object.entries(query).every(
@@ -128,6 +133,53 @@ beforeEach(async () => {
         records.push(record);
         return true;
     });
+});
+
+it('persists an independently validated managed baseline with the index record', async () => {
+    const baseline = {
+        refreshId: 'refresh-1',
+        credentialId: 'urn:uuid:managed-1',
+        issuerDid: 'did:key:issuer',
+        holderDid: 'did:key:holder',
+        encryptionMode: 'network',
+        refreshService: {
+            id: 'https://network.example/refresh/1',
+            type: 'LearnCardCredentialRefresh2026',
+            authorization: { type: 'LearnCardDIDAuth' },
+        },
+    };
+    mocks.receipt.mockResolvedValue(baseline);
+    mocks.read.mockResolvedValue({
+        ...credential,
+        id: baseline.credentialId,
+        credentialSubject: { id: baseline.holderDid },
+        refreshService: baseline.refreshService,
+        proof: { ...credentialProof, proofValue: 'z123' },
+    });
+    await useWallet().addVCtoWallet({ uri: 'lc:network:network.example/trpc:credential:root' });
+    expect(mocks.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+            refresh: expect.objectContaining({ baseline, history: [] }),
+        })
+    );
+});
+
+it('does not write a managed delivery when its signed binding differs from the receipt', async () => {
+    mocks.receipt.mockResolvedValue({
+        refreshId: 'refresh-1',
+        credentialId: 'urn:uuid:other',
+        issuerDid: 'did:key:issuer',
+        holderDid: 'did:key:holder',
+        encryptionMode: 'network',
+        refreshService: {
+            id: 'https://network.example/refresh/1',
+            type: 'LearnCardCredentialRefresh2026',
+        },
+    });
+    await expect(
+        useWallet().addVCtoWallet({ uri: 'lc:network:network.example/trpc:credential:root' })
+    ).rejects.toThrow();
+    expect(mocks.add).not.toHaveBeenCalled();
 });
 
 it('updates on-device targeting facts and emits the claim trigger after saving', async () => {

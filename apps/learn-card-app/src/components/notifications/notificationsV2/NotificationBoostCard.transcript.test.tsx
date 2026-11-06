@@ -81,7 +81,7 @@ vi.mock('../../../hooks/useTranscriptArrival', () => ({
     getTranscriptPendingReceivedKey: (did: string, id: string) => `pending:${did}:${id}`,
 }));
 vi.mock('learn-card-base', () => ({
-    useGetResolvedCredential: () => mocks.resolved,
+    useGetClaimCredential: () => ({ isError: false, ...mocks.resolved }),
     useAcceptCredentialMutation: () => ({ mutate: vi.fn(), isLoading: false }),
     useUpdateNotification: () => ({ mutate: vi.fn() }),
     usePathQuery: () => mocks.query,
@@ -257,6 +257,27 @@ describe('NotificationBoostCard claim deep link', () => {
         renderCard();
         await waitFor(() => expect(mocks.newModal).toHaveBeenCalledTimes(1));
         expect(mocks.isMatchingTranscript).not.toHaveBeenCalled();
+    });
+
+    it('never claims or opens a modal for a delivery that fails verification', async () => {
+        mocks.statusQuery = { data: outstanding, isFetched: true, isError: false };
+        mocks.resolved = { data: undefined, isLoading: false, isError: true } as never;
+        renderCard();
+        await new Promise(resolve => setTimeout(resolve, 20));
+        expect(mocks.newModal).not.toHaveBeenCalled();
+        expect(mocks.isMatchingTranscript).not.toHaveBeenCalled();
+        expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+    });
+
+    it('waits for the credential to resolve before deciding', async () => {
+        mocks.statusQuery = { data: { issuerDid: ISSUER_DID }, isFetched: true, isError: false };
+        mocks.resolved = { data: undefined, isLoading: true };
+        const view = renderCard();
+        await new Promise(resolve => setTimeout(resolve, 20));
+        expect(mocks.newModal).not.toHaveBeenCalled();
+        mocks.resolved = { data: TRANSCRIPT_VC, isLoading: false };
+        view.rerender(<NotificationBoostCard notification={notification} cardLoading />);
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledTimes(1));
     });
 
     it('opens the generic modal when there is no outstanding request', async () => {

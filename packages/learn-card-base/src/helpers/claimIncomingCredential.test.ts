@@ -6,6 +6,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { QueryClient } from '@tanstack/react-query';
 
+const resolveCredentialForClaim = vi.hoisted(() => vi.fn());
+vi.mock('./ingestManagedCredential', () => ({ resolveCredentialForClaim }));
+
 import { claimIncomingCredential } from './claimIncomingCredential';
 import { connectionPromptKeys } from '../react-query/connectionPrompts';
 import type { BespokeLearnCard } from '../types/learn-card';
@@ -26,6 +29,45 @@ const makeWallet = (overrides: Partial<BespokeLearnCard['invoke']> = {}): Bespok
     }) as unknown as BespokeLearnCard;
 
 describe('claimIncomingCredential', () => {
+    it('verifies a managed network delivery before accepting or saving it', async () => {
+        const managedUri = 'lc:network:network.example/trpc:credential:abc';
+        resolveCredentialForClaim.mockReset().mockResolvedValue({ credential: {} });
+        const wallet = makeWallet();
+        const addVCtoWallet = vi.fn().mockResolvedValue(true);
+        await claimIncomingCredential({
+            uri: managedUri,
+            wallet,
+            addVCtoWallet,
+            queryClient: makeQueryClient(),
+        });
+        expect(resolveCredentialForClaim).toHaveBeenCalledWith(wallet, managedUri);
+
+        resolveCredentialForClaim.mockRejectedValueOnce(new Error('verification failed'));
+        const rejectedWallet = makeWallet();
+        const rejectedAdd = vi.fn().mockResolvedValue(true);
+        await expect(
+            claimIncomingCredential({
+                uri: managedUri,
+                wallet: rejectedWallet,
+                addVCtoWallet: rejectedAdd,
+                queryClient: makeQueryClient(),
+            })
+        ).rejects.toThrow('verification failed');
+        expect(rejectedAdd).not.toHaveBeenCalled();
+        expect(rejectedWallet.invoke.acceptCredential).not.toHaveBeenCalled();
+    });
+
+    it('does not run managed verification for other URIs', async () => {
+        resolveCredentialForClaim.mockReset();
+        await claimIncomingCredential({
+            uri: URI,
+            wallet: makeWallet(),
+            addVCtoWallet: vi.fn().mockResolvedValue(true),
+            queryClient: makeQueryClient(),
+        });
+        expect(resolveCredentialForClaim).not.toHaveBeenCalled();
+    });
+
     it('adds, accepts, and marks the matching notification COMPLETED on the happy path', async () => {
         const wallet = makeWallet();
         const addVCtoWallet = vi.fn().mockResolvedValue(true);

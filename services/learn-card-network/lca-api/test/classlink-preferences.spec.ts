@@ -21,6 +21,11 @@ vi.mock('../src/helpers/classlink.config', async importOriginal => ({
     getClassLinkConfig: vi.fn(),
 }));
 // Spy on the real lookup (real UserKey + ClassLinkIdentity documents) to count calls.
+// Age authority (brain profile) is known and adult, so these specs exercise the ClassLink
+// privacy lock on its own; the age rules are covered by preferences.spec.ts.
+vi.mock('@helpers/currentProfile', () => ({
+    getCurrentProfile: vi.fn(async () => ({ dob: '1990-01-01', country: 'US', type: 'person' })),
+}));
 vi.mock('../src/helpers/classlinkContext.helpers', async importOriginal => {
     const actual = await importOriginal<typeof import('../src/helpers/classlinkContext.helpers')>();
     return { ...actual, getClassLinkStudentStatus: vi.fn(actual.getClassLinkStudentStatus) };
@@ -198,6 +203,19 @@ describe('ClassLink student privacy lock', () => {
             locked: true,
         });
         expect(studentLookups).not.toHaveBeenCalled();
+    });
+
+    it('keeps a stored lock when the age profile says adult (no age repair over the lock)', async () => {
+        await enforceMinorPreferences(student);
+        await caller(student).updatePreferences({ analyticsEnabled: true, isMinor: false });
+        expect(await caller(student).getPreferencesForDid()).toMatchObject({
+            ...minor,
+            locked: true,
+        });
+        expect(await Preferences.findOne({ did: student })).toMatchObject({
+            isMinor: true,
+            analyticsEnabled: false,
+        });
     });
 
     it('never locks an adult, with or without a ClassLink identity', async () => {

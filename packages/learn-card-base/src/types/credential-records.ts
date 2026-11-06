@@ -1,4 +1,4 @@
-import { CredentialRecord } from '@learncard/types';
+import { CredentialRecord, CredentialRefreshReceipt } from '@learncard/types';
 import { CredentialCategory } from './credentials';
 
 /**
@@ -20,6 +20,8 @@ export type CredentialRefreshHistoryEntry = {
  * enforce staleness. The record itself is encrypted by the LearnCloud index plane.
  */
 export type CredentialRefreshMetadata = {
+    /** Independently validated delivery binding, retained across every local refresh. */
+    baseline?: CredentialRefreshReceipt;
     serviceId: string;
     serviceType: string;
     credentialId: string;

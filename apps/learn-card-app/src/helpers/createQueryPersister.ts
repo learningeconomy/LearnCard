@@ -13,7 +13,9 @@ const CACHE_KEY = 'REACT_QUERY_OFFLINE_CACHE';
 /** Batch ordinary cache events, but let mutations await a durable, ordered snapshot. */
 export const createQueryPersister = (
     storage: QueryStorage,
-    onError: (error: unknown) => void
+    onError: (error: unknown) => void,
+    // Must match PersistQueryClientProvider's buster, or restore discards explicit saves.
+    buster = ''
 ): { persister: Persister; persistNow: (client: QueryClient) => Promise<void> } => {
     let pending: PersistedClient | undefined;
     let timer: number | undefined;
@@ -65,7 +67,7 @@ export const createQueryPersister = (
     return {
         persister,
         persistNow: client => {
-            pending = { buster: '', timestamp: Date.now(), clientState: dehydrate(client) };
+            pending = { buster, timestamp: Date.now(), clientState: dehydrate(client) };
             // Supersede the throttled snapshot and wait behind any older in-flight write.
             return flush();
         },

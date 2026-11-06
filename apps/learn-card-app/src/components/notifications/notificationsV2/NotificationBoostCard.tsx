@@ -21,7 +21,7 @@ import {
 import { formatDid } from 'learn-card-base/helpers/didHelpers';
 
 import {
-    useGetResolvedCredential,
+    useGetClaimCredential,
     useAcceptCredentialMutation,
     useUpdateNotification,
     usePathQuery,
@@ -112,7 +112,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     // unsure what the situation is when there are multiple uris to resolved
     // eg current component is not built to handle displaying multiple resolved vcs as such....
     // so it seeems like some kind of future use case
-    const { data, isLoading } = useGetResolvedCredential(notification?.data?.vcUris?.[0]);
+    const { data, isLoading, isError } = useGetClaimCredential(notification?.data?.vcUris?.[0]);
     const { mutate, isLoading: acceptCredentialLoading } = useAcceptCredentialMutation();
     const { mutate: updateNotification } = useUpdateNotification();
 
@@ -284,15 +284,24 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const openClaimModalRef = useRef(openClaimModalFromDeepLink);
     openClaimModalRef.current = openClaimModalFromDeepLink;
 
-    // Generic path — unchanged from before the transcript feature: decide once, on mount.
+    // Generic path — same as without the transcript feature: open once the credential has
+    // resolved and verified (a managed delivery that fails verification never opens it).
     useEffect(() => {
-        if (isTranscriptFeatureOn) return;
-        if (_uri === credentialUri && _claim && !claimModalOpen && !isClaimed) {
+        if (isTranscriptFeatureOn || claimDecisionMadeRef.current) return;
+        if (data && !isError && _uri === credentialUri && _claim && !claimModalOpen && !isClaimed) {
             claimDecisionMadeRef.current = true;
             openClaimModalRef.current();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [
+        isTranscriptFeatureOn,
+        data,
+        isError,
+        _uri,
+        _claim,
+        credentialUri,
+        claimModalOpen,
+        isClaimed,
+    ]);
 
     // Transcript path: never wait forever for the status or the credential.
     useEffect(() => {
@@ -312,6 +321,13 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     useEffect(() => {
         if (!isTranscriptFeatureOn || !isClaimDeepLink || claimDecisionMadeRef.current) return;
         if (claimModalOpen || isClaimed) return;
+        // Never decide on an unverified credential: wait for it to resolve and verify. A
+        // failed verification renders the error state instead of any claim path.
+        if (isError) {
+            claimDecisionMadeRef.current = true;
+            return;
+        }
+        if (!data) return;
         if (!isTranscriptStatusSettled && !claimDecisionTimedOut) return;
 
         const issuerDid = transcriptStatus?.issuerDid;
@@ -428,6 +444,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         transcriptStatus,
         resolvedCred,
         isLoading,
+        data,
+        isError,
         notification,
         credentialUri,
         initWallet,
@@ -452,6 +470,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     };
 
     const handleCardClick = () => {
+        if (!data || isError || isLoading) return;
         handleMarkRead();
         newModal(
             <BoostClaimCard
@@ -550,6 +569,14 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
             ? unwrappedCred.credentialSubject.verifiableCredential[0]?.credentialSubject
                   ?.achievement?.achievementType
             : unwrappedCred?.credentialSubject?.achievement?.achievementType;
+
+    if (isError) {
+        return (
+            <div role="alert" className="p-4 text-sm text-red-700">
+                {m['claim.modal.verificationFailed']()}
+            </div>
+        );
+    }
 
     return (
         <>

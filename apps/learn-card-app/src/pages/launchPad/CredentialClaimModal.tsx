@@ -11,6 +11,7 @@ import {
     ToastTypeEnum,
     BoostPageViewMode,
     BoostCategoryOptionsEnum,
+    resolveCredentialForClaim,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { claimIncomingCredential } from 'learn-card-base/helpers/claimIncomingCredential';
@@ -90,6 +91,24 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             try {
                 setIsLoading(true);
                 setError(null);
+                setCredential(null);
+                setWalletReady(false);
+
+                // Classify using authenticated delivery metadata, not the pre-resolved payload.
+                if (
+                    credentialUri.startsWith('lc:network:') &&
+                    credentialUri.includes(':credential:')
+                ) {
+                    const wallet = await initWallet();
+                    const resolved = await resolveCredentialForClaim(wallet, credentialUri);
+                    if (!cancelled) {
+                        walletRef.current = wallet;
+                        setWalletReady(true);
+                        setCredential(resolved.credential);
+                        markCredentialResolved({ fastPath: false });
+                    }
+                    return;
+                }
 
                 if (preResolvedCredential) {
                     // Fast path — render immediately with what we have
@@ -142,7 +161,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 }
             } catch (err) {
                 log.error('Failed to resolve credential:', err);
-                if (!cancelled) setError(m['claim.modal.loadError']());
+                if (!cancelled) setError(m['claim.modal.verificationFailed']());
                 void flushSendCredentialFlowOnError({
                     phase: 'credential_resolve',
                     message: err instanceof Error ? err.message : String(err),
@@ -165,6 +184,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
         markClaimStarted();
 
         try {
+            if (error || !credential) return;
             // Belt-and-braces: if the fast path raced and walletRef hasn't been
             // populated yet, await initWallet here before the parallel block so
             // acceptCredential / queryNotifications can't silently no-op.
@@ -195,6 +215,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             });
         } catch (err) {
             log.error('Failed to claim credential:', err);
+            if (credentialUri.startsWith('lc:network:')) {
+                setError(m['claim.modal.verificationFailed']());
+                setCredential(null);
+            }
             void flushSendCredentialFlowOnError({
                 phase: 'claim',
                 message: err instanceof Error ? err.message : String(err),
