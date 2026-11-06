@@ -767,6 +767,37 @@ describe('transcript requests', () => {
             expect((await caller().getStatus()).latest?.requestId).toBe(requestId);
         });
 
+        it('never lets a uid prove ownership of a request that records another DID (no check-then-use window)', async () => {
+            // Simulates the race: the owner's request lands after a stale-uid wallet decided
+            // its owned uids. The final query itself must not match it by uid.
+            await createTranscriptRequest({
+                jti: 'owner-new',
+                firebaseUid: 'uid-shared',
+                did,
+                primaryDid: did,
+                identityKey,
+                state: 'XX',
+                consentAt: new Date(),
+                status: 'requested',
+            });
+            const staleOwner = { firebaseUids: ['uid-shared'], dids: ['did:key:stale'] };
+            expect(await findLatestTranscriptRequest(staleOwner, 'XX')).toBeNull();
+            expect(await deleteTranscriptRequestsForAccount(staleOwner)).toBe(0);
+            // A legacy request with no recorded primaryDid is still owned through its uid.
+            await createTranscriptRequest({
+                jti: 'legacy-shared',
+                firebaseUid: 'uid-shared',
+                did: 'did:key:old-session',
+                identityKey,
+                state: 'XX',
+                consentAt: new Date(),
+                status: 'requested',
+            });
+            expect(await findLatestTranscriptRequest(staleOwner, 'XX')).toMatchObject({
+                jti: 'legacy-shared',
+            });
+        });
+
         it('keeps transcript history after the ClassLink identity is rebound to a new uid', async () => {
             const { requestId } = await caller().request({ consent: true });
             await mongodb

@@ -168,6 +168,22 @@ export const setClassLinkIdentityPrimaryDid = async (
         )
     ).modifiedCount > 0;
 
+/**
+ * Forget a recorded DID, only while it is still `expected` (so a concurrent re-record wins).
+ * Used when the recorded account no longer exists and the identity should be recorded again
+ * by the next wallet created after a fresh ClassLink sign-in.
+ */
+export const clearClassLinkIdentityPrimaryDid = async (
+    identityKey: string,
+    expected: string
+): Promise<boolean> =>
+    (
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey, primaryDid: expected },
+            { $unset: { primaryDid: '' }, $set: { updatedAt: new Date() } }
+        )
+    ).modifiedCount > 0;
+
 export const findClassLinkIdentityByIdentityKey = (
     identityKey: string
 ): Promise<MongoClassLinkIdentityType | null> =>

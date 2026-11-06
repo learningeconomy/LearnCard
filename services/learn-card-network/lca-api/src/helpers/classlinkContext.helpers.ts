@@ -44,20 +44,36 @@ export interface AccountClassLinkIdentities {
      * recovery rebind or "Secure my account" removed from its owner). They grant nothing.
      */
     heldElsewhere: MongoClassLinkIdentityType[];
+    /**
+     * Identities that matched only by a Firebase uid or Keycloak subject while their recorded
+     * DID belongs to no live account (its owner was deleted and the deletion cascade did not
+     * finish). They grant nothing through a uid or subject alone: only a fresh ClassLink sign-in
+     * or School Connect, which prove the person, re-records them to an account.
+     */
+    orphaned: MongoClassLinkIdentityType[];
 }
 
+type MatchOwnership = 'owned' | 'heldElsewhere' | 'orphaned';
+
 /**
- * Whether an identity matched by uid/subject is owned by another live account: its recorded
- * DID is not one of this account's DIDs and some account still holds it.
+ * How an identity matched by uid/subject relates to this account. Owned when it has no
+ * recorded DID yet or records one of this account's DIDs; held elsewhere when another live
+ * account holds its recorded DID; orphaned when no account holds it any more.
  */
-const isHeldByOtherAccount = async (
+const classifyMatch = async (
     identity: MongoClassLinkIdentityType,
     accountDids: string[]
-): Promise<boolean> => {
+): Promise<MatchOwnership> => {
     const recorded = identity.primaryDid;
-    if (!recorded || accountDids.includes(recorded)) return false;
-    return Boolean(await findUserKeyByDid(recorded));
+    if (!recorded || accountDids.includes(recorded)) return 'owned';
+    return (await findUserKeyByDid(recorded)) ? 'heldElsewhere' : 'orphaned';
 };
+
+/** True when the identity records a DID that no live account holds (see `orphaned`). */
+export const isOrphanedClassLinkIdentity = async (
+    identity: Pick<MongoClassLinkIdentityType, 'primaryDid'>
+): Promise<boolean> =>
+    Boolean(identity.primaryDid) && !(await findUserKeyByDid(identity.primaryDid as string));
 
 /** See `findClassLinkIdentitiesForAccount`; also returns the matches held elsewhere. */
 export const matchClassLinkIdentitiesForAccount = async (
@@ -82,10 +98,12 @@ export const matchClassLinkIdentitiesForAccount = async (
             if (!found.has(identity.identityKey)) found.set(identity.identityKey, identity);
     const all = [...found.values()];
     // Lookup errors propagate: callers fail closed (no access, privacy lock kept).
-    const held = await Promise.all(all.map(item => isHeldByOtherAccount(item, accountDids)));
+    const kinds = await Promise.all(all.map(item => classifyMatch(item, accountDids)));
+    const pick = (kind: MatchOwnership) => all.filter((_, index) => kinds[index] === kind);
     return {
-        identities: all.filter((_, index) => !held[index]),
-        heldElsewhere: all.filter((_, index) => held[index]),
+        identities: pick('owned'),
+        heldElsewhere: pick('heldElsewhere'),
+        orphaned: pick('orphaned'),
     };
 };
 
@@ -228,7 +246,8 @@ export const getClassLinkStudentStatus = async (did: string): Promise<ClassLinkS
     try {
         const userKey = await findUserKeyByDid(did);
         if (!userKey) return 'no_account';
-        const { identities, heldElsewhere } = await matchClassLinkIdentitiesForAccount(userKey);
+        const { identities, heldElsewhere, orphaned } =
+            await matchClassLinkIdentitiesForAccount(userKey);
         await Promise.all(
             identities.map(identity => recordClassLinkIdentityDid(identity, userKey))
         );
@@ -236,7 +255,9 @@ export const getClassLinkStudentStatus = async (did: string): Promise<ClassLinkS
         // identity held by another account grants no access, but it still marks the same
         // person (same sign-in) as a student: a fresh wallet made for the owner's old uid
         // stays locked rather than escaping the lock.
-        return [...identities, ...heldElsewhere].some(identity => identity.isMinorHint === true)
+        return [...identities, ...heldElsewhere, ...orphaned].some(
+            identity => identity.isMinorHint === true
+        )
             ? 'student'
             : 'not_student';
     } catch {

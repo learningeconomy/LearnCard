@@ -18,6 +18,7 @@ import { releaseClassLinkFirebaseEmail } from '@helpers/classlinkFirebaseUser.he
 import {
     findClassLinkIdentitiesForAccount,
     getAccountDids,
+    isOrphanedClassLinkIdentity,
 } from '@helpers/classlinkContext.helpers';
 import { clearNotStudentCache } from '@accesslayer/preferences/privacyLock';
 import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
@@ -129,7 +130,13 @@ export const connectProcedures = {
                 const ownsExisting =
                     existing !== null &&
                     accountIdentities.some(item => item.identityKey === identityKey);
-                if (existing && !ownsExisting) {
+                // An identity whose recorded account no longer exists (deleted, cascade not
+                // finished) may be adopted: this connect just proved the person with ClassLink.
+                const adoptsOrphan =
+                    existing !== null &&
+                    !ownsExisting &&
+                    (await isOrphanedClassLinkIdentity(existing));
+                if (existing && !ownsExisting && !adoptsOrphan) {
                     console.warn('classlink.connect.conflict', {
                         tenantId,
                         reason: 'other_account',

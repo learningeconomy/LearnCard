@@ -29,7 +29,14 @@ export type TranscriptRequestInput = Omit<MongoTranscriptRequestType, 'requested
 
 /**
  * Identifies the account that owns transcript requests. A request belongs to the account when
- * its `firebaseUid` is one of `firebaseUids`, or its `primaryDid` or `did` is one of `dids`.
+ * its `primaryDid` or `did` is one of `dids`, or, for a legacy request with no recorded
+ * `primaryDid`, its `firebaseUid` is one of `firebaseUids`.
+ *
+ * A uid never proves ownership of a request that records a `primaryDid`: every current
+ * request records the owning account's DID, and a uid can outlive its account's link to it
+ * (a recovery rebind or "Secure my account" leaves the old uid usable by a stale session).
+ * Enforcing that here, in the same query that reads or deletes, also closes the window
+ * between deciding which uids are owned and using them.
  */
 export interface TranscriptRequestOwner {
     firebaseUids: string[];
@@ -68,7 +75,11 @@ const ownerFilter = (owner: TranscriptRequestOwner): Filter<MongoTranscriptReque
     const firebaseUids = uniqueNonEmpty(owner.firebaseUids);
     const dids = uniqueNonEmpty(owner.dids);
     const clauses: Filter<MongoTranscriptRequestType>[] = [];
-    if (firebaseUids.length > 0) clauses.push({ firebaseUid: { $in: firebaseUids } });
+    if (firebaseUids.length > 0)
+        clauses.push({
+            firebaseUid: { $in: firebaseUids },
+            $or: [{ primaryDid: { $exists: false } }, { primaryDid: null }],
+        } as Filter<MongoTranscriptRequestType>);
     if (dids.length > 0) clauses.push({ primaryDid: { $in: dids } }, { did: { $in: dids } });
     return clauses.length > 0 ? { $or: clauses } : null;
 };

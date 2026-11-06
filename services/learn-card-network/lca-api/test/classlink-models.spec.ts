@@ -348,20 +348,40 @@ describe('account-keyed ClassLink lookup', () => {
         );
     });
 
-    it("replaces a recorded DID that no account holds any more, or that is this account's", async () => {
+    it('gives an orphaned identity (recorded account deleted) no access through a uid alone', async () => {
+        // The owner was deleted and the cascade did not finish: the identity still records
+        // the owner's DID, which no account holds any more.
         await upsertClassLinkIdentity({
             ...identity(),
             primaryDid: 'did:key:gone',
+            isMinorHint: true,
+            sealedStateStudentId: null,
+        });
+        const stale = account([{ type: 'firebase', id: 'uid-x' }]);
+        await getUserKeysCollection().insertOne(stale);
+        const matched = await matchClassLinkIdentitiesForAccount(stale);
+        expect(matched.identities).toEqual([]);
+        expect(matched.orphaned.map(item => item.identityKey)).toEqual([
+            'classlink:tenant-test:source-1',
+        ]);
+        await expect(resolveClassLinkContext(did)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        // Still the same sign-in, so it stays privacy-locked as a student.
+        await expect(getClassLinkStudentStatus(did)).resolves.toBe('student');
+        // A status lookup never re-records it; only a fresh ClassLink proof does.
+        expect((await getClassLinkIdentitiesCollection().findOne({}))?.primaryDid).toBe(
+            'did:key:gone'
+        );
+        // Its owner is gone, so deleting the wallet's ClassLink data removes the leftover.
+        expect(await deleteClassLinkDataForAccount(stale)).toMatchObject({ identities: 1 });
+    });
+
+    it("replaces a recorded DID with the account's primary DID when it is one of its own", async () => {
+        await upsertClassLinkIdentity({
+            ...identity(),
+            primaryDid: 'did:key:linked',
             sealedStateStudentId: null,
         });
         await getUserKeysCollection().insertOne(account([{ type: 'firebase', id: 'uid-x' }]));
-        await getClassLinkStudentStatus(did);
-        expect((await getClassLinkIdentitiesCollection().findOne({}))?.primaryDid).toBe(did);
-        // The account's linked DID was recorded; its primary DID replaces it.
-        await getClassLinkIdentitiesCollection().updateOne(
-            {},
-            { $set: { primaryDid: 'did:key:linked' } }
-        );
         await getClassLinkStudentStatus(did);
         expect((await getClassLinkIdentitiesCollection().findOne({}))?.primaryDid).toBe(did);
     });

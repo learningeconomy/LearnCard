@@ -180,7 +180,8 @@ jobs:
                   test/jobs/escrowHoldReminders.spec.ts
 
             # ClassLink SSO + transcript live-Mongo specs (account linking/CONFLICT,
-            # trusted-email gate, transcript lock/ownership, deletion cascade). Same
+            # trusted-email gate, transcript lock/ownership, deletion cascade, ClassLink
+            # pinning before a recovery rebind removes a login). Same
             # gap as above: only vitest.integration.config.ts picks these up.
             - name: Run ClassLink and transcript integration specs
               working-directory: services/learn-card-network/lca-api
@@ -194,6 +195,7 @@ jobs:
                   test/classlink-cleanup.spec.ts
                   test/classlink-synthetic-email.spec.ts
                   test/transcripts.spec.ts
+                  test/keys-identity-rebind.spec.ts
 
     ai-agent:
         name: AI Agent CI

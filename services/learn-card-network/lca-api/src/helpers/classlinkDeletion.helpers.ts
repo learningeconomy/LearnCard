@@ -60,7 +60,10 @@ export const deleteClassLinkDataForAccount = async (
     options: { clearPrivacyLock?: boolean } = {}
 ): Promise<ClassLinkDeletionResult> => {
     const matched = await matchClassLinkIdentitiesForAccount(account);
-    const { identities } = matched;
+    // Orphaned matches (their recorded account was deleted and its cascade did not finish)
+    // are removed too: no live account loses anything, and leaving them would keep a deleted
+    // account's school data with nobody able to delete it.
+    const identities = [...matched.identities, ...matched.orphaned];
     let authSubjects = 0;
     for (const identity of identities) {
         const address = identity.personalEmail?.trim().toLowerCase();

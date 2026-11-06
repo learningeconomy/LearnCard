@@ -154,6 +154,48 @@ describe('ClassLink account cleanup', () => {
         expect(remainingLiveCount).toBe(1);
     });
 
+    it("removes a deleted account's leftovers even while another wallet holds the same uid", async () => {
+        const { cleanupOrphanClassLinkData } =
+            await import('../src/helpers/classlinkCleanup.helpers');
+        const liveIdentity = await getClassLinkIdentitiesCollection().findOne({});
+        const { _id: _ignoredId, ...identityWithoutId } = liveIdentity!;
+        const old = new Date(Date.now() - 31 * 86_400_000);
+        // The deleted account recorded its DID; the live UserKey on `uid` is someone else's
+        // wallet now, and a uid alone never proves ownership of recorded-DID data.
+        await getClassLinkIdentitiesCollection().insertOne({
+            ...identityWithoutId,
+            identityKey: 'classlink:cleanup:deleted-owner',
+            firebaseUid: uid,
+            primaryDid: 'did:key:deleted-owner',
+            createdAt: old,
+            updatedAt: old,
+        });
+        await getTranscriptRequestsCollection().insertOne({
+            jti: 'deleted-owner-row',
+            firebaseUid: uid,
+            did: 'did:key:deleted-owner',
+            primaryDid: 'did:key:deleted-owner',
+            identityKey: 'classlink:cleanup:deleted-owner',
+            state: 'XX',
+            consentAt: old,
+            requestedAt: old,
+            status: 'requested',
+        } as never);
+        await cleanupOrphanClassLinkData({ apply: true });
+        expect(
+            await getClassLinkIdentitiesCollection().countDocuments({
+                identityKey: 'classlink:cleanup:deleted-owner',
+            })
+        ).toBe(0);
+        expect(
+            await getTranscriptRequestsCollection().countDocuments({ jti: 'deleted-owner-row' })
+        ).toBe(0);
+        // The live identity (no recorded DID, owned through its uid) is kept.
+        expect(await getClassLinkIdentitiesCollection().countDocuments({ firebaseUid: uid })).toBe(
+            1
+        );
+    });
+
     it('clears expired state IDs only when applied', async () => {
         const { clearExpiredClassLinkStateIds } =
             await import('../src/helpers/classlinkCleanup.helpers');

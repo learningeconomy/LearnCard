@@ -63,8 +63,10 @@ export interface OrphanCleanupOptions {
 }
 
 /**
- * Whether any account still owns this data: a UserKey with the Firebase uid, a UserKey for
- * a recorded DID, or a Keycloak provider whose id is the identity's subject.
+ * Whether any account still owns this data: a UserKey for a recorded DID, or, only when no
+ * owning DID is recorded, a UserKey with the Firebase uid or a Keycloak provider whose id is
+ * the identity's subject. Matches the access rules: a uid or subject alone never proves
+ * ownership of data that records an account DID (see `ownerFilter` and `orphaned`).
  */
 const hasOwner = async ({
     firebaseUid,
@@ -105,9 +107,10 @@ export const cleanupOrphanClassLinkData = async (
     for await (const identity of identities) {
         if (
             await hasOwner({
-                firebaseUid: identity.firebaseUid,
+                ...(identity.primaryDid
+                    ? {}
+                    : { firebaseUid: identity.firebaseUid, subject: identity.subject }),
                 dids: [identity.primaryDid],
-                subject: identity.subject,
             })
         )
             continue;
@@ -138,7 +141,7 @@ export const cleanupOrphanClassLinkData = async (
     for await (const request of requests) {
         if (
             await hasOwner({
-                firebaseUid: request.firebaseUid,
+                ...(request.primaryDid ? {} : { firebaseUid: request.firebaseUid }),
                 dids: [request.did, request.primaryDid],
             })
         )

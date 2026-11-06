@@ -41,6 +41,7 @@ import { maybeClearExpiredStateStudentIds } from '@helpers/classlinkCleanup.help
 import {
     findClassLinkIdentityForAccount,
     getAccountDids,
+    isOrphanedClassLinkIdentity,
     recordClassLinkIdentityDid,
 } from '@helpers/classlinkContext.helpers';
 import { clearNotStudentCache } from '@accesslayer/preferences/privacyLock';
@@ -58,6 +59,7 @@ import {
     getOrCreateAuthSubjectLinkedTo,
 } from '../models/AuthSubject';
 import {
+    clearClassLinkIdentityPrimaryDid,
     findClassLinkIdentityByFirebaseUid,
     findClassLinkIdentityByIdentityKey,
     upsertClassLinkIdentity,
@@ -350,15 +352,31 @@ export const classlinkRouter = t.router({
                     isMinorHint: isStudent,
                 });
                 const hintChanged = !existing || existing.isMinorHint !== isStudent;
+                // A recorded DID that no live account holds: its owner was deleted and the
+                // cascade did not finish. A uid or subject alone never claims it.
+                const recordedOrphaned = existing?.primaryDid
+                    ? await isOrphanedClassLinkIdentity(existing)
+                    : false;
                 const accountKey =
-                    hintChanged || !existing?.primaryDid
+                    hintChanged || !existing?.primaryDid || recordedOrphaned
                         ? await findUserKeyByAuthProvider('firebase', uid)
                         : null;
-                // Record the account's DID now (fill-only), rather than on first use of a
-                // ClassLink feature: once recorded, a fresh wallet made for this uid after a
-                // later recovery rebind or revoke is not treated as the identity's owner.
-                if (accountKey && !existing?.primaryDid)
+                if (recordedOrphaned && !accountKey) {
+                    // The returning student has no wallet yet: forget the dead DID (only if it
+                    // is unchanged), so the wallet they create next records itself like a new
+                    // sign-in. If a wallet already holds this uid it may be a stale session's,
+                    // so nothing is re-claimed here; School Connect from inside that wallet
+                    // (wallet session plus a fresh ClassLink proof) adopts the identity.
+                    await clearClassLinkIdentityPrimaryDid(
+                        identityKey,
+                        existing?.primaryDid as string
+                    );
+                } else if (accountKey && !existing?.primaryDid) {
+                    // Record the account's DID now (fill-only), rather than on first use of a
+                    // ClassLink feature: once recorded, a fresh wallet made for this uid after a
+                    // later recovery rebind or revoke is not treated as the identity's owner.
                     await recordClassLinkIdentityDid({ identityKey }, accountKey);
+                }
                 if (hintChanged) {
                     // The account gained a ClassLink identity (new, joined or re-created after
                     // deleteMyData) or its student hint changed: drop any cached "not a student"

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import mongodb from '@mongo';
+import { getClassLinkStudentStatus } from '../src/helpers/classlinkContext.helpers';
 import { classlinkRouter } from '../src/routes/classlink';
 import { getClassLinkConfig } from '../src/helpers/classlink.config';
 import { exchangeClassLinkCode, verifyClassLinkIdToken } from '../src/helpers/classlink.helpers';
@@ -408,6 +409,69 @@ describe('School Connect', () => {
         expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
             firebaseUid: 'rebound-uid',
             primaryDid: did,
+        });
+    });
+
+    describe('orphaned identity (owner deleted, cascade unfinished)', () => {
+        const fresh = 'did:key:after-delete';
+        const deleteOwnerWithoutCascade = async () => {
+            await caller().connect(exchange);
+            await mongodb.collection('userkeys').deleteOne({ primaryDid: did });
+        };
+        const insertFreshWallet = () =>
+            mongodb.collection('userkeys').insertOne({
+                primaryDid: fresh,
+                linkedDids: [],
+                authProviders: [{ type: 'firebase', id: uid }],
+            });
+
+        it('gives a wallet on the leftover uid nothing until it proves the person with School Connect', async () => {
+            await deleteOwnerWithoutCascade();
+            await insertFreshWallet();
+            expect(await caller(fresh).getConnection()).toMatchObject({ connected: false });
+            await expect(caller(fresh).getPersonalEmail()).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+            });
+            // A ClassLink sign-in while that wallet exists re-claims nothing: the wallet may
+            // belong to a stale session rather than the student signing in.
+            await caller().exchangeCode(exchange);
+            expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+                primaryDid: did,
+            });
+            expect(await caller(fresh).getConnection()).toMatchObject({ connected: false });
+            // School Connect from inside the wallet (wallet session + fresh ClassLink proof).
+            await expect(caller(fresh).connect(exchange)).resolves.toMatchObject({
+                isStudent: true,
+            });
+            expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+                primaryDid: fresh,
+            });
+            expect(await caller(fresh).getConnection()).toMatchObject({ connected: true });
+        });
+
+        it('lets a returning student sign in first and then record the wallet they create', async () => {
+            await deleteOwnerWithoutCascade();
+            // Real order: ClassLink sign-in, then wallet creation.
+            await caller().exchangeCode(exchange);
+            const stored = await findClassLinkIdentityByIdentityKey(identityKey);
+            expect(stored?.primaryDid).toBeUndefined();
+            await insertFreshWallet();
+            expect(await caller(fresh).getConnection()).toMatchObject({ connected: true });
+            // The first status lookup for the wallet (e.g. its preferences read) records it.
+            await expect(getClassLinkStudentStatus(fresh)).resolves.toBe('student');
+            expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+                primaryDid: fresh,
+            });
+        });
+
+        it("lets the leftover-uid wallet delete the deleted account's ClassLink data", async () => {
+            await deleteOwnerWithoutCascade();
+            await insertFreshWallet();
+            await expect(caller(fresh).deleteMyData({})).resolves.toMatchObject({
+                deleted: expect.any(Number),
+            });
+            expect(await findClassLinkIdentityByIdentityKey(identityKey)).toBeNull();
+            expect(await findAuthSubjectByIdentityKey(identityKey)).toBeNull();
         });
     });
 

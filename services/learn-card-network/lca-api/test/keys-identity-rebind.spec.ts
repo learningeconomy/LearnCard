@@ -13,6 +13,7 @@ import {
     createUserKeysIndexes,
     getUserKeysCollection,
     purgeExpiredProvisionalMigrationByAuthProvider,
+    revokeOtherDeviceShares,
     type MongoUserKeyType,
 } from '@models';
 import * as delivery from '../src/services/delivery';
@@ -453,6 +454,43 @@ describe('P0-3 lost-identity recovery sessions', () => {
             await collection.deleteMany({ recoveryEmail });
             await getClassLinkIdentitiesCollection().deleteMany({ identityKey });
             await cache.node.flushall();
+        }
+    });
+
+    it('misses the revoke when a login was linked after the caller read (and pinned) the logins', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const recoveryEmail = `recovery-revoke-${suffix}@example.com`;
+        const callerUid = `caller-${suffix}`;
+        const did = `did:key:revoke-${suffix}`;
+        const collection = getUserKeysCollection();
+        await collection.insertOne(
+            makeRecoverableUser(`revoke-${suffix}@example.edu`, recoveryEmail, callerUid, did)
+        );
+        try {
+            const read = (await collection.findOne({ primaryDid: did }))!;
+            // A login is linked between the read/pin and the commit.
+            await collection.updateOne(
+                { primaryDid: did },
+                { $addToSet: { authProviders: { type: 'firebase', id: `late-${suffix}` } } }
+            );
+            const revoke = (expectedAuthProviders: MongoUserKeyType['authProviders']) =>
+                revokeOtherDeviceShares({
+                    authProvider: { type: 'firebase', id: callerUid },
+                    primaryDid: did,
+                    expectedShareVersion: 2,
+                    authShare: { encryptedData: 'rotated', encryptedDek: '', iv: '' },
+                    expectedAuthProviders,
+                });
+            await expect(revoke(read.authProviders)).resolves.toBeNull();
+            expect((await collection.findOne({ primaryDid: did }))?.authProviders).toHaveLength(2);
+            // Re-reading the current logins (as a retry would) lets it commit.
+            const current = (await collection.findOne({ primaryDid: did }))!;
+            await expect(revoke(current.authProviders)).resolves.not.toBeNull();
+            expect((await collection.findOne({ primaryDid: did }))?.authProviders).toEqual([
+                { type: 'firebase', id: callerUid },
+            ]);
+        } finally {
+            await collection.deleteMany({ recoveryEmail });
         }
     });
 

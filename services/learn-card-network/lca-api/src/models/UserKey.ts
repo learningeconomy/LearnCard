@@ -2055,6 +2055,11 @@ export interface RevokeOtherDeviceSharesInput {
     /** The version the caller split from; any concurrent rotation makes the revoke miss. */
     expectedShareVersion: number;
     authShare: ServerEncryptedShare;
+    /**
+     * The exact login list the caller read (as stored). When set, a login linked or removed
+     * concurrently makes the revoke miss instead of unlinking a login the caller never saw.
+     */
+    expectedAuthProviders?: AuthProviderMapping[];
 }
 
 /**
@@ -2076,9 +2081,17 @@ export const revokeOtherDeviceShares = async (
 } | null> => {
     const collection = getUserKeysCollection();
     const filter = {
-        ...getAuthProviderFilter(input.authProvider),
-        primaryDid: input.primaryDid,
-        shareVersion: input.expectedShareVersion,
+        $and: [
+            getAuthProviderFilter(input.authProvider),
+            { primaryDid: input.primaryDid, shareVersion: input.expectedShareVersion },
+            // When the caller acted on a specific set of logins (e.g. pinned ClassLink
+            // identities to them), only commit while that set is unchanged: a login linked in
+            // between would otherwise be unlinked without that work. The miss surfaces as
+            // CONFLICT; retry. Added to, never replacing, the caller-login check above.
+            ...(input.expectedAuthProviders
+                ? [{ authProviders: input.expectedAuthProviders }]
+                : []),
+        ],
     };
     const existing = await collection.findOne(filter);
 

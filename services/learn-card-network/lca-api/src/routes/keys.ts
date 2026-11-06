@@ -985,6 +985,8 @@ export const keysRouter = t.router({
                 primaryDid: input.primaryDid,
                 expectedShareVersion: input.expectedShareVersion,
                 authShare: encryptAuthShare(input.authShare, seed),
+                // Only unlink the logins whose ClassLink identities were just pinned.
+                expectedAuthProviders: userKey.authProviders,
             });
 
             if (!result) {
