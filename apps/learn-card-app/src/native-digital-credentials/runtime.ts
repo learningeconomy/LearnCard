@@ -7,6 +7,7 @@ import {
     type AccountInventory,
     type DigitalCredentialWallet,
     type InventoryCacheEntry,
+    type InventoryScanProgress,
 } from './inventory';
 
 const log = getLogger('native-credential-inventory');
@@ -14,7 +15,13 @@ const log = getLogger('native-credential-inventory');
 // Private app storage contains only the opaque-ID ↔ account URI mapping and hashes.
 // Credential bodies are always obtained afresh through the account's encrypted read plane.
 const KEY = 'learncard-native-credential-inventory-v1';
-let refreshCache: { owner: string; entries: Map<string, InventoryCacheEntry> } | undefined;
+let refreshCache:
+    | {
+          owner: string;
+          entries: Map<string, InventoryCacheEntry>;
+          scanProgress: InventoryScanProgress;
+      }
+    | undefined;
 let queue: Promise<unknown> = Promise.resolve();
 const serial = <T>(operation: () => Promise<T>): Promise<T> => {
     const result = queue.then(operation, operation);
@@ -47,10 +54,12 @@ export const synchronizeNativeInventory = (
             await localforage.removeItem(KEY);
         }
         const owner = accountOwner(wallet);
-        if (refreshCache?.owner !== owner) refreshCache = { owner, entries: new Map() };
+        if (refreshCache?.owner !== owner)
+            refreshCache = { owner, entries: new Map(), scanProgress: {} };
         let rejected = 0;
         const refreshed = await buildAccountInventory(wallet, previous ?? undefined, title, {
             cache: refreshCache.entries,
+            scanProgress: refreshCache.scanProgress,
             onIssue: reason => {
                 if (reason === 'projection') rejected++;
             },

@@ -38,9 +38,16 @@ export interface InventoryCacheEntry {
     entry?: RegisteredCredential;
 }
 
+/** Scan continuation outlives the short verification cache; contains no credential body. */
+export interface InventoryScanProgress {
+    owner?: string;
+    nextUri?: string;
+}
+
 export interface InventoryRefreshOptions {
     /** Metadata/negative-result cache only; never stores credential bodies or keys. */
     cache?: Map<string, InventoryCacheEntry>;
+    scanProgress?: InventoryScanProgress;
     now?: () => number;
     onIssue?: (reason: 'unavailable' | 'projection' | 'read_budget') => void;
 }
@@ -167,6 +174,14 @@ export const buildAccountInventory = async (
         (await wallet.index.LearnCloud.get()).map(entry => entry.uri).filter(Boolean)
     );
     const cache = options.cache ?? new Map<string, InventoryCacheEntry>();
+    const scanProgress = options.scanProgress;
+    if (scanProgress && scanProgress.owner !== owner) {
+        // The runtime also replaces both objects on account change. Keep this
+        // helper safe if a caller accidentally lends the state to another owner.
+        cache.clear();
+        scanProgress.owner = owner;
+        delete scanProgress.nextUri;
+    }
     for (const uri of cache.keys()) if (!indexed.has(uri)) cache.delete(uri);
     // Recheck previously advertised credentials first so a full registry doesn't
     // displace a temporarily unavailable credential with an unrelated new one.
@@ -182,7 +197,16 @@ export const buildAccountInventory = async (
             (right?.retryRequired ? right.checkedAt : 0)
         );
     });
-    uris.push(...newlyIndexed);
+    const continuation = scanProgress?.nextUri;
+    const nextIndex = continuation ? newlyIndexed.indexOf(continuation) : -1;
+    // A finite retry burst can scan only 800 uncached entries. Keep the next
+    // unread URI independently of the 60-second cache, so a later foreground
+    // continues rather than repeatedly scanning an ineligible prefix.
+    const remaining =
+        nextIndex > 0
+            ? newlyIndexed.slice(nextIndex).concat(newlyIndexed.slice(0, nextIndex))
+            : newlyIndexed;
+    for (const uri of remaining) uris.push(uri);
     const now = options.now ?? Date.now;
     const entries: RegisteredCredential[] = [];
     let retryRequired = false;
@@ -282,6 +306,10 @@ export const buildAccountInventory = async (
                 Boolean(entry)
             )
         );
+    }
+    if (scanProgress) {
+        if (entries.length < 100 && cursor < uris.length) scanProgress.nextUri = uris[cursor];
+        else delete scanProgress.nextUri;
     }
     if (entries.length < 100 && cursor < uris.length) {
         retryRequired = true;
