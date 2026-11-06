@@ -11,6 +11,10 @@ on:
                 description: 'Exact tested revision (or explicitly selected manual branch)'
                 required: true
                 type: string
+            build_once:
+                description: 'Build graph-group prerequisites once; disable only for comparison'
+                type: boolean
+                default: true
             run_brain:
                 type: boolean
                 default: true
@@ -76,13 +80,24 @@ jobs:
               working-directory: services/learn-card-network/brain-service
               run: bunx vitest run --config vitest.share-links-neo4j.config.ts
 
+            # Keep Nx's dependency ordering/parallelism, but request the common
+            # build graph only once. No new cross-run caching is enabled.
+            - name: Build graph prerequisites
+              id: builds
+              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.build_once && inputs.run_brain && inputs.group == 'graph' }}
+              run: bunx nx run network-brain-service:build:integration-dependencies
+
             - name: Run profile search
-              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.run_brain && contains(fromJSON('["graph","profile-search"]'), inputs.group) }}
-              run: bunx nx run network-brain-service:test:profile-search
+              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && (!inputs.build_once || inputs.group != 'graph' || steps.builds.outcome == 'success') && inputs.run_brain && contains(fromJSON('["graph","profile-search"]'), inputs.group) }}
+              run: >-
+                  bunx nx run network-brain-service:test:profile-search
+                  ${{ inputs.build_once && inputs.group == 'graph' && '--excludeTaskDependencies' || '' }}
 
             - name: Run boost recipients
-              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.run_brain && contains(fromJSON('["graph","boost-recipients"]'), inputs.group) }}
-              run: bunx nx run network-brain-service:test:boost-recipients
+              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && (!inputs.build_once || inputs.group != 'graph' || steps.builds.outcome == 'success') && inputs.run_brain && contains(fromJSON('["graph","boost-recipients"]'), inputs.group) }}
+              run: >-
+                  bunx nx run network-brain-service:test:boost-recipients
+                  ${{ inputs.build_once && inputs.group == 'graph' && '--excludeTaskDependencies' || '' }}
 
             - name: Run inbox security
               if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.run_brain && contains(fromJSON('["delivery","inbox"]'), inputs.group) }}
