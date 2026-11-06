@@ -9,7 +9,7 @@ import {
     getServerDidWebDID,
     getOwningServiceDid,
 } from '@helpers/federation.helpers';
-import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 import { getProfileIdFromDid } from '@helpers/did.helpers';
 
 import { getOrCreateFederatedProfile } from '@helpers/profile.helpers';
@@ -99,13 +99,18 @@ export const federationRouter = t.router({
                     senderDid,
                     issuerDisplayName
                 );
+                // A local sender's status lists belong to its real profile, not the federated alias.
+                const localIssuer = await getProfileByDid(issuerDid);
 
                 const credentialUri = await sendCredential(
                     federatedSender,
                     recipientProfile,
                     credential,
                     ctx.domain,
-                    configuration
+                    configuration,
+                    undefined,
+                    undefined,
+                    localIssuer?.profileId ?? federatedSender.profileId
                 );
 
                 return {

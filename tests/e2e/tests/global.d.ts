@@ -4,3 +4,14 @@ declare module 'hex-lite' {
     function toBuffer(hex: string): ArrayBuffer;
     function fromBuffer(buffer: ArrayBuffer): string;
 }
+
+declare module '*docs/snippets/consentflow/update-contract.mjs' {
+    import type { LearnCardNetworkPluginMethods } from '@learncard/network-plugin';
+    import type { ConsentFlowContractUpdateResult } from '@learncard/types';
+
+    export const updateTutorialContract: (
+        learnCard: { invoke: Pick<LearnCardNetworkPluginMethods, 'updateContract'> },
+        contractUri: string,
+        options?: { apply?: boolean }
+    ) => Promise<ConsentFlowContractUpdateResult>;
+}

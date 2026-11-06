@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.app_store_app_event_request_event import AppStoreAppEventRequestEvent
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,7 +28,7 @@ class AppStoreAppEventRequest(BaseModel):
     """
     AppStoreAppEventRequest
     """ # noqa: E501
-    listing_id: Optional[StrictStr] = Field(alias="listingId")
+    listing_id: StrictStr = Field(alias="listingId")
     event: AppStoreAppEventRequestEvent
     __properties: ClassVar[List[str]] = ["listingId", "event"]
 
@@ -59,9 +59,8 @@ class AppStoreAppEventRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -74,11 +73,6 @@ class AppStoreAppEventRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of event
         if self.event:
             _dict['event'] = self.event.to_dict()
-        # set to None if listing_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_id is None and "listing_id" in self.model_fields_set:
-            _dict['listingId'] = None
-
         return _dict
 
     @classmethod

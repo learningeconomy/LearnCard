@@ -147,28 +147,46 @@ fn events() -> Vec<AuthorityEvent> {
     events
 }
 fn row(value: ItemValue) -> Row {
+    row_as(&binding(), value)
+}
+fn row_as(binding: &Binding, value: ItemValue) -> Row {
     let item = StoredItem {
         schema_version: 1,
-        binding: binding(),
+        binding: binding.clone(),
         value,
     };
     Row {
-        pk: binding().partition_key().unwrap(),
+        pk: binding.partition_key().unwrap(),
         sk: item.sort_key().unwrap(),
         payload: item.encode().unwrap(),
     }
 }
 fn rows(events: &[AuthorityEvent]) -> Vec<Row> {
+    rows_as(&binding(), events)
+}
+/// `rows()` for another account: every event is re-bound (and re-signed) to `binding`.
+fn rows_as(binding: &Binding, events: &[AuthorityEvent]) -> Vec<Row> {
+    // AuthorityEvent is not Clone; a serde round trip copies it for re-binding.
+    let events: Vec<AuthorityEvent> = events
+        .iter()
+        .map(|event| {
+            let mut event: AuthorityEvent =
+                serde_json::from_slice(&serde_json::to_vec(event).unwrap()).unwrap();
+            event.binding = binding.clone();
+            event
+        })
+        .collect();
+    let row = |value| row_as(binding, value);
     let mut result = Vec::new();
     let mut operations = BTreeMap::new();
-    for event in events {
+    for event in &events {
         let revision = event.revisions.operation.get();
         let id = [revision as u8; 16];
         let proposal = signed(event);
         let execution = ExecutionRecord {
             receipt: CommitReceipt {
                 schema_version: 1,
-                binding: binding(),
+                binding: binding.clone(),
                 execution_id: id,
                 revisions: event.revisions,
                 transaction_digest: [9; 32],
@@ -176,7 +194,7 @@ fn rows(events: &[AuthorityEvent]) -> Vec<Row> {
             proposed_event: proposal.clone(),
         };
         result.push(Row {
-            pk: binding().partition_key().unwrap(),
+            pk: binding.partition_key().unwrap(),
             sk: format!("EXECUTION#{}", hex::encode(id)),
             payload: serde_json::to_vec(&execution).unwrap(),
         });
@@ -629,10 +647,23 @@ fn rpc_artifacts_are_verified_by_kind_but_never_substitute_for_execution_receipt
 
 struct Fake {
     rows: Vec<Row>,
+    /// Further accounts' rows, each bound to its own partition (see `rows_as`).
+    others: Vec<Vec<Row>>,
     reads: AtomicUsize,
-    changing: bool,
+    /// Account-row reads after which the fence appears changed (None: stable).
+    change_after: Option<usize>,
     unavailable: bool,
     metrics: Mutex<Vec<Metric>>,
+    gauges: Mutex<Vec<(Metric, u64)>>,
+}
+impl Fake {
+    fn account_rows(&self, pk: &str) -> &[Row] {
+        if pk == binding().partition_key().unwrap() {
+            &self.rows
+        } else {
+            self.others.iter().find(|r| r[0].pk == pk).unwrap()
+        }
+    }
 }
 #[async_trait::async_trait]
 impl Backend for Fake {
@@ -649,6 +680,11 @@ impl Backend for Fake {
         self.metrics.lock().unwrap().push(m);
         Ok(())
     }
+    async fn gauge(&self, m: Metric, value: u64) -> Result<()> {
+        self.metrics.lock().unwrap().push(m);
+        self.gauges.lock().unwrap().push((m, value));
+        Ok(())
+    }
     async fn notify(&self, _: Metric) -> Result<()> {
         Ok(())
     }
@@ -659,22 +695,27 @@ impl AuthorityBackend for Fake {
         if self.unavailable {
             Err(Error::Unavailable)
         } else {
-            Ok(vec![binding().partition_key().unwrap()])
+            Ok(std::iter::once(binding().partition_key().unwrap())
+                .chain(self.others.iter().map(|r| r[0].pk.clone()))
+                .collect())
         }
     }
-    async fn authority_account(&self, _: &str, _: &str) -> Result<Option<Vec<u8>>> {
+    async fn authority_account(&self, _: &str, pk: &str) -> Result<Option<Vec<u8>>> {
         let mut row = self
-            .rows
+            .account_rows(pk)
             .iter()
             .find(|r| r.sk == "ENROLLMENT")
             .map(|r| r.payload.clone());
-        if self.changing && self.reads.fetch_add(1, Ordering::SeqCst) > 0 {
+        if self
+            .change_after
+            .is_some_and(|n| self.reads.fetch_add(1, Ordering::SeqCst) >= n)
+        {
             row = Some(vec![1]);
         }
         Ok(row)
     }
-    async fn authority_rows(&self, _: &str, _: &str) -> Result<Vec<Row>> {
-        Ok(self.rows.clone())
+    async fn authority_rows(&self, _: &str, pk: &str) -> Result<Vec<Row>> {
+        Ok(self.account_rows(pk).to_vec())
     }
 }
 fn monitor(changing: bool, unavailable: bool) -> Monitor<Fake> {
@@ -683,10 +724,12 @@ fn monitor(changing: bool, unavailable: bool) -> Monitor<Fake> {
         key: TrustedKeys::Legacy(*key().verifying_key()),
         backend: Fake {
             rows: rows(&events()),
+            others: vec![],
             reads: AtomicUsize::new(0),
-            changing,
+            change_after: changing.then_some(1),
             unavailable,
             metrics: Mutex::new(vec![]),
+            gauges: Mutex::new(vec![]),
         },
     }
 }
@@ -705,6 +748,8 @@ async fn concurrent_writes_are_coverage_retries_not_false_tamper_alarms() {
     assert!(metrics.contains(&Metric::AuthorityCoverageFailure));
     assert!(!metrics.contains(&Metric::AuthorityIntegrityFailure));
     assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(!metrics.contains(&Metric::AuthorityRepeatedPinClearAccounts));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
 }
 #[tokio::test]
 async fn unavailable_reads_never_report_success_and_integrity_alarms_are_fixed_labels() {
@@ -731,7 +776,10 @@ async fn unavailable_reads_never_report_success_and_integrity_alarms_are_fixed_l
     m.sweep_authority(&config()).await.unwrap();
     assert_eq!(
         *m.backend.metrics.lock().unwrap(),
-        vec![Metric::AuthoritySweepCompleted]
+        vec![
+            Metric::AuthorityRepeatedPinClearAccounts,
+            Metric::AuthoritySweepCompleted
+        ]
     );
     assert_eq!(
         Metric::AuthorityIntegrityFailure.name(),
@@ -812,6 +860,12 @@ fn repeated_pin_clear_counts_only_clears_inside_the_window() {
     assert!(!audit(vec![now]).repeated_pin_clear(now));
     assert!(!audit(vec![]).repeated_pin_clear(now));
 }
+fn other_account(n: u8) -> Binding {
+    Binding {
+        did_hash: [n; 32],
+        ..binding()
+    }
+}
 #[tokio::test]
 async fn sweep_reports_repeated_recent_pin_clears_without_an_integrity_alarm() {
     let now = now_ms();
@@ -822,10 +876,16 @@ async fn sweep_reports_repeated_recent_pin_clears_without_an_integrity_alarm() {
         *m.backend.metrics.lock().unwrap(),
         vec![
             Metric::AuthorityRepeatedPinClear,
+            Metric::AuthorityRepeatedPinClearAccounts,
             Metric::AuthoritySweepCompleted
         ]
     );
-    // One clear inside the window (the expected post-recovery repair) is quiet.
+    assert_eq!(
+        *m.backend.gauges.lock().unwrap(),
+        vec![(Metric::AuthorityRepeatedPinClearAccounts, 1)]
+    );
+    // One clear inside the window (the expected post-recovery repair) is quiet,
+    // but the completed sweep still reports 0 accounts so the alarm has data.
     let mut m = monitor(false, false);
     m.backend.rows = rows(&pin_clear_chain([
         now - REPEATED_PIN_CLEAR_WINDOW_MS - 60_000,
@@ -834,10 +894,85 @@ async fn sweep_reports_repeated_recent_pin_clears_without_an_integrity_alarm() {
     m.sweep_authority(&config()).await.unwrap();
     assert_eq!(
         *m.backend.metrics.lock().unwrap(),
-        vec![Metric::AuthoritySweepCompleted]
+        vec![
+            Metric::AuthorityRepeatedPinClearAccounts,
+            Metric::AuthoritySweepCompleted
+        ]
+    );
+    assert_eq!(
+        *m.backend.gauges.lock().unwrap(),
+        vec![(Metric::AuthorityRepeatedPinClearAccounts, 0)]
     );
     assert_eq!(
         Metric::AuthorityRepeatedPinClear.name(),
         "AuthorityRepeatedPinClear"
     );
+    assert_eq!(
+        Metric::AuthorityRepeatedPinClearAccounts.name(),
+        "AuthorityRepeatedPinClearAccounts"
+    );
+}
+#[tokio::test]
+async fn sweep_gauge_counts_accounts_with_repeated_pin_clears() {
+    let now = now_ms();
+    let repeated = || pin_clear_chain([now - 60_000, now - 1_000]);
+    let single = || pin_clear_chain([now - REPEATED_PIN_CLEAR_WINDOW_MS - 60_000, now - 1_000]);
+    for (accounts, expected) in [
+        // No repeated account among three verified accounts.
+        (vec![events(), single(), events()], 0),
+        // One repeated account among quiet ones.
+        (vec![events(), repeated(), single()], 1),
+        // Two repeated accounts: a known episode does not hide a new account.
+        (vec![repeated(), single(), repeated()], 2),
+    ] {
+        let mut m = monitor(false, false);
+        let mut accounts = accounts.into_iter();
+        m.backend.rows = rows(&accounts.next().unwrap());
+        m.backend.others = accounts
+            .enumerate()
+            .map(|(i, chain)| rows_as(&other_account(i as u8 + 2), &chain))
+            .collect();
+        m.sweep_authority(&config()).await.unwrap();
+        assert_eq!(
+            *m.backend.gauges.lock().unwrap(),
+            vec![(Metric::AuthorityRepeatedPinClearAccounts, expected)],
+            "{expected} accounts"
+        );
+        let metrics = m.backend.metrics.lock().unwrap();
+        assert!(!metrics.contains(&Metric::AuthorityIntegrityFailure));
+        // The deprecated per-account datum is still emitted once per account.
+        assert_eq!(
+            metrics
+                .iter()
+                .filter(|&&metric| metric == Metric::AuthorityRepeatedPinClear)
+                .count() as u64,
+            expected
+        );
+        assert_eq!(metrics.last(), Some(&Metric::AuthoritySweepCompleted));
+    }
+}
+#[tokio::test]
+async fn incomplete_sweeps_never_emit_the_repeated_pin_clear_gauge() {
+    let now = now_ms();
+    // Unreadable partition list.
+    let m = monitor(false, true);
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+    // The first account (repeated) verifies, then the second account's fence
+    // moves mid-sweep: no partial count (and no misleading 0) is reported.
+    let mut m = monitor(false, false);
+    m.backend.change_after = Some(3);
+    m.backend.rows = rows(&pin_clear_chain([now - 60_000, now - 1_000]));
+    m.backend.others = vec![rows_as(
+        &other_account(2),
+        &pin_clear_chain([now - 60_000, now - 1_000]),
+    )];
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    let metrics = m.backend.metrics.lock().unwrap();
+    // The first account was audited (deprecated per-account datum) before the failure.
+    assert_eq!(metrics[0], Metric::AuthorityRepeatedPinClear);
+    assert!(metrics.contains(&Metric::AuthorityCoverageFailure));
+    assert!(!metrics.contains(&Metric::AuthorityRepeatedPinClearAccounts));
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
 }

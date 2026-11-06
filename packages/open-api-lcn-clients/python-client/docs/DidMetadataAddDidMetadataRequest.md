@@ -4,19 +4,19 @@
 
 | Name                      | Type                                                                                                                            | Description | Notes      |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **context**               | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md)         |             | [optional] |
+| **context**               | [**List[BoostSendBoostRequestCredentialAnyOfContextInner]**](BoostSendBoostRequestCredentialAnyOfContextInner.md)               |             | [optional] |
 | **id**                    | **str**                                                                                                                         |             | [optional] |
 | **also_known_as**         | **str**                                                                                                                         |             | [optional] |
-| **controller**            | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md)         |             | [optional] |
+| **controller**            | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.md)               |             | [optional] |
 | **verification_method**   | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |             | [optional] |
-| **authentication**        | [**List[DidMetadataAddDidMetadataRequestAuthenticationInner]**](DidMetadataAddDidMetadataRequestAuthenticationInner.md)         |             | [optional] |
-| **assertion_method**      | [**List[DidMetadataAddDidMetadataRequestAuthenticationInner]**](DidMetadataAddDidMetadataRequestAuthenticationInner.md)         |             | [optional] |
-| **key_agreement**         | [**List[DidMetadataAddDidMetadataRequestAuthenticationInner]**](DidMetadataAddDidMetadataRequestAuthenticationInner.md)         |             | [optional] |
-| **capability_invocation** | [**List[DidMetadataAddDidMetadataRequestAuthenticationInner]**](DidMetadataAddDidMetadataRequestAuthenticationInner.md)         |             | [optional] |
-| **capability_delegation** | [**List[DidMetadataAddDidMetadataRequestAuthenticationInner]**](DidMetadataAddDidMetadataRequestAuthenticationInner.md)         |             | [optional] |
-| **public_key**            | [**List[DidMetadataAddDidMetadataRequestAuthenticationInner]**](DidMetadataAddDidMetadataRequestAuthenticationInner.md)         |             | [optional] |
+| **authentication**        | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |             | [optional] |
+| **assertion_method**      | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |             | [optional] |
+| **key_agreement**         | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |             | [optional] |
+| **capability_invocation** | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |             | [optional] |
+| **capability_delegation** | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |             | [optional] |
+| **public_key**            | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |             | [optional] |
 | **service**               | [**List[DidMetadataAddDidMetadataRequestServiceInner]**](DidMetadataAddDidMetadataRequestServiceInner.md)                       |             | [optional] |
-| **proof**                 | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md)                             |             | [optional] |
+| **proof**                 | [**BoostSendBoostRequestCredentialAnyOfProof**](BoostSendBoostRequestCredentialAnyOfProof.md)                                   |             | [optional] |
 
 ## Example
 

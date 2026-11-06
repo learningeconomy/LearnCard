@@ -27,11 +27,11 @@ class UtilitiesDeepHealthCheck200Response(BaseModel):
     """
     UtilitiesDeepHealthCheck200Response
     """ # noqa: E501
-    healthy: Optional[StrictBool]
-    version: Optional[StrictStr]
+    healthy: StrictBool
+    version: StrictStr
     didkit_engine: StrictStr = Field(alias="didkitEngine")
-    did: Optional[StrictStr]
-    vp_verified: Optional[StrictBool] = Field(alias="vpVerified")
+    did: StrictStr
+    vp_verified: StrictBool = Field(alias="vpVerified")
     verification_errors: List[StrictStr] = Field(alias="verificationErrors")
     ms: Optional[Union[StrictFloat, StrictInt]]
     additional_properties: Dict[str, Any] = {}
@@ -71,9 +71,8 @@ class UtilitiesDeepHealthCheck200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -90,29 +89,8 @@ class UtilitiesDeepHealthCheck200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if healthy (nullable) is None
-        # and model_fields_set contains the field
-        if self.healthy is None and "healthy" in self.model_fields_set:
-            _dict['healthy'] = None
-
-        # set to None if version (nullable) is None
-        # and model_fields_set contains the field
-        if self.version is None and "version" in self.model_fields_set:
-            _dict['version'] = None
-
-        # set to None if did (nullable) is None
-        # and model_fields_set contains the field
-        if self.did is None and "did" in self.model_fields_set:
-            _dict['did'] = None
-
-        # set to None if vp_verified (nullable) is None
-        # and model_fields_set contains the field
-        if self.vp_verified is None and "vp_verified" in self.model_fields_set:
-            _dict['vpVerified'] = None
-
-        # set to None if ms (nullable) is None
-        # and model_fields_set contains the field
-        if self.ms is None and "ms" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.ms is None and "ms" in self.model_fields_set and "ms" not in excluded_fields:
             _dict['ms'] = None
 
         return _dict

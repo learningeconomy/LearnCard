@@ -42,6 +42,7 @@ import {
     setRecoveryEmailByAuthProvider,
     markUserKeyMigrationProvisionalByAuthProvider,
     activateUserKeyByAuthProvider,
+    isWeb3AuthLogin,
     purgeExpiredProvisionalMigrationByAuthProvider,
     getSssActivationState,
     hasActivatableRecoveryMethod,
@@ -1058,6 +1059,12 @@ export const keysRouter = t.router({
                      */
                     priorEscrowEnrollment: z.boolean(),
                     sssActivationState: z.enum(['provisional', 'active']),
+                    /**
+                     * Web3Auth, signing in through this login, derives this account's
+                     * key (see `isWeb3AuthLogin`). Web3Auth-mode clients stop any
+                     * existing account where this is false.
+                     */
+                    isWeb3AuthLogin: z.boolean(),
                 })
                 .nullable()
         )
@@ -1133,6 +1140,7 @@ export const keysRouter = t.router({
                     ? maskEmail(userKey.recoveryEmail)
                     : null,
                 sssActivationState: getSssActivationState(userKey),
+                isWeb3AuthLogin: isWeb3AuthLogin(userKey, authProvider),
                 escrowOptedOut: Boolean(userKey.escrowOptedOutAt),
                 escrowPin: getEscrowPinStatus(userKey),
                 escrowStale: userKey.escrowBlob

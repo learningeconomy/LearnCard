@@ -383,6 +383,8 @@ const composeConfiguration = async (state: StackState): Promise<Record<string, u
                 CONFIG_STAGE: '',
                 LAMBDA_STAGE: '',
                 IS_OFFLINE: 'true',
+                CLIENT_APP_DOMAIN_NAME: `localhost:${state.ports.app}`,
+                CLIENT_APP_PORT: String(state.ports.app),
                 SKIP_DIDKIT_NAPI: '1',
                 SENTRY_DSN: '',
                 SENTRY_ENV: 'verification',

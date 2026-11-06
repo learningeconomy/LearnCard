@@ -35,13 +35,8 @@ export type Context = {
     tenant: ResolvedTenant;
     debug?: boolean;
     clientIp?: string;
-    // Value of the X-Auth-Token header — a caller's own provider token
-    // (e.g. a Firebase ID token), distinct from the Authorization header
-    // (reserved for the DID-Auth VP). Lets GET routes that verify a
-    // provider token (e.g. keys.getRecoveryShare, P0-4) read it without
-    // putting it in a query string, without colliding with clients that
-    // send a DID-Auth VP as Authorization for the same route.
     providerToken?: string;
+    authorizationHeader?: string;
 };
 
 export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create();
@@ -57,12 +52,12 @@ export const createContext = async (
     const domainName = 'requestContext' in event ? event.requestContext.domainName : '';
     const debug = environment.NODE_ENV === 'test';
 
-    // See Context.providerToken — a separate header from Authorization,
-    // which is reserved for the DID-Auth VP handled below.
+    // The original signed DID VP may be forwarded only to brain-service's authenticated self-profile route.
     const providerTokenHeader = (event.headers as Record<string, string | undefined>)[
         'x-auth-token'
     ];
     const providerToken = providerTokenHeader || undefined;
+    const authorizationHeader = authHeader || undefined;
 
     const domain =
         !domainName || environment.IS_OFFLINE
@@ -132,6 +127,7 @@ export const createContext = async (
                             debug,
                             clientIp,
                             providerToken,
+                            authorizationHeader,
                         };
 
                     const cacheResponse = await consumeChallengeForDid(did, challenge);
@@ -143,6 +139,7 @@ export const createContext = async (
                         debug,
                         clientIp,
                         providerToken,
+                        authorizationHeader,
                     };
                 }
             }

@@ -38,7 +38,8 @@ class TestContractsCreateConsentFlowContractRequestContractReadCredentials(unitt
                 categories = {
                     'key' : openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials_categories_value.contracts_createConsentFlowContract_request_contract_read_credentials_categories_value(
                         required = True, 
-                        default_enabled = True, )
+                        default_enabled = True, 
+                        reason = '', )
                     }
             )
         else:

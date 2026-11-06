@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name                | Type                                                                                                                                                                                | Description | Notes |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **type**            | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.md)                                                     |             |
-| **identifier**      | **str**                                                                                                                                                                             |             |
-| **identifier_type** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType.md) |             |
+| Name                | Type                                                                                                                                                                          | Description | Notes |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **type**            | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.md)                                               |             |
+| **identifier**      | **str**                                                                                                                                                                       |             |
+| **identifier_type** | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType.md) |             |
 
 ## Example
 

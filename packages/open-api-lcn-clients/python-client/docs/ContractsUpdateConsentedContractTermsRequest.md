@@ -2,12 +2,14 @@
 
 ## Properties
 
-| Name           | Type                                                                                                          | Description | Notes      |
-| -------------- | ------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **uri**        | **str**                                                                                                       |             |
-| **terms**      | [**ContractsUpdateConsentedContractTermsRequestTerms**](ContractsUpdateConsentedContractTermsRequestTerms.md) |             |
-| **expires_at** | **str**                                                                                                       |             | [optional] |
-| **one_time**   | **bool**                                                                                                      |             | [optional] |
+| Name                 | Type                                                                                    | Description | Notes      |
+| -------------------- | --------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **uri**              | **str**                                                                                 |             |
+| **terms**            | [**ContractsConsentToContractRequestTerms**](ContractsConsentToContractRequestTerms.md) |             |
+| **accept_version**   | **int**                                                                                 |             | [optional] |
+| **expires_at**       | **str**                                                                                 |             | [optional] |
+| **one_time**         | **bool**                                                                                |             | [optional] |
+| **audience_version** | **int**                                                                                 |             | [optional] |
 
 ## Example
 

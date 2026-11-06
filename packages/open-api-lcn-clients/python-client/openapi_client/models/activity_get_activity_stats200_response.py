@@ -67,9 +67,8 @@ class ActivityGetActivityStats200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -86,54 +85,44 @@ class ActivityGetActivityStats200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if total_events (nullable) is None
-        # and model_fields_set contains the field
-        if self.total_events is None and "total_events" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.total_events is None and "total_events" in self.model_fields_set and "total_events" not in excluded_fields:
             _dict['totalEvents'] = None
 
-        # set to None if total (nullable) is None
-        # and model_fields_set contains the field
-        if self.total is None and "total" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.total is None and "total" in self.model_fields_set and "total" not in excluded_fields:
             _dict['total'] = None
 
-        # set to None if created (nullable) is None
-        # and model_fields_set contains the field
-        if self.created is None and "created" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.created is None and "created" in self.model_fields_set and "created" not in excluded_fields:
             _dict['created'] = None
 
-        # set to None if delivered (nullable) is None
-        # and model_fields_set contains the field
-        if self.delivered is None and "delivered" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.delivered is None and "delivered" in self.model_fields_set and "delivered" not in excluded_fields:
             _dict['delivered'] = None
 
-        # set to None if claimed (nullable) is None
-        # and model_fields_set contains the field
-        if self.claimed is None and "claimed" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.claimed is None and "claimed" in self.model_fields_set and "claimed" not in excluded_fields:
             _dict['claimed'] = None
 
-        # set to None if expired (nullable) is None
-        # and model_fields_set contains the field
-        if self.expired is None and "expired" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.expired is None and "expired" in self.model_fields_set and "expired" not in excluded_fields:
             _dict['expired'] = None
 
-        # set to None if failed (nullable) is None
-        # and model_fields_set contains the field
-        if self.failed is None and "failed" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.failed is None and "failed" in self.model_fields_set and "failed" not in excluded_fields:
             _dict['failed'] = None
 
-        # set to None if revoked (nullable) is None
-        # and model_fields_set contains the field
-        if self.revoked is None and "revoked" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.revoked is None and "revoked" in self.model_fields_set and "revoked" not in excluded_fields:
             _dict['revoked'] = None
 
-        # set to None if suspended (nullable) is None
-        # and model_fields_set contains the field
-        if self.suspended is None and "suspended" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.suspended is None and "suspended" in self.model_fields_set and "suspended" not in excluded_fields:
             _dict['suspended'] = None
 
-        # set to None if claim_rate (nullable) is None
-        # and model_fields_set contains the field
-        if self.claim_rate is None and "claim_rate" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.claim_rate is None and "claim_rate" in self.model_fields_set and "claim_rate" not in excluded_fields:
             _dict['claimRate'] = None
 
         return _dict

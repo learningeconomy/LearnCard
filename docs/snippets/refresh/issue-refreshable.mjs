@@ -39,9 +39,8 @@ const result = await issuer.invoke.send({
                 },
             },
         },
-        name: 'Provisional Transcript',
-        category: 'Achievement',
     },
+    display: { name: 'Academic credential', category: 'Achievement' },
     refresh: true,
 });
 

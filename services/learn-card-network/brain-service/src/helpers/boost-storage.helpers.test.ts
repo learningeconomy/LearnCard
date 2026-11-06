@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { JWE, VC } from '@learncard/types';
+import type { Transaction } from 'neo4j-driver';
 
 const mocks = vi.hoisted(() => ({
     decrypt: vi.fn(),
@@ -12,6 +13,17 @@ const mocks = vi.hoisted(() => ({
     accept: vi.fn(),
     notify: vi.fn(async () => undefined),
     signingAuthority: vi.fn(),
+    release: vi.fn(),
+    transaction: { run: vi.fn() },
+}));
+
+vi.mock('@instance', () => ({
+    neogma: {
+        getTransaction: async (
+            _transaction: Transaction | null,
+            action: (transaction: unknown) => Promise<unknown>
+        ) => action(mocks.transaction),
+    },
 }));
 
 vi.mock('@models', () => ({}));
@@ -24,12 +36,13 @@ vi.mock('./uri.helpers', () => ({
         `lc:network:${domain}/${kind}:${id}`,
 }));
 vi.mock('@accesslayer/credential/create', () => ({ storeCredential: mocks.store }));
+vi.mock('@accesslayer/credential/delete', () => ({ releaseUnlinkedCredential: mocks.release }));
 vi.mock('@accesslayer/boost/relationships/create', () => ({
     createBoostInstanceOfRelationship: mocks.instanceOf,
 }));
 vi.mock('@accesslayer/credential/relationships/create', () => ({
     createSentCredentialRelationship: mocks.sent,
-    createCredentialIssuedViaContractRelationship: mocks.contract,
+    createContractCredentialRelationships: mocks.contract,
     createListingSentCredentialRelationship: mocks.listing,
 }));
 vi.mock('./credential.helpers', () => ({
@@ -137,41 +150,13 @@ describe('boost payload storage', () => {
             ),
         ],
     ] as const)(
-        'stores %s payload unchanged and preserves graph, claim, and notification behavior',
+        'preserves %s bytes without decrypting or replacing the issuer signature',
         async (_kind, credential) => {
             const uri = await sendBoost({ ...options, credential });
             expect(uri).toBe('lc:network:network.example/credential:stored');
             expect(mocks.store.mock.calls[0]?.[0]).toBe(credential);
             expect(mocks.decrypt).not.toHaveBeenCalled();
             expect(mocks.issue).not.toHaveBeenCalled();
-            expect(mocks.instanceOf).toHaveBeenCalledExactlyOnceWith(
-                { id: 'stored' },
-                options.boost
-            );
-            expect(mocks.sent).toHaveBeenCalledExactlyOnceWith(
-                options.from,
-                options.to,
-                { id: 'stored' },
-                options.metadata,
-                'activity',
-                'integration'
-            );
-            expect(mocks.contract).toHaveBeenCalledExactlyOnceWith(
-                { id: 'stored' },
-                options.contractTerms
-            );
-            expect(mocks.listing).toHaveBeenCalledExactlyOnceWith(
-                'listing',
-                options.to,
-                { id: 'stored' },
-                options.metadata,
-                'activity',
-                'integration'
-            );
-            expect(mocks.accept).toHaveBeenCalledExactlyOnceWith(options.to, uri, {
-                skipNotification: false,
-            });
-            expect(mocks.notify).toHaveBeenCalledOnce();
         }
     );
 
@@ -179,12 +164,10 @@ describe('boost payload storage', () => {
         const first = deferred();
         const sent = deferred();
         const listing = deferred();
-        const contract = deferred();
         mocks.instanceOf.mockReturnValueOnce(first.promise);
         mocks.sent.mockReturnValueOnce(sent.promise);
         mocks.listing.mockReturnValueOnce(listing.promise);
-        mocks.contract.mockReturnValueOnce(contract.promise);
-        const result = sendBoost(options);
+        const result = sendBoost({ ...options, contractTerms: undefined });
         await vi.waitFor(() => expect(mocks.instanceOf).toHaveBeenCalledOnce());
         expect(mocks.sent).not.toHaveBeenCalled();
         first.resolve();
@@ -194,19 +177,67 @@ describe('boost payload storage', () => {
         await vi.waitFor(() => expect(mocks.listing).toHaveBeenCalledOnce());
         expect(mocks.contract).not.toHaveBeenCalled();
         listing.resolve();
-        await vi.waitFor(() => expect(mocks.contract).toHaveBeenCalledOnce());
-        expect(mocks.accept).not.toHaveBeenCalled();
-        expect(mocks.notify).not.toHaveBeenCalled();
-        contract.resolve();
         await expect(result).resolves.toBe('lc:network:network.example/credential:stored');
+        expect(mocks.contract).not.toHaveBeenCalled();
+        expect(mocks.instanceOf.mock.calls[0]?.[2]).toBe(mocks.transaction);
+        expect(mocks.sent.mock.calls[0]?.[6]).toBe(mocks.transaction);
+        expect(mocks.listing.mock.calls[0]?.[6]).toBe(mocks.transaction);
+    });
+
+    it('releases a failed contract send so the same signed payload can be retried', async () => {
+        let reserved = false;
+        mocks.store
+            .mockImplementationOnce(async () => {
+                reserved = true;
+                return { id: 'stored' };
+            })
+            .mockImplementationOnce(async () => {
+                if (reserved) throw new Error('Status list index is already bound');
+                return { id: 'retried' };
+            });
+        mocks.release.mockImplementationOnce(async () => {
+            reserved = false;
+        });
+        const error = new Error('contract not approved');
+        mocks.contract.mockRejectedValueOnce(error);
+        await expect(sendBoost({ ...options, credential: vc })).rejects.toBe(error);
+        expect(mocks.release).toHaveBeenCalledWith('stored');
+        await expect(sendBoost({ ...options, credential: vc })).resolves.toBe(
+            'lc:network:network.example/credential:retried'
+        );
+        expect(mocks.store.mock.calls[0]?.[0]).toBe(vc);
+        expect(mocks.store.mock.calls[1]?.[0]).toBe(vc);
+    });
+
+    it('preserves the relationship error when cleanup fails', async () => {
+        const error = new Error('relationship failed');
+        mocks.contract.mockRejectedValueOnce(error);
+        mocks.release.mockRejectedValueOnce(new Error('cleanup failed'));
+        const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        try {
+            await expect(sendBoost(options)).rejects.toBe(error);
+            expect(log).toHaveBeenCalledWith('BOOST_UNLINKED_CREDENTIAL_CLEANUP_FAILED');
+        } finally {
+            log.mockRestore();
+        }
     });
 
     it.each(['instanceOf', 'sent', 'listing', 'contract'] as const)(
-        'stops after a failed %s relationship without acceptance or notification',
+        'stops after a failed %s graph write without acceptance or notification',
         async failed => {
             const error = new Error('graph write failed');
             mocks[failed].mockRejectedValueOnce(error);
-            await expect(sendBoost(options)).rejects.toBe(error);
+            await expect(
+                sendBoost({
+                    ...options,
+                    contractTerms: failed === 'contract' ? options.contractTerms : undefined,
+                })
+            ).rejects.toBe(error);
+            if (failed === 'contract') {
+                expect(mocks.instanceOf).not.toHaveBeenCalled();
+                expect(mocks.sent).not.toHaveBeenCalled();
+                expect(mocks.listing).not.toHaveBeenCalled();
+            }
             const order = ['instanceOf', 'sent', 'listing', 'contract'] as const;
             for (const later of order.slice(order.indexOf(failed) + 1)) {
                 expect(mocks[later]).not.toHaveBeenCalled();
@@ -224,7 +255,7 @@ describe('boost payload storage', () => {
                 listing: { listing_id: 'listing' },
                 ownerProfile: { profileId: 'org' },
             } as Parameters<typeof sendBoost>[0]['from'];
-            await sendBoost({ ...options, from, listingId });
+            await sendBoost({ ...options, from, listingId, contractTerms: undefined });
             expect(mocks.sent).toHaveBeenCalledOnce();
             expect(mocks.listing).toHaveBeenCalledTimes(listingId === 'another-listing' ? 1 : 0);
         }
@@ -287,7 +318,7 @@ describe('boost payload storage', () => {
             } else {
                 expect(unsigned).not.toHaveProperty('boostId');
             }
-            expect(mocks.store).toHaveBeenCalledWith(issued);
+            expect(mocks.store).toHaveBeenCalledWith(issued, mocks.transaction, 'org');
         }
     );
 
@@ -410,6 +441,41 @@ describe('boost payload storage', () => {
                 expect(credential).not.toHaveProperty('awardedDate');
             }
         );
+
+        describe('display-only anchor detection', () => {
+            const anchorBoostWith = (template: Record<string, unknown>) =>
+                ({
+                    dataValues: {
+                        id: BOOST_ID,
+                        boost: JSON.stringify({ ...vc, boostId: undefined, ...template }),
+                    },
+                }) as Parameters<typeof prepareCredentialFromBoost>[0];
+
+            it("does not mistake an ordinary Boost's own display object for a display-only anchor", async () => {
+                const credential = await prepareCredentialFromBoost(
+                    anchorBoostWith({
+                        display: {
+                            backgroundColor: '#fff',
+                            backgroundImage: '',
+                            displayType: 'card',
+                        },
+                    }),
+                    `lc:network:network.example/boost:${BOOST_ID}`,
+                    options.domain
+                );
+                expect(credential.boostId).toBe(`lc:network:network.example/boost:${BOOST_ID}`);
+            });
+
+            it('rejects reusing a boost marked as a display-only anchor without an issuance credential', async () => {
+                await expect(
+                    prepareCredentialFromBoost(
+                        anchorBoostWith({ displayOnlyAnchor: true, display: {} }),
+                        `lc:network:network.example/boost:${BOOST_ID}`,
+                        options.domain
+                    )
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+        });
 
         describe('stampIssuanceDate', () => {
             const NOW = '2026-10-18T05:00:00.000Z';

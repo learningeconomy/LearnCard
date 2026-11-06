@@ -2,13 +2,15 @@
 
 ## Properties
 
-| Name                | Type                                                                                    | Description | Notes      |
-| ------------------- | --------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **terms**           | [**ContractsConsentToContractRequestTerms**](ContractsConsentToContractRequestTerms.md) |             |
-| **contract_uri**    | **str**                                                                                 |             |
-| **expires_at**      | **str**                                                                                 |             | [optional] |
-| **one_time**        | **bool**                                                                                |             | [optional] |
-| **recipient_token** | **str**                                                                                 |             | [optional] |
+| Name                    | Type                                                                                    | Description | Notes      |
+| ----------------------- | --------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **terms**               | [**ContractsConsentToContractRequestTerms**](ContractsConsentToContractRequestTerms.md) |             |
+| **contract_uri**        | **str**                                                                                 |             |
+| **expires_at**          | **str**                                                                                 |             | [optional] |
+| **one_time**            | **bool**                                                                                |             | [optional] |
+| **audience_version**    | **int**                                                                                 |             | [optional] |
+| **expected_request_id** | **str**                                                                                 |             | [optional] |
+| **recipient_token**     | **str**                                                                                 |             | [optional] |
 
 ## Example
 

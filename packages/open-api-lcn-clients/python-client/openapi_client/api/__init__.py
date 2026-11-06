@@ -10,6 +10,7 @@ from openapi_client.api.claim_hooks_api import ClaimHooksApi
 from openapi_client.api.contact_methods_api import ContactMethodsApi
 from openapi_client.api.contracts_api import ContractsApi
 from openapi_client.api.credential_refresh_api import CredentialRefreshApi
+from openapi_client.api.credential_share_previews_api import CredentialSharePreviewsApi
 from openapi_client.api.credentials_api import CredentialsApi
 from openapi_client.api.did_metadata_api import DIDMetadataApi
 from openapi_client.api.federation_api import FederationApi

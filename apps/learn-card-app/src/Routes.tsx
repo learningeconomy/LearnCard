@@ -1,3 +1,4 @@
+import UnsubscribePage from './pages/unsubscribe/UnsubscribePage';
 import React, { Suspense } from 'react';
 import { Redirect, Route, Switch, useLocation } from 'react-router-dom';
 import type { RouteComponentProps, RouteProps } from 'react-router-dom';
@@ -19,6 +20,7 @@ import * as Sentry from '@sentry/react';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
+const CampaignsPage = lazyWithRetry(() => import('./pages/campaigns/CampaignsPage'));
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
 const DashboardPage = lazyWithRetry(() => import('./pages/dashboard/DashboardPage'));
 const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
@@ -85,6 +87,9 @@ const ShareCredentialsWithApp = lazyWithRetry(
 );
 const ExternalConsentFlowDoor = lazyWithRetry(
     () => import('./pages/consentFlow/ExternalConsentFlowDoor')
+);
+const ContractUpdateReviewRoute = lazyWithRetry(
+    () => import('./pages/consentFlow/ContractUpdateReviewRoute')
 );
 const WalletServiceWorker = lazyWithRetry(
     () => import('./pages/walletServiceWorker/WalletServiceWorker')
@@ -236,6 +241,7 @@ export const Routes: React.FC = () => {
                     <Switch location={background || location}>
                         <SentryRoute exact path="/recovery/cancel" component={CancelRecoveryPage} />
                         <Route exact path="/s/:id" component={ShareLinkViewer} />
+                        <SentryRoute exact path="/unsubscribe" component={UnsubscribePage} />
                         <SentryRoute exact path="/login" component={LoginPage} />
                         <SentryRoute
                             exact
@@ -290,6 +296,8 @@ export const Routes: React.FC = () => {
                             path="/app-store/admin"
                             component={AppStoreAdminWithProvider}
                         />
+
+                        <SentryRoute path="/admin/campaigns" component={CampaignsPage} />
 
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
                         {/* Linked from the "New device signed in with your PIN" email. */}
@@ -404,6 +412,11 @@ export const Routes: React.FC = () => {
                             render={() => <ExternalConsentFlowDoor login />}
                         />
                         <SentryRoute exact path="/consent-flow-sync-data" component={LaunchPad} />
+                        <PrivateRoute
+                            exact
+                            path="/consent-flow/review"
+                            component={ContractUpdateReviewRoute}
+                        />
 
                         <PrivateRoute
                             exact

@@ -4,7 +4,7 @@ This service exposes the LearnCard Network API and local Neo4j-backed skills flo
 
 ## Live consent data for AI consumers
 
-`getConsentedDataForDid` returns data from live grants and authorized one-time grants (`oneTime: true`, stored with `status: 'stale'`) between the authenticated contract owner and the requested profile. Withdrawn grants and other stale grants are excluded. Term, contract and category expirations are enforced; empty expiry values mean no expiry, while malformed nonempty dates never authorize access. One-time means a fixed sharing grant, not a destructive read-once API; withdrawal still revokes subsequent retrieval. Malformed legacy terms are omitted rather than authorizing data or failing every grant in the response.
+`getConsentedDataForDid` returns data from live grants and authorized one-time grants (`oneTime: true`, stored with `status: 'consumed'`) between the authenticated contract owner and the requested profile. Pending and suspended updates retain reads under the user's previously accepted version; they do not enable newly requested data, writes, AutoBoosts, or synchronization. Withdrawn grants and consumed grants without the one-time flag are excluded. Term, contract and category expirations are enforced; empty expiry values mean no expiry, while malformed nonempty dates never authorize access. One-time means a fixed sharing grant, not a destructive read-once API; withdrawal still revokes subsequent retrieval. Malformed legacy terms are omitted rather than authorizing data or failing every grant in the response.
 
 - `termsUri`, `contractUri`, `status` and `terms` identify the current grant and its permissions.
 - `createdAt` is the original grant time when known. `date` is the latest consent update time. No historical timestamp is invented.
@@ -79,6 +79,32 @@ credential-library content changes without duplicating profiles, Boosts, signing
 authorities, or contracts.
 
 ## Notes
+
+### Managed public status repair
+
+An issuer can call `credentialRefresh.attachStatusEntries({ refreshId, credentialStatus })`
+with the original signed credential's exact status descriptor. Object versus array shape,
+array order, and all descriptor fields must match the stored HMAC. The route validates
+local issuer-owned coordinates and reconciles an existing revocation or suspension.
+Credentials without supported public status entries cannot be repaired this way.
+
+New status fingerprints use `<keyVersion>:<base64url HMAC-SHA256>`. Configure
+`CREDENTIAL_REFRESH_DIGEST_KEY_VERSION` (default `v1`) with
+`CREDENTIAL_REFRESH_DIGEST_SECRET`. `CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS` is a JSON
+object mapping retained versions to their secret keys (default `{}`). Unversioned legacy
+fingerprints accept the current key or an explicitly retained previous key. Never log these
+secrets. Removing a previous key disables repair for fingerprints made with that key.
+
+Lifecycle mutations join the relationship update and status-list signing/write in one
+Neo4j transaction. A failed bit write rolls back the relationship, including unsuspension;
+retry the original mutation. No pending-sync worker is needed for these atomic writes.
+
+Managed versions share one status binding. Ordinary deliveries reserve their local
+coordinates under the same list locks and cannot reuse a managed credential's index.
+Binding and lifecycle writes lock the root, aggregate, then sorted status lists;
+attaching coordinates to an existing root also reconciles its lifecycle atomically.
+Legacy deliveries without public status metadata retain network-only lifecycle state;
+repair requires supported entries authenticated by the original status fingerprint.
 
 - The default fixture is idempotent by framework and skill ID, so running the seed command multiple times does not duplicate data.
 - Seeded skills are compatible with the existing skill search, boost alignment, and OBv3 alignment flows.
