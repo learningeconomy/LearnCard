@@ -18,7 +18,7 @@ const ancestor = (cwd, base, head) =>
     SHA.test(head ?? '') &&
     spawnSync('git', ['merge-base', '--is-ancestor', base, head], { cwd, stdio: 'ignore' })
         .status === 0;
-const trusted = (run, workflow, repositoryId, event) =>
+const trustedIdentity = (run, workflow, repositoryId, event) =>
     positive(run?.id) &&
     positive(run.run_attempt) &&
     run.workflow_id === workflow.id &&
@@ -27,9 +27,59 @@ const trusted = (run, workflow, repositoryId, event) =>
     run.head_branch === 'main' &&
     run.repository?.id === repositoryId &&
     run.head_repository?.id === repositoryId &&
-    run.status === 'completed' &&
-    run.conclusion === 'success' &&
     SHA.test(run.head_sha ?? '');
+const trusted = (run, workflow, repositoryId, event) =>
+    trustedIdentity(run, workflow, repositoryId, event) &&
+    run.status === 'completed' &&
+    run.conclusion === 'success';
+
+/**
+ * GitHub keeps only one pending run per concurrency group. An older rerun can
+ * replace a newer pending event, so every admitted worker selects the newest
+ * ready staging source instead of assuming its triggering event is newest.
+ */
+async function latestSource({ github, repo, repositoryId, cwd = process.cwd() }) {
+    const api = github.rest.actions;
+    const workflow = (await api.getWorkflow({ ...repo, workflow_id: 'deploy.yml', request })).data;
+    assert.equal(workflow.path, '.github/workflows/deploy.yml');
+    const git = gitAt(cwd);
+    const main = (await github.rest.git.getRef({ ...repo, ref: 'heads/main', request })).data.object
+        .sha;
+    assert(SHA.test(main ?? ''), 'Invalid main revision');
+    if (spawnSync('git', ['cat-file', '-e', main], { cwd, stdio: 'ignore' }).status !== 0) {
+        git(['fetch', '--no-tags', 'origin', main]);
+    }
+    const history = (
+        await api.listWorkflowRuns({
+            ...repo,
+            workflow_id: workflow.id,
+            branch: 'main',
+            event: 'push',
+            status: 'success',
+            per_page: 100,
+            request,
+        })
+    ).data.workflow_runs;
+    assert(Array.isArray(history), 'Missing source history');
+    let selected;
+    for (const run of history) {
+        if (!trusted(run, workflow, repositoryId, 'push') || !ancestor(cwd, run.head_sha, main))
+            continue;
+        if (git(['show', '-s', '--format=%B', run.head_sha]).includes('chore(release):')) continue;
+        if (
+            spawnSync('git', ['cat-file', '-e', `${run.head_sha}:${WORKFLOW}`], {
+                cwd,
+                stdio: 'ignore',
+            }).status !== 0
+        )
+            continue;
+        if (!selected || ancestor(cwd, selected.head_sha, run.head_sha)) selected = run;
+    }
+    assert(selected || history.length < 100, 'No eligible source within bounded history');
+    return selected
+        ? { runId: selected.id, attempt: selected.run_attempt, head: selected.head_sha }
+        : undefined;
+}
 
 /**
  * Only successful automatic staging Deploys may hand off. Compare with newer
@@ -84,20 +134,28 @@ async function eligibleSource({
             workflow_id: workflow.id,
             branch: 'main',
             event: 'push',
-            status: 'success',
+            // A newer run being retried may have already deployed on its first
+            // successful attempt. Do not let its temporary non-green status
+            // authorize rolling back to an older candidate.
             per_page: 100,
             request,
         })
     ).data.workflow_runs;
     assert(Array.isArray(history), 'Missing source history');
     for (const run of history) {
-        if (!trusted(run, workflow, repositoryId, 'push') || run.head_sha === head) continue;
+        if (!trustedIdentity(run, workflow, repositoryId, 'push') || run.head_sha === head)
+            continue;
+        const succeeded = trusted(run, workflow, repositoryId, 'push');
+        if (!succeeded && run.run_attempt === 1) continue;
         if (
             ancestor(cwd, head, run.head_sha) &&
             ancestor(cwd, run.head_sha, main) &&
             !release(run.head_sha)
         ) {
-            return { current: false, reason: 'newer-successful-deploy' };
+            return {
+                current: false,
+                reason: succeeded ? 'newer-successful-deploy' : 'newer-deploy-retry',
+            };
         }
     }
     // If the source is outside the bounded window, do not guess it is current.
@@ -206,4 +264,4 @@ async function resolveRange({
         return fallback('history-unavailable');
     }
 }
-module.exports = { eligibleSource, resolveRange };
+module.exports = { latestSource, eligibleSource, resolveRange };

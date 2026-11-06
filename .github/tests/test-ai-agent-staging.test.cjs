@@ -5,7 +5,11 @@ const { tmpdir } = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const yaml = require('js-yaml');
-const { eligibleSource, resolveRange } = require('../../scripts/ai-agent-staging.cjs');
+const {
+    latestSource,
+    eligibleSource,
+    resolveRange,
+} = require('../../scripts/ai-agent-staging.cjs');
 
 const repo = { owner: 'org', repo: 'repo' };
 function fixture(t) {
@@ -327,4 +331,74 @@ test('Trigger receives the deployed SHA even when the workflow default SHA is ne
         'prod',
         '--skip-update-check',
     ]);
+});
+
+test('a displaced newer event is recovered by an older rerun or release worker', async t => {
+    const f = fixture(t);
+    const old = f.run(99, f.b);
+    // Old B is the last-triggered worker, but C remains the newest tested tree.
+    f.setSources([old, f.source]);
+    assert.deepEqual(await latestSource(f.args), { runId: 100, attempt: 1, head: f.c });
+    const release = f.commit('release', 'chore(release): version packages');
+    f.setSources([f.run(101, release), old, f.source]);
+    assert.equal((await latestSource(f.args)).head, f.c);
+    const failed = f.commit('failed');
+    f.setSources([f.run(102, failed, 'deploy.yml', { conclusion: 'failure' }), old, f.source]);
+    assert.equal((await latestSource(f.args)).head, f.c);
+});
+
+test('failed/manual/fork events cannot evict a pending successful handoff', () => {
+    const staging = read('ai-agent-staging.yml');
+    const expression = staging.concurrency.group.trim().replace(/^\$\{\{|\}\}$/g, '');
+    const vm = require('node:vm');
+    const group = changes =>
+        vm.runInNewContext(expression, {
+            github: {
+                run_id: 123,
+                event: {
+                    repository: { id: 1 },
+                    workflow_run: {
+                        conclusion: 'success',
+                        event: 'push',
+                        head_branch: 'main',
+                        head_repository: { id: 1 },
+                        ...changes,
+                    },
+                },
+            },
+            format: (value, id) => value.replace('{0}', id),
+        });
+    assert.equal(group({}), 'ai-agent-staging');
+    for (const changes of [
+        { conclusion: 'failure' },
+        { event: 'workflow_dispatch' },
+        { head_repository: { id: 2 } },
+        { head_branch: 'other' },
+    ]) {
+        assert.equal(group(changes), 'ai-agent-staging-ignored-123');
+    }
+    assert.equal(
+        staging.jobs.rollout.with['source-run-id'],
+        '${{ needs.select.outputs.source-run-id }}'
+    );
+    assert.equal(
+        staging.jobs.rollout.with['source-attempt'],
+        '${{ needs.select.outputs.source-attempt }}'
+    );
+});
+
+test('retrying a newer core Deploy cannot make an older revision safe to roll out again', async t => {
+    const f = fixture(t);
+    const newer = f.commit('newer');
+    for (const conclusion of [null, 'failure', 'cancelled']) {
+        f.setSources([
+            f.run(101, newer, 'deploy.yml', {
+                run_attempt: 2,
+                status: conclusion ? 'completed' : 'in_progress',
+                conclusion,
+            }),
+            f.source,
+        ]);
+        assert.equal((await eligibleSource(f.args)).reason, 'newer-deploy-retry');
+    }
 });

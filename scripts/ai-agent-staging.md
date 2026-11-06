@@ -8,7 +8,12 @@ Both callers use `ai-agent-rollout.yml` and the existing service/environment loc
 and GitHub Environment approvals. The extracted rollout retains the image-build
 optimizations from PR #1930.
 
-The initial source check re-reads the exact Deploy run and attempt through the
+Each admitted worker selects the newest eligible successful staging Deploy, even
+when triggered by an older rerun. GitHub can replace a pending run with a later
+event, so using only the triggering revision could strand a newer handoff.
+Failed/manual/fork events use a separate concurrency group and cannot evict it.
+
+The initial source check re-reads the selected Deploy run and attempt through the
 Actions API, verifies its repository, workflow, event, branch and revision, and
 checks that its commit is still on main. Production release commits and runs
 whose source predates this handoff are excluded. No PR artifacts are consumed.
@@ -35,6 +40,8 @@ Manual deployments do not advance this automatic staging baseline.
 Immediately before changing Trigger.dev or ECS, inside the shared target lock,
 the source is checked again. A newer successful automatic staging Deploy makes
 an older candidate obsolete. An untested push to main alone does not do this.
+A newer Deploy retry also blocks older candidates conservatively: its earlier
+attempt may already have deployed even if the retry is now red or in progress.
 Source validation/API failures stop before mutation. A skipped stale candidate
 never writes the terminal checkpoint; the successor retains its pending changes.
 Active rollouts are not cancelled. Explicit manual rollbacks remain possible.

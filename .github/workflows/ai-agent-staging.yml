@@ -9,7 +9,13 @@ on:
 
 # Independent of Deploy-main; a slow AI rollout cannot hold the core deploy queue.
 concurrency:
-    group: ai-agent-staging
+    # Non-candidates must not evict a successful push's pending handoff.
+    group: >-
+        ${{ github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.event == 'push' &&
+            github.event.workflow_run.head_branch == 'main' &&
+            github.event.workflow_run.head_repository.id == github.event.repository.id &&
+            'ai-agent-staging' || format('ai-agent-staging-ignored-{0}', github.run_id) }}
     cancel-in-progress: false
 
 permissions:
@@ -32,6 +38,8 @@ jobs:
         timeout-minutes: 15
         outputs:
             head: ${{ steps.source.outputs.head }}
+            source-run-id: ${{ steps.source.outputs.source-run-id }}
+            source-attempt: ${{ steps.source.outputs.source-attempt }}
             affected: ${{ steps.affected.outputs.affected }}
         steps:
             # Bootstrap only from this trusted default-branch workflow revision.
@@ -43,15 +51,18 @@ jobs:
               uses: actions/github-script@v8
               with:
                   script: |
-                      const { eligibleSource, resolveRange } = require('./scripts/ai-agent-staging.cjs');
-                      const event = context.payload.workflow_run;
-                      const args = { github, repo: context.repo, repositoryId: context.payload.repository.id,
-                        runId: event.id, attempt: event.run_attempt, head: event.head_sha };
+                      const { latestSource, eligibleSource, resolveRange } = require('./scripts/ai-agent-staging.cjs');
+                      const common = { github, repo: context.repo, repositoryId: context.payload.repository.id };
+                      const latest = await latestSource(common);
+                      if (!latest) { core.notice('No eligible automatic staging Deploy.'); return; }
+                      const args = { ...common, ...latest };
                       const source = await eligibleSource(args);
                       core.setOutput('current', String(source.current));
                       if (!source.current) { core.notice(source.reason); return; }
                       const range = await resolveRange({ ...args, runId: context.runId, warn: core.warning });
                       core.setOutput('head', range.head);
+                      core.setOutput('source-run-id', String(latest.runId));
+                      core.setOutput('source-attempt', String(latest.attempt));
                       core.setOutput('base', range.base);
                       await core.summary.addHeading('AI Agent staging comparison').addCodeBlock(JSON.stringify(range, null, 2)).write();
             - uses: actions/checkout@v7
@@ -135,6 +146,6 @@ jobs:
             revision: ${{ needs.select.outputs.head }}
             target-environment: staging
             automatic: true
-            source-run-id: ${{ format('{0}', github.event.workflow_run.id) }}
-            source-attempt: ${{ format('{0}', github.event.workflow_run.run_attempt) }}
+            source-run-id: ${{ needs.select.outputs.source-run-id }}
+            source-attempt: ${{ needs.select.outputs.source-attempt }}
         secrets: inherit
