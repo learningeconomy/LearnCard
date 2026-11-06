@@ -42,6 +42,7 @@ const LearnerContextPromptInternalValidator = z
     .strict();
 
 type LearnerContextPromptRequest = z.infer<typeof LearnerContextPromptInternalValidator>;
+type LearnerContextPromptInput = z.input<typeof LearnerContextPromptInternalValidator>;
 const CREDENTIAL_SUMMARY_CACHE_VERSION = 'v4-verified-consent';
 const LEARNER_CONTEXT_PROMPT_CACHE_VERSION = 'v3-verified-consent';
 const DIRECT_SYNTHESIS_MAX_CREDENTIALS = 20;
@@ -111,7 +112,7 @@ export const parseLearnerContextPromptRequest = (input: unknown): LearnerContext
 const parseLearnerContextPromptInternal = (input: unknown): LearnerContextPromptRequest =>
     LearnerContextPromptInternalValidator.parse(input);
 
-export const generateLearnerContextPrompt = async (request: LearnerContextPromptRequest) => {
+export const generateLearnerContextPrompt = async (request: LearnerContextPromptInput) => {
     const startedAt = performance.now();
     const input = parseLearnerContextPromptInternal(request);
     const did = getCurrentAiSubject();

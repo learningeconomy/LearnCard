@@ -165,6 +165,16 @@ beforeEach(() => {
 });
 
 describe('selection-only learner context', () => {
+    it('accepts trusted request input and applies parser defaults', async () => {
+        const result = await runWithAiPrivacyContext(OWNER, () =>
+            generateLearnerContextPrompt({ credentialUris: [URI], personalFields: ['name'] })
+        );
+        expect(providerInputs).toHaveLength(1);
+        expect(providerInputs[0]).toContain('Requested detail level: compact');
+        expect(result.structuredContext).toBeUndefined();
+        expect(result.prompt).toContain('TypeScript Foundations');
+    });
+
     it('rejects raw credential/personal payloads and caller identity', () => {
         for (const input of [
             { credentials: [source] },
