@@ -316,18 +316,11 @@
         "searching": "Searching… Found so far: {{count}}.",
         "loadError": "Credentials loaded: {{count}}. The collection is incomplete.",
         "loadErrorEmpty": "Could not load credentials. The collection is incomplete.",
-        "complete": "Credentials: {{count}}. Collection complete.",
-        "loaded": "Credentials loaded: {{count}}. {{state}}",
-        "loadingMore": "Loading more…",
-        "moreAvailable": "More credentials are available.",
         "retrying": "Retrying…",
         "retry": "Retry loading credentials",
-        "loading": "Loading…",
-        "continue": "Continue loading",
         "loadingEarned": "Loading earned credentials",
         "initialError": "Credentials could not be loaded. Try again.",
         "loadingCredentials": "Loading credentials…",
-        "loadMore": "Load more credentials",
         "recentIncomplete": "Some recent credentials could not be loaded. These results are incomplete.",
         "recentError": "Recent credentials could not be loaded.",
         "loadingRecent": "Loading recent credentials…",
@@ -2694,7 +2687,8 @@
                 "title": "Choose a new recovery PIN",
                 "body": "Your recovery PIN was entered incorrectly before, so it has fewer tries left. Choose a different 6-digit PIN to get all your tries back.",
                 "skipNote": "If you skip this, your current PIN keeps working with fewer tries left. You can choose a new one later in Account Recovery."
-            }
+            },
+            "escrowNotice": "An encrypted piece of your account key is held by a secure service. Your PIN unlocks it right away, without a 7-day wait. <0>Learn more</0>"
         },
         "confirmCode": {
             "mismatch": "That code isn't right. Try again.",
@@ -10263,7 +10257,7 @@
         "viewNotificationsHint": "Get a private notification with the view count and time. Off by default.",
         "saveToLearnCard": "Save collection",
         "savingToLearnCard": "Saving collection…",
-        "savedCollectionStatus": "Collection saved for reference.",
+        "savedCollectionStatus": "Collection saved.",
         "savedCollectionDestination": "Find it in Data & Sharing under Shared with you.",
         "viewSavedCollections": "View saved collections",
         "saveError": "Could not save this collection. Please try again.",

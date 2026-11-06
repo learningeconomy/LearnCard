@@ -15,6 +15,9 @@ vi.mock('@ionic/react', () => ({
     IonIcon: ({ icon, ...rest }: Record<string, unknown>) => <span {...rest} />,
 }));
 
+vi.mock('learn-card-base', () => ({ useGetProfile: () => ({ data: undefined }) }));
+vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({ default: () => null }));
+
 afterEach(() => {
     cleanup();
     useSharedLinksStore.setState({ vm: null });
