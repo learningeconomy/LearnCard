@@ -343,9 +343,8 @@ async function resolveReuse({
             trusted(latest) && latest.run_attempt === run.run_attempt,
             'queue-run-changed'
         );
-        const remainingProjects = scope.allProjects.filter(
-            project => !scope.projects.includes(project)
-        );
+        const covered = new Set(scope.projects);
+        const remainingProjects = scope.allProjects.filter(project => !covered.has(project));
         const partial = remainingProjects.length > 0;
         return {
             reused: !partial,
