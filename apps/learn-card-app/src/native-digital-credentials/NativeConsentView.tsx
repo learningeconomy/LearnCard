@@ -52,11 +52,11 @@ export const NativeConsentView: React.FC<NativeConsentViewProps> = ({
     onCancel,
 }) => {
     const busy = submitting || canceling;
-    const name =
-        requester.name && requester.name !== requester.packageName
-            ? requester.name
-            : m['nativeCredentials.androidApp']();
-    const identifier = requester.packageName || requester.name;
+    // An installed application's label is self-asserted branding, not an identity.
+    // Browser requests lead with the authenticated web origin, never the browser label.
+    const identifier = requester.origin.startsWith('android:apk-key-hash:')
+        ? requester.packageName || requester.origin
+        : requester.origin;
 
     return (
         <div
@@ -87,17 +87,12 @@ export const NativeConsentView: React.FC<NativeConsentViewProps> = ({
                                 <p className="text-xs font-medium text-grayscale-600">
                                     {m['nativeCredentials.requestedBy']()}
                                 </p>
-                                <p className="break-words text-sm font-semibold text-grayscale-900">
-                                    {name}
+                                <p
+                                    dir="ltr"
+                                    className="break-all text-sm font-semibold text-grayscale-900"
+                                >
+                                    {identifier}
                                 </p>
-                                {identifier && identifier !== name && (
-                                    <p
-                                        dir="ltr"
-                                        className="mt-0.5 break-all text-xs text-grayscale-600"
-                                    >
-                                        {identifier}
-                                    </p>
-                                )}
                             </div>
                         </div>
                         <details className="mt-2 border-t border-grayscale-100">

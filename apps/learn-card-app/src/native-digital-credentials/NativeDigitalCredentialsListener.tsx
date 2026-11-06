@@ -40,6 +40,9 @@ export default function NativeDigitalCredentialsListener() {
         let enabled = false;
         let active = true;
         let retryAttempt = 0;
+        // status() reports private preferences, not live GMS state. Reassert on boot/foreground.
+        let reassertRevision = 1;
+        let appliedRevision = 0;
         // Fence native handles before async wallet replacement. Each WebView has its own
         // JS stores, while the native registry generation is shared by all host Activities.
         const invalidate = () => {
@@ -83,11 +86,14 @@ export default function NativeDigitalCredentialsListener() {
                 const selectedAccount = captureHistoryAccount();
                 const wallet =
                     (await walletInitializer.current()) as unknown as DigitalCredentialWallet;
+                const refreshingRevision = reassertRevision;
                 const result = await synchronizeNativeInventory(
                     wallet,
                     () => !stopped && selectedAccount(),
-                    m['nativeCredentials.credentialTitle']()
+                    m['nativeCredentials.credentialTitle'](),
+                    refreshingRevision !== appliedRevision
                 );
+                appliedRevision = refreshingRevision;
                 retryRequired = result.retryRequired;
             } catch {
                 retryRequired = true;
@@ -131,8 +137,10 @@ export default function NativeDigitalCredentialsListener() {
         });
         const foreground = App.addListener('appStateChange', event => {
             active = event.isActive;
-            if (active) schedule();
-            else clearTimeout(timer);
+            if (active) {
+                reassertRevision++;
+                schedule();
+            } else clearTimeout(timer);
         });
         void check();
         return () => {

@@ -16,6 +16,7 @@ import {
     type DigitalCredentialWallet,
 } from './inventory';
 import type { PendingDigitalCredentialRequest } from './types';
+import { readCurrentAccountIndex } from './accountReads';
 
 /** Uses the same consent component and SDK matcher as OID4VP, with a request-bounded frame. */
 export const prepareAccountPresentation = async (
@@ -56,13 +57,17 @@ export const prepareAccountPresentation = async (
     });
     if (new Set(fields).size !== fields.length) throw new Error('Duplicate requested field');
     const load = async () => {
-        const credential = await wallet.read.get(entry.uri);
+        const credential = await wallet.read.get(entry.uri, { cache: 'skip-cache' });
         assertCurrent();
         const compact = compactCredential(credential);
         if (!compact || (await credentialDigest(compact)) !== entry.digest)
             throw new Error('Credential changed');
         // Re-read both the index and body at approval; a deleted credential is not shareable.
-        if (!(await wallet.index.LearnCloud.get()).some(value => value.uri === entry.uri))
+        if (
+            !(await readCurrentAccountIndex(wallet.index.LearnCloud)).some(
+                value => value.uri === entry.uri
+            )
+        )
             throw new Error('Credential removed');
         const candidate = { id: entry.uri, credential, title: entry.projection.title };
         const eligible = await eligibleCredential(wallet, candidate);

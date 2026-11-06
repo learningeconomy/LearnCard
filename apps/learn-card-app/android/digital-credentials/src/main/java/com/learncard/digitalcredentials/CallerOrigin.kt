@@ -1,7 +1,6 @@
 package com.learncard.digitalcredentials
 
 import android.app.Activity
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Base64
@@ -18,22 +17,22 @@ internal object CallerOrigin {
     fun resolve(activity: Activity, caller: CallingAppInfo): String {
         val launchedBy = activity.callingPackage ?: throw SecurityException("Missing platform caller")
         val pm = activity.packageManager
-        val broker = pm.getApplicationInfo(launchedBy, 0)
-        val systemBroker = broker.flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
-        require(systemBroker || launchedBy == caller.packageName) { "Caller mismatch" }
+        val launchInfo = pm.getPackageInfo(launchedBy, if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES)
+        val multipleSigners = Build.VERSION.SDK_INT >= 28 && launchInfo.signingInfo?.hasMultipleSigners() == true
+        val launchCertificates = if (Build.VERSION.SDK_INT >= 28) launchInfo.signingInfo?.signingCertificateHistory else launchInfo.signatures
+        val broker = CallerTrust.isBroker(launchedBy, launchCertificates.orEmpty().map {
+            MessageDigest.getInstance("SHA-256").digest(it.toByteArray()).joinToString("") { byte -> "%02x".format(byte) }
+        }.toSet(), multipleSigners)
         // The system broker authenticates the requesting app. Android package visibility
         // prevents a provider from independently looking up arbitrary requesters; do not
         // request QUERY_ALL_PACKAGES just to repeat the broker's certificate lookup.
         val claimed = caller.signingInfoCompat.signingCertificateHistory
-        val actual = if (systemBroker) claimed.toList() else if (Build.VERSION.SDK_INT >= 28) {
-            pm.getPackageInfo(caller.packageName, PackageManager.GET_SIGNING_CERTIFICATES).signingInfo!!.signingCertificateHistory.toList()
-        } else pm.getPackageInfo(caller.packageName, PackageManager.GET_SIGNATURES).signatures!!.toList()
-        require(actual.map { it.toCharsString() }.toSet() == claimed.map { it.toCharsString() }.toSet()) { "Certificate mismatch" }
+        CallerTrust.validateRequester(launchedBy, caller.packageName, broker,
+            claimed.map { it.toCharsString() }.toSet(), launchCertificates.orEmpty().map { it.toCharsString() }.toSet())
         if (caller.isOriginPopulated()) {
             val allowlist = activity.assets.open("digital_credentials_privileged_callers.json").bufferedReader().use { it.readText() }
             return caller.getOrigin(allowlist) ?: throw SecurityException("Missing browser origin")
         }
-        require(actual.size == 1) { "Multiple signing certificates unsupported in this profile" }
-        return certificateOrigin(actual.first().toByteArray())
+        return certificateOrigin(claimed.first().toByteArray())
     }
 }

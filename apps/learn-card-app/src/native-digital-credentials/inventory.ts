@@ -2,8 +2,11 @@ import type { ParsedSdJwtVc, PresentSdJwtVcOptions } from '@learncard/sd-jwt-vc-
 import type { VerificationCheck } from '@learncard/types';
 import type { WalletForCandidates, PooledCandidate } from '../pages/oid4vp/candidatePool';
 import type { AndroidCredentialEntry } from './types';
+import { readCurrentAccountIndex, type NativeAccountIndex } from './accountReads';
 
 export interface DigitalCredentialWallet extends WalletForCandidates {
+    index: WalletForCandidates['index'] & { LearnCloud: NativeAccountIndex };
+    read: { get: (uri: string, options?: { cache: 'skip-cache' }) => Promise<unknown> };
     id: {
         did: () => string;
         keypair: (algorithm: 'ed25519') => { kty: string; crv: string; x: string; d: string };
@@ -171,7 +174,9 @@ export const buildAccountInventory = async (
     );
     // An index failure aborts the refresh before any replacement/clear.
     const indexed = new Set(
-        (await wallet.index.LearnCloud.get()).map(entry => entry.uri).filter(Boolean)
+        (await readCurrentAccountIndex(wallet.index.LearnCloud))
+            .map(entry => entry.uri)
+            .filter(Boolean)
     );
     const cache = options.cache ?? new Map<string, InventoryCacheEntry>();
     const scanProgress = options.scanProgress;
@@ -214,7 +219,7 @@ export const buildAccountInventory = async (
     let cursor = 0;
     const read = async (uri: string): Promise<RegisteredCredential | undefined> => {
         try {
-            const credential = await wallet.read.get(uri);
+            const credential = await wallet.read.get(uri, { cache: 'skip-cache' });
             // A null read is not authoritative removal while the URI is indexed.
             if (!credential) throw new InventoryUnavailableError('Credential read unavailable');
             const eligible = await eligibleCredential(wallet, { id: uri, credential });

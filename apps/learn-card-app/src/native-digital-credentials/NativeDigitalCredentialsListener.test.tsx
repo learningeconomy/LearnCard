@@ -123,5 +123,18 @@ it('ignores fetch-status updates and coalesces successful inventory changes', as
     });
     await advance(350);
     expect(mocks.synchronize).toHaveBeenCalledTimes(2);
+    expect(mocks.synchronize.mock.calls.map(call => call[3])).toEqual([true, false]);
+    act(() => mocks.foreground?.({ isActive: true }));
+    await advance(350);
+    expect(mocks.synchronize.mock.lastCall?.[3]).toBe(true);
+    view.unmount();
+});
+
+it('retries failed foreground reassertion instead of trusting local status', async () => {
+    mocks.synchronize.mockRejectedValueOnce(new Error('register failed'));
+    const view = render(<NativeDigitalCredentialsListener />);
+    await advance();
+    await advance(2_000);
+    expect(mocks.synchronize.mock.calls.map(call => call[3])).toEqual([true, true]);
     view.unmount();
 });

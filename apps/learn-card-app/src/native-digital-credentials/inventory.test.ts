@@ -46,6 +46,43 @@ const setup = (count = 1) => {
 };
 
 describe('native registry inventory reconciliation', () => {
+    it.each(['status', 'credentialStatus'])(
+        'excludes unsupported %s instead of treating deferred revocation checks as success',
+        async status => {
+            const { wallet, parsed } = setup();
+            parsed.rawPayload[status] = {
+                status_list: { uri: 'https://example.test/status', idx: 1 },
+            };
+            expect((await buildAccountInventory(wallet, undefined, 'Credential')).entries).toEqual(
+                []
+            );
+            expect(wallet.invoke.verifySdJwtVc).not.toHaveBeenCalled();
+        }
+    );
+
+    it.each(['expired', 'not_yet_valid', 'signature_invalid'])(
+        'removes an indexed credential after a confirmed %s result',
+        async reason => {
+            const { wallet } = setup();
+            const initial = await buildAccountInventory(wallet, undefined, 'Credential');
+            vi.mocked(wallet.invoke.verifySdJwtVc).mockResolvedValue({
+                checks: [],
+                warnings: [],
+                errors: [`${reason}: invalid`],
+            });
+            expect((await buildAccountInventory(wallet, initial, 'Credential')).entries).toEqual(
+                []
+            );
+        }
+    );
+
+    it('removes a credential whose holder key no longer matches the account', async () => {
+        const { wallet, parsed } = setup();
+        const initial = await buildAccountInventory(wallet, undefined, 'Credential');
+        parsed.holderPublicKey = { kty: 'OKP', crv: 'Ed25519', x: 'different-key' };
+        expect((await buildAccountInventory(wallet, initial, 'Credential')).entries).toEqual([]);
+    });
+
     it.each(['read', 'null', 'issuer', 'unknown'])(
         'retains indexed credentials on %s failure, retries, and removes actual deletions',
         async failure => {

@@ -13,7 +13,7 @@ export interface PendingDigitalCredentialRequest {
     selectedEntryId: string;
     /** Established in Android from platform calling-app information, never from the request JSON. */
     origin: string;
-    /** Display label supplied by Android; request JSON metadata is ignored. */
+    /** Self-asserted installed-app label; never use as an authenticated requester identity. */
     callerName?: string;
     /** Authenticated Android package identifier, independent of the optional display label. */
     callerPackage?: string;
@@ -21,6 +21,7 @@ export interface PendingDigitalCredentialRequest {
 }
 
 export interface NativeDigitalCredentialsPlugin {
+    /** Local bookkeeping only; does not establish that entries still exist in GMS. */
     status: () => Promise<{ enabled: boolean; registeredEntryIds?: string[] }>;
     register: (options: { entries: AndroidCredentialEntry[] }) => Promise<{ registered: number }>;
     clear: () => Promise<{ cleared: boolean }>;

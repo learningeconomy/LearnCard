@@ -76,6 +76,45 @@ const setup = () => {
 };
 
 describe('native registration replacement', () => {
+    it('reasserts unchanged metadata after an OS reset even if local status still lists it', async () => {
+        const { wallet } = setup();
+        await synchronizeNativeInventory(wallet, () => true, 'Credential');
+        await synchronizeNativeInventory(wallet, () => true, 'Credential');
+        expect(native.register).toHaveBeenCalledTimes(1);
+        await synchronizeNativeInventory(wallet, () => true, 'Credential', true);
+        expect(native.register).toHaveBeenCalledTimes(2);
+    });
+
+    it('removes local account mappings even when platform clear fails and retries empty clears', async () => {
+        const { wallet } = setup();
+        await synchronizeNativeInventory(wallet, () => true, 'Credential');
+        native.clear.mockImplementationOnce(async () => {
+            native.ids = [];
+            throw new Error('platform unavailable');
+        });
+        await expect(clearNativeInventory()).rejects.toThrow('Native registry clear unavailable');
+        expect(native.stored).toBeNull();
+        vi.mocked(wallet.index.LearnCloud.get).mockResolvedValue([]);
+        native.clear.mockRejectedValueOnce(new Error('platform unavailable'));
+        await expect(
+            synchronizeNativeInventory(wallet, () => true, 'Credential')
+        ).rejects.toThrow();
+        await synchronizeNativeInventory(wallet, () => true, 'Credential');
+        expect(native.clear).toHaveBeenCalledTimes(3);
+    });
+
+    it('retries a failed register without trusting the saved mapping', async () => {
+        const { wallet } = setup();
+        native.register.mockRejectedValueOnce(new Error('platform unavailable'));
+        await expect(
+            synchronizeNativeInventory(wallet, () => true, 'Credential')
+        ).rejects.toThrow();
+        expect(native.ids).toEqual([]);
+        expect(native.stored?.entries).toHaveLength(1);
+        await synchronizeNativeInventory(wallet, () => true, 'Credential');
+        expect(native.ids).toHaveLength(1);
+    });
+
     it.each(['read', 'issuer'])(
         'preserves the registered handle through %s failures, retries, then clears on deletion',
         async failure => {
