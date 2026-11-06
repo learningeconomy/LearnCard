@@ -1,6 +1,7 @@
 import { expect, mock, test } from 'bun:test';
 import { z } from 'zod';
 import type { StreamingOptions } from './providers';
+import type { ActiveAiConsentReceipt } from '../learncard/consent';
 import * as environment from '../constants/env';
 
 // This file covers the legacy OpenAI embedding client; the default is Nova.
@@ -20,7 +21,14 @@ let _structuredStreamingInput: Record<string, unknown> | undefined;
 const auditedOperations: { provider: string; model: string; operation: string }[] = [];
 const circuitRecipients: string[] = [];
 const token = `{{NAME_${'a'.repeat(32)}}}`;
-const assertCurrentAiConsent = mock(async () => undefined);
+const assertCurrentAiConsent = mock(
+    async (): Promise<
+        Pick<ActiveAiConsentReceipt, 'credentialUris' | 'personalFields'> | undefined
+    > => ({
+        credentialUris: ['lc:algebra'],
+        personalFields: [],
+    })
+);
 
 const replaceText = <Value>(value: Value, from: string, to: string): Value => {
     if (typeof value === 'string') return value.replaceAll(from, to) as Value;
@@ -106,6 +114,9 @@ mock.module('./provider-circuit', () => ({
 mock.module('./privacy', () => ({
     assertCurrentAiConsent,
     getCurrentAiSubject: () => 'did:example:learner',
+}));
+mock.module('../mcp-server/controllers/get-user-context', () => ({
+    getLatestUserSummary: async () => 'Taylor has visual design experience',
 }));
 mock.module('../services/credentialSearch', () => ({
     searchCredentialsByTopic: async () => [
@@ -276,6 +287,8 @@ test('MCP answer controller returns protected output and rejects another owner',
     expect(await getAnswerAboutUser('did:example:learner', 'What can Taylor do?')).toBe(
         `Hello ${token}!`
     );
+    expect(streamingInput?.message).toContain('visual design experience');
+    expect(streamingInput?.message).not.toContain('Taylor');
     streamingInput = undefined;
     await expect(getAnswerAboutUser('did:example:other', 'What can they do?')).rejects.toThrow();
     expect(streamingInput).toBeUndefined();
