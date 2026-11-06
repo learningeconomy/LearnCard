@@ -34,6 +34,19 @@ Managed refresh is rolling out network by network. If any of these calls fails w
 
 ## Before you start
 
+### External status lists
+
+Managed credentials support external HTTPS Bitstring Status Lists. Keep the exact signed
+`credentialStatus` descriptor in every later version. Managed send results expose
+`statusManagement` (`network`, `external`, `mixed`, or `none`) outside the refresh receipt;
+preparation reports it when the entries are known.
+
+LearnCard cannot revoke an external entry. Revoke returns `PRECONDITION_FAILED` with:
+"This credential's public revocation is managed outside LearnCard. Revoke it with your status-list provider."
+Revoke with your provider instead. External suspension and unsuspension similarly return:
+"This credential's public suspension is managed outside LearnCard. Update it with your status-list provider."
+For mixed credentials, each action follows the provider of its corresponding status purpose.
+
 - A seed and profile from the [Quickstart](../quick-start/your-first-integration.md), in `.env` as `SECURE_SEED` and `PROFILE_ID`
 - The recipient's profile ID (they need a LearnCard account; refresh delivers to a specific person)
 

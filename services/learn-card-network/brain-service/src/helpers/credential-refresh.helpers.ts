@@ -64,7 +64,7 @@ import {
 } from './credential-refresh-materiality.helpers';
 import { isInitialRefreshVersionUniquenessRace } from './credential-refresh-initial-binding.helpers';
 import { ensureInitialNotificationPolicy } from './credential-refresh-notification-policy.helpers';
-import { getStatusListBaseUrl } from './status-list.helpers';
+import { getStatusListBaseUrl, getStatusManagement } from './status-list.helpers';
 import { bindRefreshStatusEntries } from './managed-status.helpers';
 import { constructUri } from './uri.helpers';
 import {
@@ -318,6 +318,8 @@ export type SendRefreshableCredentialParams = {
 export type SendRefreshableCredentialResult = {
     uri: string;
     receipt: ManagedCredentialRefreshReceipt;
+    /** Public status providers; external entries require provider-side lifecycle updates. */
+    statusManagement?: ReturnType<typeof getStatusManagement>;
 };
 
 type InitialRefreshRoot = {
@@ -722,7 +724,14 @@ export const sendRefreshableCredential = async (
             holderProfile,
             initialNotificationSuppressed,
         });
-        return { uri, receipt: buildReceipt() };
+        return {
+            uri,
+            receipt: buildReceipt(),
+            statusManagement: getStatusManagement(
+                getBitstringStatusListEntries(credential),
+                domain
+            ),
+        };
     }
 
     await bindRefreshStatusEntries(
@@ -910,7 +919,14 @@ export const sendRefreshableCredential = async (
             holderProfile,
             initialNotificationSuppressed,
         });
-        return { uri, receipt: buildReceipt() };
+        return {
+            uri,
+            receipt: buildReceipt(),
+            statusManagement: getStatusManagement(
+                getBitstringStatusListEntries(credential),
+                domain
+            ),
+        };
     }
 
     // Contract-linked root history was committed atomically with the root binding.
@@ -928,7 +944,11 @@ export const sendRefreshableCredential = async (
         initialNotificationSuppressed,
     });
 
-    return { uri, receipt: buildReceipt() };
+    return {
+        uri,
+        receipt: buildReceipt(),
+        statusManagement: getStatusManagement(getBitstringStatusListEntries(credential), domain),
+    };
 };
 
 // --- Publication (LC-2135) -----------------------------------------------------

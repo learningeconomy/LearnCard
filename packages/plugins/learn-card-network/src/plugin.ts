@@ -2103,7 +2103,7 @@ export async function getLearnCardNetworkPlugin(
                         }
 
                         const prepared = await client.boost.prepareRefreshableSend.mutate({
-                            statusBinding: 'server',
+                            ...(boost.credentialStatus ? {} : { statusBinding: 'server' as const }),
                             ...(input.statusPurposes
                                 ? { statusPurposes: input.statusPurposes }
                                 : {}),
@@ -2178,20 +2178,26 @@ export async function getLearnCardNetworkPlugin(
                         // Signing goes through the vc-plugin boundary, which prepares the
                         // managed inline JSON-LD context — the service and its terms are
                         // signed in one proof, never mutated afterwards.
-                        const signedCredential = await issueCredentialWithNetworkStatus(
-                            _learnCard,
-                            client,
-                            boost,
-                            input.statusPurposes
-                                ? [
-                                      ...new Set<BitstringCredentialStatusPurpose>([
-                                          'revocation',
-                                          ...input.statusPurposes,
-                                      ]),
-                                  ]
-                                : undefined,
-                            prepared.statusEntries
-                        );
+                        const signedCredential = boost.credentialStatus
+                            ? await _learnCard.invoke.issueCredential(
+                                  prepareManagedRefreshContext(
+                                      UnsignedVCValidator.parse(materializeCredentialFields(boost))
+                                  )
+                              )
+                            : await issueCredentialWithNetworkStatus(
+                                  _learnCard,
+                                  client,
+                                  boost,
+                                  input.statusPurposes
+                                      ? [
+                                            ...new Set<BitstringCredentialStatusPurpose>([
+                                                'revocation',
+                                                ...input.statusPurposes,
+                                            ]),
+                                        ]
+                                      : undefined,
+                                  prepared.statusEntries
+                              );
 
                         // Validated handoff: the server re-derives the refresh ID from the
                         // signed service, re-validates ownership/holder/proof, records the

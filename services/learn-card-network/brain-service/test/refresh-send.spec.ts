@@ -694,6 +694,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             const intent = await getRefreshSendIntent(ISSUER_PROFILE_ID, input.idempotencyKey);
             const receipt = first.refresh!;
             const reordered = {
+                statusManagement: first.statusManagement,
                 refresh: {
                     holderDid: receipt.holderDid,
                     issuerDid: receipt.issuerDid,

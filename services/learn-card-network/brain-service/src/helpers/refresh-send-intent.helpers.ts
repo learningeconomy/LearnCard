@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'crypto';
 import { TRPCError } from '@trpc/server';
 import type { ManagedCredentialRefreshReceipt, SendBoostResponse } from '@learncard/types';
+import { getStatusEntriesForCredential, getStatusManagement } from './status-list.helpers';
 import { canonicalizeCredentialJson } from '@learncard/helpers';
 
 import { neogma } from '@instance';
@@ -271,6 +272,10 @@ export const reconcileBoundRefreshSendIntent = async (
         credentialUri: getManagedCredentialUri(root.rootId, domain),
         activityId: intent.pendingActivityId ?? '',
         refresh: intent.pendingReceipt,
+        statusManagement: getStatusManagement(
+            await getStatusEntriesForCredential(root.rootId),
+            domain
+        ),
     };
 
     await markRefreshSendIntentDelivered(intent, result);

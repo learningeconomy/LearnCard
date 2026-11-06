@@ -43,7 +43,7 @@ const bit = async (entry: BitstringStatusListEntry): Promise<boolean> => {
     return Boolean(bytes[Math.floor(index / 8)]! & (1 << (index % 8)));
 };
 
-const send = async (arrayShape = false) => {
+const send = async (arrayShape = false, suppliedEntries?: BitstringStatusListEntry[]) => {
     const template: UnsignedVC = {
         '@context': ['https://www.w3.org/ns/credentials/v2'],
         type: ['VerifiableCredential'],
@@ -52,16 +52,17 @@ const send = async (arrayShape = false) => {
         validFrom: '2026-01-01T00:00:00Z',
     };
     const allocation = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
-        statusBinding: 'server',
+        ...(suppliedEntries ? {} : { statusBinding: 'server' as const }),
         recipient: 'status-holder',
         template: { credential: template },
         credentialId: 'urn:uuid:managed-status-test',
         statusPurposes: arrayShape ? ['suspension'] : [],
     });
-    const entries = allocation.statusEntries!;
-    expect(entries.map(entry => entry.statusPurpose)).toEqual(
-        arrayShape ? ['revocation', 'suspension'] : ['revocation']
-    );
+    const entries = suppliedEntries ?? allocation.statusEntries!;
+    if (!suppliedEntries)
+        expect(entries.map(entry => entry.statusPurpose)).toEqual(
+            arrayShape ? ['revocation', 'suspension'] : ['revocation']
+        );
     const unsigned = injectManagedRefreshService(
         {
             '@context': ['https://www.w3.org/ns/credentials/v2'],
@@ -75,18 +76,21 @@ const send = async (arrayShape = false) => {
         allocation.refreshService
     );
     const credential = await issuer.learnCard.invoke.issueCredential(unsigned);
-    const uri = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
-        refreshId: allocation.refreshId,
-        credential,
-        boostUri: allocation.boostUri,
+    const result = await issuer.clients.fullAuth.boost.send({
+        type: 'boost',
+        recipient: 'status-holder',
+        refresh: true,
+        signedCredential: credential,
+        templateUri: allocation.boostUri,
     });
+    const uri = result.credentialUri;
     const root = (
         await neogma.queryRunner.run(
             'MATCH (:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root) RETURN root.id AS id',
             { refreshId: allocation.refreshId }
         )
     ).records[0]!.get('id') as string;
-    return { allocation, entries, unsigned, credential, uri, root };
+    return { allocation, entries, unsigned, credential, uri, root, result };
 };
 
 describe('Managed public status', () => {
@@ -260,7 +264,7 @@ describe('Managed public status', () => {
         expect(delivery.records[0]!.get('status')).toBeNull();
     });
 
-    it('rejects external managed status lists with BAD_REQUEST but preserves ordinary storage', async () => {
+    it('accepts external managed status lists and preserves ordinary storage', async () => {
         const allocation =
             await issuer.clients.fullAuth.credentialRefresh.allocateCredentialRefresh({
                 holder: { profileId: 'status-holder', did: holder.learnCard.id.did() },
@@ -290,10 +294,7 @@ describe('Managed public status', () => {
                 refreshId: allocation.refreshId,
                 credential,
             })
-        ).rejects.toMatchObject({
-            code: 'BAD_REQUEST',
-            message: 'Managed credentials must use network-hosted status lists',
-        });
+        ).resolves.toEqual(expect.any(String));
         await expect(
             storeCredential(credential, undefined, 'status-issuer')
         ).resolves.toBeDefined();
@@ -715,7 +716,7 @@ describe('Managed public status', () => {
         }
     );
 
-    it('rejects another refresh reusing an index, wrong owners, purpose, bounds and remote URLs', async () => {
+    it('rejects another refresh reusing an index, wrong owners, purpose, bounds and malformed local URLs', async () => {
         const { entries } = await send();
         const allocation =
             await issuer.clients.fullAuth.credentialRefresh.allocateCredentialRefresh({
@@ -748,13 +749,100 @@ describe('Managed public status', () => {
         ).rejects.toThrow('range');
         await expect(
             statusLists.validateStatusEntries(
-                [{ ...entry, statusListCredential: 'https://other.example/status-lists/id' }],
+                [{ ...entry, statusListCredential: 'https://localhost:3000/not-status-lists/id' }],
                 'status-issuer',
                 domain
             )
         ).rejects.toMatchObject({
             code: 'BAD_REQUEST',
-            message: 'Managed credentials must use network-hosted status lists',
+            message: 'Status list URL must be canonical and local',
         });
+    });
+
+    const externalEntry = (
+        statusPurpose: 'revocation' | 'suspension'
+    ): BitstringStatusListEntry => ({
+        type: 'BitstringStatusListEntry',
+        statusPurpose,
+        statusListCredential: 'https://provider.example/status-list',
+        statusListIndex: '7',
+    });
+
+    it('sends, publishes and repairs external status while rejecting provider-side revocation', async () => {
+        const entry = externalEntry('revocation');
+        const { allocation, unsigned, root, result } = await send(false, [entry]);
+        expect(result.statusManagement).toBe('external');
+        expect(
+            (await neogma.queryRunner.run('MATCH (b:CredentialStatusBinding) RETURN b')).records
+        ).toHaveLength(0);
+        await issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+            mode: 'issuer-signed',
+            refreshId: allocation.refreshId,
+            signedCredential: await issuer.learnCard.invoke.issueCredential({
+                ...unsigned,
+                validFrom: '2026-02-01T00:00:00Z',
+            }),
+        });
+        await expect(
+            issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+                mode: 'issuer-signed',
+                refreshId: allocation.refreshId,
+                signedCredential: await issuer.learnCard.invoke.issueCredential({
+                    ...unsigned,
+                    validFrom: '2026-03-01T00:00:00Z',
+                    credentialStatus: { ...entry, statusListIndex: '8' },
+                }),
+            })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await neogma.queryRunner.run(
+            'MATCH (r:CredentialRefresh {refreshId: $refreshId}) REMOVE r.statusEntries',
+            { refreshId: allocation.refreshId }
+        );
+        await issuer.clients.fullAuth.credentialRefresh.attachStatusEntries({
+            refreshId: allocation.refreshId,
+            credentialStatus: entry,
+        });
+        expect(await statusLists.getStatusEntriesForCredential(root)).toEqual([entry]);
+        await expect(
+            issuer.clients.fullAuth.boost.revokeBoostRecipient({
+                boostUri: allocation.boostUri,
+                recipientProfileId: 'status-holder',
+                credentialUri: result.credentialUri,
+            })
+        ).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+            message:
+                "This credential's public revocation is managed outside LearnCard. Revoke it with your status-list provider.",
+        });
+        const state = await neogma.queryRunner.run(
+            'MATCH ()-[sent:CREDENTIAL_SENT]->(:Credential {id: $root}) RETURN sent.status AS status',
+            { root }
+        );
+        expect(state.records[0]!.get('status')).toBeNull();
+    });
+
+    it('revokes mixed local revocation but rejects external suspension and unsuspension', async () => {
+        const local = await issuer.clients.fullAuth.boost.allocateCredentialStatus({
+            statusPurposes: ['revocation'],
+        });
+        const { allocation, result } = await send(true, [...local, externalEntry('suspension')]);
+        expect(result.statusManagement).toBe('mixed');
+        const input = {
+            boostUri: allocation.boostUri,
+            recipientProfileId: 'status-holder',
+            credentialUri: result.credentialUri,
+        };
+        for (const mutate of [
+            issuer.clients.fullAuth.boost.suspendBoostRecipient,
+            issuer.clients.fullAuth.boost.unsuspendBoostRecipient,
+        ]) {
+            await expect(mutate(input)).rejects.toMatchObject({
+                code: 'PRECONDITION_FAILED',
+                message:
+                    "This credential's public suspension is managed outside LearnCard. Update it with your status-list provider.",
+            });
+        }
+        await issuer.clients.fullAuth.boost.revokeBoostRecipient(input);
+        expect(await bit(local[0]!)).toBe(true);
     });
 });
