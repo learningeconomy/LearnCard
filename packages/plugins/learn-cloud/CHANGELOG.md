@@ -1,5 +1,39 @@
 # learn-card-core
 
+## Unreleased
+
+### Patch Changes
+
+- Allow credential collection retries after failed service identity discovery (LC-2294). Keep successful and in-flight discovery shared, but discard rejected discovery promises so a restored connection can recover without restarting the account.
+
+## 2.3.51
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.43
+    - @learncard/helpers@1.7.3
+    - @learncard/learn-cloud-client@1.6.51
+    - @learncard/didkit-plugin@1.10.9
+
+## 2.3.50
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.42
+    - @learncard/helpers@1.7.2
+    - @learncard/learn-cloud-client@1.6.50
+    - @learncard/didkit-plugin@1.10.8
+
+## 2.3.49
+
+### Patch Changes
+
+- Updated dependencies [[`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990)]:
+    - @learncard/didkit-plugin@1.10.7
+    - @learncard/learn-cloud-client@1.6.49
+
 ## 2.3.48
 
 ### Patch Changes

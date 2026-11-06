@@ -16,6 +16,7 @@ export {
     type AuthProvider,
     type RecoveryMethodInfo,
     type RecoveryResult,
+    type RevokeOtherDevicesResult,
     type IdentityRecoverySession,
     type ServerKeyStatus,
     type SssActivationState,
@@ -124,6 +125,29 @@ export class EscrowPinUnavailableError extends Error {
     }
 }
 
+/**
+ * What this client saw during one PIN sign-in flow (own-typos rule, E). A flow starts
+ * with the first PIN status read before the first attempt and ends when the sign-in
+ * completes; a new modal or app start begins a new flow.
+ */
+export interface EscrowPinAttemptContext {
+    /**
+     * Verified wrong entries recorded against the PIN when the flow started, before
+     * any attempt here. Undefined when the server could not say (legacy record, failed
+     * read): treated as "wrong entries recorded".
+     */
+    priorWrongAttempts?: number;
+    /** Wrong entries this client itself submitted in this flow (mismatch responses). */
+    ownWrongAttempts: number;
+    /**
+     * Salt of the PIN generation the counts belong to (from the flow's first status).
+     * A status read during the release that shows another salt (a new PIN, or a
+     * same-PIN re-set elsewhere) means the counts describe a different PIN, so they
+     * are ignored and the stricter #1905 rule applies.
+     */
+    pinSalt?: string;
+}
+
 /** A failed PIN attempt consumes its hold; another attempt must start a fresh hold. */
 export class EscrowPinMismatchError extends Error {
     constructor(public readonly attemptsRemaining: number) {
@@ -156,6 +180,18 @@ export class EscrowPinLockedError extends Error {
     }
 }
 
+/**
+ * A PIN sign-in released the key, but the released share version is no longer on the
+ * server (another device secured the account or recovered meanwhile). Nothing was
+ * stored; a revoke is never silently undone.
+ */
+export class PinSignInStaleError extends Error {
+    constructor() {
+        super('Your account changed while signing in. Try again.');
+        this.name = 'PinSignInStaleError';
+    }
+}
+
 export interface PasskeyRecoveryMethod {
     type: 'passkey';
     credentialId?: string;
@@ -180,7 +216,19 @@ export type RecoveryMethod =
  * SSS-specific recovery input — what the user provides to recover their key.
  */
 export type RecoveryInput =
-    | { method: 'escrow-pin'; pin: string; expectedDid?: string }
+    | {
+          method: 'escrow-pin';
+          pin: string;
+          expectedDid?: string;
+          /** Verified recovery-email session; set only when no login is bound yet. */
+          recoverySessionToken?: string;
+          /**
+           * Own-typos rule (E): wrong entries this client observed in the current PIN
+           * sign-in flow. Omitted by older callers, which keeps the stricter rule (any
+           * recorded wrong entry blocks the same-PIN re-set).
+           */
+          pinAttempts?: EscrowPinAttemptContext;
+      }
     | {
           method: 'escrow';
           holdId: string;

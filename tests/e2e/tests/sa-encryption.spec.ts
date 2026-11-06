@@ -7,6 +7,7 @@ import { getBitstringStatusListEntries, getBitstringStatusListBit } from '@learn
 import { getLearnCard, getLearnCardForUser, type LearnCard } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
 import { normalContract, normalFullTerms } from './helpers/contract.helpers';
+import { seedLegacyAutoBoost } from './helpers/legacy-autoboost.helpers';
 
 test('legacy signed wrappers still verify and reject tampered inner credentials', async () => {
     const issuer = await initLearnCard({ seed: 'e'.repeat(64) });
@@ -52,9 +53,11 @@ test('delegated AutoBoosts remain readable by the contract owner across consent 
         name: 'Delegated AutoBoost encryption',
         writers: ['testc'],
     });
-    await writer.invoke.addAutoBoostsToContract(contractUri, [
-        { boostUri, signingAuthority: { endpoint: sa.endpoint, name: sa.name } },
-    ]);
+    await seedLegacyAutoBoost(contractUri, {
+        boostUri,
+        issuerProfileId: 'testc',
+        signingAuthority: { endpoint: sa.endpoint, name: sa.name },
+    });
     const { termsUri } = await student.invoke.consentToContract(contractUri, {
         terms: normalFullTerms,
     });
@@ -83,9 +86,13 @@ test('delegated AutoBoosts remain readable by the contract owner across consent 
     const { termsUri: reconsentedTermsUri } = await student.invoke.consentToContract(contractUri, {
         terms: normalFullTerms,
     });
-    await assertNewCredentialReaders(reconsentedTermsUri);
+    expect(
+        (await student.invoke.getCredentialsForContract(reconsentedTermsUri)).records
+    ).toHaveLength(1);
     await student.invoke.updateContractTerms(reconsentedTermsUri, { terms: normalFullTerms });
-    await assertNewCredentialReaders(reconsentedTermsUri);
+    expect(
+        (await student.invoke.getCredentialsForContract(reconsentedTermsUri)).records
+    ).toHaveLength(1);
 });
 
 test('SA issuance stores encrypted credentials and supports claim and revocation', async () => {

@@ -640,6 +640,10 @@ const serviceConfigContract = ({
                         '${construct:notifications-queue.queueUrl}'
                     );
                     assert.equal(provider.INBOX_QUEUE_URL, '${construct:inbox-queue.queueUrl}');
+                    assert.equal(
+                        provider.CAMPAIGN_QUEUE_URL,
+                        '${construct:campaign-queue.queueUrl}'
+                    );
                 }
                 // Resolve CF intrinsic infra references to realistic synthetic deployed lengths.
                 for (const key of infraKeys)
@@ -701,7 +705,7 @@ const serviceConfigContract = ({
 // Brain Lambda provider fallback credentials (the deploy env secrets above), plus the
 // CF-intrinsic infra keys (Redis + serverless-lift queue URLs) that resolve at deploy time.
 // Brain shares one execution role, so RUNTIME_SECRETS_ID plus every credential fallback sit
-// on the provider. Infra includes Redis and the two serverless-lift queue URLs. The fallback
+// on the provider. Infra includes Redis and the three serverless-lift queue URLs. The fallback
 // set is brain-service/serverless.function-env.cjs's PROVIDER_SECRETS — the only values that
 // drop out once the bundle is selected.
 serviceConfigContract({
@@ -717,6 +721,7 @@ serviceConfigContract({
         'REDIS_PORT',
         'NOTIFICATIONS_QUEUE_URL',
         'INBOX_QUEUE_URL',
+        'CAMPAIGN_QUEUE_URL',
         'GIT_SHA',
     ],
     fallback: [
@@ -747,6 +752,7 @@ serviceConfigContract({
         REDIS_PORT: 4,
         NOTIFICATIONS_QUEUE_URL: 120,
         INBOX_QUEUE_URL: 120,
+        CAMPAIGN_QUEUE_URL: 120,
         RUNTIME_SECRETS_ID: 90,
         GIT_SHA: 40,
         SEED: 64,

@@ -68,6 +68,9 @@ export {
     parseEscrowEnvelope,
     parseEscrowBlobPlaintext,
     parseEscrowReleasePlaintext,
+    canonicalEscrowEmailBrand,
+    MAX_ESCROW_EMAIL_BRAND_LENGTH,
+    MAX_ESCROW_EMAIL_BRAND_DIGITS,
     generateEscrowKeyPair,
     encryptEscrowBlob,
     decryptEscrowBlob,
@@ -87,7 +90,11 @@ export type {
     SignedEscrowEnrollmentIntent,
 } from './escrow-enrollment-intent.types';
 export { verifyEnclaveAttestation } from './escrow-attestation';
-export { EscrowEvidenceError } from './escrow-authority.types';
+export {
+    EscrowEvidenceError,
+    EscrowAuthorityTenantMismatchError,
+    ESCROW_AUTHORITY_TENANT_PATTERN,
+} from './escrow-authority.types';
 export type { HistoricalEscrowEvidence } from './escrow-authority.types';
 export type { EscrowRecoveryExpectations } from '@learncard/types';
 export {
@@ -108,7 +115,12 @@ export type {
 } from './escrow-authority.types';
 export { verifyNitroAttestationDocument, NitroAttestationError } from './escrow-nitro-attestation';
 export type { NitroAttestationReason } from './escrow-nitro-attestation';
-export type { EscrowAttestationPolicy, EscrowHoldStatus, EscrowRecoveryStart } from './types';
+export type {
+    EscrowAttestationPolicy,
+    EscrowHoldStatus,
+    EscrowPinAttemptContext,
+    EscrowRecoveryStart,
+} from './types';
 export type {
     EscrowEnrollmentOptions,
     EscrowEnrollmentState,
@@ -121,6 +133,7 @@ export {
     EscrowPinThrottledError,
     EscrowHoldRestartThrottledError,
     EscrowPinUnavailableError,
+    PinSignInStaleError,
 } from './types';
 export {
     PIN_MIN_LENGTH,
@@ -234,6 +247,7 @@ export type {
     RecoveryMethodInfo,
     RecoveryInput,
     RecoveryResult,
+    RevokeOtherDevicesResult,
     RecoverySetupInput,
     RecoverySetupResult,
     RecoveryConfirmationInput,

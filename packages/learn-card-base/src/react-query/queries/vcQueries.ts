@@ -26,7 +26,11 @@ import {
 } from '../mutations/syncConsentFlow';
 import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { getOrFetchCredentialRecordForBoost } from 'learn-card-base/hooks/useGetCredentialRecordForBoost';
-import { useBackfillBoostUris } from 'learn-card-base/helpers/backfills';
+import { backfillResolvedCredentialRecord } from 'learn-card-base/helpers/backfills';
+import {
+    getCredentialLifecycleStatuses,
+    type HeldCredential,
+} from 'learn-card-base/helpers/credentialLifecycleStatus';
 import { getLogger } from '../../logging/logger';
 import { walletStore } from '../../stores/walletStore';
 import {
@@ -47,10 +51,15 @@ const useCredentialReader = () => {
     return switchedDid && wallet?.id.did() !== switchedDid ? null : wallet;
 };
 
+/**
+ * Resolve an account-scoped document and opportunistically backfill that same reader's
+ * missing index metadata. Existing server authorization still applies; a rejected
+ * metadata write never prevents the credential from being displayed.
+ */
 export const useGetResolvedCredential = (uri: string | undefined, enabled = true) => {
     const wallet = useCredentialReader();
     const queryClient = useQueryClient();
-    return useQuery({
+    const result = useQuery({
         ...resolvedCredentialQueryOptions(
             wallet,
             uri,
@@ -58,6 +67,13 @@ export const useGetResolvedCredential = (uri: string | undefined, enabled = true
         ),
         enabled: enabled && Boolean(wallet && uri),
     });
+    useEffect(() => {
+        if (!wallet || !uri || !result.data) return;
+        void backfillResolvedCredentialRecord(queryClient, wallet, uri, result.data).catch(error =>
+            log.warn('Unable to update opened credential metadata', error)
+        );
+    }, [queryClient, wallet, uri, result.data]);
+    return result;
 };
 
 export const getOrFetchResolvedCredential = async (
@@ -124,12 +140,10 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const didWeb = switchedProfileStore.use.switchedDid();
-    const backfillBoostUris = useBackfillBoostUris();
-    const queryKey = ['useGetCredentialList', didWeb ?? '', category ?? ''];
+    const reader = useCredentialReader();
+    const queryKey = ['useGetCredentialList', didWeb ?? '', category ?? '', reader?.id.did() ?? ''];
 
-    // Drop a malformed entry before the observer reads it, so the list refetches instead of
-    // crashing. Runs on every render so an entry restored from the persisted cache after mount
-    // is caught on the re-render that ends restoring.
+    // Recover malformed persisted entries before the infinite observer reads them.
     const cached = queryClient.getQueryData(queryKey);
     if (cached !== undefined && !isInfiniteData(cached)) {
         log.warn('Dropping malformed useGetCredentialList cache entry', queryKey);
@@ -138,17 +152,19 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
 
     return useInfiniteQuery({
         queryKey,
-        queryFn: async ({ pageParam }) => {
+        queryFn: async ({ pageParam, signal }) => {
             try {
+                if (!reader) throw new Error('Credential reader is unavailable');
                 const wallet = await initWallet();
-
+                if (wallet.id.did() !== reader.id.did())
+                    throw new Error('Credential reader changed');
+                signal.throwIfAborted();
                 const data = await wallet.index.LearnCloud.getPage<CredentialMetadata>?.(
                     category ? { category } : undefined,
-                    { cursor: pageParam, limit: 12 }
+                    { cursor: pageParam, limit: 12, sort: 'newestFirst' }
                 );
-
-                backfillBoostUris(data?.records ?? []);
-
+                signal.throwIfAborted();
+                if (!data) throw new Error('Credential index is unavailable');
                 return {
                     ...data,
                     records: data?.records.map(record => ({
@@ -156,14 +172,14 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                         ...(record.__v && { __v: Number(record.__v) }),
                     })),
                 };
-            } catch (error: any) {
+            } catch (error: unknown) {
                 log.error(error);
-                return Promise.reject(error);
+                throw error;
             }
         },
         initialPageParam: undefined as undefined | string,
         getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage?.cursor : undefined),
-        enabled,
+        enabled: enabled && Boolean(reader),
     });
 };
 
@@ -171,31 +187,37 @@ export const useGetRecordForUri = (uri?: string, enabled = true) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const didWeb = switchedProfileStore.use.switchedDid();
+    const reader = useCredentialReader();
 
     return useQuery({
-        queryKey: ['useGetRecordForUri', didWeb ?? '', uri],
+        queryKey: ['useGetRecordForUri', didWeb ?? '', uri, reader?.id.did() ?? ''],
         queryFn: async () => {
             // First, try to find it in existing category cache
             const categoryQueries = queryClient.getQueriesData<
                 InfiniteData<{ hasMore: boolean; cursor?: string; records: LCR[] }>
             >({ queryKey: ['useGetCredentialList', didWeb ?? ''] });
 
-            const records = categoryQueries.flatMap(([, data]) =>
-                isInfiniteData<{ records?: LCR[] }>(data)
-                    ? data.pages.flatMap(page => page?.records ?? [])
-                    : []
-            );
+            const records = categoryQueries
+                .filter(([key]) => key[3] === reader?.id.did())
+                .flatMap(([, data]) =>
+                    isInfiniteData<{ records?: LCR[] }>(data)
+                        ? data.pages.flatMap(page => page?.records ?? [])
+                        : []
+                );
 
             const found = records.find(record => record?.uri === uri);
 
             if (found) return found;
 
             const wallet = await initWallet();
+            if (!reader || wallet.id.did() !== reader.id.did()) {
+                throw new Error('Credential reader changed');
+            }
 
             // If not found in cache, fetch directly
             return (await wallet.index.LearnCloud.get<CredentialMetadata>({ uri }))[0];
         },
-        enabled: Boolean(uri) && enabled,
+        enabled: Boolean(uri && reader) && enabled,
     });
 };
 
@@ -268,16 +290,30 @@ export const usePrefetchCredentials = (category?: CredentialCategory, enabled = 
     );
 };
 
+/** Warm one index page without letting a metadata-only count scan download the entire collection. */
+export const usePrefetchCredentialPage = (category?: CredentialCategory, enabled = true) => {
+    const { data } = useGetCredentialList(category, enabled);
+    return useGetResolvedCredentials(
+        data?.pages[0]?.records?.slice(0, 12).map(record => record.uri),
+        enabled
+    );
+};
+
 // Returns the credential count for a category of credential eg Achievement
 export const useGetCredentialCount = (category?: CredentialCategory, enabled: boolean = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const reader = useCredentialReader();
 
     return useQuery<string | number | null>({
-        queryKey: ['useGetCredentialCount', switchedDid ?? '', category],
-        queryFn: async () => {
+        queryKey: ['useGetCredentialCount', switchedDid ?? '', category, reader?.id.did() ?? ''],
+        queryFn: async ({ signal }) => {
             try {
                 const wallet = await initWallet();
+                if (!reader || wallet.id.did() !== reader.id.did()) {
+                    throw new Error('Credential reader changed');
+                }
+                signal.throwIfAborted();
                 let credentialsCount = null;
 
                 try {
@@ -289,13 +325,14 @@ export const useGetCredentialCount = (category?: CredentialCategory, enabled: bo
                     throw e;
                 }
 
+                signal.throwIfAborted();
                 return credentialsCount;
             } catch (error) {
                 log.error(error);
                 return Promise.reject(new Error(error));
             }
         },
-        enabled,
+        enabled: enabled && Boolean(reader),
     });
 };
 
@@ -463,6 +500,68 @@ export const useGetCredentials = (
     });
 };
 
+// Last known revoked URIs per query cache and profile. Kept outside the query cache on purpose:
+// a data-only cache entry has no observers, so it would be garbage collected after gcTime.
+const knownRevokedUris = new WeakMap<QueryClient, Map<string, Set<string>>>();
+
+type SkillSource = {
+    skills?: unknown[];
+    credentialSubject?: { achievement?: { alignment?: unknown[] } };
+};
+
+/**
+ * Whether any skills consumer would read skills off this credential: framework alignments
+ * (LearnCardApp skills map and counts) or a `skills` list (Scouts), on the credential or the
+ * boost credential it wraps. Only these need a status check before they count.
+ */
+const hasSkills = (credential: VC): boolean =>
+    [credential as SkillSource, (credential as { boostCredential?: SkillSource }).boostCredential]
+        .filter((source): source is SkillSource => Boolean(source))
+        .some(
+            source =>
+                Boolean(source.skills?.length) ||
+                Boolean(source.credentialSubject?.achievement?.alignment?.length)
+        );
+
+/**
+ * Revoked credentials stay in the holder's index (LearnCardApp shows them with a revoked
+ * badge instead of removing them), so anything that aggregates skills must drop them itself.
+ *
+ * Status comes from getCredentialLifecycleStatuses, the same rule the credential card uses, so
+ * LearnCloud copies and imported credentials are checked too. Only skill-bearing credentials
+ * are checked; the rest pass through, since they add nothing to a skills aggregate.
+ *
+ * An indexed URI whose status is unknown keeps its last known answer: once we have seen it
+ * revoked, a failed status check or a failed resolve must not bring its skills back. A URI we
+ * have never seen revoked still counts.
+ */
+const dropRevokedCredentials = async (
+    queryClient: QueryClient,
+    wallet: BespokeLearnCard,
+    switchedDid: string | undefined,
+    indexedUris: string[],
+    held: HeldCredential[]
+): Promise<VC[]> => {
+    const byProfile = knownRevokedUris.get(queryClient) ?? new Map<string, Set<string>>();
+    knownRevokedUris.set(queryClient, byProfile);
+    const knownRevoked = byProfile.get(switchedDid ?? '') ?? new Set<string>();
+
+    const skillBearing = held.filter(({ credential }) => hasSkills(credential));
+    const statuses = await getCredentialLifecycleStatuses(wallet, skillBearing, { queryClient });
+
+    // Every indexed URI, resolved or not, so a failed resolve does not forget a revocation.
+    const revokedSet = new Set(
+        indexedUris.filter(uri => {
+            const status = statuses.get(uri);
+            if (status === undefined) return knownRevoked.has(uri);
+            return status === 'revoked';
+        })
+    );
+    byProfile.set(switchedDid ?? '', revokedSet);
+
+    return held.filter(({ uri }) => !revokedSet.has(uri)).map(({ credential }) => credential);
+};
+
 // query for getting all creds to construct an aggregation of all skills
 export const useGetCredentialsForSkills = (enabled: boolean = true) => {
     const { initWallet } = useWallet();
@@ -530,14 +629,32 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                 ];
 
                 // resolve all creds
-                const resolvedCredentials = (
+                const held = (
                     await Promise.all(
-                        credentialsList.map(
-                            async record =>
-                                await tryFetchResolvedCredential(queryClient, wallet, record.uri)
-                        )
+                        credentialsList.map(async (record): Promise<HeldCredential | undefined> => {
+                            const credential = await tryFetchResolvedCredential(
+                                queryClient,
+                                wallet,
+                                record.uri
+                            );
+                            if (!credential) return undefined;
+                            const { networkUri } = record as LCR;
+                            return {
+                                uri: record.uri,
+                                credential,
+                                ...(networkUri ? { networkUri } : {}),
+                            };
+                        })
                     )
-                ).filter(Boolean) as VC[];
+                ).filter((item): item is HeldCredential => !!item);
+
+                const resolvedCredentials = await dropRevokedCredentials(
+                    queryClient,
+                    wallet,
+                    switchedDid,
+                    credentialsList.map(record => record.uri),
+                    held
+                );
 
                 return resolvedCredentials.sort((a, b) => {
                     const aDate = getIssuanceDate(a) ?? '';

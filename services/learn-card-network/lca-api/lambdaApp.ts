@@ -18,12 +18,26 @@ import { toServerlessApplication } from './src/helpers/serverlessApplication';
 import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './src/models';
 import { runEscrowHoldReminders } from './src/jobs/escrowHoldReminders';
 import { runEscrowBlobRewrap } from './src/jobs/escrowBlobRewrap';
+import { checkEscrowRemoteConfig } from './src/services/escrow-enclave';
+import { createRetryingOnce } from './src/helpers/retryingOnce';
 
-const startupPromise = Promise.all([
-    getEmptyLearnCard(), // Load WASM in for better cold starts
-    ensureUserKeysIndexes(),
-    createEscrowHoldsIndexes(),
-]);
+checkEscrowRemoteConfig();
+
+// Cold-start work every handler waits for. A failure is not cached, so a transient
+// error (e.g. a slow Mongo call) fails only the requests that hit it and the next
+// request retries, instead of the container failing everything until recycled.
+const ensureStartup = createRetryingOnce(() =>
+    Promise.all([
+        getEmptyLearnCard(), // Load WASM in for better cold starts
+        ensureUserKeysIndexes(),
+        createEscrowHoldsIndexes(),
+    ])
+);
+
+// Start during init for faster first requests; handlers await (and retry) it.
+ensureStartup().catch(error => {
+    console.error('lca-api startup failed; the next request retries', error);
+});
 
 const isWarmupEvent = (event: APIGatewayProxyEventV2): boolean =>
     'source' in event && event.source === 'serverless-plugin-warmup';
@@ -79,7 +93,7 @@ export const _trpcHandler = awsLambdaRequestHandler({
 
 export const openApiHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        await startupPromise;
+        await ensureStartup();
 
         if (isWarmupEvent(event)) {
             console.log('[Warmup] Initializing LearnCard...');
@@ -105,7 +119,7 @@ export const openApiHandler = Sentry.AWSLambda.wrapHandler(
 
 export const trpcHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        await startupPromise;
+        await ensureStartup();
 
         if (isWarmupEvent(event)) {
             console.log('[Warmup] Initializing LearnCard...');
@@ -130,9 +144,9 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
 );
 
 // Scheduled (EventBridge) functions, not API-Gateway-triggered: they share
-// startupPromise with the handlers above; warmup/OPTIONS handling doesn't apply.
+// ensureStartup with the handlers above; warmup/OPTIONS handling doesn't apply.
 export const escrowHoldRemindersHandler = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
-    await startupPromise;
+    await ensureStartup();
     const counts = await runEscrowHoldReminders();
     console.log('[escrow-hold-reminders] completed', counts);
 });
@@ -140,7 +154,7 @@ export const escrowHoldRemindersHandler = Sentry.AWSLambda.wrapHandler(async ():
 // P9.3: migrates escrow blobs off a retiring enclave key for accounts that
 // never sign in again (P9.2 already covers accounts that do, on next login).
 export const escrowBlobRewrapHandler = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
-    await startupPromise;
+    await ensureStartup();
     const counts = await runEscrowBlobRewrap();
     console.log('[escrow-blob-rewrap] completed', counts);
 });

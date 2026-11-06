@@ -2,19 +2,20 @@
 
 ## Properties
 
-| Name                         | Type                                                                                                      | Description | Notes                         |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------- | ----------- | ----------------------------- |
-| **id**                       | **str**                                                                                                   |             |
-| **client_request_id**        | **UUID**                                                                                                  |             |
-| **title**                    | **str**                                                                                                   |             |
-| **note**                     | **str**                                                                                                   |             | [optional]                    |
-| **expires_at**               | **datetime**                                                                                              |             | [optional]                    |
-| **passcode**                 | **str**                                                                                                   |             | [optional]                    |
-| **notify_on_view**           | **bool**                                                                                                  |             | [optional] [default to False] |
-| **selected_count**           | **int**                                                                                                   |             |
-| **content_version**          | **float**                                                                                                 |             |
-| **envelope**                 | [**ShareLinksCreateRequestEnvelope**](ShareLinksCreateRequestEnvelope.md)                                 |             |
-| **owner_encrypted_recovery** | [**CredentialSendCredentialRequestCredentialAnyOf1**](CredentialSendCredentialRequestCredentialAnyOf1.md) |             |
+| Name                         | Type                                                                                  | Description | Notes                         |
+| ---------------------------- | ------------------------------------------------------------------------------------- | ----------- | ----------------------------- |
+| **id**                       | **str**                                                                               |             |
+| **client_request_id**        | **UUID**                                                                              |             |
+| **title**                    | **str**                                                                               |             |
+| **note**                     | **str**                                                                               |             | [optional]                    |
+| **expires_at**               | **datetime**                                                                          |             | [optional]                    |
+| **passcode**                 | **str**                                                                               |             | [optional]                    |
+| **notify_on_view**           | **bool**                                                                              |             | [optional] [default to False] |
+| **selected_count**           | **int**                                                                               |             |
+| **content_version**          | **float**                                                                             |             |
+| **envelope**                 | [**ShareLinksCreateRequestEnvelope**](ShareLinksCreateRequestEnvelope.md)             |             |
+| **owner_encrypted_recovery** | [**BoostSendBoostRequestCredentialAnyOf1**](BoostSendBoostRequestCredentialAnyOf1.md) |             |
+| **attachment**               | [**ShareLinksCreateRequestAttachment**](ShareLinksCreateRequestAttachment.md)         |             | [optional]                    |
 
 ## Example
 

@@ -17,6 +17,8 @@ on:
                     - production
                     - scouts
                     - scouts-staging
+                    - vetpass
+                    - vetpass-staging
             # Component selection - which things to deploy
             deploy-brain-service:
                 description: 'Deploy Brain Service (Network API)'
@@ -45,6 +47,11 @@ on:
                 type: string
             deploy-ai-agent:
                 description: 'Deploy AI Agent (ECS + Trigger.dev)'
+                required: false
+                default: false
+                type: boolean
+            deploy-ai-passport-backend:
+                description: 'Deploy AI Passport Backend (Fly; staging or production only)'
                 required: false
                 default: false
                 type: boolean
@@ -84,6 +91,7 @@ jobs:
             affected: ${{ steps.affected.outputs.affected }}
             base: ${{ steps.range.outputs.base }}
             head: ${{ steps.range.outputs.head }}
+            tests_reused: ${{ steps.test-proof.outputs.reused || 'false' }}
             # always()-based publishers must not run after range selection fails.
             is_release: ${{ job.status == 'success' && steps.check_release.outputs.is_release || 'false' }}
             is_manual: ${{ steps.check_manual.outputs.is_manual }}
@@ -94,6 +102,11 @@ jobs:
             ai_agent_changed: ${{ steps.check_versions.outputs.ai_agent_changed }}
             lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
             native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
+            aip_backend_changed: ${{ steps.check_versions.outputs.aip_backend_changed }}
+            # AI Passport legs are computed separately (aip-env) so they can't disturb the
+            # LearnCard/ScoutPass matrices above.
+            aip_backend_deployment_matrix: ${{ steps.aip-env.outputs.aip_backend_deployment_matrix }}
+            aip_backend_matrix_has_legs: ${{ steps.aip-env.outputs.aip_backend_matrix_has_legs }}
             # Dynamic environment names
             # target_frontend_env is only consumed by publish-native-apps (fastlane);
             # Netlify/CapGo deploys fan out over frontend_deployment_matrix instead.
@@ -188,6 +201,38 @@ jobs:
                   echo "affected=$affected" >> "$GITHUB_OUTPUT"
                   echo "Affected projects: $affected"
 
+            - name: Check merge-queue test proof
+              id: test-proof
+              if: github.event_name == 'push' && steps.check_release.outputs.is_release != 'true' && steps.affected.outputs.affected != ''
+              uses: actions/github-script@v8
+              env:
+                  NX_BASE: ${{ steps.range.outputs.base }}
+                  NX_HEAD: ${{ steps.range.outputs.head }}
+              with:
+                  retries: 0
+                  script: |
+                      const { execFileSync } = require('node:child_process');
+                      const fs = require('node:fs');
+                      const path = require('node:path');
+                      let result = { reused: false, reason: 'selection-unavailable' };
+                      try {
+                        const file = path.join(process.env.RUNNER_TEMP, 'deploy-test-selection.json');
+                        execFileSync('bunx', ['nx', 'affected', '--target=test', `--base=${process.env.NX_BASE}`, `--head=${process.env.NX_HEAD}`, `--graph=${file}`], { timeout: 20000, maxBuffer: 1024 * 1024 });
+                        const { resolveReuse } = require('./scripts/deploy-test-proof.cjs');
+                        result = await resolveReuse({ github, repo: context.repo,
+                          repositoryId: context.payload.repository.id,
+                          base: process.env.NX_BASE, head: process.env.NX_HEAD,
+                          graph: JSON.parse(fs.readFileSync(file, 'utf8')) });
+                      } catch {
+                        // Optional evidence lookup cannot replace the fallback test gate.
+                      }
+                      core.setOutput('reused', String(result.reused));
+                      try {
+                        await core.summary.addHeading('Deploy test reuse').addCodeBlock(JSON.stringify(result, null, 2)).write();
+                      } catch {
+                        core.warning('Deploy test-reuse summary unavailable.');
+                      }
+
             - name: Check version changes for release
               if: github.event_name != 'workflow_dispatch'
               id: check_versions
@@ -216,6 +261,21 @@ jobs:
                   LC_FE_PRODUCTION='{"name":"LearnCard Production","environment":"learn-card-app-production","capgo":true}'
                   SCOUTS_FE_STAGING='{"name":"ScoutPass Staging","environment":"scout-app-staging","capgo":false,"stage":"staging"}'
                   SCOUTS_FE_PRODUCTION='{"name":"ScoutPass Production","environment":"scout-app-production","capgo":true,"stage":"production"}'
+                  # VetPass is a learn-card-app tenant on the LearnCard network services, so it
+                  # has frontend legs only (no service legs). Automatic runs ship it alongside
+                  # LearnCard (staging on affected main pushes, production on releases); manual
+                  # runs deploy it alone via the 'vetpass' / 'vetpass-staging' targets, like
+                  # ScoutPass. TENANT/STAGE come from the GitHub Environment. No CapGo: VetPass
+                  # has no OTA channel.
+                  VETPASS_FE_STAGING='{"name":"VetPass Staging","environment":"vetpass-app-staging","capgo":false}'
+                  VETPASS_FE_PRODUCTION='{"name":"VetPass Production","environment":"vetpass-app-production","capgo":false}'
+                  # Ride-along variants for automatic runs. tenant_leg=true makes the leg
+                  # continue-on-error, so a VetPass failure can't fail deploy-frontend's aggregate
+                  # result, which gates LearnCard native publishing, the production smoketest and
+                  # Jira tagging. A failing ride-along leg alerts Slack itself. Manual VetPass
+                  # dispatches use the plain legs, so their failure fails the run.
+                  VETPASS_FE_STAGING_RIDEALONG="${VETPASS_FE_STAGING%\}},\"tenant_leg\":true}"
+                  VETPASS_FE_PRODUCTION_RIDEALONG="${VETPASS_FE_PRODUCTION%\}},\"tenant_leg\":true}"
 
                   set_service_matrix() {
                     local legs
@@ -240,7 +300,21 @@ jobs:
                     tr ',' '\n' <<< "$AFFECTED" | grep -qx "$1"
                   }
 
-                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
+                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && ("${{ github.event.inputs.target-environment }}" == 'vetpass' || "${{ github.event.inputs.target-environment }}" == 'vetpass-staging') ]]; then
+                    # VetPass runs on the LearnCard services; deploy those via 'staging'/'production'.
+                    if [[ "${{ github.event.inputs.deploy-brain-service }}" == 'true' || "${{ github.event.inputs.deploy-learn-cloud }}" == 'true' || "${{ github.event.inputs.deploy-lca-api }}" == 'true' ]]; then
+                      echo "::error::VetPass has no services of its own (it uses LearnCard's). Untick the service boxes, or dispatch 'staging'/'production' to deploy LearnCard services."
+                      exit 1
+                    fi
+                    set_service_matrix
+                    if [[ "${{ github.event.inputs.target-environment }}" == 'vetpass' ]]; then
+                      echo "frontend_env=vetpass-app-production" >> "$GITHUB_OUTPUT"
+                      set_frontend_matrix "$VETPASS_FE_PRODUCTION"
+                    else
+                      echo "frontend_env=vetpass-app-staging" >> "$GITHUB_OUTPUT"
+                      set_frontend_matrix "$VETPASS_FE_STAGING"
+                    fi
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
                     echo "frontend_env=scout-app-production" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$SCOUTS_PRODUCTION"
                     set_frontend_matrix "$SCOUTS_FE_PRODUCTION"
@@ -262,7 +336,7 @@ jobs:
                     echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$LC_PRODUCTION"
                     if [[ "${{ steps.check_versions.outputs.lca_app_changed }}" == 'true' ]]; then
-                      set_frontend_matrix "$LC_FE_PRODUCTION"
+                      set_frontend_matrix "$LC_FE_PRODUCTION" "$VETPASS_FE_PRODUCTION_RIDEALONG"
                     else
                       set_frontend_matrix
                     fi
@@ -273,13 +347,84 @@ jobs:
                     # Netlify branch builds), only when their Nx project is affected.
                     FE_LEGS=()
                     if is_affected learn-card-app; then
-                      FE_LEGS+=("$LC_FE_STAGING")
+                      FE_LEGS+=("$LC_FE_STAGING" "$VETPASS_FE_STAGING_RIDEALONG")
                     fi
                     if is_affected scouts; then
                       FE_LEGS+=("$SCOUTS_FE_STAGING")
                     fi
                     set_frontend_matrix "${FE_LEGS[@]}"
                   fi
+
+            # AI Passport backend deploys (Fly). Automatic legs stay off until
+            # the repo var AIP_DEPLOY_ENABLED is 'true', so merging this workflow doesn't race
+            # the AI-Passport repo's own deploy-fly.yml. Flip the var when that repo is frozen.
+            # Manual dispatch ignores the var so ops can prove staging first.
+            - name: Determine AI Passport Deployments
+              id: aip-env
+              env:
+                  EVENT_NAME: ${{ github.event_name }}
+                  TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
+                  DEPLOY_BACKEND: ${{ inputs.deploy-ai-passport-backend }}
+                  IS_RELEASE: ${{ steps.check_release.outputs.is_release }}
+                  BACKEND_CHANGED: ${{ steps.check_versions.outputs.aip_backend_changed }}
+                  AFFECTED: ${{ steps.affected.outputs.affected }}
+                  AIP_DEPLOY_ENABLED: ${{ vars.AIP_DEPLOY_ENABLED }}
+              run: |
+                  # Production Fly app names are pinned here; staging reads FLY_APP_NAME from
+                  # its GitHub Environment because ops hasn't created that app yet.
+                  BE_STAGING='{"name":"AI Passport API Staging","environment":"ai-passport-api-staging","stage":"staging","fly_app":""}'
+                  BE_PRODUCTION='{"name":"AI Passport API Production","environment":"ai-passport-api-production","stage":"production","fly_app":"ai-passport"}'
+                  BE_LCA_PRODUCTION='{"name":"LCA Backend Production","environment":"ai-passport-lca-backend-production","stage":"production","fly_app":"lca-backend"}'
+
+                  set_matrix() {
+                    local key="$1" legs
+                    shift
+                    legs=$(IFS=,; echo "$*")
+                    echo "${key}_deployment_matrix={\"include\":[${legs}]}" >> "$GITHUB_OUTPUT"
+                    if [[ -n "$legs" ]]; then
+                      echo "${key}_matrix_has_legs=true" >> "$GITHUB_OUTPUT"
+                    else
+                      echo "${key}_matrix_has_legs=false" >> "$GITHUB_OUTPUT"
+                    fi
+                  }
+
+                  # Exact match so a project whose name prefixes another can't false-match.
+                  is_affected() {
+                    tr ',' '\n' <<< "$AFFECTED" | grep -qx "$1"
+                  }
+
+                  BE_LEGS=()
+                  if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
+                    case "$TARGET_ENVIRONMENT" in
+                      staging)
+                        if [[ "$DEPLOY_BACKEND" == 'true' ]]; then
+                          BE_LEGS+=("$BE_STAGING")
+                        fi
+                        ;;
+                      production)
+                        if [[ "$DEPLOY_BACKEND" == 'true' ]]; then
+                          BE_LEGS+=("$BE_PRODUCTION" "$BE_LCA_PRODUCTION")
+                        fi
+                        ;;
+                      *)
+                        if [[ "$DEPLOY_BACKEND" == 'true' ]]; then
+                          echo "::warning::AI Passport deploys only target staging or production; ignoring for $TARGET_ENVIRONMENT."
+                        fi
+                        ;;
+                    esac
+                  elif [[ "$AIP_DEPLOY_ENABLED" != 'true' ]]; then
+                    echo "Automatic AI Passport deploys are off (repo var AIP_DEPLOY_ENABLED != 'true')."
+                  elif [[ "$IS_RELEASE" == 'true' ]]; then
+                    if [[ "$BACKEND_CHANGED" == 'true' ]]; then
+                      BE_LEGS+=("$BE_PRODUCTION" "$BE_LCA_PRODUCTION")
+                    fi
+                  else
+                    if is_affected ai-passport-backend; then
+                      BE_LEGS+=("$BE_STAGING")
+                    fi
+                  fi
+
+                  set_matrix aip_backend "${BE_LEGS[@]}"
 
     # ============================================================================
     # BUILD NATIVE PLUGIN (for Lambda deploys - Linux x64)
@@ -356,34 +501,45 @@ jobs:
         runs-on: ubuntu-latest
         environment: ci-tests
         steps:
+            - name: Record reused queue tests
+              if: needs.determine-affected.outputs.tests_reused == 'true'
+              run: echo 'The exact deployment range passed audited queue tests; see Determine Affected Projects for proof.' >> "$GITHUB_STEP_SUMMARY"
+
             - name: Checkout Repo
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
             # Ensure the full-tree fallback also resolves in this runner's clone.
             - name: Prepare full-tree comparison fallback
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               run: git hash-object -t tree -w --stdin </dev/null
 
             - name: Download native plugin binary
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               uses: actions/download-artifact@v4
               with:
                   name: didkit-native-linux-x64
                   path: packages/plugins/didkit-plugin-node
 
             - name: Use Composite Setup Action
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               uses: ./.github/actions/setup
 
             # Same as test.yml: install the escrow crates' pinned toolchain once, so
             # nx's parallel `cargo test` runs don't race to install it (rustfmt conflict).
             - name: Install pinned Rust toolchain
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               working-directory: services/escrow-enclave-app
               run: rustup toolchain install
 
             - name: Test retry reporting contract
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               run: node --test scripts/ci-test-retries/retry.test.cjs
 
             - name: Run tests
+              if: needs.determine-affected.outputs.tests_reused != 'true'
               id: tests
               timeout-minutes: 20
               run: bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"
@@ -392,11 +548,11 @@ jobs:
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   NX_BASE: ${{ needs.determine-affected.outputs.base }}
                   NX_HEAD: ${{ needs.determine-affected.outputs.head }}
-                  SEED: ${{ secrets.SEED }}
-                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+                  SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
             - name: Summarize test retries
-              if: always()
+              if: ${{ always() && needs.determine-affected.outputs.tests_reused != 'true' }}
               env:
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   LC_CI_NX_OUTCOME: ${{ steps.tests.outcome }}
@@ -435,6 +591,12 @@ jobs:
               with:
                   name: didkit-native-linux-x64
                   path: packages/plugins/didkit-plugin-node
+
+            # The serverless-deploy script smoke-loads the native layer, which must run on Node 24.
+            - name: Set up Lambda Node 24 runtime tools
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
@@ -595,6 +757,12 @@ jobs:
                   name: didkit-native-linux-x64
                   path: packages/plugins/didkit-plugin-node
 
+            # The serverless-deploy script smoke-loads the native layer, which must run on Node 24.
+            - name: Set up Lambda Node 24 runtime tools
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
@@ -708,7 +876,7 @@ jobs:
             - name: Set up LCA Node 24 runtime tools
               uses: actions/setup-node@v6
               with:
-                  node-version: 24.12.0
+                  node-version-file: .nvmrc
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
@@ -851,6 +1019,7 @@ jobs:
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && startsWith(github.event.inputs.target-environment, 'vetpass')) ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true') ||
                 (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success')
             ) &&
@@ -858,6 +1027,9 @@ jobs:
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
             !contains(needs.deploy-lca-api.result, 'failure')
         runs-on: ubuntu-latest
+        # Ride-along tenant legs (VetPass on automatic runs) must not block LearnCard: their
+        # failure shows on the leg and alerts Slack, not in needs.deploy-frontend.result.
+        continue-on-error: ${{ matrix.tenant_leg == true }}
         strategy:
             fail-fast: false
             matrix: ${{ fromJSON(needs.determine-affected.outputs.frontend_deployment_matrix) }}
@@ -945,15 +1117,48 @@ jobs:
               working-directory: apps/scouts
               run: bun scripts/lc.ts stage-env "${{ matrix.stage || 'production' }}" | tee -a "$GITHUB_OUTPUT"
 
+            # learn-card-app's `build` script re-runs prepare-native-config with
+            # ${TENANT:-learncard} ${STAGE:+--stage $STAGE}, so both must be passed here or
+            # the build re-bakes LearnCard production over the tenant prepared above.
             - name: Build App
               run: bunx nx build ${{ steps.vars.outputs.project_name }}
               env:
+                  TENANT: ${{ vars.TENANT || 'learncard' }}
+                  STAGE: ${{ vars.STAGE || '' }}
                   NODE_ENV: ${{ vars.NODE_ENV }}
                   VITE_NODE_ENV: ${{ steps.scouts-stage-env.outputs.VITE_NODE_ENV || vars.VITE_NODE_ENV }}
                   VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+
+            # Guards against the build re-baking the wrong tenant OR the wrong stage (the
+            # original bug was learncard/production baked on staging). The expected stage is
+            # the overlay's declared `stage` (named overlays like keycloak-staging declare
+            # staging), or production when STAGE is empty.
+            - name: Verify baked tenant and stage
+              if: steps.vars.outputs.project_name == 'learn-card-app'
+              working-directory: apps/learn-card-app
+              env:
+                  TENANT: ${{ vars.TENANT || 'learncard' }}
+                  STAGE: ${{ vars.STAGE || '' }}
+              run: |
+                  bun -e '
+                    import { readFileSync } from "fs";
+                    const { TENANT, STAGE } = process.env;
+                    const read = path => JSON.parse(readFileSync(path, "utf-8"));
+                    const baked = read("build/tenant-config.json");
+                    const expectedStage = STAGE
+                      ? read(`environments/${TENANT}/config.${STAGE}.json`).stage
+                      : "production";
+                    const actual = `${baked.tenantId}/${baked.stage}`;
+                    const expected = `${TENANT}/${expectedStage}`;
+                    if (actual !== expected) {
+                      console.log(`::error::build/tenant-config.json is ${actual}, expected ${expected}; refusing to deploy.`);
+                      process.exit(1);
+                    }
+                    console.log(`Baked tenant/stage: ${actual} (${baked.domain})`);
+                  '
 
             - name: Validate Netlify target
               run: |
@@ -1059,6 +1264,7 @@ jobs:
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Set CapGo Channel
+              id: capgo-set-channel
               if: matrix.capgo
               working-directory: apps/${{ steps.vars.outputs.project_name }}
               env:
@@ -1069,11 +1275,90 @@ jobs:
                     echo "::error::No CapGo bundle version received; aborting channel assignment."
                     exit 1
                   fi
+                  # --downgrade turns off "Disable auto downgrade under native". iOS
+                  # store builds (20.0.x) are numbered above our bundles (1.100.x), so
+                  # with it on no iPhone takes an OTA update. Set it on every deploy so
+                  # new channels and dashboard edits can't re-enable it.
                   bunx --package @capgo/cli@8.50.3 capgo channel set ${{ steps.capgo-channel.outputs.channel }} \
                     -s default \
                     -b "$BUNDLE_VERSION" \
                     --self-assign \
+                    --downgrade \
                     ${{ steps.vars.outputs.capgo_id }}
+
+            # Ask Capgo's update endpoint, as an iOS and an Android device, whether users
+            # would actually get the bundle we just published. A successful upload is not
+            # enough: channel settings (e.g. "Disable auto downgrade under native") can
+            # block a whole platform. Non-blocking: a failure here must not skip the
+            # native store publish, so it alerts #release-owner instead.
+            - name: Check OTA delivery (Capgo canary)
+              id: capgo-canary
+              if: matrix.capgo
+              continue-on-error: true
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  CAPGO_APP_ID: ${{ steps.vars.outputs.capgo_id }}
+                  CAPGO_CHANNEL: ${{ steps.capgo-channel.outputs.channel }}
+                  BUNDLE_VERSION: ${{ steps.capgo-upload.outputs.version }}
+                  APP_PACKAGE_JSON: apps/${{ steps.vars.outputs.project_name }}/package.json
+                  APP_LABEL: ${{ matrix.name }}
+                  # Native versions come from Capgo's device list. Overrides must be set on the
+                  # leg's GitHub *environment*, never repo-wide: LearnCard and ScoutPass have
+                  # different native version numbers.
+                  CANARY_NATIVE_IOS: ${{ vars.CAPGO_CANARY_NATIVE_IOS }}
+                  CANARY_NATIVE_ANDROID: ${{ vars.CAPGO_CANARY_NATIVE_ANDROID }}
+                  CANARY_GH_ENVIRONMENT: ${{ matrix.environment }}
+                  CANARY_ALERT_FILE: ${{ runner.temp }}/capgo-canary-alert.txt
+                  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: node scripts/release-alerts/capgo-canary.mjs
+
+            # Also covers the upload or channel step failing outright (no bundle went out).
+            - name: Alert release owner (OTA delivery)
+              if: |
+                  always() && matrix.capgo &&
+                  (steps.capgo-canary.outcome == 'failure' ||
+                   steps.capgo-upload.outcome == 'failure' ||
+                   steps.capgo-set-channel.outcome == 'failure')
+              continue-on-error: true
+              env:
+                  SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+                  RELEASE_ALERT_CHANNEL: ${{ vars.RELEASE_ALERT_SLACK_CHANNEL || '#release-owner' }}
+                  # If the bot can't post (e.g. not invited), the alert goes to deploy-errors
+                  # instead of being lost behind continue-on-error.
+                  SLACK_FALLBACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_ERRORS_URL }}
+                  ALERT_FILE: ${{ runner.temp }}/capgo-canary-alert.txt
+                  UPLOAD_OUTCOME: ${{ steps.capgo-upload.outcome }}
+                  CHANNEL_OUTCOME: ${{ steps.capgo-set-channel.outcome }}
+                  LEG: ${{ matrix.name }}
+                  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: |
+                  # The canary writes its own alert. Without one, say which step actually failed.
+                  if [[ ! -s "$ALERT_FILE" ]]; then
+                    if [[ "$UPLOAD_OUTCOME" == "success" && "$CHANNEL_OUTCOME" == "success" ]]; then
+                      TITLE=":rotating_light: *OTA canary crashed: ${LEG}*"
+                      DETAIL="The bundle was uploaded and the channel set, but the Capgo canary crashed before it could check delivery. Check the run."
+                    else
+                      TITLE=":rotating_light: *OTA bundle was not published: ${LEG}*"
+                      DETAIL="The Capgo upload or channel step failed, so users are not getting this release over the air."
+                    fi
+                    printf '%s\n%s\n<%s|Deploy run>\n' "$TITLE" "$DETAIL" "$RUN_URL" > "$ALERT_FILE"
+                  fi
+                  node scripts/release-alerts/slack.mjs "$ALERT_FILE"
+
+            # Tenant legs are continue-on-error, so their failure doesn't fail the run and the
+            # global failure notification never fires. Alert the same channel directly.
+            - name: Notify tenant deploy failure
+              if: failure() && matrix.tenant_leg == true && github.ref == 'refs/heads/main'
+              uses: rtCamp/action-slack-notify@v2
+              env:
+                  SLACK_USERNAME: GitHub Actions CI
+                  SLACK_TITLE: 'Tenant frontend deploy failed: ${{ matrix.name }}'
+                  SLACK_MESSAGE: |
+                      *${{ matrix.name }}* failed in Deploy run #${{ github.run_number }} (`${{ github.sha }}`). LearnCard deploys were not blocked.
+                      Check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                  SLACK_COLOR: 'danger'
+                  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_ERRORS_URL }}
+                  MSG_MINIMAL: 'true'
 
     # ============================================================================
     # JIRA RELEASE TAGGING (production only, non-blocking)
@@ -1313,6 +1598,59 @@ jobs:
             releaseNotes: '- Critical Bug Fixes and Security Patches'
         secrets: inherit
 
+    # Tell the release owner when a native store release did not go out. The generic
+    # "Deploy failed" notifier fires for many unrelated reasons, so an App Store failure
+    # used to look like every other failure. Runs on failure, skip (frontend failed) and
+    # cancellation, naming the platform and the reason from the job log.
+    release-delivery-check:
+        name: Alert release owner on native store problems
+        needs: [determine-affected, deploy-frontend, publish-native-apps]
+        if: |
+            always() &&
+            (
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-app-stores == 'true') ||
+                (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true')
+            ) &&
+            needs.publish-native-apps.result != 'success'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            actions: read
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+                  sparse-checkout: |
+                      scripts/release-alerts
+                      apps/learn-card-app/package.json
+                      apps/scouts/package.json
+                  sparse-checkout-cone-mode: false
+
+            - name: Describe the native release failure
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PUBLISH_RESULT: ${{ needs.publish-native-apps.result }}
+                  FRONTEND_RESULT: ${{ needs.deploy-frontend.result }}
+                  TARGET_ENV: ${{ needs.determine-affected.outputs.target_frontend_env }}
+                  ALERT_FILE: ${{ runner.temp }}/native-release-alert.txt
+                  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: |
+                  # VetPass is a learn-card-app tenant, so only ScoutPass has its own version.
+                  case "$TARGET_ENV" in
+                    scout-app-*) PACKAGE_JSON=apps/scouts/package.json ;;
+                    *) PACKAGE_JSON=apps/learn-card-app/package.json ;;
+                  esac
+                  APP_VERSION=$(node -p "require('./$PACKAGE_JSON').version") \
+                    node scripts/release-alerts/native-release-check.mjs
+
+            - name: Alert release owner
+              env:
+                  SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+                  RELEASE_ALERT_CHANNEL: ${{ vars.RELEASE_ALERT_SLACK_CHANNEL || '#release-owner' }}
+                  SLACK_FALLBACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_ERRORS_URL }}
+              run: node scripts/release-alerts/slack.mjs "${{ runner.temp }}/native-release-alert.txt"
+
     # ============================================================================
     # DOCKER IMAGES
     # ============================================================================
@@ -1440,7 +1778,7 @@ jobs:
             - name: Use Node.js 24 for npm trusted publishing
               uses: actions/setup-node@v6
               with:
-                  node-version: 24.12.0
+                  node-version-file: .nvmrc
                   package-manager-cache: false
 
             - name: Build packages
@@ -1615,18 +1953,17 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            # 2026-07-02: Pin only the Changesets subprocess to Node 24.16.0.
-            # Newer runner Node 24 builds can make node-fetch@2 report false
-            # ERR_STREAM_PREMATURE_CLOSE failures while @changesets/changelog-github
-            # fetches GitHub GraphQL changelog data.
-            # Node regression: https://github.com/nodejs/node/issues/63989
-            # Our failed deploy: https://github.com/learningeconomy/LearnCard/actions/runs/28558778835/job/84673047463
-            # Owner: release CI. Revisit after Node's fix is on the runner or Changesets stops using node-fetch@2:
-            # https://github.com/nodejs/node/pull/64004
-            - name: Use Node.js 24.12.0 for Changesets
+            # 2026-07-02: Changesets was pinned to an older Node 24 because 24.17.0 made
+            # node-fetch@2 report false ERR_STREAM_PREMATURE_CLOSE failures while
+            # @changesets/changelog-github fetched GitHub GraphQL changelog data
+            # (https://github.com/nodejs/node/issues/63989). The fix
+            # (https://github.com/nodejs/node/pull/64004) shipped in Node 24.18, so
+            # .nvmrc (24.22.1) is safe to use. Keep an explicit step so Changesets stays
+            # pinned to the repo Node even if the setup action changes.
+            - name: Use Node.js from .nvmrc for Changesets
               uses: actions/setup-node@v6
               with:
-                  node-version: 24.12.0
+                  node-version-file: .nvmrc
 
             - name: Create Release Pull Request
               uses: changesets/action@v1
@@ -1985,3 +2322,198 @@ jobs:
                     echo "::error::Authenticated staging smoke test failed"
                     exit 1
                   fi
+
+    # ============================================================================
+    # AI PASSPORT BACKEND DEPLOYMENTS (Fly)
+    # Triggers (automatic legs need the repo var AIP_DEPLOY_ENABLED='true'):
+    #   - Push: staging when Nx marks ai-passport-backend affected
+    #   - Release: production when that project's package.json version changed
+    #   - Manual: deploy-ai-passport-backend, staging or production
+    # GitHub Environments, FLY_API_TOKEN and the staging overrides: ENVIRONMENTS.md.
+    # ============================================================================
+    deploy-ai-passport-backend:
+        name: Deploy AI Passport Backend (${{ matrix.name }})
+        timeout-minutes: 30
+        needs: [determine-affected, test-affected]
+        if: |
+            always() &&
+            !cancelled() &&
+            needs.determine-affected.result == 'success' &&
+            needs.determine-affected.outputs.aip_backend_matrix_has_legs == 'true' &&
+            (
+              needs.determine-affected.outputs.is_manual == 'true' ||
+              needs.determine-affected.outputs.is_release == 'true' ||
+              needs.test-affected.result == 'success'
+            )
+        permissions:
+            contents: read
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.aip_backend_deployment_matrix) }}
+        environment: ${{ matrix.environment }}
+        concurrency:
+            group: deploy-ai-passport-backend-${{ matrix.environment }}
+            cancel-in-progress: false
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+
+            # Production deploys exactly what AI-Passport's deploy-fly.yml did: fly.toml plus the
+            # app's existing Fly secrets, no overrides. Staging must override every value that
+            # would otherwise point at production (fly.toml's role ARN, the code-default DID and
+            # contract URI), and the job refuses to deploy staging with production values.
+            - name: Validate Fly target and staging overrides
+              id: fly-target
+              env:
+                  ENVIRONMENT: ${{ matrix.environment }}
+                  STAGE: ${{ matrix.stage }}
+                  PINNED_APP: ${{ matrix.fly_app }}
+                  FLY_APP_NAME: ${{ vars.FLY_APP_NAME }}
+                  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+                  AIP_LEARNCARD_DID_WEB: ${{ vars.AIP_LEARNCARD_DID_WEB }}
+                  AIP_LEARNCARD_CONTRACT_URI: ${{ vars.AIP_LEARNCARD_CONTRACT_URI }}
+                  AIP_LEARNCARD_NETWORK_URL: ${{ vars.AIP_LEARNCARD_NETWORK_URL }}
+                  AIP_LEARNCARD_CLOUD_URL: ${{ vars.AIP_LEARNCARD_CLOUD_URL }}
+                  AIP_LCA_URL: ${{ vars.AIP_LCA_URL }}
+                  AIP_DOMAIN: ${{ vars.AIP_DOMAIN }}
+                  AIP_CORS_ORIGINS: ${{ vars.AIP_CORS_ORIGINS }}
+                  AIP_AWS_ROLE_ARN: ${{ vars.AIP_AWS_ROLE_ARN }}
+                  AIP_BEDROCK_GUARDRAIL_ID: ${{ vars.AIP_BEDROCK_GUARDRAIL_ID }}
+                  AIP_BEDROCK_GUARDRAIL_VERSION: ${{ vars.AIP_BEDROCK_GUARDRAIL_VERSION }}
+              run: |
+                  failed=0
+                  fail() { echo "::error::$1"; failed=1; }
+
+                  if [[ -z "$FLY_API_TOKEN" ]]; then
+                    fail "FLY_API_TOKEN secret is missing in environment '$ENVIRONMENT'."
+                  fi
+
+                  APP="${PINNED_APP:-$FLY_APP_NAME}"
+                  if [[ -z "$APP" ]]; then
+                    fail "FLY_APP_NAME var is missing in environment '$ENVIRONMENT'."
+                  elif [[ -n "$PINNED_APP" && -n "$FLY_APP_NAME" && "$FLY_APP_NAME" != "$PINNED_APP" ]]; then
+                    fail "FLY_APP_NAME ($FLY_APP_NAME) in '$ENVIRONMENT' doesn't match the pinned app $PINNED_APP."
+                  fi
+
+                  OVERRIDES="$RUNNER_TEMP/fly-env-overrides"
+                  : > "$OVERRIDES"
+
+                  if [[ "$STAGE" == 'staging' ]]; then
+                    # Production values staging must never inherit. Keep in sync with
+                    # services/ai-passport-backend/src/constants/env.ts and fly.toml.
+                    PROD_DID='did:web:network.learncard.com:users:ai-passport'
+                    PROD_CONTRACT_URI='lc:network:network.learncard.com/trpc:contract:fd6649c7-52c9-4d02-b5ab-fade649d5a0b'
+                    PROD_ROLE_ARN=$(sed -n 's/^ *AWS_ROLE_ARN *= *"\(.*\)"/\1/p' services/ai-passport-backend/fly.toml)
+
+                    case "$APP" in
+                      ai-passport|lca-backend|claude-ai-passport)
+                        fail "Staging can't deploy to the production Fly app $APP." ;;
+                    esac
+
+                    for name in AIP_LEARNCARD_DID_WEB AIP_LEARNCARD_CONTRACT_URI AIP_DOMAIN AIP_CORS_ORIGINS \
+                                AIP_AWS_ROLE_ARN AIP_BEDROCK_GUARDRAIL_ID AIP_BEDROCK_GUARDRAIL_VERSION; do
+                      if [[ -z "${!name}" ]]; then
+                        fail "$name var is missing in environment '$ENVIRONMENT'."
+                      fi
+                    done
+
+                    if [[ "$AIP_LEARNCARD_DID_WEB" == "$PROD_DID" ]]; then
+                      fail "AIP_LEARNCARD_DID_WEB is the production AI Passport DID."
+                    fi
+                    if [[ "$AIP_LEARNCARD_CONTRACT_URI" == "$PROD_CONTRACT_URI" ]]; then
+                      fail "AIP_LEARNCARD_CONTRACT_URI is the production consent contract."
+                    fi
+                    if [[ -n "$PROD_ROLE_ARN" && "$AIP_AWS_ROLE_ARN" == "$PROD_ROLE_ARN" ]]; then
+                      fail "AIP_AWS_ROLE_ARN is the production privacy-runtime role from fly.toml."
+                    fi
+                    if [[ -n "$AIP_BEDROCK_GUARDRAIL_VERSION" && ! "$AIP_BEDROCK_GUARDRAIL_VERSION" =~ ^[1-9][0-9]*$ ]]; then
+                      fail "AIP_BEDROCK_GUARDRAIL_VERSION must be a published numeric version, not DRAFT."
+                    fi
+
+                    add_env() {
+                      if [[ -n "$2" ]]; then
+                        printf '%s\n' "--env" "$1=$2" >> "$OVERRIDES"
+                      fi
+                    }
+                    add_env LEARNCARD_DID_WEB "$AIP_LEARNCARD_DID_WEB"
+                    add_env LEARNCARD_CONTRACT_URI "$AIP_LEARNCARD_CONTRACT_URI"
+                    add_env LEARNCARD_NETWORK_URL "$AIP_LEARNCARD_NETWORK_URL"
+                    add_env LEARNCARD_CLOUD_URL "$AIP_LEARNCARD_CLOUD_URL"
+                    add_env LCA_URL "$AIP_LCA_URL"
+                    add_env DOMAIN "$AIP_DOMAIN"
+                    add_env CORS_ORIGINS "$AIP_CORS_ORIGINS"
+                    add_env AWS_ROLE_ARN "$AIP_AWS_ROLE_ARN"
+                    add_env BEDROCK_GUARDRAIL_ID "$AIP_BEDROCK_GUARDRAIL_ID"
+                    add_env BEDROCK_GUARDRAIL_VERSION "$AIP_BEDROCK_GUARDRAIL_VERSION"
+                  fi
+
+                  if [[ "$failed" != 0 ]]; then
+                    exit 1
+                  fi
+
+                  echo "app=$APP" >> "$GITHUB_OUTPUT"
+                  echo "overrides=$OVERRIDES" >> "$GITHUB_OUTPUT"
+                  echo "Deploying $STAGE to Fly app $APP with $(( $(wc -l < "$OVERRIDES") / 2 )) env override(s)."
+
+            - name: Set up flyctl
+              uses: superfly/flyctl-actions/setup-flyctl@1.6
+
+            # validateBackendEnvironment() exits 1 before the HTTP server binds when any of these is
+            # missing, and the only trace is a bare service_start_failed event, so the health probe
+            # just times out. Check names (never values) before shipping a release that can't boot.
+            # Keep in sync with services/ai-passport-backend/src/constants/env.ts.
+            - name: Check required Fly secrets
+              env:
+                  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+                  FLY_APP: ${{ steps.fly-target.outputs.app }}
+              run: |
+                  present=$(
+                    {
+                      flyctl secrets list --app "$FLY_APP" --json | jq -r '.[] | (.Name // .name)'
+                      sed -n '/^\[env\]/,/^\[/s/^ *\([A-Z0-9_]*\) *=.*/\1/p' services/ai-passport-backend/fly.toml
+                    } | sort -u
+                  )
+                  missing=()
+                  for name in MONGO_URI SEED JWT_SECRET REDIS_HOST REDIS_PORT AI_PRIVACY_KEY; do
+                    grep -qx "$name" <<< "$present" || missing+=("$name")
+                  done
+                  if (( ${#missing[@]} )); then
+                    echo "::error::Fly app $FLY_APP is missing required secrets: ${missing[*]}. The API exits on boot without them."
+                    exit 1
+                  fi
+
+            # Same invocation as AI-Passport's deploy-fly.yml: the build context is the monorepo
+            # root (the frozen install in Dockerfile.api needs every workspace manifest) and
+            # fly.toml's dockerfile path resolves next to the config.
+            - name: Deploy to Fly
+              env:
+                  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+                  FLY_APP: ${{ steps.fly-target.outputs.app }}
+                  OVERRIDES: ${{ steps.fly-target.outputs.overrides }}
+              run: |
+                  mapfile -t ENV_ARGS < "$OVERRIDES"
+                  flyctl deploy . \
+                    --remote-only \
+                    --config services/ai-passport-backend/fly.toml \
+                    --app "$FLY_APP" \
+                    "${ENV_ARGS[@]}"
+
+            # fly.toml has no health check, so probe /health here. Machines scale to zero, so the
+            # retries also cover the cold start.
+            - name: Verify deployment health
+              env:
+                  FLY_APP: ${{ steps.fly-target.outputs.app }}
+              run: |
+                  curl --fail --silent --show-error \
+                    --retry 10 --retry-delay 6 --retry-all-errors --max-time 20 \
+                    "https://$FLY_APP.fly.dev/health"
+
+            # The app logs only safe event codes, so the machine log is the fastest way to tell a
+            # boot crash (service_start_failed, restart loop) from a slow cold start.
+            - name: Show Fly machine logs on failure
+              if: failure() && steps.fly-target.outputs.app != ''
+              env:
+                  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+                  FLY_APP: ${{ steps.fly-target.outputs.app }}
+              run: flyctl logs --app "$FLY_APP" --no-tail | tail -n 200 || true

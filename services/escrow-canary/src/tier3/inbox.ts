@@ -74,7 +74,29 @@ export interface Header {
     value: string;
 }
 const utf8 = new TextDecoder('utf-8', { fatal: true });
-const latin1 = new TextDecoder('latin1');
+
+/**
+ * Raw message bytes <-> one char per byte (true ISO-8859-1), so 8bit/binary
+ * bodies survive the header split byte for byte. Never `TextDecoder('latin1')`:
+ * WHATWG maps that label to windows-1252 (Bun follows it; Node does not), which
+ * turns 0x80-0x9F into U+20AC etc., and a later `Buffer.from(_, 'latin1')`
+ * truncates those, corrupting UTF-8 (e.g. `’` e2 80 99 -> e2 ac 22).
+ */
+const bytesToBinary = (bytes: Uint8Array): string => {
+    let text = '';
+    for (let i = 0; i < bytes.length; i += 0x8000)
+        text += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return text;
+};
+const binaryToBytes = (text: string): Uint8Array => {
+    const bytes = new Uint8Array(text.length);
+    for (let i = 0; i < text.length; i += 1) {
+        const code = text.charCodeAt(i);
+        if (code > 0xff) throw new InboxError('malformed');
+        bytes[i] = code;
+    }
+    return bytes;
+};
 
 const splitHeadersAndBody = (text: string): { headers: Header[]; body: string } => {
     const match = /\r?\n\r?\n/.exec(text);
@@ -142,8 +164,7 @@ const decodeBody = (
         const compact = body.replace(/\s+/g, '');
         if (!/^[A-Za-z0-9+/]*={0,2}$/.test(compact)) throw new InboxError('malformed');
         bytes = Uint8Array.from(Buffer.from(compact, 'base64'));
-    } else if (['7bit', '8bit', 'binary'].includes(transfer))
-        bytes = Uint8Array.from(Buffer.from(body, 'latin1'));
+    } else if (['7bit', '8bit', 'binary'].includes(transfer)) bytes = binaryToBytes(body);
     else throw new InboxError('malformed');
     try {
         return utf8.decode(bytes).replace(/\r\n/g, '\n');
@@ -182,7 +203,7 @@ export interface ParsedMessage {
 /** Headers in original order, decoded subject, and the single text/plain body. */
 export const parseMessage = (raw: Uint8Array): ParsedMessage => {
     if (raw.length > MAX_MESSAGE_BYTES) throw new InboxError('email_untrusted');
-    const { headers, body } = splitHeadersAndBody(latin1.decode(raw));
+    const { headers, body } = splitHeadersAndBody(bytesToBinary(raw));
     const contentType = one(headers, 'content-type') ?? 'text/plain; charset=us-ascii';
     const subject = decodeHeaderWords(one(headers, 'subject') ?? '');
     const mediaType = contentType.split(';')[0].trim().toLowerCase();
@@ -318,6 +339,12 @@ export interface TrustPolicy {
     expectedDkimDomain: string;
     requireDmarc: boolean;
     recoveryEmail: string;
+    /**
+     * Accept exactly one `X-SES-Spam-Verdict: FAIL` (provisioning login mail
+     * only, by explicit operator flag). Every other check still applies; the
+     * tier 3 runner never sets it.
+     */
+    allowSpamFail?: boolean;
 }
 
 /** `false` from a non-allowlisted sender (skip silently); throws for enclave-looking but untrusted mail. */
@@ -370,7 +397,8 @@ export const isTrusted = (message: ParsedMessage, policy: TrustPolicy): boolean 
         );
     });
     if (!aligned) fail();
-    if (all(sesBlock, 'x-ses-spam-verdict').join() !== 'PASS') fail();
+    const spam = all(sesBlock, 'x-ses-spam-verdict').join();
+    if (spam !== 'PASS' && !(policy.allowSpamFail === true && spam === 'FAIL')) fail();
     if (all(sesBlock, 'x-ses-virus-verdict').join() !== 'PASS') fail();
     // Exactly one To with exactly this account's address and no copies: a
     // relayed genuine message for another user cannot pass by adding a To/Cc.
@@ -435,31 +463,47 @@ export const inboxPolicy = (config: RunnerConfig['inbox'], recoveryEmail: string
     recoveryEmail,
 });
 
-const readTrusted = async <K extends Template['kind']>(
+/** One trusted message whose content a caller-supplied parser accepted. */
+export interface ParsedFound<T> {
+    key: string;
+    lastModified: number;
+    value: T;
+}
+export interface ParsedFindResult<T> {
+    found?: ParsedFound<T>;
+    /** Allowlisted-sender mail that failed trust checks: a diagnostic, never satisfies a step. */
+    untrusted: number;
+    /** Trusted or unreadable mail whose MIME or content the parsers rejected (diagnostic). */
+    malformed: number;
+}
+/** `undefined` = not this kind of message (skip); throw `InboxError('malformed')` to reject. */
+export type MessageParser<T> = (message: ParsedMessage) => T | undefined;
+
+const readTrusted = async <T>(
     store: InboxStore,
     object: InboxObject,
-    kind: K,
-    policy: TrustPolicy
-): Promise<FoundMessage<K> | undefined> => {
+    policy: TrustPolicy,
+    parse: MessageParser<T>
+): Promise<ParsedFound<T> | undefined> => {
     const message = parseMessage(await store.get(object.key));
     if (!isTrusted(message, policy)) return undefined;
-    const template = parseTemplate(message);
-    if (!template || template.kind !== kind) return undefined;
-    return {
-        key: object.key,
-        lastModified: object.lastModified,
-        template: template as Extract<Template, { kind: K }>,
-    };
+    const value = parse(message);
+    if (value === undefined) return undefined;
+    return { key: object.key, lastModified: object.lastModified, value };
 };
 
-/** Newest-first; stops at the first trusted message of `kind` that arrived at or after `since`. */
-export const findMessage = async <K extends Template['kind']>(
+/**
+ * Newest-first; stops at the first trusted message that `parse` accepts and
+ * that arrived at or after `since`. Trust checks always apply; the parser only
+ * decides content. Shared by the runner and the provisioning tool.
+ */
+export const findParsed = async <T>(
     store: InboxStore,
     prefix: string,
-    kind: K,
     since: number,
-    policy: TrustPolicy
-): Promise<FindResult<K>> => {
+    policy: TrustPolicy,
+    parse: MessageParser<T>
+): Promise<ParsedFindResult<T>> => {
     const candidates = (await store.list(prefix))
         .filter(
             object =>
@@ -469,21 +513,50 @@ export const findMessage = async <K extends Template['kind']>(
         .sort((a, b) => b.lastModified - a.lastModified)
         .slice(0, MAX_CANDIDATES);
     let untrusted = 0;
+    let malformed = 0;
     for (const object of candidates) {
         if (object.size > MAX_MESSAGE_BYTES) {
             untrusted += 1;
             continue;
         }
         try {
-            const found = await readTrusted(store, object, kind, policy);
-            if (found) return { found, untrusted };
+            const found = await readTrusted(store, object, policy, parse);
+            if (found) return { found, untrusted, malformed };
         } catch (error) {
-            if (error instanceof InboxError)
-                untrusted += error.reason === 'email_untrusted' ? 1 : 0;
-            else throw error;
+            if (!(error instanceof InboxError)) throw error;
+            if (error.reason === 'email_untrusted') untrusted += 1;
+            else malformed += 1;
         }
     }
-    return { untrusted };
+    return { untrusted, malformed };
+};
+
+const templateOf =
+    <K extends Template['kind']>(kind: K): MessageParser<Extract<Template, { kind: K }>> =>
+    message => {
+        const template = parseTemplate(message);
+        return template?.kind === kind ? (template as Extract<Template, { kind: K }>) : undefined;
+    };
+const asFound = <K extends Template['kind']>(
+    found: ParsedFound<Extract<Template, { kind: K }>>
+): FoundMessage<K> => ({
+    key: found.key,
+    lastModified: found.lastModified,
+    template: found.value,
+});
+
+/** Newest-first; stops at the first trusted message of `kind` that arrived at or after `since`. */
+export const findMessage = async <K extends Template['kind']>(
+    store: InboxStore,
+    prefix: string,
+    kind: K,
+    since: number,
+    policy: TrustPolicy
+): Promise<FindResult<K>> => {
+    const result = await findParsed(store, prefix, since, policy, templateOf(kind));
+    return result.found
+        ? { found: asFound(result.found), untrusted: result.untrusted }
+        : { untrusted: result.untrusted };
 };
 
 /** Re-read one known object (crash recovery for a confirm already in flight). */
@@ -495,5 +568,6 @@ export const readKnownMessage = async <K extends Template['kind']>(
 ): Promise<FoundMessage<K> | undefined> => {
     const object = (await store.list(key)).find(candidate => candidate.key === key);
     if (!object || object.size > MAX_MESSAGE_BYTES) return undefined;
-    return readTrusted(store, object, kind, policy);
+    const found = await readTrusted(store, object, policy, templateOf(kind));
+    return found ? asFound(found) : undefined;
 };

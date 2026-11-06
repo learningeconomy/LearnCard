@@ -248,6 +248,7 @@ export default defineConfig(async ({ mode, command }) => {
                 'zod/v4',
                 '@learncard/sss-key-manager > shamir-secret-sharing',
                 '@learncard/sss-key-manager > hash-wasm',
+                '@learncard/sss-key-manager > @noble/ed25519',
                 // Escrow Nitro attestation (recovery) imports these at runtime.
                 '@learncard/sss-key-manager > reflect-metadata',
                 '@learncard/sss-key-manager > cborg',
@@ -260,6 +261,7 @@ export default defineConfig(async ({ mode, command }) => {
                 '@learncard/vpqr-plugin > @digitalbazaar/vpqr',
                 '@learncard/ethereum-plugin > ethers',
                 '@learncard/network-brain-client > @trpc/client',
+                '@learncard/learn-cloud-client > @trpc/client',
                 '@learncard/lca-api-plugin > @learncard/lca-api-client > @trpc/client',
                 '@learncard/core > core-js/actual/promise',
                 '@learncard/core > abort-controller/dist/abort-controller.js',

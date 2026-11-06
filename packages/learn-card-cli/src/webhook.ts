@@ -13,11 +13,12 @@ import {
     type ProjectOptions,
     PRODUCTION_NETWORK,
 } from './project';
-import { DEFAULT_BADGE, templateCredential } from './send';
+import { DEFAULT_BADGE, invalidRecipientReason, templateCredential } from './send';
 import { WEBHOOK_MJS } from './generated/snippets';
 import { writeSnippet } from './snippet-files';
 import { setupSigning } from './setup-signing';
 import { out } from './out';
+import { UsageError } from './errors';
 
 interface WebhookModule {
     extractBearer: (header: unknown) => string | undefined;
@@ -113,6 +114,38 @@ export const collectWebhookEvents = (
         };
     });
 
+const DEFAULT_TIMEOUT_SECONDS = 60;
+
+/** `--timeout <seconds>` in milliseconds: a positive number, default 60s. */
+export const parseWebhookTimeout = (value: string | undefined): number => {
+    if (value === undefined) return DEFAULT_TIMEOUT_SECONDS * 1000;
+    const seconds = Number(value);
+    if (!value.trim() || !Number.isFinite(seconds) || seconds <= 0)
+        throw new UsageError(`Invalid --timeout "${value}". Use a positive number of seconds.`);
+    return seconds * 1000;
+};
+
+/**
+ * Human mode at a terminal waits for Ctrl+C. Without a terminal on stdin (CI, an agent's
+ * shell) nobody can press Ctrl+C, so the run ends after `--timeout` like `--json` does.
+ */
+export const humanWaitTimeoutMs = (timeoutMs: number, stdinIsTTY: boolean): number | undefined =>
+    stdinIsTTY ? undefined : timeoutMs;
+
+/** Recipient checks for `webhook --url`, before any identity or network work. */
+export const validateWebhookUrl = (url: string, production: boolean): void => {
+    let parsed: URL;
+    try {
+        parsed = new URL(url);
+    } catch {
+        throw new UsageError(`Invalid --url "${url}". Use a public HTTPS URL.`);
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol))
+        throw new UsageError(`Invalid --url "${url}". Use a public HTTPS URL.`);
+    if (production && parsed.protocol !== 'https:')
+        throw new UsageError('--url must be a public HTTPS URL when using the production network.');
+};
+
 export const runWebhook = async (
     email: string | undefined,
     options: ProjectOptions & {
@@ -125,9 +158,23 @@ export const runWebhook = async (
 ): Promise<void> => {
     const project = await loadProject(process.cwd());
     const { port, expectedDid } = webhookConfig(project.env, options);
+    const timeoutMs = parseWebhookTimeout(options.timeout);
     const production = resolveServices(project.env, options.network).network === PRODUCTION_NETWORK;
-    if (options.url && production && new URL(options.url).protocol !== 'https:') {
-        throw new Error('--url must be a public HTTPS URL when using the production network.');
+    if (options.url) validateWebhookUrl(options.url, production);
+    // Settle the recipient before creating an identity or connecting (only needed with --url).
+    let recipient = '';
+    if (options.url) {
+        const prompts = createPrompts(options.yes);
+        try {
+            recipient =
+                email || options.to || (await prompts.ask('Recipient email (--to <email>)', ''));
+        } finally {
+            prompts.close();
+        }
+        recipient = recipient.trim();
+        if (!recipient) throw new UsageError('Provide an email argument or --to <email>.');
+        const reason = invalidRecipientReason(recipient);
+        if (reason) throw new UsageError(reason);
     }
     const identity = await ensureIdentity(project, options);
     const learnCard = await connect(project, { ...options, lca: true });
@@ -161,15 +208,6 @@ export const runWebhook = async (
                 'Demo: signatures are verified, but any DID is accepted. Set EXPECTED_NETWORK_DID to your trusted network DID before production.'
             );
         }
-        const prompts = createPrompts(options.yes);
-        let recipient: string;
-        try {
-            recipient =
-                email || options.to || (await prompts.ask('Recipient email (--to <email>)', ''));
-        } finally {
-            prompts.close();
-        }
-        if (!recipient) throw new Error('Provide an email argument or --to <email>.');
         // Template claims need a hosted signer; the demo does not persist signer configuration.
         await setupSigning(project, learnCard, undefined, { persist: false });
         if (!project.env[KEYS.TEMPLATE_URI]) {
@@ -182,7 +220,6 @@ export const runWebhook = async (
         }
         const templateUri = project.env[KEYS.TEMPLATE_URI]!;
         // Start collecting before send() so an ISSUANCE_DELIVERED that arrives mid-call isn't missed.
-        const timeoutMs = (Number(options.timeout) > 0 ? Number(options.timeout) : 60) * 1000;
         let stopCollectingEvents: (() => void) | undefined;
         const eventsPromise = out.json
             ? collectWebhookEvents(timeoutMs, !!options.waitForClaim, stop => {
@@ -223,7 +260,15 @@ export const runWebhook = async (
             });
             return;
         }
+        const waitMs = humanWaitTimeoutMs(timeoutMs, !!process.stdin.isTTY);
         await new Promise<void>((resolve, reject) => {
+            const timer =
+                waitMs === undefined
+                    ? undefined
+                    : setTimeout(() => {
+                          out.log(`Stopped after ${waitMs / 1000}s (no terminal; see --timeout).`);
+                          stop();
+                      }, waitMs);
             const stop = (): void => {
                 cleanup();
                 resolve();
@@ -233,6 +278,7 @@ export const runWebhook = async (
                 reject(error);
             };
             const cleanup = (): void => {
+                if (timer) clearTimeout(timer);
                 process.removeListener('SIGINT', stop);
                 process.removeListener('SIGTERM', stop);
                 server.removeListener('error', fail);

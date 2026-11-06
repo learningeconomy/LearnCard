@@ -153,7 +153,8 @@ jobs:
         needs: should-deploy
         if: needs.should-deploy.outputs.deploy == 'true'
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        # Up to 10m readiness + the existing 25m deploy command + checkout/comment overhead.
+        timeout-minutes: 40
         environment: preview
         permissions:
             contents: read
@@ -190,45 +191,39 @@ jobs:
                       });
                       core.setOutput('comment_id', comment.id);
 
-            - name: Start EC2 instance
+            - name: Select trusted preview control revision
+              id: control-ref
+              env:
+                  PREVIEW_CONTROL_EVENT: ${{ github.event_name }}
+                  PREVIEW_CONTROL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+                  PREVIEW_CONTROL_WORKFLOW_SHA: ${{ github.workflow_sha }}
               run: |
-                  echo "Starting EC2 preview server..."
-                  curl -sf -H "x-api-key: ${{ secrets.PREVIEW_EC2_API_KEY }}" \
-                      "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/start" || {
-                      echo "::warning::EC2 start request failed — instance may already be running"
-                  }
+                  # PR workflow_sha is a PR merge commit, not trusted control code.
+                  if [[ "$PREVIEW_CONTROL_EVENT" == 'pull_request' ]]; then
+                    control_ref="$PREVIEW_CONTROL_BASE_SHA"
+                  else
+                    control_ref="$PREVIEW_CONTROL_WORKFLOW_SHA"
+                  fi
+                  if ! [[ "$control_ref" =~ ^[0-9a-f]{40}$ ]]; then
+                    echo '::error::Missing or invalid trusted preview control revision.' >&2
+                    exit 1
+                  fi
+                  echo "ref=$control_ref" >> "$GITHUB_OUTPUT"
 
-            - name: Wait for EC2 to be ready
+            - name: Checkout preview control script
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ steps.control-ref.outputs.ref }}
+                  persist-credentials: false
+                  sparse-checkout: .github/scripts
+
+            - name: Start EC2 and wait for SSH readiness
               id: ec2
-              run: |
-                  echo "Waiting for EC2 instance to be ready..."
-                  for i in {1..30}; do
-                      STATUS=$(curl -s -H "x-api-key: ${{ secrets.PREVIEW_EC2_API_KEY }}" \
-                          "${{ secrets.PREVIEW_EC2_LAMBDA_URL }}/status" || echo "")
-                      STATE=$(echo "$STATUS" | grep -i "^State:" | awk '{print $2}')
-                      IP=$(echo "$STATUS" | grep -i "^Public IP:" | awk '{print $3}')
-
-                      echo "Attempt $i: state=$STATE, ip=$IP"
-
-                      if [ "$STATE" = "running" ] && [ -n "$IP" ]; then
-                          echo "Waiting for SSH..."
-                          for j in {1..20}; do
-                              if nc -z -w5 "$IP" 22 2>/dev/null; then
-                                  echo "SSH is ready at $IP"
-                                  echo "ip=$IP" >> "$GITHUB_OUTPUT"
-                                  exit 0
-                              fi
-                              echo "  SSH not ready yet ($j)..."
-                              sleep 5
-                          done
-                          echo "::error::Timeout waiting for SSH"
-                          exit 1
-                      fi
-
-                      sleep 10
-                  done
-                  echo "::error::Timeout waiting for EC2 to start"
-                  exit 1
+              timeout-minutes: 11
+              env:
+                  PREVIEW_EC2_LAMBDA_URL: ${{ secrets.PREVIEW_EC2_LAMBDA_URL }}
+                  PREVIEW_EC2_API_KEY: ${{ secrets.PREVIEW_EC2_API_KEY }}
+              run: python3 .github/scripts/preview-readiness.py
 
             - name: Deploy preview on EC2
               uses: appleboy/ssh-action@v1.0.3

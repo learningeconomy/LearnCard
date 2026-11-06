@@ -1,4 +1,5 @@
 import { accountFeature } from './journeys/account';
+import { aiSessionsFeature } from './journeys/ai-sessions';
 import { appStoreFeature } from './journeys/app-store';
 import { cliFeature } from './journeys/cli';
 import { consentFlowFeature } from './journeys/consent-flow';
@@ -27,4 +28,5 @@ export const verificationFeatures: FeatureDefinition[] = [
     sdkToAppFeature,
     consentFlowFeature,
     docsFeature,
+    aiSessionsFeature,
 ];

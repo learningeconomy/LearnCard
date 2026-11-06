@@ -29,7 +29,7 @@ class BoostGetBoostFrameworks200Response(BaseModel):
     BoostGetBoostFrameworks200Response
     """ # noqa: E501
     cursor: Optional[StrictStr] = None
-    has_more: Optional[StrictBool] = Field(alias="hasMore")
+    has_more: StrictBool = Field(alias="hasMore")
     records: List[BoostGetBoostFrameworks200ResponseRecordsInner]
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["cursor", "hasMore", "records"]
@@ -61,9 +61,8 @@ class BoostGetBoostFrameworks200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -85,16 +84,6 @@ class BoostGetBoostFrameworks200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
-            _dict['cursor'] = None
-
-        # set to None if has_more (nullable) is None
-        # and model_fields_set contains the field
-        if self.has_more is None and "has_more" in self.model_fields_set:
-            _dict['hasMore'] = None
 
         return _dict
 

@@ -1,7 +1,8 @@
 import { waitForInboxCredentialBatch } from './inbox-batch';
-import { getClient, getApiTokenClient } from '@learncard/network-brain-client';
+import { getClient, getApiTokenClient, getAnonymousClient } from '@learncard/network-brain-client';
 import {
     JWEValidator,
+    MyCampaignValidator,
     LCNProfile,
     LCNVisibleProfile,
     UnsignedVCValidator,
@@ -2379,18 +2380,27 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.createConsentFlowContract.mutate(contract);
             },
 
-            addAutoBoostsToContract: async (_learnCard, contractUri, autoboosts) => {
+            updateContract: async (_learnCard, uri, changes, options = {}) => {
+                const { read, write, contract, ...details } = changes;
+                if ((read && contract?.read) || (write && contract?.write)) {
+                    throw new Error(
+                        'Contract read/write updates must use either the top-level or nested contract shape, not both.'
+                    );
+                }
                 await ensureUser();
-
-                return client.contracts.addAutoBoostsToContract.mutate({ contractUri, autoboosts });
-            },
-
-            removeAutoBoostsFromContract: async (_learnCard, contractUri, boostUris) => {
-                await ensureUser();
-
-                return client.contracts.removeAutoBoostsFromContract.mutate({
-                    contractUri,
-                    boostUris,
+                return client.contracts.updateConsentFlowContract.mutate({
+                    uri,
+                    changes: {
+                        ...details,
+                        ...((contract || read || write) && {
+                            contract: {
+                                ...contract,
+                                ...(read && { read }),
+                                ...(write && { write }),
+                            },
+                        }),
+                    },
+                    ...options,
                 });
             },
 
@@ -2404,6 +2414,15 @@ export async function getLearnCardNetworkPlugin(
             },
             getContract: async (_learnCard, uri) => {
                 return client.contracts.getConsentFlowContract.query({ uri });
+            },
+            getContractVersions: async (_learnCard, uri) => {
+                await ensureUser();
+                return client.contracts.getContractVersions.query({ uri });
+            },
+
+            getConsentStatus: async (_learnCard, uri, profileId) => {
+                await ensureUser();
+                return client.contracts.getConsentStatus.query({ uri, profileId });
             },
 
             getContracts: async (_learnCard, options) => {
@@ -2490,6 +2509,15 @@ export async function getLearnCardNetworkPlugin(
                     terms,
                     expiresAt,
                     oneTime,
+                    audienceVersion,
+                });
+            },
+            acceptContractUpdate: async (_learnCard, uri, { version, terms, audienceVersion }) => {
+                await ensureUser();
+                return client.contracts.updateConsentedContractTerms.mutate({
+                    uri,
+                    terms,
+                    acceptVersion: version,
                     audienceVersion,
                 });
             },
@@ -3306,9 +3334,32 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.isAdmin.query();
             },
 
+            getAnnouncementPreferences: async _learnCard => {
+                await ensureUser();
+                return client.campaigns.getAnnouncementPreferences.query();
+            },
+            updateAnnouncementPreferences: async (_learnCard, updates) => {
+                await ensureUser();
+                return client.campaigns.updateAnnouncementPreferences.mutate(updates);
+            },
+            unsubscribeFromAnnouncements: async (_learnCard, token) => {
+                return getAnonymousClient(url).campaigns.unsubscribe.mutate({ token });
+            },
             campaignsIsAdmin: async _learnCard => {
                 await ensureUser();
                 return client.campaigns.isAdmin.query();
+            },
+            campaignsSendTestToMe: async (_learnCard, campaignId) => {
+                await ensureUser();
+                return client.campaigns.sendTestToMe.mutate({ campaignId });
+            },
+            campaignsPreviewDispatch: async (_learnCard, campaignId) => {
+                await ensureUser();
+                return client.campaigns.previewDispatch.query({ campaignId });
+            },
+            campaignsDispatch: async (_learnCard, campaignId, options = {}) => {
+                await ensureUser();
+                return client.campaigns.dispatch.mutate({ campaignId, ...options });
             },
             campaignsCreate: async (_learnCard, input) => {
                 await ensureUser();
@@ -3352,11 +3403,21 @@ export async function getLearnCardNetworkPlugin(
             },
             getMyCampaigns: async _learnCard => {
                 await ensureUser();
-                return client.campaigns.getMyCampaigns.query();
+                const response = await client.campaigns.getMyCampaigns.query();
+                if (!Array.isArray(response))
+                    throw new Error('Invalid campaigns response: expected an array');
+                return response.flatMap(item => {
+                    const result = MyCampaignValidator.safeParse(item);
+                    return result.success ? [result.data] : [];
+                });
             },
-            recordCampaignEvent: async (_learnCard, campaignId, event) => {
+            recordCampaignEvent: async (_learnCard, campaignId, event, testId) => {
                 await ensureUser();
-                return client.campaigns.recordEvent.mutate({ campaignId, event });
+                return client.campaigns.recordEvent.mutate({
+                    campaignId,
+                    event,
+                    ...(testId ? { testId } : {}),
+                });
             },
             enrollInCampaign: async (_learnCard, campaignId) => {
                 await ensureUser();

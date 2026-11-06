@@ -7,7 +7,8 @@ import * as Sentry from '@sentry/react';
 export const isShareViewerPath = (pathname: string): boolean => /^\/s(?:\/|$)/.test(pathname);
 
 const isShareRoute = () =>
-    typeof window !== 'undefined' && isShareViewerPath(window.location.pathname);
+    typeof window !== 'undefined' &&
+    (isShareViewerPath(window.location.pathname) || window.location.pathname === '/unsubscribe');
 let privateSession = isShareRoute();
 let privacyConfigured = false;
 const listeners = new Set<() => void>();
@@ -41,18 +42,29 @@ export const enterSharePrivacy = (): void => {
 
 /** Also protects navigation breadcrumbs recorded before the viewer mounts. */
 export const scrubShareTelemetry = <T>(value: T): T => {
+    // Ancestors mark true cycles. Later paths to an already scrubbed object get a marker,
+    // not the clone: a shared reference would fan out again when Sentry stringifies it.
+    const ancestors = new WeakSet<object>();
+    const seen = new WeakSet<object>();
     const scrub = (item: unknown): unknown => {
         if (typeof item === 'string')
-            return item.replace(
-                /(\/s\/[^\s?#"'<>]+)(?:\?[^\s#"'<>]*)?#[^\s"'<>]*/g,
-                '$1#[redacted]'
-            );
-        if (Array.isArray(item)) return item.map(scrub);
-        if (item && typeof item === 'object')
-            return Object.fromEntries(
-                Object.entries(item).map(([key, child]) => [key, scrub(child)])
-            );
-        return item;
+            return item
+                .replace(/(\/s\/[^\s?#"'<>]+)(?:\?[^\s#"'<>]*)?#[^\s"'<>]*/g, '$1#[redacted]')
+                .replace(/(\/unsubscribe\?)[^\s"'<>]*/g, '$1[redacted]');
+        if (!item || typeof item !== 'object' || item instanceof Date) return item;
+        if (ancestors.has(item)) return '[Circular]';
+        if (seen.has(item)) return '[Shared]';
+        ancestors.add(item);
+        seen.add(item);
+        try {
+            return Array.isArray(item)
+                ? item.map(scrub)
+                : Object.fromEntries(
+                      Object.entries(item).map(([key, child]) => [key, scrub(child)])
+                  );
+        } finally {
+            ancestors.delete(item);
+        }
     };
     return scrub(value) as T;
 };

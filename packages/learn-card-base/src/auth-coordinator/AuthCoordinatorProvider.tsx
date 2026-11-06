@@ -87,6 +87,12 @@ export interface AuthCoordinatorContextValue {
     setEscrowPin: AuthCoordinator['setEscrowPin'];
     clearEscrowPin: AuthCoordinator['clearEscrowPin'];
     acknowledgeEscrowPinAutoClear: AuthCoordinator['acknowledgeEscrowPinAutoClear'];
+    /** Dismiss the one-time review shown after a PIN sign-in. */
+    acknowledgePinSignIn: AuthCoordinator['acknowledgePinSignIn'];
+    /** Hide the "choose a new PIN" prompt (`ready.escrowPinChangeRequired`) for this session. */
+    dismissEscrowPinChange: AuthCoordinator['dismissEscrowPinChange'];
+    /** "Secure my account" / "Sign out of all other devices"; see AuthCoordinator. */
+    secureAccount: AuthCoordinator['secureAccount'];
     getEscrowEnrollmentState: AuthCoordinator['getEscrowEnrollmentState'];
     beginIdentityRecovery: () => void;
     sendIdentityRecoveryCode: (email: string) => Promise<void>;
@@ -182,6 +188,12 @@ export interface AuthCoordinatorProviderProps {
     legacyAccountThresholdMs?: number;
 
     /**
+     * Deadline for the server key-status fetch.
+     * See AuthCoordinatorConfig.serverStatusTimeoutMs for details.
+     */
+    serverStatusTimeoutMs?: number;
+
+    /**
      * Confirms a legacy key belongs to the signed-in account before migration
      * writes it. See AuthCoordinatorConfig.verifyMigrationIdentity.
      */
@@ -224,6 +236,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     onDebugEvent,
     enabled = true,
     legacyAccountThresholdMs,
+    serverStatusTimeoutMs,
     verifyMigrationIdentity,
 }) => {
     // `idle` means storage/session restoration has finished without an account.
@@ -407,6 +420,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             onLogout,
             clearPendingEscrowRecovery,
             legacyAccountThresholdMs,
+            serverStatusTimeoutMs,
             verifyMigrationIdentity: verifyMigrationIdentityRef.current
                 ? check => verifyMigrationIdentityRef.current?.(check) ?? Promise.resolve('unknown')
                 : undefined,
@@ -563,6 +577,16 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     }, []);
     const acknowledgeEscrowPinAutoClear = useCallback(() => {
         coordinatorRef.current?.acknowledgeEscrowPinAutoClear();
+    }, []);
+    const acknowledgePinSignIn = useCallback(() => {
+        coordinatorRef.current?.acknowledgePinSignIn();
+    }, []);
+    const dismissEscrowPinChange = useCallback(() => {
+        coordinatorRef.current?.dismissEscrowPinChange();
+    }, []);
+    const secureAccount = useCallback(async (params: { pin: string | null }) => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.secureAccount(params);
     }, []);
     const getEscrowEnrollmentState = useCallback(async () => {
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
@@ -721,6 +745,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             setEscrowPin,
             clearEscrowPin,
             acknowledgeEscrowPinAutoClear,
+            acknowledgePinSignIn,
+            dismissEscrowPinChange,
+            secureAccount,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,
@@ -770,6 +797,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             setEscrowPin,
             clearEscrowPin,
             acknowledgeEscrowPinAutoClear,
+            acknowledgePinSignIn,
+            dismissEscrowPinChange,
+            secureAccount,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,

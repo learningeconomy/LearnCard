@@ -1,4 +1,298 @@
 {
+    "consentUpdate": {
+        "summary": {
+            "requestDetails": "Détails de la demande",
+            "before": "Actuellement",
+            "after": "Après la mise à jour",
+            "notRequested": "Non demandé"
+        },
+        "details": {
+            "frontDoorBoostUri": "Identifiant de la porte d’entrée",
+            "frontDoorCurrent": "Identifiant actuel",
+            "frontDoorUpdated": "Identifiant mis à jour",
+            "expiresAt": "Expiration de l’accès",
+            "writers": "Personnes autorisées à écrire",
+            "autoboosts": "Envois automatiques d’identifiants",
+            "personCountOne": "{{count}} personne",
+            "peopleCount": "{{count}} personnes",
+            "credentialCountOne": "{{count}} identifiant",
+            "credentialsCount": "{{count}} identifiants",
+            "set": "Défini"
+        },
+        "editor": {
+            "accessSettings": "Paramètres de {{label}}",
+            "title": "Mettre à jour la demande",
+            "close": "Fermer l’éditeur de la demande",
+            "description": "Modifiez la demande actuelle, vérifiez vos changements, puis publiez-les quand vous êtes prêt.",
+            "noContract": "Créez ou sélectionnez une demande de consentement avant de la modifier.",
+            "loading": "Chargement de la demande…",
+            "loadError": "Impossible de charger la demande actuelle. Veuillez réessayer.",
+            "unsupportedNetwork": "Les mises à jour des demandes ne sont pas encore disponibles sur ce réseau. Connectez-vous au service mis à jour et réessayez.",
+            "retry": "Réessayer",
+            "currentVersion": "Version actuelle : {{version}}",
+            "customField": "Champ personnalisé pour {{area}}",
+            "addField": "Ajouter un champ",
+            "removeAccess": "Retirer {{label}}",
+            "selectImage": "Choisir l’image de la demande",
+            "removeImage": "Retirer l’image de la demande",
+            "image": "Image",
+            "reason": "Pourquoi faites-vous cette mise à jour ?",
+            "reasonPlaceholder": "Expliquez ce qui change pour les personnes utilisant votre application",
+            "reasonRequired": "Ajoutez une courte explication avant l’aperçu ou la publication (140 caractères maximum).",
+            "reasonHint": "Les personnes verront cette explication en examinant la mise à jour (140 caractères maximum).",
+            "summary": "Vos changements",
+            "noChanges": "Modifiez un champ pour préparer une mise à jour.",
+            "approvalNeeded": "Les personnes doivent approuver cette mise à jour avant que l’application puisse à nouveau enregistrer des données.",
+            "optionalNotice": "Le nouvel accès facultatif reste désactivé tant que les personnes ne l’activent pas.",
+            "quietNotice": "Cette mise à jour ne nécessite pas de nouvelle approbation.",
+            "updated": "Mis à jour",
+            "notSet": "Non défini",
+            "cleared": "Effacé",
+            "enabled": "Activé",
+            "disabled": "Désactivé",
+            "optionalOn": "Facultatif · activé pour les nouvelles connexions",
+            "optionalOff": "Facultatif · désactivé par défaut",
+            "retired": "Cette demande a été retirée et ne peut plus être modifiée.",
+            "published": "Mise à jour publiée · version {{version}}",
+            "preview": "Aperçu de la mise à jour",
+            "previewing": "Préparation de l’aperçu…",
+            "consumerNotification": "Toutes les personnes connectées à ce contrat seront informées et invitées à examiner les modifications.",
+            "publish": "Publier la mise à jour",
+            "publishing": "Publication de la mise à jour…",
+            "reload": "Recharger la demande actuelle",
+            "reloading": "Rechargement de la demande…",
+            "conflict": "Cette demande a changé ailleurs. Rechargez la demande actuelle avant de publier.",
+            "previewError": "Impossible de préparer l’aperçu. Vos changements sont conservés ; veuillez réessayer.",
+            "publishError": "Impossible de publier la mise à jour. Vos changements sont conservés ; veuillez réessayer.",
+            "publishedReloadError": "La mise à jour a été publiée, mais la demande actuelle n’a pas pu être rechargée. Rechargez-la avant une autre mise à jour.",
+            "createError": "Impossible de créer la demande. Veuillez réessayer."
+        },
+        "dismissing": "Masquage…",
+        "dismissError": "Impossible de masquer cette mise à jour. Veuillez réessayer.",
+        "approvedUpdate": "Mise à jour approuvée",
+        "approvedUpdateDescription": "Vous avez approuvé la demande mise à jour de {{appName}}.",
+        "headline": {
+            "paused": "L’accès de {{name}} est suspendu",
+            "read": "{{name}} demande à voir vos {{label}}",
+            "write": "{{name}} demande à ajouter des {{label}} à votre compte",
+            "multiple": "{{name}} demande davantage d’accès",
+            "changed": "{{name}} a modifié sa demande",
+            "optional": "{{name}} propose une nouvelle option",
+            "removed": "{{name}} voit désormais moins d’informations"
+        },
+        "subhead": {
+            "reconnect": "Approuvez la mise à jour pour vous reconnecter.",
+            "newItems": "{{count}} nouveaux éléments",
+            "review": "Examinez ce qui a changé.",
+            "optional": "Activez-la si vous le souhaitez. Rien ne change sans votre accord.",
+            "removed": "Ne demande plus les informations suivantes : {{label}}.",
+            "changed": "Sa demande a changé."
+        },
+        "action": {
+            "reconnect": "Se reconnecter",
+            "allow": "Autoriser",
+            "allowAccess": "Autoriser l’accès",
+            "continue": "Continuer",
+            "done": "Terminé",
+            "saveChoices": "Enregistrer les choix"
+        },
+        "ui": {
+            "close": "Fermer",
+            "saving": "Enregistrement…",
+            "stopSharing": "Arrêter le partage",
+            "askParent": "Demander à un parent",
+            "saveError": "Un problème est survenu. Veuillez réessayer.",
+            "new": "Nouveau",
+            "removed": "Supprimé",
+            "updated": "Mis à jour",
+            "turnOnOption": "Activer cette option",
+            "required": "Obligatoire",
+            "whySeeing": "Pourquoi est-ce que je vois cela ?",
+            "appContext": "{{name}} est une application que vous avez connectée à {{brand}}. Vous choisissez ce qu’elle peut voir et ajouter à votre compte. Vous pouvez modifier vos choix à tout moment.",
+            "parentNeeded": "Un parent est nécessaire pour continuer.",
+            "stopSharingWarning": "{{name}} n’aura plus accès à tout ce que vous avez partagé. Vous pourrez vous reconnecter plus tard.",
+            "keepSharing": "Continuer le partage",
+            "stopSharingWith": "Arrêter le partage avec {{name}}",
+            "respondBy": "Répondez avant le {{date}} pour continuer le partage",
+            "loadError": "Impossible de charger cette mise à jour. Veuillez réessayer.",
+            "tryAgain": "Réessayer",
+            "noLongerAvailable": "Cette mise à jour n’est plus disponible.",
+            "unchangedRead": "{{name}} peut déjà voir {{items}}. Cela ne change pas.",
+            "unchangedWrite": "{{name}} peut déjà ajouter {{items}}. Cela ne change pas.",
+            "unchangedDefault": "Vos choix actuels restent inchangés.",
+            "noExistingAccess": "Aucun accès n’est actuellement activé pour cette application.",
+            "noDefaultAccess": "Aucun accès par défaut ne reste inchangé.",
+            "allAccessChanged": "Votre accès existant est inclus dans les changements ci-dessus.",
+            "defaultAccess": "Accès par défaut de la demande actuelle",
+            "defaultAccessDescription": "Cet aperçu montre les choix par défaut, pas les autorisations enregistrées d’une personne.",
+            "readAccess": "Accès en lecture",
+            "writeAccess": "Accès en écriture",
+            "saved": "Enregistré",
+            "changes": "Modifications"
+        },
+        "review": "Examiner cette mise à jour",
+        "dismiss": "Masquer",
+        "needsReview": "À examiner",
+        "newOption": "Nouvelle option · ajoutée au cours des 14 derniers jours",
+        "appUpdatedTerms": "Mise à jour de l’application",
+        "appUpdatedTermsDescription": "{{appName}} a modifié sa demande d’accès.",
+        "notification": {
+            "relaxedWithItem": "{{appName}} ne demande plus vos {{removed}}",
+            "changed": "{{appName}} a modifié sa demande",
+            "review": "{{appName}} vous demande d’examiner une mise à jour",
+            "option": "{{appName}} propose une nouvelle option"
+        },
+        "scope": {
+            "transcripts": {
+                "label": "Relevés de notes",
+                "description": "Documents récapitulant les cours et apprentissages terminés."
+            },
+            "certificates": {
+                "label": "Certificats",
+                "description": "Justificatifs reconnaissant des qualifications ou des apprentissages terminés."
+            },
+            "achievements": {
+                "label": "Réalisations",
+                "description": "Étapes franchies grâce aux efforts, aux compétences ou à la persévérance."
+            },
+            "skills": {
+                "label": "Compétences",
+                "description": "Aptitudes développées par la formation, la pratique ou l’expérience."
+            },
+            "workHistory": {
+                "label": "Parcours professionnel",
+                "description": "Fonctions et activités professionnelles au fil du temps."
+            },
+            "learningHistory": {
+                "label": "Parcours d’apprentissage",
+                "description": "Programmes d’apprentissage structurés."
+            },
+            "ids": {
+                "label": "Pièces d’identité",
+                "description": "Justificatifs utilisés pour vérifier l’identité."
+            },
+            "socialBadges": {
+                "label": "Badges sociaux",
+                "description": "Distinctions numériques reconnaissant une participation ou l’appartenance à un groupe."
+            },
+            "memberships": {
+                "label": "Adhésions",
+                "description": "Informations sur les adhésions."
+            },
+            "accomplishments": {
+                "label": "Travaux réalisés",
+                "description": "Ensembles de travaux illustrant les compétences et l’expérience."
+            },
+            "experiences": {
+                "label": "Expériences",
+                "description": "Connaissances et compétences acquises au cours d’activités professionnelles."
+            },
+            "accommodations": {
+                "label": "Aménagements",
+                "description": "Adaptations favorisant l’accessibilité."
+            },
+            "family": {
+                "label": "Famille",
+                "description": "Profils familiaux liés par des parcours d’apprentissage partagés."
+            },
+            "name": {
+                "label": "Nom",
+                "description": "Votre nom."
+            },
+            "email": {
+                "label": "Adresse e-mail",
+                "description": "Votre adresse e-mail."
+            },
+            "profilePhoto": {
+                "label": "Photo de profil",
+                "description": "Votre photo de profil."
+            },
+            "qualifications": {
+                "label": "Qualifications",
+                "description": "Études, formations et qualifications professionnelles."
+            },
+            "goals": {
+                "label": "Objectifs",
+                "description": "Objectifs d’apprentissage et de carrière que vous souhaitez atteindre."
+            },
+            "professionalTitle": {
+                "label": "Titre professionnel",
+                "description": "Le titre qui décrit votre fonction professionnelle."
+            },
+            "roleExperience": {
+                "label": "Expérience dans une fonction",
+                "description": "Expérience acquise dans une fonction professionnelle précise."
+            },
+            "workExperience": {
+                "label": "Expérience professionnelle",
+                "description": "Vos activités, responsabilités et expériences professionnelles."
+            },
+            "payRate": {
+                "label": "Rémunération",
+                "description": "Le montant de votre rémunération et sa périodicité."
+            },
+            "workLifeBalance": {
+                "label": "Équilibre entre travail et vie personnelle",
+                "description": "Vos préférences pour concilier travail et vie personnelle."
+            },
+            "jobStability": {
+                "label": "Stabilité de l’emploi",
+                "description": "Vos préférences en matière de sécurité et de stabilité de l’emploi."
+            },
+            "selfAssignedSkills": {
+                "label": "Compétences autoévaluées",
+                "description": "Compétences que vous avez ajoutées à votre propre profil."
+            },
+            "aiSummaries": {
+                "label": "Résumés d’IA",
+                "description": "Résumés de vos séances d’apprentissage assisté par IA."
+            },
+            "aiTopics": {
+                "label": "Sujets d’IA",
+                "description": "Sujets explorés lors de votre apprentissage assisté par IA."
+            },
+            "aiAssessments": {
+                "label": "Évaluations d’IA",
+                "description": "Évaluations issues de votre apprentissage assisté par IA."
+            },
+            "aiInsights": {
+                "label": "Observations d’IA",
+                "description": "Observations sur vos progrès d’apprentissage et vos compétences."
+            },
+            "learningPathways": {
+                "label": "Parcours d’apprentissage",
+                "description": "Plans et étapes pour atteindre vos objectifs d’apprentissage."
+            }
+        }
+    },
+    "credentialCollection": {
+        "searchIncomplete": "Recherche incomplète. Résultats trouvés : {{count}}.",
+        "searching": "Recherche… Résultats trouvés : {{count}}.",
+        "loadError": "Justificatifs chargés : {{count}}. La collection est incomplète.",
+        "loadErrorEmpty": "Impossible de charger les justificatifs. La collection est incomplète.",
+        "complete": "Justificatifs : {{count}}. Collection complète.",
+        "loaded": "Justificatifs chargés : {{count}}. {{state}}",
+        "loadingMore": "Chargement de la suite…",
+        "moreAvailable": "D’autres justificatifs sont disponibles.",
+        "retrying": "Nouvelle tentative…",
+        "retry": "Réessayer de charger les justificatifs",
+        "loading": "Chargement…",
+        "continue": "Continuer le chargement",
+        "loadingEarned": "Chargement des justificatifs obtenus",
+        "initialError": "Impossible de charger les justificatifs. Réessayez.",
+        "loadingCredentials": "Chargement des justificatifs…",
+        "loadMore": "Charger plus de justificatifs",
+        "recentIncomplete": "Certains justificatifs récents n’ont pas pu être chargés. Ces résultats sont incomplets.",
+        "recentError": "Impossible de charger les justificatifs récents.",
+        "loadingRecent": "Chargement des justificatifs récents…",
+        "retryRecent": "Réessayer de charger les justificatifs récents",
+        "totalsAria": "Totaux des justificatifs",
+        "totals": "Justificatifs : {{credentials}} · Compétences : {{skills}}",
+        "totalsError": "Impossible de charger les totaux des justificatifs.",
+        "countUnavailable": "Nombre indisponible",
+        "counting": "Comptage des justificatifs…",
+        "retryTotals": "Réessayer de charger les totaux"
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "Crédits obtenus non renseignés",
@@ -1529,14 +1823,15 @@
             "whoAreYou": "Qui êtes-vous ? (Facultatif)",
             "explore": "Explorer {{brand}}",
             "pin": {
-                "title": "Ajouter un code PIN de récupération",
-                "body": "Si vous perdez cet appareil, un code PIN à 6 chiffres vous permettra de vous reconnecter en quelques secondes.",
+                "title": "Créez votre code PIN",
+                "body": "Vous l’utiliserez pour vous connecter sur de nouveaux appareils.",
                 "confirmTitle": "Confirmez votre code PIN",
                 "confirmBody": "Entrez à nouveau les 6 mêmes chiffres.",
                 "saving": "Enregistrement de votre code PIN…",
                 "success": "Vous êtes protégé",
                 "skip": "Ignorer pour le moment",
                 "startOver": "Recommencer",
+                "saveFailedSkip": "Impossible d'enregistrer votre PIN. Réessayez, ou ignorez cette étape pour le moment et configurez-le plus tard.",
                 "hint": "Vous pouvez le modifier ou le supprimer à tout moment dans les Paramètres."
             }
         }
@@ -1998,14 +2293,26 @@
             "change": "Modifier",
             "afterRecovery": {
                 "title": "Définissez un nouveau PIN de récupération",
-                "body": "Le PIN que vous venez d’utiliser a été retiré : chaque PIN ne sert qu’une fois pour garder votre compte protégé. Choisissez-en un nouveau pour conserver la récupération instantanée.",
+                "body": "Votre PIN de récupération n'est plus actif. Choisissez-en un nouveau pour conserver la récupération instantanée.",
                 "hint": "Mêmes règles : 6 chiffres, rien d’évident."
             },
             "pinResetRequired": {
                 "title": "Définissez un nouveau PIN de récupération",
                 "body": "Votre ancien PIN de récupération ne peut plus être utilisé depuis la récupération de votre compte. Définissez un nouveau PIN à 6 chiffres pour rétablir la récupération automatique."
             },
-            "useInstead": "Utiliser mon code PIN de récupération"
+            "useInstead": "Utiliser mon code PIN de récupération",
+            "incorrect": "PIN incorrect. Il vous reste {{attempts}} tentatives.",
+            "locked": "Trop de tentatives. Vous pouvez toujours récupérer votre compte en attendant 7 jours.",
+            "confirmPin": "Confirmez votre PIN",
+            "confirmPinDesc": "Saisissez à nouveau votre PIN pour le confirmer.",
+            "trivial": "Choisissez un PIN plus difficile à deviner.",
+            "mismatch": "Les PIN ne correspondent pas.",
+            "samePin": "Choisissez un PIN différent de celui que vous venez d'utiliser.",
+            "newPinRequired": {
+                "title": "Choisissez un nouveau PIN de récupération",
+                "body": "Votre PIN de récupération a été saisi incorrectement auparavant : il lui reste donc moins d'essais. Choisissez un PIN différent à 6 chiffres pour retrouver tous vos essais.",
+                "skipNote": "Si vous passez cette étape, votre PIN actuel continue de fonctionner avec moins d'essais. Vous pourrez en choisir un nouveau plus tard dans Récupération du compte."
+            }
         },
         "confirmCode": {
             "mismatch": "Ce code est incorrect. Réessayez.",
@@ -2276,7 +2583,8 @@
             "successDescription": "Votre compte est connecté à votre nouvel identifiant. Configurez à nouveau la récupération pour le protéger.",
             "tooManyAttempts": "Trop de tentatives incorrectes. Réessayez plus tard.",
             "invalidCode": "Ce code est incorrect ou a expiré. Demandez un nouveau code et réessayez.",
-            "invalidRecoveryMethod": "Cette méthode n’a pas permis de vérifier votre compte. Essayez-en une autre."
+            "invalidRecoveryMethod": "Cette méthode n’a pas permis de vérifier votre compte. Essayez-en une autre.",
+            "successDescriptionKept": "Votre compte est associé à votre nouvel identifiant. Vos autres appareils et méthodes de récupération fonctionnent toujours."
         },
         "cancel": {
             "invalidLink": {
@@ -2357,9 +2665,90 @@
             "discardEmail": "Ignorer",
             "discardNote": "Celui que vous avez sauvegardé ne fonctionnera pas. Vous pouvez en créer un nouveau à tout moment."
         },
-        "notFinished": "Non terminé"
+        "notFinished": "Non terminé",
+        "pinHero": {
+            "title": "Confirmez qu'il s'agit bien de vous",
+            "description": "Saisissez votre PIN à 6 chiffres pour terminer la connexion.",
+            "otherWays": "Autres moyens de confirmer",
+            "device": "Approuver depuis un autre appareil",
+            "deviceDesc": "Scannez un code avec un appareil sur lequel vous êtes connecté",
+            "showMore": "Afficher {{count}} de plus",
+            "showLess": "Afficher moins",
+            "trouble": "Un problème pour vous connecter ?"
+        },
+        "pinSignIn": {
+            "verifying": "Vérification de votre PIN...",
+            "incorrectOne": "PIN incorrect. Il vous reste 1 tentative.",
+            "unavailable": "La connexion par PIN n'est pas disponible pour ce compte. Utilisez un autre moyen de vous connecter.",
+            "failed": "Un problème est survenu. Veuillez réessayer.",
+            "newCodeNeeded": "Pour votre sécurité, chaque essai de PIN nécessite un nouveau code par e-mail. Envoyez un nouveau code pour réessayer."
+        },
+        "pinSignInReview": {
+            "title": "Vous êtes connecté",
+            "body": "Vos autres appareils restent connectés eux aussi.",
+            "secureLink": "Appareil perdu ? Sécurisez votre compte",
+            "warnTitle": "Quelqu'un a peut-être essayé votre PIN",
+            "warnBodyOne": "Il a été saisi incorrectement 1 fois avant votre connexion. Choisissez un nouveau PIN pour rester protégé.",
+            "warnBodyTwo": "Il a été saisi incorrectement 2 fois avant votre connexion. Choisissez un nouveau PIN pour rester protégé.",
+            "warnBody": "Il a été saisi incorrectement {{count}} fois avant votre connexion. Choisissez un nouveau PIN pour rester protégé.",
+            "warnBodyUnknown": "Votre PIN a peut-être été saisi incorrectement avant votre connexion. Choisissez un nouveau PIN pour rester protégé.",
+            "choosePin": "Choisir un nouveau PIN",
+            "notNow": "Pas maintenant"
+        },
+        "secureAccount": {
+            "title": "Sécurisez votre compte",
+            "intro": "Utilisez cette option si vous pensez que quelqu'un d'autre est entré dans votre compte. Cela va :",
+            "signOut": "Empêcher vos autres appareils et vos autres identifiants de se reconnecter",
+            "turnOff": "Désactiver votre ancienne phrase de récupération, votre fichier de sauvegarde, votre clé d'accès et votre clé de récupération par e-mail",
+            "stayHere": "Garder votre session ouverte sur cet appareil",
+            "openDevices": "Un appareil ouvert en ce moment peut continuer à fonctionner jusqu'à sa déconnexion. Cela ne peut pas annuler ce que quelqu'un a déjà fait avec votre compte.",
+            "afterwards": "Ensuite, vous ajouterez de nouveaux moyens de récupérer votre compte.",
+            "continue": "Sécuriser mon compte",
+            "pinTitle": "Conserver un PIN de récupération",
+            "pinDesc": "Choisissez un PIN à 6 chiffres. Si quelqu'un d'autre connaît peut-être votre PIN actuel, choisissez-en un nouveau. Pour conserver votre PIN actuel, saisissez-le ici.",
+            "skipPin": "Continuer sans PIN",
+            "skipPinNote": "Vous pourrez définir un nouveau PIN plus tard dans Récupération du compte.",
+            "working": "Sécurisation de votre compte...",
+            "workingHint": "Gardez cette page ouverte jusqu'à la fin.",
+            "doneTitle": "Votre compte est sécurisé",
+            "doneBody": "Les autres appareils et identifiants ne peuvent plus se reconnecter, et vos anciennes méthodes de récupération sont désactivées.",
+            "pinKept": "Votre PIN de récupération est activé.",
+            "pinNotKept": "Votre PIN de récupération est désactivé. Vous pouvez en définir un dans Récupération du compte.",
+            "nextStep": "Ajoutez un nouveau moyen de récupérer votre compte pour ne pas en perdre l'accès.",
+            "setUpPasskey": "Configurer une clé d'accès",
+            "setUpRecovery": "Ajouter une méthode de récupération",
+            "conflict": "Votre compte a changé pendant sa sécurisation. Veuillez réessayer.",
+            "failed": "Nous n'avons pas pu terminer la sécurisation de votre compte. Veuillez réessayer.",
+            "sessionExpired": "Votre session a expiré. Reconnectez-vous pour sécuriser votre compte.",
+            "opening": "Ouverture de la sécurité du compte...",
+            "pinDescNewPin": "Choisissez un nouveau PIN à 6 chiffres, différent de votre PIN actuel."
+        },
+        "signOutOtherDevices": {
+            "section": "Sécurité",
+            "label": "Se déconnecter des autres appareils",
+            "caption": "Appareil perdu ou activité inhabituelle ?",
+            "attention": "Votre PIN a été saisi incorrectement."
+        },
+        "inProgress": "Une récupération est déjà en cours. Attendez qu'elle se termine, puis réessayez.",
+        "emailSender": {
+            "code": "Nous vous enverrons par e-mail un code de {{sender}}, le service qui sécurise votre compte {{brand}}.",
+            "updates": "Certains e-mails concernant cette demande proviennent de {{sender}}, le service qui sécurise votre compte {{brand}}.",
+            "codeMixed": "Votre code peut provenir de {{brand}} ou de {{sender}}, le service qui sécurise votre compte {{brand}}.",
+            "updatesMixed": "Certains e-mails concernant cette demande peuvent provenir de {{brand}} ou de {{sender}}, le service qui sécurise votre compte {{brand}}.",
+            "codeShared": "Si vous utilisez aussi {{sender}} avec ce compte, votre code peut provenir de {{sender}} au lieu de {{brand}}.",
+            "updatesShared": "Si vous utilisez aussi {{sender}} avec ce compte, certains e-mails concernant cette demande peuvent provenir de {{sender}} au lieu de {{brand}}."
+        }
     },
     "alerts": {
+        "announcement": "Annonce",
+        "newAlert": "Nouveau",
+        "markRead": "Marquer comme lu",
+        "read": "Lu",
+        "markingRead": "Marquage comme lu…",
+        "archiving": "Archivage…",
+        "restore": "Restaurer",
+        "restoring": "Restauration…",
+        "updateFailed": "Impossible de mettre à jour cette alerte. Veuillez réessayer.",
         "title": "Alertes",
         "notifications": "Notifications",
         "markAllRead": "Tout marquer comme lu",
@@ -2466,6 +2855,8 @@
     "error": {
         "generic": "Une erreur est survenue. Veuillez réessayer.",
         "network": "Problème de connexion. Veuillez vérifier votre connexion internet et réessayer.",
+        "updateRequired": "Votre compte utilise une méthode de connexion plus récente. Veuillez mettre à jour l’application vers la dernière version (il suffit souvent de la fermer et de la rouvrir), puis reconnectez-vous.",
+        "updateRequiredTitle": "Mise à jour requise",
         "notFound": "Page non trouvée.",
         "unauthorized": "Vous n'avez pas la permission d'effectuer cette action.",
         "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
@@ -4640,6 +5031,7 @@
         }
     },
     "notifications": {
+        "viewCampaign": "Voir",
         "contract": "votre contrat",
         "loadErr": "Impossible de charger l'activité",
         "updates": "Mises à jour",
@@ -9759,12 +10151,14 @@
         "unlocking": "Ouverture…",
         "viewNotificationsTitle": "M’avertir lors de la consultation",
         "viewNotificationsHint": "Recevez une notification privée avec le nombre et l’heure. Désactivé par défaut.",
-        "saveToLearnCard": "Enregistrer dans LearnCard",
-        "savingToLearnCard": "Enregistrement…",
-        "savedToLearnCard": "Enregistré dans LearnCard",
-        "saveError": "Impossible d’enregistrer ces justificatifs. Réessayez.",
+        "saveToLearnCard": "Enregistrer la collection",
+        "savingToLearnCard": "Enregistrement de la collection…",
+        "savedCollectionStatus": "Collection enregistrée pour référence.",
+        "savedCollectionDestination": "Retrouvez-la dans Données et partage, sous Partagé avec vous.",
+        "viewSavedCollections": "Voir les collections enregistrées",
+        "saveError": "Impossible d’enregistrer cette collection. Réessayez.",
         "signInToSave": "Se connecter pour enregistrer",
-        "saveHint": "Conservez cette collection signée dans vos éléments reçus.",
+        "saveHint": "Enregistrez la collection d’une autre personne comme référence. Elle n’ajoute pas de titres à votre Passport et ne compte pas parmi les titres que vous avez obtenus.",
         "viewCredential": "Voir le justificatif"
     },
     "resumePublishing": {
@@ -9930,6 +10324,17 @@
         "revocationCheck": "Vérification de révocation disponible",
         "evidenceCount": "Éléments de preuve : {{count}}",
         "evidence": "Pièces justificatives"
+    },
+    "announcements": {
+        "title": "Annonces du produit",
+        "email": "E-mail",
+        "push": "Notifications push",
+        "loading": "Chargement des préférences…",
+        "saving": "Enregistrement des préférences…",
+        "error": "Une erreur est survenue. Veuillez réessayer.",
+        "retry": "Réessayer",
+        "unsubscribing": "Désinscription…",
+        "unsubscribed": "Vous ne recevrez plus les annonces."
     },
     "nativeCredentials": {
         "credentialTitle": "Justificatif numérique",

@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, shieldCheckmarkOutline, keypadOutline } from 'ionicons/icons';
-import { Toggle } from 'learn-card-base';
+import { Toggle, isSameEscrowPinError } from 'learn-card-base';
 import type { KeyDerivationStrategy } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { RecoveryPinInput } from './RecoveryPinInput';
 
 const pinErrorMessage = (cause: unknown): string => {
+    if (isSameEscrowPinError(cause)) return m['recovery.pin.samePin']();
     const message = cause instanceof Error ? cause.message : '';
     return [
         'PIN must contain 6–12 digits.',
@@ -112,7 +113,11 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
         } catch (e) {
             setError(pinErrorMessage(e));
             setPinConfirmInput('');
-            setPinMode('confirm');
+            // The PIN itself must change, so start over at the first entry.
+            if (isSameEscrowPinError(e)) {
+                setPinInput('');
+                setPinMode('set');
+            } else setPinMode('confirm');
         } finally {
             setLoading(null);
             busy.current = false;

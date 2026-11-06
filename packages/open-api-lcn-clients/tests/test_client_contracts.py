@@ -17,12 +17,23 @@ sys.path.insert(0, str(PACKAGE / "python-client"))
 
 from openapi_client import ApiClient, Configuration
 from openapi_client.api.activity_api import ActivityApi
+from openapi_client.api.contracts_api import ContractsApi
 from openapi_client.api.credential_refresh_api import CredentialRefreshApi
+from openapi_client.api.boosts_api import BoostsApi
 from openapi_client.models.credential_refresh_allocate_credential_refresh_request import (
     CredentialRefreshAllocateCredentialRefreshRequest as Allocate,
 )
 from openapi_client.models.credential_refresh_publish_credential_refresh_request import (
     CredentialRefreshPublishCredentialRefreshRequest as Publish,
+)
+from openapi_client.models.boost_search_skills_available_for_boost_request import (
+    BoostSearchSkillsAvailableForBoostRequest as SearchSkills,
+)
+from openapi_client.models.boost_search_skills_available_for_boost_request_query import (
+    BoostSearchSkillsAvailableForBoostRequestQuery as SearchQuery,
+)
+from openapi_client.models.contracts_update_consent_flow_contract_request import (
+    ContractsUpdateConsentFlowContractRequest as UpdateContract,
 )
 
 UNSIGNED = {
@@ -69,6 +80,38 @@ PUBLICATIONS = {
     },
 }
 
+CONSENT_STATUSES = ("live", "consumed", "withdrawn", "needs_reconsent", "suspended")
+SYNTHETIC_PROFILE = {
+    "profileId": "synthetic-holder", "displayName": "Synthetic Holder",
+    "shortBio": "", "bio": "", "did": "did:example:synthetic-holder",
+}
+CONSENT_RECORDS = [
+    {
+        "uri": f"lc:network:example.invalid:terms:synthetic-{status}",
+        "consenter": SYNTHETIC_PROFILE,
+        "status": status,
+        "consentedVersion": 1,
+        "lastReviewedVersion": 1,
+        "terms": {
+            "read": {
+                "credentials": {"shareAll": False, "sharing": False, "categories": {}},
+                "personal": {},
+            },
+            "write": {"credentials": {"categories": {}}, "personal": {}},
+        },
+        "contract": {
+            "uri": "lc:network:example.invalid:contract:synthetic",
+            "owner": SYNTHETIC_PROFILE, "name": "Synthetic contract", "version": 3,
+            "createdAt": "2026-01-02T00:00:00Z", "updatedAt": "2026-01-03T00:00:00Z",
+            "contract": {
+                "read": {"credentials": {"categories": {}}, "personal": {}},
+                "write": {"credentials": {"categories": {}}, "personal": {}},
+            },
+        },
+    }
+    for status in CONSENT_STATUSES
+]
+
 
 class ContractTests(unittest.TestCase):
     @classmethod
@@ -112,6 +155,8 @@ class ContractTests(unittest.TestCase):
                         "refreshId": "synthetic-refresh", "version": 2,
                         "publishedAt": "2026-01-02T00:00:00Z", "notification": "suppressed",
                     }
+                elif urlsplit(self.path).path == "/consent-flow-contracts/consent":
+                    response = {"records": CONSENT_RECORDS, "hasMore": False}
                 else:
                     response = {}
                 encoded = json.dumps(response).encode()
@@ -127,6 +172,8 @@ class ContractTests(unittest.TestCase):
         cls.client = ApiClient(Configuration(host=f"http://127.0.0.1:{cls.server.server_port}"))
         cls.refresh = CredentialRefreshApi(cls.client)
         cls.activity = ActivityApi(cls.client)
+        cls.contracts = ContractsApi(cls.client)
+        cls.boosts = BoostsApi(cls.client)
 
     @classmethod
     def tearDownClass(cls):
@@ -146,6 +193,17 @@ class ContractTests(unittest.TestCase):
         record = self.records[-1]
         record["serverValid"] = valid
         return record
+
+    def test_public_consent_list_parses_every_supported_lifecycle_status(self):
+        response = self.contracts.contracts_get_consented_contracts(_request_timeout=2.0)
+        self.last_record()
+        self.assertEqual(tuple(record.status for record in response.records), CONSENT_STATUSES)
+        for record in response.records:
+            with self.subTest(status=record.status):
+                self.assertEqual(record.consented_version, 1)
+                self.assertEqual(record.last_reviewed_version, 1)
+                self.assertEqual(record.contract.version, 3)
+                self.assertFalse(record.terms.read.credentials.sharing)
 
     def test_publication_preserves_complete_prepared_json_for_both_construction_paths(self):
         validator = self.body_validator("/credential-refresh/publish")
@@ -211,6 +269,36 @@ class ContractTests(unittest.TestCase):
                     # Explicit null is preserved, not made valid: the unchanged server rejects it.
                     if "profileId" not in profile:
                         self.assertNotIn("profileId", record["body"]["holder"])
+
+    def test_optional_none_limit_is_omitted_but_nullable_cursor_is_preserved(self):
+        model = SearchSkills(
+            uri="urn:synthetic:boost", query=SearchQuery.from_dict({}), limit=None, cursor=None
+        )
+        response = self.boosts.boost_search_skills_available_for_boost_without_preload_content(
+            model, _request_timeout=2.0
+        )
+        response.read()
+        record = self.last_record()
+        self.assertEqual(record["body"], {"uri": model.uri, "query": {}, "cursor": None})
+        self.body_validator("/boost/skills/search").validate(record["body"])
+
+    def test_nullable_expiry_clear_survives_omitted_optional_none_values(self):
+        payload = {
+            "uri": "urn:synthetic:contract",
+            "changes": {"expiresAt": None, "subtitle": None},
+            "reason": None,
+        }
+        expected = {"uri": payload["uri"], "changes": {"expiresAt": None}}
+        validator = self.body_validator("/consent-flow-contract/update")
+        for constructor in (UpdateContract.from_dict, UpdateContract.model_validate):
+            with self.subTest(constructor=constructor.__name__):
+                response = self.contracts.contracts_update_consent_flow_contract_without_preload_content(
+                    constructor(copy.deepcopy(payload)), _request_timeout=2.0
+                )
+                response.read()
+                record = self.last_record()
+                self.assertEqual(record["body"], expected)
+                validator.validate(record["body"])
 
     def test_aware_activity_dates_normalize_to_exact_utc_z_queries(self):
         cases = [

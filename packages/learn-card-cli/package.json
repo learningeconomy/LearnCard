@@ -1,9 +1,21 @@
 {
     "name": "@learncard/cli",
-    "version": "3.6.7",
+    "version": "4.0.1",
     "description": "Command Line Interface for LearnCard",
     "main": "dist/index.js",
-    "bin": "dist/index.js",
+    "bin": {
+        "learncard": "dist/index.js",
+        "cli": "dist/index.js"
+    },
+    "files": [
+        "dist",
+        "examples",
+        "README.md",
+        "CHANGELOG.md"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
     "scripts": {
         "start": "bun scripts/embed-snippets.ts && bun --conditions=development src/index.tsx",
         "start:built": "bun run build && node --enable-source-maps dist/index.js",

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { VC } from '@learncard/types';
-import { DASHBOARD_TYPE } from 'packages/plugins/lca-api-plugin/src/types';
+import { DASHBOARD_TYPE } from '@learncard/lca-api-plugin';
 import { Capacitor } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';

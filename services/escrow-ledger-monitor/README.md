@@ -63,7 +63,8 @@ or a separately reviewed sharded/checkpoint design before further rollout.
 
 Fixed metrics/notifications are `AuthorityIntegrityFailure`,
 `AuthorityCoverageFailure`, `AuthoritySweepCompleted`, and (metric only)
-`AuthorityRepeatedPinClear`, with only operator-owned
+`AuthorityRepeatedPinClearAccounts` plus the deprecated `AuthorityRepeatedPinClear`,
+with only operator-owned
 Tenant dimensions. A separate authority heartbeat alarm treats missing data as
 breaching. Integrity findings may accompany a completed sweep; completion is a
 coverage signal, not an assertion that every row is valid. No historical release
@@ -119,15 +120,36 @@ gate.
 
 Repeated PIN clears: from a fully verified history, every committed event whose
 signed `previous_pin` was configured and whose `pin` is not is counted as a PIN clear
-(only an owner `Enroll`/`Replace` can change the PIN generation). When an account has
-at least 2 clears whose signed `time.interval.hi_ms` falls in the 30 days before the
-sweep, the sweep emits the metric `AuthorityRepeatedPinClear` (no SNS message; the
-`AuthorityRepeatedPinClear` CloudWatch alarm notifies). This is a rate signal, not an
-integrity finding: the clients may sign one clear automatically after an
-identity-recovery rebind (`packages/sss-key-manager/POST_RECOVERY_ESCROW_REPAIR_DESIGN.md`,
-Q1), so a second one within the window is unusual. Signed records cannot tell a
-user-initiated clear from an automatic one, and the metric has only the Tenant
-dimension; find the account from the authority table.
+(only an owner `Enroll`/`Replace` can change the PIN generation). An account with at
+least 2 clears whose signed `time.interval.hi_ms` falls in the 30 days before the
+sweep is a repeated-PIN-clear account. After a complete sweep, immediately before
+`AuthoritySweepCompleted`, the monitor emits one gauge datum
+`AuthorityRepeatedPinClearAccounts` = the number of such accounts, including 0 (no SNS
+message; the `AuthorityRepeatedPinClear` CloudWatch alarm notifies). An incomplete
+sweep (coverage failure, changed fence, exceeded bound) emits no gauge, so a partial
+count or a misleading 0 is never reported. Accounts that fail verification raise
+`AuthorityIntegrityFailure` instead and are not counted.
+
+The alarm takes the hourly `Maximum` of the gauge and fires when it exceeds
+`authority_repeated_pin_clear_threshold`, an account count (default 0: any account
+alarms). During a known episode set it to the number of known accounts (e.g. 1) so a
+new account still notifies, then back to 0 once the known account's clears age out
+of the 30-day window. The alarm needs this monitor build: deploy it in the same apply
+that switches the alarm (an older build emits no gauge and the alarm would sit in
+`OK` on missing data).
+
+Deprecated: the monitor still emits the old per-account `AuthorityRepeatedPinClear`
+datum (1 per affected account per sweep, Tenant dimension only) for one release so
+existing dashboards keep working. Nothing alarms on it; it will be removed in the next
+release. It could not distinguish one known account from a new one, because the Sum
+is the same shape for both.
+
+This is a rate signal, not an integrity finding: the clients may sign one clear
+automatically after an identity-recovery rebind
+(`packages/sss-key-manager/POST_RECOVERY_ESCROW_REPAIR_DESIGN.md`, Q1), so a second one
+within the window is unusual. Signed records cannot tell a user-initiated clear from
+an automatic one, and the metrics have only the Tenant dimension; find the accounts
+from the authority table.
 
 Limits: 10,000 scan pages of at most 100 items, 50,000 distinct partitions,
 4,096 rows / 32 MiB per account, and the shared 900-second Lambda deadline.
