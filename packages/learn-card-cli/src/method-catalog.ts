@@ -98,6 +98,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'createClaimHook',
     'createContract',
     'createDagJwe',
+    'createDcApiResponse',
     'createJwe',
     'createManagedProfile',
     'createManagedServiceProfile',
@@ -458,6 +459,8 @@ export const WRITE_OVERRIDES: ReadonlySet<string> = new Set([
 export const SECRET_METHODS: ReadonlySet<string> = new Set([
     // OpenID4VCI: the flow handle carries the PKCE verifier that redeems the auth code.
     'beginCredentialOfferAuthCode',
+    // DC API responses contain a signed, holder-bound vp_token.
+    'createDcApiResponse',
     // OpenID4VCI access tokens.
     'exchangeAuthCodeForToken',
     'exchangePreAuthCodeForToken',

@@ -49,11 +49,28 @@ await new Promise((resolve, reject) => {
 let sequence = 0;
 const waiting = new Map();
 ws.onmessage = event => {
-    const m = JSON.parse(event.data);
-    if (m.id) {
-        waiting.get(m.id)?.(m);
-        waiting.delete(m.id);
+    let message;
+    try {
+        if (typeof event.data !== 'string') return;
+        message = JSON.parse(event.data);
+    } catch {
+        return;
     }
+    if (
+        message === null ||
+        typeof message !== 'object' ||
+        Array.isArray(message) ||
+        typeof message.id !== 'number' ||
+        !Number.isSafeInteger(message.id) ||
+        message.id <= 0
+    )
+        return;
+    // Only locally issued IDs can resolve commands. The remote message is data,
+    // never a callable or a name used for dynamic method dispatch.
+    const pending = waiting.get(message.id);
+    if (!pending) return;
+    waiting.delete(message.id);
+    pending.resolve(message);
 };
 const command = (method, params = {}) =>
     new Promise(resolve => {
@@ -62,9 +79,11 @@ const command = (method, params = {}) =>
             waiting.delete(id);
             resolve(null);
         }, 8000);
-        waiting.set(id, result => {
-            clearTimeout(timer);
-            resolve(result);
+        waiting.set(id, {
+            resolve(result) {
+                clearTimeout(timer);
+                resolve(result);
+            },
         });
         ws.send(JSON.stringify({ id, method, params }));
     });
