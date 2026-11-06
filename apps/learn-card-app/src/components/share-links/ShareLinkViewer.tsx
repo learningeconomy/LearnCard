@@ -1012,6 +1012,26 @@ const ShareLinkViewer = () => {
     const isLoggedIn = useIsLoggedIn();
     const wallet = walletStore.use.wallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    // Login state is restored before the wallet. Do not accept a passcode in a
+    // viewer that would be discarded when that wallet supplies its identity.
+    if (isLoggedIn && !wallet) {
+        return (
+            <IonPage className="sentry-block ph-no-capture font-poppins">
+                <IonContent>
+                    <main className="min-h-full bg-grayscale-100 px-5 py-14 text-center">
+                        <section role="status" className="mx-auto max-w-3xl space-y-4">
+                            <h1 className="text-xl font-semibold text-grayscale-900">
+                                {m['shareLinks.opening']()}
+                            </h1>
+                            <p className="text-sm text-grayscale-600">
+                                {m['shareLinks.openingHint']()}
+                            </p>
+                        </section>
+                    </main>
+                </IonContent>
+            </IonPage>
+        );
+    }
     const account = isLoggedIn ? `${wallet?.id.did() ?? ''}:${switchedDid ?? ''}` : 'anonymous';
     return <ShareLinkViewerContent key={`${id}:${account}`} id={id} />;
 };

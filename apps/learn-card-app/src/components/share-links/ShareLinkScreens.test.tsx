@@ -33,7 +33,11 @@ const mocks = vi.hoisted(() => ({
         },
     },
     auth: { loggedIn: false },
-    account: { did: 'did:key:recipient-1', switchedDid: undefined as string | undefined },
+    account: {
+        did: 'did:key:recipient-1',
+        switchedDid: undefined as string | undefined,
+        walletReady: true,
+    },
     history: { push: vi.fn(), replace: vi.fn() },
     redirect: { authRedirect: vi.fn() },
     anonymousWallet: vi.fn(),
@@ -58,7 +62,12 @@ vi.mock('learn-card-base', () => ({
 }));
 vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write: vi.fn() } }));
 vi.mock('learn-card-base/stores/walletStore', () => ({
-    walletStore: { use: { wallet: () => ({ id: { did: () => mocks.account.did } }) } },
+    walletStore: {
+        use: {
+            wallet: () =>
+                mocks.account.walletReady ? { id: { did: () => mocks.account.did } } : null,
+        },
+    },
     switchedProfileStore: { use: { switchedDid: () => mocks.account.switchedDid } },
 }));
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({
@@ -131,6 +140,7 @@ beforeEach(() => {
     mocks.auth.loggedIn = false;
     mocks.account.did = 'did:key:recipient-1';
     mocks.account.switchedDid = undefined;
+    mocks.account.walletReady = true;
     sessionStorage.clear();
     mocks.wallet.id.did.mockReturnValue('owner');
     mocks.anonymousWallet.mockResolvedValue(mocks.wallet);
@@ -784,6 +794,37 @@ describe('recipient screen', () => {
             '2468'
         );
         expect(window.location.href).not.toContain('2468');
+    });
+    it('waits for the signed-in account to restore before showing the passcode form', async () => {
+        mocks.auth.loggedIn = true;
+        mocks.account.walletReady = false;
+        mocks.wallet.invoke.resolveShareLink.mockImplementation(
+            async (_id: string, passcode?: string) =>
+                passcode === '2468'
+                    ? {
+                          state: 'active',
+                          contentVersion: 1,
+                          selectedCount: 1,
+                          title: 'Learning highlights',
+                          sharer: { displayName: 'Alex' },
+                          expiresAt: null,
+                      }
+                    : { state: 'passcode_required' }
+        );
+        const view = render(<ShareLinkViewer />);
+        await act(async () => {});
+        expect(screen.queryByLabelText('Passcode')).toBeNull();
+        expect(screen.getByRole('status')).toBeVisible();
+
+        mocks.account.walletReady = true;
+        view.rerender(<ShareLinkViewer />);
+        fireEvent.change(await screen.findByLabelText('Passcode'), {
+            target: { value: '2468' },
+        });
+        view.rerender(<ShareLinkViewer />);
+        expect(screen.getByLabelText('Passcode')).toHaveValue('2468');
+        fireEvent.click(screen.getByRole('button', { name: 'Open credentials' }));
+        await screen.findByText('Community leadership');
     });
 
     it('saves the signed presentation through send and accept for a logged-in recipient', async () => {
