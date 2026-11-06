@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const directory = dirname(fileURLToPath(import.meta.url));
 const css = `
 *{box-sizing:border-box}body{margin:0;background:#eff0f5;color:#18224e;font-family:Poppins,system-ui,sans-serif;font-size:14px;line-height:1.6}
-main{max-width:480px;margin:24px auto;padding:24px;background:white;border-radius:20px}h1{font-size:20px;font-weight:600;line-height:1.4}
+main{width:calc(100% - 32px);max-width:480px;margin:24px auto;padding:24px;background:white;border-radius:20px}h1{font-size:20px;font-weight:600;line-height:1.4}
 p{color:#6f7590}.eyebrow{font-size:12px;font-weight:500}.origin{overflow-wrap:anywhere;color:#353e64;font-size:12px}
 .credential{padding:16px;background:#eff0f5;border-radius:16px;color:#18224e}.status{padding:12px;border:1px solid #a7f3d0;background:#ecfdf5;border-radius:16px;color:#047857}
 .error{background:#fef2f2;border-color:#fee2e2;color:#b91c1c}button{display:block;width:100%;border:0;margin:16px 0;padding:14px 16px;border-radius:20px;background:#18224e;color:white;font:500 14px Poppins,system-ui,sans-serif}
