@@ -103,30 +103,32 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     const isCardView = viewMode === BoostPageViewMode.Card;
 
+    const searchResultsText = searching
+        ? isComplete
+            ? matches.length === 0
+                ? m['boost.search.noResultsTitled']({ query: searchString })
+                : m['boost.search.foundResults']({
+                      count: matches.length,
+                      query: searchString,
+                  })
+            : boostError
+              ? m['credentialCollection.searchIncomplete']({ count: matches.length })
+              : m['credentialCollection.searching']({ count: matches.length })
+        : boostError
+          ? records.length > 0
+              ? m['credentialCollection.loadError']({ count: records.length })
+              : m['credentialCollection.loadErrorEmpty']()
+          : '';
+
     const searchResultsElement = (
         <div
             className={`flex flex-col gap-[5px] mt-[6px] ${isCardView ? 'px-[15px]' : ''} ${boostError ? 'rounded-2xl border border-red-100 bg-red-50 p-3' : ''}`}
         >
             <span
-                role="status"
-                aria-live="polite"
-                aria-atomic="true"
+                aria-hidden="true"
                 className={`font-notoSans text-[14px] font-[700] ${boostError ? 'text-red-700' : 'text-grayscale-900'}`}
             >
-                {searching
-                    ? isComplete
-                        ? matches.length === 0
-                            ? m['boost.search.noResultsTitled']({ query: searchString })
-                            : m['boost.search.foundResults']({
-                                  count: matches.length,
-                                  query: searchString,
-                              })
-                        : boostError
-                          ? m['credentialCollection.searchIncomplete']({ count: matches.length })
-                          : m['credentialCollection.searching']({ count: matches.length })
-                    : records.length > 0
-                      ? m['credentialCollection.loadError']({ count: records.length })
-                      : m['credentialCollection.loadErrorEmpty']()}
+                {searchResultsText}
             </span>
             {boostError && (
                 <button
@@ -148,6 +150,9 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     return (
         <>
+            <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {searchResultsText}
+            </div>
             {showSkeleton && (
                 <div
                     role="status"

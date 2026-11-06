@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { LCR } from '../../../../../../packages/learn-card-base/src/types/credential-records';
 import type { BespokeLearnCard } from '../../../../../../packages/learn-card-base/src/types/learn-card';
+import * as m from '../../../paraglide/messages.js';
 const host = vi.hoisted(() => ({
     wallet: null as BespokeLearnCard | null,
     switchedDid: undefined as string | undefined,
@@ -255,10 +256,17 @@ describe('buffered collection consumers', () => {
             });
             host.onScreen = true;
             render(<QueryClientProvider client={client}>{consumer()}</QueryClientProvider>);
+            const status = screen
+                .getAllByRole('status')
+                .find(element => element.getAttribute('aria-atomic') === 'true');
+            expect(status).toBeDefined();
             try {
                 const retry = await screen.findByRole('button', {
                     name: 'Retry loading credentials',
                 });
+                expect(status?.textContent).toBe(
+                    m['credentialCollection.loadError']({ count: 12 })
+                );
                 expect(
                     screen
                         .getAllByRole('article')
@@ -279,6 +287,8 @@ describe('buffered collection consumers', () => {
                         .map(card => card.getAttribute('data-credential-uri'))
                 ).toEqual(rows.map(row => row.uri))
             );
+            expect(screen.getByRole('status')).toBe(status);
+            expect(status?.textContent).toBe('');
         }
     );
 

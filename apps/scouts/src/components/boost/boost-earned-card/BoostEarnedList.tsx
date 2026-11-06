@@ -111,18 +111,18 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
             : boostError
               ? m['credentialCollection.searchIncomplete']({ count: matches.length })
               : m['credentialCollection.searching']({ count: matches.length })
-        : records.length > 0
-          ? m['credentialCollection.loadError']({ count: records.length })
-          : m['credentialCollection.loadErrorEmpty']();
+        : boostError
+          ? records.length > 0
+              ? m['credentialCollection.loadError']({ count: records.length })
+              : m['credentialCollection.loadErrorEmpty']()
+          : '';
 
     const searchResultsElement = (
         <div
             className={`flex flex-col gap-[10px] mt-[6px] ${isCardView ? 'px-[15px]' : ''} ${boostError ? 'rounded-2xl border border-red-100 bg-red-50 p-3' : ''}`}
         >
             <span
-                role="status"
-                aria-live="polite"
-                aria-atomic="true"
+                aria-hidden="true"
                 className={`font-notoSans text-[14px] font-bold ${boostError ? 'text-red-700' : 'text-grayscale-900'}`}
             >
                 {searchResultsText}
@@ -145,6 +145,9 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     );
     return (
         <>
+            <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {searchResultsText}
+            </div>
             {showSkeleton && (
                 <IonCol
                     className="flex m-auto items-center flex-wrap w-full achievements-list-container"

@@ -55,25 +55,33 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
             <div
                 role="region"
                 aria-label={m['passport.activity.allCreds']()}
+                // Keyboard users need a tab stop to scroll records outside the viewport.
+                // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
                 tabIndex={0}
                 className="overflow-y-auto flex-1 px-5 py-4 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
             >
-                {(isError || isPending || isEmpty) && (
-                    <p
-                        role="status"
-                        aria-live="polite"
-                        aria-atomic="true"
-                        className={`text-sm mb-4 ${isError ? 'rounded-2xl border border-red-100 bg-red-50 p-3 text-red-700' : 'text-grayscale-600'}`}
-                    >
-                        {isError
-                            ? records.length > 0
-                                ? m['credentialCollection.loadError']({ count: records.length })
-                                : m['credentialCollection.initialError']()
-                            : isPending
-                              ? m['credentialCollection.loadingCredentials']()
-                              : m['passport.activity.emptyAll']()}
-                    </p>
-                )}
+                <p
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className={
+                        isError
+                            ? 'text-sm mb-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-red-700'
+                            : isPending || isEmpty
+                              ? 'text-sm mb-4 text-grayscale-600'
+                              : 'sr-only'
+                    }
+                >
+                    {isError
+                        ? records.length > 0
+                            ? m['credentialCollection.loadError']({ count: records.length })
+                            : m['credentialCollection.initialError']()
+                        : isPending
+                          ? m['credentialCollection.loadingCredentials']()
+                          : isEmpty
+                            ? m['passport.activity.emptyAll']()
+                            : ''}
+                </p>
                 {groups.map(group => (
                     <div key={group.label} className="mb-6">
                         <p className="text-[12px] tracking-[1px] text-grayscale-600 uppercase py-2">
