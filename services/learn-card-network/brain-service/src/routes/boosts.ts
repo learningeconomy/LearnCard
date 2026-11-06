@@ -4325,8 +4325,10 @@ export const boostsRouter = t.router({
                 });
             }
             let storageStarted = false;
+            let activityId: string | undefined;
+            let issuanceStage = 'activity';
             try {
-                const activityId = await logCredentialSent({
+                activityId = await logCredentialSent({
                     actorProfileId: saOwnerProfile.profileId,
                     recipientType: 'profile',
                     recipientIdentifier: profile.profileId,
@@ -4334,6 +4336,7 @@ export const boostsRouter = t.router({
                     boostUri,
                     source: 'claimLink',
                 });
+                issuanceStage = 'issuance';
                 const sentBoostUri = await issueClaimLinkBoost(
                     boost,
                     ctx.domain,
@@ -4353,11 +4356,19 @@ export const boostsRouter = t.router({
                     }
                 );
                 if (request) {
+                    issuanceStage = 'reconciliation';
                     const result = await recoverClaimLinkRequest(request, useClaimLinkForBoost);
                     if (result.status !== 'complete')
                         throw new Error('Claim acceptance is not confirmed');
                 } else {
-                    await useClaimLinkForBoost(boostUri, challenge);
+                    issuanceStage = 'usage-accounting';
+                    try {
+                        await useClaimLinkForBoost(boostUri, challenge);
+                    } catch {
+                        // Legacy issuance already succeeded; accounting failures must not make
+                        // consumers retry and potentially receive a duplicate credential.
+                        console.error('Legacy claim-link usage accounting failed');
+                    }
                 }
                 // Activity reporting cannot undo an established claim or make the learner issue it again.
                 try {
@@ -4376,16 +4387,34 @@ export const boostsRouter = t.router({
                 }
                 return sentBoostUri;
             } catch (error) {
-                console.error('Claim-link request failed', error);
+                console.error(`Claim-link request failed during ${issuanceStage}`);
+                const failedActivityIsSafe =
+                    !request || !storageStarted || error instanceof ClaimLinkStorageRejectedError;
+                if (activityId && failedActivityIsSafe) {
+                    try {
+                        await logCredentialFailed({
+                            activityId,
+                            actorProfileId: saOwnerProfile.profileId,
+                            recipientType: 'profile',
+                            recipientIdentifier: profile.profileId,
+                            recipientProfileId: profile.profileId,
+                            boostUri,
+                            source: 'claimLink',
+                            metadata: { error: 'Claim-link issuance failed', stage: issuanceStage },
+                        });
+                    } catch {
+                        console.error('Claim-link failure activity reporting failed');
+                    }
+                }
                 if (claimRequest) {
                     try {
                         await releaseClaimLinkRequestOwner(
                             claimRequest,
                             !storageStarted || error instanceof ClaimLinkStorageRejectedError
                         );
-                    } catch (releaseError) {
+                    } catch {
                         // Cleanup failure cannot replace the original issuance/storage outcome.
-                        console.error('Claim-link ownership cleanup failed', releaseError);
+                        console.error('Claim-link ownership cleanup failed');
                     }
                 }
                 throw new TRPCError({

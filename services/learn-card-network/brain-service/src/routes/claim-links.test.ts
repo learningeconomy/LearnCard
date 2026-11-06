@@ -8,6 +8,9 @@ const mocks = vi.hoisted(() => ({
     reserve: vi.fn(),
     release: vi.fn(),
     issue: vi.fn(),
+    use: vi.fn(),
+    failed: vi.fn(),
+    claimed: vi.fn(),
 }));
 const profile = {
     profileId: 'learner',
@@ -30,6 +33,7 @@ vi.mock('@cache/claim-links', async importOriginal => ({
     }),
     getClaimLinkGeneratorProfileId: async () => undefined,
     getClaimLinkGeneration: async () => 'generation',
+    useClaimLinkForBoost: mocks.use,
 }));
 vi.mock('@accesslayer/claim-link-request', async importOriginal => ({
     ...(await importOriginal<typeof import('@accesslayer/claim-link-request')>()),
@@ -57,6 +61,8 @@ vi.mock('@helpers/boost.helpers', async importOriginal => ({
 vi.mock('@helpers/activity.helpers', async importOriginal => ({
     ...(await importOriginal<typeof import('@helpers/activity.helpers')>()),
     logCredentialSent: async () => 'activity',
+    logCredentialFailed: mocks.failed,
+    logCredentialClaimed: mocks.claimed,
 }));
 
 import { boostsRouter } from './boosts';
@@ -90,6 +96,9 @@ beforeEach(() => {
     mocks.recover.mockResolvedValue({ status: 'absent' });
     mocks.reserve.mockResolvedValue({ acquired: true });
     mocks.release.mockResolvedValue(undefined);
+    mocks.use.mockResolvedValue(undefined);
+    mocks.failed.mockResolvedValue(undefined);
+    mocks.claimed.mockResolvedValue('activity');
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -159,5 +168,72 @@ describe('claim-link reconciliation transport and compatibility', () => {
         await expect(
             boostsRouter.createCaller(context()).claimBoostWithLink(input)
         ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR', cause: issuanceFailure });
+    });
+
+    it('returns a legacy credential URI when usage accounting fails', async () => {
+        const credentialUri = 'lc:credential:issued';
+        mocks.issue.mockResolvedValue(credentialUri);
+        mocks.use.mockRejectedValue(new Error('private redis details'));
+        const result = await boostsRouter.createCaller(context()).claimBoostWithLink({
+            boostUri: input.boostUri,
+            challenge: input.challenge,
+        });
+        expect(result).toBe(credentialUri);
+        expect(mocks.claimed).toHaveBeenCalledOnce();
+        expect(mocks.failed).not.toHaveBeenCalled();
+    });
+
+    it('records a correlated failure for definite issuance rejection', async () => {
+        const issuanceFailure = new Error('signing authority unavailable');
+        mocks.issue.mockRejectedValue(issuanceFailure);
+        await expect(
+            boostsRouter.createCaller(context()).claimBoostWithLink(input)
+        ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR', cause: issuanceFailure });
+        expect(mocks.failed).toHaveBeenCalledWith(
+            expect.objectContaining({
+                activityId: 'activity',
+                actorProfileId: 'learner',
+                recipientProfileId: 'learner',
+                boostUri: input.boostUri,
+                source: 'claimLink',
+            })
+        );
+    });
+
+    it.each(['legacy', 'recoverable'] as const)(
+        'classifies an uncertain %s storage outcome without falsely terminating recoverable work',
+        async mode => {
+            mocks.issue.mockImplementation(
+                async (_boost, _domain, _issuer, _profile, _sa, _id, started) => {
+                    started();
+                    throw new Error('storage outcome uncertain');
+                }
+            );
+            await expect(
+                boostsRouter.createCaller(context()).claimBoostWithLink({
+                    ...input,
+                    requestId: mode === 'recoverable' ? input.requestId : undefined,
+                })
+            ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+            expect(mocks.failed).toHaveBeenCalledTimes(mode === 'legacy' ? 1 : 0);
+        }
+    );
+
+    it('records failure for rejected storage and preserves error on cleanup failure', async () => {
+        const { ClaimLinkStorageRejectedError } = await import('@helpers/boost.helpers');
+        const rejection = new ClaimLinkStorageRejectedError(new Error('storage rejected'));
+        mocks.issue.mockImplementation(
+            async (_boost, _domain, _issuer, _profile, _sa, _id, started) => {
+                started();
+                throw rejection;
+            }
+        );
+        mocks.release.mockRejectedValue(new Error('private cleanup details'));
+        await expect(
+            boostsRouter.createCaller(context()).claimBoostWithLink(input)
+        ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR', cause: rejection });
+        expect(mocks.failed).toHaveBeenCalledWith(
+            expect.objectContaining({ activityId: 'activity', source: 'claimLink' })
+        );
     });
 });

@@ -206,10 +206,12 @@ export const useClaimLinkForBoost = async (
 };
 
 const INVALIDATE_LINK = `
-if (redis.call('GET', KEYS[1]) or '') ~= ARGV[1] then return -1 end
+local current = redis.call('GET', KEYS[1])
+if not current then return 0 end
+if current ~= ARGV[1] then return -1 end
 redis.call('SET', KEYS[2], '{"reason":"unavailable"}', 'EX', ARGV[2])
 local deleted = redis.call('DEL', KEYS[1])
-if ARGV[3] ~= '' then redis.call('DEL', KEYS[3]) end
+redis.call('DEL', KEYS[3])
 return deleted
 `;
 
@@ -218,18 +220,16 @@ export const invalidateClaimLinkForBoost = async (boostUri: string, challenge: s
     const key = getClaimLinkCacheKey(boostUri, challenge);
     for (let attempt = 0; attempt < MAX_CONTENTION_ATTEMPTS; attempt++) {
         const snapshot = await redis.get(key);
-        const generation = snapshot
-            ? BoostClaimLinkCacheValueValidator.parse(JSON.parse(snapshot)).generation
-            : undefined;
+        if (!snapshot) return 0;
+        const generation = BoostClaimLinkCacheValueValidator.parse(JSON.parse(snapshot)).generation;
         const deleted = await redis.eval(
             INVALIDATE_LINK,
             3,
             key,
             outcomeKey(boostUri, challenge),
             `${key}|replay|${generation ?? 'legacy'}`,
-            snapshot ?? '',
-            OUTCOME_RETENTION_SECONDS,
-            snapshot ? '1' : ''
+            snapshot,
+            OUTCOME_RETENTION_SECONDS
         );
         if (deleted !== -1) return Number(deleted);
     }

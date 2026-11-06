@@ -41,6 +41,34 @@ describe('claim-link outcome evidence and retry-safe usage', () => {
         expect(await getClaimLinkAvailability(boostUri, 'last-use')).toBe('exhausted');
     });
 
+    it.each(['expired', 'exhausted'] as const)(
+        'preserves confirmed %s evidence when invalidating an absent link',
+        async reason => {
+            await setValidClaimLinkForBoost(
+                boostUri,
+                challenge,
+                authority,
+                reason === 'expired' ? { ttlSeconds: 1 } : { totalUses: 1 }
+            );
+            if (reason === 'expired') await vi.advanceTimersByTimeAsync(1100);
+            else await useClaimLinkForBoost(boostUri, challenge);
+            expect(await getClaimLinkAvailability(boostUri, challenge)).toBe(reason);
+            expect(await invalidateClaimLinkForBoost(boostUri, challenge)).toBe(0);
+            expect(await getClaimLinkAvailability(boostUri, challenge)).toBe(reason);
+        }
+    );
+
+    it('preserves exhaustion when the last claim wins a race with invalidation', async () => {
+        await setValidClaimLinkForBoost(boostUri, challenge, authority, { totalUses: 1 });
+        const evalCommand = redis.eval.bind(redis);
+        vi.spyOn(redis, 'eval').mockImplementationOnce(async (...args) => {
+            await useClaimLinkForBoost(boostUri, challenge);
+            return evalCommand(...args);
+        });
+        expect(await invalidateClaimLinkForBoost(boostUri, challenge)).toBe(0);
+        expect(await getClaimLinkAvailability(boostUri, challenge)).toBe('exhausted');
+    });
+
     it('does not leave permanent outcome metadata for links without expiry', async () => {
         await redis.set(`${getClaimLinkCacheKey(boostUri, challenge)}|outcome`, '{}');
         await setValidClaimLinkForBoost(boostUri, challenge, authority, { totalUses: 2 });
