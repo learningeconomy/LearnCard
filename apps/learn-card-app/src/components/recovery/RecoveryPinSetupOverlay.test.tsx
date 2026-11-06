@@ -5,6 +5,9 @@ import { RecoveryPinSetupOverlay } from './RecoveryPinSetupOverlay';
 import { createRecoveryPinActions } from '../../providers/recoveryPinActions';
 import { createRecoverySetupRunner } from '../../../../../packages/learn-card-base/src/auth-coordinator/recoverySetup';
 
+const { mockOpenPP } = vi.hoisted(() => ({ mockOpenPP: vi.fn() }));
+vi.mock('../../helpers/externalLinkHelpers', () => ({ openPP: mockOpenPP }));
+
 vi.mock('learn-card-base', async () => ({
     Overlay: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     isSameEscrowPinError: (await import('learn-card-base/auth-coordinator/errors'))
@@ -117,6 +120,64 @@ describe('RecoveryPinSetupOverlay', () => {
 
         expect(screen.getByText('Set a recovery PIN')).toBeInTheDocument();
         expect(screen.queryByText(/has been retired/)).not.toBeInTheDocument();
+    });
+
+    it.each([
+        'first-time',
+        'after-recovery',
+        'after-hold-recovery',
+        'pin-reset-required',
+        'new-pin-required',
+    ] as const)('explains escrow while setting a PIN (%s)', reason => {
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                reason={reason}
+            />
+        );
+
+        expect(
+            screen.getByText(/An encrypted piece of your account key is held by a secure service/)
+        ).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Learn more' }));
+        expect(mockOpenPP).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the PIN pad first in focus order, ahead of the privacy policy link', () => {
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+            />
+        );
+
+        const firstDigit = screen.getAllByLabelText(/PIN digit/)[0];
+        const policyLink = screen.getByRole('button', { name: 'Learn more' });
+        expect(
+            firstDigit.compareDocumentPosition(policyLink) & Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy();
+    });
+
+    it('hides the escrow notice once the PIN is being confirmed', () => {
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+            />
+        );
+
+        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+            clipboardData: { getData: () => '135790' },
+        });
+
+        expect(screen.getByText('Confirm your PIN')).toBeInTheDocument();
+        expect(screen.queryByText(/encrypted piece of your account key/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Learn more' })).not.toBeInTheDocument();
     });
 
     it('rejects trivial PINs', () => {

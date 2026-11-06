@@ -29,7 +29,7 @@ class BoostCreateChildBoostRequest(BaseModel):
     """
     BoostCreateChildBoostRequest
     """ # noqa: E501
-    parent_uri: Optional[StrictStr] = Field(alias="parentUri")
+    parent_uri: StrictStr = Field(alias="parentUri")
     boost: BoostCreateChildBoostRequestBoost
     skills: Optional[List[BoostSendRequestTemplateSkillsInner]] = None
     __properties: ClassVar[List[str]] = ["parentUri", "boost", "skills"]
@@ -61,9 +61,8 @@ class BoostCreateChildBoostRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -82,11 +81,6 @@ class BoostCreateChildBoostRequest(BaseModel):
             for _item_skills in self.skills:
                 _items.append(_item_skills.to_dict() if _item_skills is not None else None)
             _dict['skills'] = _items
-        # set to None if parent_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.parent_uri is None and "parent_uri" in self.model_fields_set:
-            _dict['parentUri'] = None
-
         return _dict
 
     @classmethod

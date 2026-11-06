@@ -271,7 +271,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **inbox_approve_guardian_request**
 
-> ContactMethodsSendChallenge200Response inbox_approve_guardian_request(inbox_approve_guardian_request_request)
+> ContactMethodsSendChallenge200Response inbox_approve_guardian_request(contact_methods_verify_contact_method_request)
 
 Approve Guardian Request
 
@@ -284,7 +284,7 @@ Consumes a guardian approval token and marks the requesting user profile as appr
 ```python
 import openapi_client
 from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
-from openapi_client.models.inbox_approve_guardian_request_request import InboxApproveGuardianRequestRequest
+from openapi_client.models.contact_methods_verify_contact_method_request import ContactMethodsVerifyContactMethodRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -308,11 +308,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    inbox_approve_guardian_request_request = openapi_client.InboxApproveGuardianRequestRequest() # InboxApproveGuardianRequestRequest |
+    contact_methods_verify_contact_method_request = openapi_client.ContactMethodsVerifyContactMethodRequest() # ContactMethodsVerifyContactMethodRequest |
 
     try:
         # Approve Guardian Request
-        api_response = api_instance.inbox_approve_guardian_request(inbox_approve_guardian_request_request)
+        api_response = api_instance.inbox_approve_guardian_request(contact_methods_verify_contact_method_request)
         print("The response of UniversalInboxApi->inbox_approve_guardian_request:\n")
         pprint(api_response)
     except Exception as e:
@@ -321,9 +321,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                       | Type                                                                            | Description | Notes |
-| ------------------------------------------ | ------------------------------------------------------------------------------- | ----------- | ----- |
-| **inbox_approve_guardian_request_request** | [**InboxApproveGuardianRequestRequest**](InboxApproveGuardianRequestRequest.md) |             |
+| Name                                              | Type                                                                                        | Description | Notes |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contact_methods_verify_contact_method_request** | [**ContactMethodsVerifyContactMethodRequest**](ContactMethodsVerifyContactMethodRequest.md) |             |
 
 ### Return type
 
@@ -1239,7 +1239,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **inbox_reject_guardian_credential**
 
-> ContactMethodsSendChallenge200Response inbox_reject_guardian_credential(token, inbox_reject_guardian_credential_request)
+> ContactMethodsSendChallenge200Response inbox_reject_guardian_credential(token, inbox_approve_guardian_credential_request)
 
 Reject Guardian Credential
 
@@ -1252,7 +1252,7 @@ Guardian rejects a pending credential. Requires a valid OTP from sendGuardianCha
 ```python
 import openapi_client
 from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
-from openapi_client.models.inbox_reject_guardian_credential_request import InboxRejectGuardianCredentialRequest
+from openapi_client.models.inbox_approve_guardian_credential_request import InboxApproveGuardianCredentialRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -1277,11 +1277,11 @@ with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
     token = 'token_example' # str |
-    inbox_reject_guardian_credential_request = openapi_client.InboxRejectGuardianCredentialRequest() # InboxRejectGuardianCredentialRequest |
+    inbox_approve_guardian_credential_request = openapi_client.InboxApproveGuardianCredentialRequest() # InboxApproveGuardianCredentialRequest |
 
     try:
         # Reject Guardian Credential
-        api_response = api_instance.inbox_reject_guardian_credential(token, inbox_reject_guardian_credential_request)
+        api_response = api_instance.inbox_reject_guardian_credential(token, inbox_approve_guardian_credential_request)
         print("The response of UniversalInboxApi->inbox_reject_guardian_credential:\n")
         pprint(api_response)
     except Exception as e:
@@ -1290,10 +1290,10 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                         | Type                                                                                | Description | Notes |
-| -------------------------------------------- | ----------------------------------------------------------------------------------- | ----------- | ----- |
-| **token**                                    | **str**                                                                             |             |
-| **inbox_reject_guardian_credential_request** | [**InboxRejectGuardianCredentialRequest**](InboxRejectGuardianCredentialRequest.md) |             |
+| Name                                          | Type                                                                                  | Description | Notes |
+| --------------------------------------------- | ------------------------------------------------------------------------------------- | ----------- | ----- |
+| **token**                                     | **str**                                                                               |             |
+| **inbox_approve_guardian_credential_request** | [**InboxApproveGuardianCredentialRequest**](InboxApproveGuardianCredentialRequest.md) |             |
 
 ### Return type
 
@@ -1322,7 +1322,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **inbox_reject_guardian_credential_in_app**
 
-> InboxApproveGuardianCredentialInApp200Response inbox_reject_guardian_credential_in_app(inbox_reject_guardian_credential_in_app_request)
+> InboxApproveGuardianCredentialInApp200Response inbox_reject_guardian_credential_in_app(inbox_approve_guardian_credential_in_app_request)
 
 Reject Guardian Credential In-App
 
@@ -1335,7 +1335,7 @@ Authenticated guardian rejects a pending credential. Requires MANAGES relationsh
 ```python
 import openapi_client
 from openapi_client.models.inbox_approve_guardian_credential_in_app200_response import InboxApproveGuardianCredentialInApp200Response
-from openapi_client.models.inbox_reject_guardian_credential_in_app_request import InboxRejectGuardianCredentialInAppRequest
+from openapi_client.models.inbox_approve_guardian_credential_in_app_request import InboxApproveGuardianCredentialInAppRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -1359,11 +1359,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    inbox_reject_guardian_credential_in_app_request = openapi_client.InboxRejectGuardianCredentialInAppRequest() # InboxRejectGuardianCredentialInAppRequest |
+    inbox_approve_guardian_credential_in_app_request = openapi_client.InboxApproveGuardianCredentialInAppRequest() # InboxApproveGuardianCredentialInAppRequest |
 
     try:
         # Reject Guardian Credential In-App
-        api_response = api_instance.inbox_reject_guardian_credential_in_app(inbox_reject_guardian_credential_in_app_request)
+        api_response = api_instance.inbox_reject_guardian_credential_in_app(inbox_approve_guardian_credential_in_app_request)
         print("The response of UniversalInboxApi->inbox_reject_guardian_credential_in_app:\n")
         pprint(api_response)
     except Exception as e:
@@ -1372,9 +1372,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                                | Type                                                                                          | Description | Notes |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **inbox_reject_guardian_credential_in_app_request** | [**InboxRejectGuardianCredentialInAppRequest**](InboxRejectGuardianCredentialInAppRequest.md) |             |
+| Name                                                 | Type                                                                                            | Description | Notes |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **inbox_approve_guardian_credential_in_app_request** | [**InboxApproveGuardianCredentialInAppRequest**](InboxApproveGuardianCredentialInAppRequest.md) |             |
 
 ### Return type
 

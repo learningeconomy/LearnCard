@@ -2,10 +2,10 @@
 
 ## Properties
 
-| Name                  | Type                                                                                                                                                        | Description | Notes |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **boost_uri**         | **str**                                                                                                                                                     |             |
-| **signing_authority** | [**ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority**](ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority.md) |             |
+| Name                  | Type                                                                                                                        | Description | Notes |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **boost_uri**         | **str**                                                                                                                     |             |
+| **signing_authority** | [**BoostSendBoostViaSigningAuthorityRequestSigningAuthority**](BoostSendBoostViaSigningAuthorityRequestSigningAuthority.md) |             |
 
 ## Example
 

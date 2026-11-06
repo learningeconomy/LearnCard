@@ -25,13 +25,10 @@ from openapi_client.models.boost_allocate_credential_status_request import Boost
 from openapi_client.models.boost_attach_framework_to_boost_request import BoostAttachFrameworkToBoostRequest
 from openapi_client.models.boost_claim_boost_with_link_request import BoostClaimBoostWithLinkRequest
 from openapi_client.models.boost_count_boost_children_request import BoostCountBoostChildrenRequest
-from openapi_client.models.boost_count_boost_parents_request import BoostCountBoostParentsRequest
 from openapi_client.models.boost_count_boost_siblings_request import BoostCountBoostSiblingsRequest
-from openapi_client.models.boost_count_boosts_request import BoostCountBoostsRequest
 from openapi_client.models.boost_count_familial_boosts_request import BoostCountFamilialBoostsRequest
 from openapi_client.models.boost_create_boost_request import BoostCreateBoostRequest
 from openapi_client.models.boost_create_child_boost_request import BoostCreateChildBoostRequest
-from openapi_client.models.boost_detach_framework_from_boost_request import BoostDetachFrameworkFromBoostRequest
 from openapi_client.models.boost_generate_claim_link200_response import BoostGenerateClaimLink200Response
 from openapi_client.models.boost_generate_claim_link_request import BoostGenerateClaimLinkRequest
 from openapi_client.models.boost_get_boost200_response import BoostGetBoost200Response
@@ -61,17 +58,13 @@ from openapi_client.models.boost_get_paginated_boosts200_response import BoostGe
 from openapi_client.models.boost_get_paginated_boosts_request import BoostGetPaginatedBoostsRequest
 from openapi_client.models.boost_get_skills_available_for_boost200_response_inner import BoostGetSkillsAvailableForBoost200ResponseInner
 from openapi_client.models.boost_make_boost_parent_request import BoostMakeBoostParentRequest
-from openapi_client.models.boost_remove_boost_admin_request import BoostRemoveBoostAdminRequest
-from openapi_client.models.boost_remove_boost_parent_request import BoostRemoveBoostParentRequest
 from openapi_client.models.boost_revoke_boost_recipient_request import BoostRevokeBoostRecipientRequest
 from openapi_client.models.boost_search_skills_available_for_boost200_response import BoostSearchSkillsAvailableForBoost200Response
 from openapi_client.models.boost_search_skills_available_for_boost_request import BoostSearchSkillsAvailableForBoostRequest
 from openapi_client.models.boost_send_boost_request import BoostSendBoostRequest
 from openapi_client.models.boost_send_boost_via_signing_authority_request import BoostSendBoostViaSigningAuthorityRequest
-from openapi_client.models.boost_suspend_boost_recipient_request import BoostSuspendBoostRecipientRequest
 from openapi_client.models.boost_update_boost_permissions_request import BoostUpdateBoostPermissionsRequest
 from openapi_client.models.boost_update_boost_request import BoostUpdateBoostRequest
-from openapi_client.models.boost_update_other_boost_permissions_request import BoostUpdateOtherBoostPermissionsRequest
 
 from openapi_client.api_client import ApiClient, RequestSerialized
 from openapi_client.api_response import ApiResponse
@@ -1810,7 +1803,7 @@ class BoostsApi:
     @validate_call
     def boost_count_boost_parents(
         self,
-        boost_count_boost_parents_request: BoostCountBoostParentsRequest,
+        boost_count_boost_children_request: BoostCountBoostChildrenRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1828,8 +1821,8 @@ class BoostsApi:
 
         This endpoint counts the parents of a particular boost
 
-        :param boost_count_boost_parents_request: (required)
-        :type boost_count_boost_parents_request: BoostCountBoostParentsRequest
+        :param boost_count_boost_children_request: (required)
+        :type boost_count_boost_children_request: BoostCountBoostChildrenRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1853,7 +1846,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_count_boost_parents_serialize(
-            boost_count_boost_parents_request=boost_count_boost_parents_request,
+            boost_count_boost_children_request=boost_count_boost_children_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1881,7 +1874,7 @@ class BoostsApi:
     @validate_call
     def boost_count_boost_parents_with_http_info(
         self,
-        boost_count_boost_parents_request: BoostCountBoostParentsRequest,
+        boost_count_boost_children_request: BoostCountBoostChildrenRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1899,8 +1892,8 @@ class BoostsApi:
 
         This endpoint counts the parents of a particular boost
 
-        :param boost_count_boost_parents_request: (required)
-        :type boost_count_boost_parents_request: BoostCountBoostParentsRequest
+        :param boost_count_boost_children_request: (required)
+        :type boost_count_boost_children_request: BoostCountBoostChildrenRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1924,7 +1917,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_count_boost_parents_serialize(
-            boost_count_boost_parents_request=boost_count_boost_parents_request,
+            boost_count_boost_children_request=boost_count_boost_children_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1952,7 +1945,7 @@ class BoostsApi:
     @validate_call
     def boost_count_boost_parents_without_preload_content(
         self,
-        boost_count_boost_parents_request: BoostCountBoostParentsRequest,
+        boost_count_boost_children_request: BoostCountBoostChildrenRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1970,8 +1963,8 @@ class BoostsApi:
 
         This endpoint counts the parents of a particular boost
 
-        :param boost_count_boost_parents_request: (required)
-        :type boost_count_boost_parents_request: BoostCountBoostParentsRequest
+        :param boost_count_boost_children_request: (required)
+        :type boost_count_boost_children_request: BoostCountBoostChildrenRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1995,7 +1988,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_count_boost_parents_serialize(
-            boost_count_boost_parents_request=boost_count_boost_parents_request,
+            boost_count_boost_children_request=boost_count_boost_children_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2018,7 +2011,7 @@ class BoostsApi:
 
     def _boost_count_boost_parents_serialize(
         self,
-        boost_count_boost_parents_request,
+        boost_count_boost_children_request,
         _request_auth,
         _content_type,
         _headers,
@@ -2044,8 +2037,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_count_boost_parents_request is not None:
-            _body_params = boost_count_boost_parents_request
+        if boost_count_boost_children_request is not None:
+            _body_params = boost_count_boost_children_request
 
 
         # set the HTTP header `Accept`
@@ -2382,7 +2375,7 @@ class BoostsApi:
     @validate_call
     def boost_count_boosts(
         self,
-        boost_count_boosts_request: Optional[BoostCountBoostsRequest] = None,
+        boost_get_boosts_request: Optional[BoostGetBoostsRequest] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2400,8 +2393,8 @@ class BoostsApi:
 
         This endpoint counts the current user's managed boosts.
 
-        :param boost_count_boosts_request:
-        :type boost_count_boosts_request: BoostCountBoostsRequest
+        :param boost_get_boosts_request:
+        :type boost_get_boosts_request: BoostGetBoostsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2425,7 +2418,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_count_boosts_serialize(
-            boost_count_boosts_request=boost_count_boosts_request,
+            boost_get_boosts_request=boost_get_boosts_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2453,7 +2446,7 @@ class BoostsApi:
     @validate_call
     def boost_count_boosts_with_http_info(
         self,
-        boost_count_boosts_request: Optional[BoostCountBoostsRequest] = None,
+        boost_get_boosts_request: Optional[BoostGetBoostsRequest] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2471,8 +2464,8 @@ class BoostsApi:
 
         This endpoint counts the current user's managed boosts.
 
-        :param boost_count_boosts_request:
-        :type boost_count_boosts_request: BoostCountBoostsRequest
+        :param boost_get_boosts_request:
+        :type boost_get_boosts_request: BoostGetBoostsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2496,7 +2489,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_count_boosts_serialize(
-            boost_count_boosts_request=boost_count_boosts_request,
+            boost_get_boosts_request=boost_get_boosts_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2524,7 +2517,7 @@ class BoostsApi:
     @validate_call
     def boost_count_boosts_without_preload_content(
         self,
-        boost_count_boosts_request: Optional[BoostCountBoostsRequest] = None,
+        boost_get_boosts_request: Optional[BoostGetBoostsRequest] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2542,8 +2535,8 @@ class BoostsApi:
 
         This endpoint counts the current user's managed boosts.
 
-        :param boost_count_boosts_request:
-        :type boost_count_boosts_request: BoostCountBoostsRequest
+        :param boost_get_boosts_request:
+        :type boost_get_boosts_request: BoostGetBoostsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2567,7 +2560,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_count_boosts_serialize(
-            boost_count_boosts_request=boost_count_boosts_request,
+            boost_get_boosts_request=boost_get_boosts_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2590,7 +2583,7 @@ class BoostsApi:
 
     def _boost_count_boosts_serialize(
         self,
-        boost_count_boosts_request,
+        boost_get_boosts_request,
         _request_auth,
         _content_type,
         _headers,
@@ -2616,8 +2609,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_count_boosts_request is not None:
-            _body_params = boost_count_boosts_request
+        if boost_get_boosts_request is not None:
+            _body_params = boost_get_boosts_request
 
 
         # set the HTTP header `Accept`
@@ -3804,7 +3797,7 @@ class BoostsApi:
     @validate_call
     def boost_detach_framework_from_boost(
         self,
-        boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest,
+        boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -3822,8 +3815,8 @@ class BoostsApi:
 
         Removes a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.
 
-        :param boost_detach_framework_from_boost_request: (required)
-        :type boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest
+        :param boost_attach_framework_to_boost_request: (required)
+        :type boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -3847,7 +3840,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_detach_framework_from_boost_serialize(
-            boost_detach_framework_from_boost_request=boost_detach_framework_from_boost_request,
+            boost_attach_framework_to_boost_request=boost_attach_framework_to_boost_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -3875,7 +3868,7 @@ class BoostsApi:
     @validate_call
     def boost_detach_framework_from_boost_with_http_info(
         self,
-        boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest,
+        boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -3893,8 +3886,8 @@ class BoostsApi:
 
         Removes a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.
 
-        :param boost_detach_framework_from_boost_request: (required)
-        :type boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest
+        :param boost_attach_framework_to_boost_request: (required)
+        :type boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -3918,7 +3911,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_detach_framework_from_boost_serialize(
-            boost_detach_framework_from_boost_request=boost_detach_framework_from_boost_request,
+            boost_attach_framework_to_boost_request=boost_attach_framework_to_boost_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -3946,7 +3939,7 @@ class BoostsApi:
     @validate_call
     def boost_detach_framework_from_boost_without_preload_content(
         self,
-        boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest,
+        boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -3964,8 +3957,8 @@ class BoostsApi:
 
         Removes a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.
 
-        :param boost_detach_framework_from_boost_request: (required)
-        :type boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest
+        :param boost_attach_framework_to_boost_request: (required)
+        :type boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -3989,7 +3982,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_detach_framework_from_boost_serialize(
-            boost_detach_framework_from_boost_request=boost_detach_framework_from_boost_request,
+            boost_attach_framework_to_boost_request=boost_attach_framework_to_boost_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4012,7 +4005,7 @@ class BoostsApi:
 
     def _boost_detach_framework_from_boost_serialize(
         self,
-        boost_detach_framework_from_boost_request,
+        boost_attach_framework_to_boost_request,
         _request_auth,
         _content_type,
         _headers,
@@ -4038,8 +4031,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_detach_framework_from_boost_request is not None:
-            _body_params = boost_detach_framework_from_boost_request
+        if boost_attach_framework_to_boost_request is not None:
+            _body_params = boost_attach_framework_to_boost_request
 
 
         # set the HTTP header `Accept`
@@ -8699,7 +8692,7 @@ class BoostsApi:
     @validate_call
     def boost_get_connected_boost_recipients(
         self,
-        uri: Optional[StrictStr],
+        uri: StrictStr,
         boost_get_connected_boost_recipients_request: BoostGetConnectedBoostRecipientsRequest,
         _request_timeout: Union[
             None,
@@ -8774,7 +8767,7 @@ class BoostsApi:
     @validate_call
     def boost_get_connected_boost_recipients_with_http_info(
         self,
-        uri: Optional[StrictStr],
+        uri: StrictStr,
         boost_get_connected_boost_recipients_request: BoostGetConnectedBoostRecipientsRequest,
         _request_timeout: Union[
             None,
@@ -8849,7 +8842,7 @@ class BoostsApi:
     @validate_call
     def boost_get_connected_boost_recipients_without_preload_content(
         self,
-        uri: Optional[StrictStr],
+        uri: StrictStr,
         boost_get_connected_boost_recipients_request: BoostGetConnectedBoostRecipientsRequest,
         _request_timeout: Union[
             None,
@@ -11001,7 +10994,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_admin(
         self,
-        boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest,
+        boost_add_boost_admin_request: BoostAddBoostAdminRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -11019,8 +11012,8 @@ class BoostsApi:
 
         This route removes an  admin from a boost
 
-        :param boost_remove_boost_admin_request: (required)
-        :type boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest
+        :param boost_add_boost_admin_request: (required)
+        :type boost_add_boost_admin_request: BoostAddBoostAdminRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -11044,7 +11037,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_admin_serialize(
-            boost_remove_boost_admin_request=boost_remove_boost_admin_request,
+            boost_add_boost_admin_request=boost_add_boost_admin_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -11072,7 +11065,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_admin_with_http_info(
         self,
-        boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest,
+        boost_add_boost_admin_request: BoostAddBoostAdminRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -11090,8 +11083,8 @@ class BoostsApi:
 
         This route removes an  admin from a boost
 
-        :param boost_remove_boost_admin_request: (required)
-        :type boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest
+        :param boost_add_boost_admin_request: (required)
+        :type boost_add_boost_admin_request: BoostAddBoostAdminRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -11115,7 +11108,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_admin_serialize(
-            boost_remove_boost_admin_request=boost_remove_boost_admin_request,
+            boost_add_boost_admin_request=boost_add_boost_admin_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -11143,7 +11136,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_admin_without_preload_content(
         self,
-        boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest,
+        boost_add_boost_admin_request: BoostAddBoostAdminRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -11161,8 +11154,8 @@ class BoostsApi:
 
         This route removes an  admin from a boost
 
-        :param boost_remove_boost_admin_request: (required)
-        :type boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest
+        :param boost_add_boost_admin_request: (required)
+        :type boost_add_boost_admin_request: BoostAddBoostAdminRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -11186,7 +11179,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_admin_serialize(
-            boost_remove_boost_admin_request=boost_remove_boost_admin_request,
+            boost_add_boost_admin_request=boost_add_boost_admin_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -11209,7 +11202,7 @@ class BoostsApi:
 
     def _boost_remove_boost_admin_serialize(
         self,
-        boost_remove_boost_admin_request,
+        boost_add_boost_admin_request,
         _request_auth,
         _content_type,
         _headers,
@@ -11235,8 +11228,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_remove_boost_admin_request is not None:
-            _body_params = boost_remove_boost_admin_request
+        if boost_add_boost_admin_request is not None:
+            _body_params = boost_add_boost_admin_request
 
 
         # set the HTTP header `Accept`
@@ -11287,7 +11280,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_parent(
         self,
-        boost_remove_boost_parent_request: BoostRemoveBoostParentRequest,
+        boost_make_boost_parent_request: BoostMakeBoostParentRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -11305,8 +11298,8 @@ class BoostsApi:
 
         This endpoint removes a parent/child relationship between two boosts
 
-        :param boost_remove_boost_parent_request: (required)
-        :type boost_remove_boost_parent_request: BoostRemoveBoostParentRequest
+        :param boost_make_boost_parent_request: (required)
+        :type boost_make_boost_parent_request: BoostMakeBoostParentRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -11330,7 +11323,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_parent_serialize(
-            boost_remove_boost_parent_request=boost_remove_boost_parent_request,
+            boost_make_boost_parent_request=boost_make_boost_parent_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -11358,7 +11351,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_parent_with_http_info(
         self,
-        boost_remove_boost_parent_request: BoostRemoveBoostParentRequest,
+        boost_make_boost_parent_request: BoostMakeBoostParentRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -11376,8 +11369,8 @@ class BoostsApi:
 
         This endpoint removes a parent/child relationship between two boosts
 
-        :param boost_remove_boost_parent_request: (required)
-        :type boost_remove_boost_parent_request: BoostRemoveBoostParentRequest
+        :param boost_make_boost_parent_request: (required)
+        :type boost_make_boost_parent_request: BoostMakeBoostParentRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -11401,7 +11394,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_parent_serialize(
-            boost_remove_boost_parent_request=boost_remove_boost_parent_request,
+            boost_make_boost_parent_request=boost_make_boost_parent_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -11429,7 +11422,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_parent_without_preload_content(
         self,
-        boost_remove_boost_parent_request: BoostRemoveBoostParentRequest,
+        boost_make_boost_parent_request: BoostMakeBoostParentRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -11447,8 +11440,8 @@ class BoostsApi:
 
         This endpoint removes a parent/child relationship between two boosts
 
-        :param boost_remove_boost_parent_request: (required)
-        :type boost_remove_boost_parent_request: BoostRemoveBoostParentRequest
+        :param boost_make_boost_parent_request: (required)
+        :type boost_make_boost_parent_request: BoostMakeBoostParentRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -11472,7 +11465,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_parent_serialize(
-            boost_remove_boost_parent_request=boost_remove_boost_parent_request,
+            boost_make_boost_parent_request=boost_make_boost_parent_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -11495,7 +11488,7 @@ class BoostsApi:
 
     def _boost_remove_boost_parent_serialize(
         self,
-        boost_remove_boost_parent_request,
+        boost_make_boost_parent_request,
         _request_auth,
         _content_type,
         _headers,
@@ -11521,8 +11514,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_remove_boost_parent_request is not None:
-            _body_params = boost_remove_boost_parent_request
+        if boost_make_boost_parent_request is not None:
+            _body_params = boost_make_boost_parent_request
 
 
         # set the HTTP header `Accept`
@@ -12145,7 +12138,7 @@ class BoostsApi:
     @validate_call
     def boost_send_boost(
         self,
-        profile_id: Optional[StrictStr],
+        profile_id: StrictStr,
         boost_send_boost_request: BoostSendBoostRequest,
         _request_timeout: Union[
             None,
@@ -12220,7 +12213,7 @@ class BoostsApi:
     @validate_call
     def boost_send_boost_with_http_info(
         self,
-        profile_id: Optional[StrictStr],
+        profile_id: StrictStr,
         boost_send_boost_request: BoostSendBoostRequest,
         _request_timeout: Union[
             None,
@@ -12295,7 +12288,7 @@ class BoostsApi:
     @validate_call
     def boost_send_boost_without_preload_content(
         self,
-        profile_id: Optional[StrictStr],
+        profile_id: StrictStr,
         boost_send_boost_request: BoostSendBoostRequest,
         _request_timeout: Union[
             None,
@@ -12747,7 +12740,7 @@ class BoostsApi:
     @validate_call
     def boost_suspend_boost_recipient(
         self,
-        boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest,
+        boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -12765,8 +12758,8 @@ class BoostsApi:
 
         Temporarily suspends a credential for a specified recipient. Suspension is reversible.
 
-        :param boost_suspend_boost_recipient_request: (required)
-        :type boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest
+        :param boost_revoke_boost_recipient_request: (required)
+        :type boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -12790,7 +12783,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_suspend_boost_recipient_serialize(
-            boost_suspend_boost_recipient_request=boost_suspend_boost_recipient_request,
+            boost_revoke_boost_recipient_request=boost_revoke_boost_recipient_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -12818,7 +12811,7 @@ class BoostsApi:
     @validate_call
     def boost_suspend_boost_recipient_with_http_info(
         self,
-        boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest,
+        boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -12836,8 +12829,8 @@ class BoostsApi:
 
         Temporarily suspends a credential for a specified recipient. Suspension is reversible.
 
-        :param boost_suspend_boost_recipient_request: (required)
-        :type boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest
+        :param boost_revoke_boost_recipient_request: (required)
+        :type boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -12861,7 +12854,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_suspend_boost_recipient_serialize(
-            boost_suspend_boost_recipient_request=boost_suspend_boost_recipient_request,
+            boost_revoke_boost_recipient_request=boost_revoke_boost_recipient_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -12889,7 +12882,7 @@ class BoostsApi:
     @validate_call
     def boost_suspend_boost_recipient_without_preload_content(
         self,
-        boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest,
+        boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -12907,8 +12900,8 @@ class BoostsApi:
 
         Temporarily suspends a credential for a specified recipient. Suspension is reversible.
 
-        :param boost_suspend_boost_recipient_request: (required)
-        :type boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest
+        :param boost_revoke_boost_recipient_request: (required)
+        :type boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -12932,7 +12925,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_suspend_boost_recipient_serialize(
-            boost_suspend_boost_recipient_request=boost_suspend_boost_recipient_request,
+            boost_revoke_boost_recipient_request=boost_revoke_boost_recipient_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -12955,7 +12948,7 @@ class BoostsApi:
 
     def _boost_suspend_boost_recipient_serialize(
         self,
-        boost_suspend_boost_recipient_request,
+        boost_revoke_boost_recipient_request,
         _request_auth,
         _content_type,
         _headers,
@@ -12981,8 +12974,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_suspend_boost_recipient_request is not None:
-            _body_params = boost_suspend_boost_recipient_request
+        if boost_revoke_boost_recipient_request is not None:
+            _body_params = boost_revoke_boost_recipient_request
 
 
         # set the HTTP header `Accept`
@@ -13033,7 +13026,7 @@ class BoostsApi:
     @validate_call
     def boost_unsuspend_boost_recipient(
         self,
-        boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest,
+        boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -13051,8 +13044,8 @@ class BoostsApi:
 
         Clears a temporary credential suspension for a specified recipient.
 
-        :param boost_suspend_boost_recipient_request: (required)
-        :type boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest
+        :param boost_revoke_boost_recipient_request: (required)
+        :type boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -13076,7 +13069,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_unsuspend_boost_recipient_serialize(
-            boost_suspend_boost_recipient_request=boost_suspend_boost_recipient_request,
+            boost_revoke_boost_recipient_request=boost_revoke_boost_recipient_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -13104,7 +13097,7 @@ class BoostsApi:
     @validate_call
     def boost_unsuspend_boost_recipient_with_http_info(
         self,
-        boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest,
+        boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -13122,8 +13115,8 @@ class BoostsApi:
 
         Clears a temporary credential suspension for a specified recipient.
 
-        :param boost_suspend_boost_recipient_request: (required)
-        :type boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest
+        :param boost_revoke_boost_recipient_request: (required)
+        :type boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -13147,7 +13140,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_unsuspend_boost_recipient_serialize(
-            boost_suspend_boost_recipient_request=boost_suspend_boost_recipient_request,
+            boost_revoke_boost_recipient_request=boost_revoke_boost_recipient_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -13175,7 +13168,7 @@ class BoostsApi:
     @validate_call
     def boost_unsuspend_boost_recipient_without_preload_content(
         self,
-        boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest,
+        boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -13193,8 +13186,8 @@ class BoostsApi:
 
         Clears a temporary credential suspension for a specified recipient.
 
-        :param boost_suspend_boost_recipient_request: (required)
-        :type boost_suspend_boost_recipient_request: BoostSuspendBoostRecipientRequest
+        :param boost_revoke_boost_recipient_request: (required)
+        :type boost_revoke_boost_recipient_request: BoostRevokeBoostRecipientRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -13218,7 +13211,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_unsuspend_boost_recipient_serialize(
-            boost_suspend_boost_recipient_request=boost_suspend_boost_recipient_request,
+            boost_revoke_boost_recipient_request=boost_revoke_boost_recipient_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -13241,7 +13234,7 @@ class BoostsApi:
 
     def _boost_unsuspend_boost_recipient_serialize(
         self,
-        boost_suspend_boost_recipient_request,
+        boost_revoke_boost_recipient_request,
         _request_auth,
         _content_type,
         _headers,
@@ -13267,8 +13260,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_suspend_boost_recipient_request is not None:
-            _body_params = boost_suspend_boost_recipient_request
+        if boost_revoke_boost_recipient_request is not None:
+            _body_params = boost_revoke_boost_recipient_request
 
 
         # set the HTTP header `Accept`
@@ -13892,7 +13885,7 @@ class BoostsApi:
     def boost_update_other_boost_permissions(
         self,
         profile_id: StrictStr,
-        boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest,
+        boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -13912,8 +13905,8 @@ class BoostsApi:
 
         :param profile_id: (required)
         :type profile_id: str
-        :param boost_update_other_boost_permissions_request: (required)
-        :type boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest
+        :param boost_update_boost_permissions_request: (required)
+        :type boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -13938,7 +13931,7 @@ class BoostsApi:
 
         _param = self._boost_update_other_boost_permissions_serialize(
             profile_id=profile_id,
-            boost_update_other_boost_permissions_request=boost_update_other_boost_permissions_request,
+            boost_update_boost_permissions_request=boost_update_boost_permissions_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -13967,7 +13960,7 @@ class BoostsApi:
     def boost_update_other_boost_permissions_with_http_info(
         self,
         profile_id: StrictStr,
-        boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest,
+        boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -13987,8 +13980,8 @@ class BoostsApi:
 
         :param profile_id: (required)
         :type profile_id: str
-        :param boost_update_other_boost_permissions_request: (required)
-        :type boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest
+        :param boost_update_boost_permissions_request: (required)
+        :type boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -14013,7 +14006,7 @@ class BoostsApi:
 
         _param = self._boost_update_other_boost_permissions_serialize(
             profile_id=profile_id,
-            boost_update_other_boost_permissions_request=boost_update_other_boost_permissions_request,
+            boost_update_boost_permissions_request=boost_update_boost_permissions_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -14042,7 +14035,7 @@ class BoostsApi:
     def boost_update_other_boost_permissions_without_preload_content(
         self,
         profile_id: StrictStr,
-        boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest,
+        boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -14062,8 +14055,8 @@ class BoostsApi:
 
         :param profile_id: (required)
         :type profile_id: str
-        :param boost_update_other_boost_permissions_request: (required)
-        :type boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest
+        :param boost_update_boost_permissions_request: (required)
+        :type boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -14088,7 +14081,7 @@ class BoostsApi:
 
         _param = self._boost_update_other_boost_permissions_serialize(
             profile_id=profile_id,
-            boost_update_other_boost_permissions_request=boost_update_other_boost_permissions_request,
+            boost_update_boost_permissions_request=boost_update_boost_permissions_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -14112,7 +14105,7 @@ class BoostsApi:
     def _boost_update_other_boost_permissions_serialize(
         self,
         profile_id,
-        boost_update_other_boost_permissions_request,
+        boost_update_boost_permissions_request,
         _request_auth,
         _content_type,
         _headers,
@@ -14140,8 +14133,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_update_other_boost_permissions_request is not None:
-            _body_params = boost_update_other_boost_permissions_request
+        if boost_update_boost_permissions_request is not None:
+            _body_params = boost_update_boost_permissions_request
 
 
         # set the HTTP header `Accept`

@@ -152,6 +152,34 @@ describe('login-code mail trust and selection', () => {
         }
     );
 
+    describe('--allow-login-spam-fail', () => {
+        const lenient = loginTrustPolicy({ ...loginMail, allowSpamFail: true }, TO);
+        const findLenient = (change: Partial<EmailOptions>) =>
+            findParsed(
+                storeOf([{ at: 1_000, options: { ...loginEmail(TO, '482913'), ...change } }]),
+                PREFIX,
+                0,
+                lenient,
+                parseLoginCode
+            );
+
+        it('accepts a spam verdict of FAIL and nothing else changes', async () => {
+            const result = await findLenient({ spam: 'FAIL' });
+            expect(result.found?.value.code).toBe('482913');
+        });
+
+        it.each<[string, Partial<EmailOptions>]>([
+            ['a virus verdict', { virus: 'FAIL' }],
+            ['an unknown spam verdict', { spam: 'GRAY' }],
+            ['a To mismatch', { spam: 'FAIL', to: 'canary-staging+2@inbox.example.com' }],
+            ['a forged second From', { spam: 'FAIL', prepend: [`From: ${LOGIN_SENDER}`] }],
+        ])('still counts %s as untrusted', async (_name, change) => {
+            const result = await findLenient(change);
+            expect(result.found).toBeUndefined();
+            expect(result.untrusted).toBe(1);
+        });
+    });
+
     it('counts malformed trusted mail separately', async () => {
         const result = await find([
             {

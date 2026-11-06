@@ -1,13 +1,12 @@
 name: AI Passport
 
-# Service-backed checks for apps/ai-passport and services/ai-passport-backend, carried over
+# Service-backed checks for services/ai-passport-backend, carried over
 # from the AI-Passport repo's CI. The backend suite needs Mongo (replica set), Redis, Qdrant
 # and the local privacy runtime, so it is not wired to the nx `test` target.
 on:
     pull_request:
         types: [opened, synchronize, reopened, ready_for_review]
         paths:
-            - 'apps/ai-passport/**'
             - 'services/ai-passport-backend/**'
             - 'packages/learn-card-types/src/aiPassport.ts'
             - 'bun.lock'
@@ -94,30 +93,4 @@ jobs:
 
             - name: Build backend
               working-directory: services/ai-passport-backend
-              run: bun run build
-
-    app:
-        name: App build and unit tests
-        runs-on: ubuntu-latest
-        timeout-minutes: 15
-        steps:
-            - uses: actions/checkout@v7
-
-            # Astro 7 needs Node >= 22.12.
-            - uses: actions/setup-node@v6
-              with:
-                  node-version-file: .nvmrc
-                  package-manager-cache: false
-
-            - uses: ./.github/actions/setup
-
-            - name: Build @learncard/types
-              run: bunx nx run types:build
-
-            - name: Run app unit tests
-              working-directory: apps/ai-passport
-              run: bun test src
-
-            - name: Build app
-              working-directory: apps/ai-passport
               run: bun run build

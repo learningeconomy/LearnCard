@@ -18,6 +18,10 @@ const isProse = path =>
     /^docs\/.+\.md$/.test(path) ||
     /^\.changeset\/[^/]+\.md$/.test(path);
 
+const isConfigOrUnknownPath = path =>
+    !/^(apps|packages|services|examples|tests|tools)\//.test(path) ||
+    /(^|\/)(package\.json|project\.json|tsconfig[^/]*\.json|\.gitignore|\.nxignore)$/.test(path);
+
 const decideFromGraph = (paths, { graph, tasks }) => {
     const app = graph.nodes['learn-card-app'];
     const planned = Object.values(tasks.tasks);
@@ -89,7 +93,7 @@ const validatePreflightVersions = (versions, manifest) => {
     }
 };
 
-const loadNxGraph = cwd => {
+const loadNxGraph = (cwd, graphArgs = ['run', 'learn-card-app:test-mock']) => {
     // A fresh runner has no workspace install. Never replace an existing install.
     if (existsSync(join(cwd, 'node_modules'))) throw new Error('Workspace already installed');
     const versions = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8')).devDependencies;
@@ -123,17 +127,13 @@ const loadNxGraph = cwd => {
         if (nx.version !== versions.nx) throw new Error('Unexpected Nx version');
         const file = join(tools, 'graph.json');
         // --graph plans tasks; it does not execute builds or browser tests.
-        run(
-            process.execPath,
-            [join(modules, 'nx', nx.bin.nx), 'run', 'learn-card-app:test-mock', `--graph=${file}`],
-            {
-                ...process.env,
-                NODE_PATH: modules,
-                NX_DAEMON: 'false',
-                NX_ISOLATE_PLUGINS: 'false',
-                NX_CACHE_PROJECT_GRAPH: 'false',
-            }
-        );
+        run(process.execPath, [join(modules, 'nx', nx.bin.nx), ...graphArgs, `--graph=${file}`], {
+            ...process.env,
+            NODE_PATH: modules,
+            NX_DAEMON: 'false',
+            NX_ISOLATE_PLUGINS: 'false',
+            NX_CACHE_PROJECT_GRAPH: 'false',
+        });
         return JSON.parse(readFileSync(file, 'utf8'));
     } finally {
         rmSync(tools, { recursive: true, force: true });
@@ -185,16 +185,7 @@ const decideEligibility = ({ eventName, baseSha, headSha, cwd = process.cwd(), g
     }
     // Global/unknown locations and dependency metadata always run. Do not trust a
     // head-only graph to explain a changed/deleted dependency declaration.
-    if (
-        paths.some(
-            path =>
-                !isProse(path) &&
-                (!/^(apps|packages|services|examples|tests|tools)\//.test(path) ||
-                    /(^|\/)(package\.json|project\.json|tsconfig[^/]*\.json|\.gitignore|\.nxignore)$/.test(
-                        path
-                    ))
-        )
-    )
+    if (paths.some(path => !isProse(path) && isConfigOrUnknownPath(path)))
         return { run: true, reason: 'code-config-or-unknown-path' };
     if (!getGraph) return { run: true, reason: 'graph-unavailable' };
     try {
@@ -267,6 +258,8 @@ const main = () => {
 
 if (require.main === module) main();
 module.exports = {
+    isProse,
+    isConfigOrUnknownPath,
     decideEligibility,
     decideFromGraph,
     loadNxGraph,

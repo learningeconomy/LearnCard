@@ -48,7 +48,7 @@ class TestBoostUpdateBoostRequest(unittest.TestCase):
                         }, 
                     allow_anyone_to_create_children = True, 
                     credential = null, 
-                    default_permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
+                    default_permissions = openapi_client.models.boost_send_request_template_claim_permissions.boost_send_request_template_claimPermissions(
                         role = '', 
                         can_view = True, 
                         can_edit = True, 
@@ -84,7 +84,7 @@ class TestBoostUpdateBoostRequest(unittest.TestCase):
                         }, 
                     allow_anyone_to_create_children = True, 
                     credential = null, 
-                    default_permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
+                    default_permissions = openapi_client.models.boost_send_request_template_claim_permissions.boost_send_request_template_claimPermissions(
                         role = '', 
                         can_view = True, 
                         can_edit = True, 

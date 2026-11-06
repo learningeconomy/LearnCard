@@ -2,12 +2,12 @@
 
 ## Properties
 
-| Name       | Type                                                                                  | Description | Notes                      |
-| ---------- | ------------------------------------------------------------------------------------- | ----------- | -------------------------- |
-| **limit**  | **float**                                                                             |             | [optional] [default to 25] |
-| **cursor** | **str**                                                                               |             | [optional]                 |
-| **sort**   | **str**                                                                               |             | [optional]                 |
-| **query**  | [**ContractsGetConsentedDataRequestQuery**](ContractsGetConsentedDataRequestQuery.md) |             | [optional]                 |
+| Name       | Type                                                                                                        | Description | Notes                      |
+| ---------- | ----------------------------------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**  | **float**                                                                                                   |             | [optional] [default to 25] |
+| **cursor** | **str**                                                                                                     |             | [optional]                 |
+| **sort**   | **str**                                                                                                     |             | [optional]                 |
+| **query**  | [**ContractsGetConsentedDataForContractRequestQuery**](ContractsGetConsentedDataForContractRequestQuery.md) |             | [optional]                 |
 
 ## Example
 

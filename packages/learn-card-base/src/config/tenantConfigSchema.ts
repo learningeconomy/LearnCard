@@ -11,6 +11,13 @@
 import { z, type ZodIssue } from 'zod';
 
 /**
+ * Same as `ESCROW_AUTHORITY_TENANT_PATTERN` in `@learncard/sss-key-manager`. Copied, not
+ * imported, so the Node config scripts that load this schema don't pull in the SDK;
+ * `tenantConfigSchema.test.ts` asserts the two stay identical.
+ */
+export const ESCROW_AUTHORITY_TENANT_LABEL = /^[A-Za-z0-9_-]{1,128}$/;
+
+/**
  * URL string that also accepts `TODO_*` sentinel placeholders.
  *
  * Tenant configs under development use `TODO_BRAIN_SERVICE_URL` etc. as
@@ -123,6 +130,32 @@ export const tenantSSSConfigSchema = z
             .optional(),
         /** Max attestation age in ms. Nitro policy default is 300000 (5 min) when unset. */
         escrowEnclaveMaxAgeMs: z.number().int().positive().max(3_600_000).optional(),
+        /**
+         * The escrow enclave's measured authority tenant label (`ESCROW_AUTHORITY_TENANT`),
+         * used for every value the enclave verifies or signs. Defaults to this tenant's
+         * `tenantId`. Set it when this app shares another tenant's single-tenant enclave:
+         * VetPass uses LearnCard's (`"learncard"`). Branding, emails, X-Tenant-Id and
+         * rollout keep using `tenantId`.
+         */
+        escrowAuthorityTenant: z
+            .string()
+            .regex(ESCROW_AUTHORITY_TENANT_LABEL, 'Expected 1-128 letters, digits, "_" or "-"')
+            .optional(),
+        /**
+         * D21: seal this app's `branding.name` into the escrow blob so the enclave's own
+         * recovery emails (code, recovery started, release warning) carry this app's brand
+         * instead of the authority tenant's. Default false. Turn on only after every live
+         * enclave host runs the brand-aware image: an older image drops the sealed brand
+         * whenever it re-encrypts a blob. See ROLLOUT.md.
+         */
+        escrowSealEmailBrand: z.boolean().optional(),
+        /**
+         * D21: `branding.name` of the other apps that share this app's DIDs and seal their own
+         * brand (LearnCard lists `VetPass`). While `escrowSealEmailBrand` is on, the recovery
+         * screens warn that enclave emails may carry one of these brands ("last writer wins"
+         * on a shared DID). Ignored while sealing is off.
+         */
+        escrowSharedEmailBrands: z.array(z.string().trim().min(1).max(64)).optional(),
         enableEmailBackupShare: z.boolean().default(true),
         requireEmailForPhoneUsers: z.boolean().default(true),
     })

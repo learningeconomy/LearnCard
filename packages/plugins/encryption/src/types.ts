@@ -5,6 +5,8 @@ export type EncryptionPluginMethods = {
     createJwe: (cleartext: string, recipients?: string[]) => Promise<JWE>;
     decryptJwe: (jwe: JWE, jwks?: JWKWithPrivateKey[]) => Promise<string>;
     createDagJwe: <T>(cleartext: T, recipients?: string[]) => Promise<JWE>;
+    /** Encrypts only to explicit recipients, without adding the calling identity. */
+    createDagJweExact: <T>(cleartext: T, recipients: string[]) => Promise<JWE>;
     decryptDagJwe: <T>(jwe: JWE, jwks?: JWKWithPrivateKey[]) => Promise<T>;
 };
 

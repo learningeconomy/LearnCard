@@ -1,7 +1,8 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { isVC2Format } from '@learncard/helpers';
 import { getIDsQueryKey } from '../queries/idCredentials';
+import { getPaginatedManagedBoostsKey } from '../queries/vcQueries';
 import {
     BoostCategoryOptionsEnum,
     // oxlint-disable-next-line no-unused-vars
@@ -24,6 +25,7 @@ import {
     BoostPermissions,
     UnsignedVC,
     LCNBoostStatusEnum,
+    type PaginatedBoostsType,
 } from '@learncard/types';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { BoostCMSState } from 'learn-card-base/components/boost/boost';
@@ -253,6 +255,8 @@ export const useCreateBoost = () => {
             meta?: Record<string, unknown>;
             autoConnectRecipients?: boolean;
         }) => {
+            // Pin the managed list before wallet/network work can yield to a profile switch.
+            const managedBoostsKey = getPaginatedManagedBoostsKey(state.basicInfo.type);
             const wallet = await initWallet();
 
             const walletDid = wallet?.id?.did();
@@ -397,6 +401,7 @@ export const useCreateBoost = () => {
             }
 
             return {
+                managedBoostsKey,
                 boostUri,
                 name: state.basicInfo.name,
                 type: state.basicInfo.achievementType ?? '',
@@ -404,14 +409,14 @@ export const useCreateBoost = () => {
                 status,
             };
         },
-        onSuccess: async ({ boostUri, name, type, category, status }) => {
+        onSuccess: async ({ managedBoostsKey, boostUri, name, type, category, status }) => {
             await queryClient.cancelQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
+                queryKey: managedBoostsKey,
             });
             const wallet = await initWallet();
 
             // update cache optimistically
-            insertItem(queryClient, ['useGetPaginatedManagedBoosts', category], {
+            insertItem(queryClient, managedBoostsKey, {
                 uri: boostUri,
                 name,
                 type,
@@ -421,7 +426,14 @@ export const useCreateBoost = () => {
 
             // Intentionally don't await these to keep this mutation fast!
 
-            queryClient.refetchQueries({ queryKey: ['useGetPaginatedManagedBoosts', category] });
+            // The queryFn reads the live wallet, so never refetch another profile's list.
+            queryClient.invalidateQueries({
+                queryKey: managedBoostsKey,
+                refetchType:
+                    managedBoostsKey[1] === (switchedProfileStore.get.switchedDid() ?? '')
+                        ? 'all'
+                        : 'none',
+            });
             queryClient.invalidateQueries({ queryKey: ['useGetPaginatedFamilialBoosts'] });
             queryClient.invalidateQueries({ queryKey: ['useGetBoostChildren'] });
             queryClient.invalidateQueries({ queryKey: ['useCountBoostChildren'] });
@@ -465,6 +477,8 @@ export const useCreateChildBoost = () => {
             meta?: Record<string, unknown>;
             autoConnectRecipients?: boolean;
         }) => {
+            // Pin the managed list before wallet/network work can yield to a profile switch.
+            const managedBoostsKey = getPaginatedManagedBoostsKey(state.basicInfo.type);
             const wallet = await initWallet();
 
             const walletDid = wallet?.id?.did();
@@ -545,6 +559,7 @@ export const useCreateChildBoost = () => {
             });
 
             return {
+                managedBoostsKey,
                 boostUri,
                 name: state.basicInfo.name,
                 type: state.basicInfo.achievementType ?? '',
@@ -552,7 +567,7 @@ export const useCreateChildBoost = () => {
                 status,
             };
         },
-        onSuccess: async ({ boostUri, name, type, category, status }) => {
+        onSuccess: async ({ managedBoostsKey, boostUri, name, type, category, status }) => {
             await queryClient.invalidateQueries({
                 queryKey: ['useGetBoostChildren'],
             });
@@ -572,12 +587,12 @@ export const useCreateChildBoost = () => {
             });
 
             await queryClient.cancelQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
+                queryKey: managedBoostsKey,
             });
             const wallet = await initWallet();
 
             // update cache optimistically
-            insertItem(queryClient, ['useGetPaginatedManagedBoosts', category], {
+            insertItem(queryClient, managedBoostsKey, {
                 uri: boostUri,
                 name,
                 type,
@@ -586,7 +601,14 @@ export const useCreateChildBoost = () => {
             });
 
             // Intentionally don't await these to keep this mutation fast!
-            queryClient.refetchQueries({ queryKey: ['useGetPaginatedManagedBoosts', category] });
+            // The queryFn reads the live wallet, so never refetch another profile's list.
+            queryClient.invalidateQueries({
+                queryKey: managedBoostsKey,
+                refetchType:
+                    managedBoostsKey[1] === (switchedProfileStore.get.switchedDid() ?? '')
+                        ? 'all'
+                        : 'none',
+            });
             wallet.invoke.resolveFromLCN(boostUri).then(async boost => {
                 const validationResult = await VCValidator.spa(boost);
 
@@ -949,77 +971,53 @@ export const useDeleteManagedBoostMutation = () => {
 
             return { boostUri, category };
         },
-        onMutate: async update => {
-            const { boostUri, category } = update;
-            // get cached query useGetResolvedBoostsFromCategory
-            await queryClient.cancelQueries({
-                queryKey: ['useGetResolvedBoostsFromCategory', category],
-            });
+        onMutate: async ({ boostUri, category }) => {
+            const managedBoostsKey = getPaginatedManagedBoostsKey(category);
+            const resolvedBoostsKey = ['useGetResolvedBoostsFromCategory', category];
+            await queryClient.cancelQueries({ queryKey: resolvedBoostsKey });
+            await queryClient.cancelQueries({ queryKey: managedBoostsKey });
 
-            const currentQuery = queryClient.getQueryData([
-                'useGetResolvedBoostsFromCategory',
-                category,
-            ]);
+            const currentQuery =
+                queryClient.getQueryData<Array<{ boost: Boost }>>(resolvedBoostsKey);
+            const previousManagedBoosts =
+                queryClient.getQueryData<InfiniteData<PaginatedBoostsType>>(managedBoostsKey);
 
-            // update cache optimistically
-            // remove from useGetCredentials cache
             if (currentQuery) {
-                // construct updated payload
-                const updatedQuery = currentQuery?.filter(boost => {
-                    return boost?.boost?.uri !== boostUri;
-                });
-
-                // write to cache
                 queryClient.setQueryData(
-                    ['useGetResolvedBoostsFromCategory', category],
-                    updatedQuery
+                    resolvedBoostsKey,
+                    currentQuery.filter(boost => boost?.boost?.uri !== boostUri)
                 );
             }
 
-            /*
-                clean up paginatedManagedBoosts
-            */
-            await queryClient.cancelQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
-            });
-
-            queryClient.setQueryData<{
-                pages: Array<{
-                    cursor: string;
-                    hasMore: boolean;
-                    records: Array<any>;
-                }>;
-                pageParams: Array<string | null>;
-            }>(['useGetPaginatedManagedBoosts', category], old => {
-                if (!old) return old;
-
-                const newPages = old.pages.map(page => ({
-                    ...page,
-                    records: page.records.filter(record => record.uri !== boostUri),
-                }));
+            queryClient.setQueryData<InfiniteData<PaginatedBoostsType>>(managedBoostsKey, old => {
+                if (!Array.isArray(old?.pages)) return old;
 
                 return {
                     ...old,
-                    pages: newPages,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        records: page.records.filter(record => record.uri !== boostUri),
+                    })),
                 };
             });
-            /*
-                clean up paginatedManagedBoosts
-            */
 
-            return { currentQuery }; //use in OnError
+            return { currentQuery, previousManagedBoosts, managedBoostsKey, resolvedBoostsKey };
         },
-        // oxlint-disable-next-line no-unused-vars
-        onSuccess: (res, variables) => {
-            // oxlint-disable-next-line no-unused-vars
-            const { boostUri, category } = res;
-            queryClient.invalidateQueries({
-                queryKey: ['useGetResolvedBoostsFromCategory', category],
-            });
-            queryClient.invalidateQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
-            });
-            queryClient.invalidateQueries({ queryKey: ['boosts'] });
+        onError: (_error, _variables, context) => {
+            if (context?.currentQuery !== undefined) {
+                queryClient.setQueryData(context.resolvedBoostsKey, context.currentQuery);
+            }
+            if (context?.previousManagedBoosts !== undefined) {
+                queryClient.setQueryData(context.managedBoostsKey, context.previousManagedBoosts);
+            }
+        },
+        onSettled: (_data, _error, _variables, context) => {
+            if (!context) return;
+            return Promise.all([
+                queryClient.invalidateQueries({ queryKey: context.resolvedBoostsKey }),
+                queryClient.invalidateQueries({ queryKey: context.managedBoostsKey }),
+                queryClient.invalidateQueries({ queryKey: ['boosts'] }),
+            ]);
         },
     });
 };
@@ -1083,6 +1081,7 @@ export const useDeleteEarnedBoostMutation = () => {
         onMutate: async update => {
             const { boostUri, category } = update;
             const didWeb = switchedProfileStore.get.switchedDid();
+            const readerDid = (await initWallet()).id.did();
 
             await queryClient.cancelQueries({
                 queryKey: ['useGetCredentials', didWeb ?? '', category],
@@ -1107,6 +1106,7 @@ export const useDeleteEarnedBoostMutation = () => {
                 'useGetCredentialList',
                 didWeb ?? '',
                 category,
+                readerDid,
             ]);
             const currentIDQueryList = queryClient.getQueryData(getIDsQueryKey(didWeb));
 
@@ -1152,7 +1152,7 @@ export const useDeleteEarnedBoostMutation = () => {
                     updatedQuery
                 );
                 queryClient.setQueryData(
-                    ['useGetCredentialList', didWeb ?? '', category],
+                    ['useGetCredentialList', didWeb ?? '', category, readerDid],
                     updatedQueryList
                 );
 
@@ -1175,7 +1175,7 @@ export const useDeleteEarnedBoostMutation = () => {
             });
             queryClient.invalidateQueries({ queryKey: ['boosts'] });
             queryClient.invalidateQueries({
-                queryKey: ['useGetCredentialList', didWeb ?? '', category],
+                queryKey: ['useGetCredentialList', didWeb ?? ''],
             });
             queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialCount', didWeb ?? '', category],

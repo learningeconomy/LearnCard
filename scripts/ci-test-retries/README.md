@@ -50,8 +50,9 @@ No reports are uploaded as artifacts.
 
 All workspace packages whose test script invokes Vitest use the factory, including
 the AI agent and credential viewer's `vite.config.ts` files. Their existing test
-options and Vite plugins/aliases are preserved. The inventory contract checks new
-workspace test scripts for the same wiring.
+options and Vite plugins/aliases are preserved. Runtime regressions exercise the
+AI agent's Node globals and built-output exclusions, the viewer's source alias,
+and custom reporters alongside retry reporting; they do not count plugin objects.
 
 ## Nx inputs
 
@@ -92,11 +93,24 @@ node --test scripts/ci-test-retries/retry.test.cjs
 
 The regression suite starts real Vitest processes with this shared configuration,
 both standalone Vite configs and real Nx build/test fixtures. It checks healthy/flaky/permanent cases,
-concurrent writers, opt-out/misconfiguration, import/setup/teardown failures,
-non-Vitest/build failures, incomplete/corrupt evidence and workflow propagation.
-It also proves affected selection and actual cache hits/misses for inherited and
-explicit inputs, shared/config edits, and the retry flag (not report location).
-The non-Vitest fixture is a failing Node command, not the production Rust graph.
+concurrent writers and summary rows, recovered-case warnings, opt-out/misconfiguration,
+import/setup/teardown failures, non-Vitest/build failures and incomplete/corrupt evidence.
+Corrupt evidence cannot append a partial passing summary, and the summary retains
+each supplied test-step outcome without depending on its surrounding wording.
+Every workspace manifest whose test script invokes Vitest also runs a controlled
+case through its actual resolved CI test options and must emit a valid report.
+Those reporting-only fixtures isolate app plugins and service setup; the standalone
+preservation cases above exercise their normal config pipeline separately.
+This detects a new package bypassing reporting without matching factory source text
+or imposing an arbitrary minimum workspace count.
+It also queries the real workspace Nx graph: shared config/reporter/summary changes
+must select every workspace Vitest project, and each project's resolved `test`
+target inputs must include `ciTestConfig`. A coverage/build target selecting the
+same project cannot substitute for the test target's cache dependency.
+Isolated fixtures prove actual cache hits/misses for inherited and explicit inputs,
+shared/config edits, and the retry flag (not report location). The non-Vitest fixture is a failing Node command,
+not the production Rust graph. Source-pattern inventories and exact YAML-step
+snapshots are not substitutes for these execution checks.
 
 The reporter uses the pinned Vitest 4 reporter API, specifically
 [TestCase diagnostics](https://vitest.dev/api/advanced/test-case) and

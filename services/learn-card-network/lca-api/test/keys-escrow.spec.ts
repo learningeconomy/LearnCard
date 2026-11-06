@@ -173,7 +173,8 @@ describe('authority enrollment persistence', () => {
         delete process.env.ESCROW_ENCLAVE_REMOTE_TOKEN;
         __setEscrowEnclaveForTests(undefined);
     });
-    const setup = async () => {
+    /** `enclave`: the label the fake enclave signs; `intent`: the client's intent tenant. */
+    const setup = async ({ enclave = 'learncard', intent = 'learncard' } = {}) => {
         const software = getEscrowEnclave();
         const attestation = await software.getAttestation();
         const persisted = await encryptEscrowBlob(
@@ -207,7 +208,7 @@ describe('authority enrollment persistence', () => {
                 nonce: string;
             }): Promise<AuthorityStateResponse> => ({
                 state: {
-                    tenant: 'learncard',
+                    tenant: enclave,
                     authorityGeneration: 'fresh-g1',
                     did: input.expectedDid,
                     status: 'empty',
@@ -238,7 +239,7 @@ describe('authority enrollment persistence', () => {
         const signedIntent = await signEscrowEnrollmentIntent(
             {
                 version: 2,
-                tenant: 'learncard',
+                tenant: intent,
                 did,
                 authorityGeneration: 'fresh-g1',
                 expectedEnrollmentVersion: 0,
@@ -409,6 +410,112 @@ describe('authority enrollment persistence', () => {
         expect((await record())?.escrowBlob?.envelope).toEqual(envelope);
         expect(apply).toHaveBeenCalledTimes(1);
     });
+    describe('authority tenant decoupled from the app tenant (VetPass on the learncard enclave)', () => {
+        const vetpassOwner = () =>
+            appRouter.createCaller({
+                domain: 'localhost%3A3000',
+                tenant: { id: 'vetpass', emailBranding: {}, resolvedVia: 'header' as const },
+                user: { did, isChallengeValid: true, authorizedDid: false },
+            });
+        afterEach(() => {
+            delete process.env.ESCROW_AUTHORITY_TENANT;
+        });
+
+        it('serves learncard authority state and applies learncard intents for X-Tenant-Id vetpass', async () => {
+            const { input, apply, persisted } = await setup();
+            const nonce = 'cd'.repeat(32);
+            await expect(
+                vetpassOwner().escrow.getAuthorityState({ ...auth, nonce })
+            ).resolves.toMatchObject({ state: { tenant: 'learncard' } });
+            await expect(vetpassOwner().escrow.enroll(input)).resolves.toMatchObject({
+                success: true,
+            });
+            expect(apply).toHaveBeenCalledTimes(1);
+            const signedIntent = await signEscrowEnrollmentIntent(
+                {
+                    ...input.signedIntent.intent,
+                    expectedEnrollmentVersion: 1,
+                    action: 'disable',
+                    sourceBlobIdentity: await getEscrowBlobIdentity(persisted),
+                    targetBlobIdentity: null,
+                    allowRewrap: false,
+                    requestId: randomUUID(),
+                    recoveryEmail: null,
+                    recoveryLanguage: null,
+                },
+                pk
+            );
+            apply.mockResolvedValueOnce({
+                envelope: null,
+                receipt,
+                authorityGeneration: 'fresh-g1',
+                enrollmentVersion: 2,
+                enrollmentEpoch: 1,
+            });
+            await expect(
+                vetpassOwner().escrow.disable({
+                    ...auth,
+                    optOut: false,
+                    signedIntent,
+                    sourceEnvelope: persisted,
+                })
+            ).resolves.toMatchObject({ receipt });
+            expect(apply).toHaveBeenCalledTimes(2);
+        });
+
+        it('rejects an app-tenant (vetpass) intent before reaching the enclave', async () => {
+            const { input, apply } = await setup({ intent: 'vetpass' });
+            await expect(vetpassOwner().escrow.enroll(input)).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+            await expect(owner().escrow.enroll(input)).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+            expect(apply).not.toHaveBeenCalled();
+            expect((await record())?.escrowBlob).toBeUndefined();
+        });
+
+        it('fails closed when the enclave signs a different authority tenant than configured', async () => {
+            const { input, apply } = await setup({ enclave: 'scouts' });
+            for (const caller of [owner, vetpassOwner]) {
+                await expect(
+                    caller().escrow.getAuthorityState({ ...auth, nonce: 'ef'.repeat(32) })
+                ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+                await expect(caller().escrow.enroll(input)).rejects.toMatchObject({
+                    code: 'FORBIDDEN',
+                });
+            }
+            expect(apply).not.toHaveBeenCalled();
+        });
+
+        it('checks against ESCROW_AUTHORITY_TENANT, not the request tenant', async () => {
+            process.env.ESCROW_AUTHORITY_TENANT = 'scouts';
+            const { input, apply } = await setup({ enclave: 'scouts', intent: 'scouts' });
+            await expect(
+                vetpassOwner().escrow.getAuthorityState({ ...auth, nonce: 'ab'.repeat(32) })
+            ).resolves.toMatchObject({ state: { tenant: 'scouts' } });
+            await expect(vetpassOwner().escrow.enroll(input)).resolves.toMatchObject({
+                success: true,
+            });
+            expect(apply).toHaveBeenCalledTimes(1);
+        });
+
+        it('keeps the per-app tenant on holds started from VetPass in authority mode', async () => {
+            await enroll();
+            const software = getEscrowEnclave();
+            __setEscrowEnclaveForTests(
+                Object.assign(software, { confirmHold: async () => ({ success: true as const }) })
+            );
+            const started = await appRouter
+                .createCaller({
+                    domain: 'localhost%3A3000',
+                    tenant: { id: 'vetpass', emailBranding: {}, resolvedVia: 'header' as const },
+                })
+                .escrow.startRecovery({ ...auth, clientEphemeralPublicKey: recipient.publicKey });
+            expect((await findEscrowHoldById(started.holdId))?.tenantId).toBe('vetpass');
+        });
+    });
+
     it('suppresses its own started notification and marks requiresConfirmation for an authority-mode hold', async () => {
         await enroll();
         const software = getEscrowEnclave();

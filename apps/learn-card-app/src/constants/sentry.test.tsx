@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, renderHook } from '@testing-library/react';
 
 const state = vi.hoisted(() => ({
     currentUser: { uid: 'firebase-user' } as { uid: string } | null,
+    tenantEnabled: true,
     preferences: { bugReportsEnabled: true },
     preferencesLoading: false,
     eligibility: {
@@ -13,6 +14,14 @@ const state = vi.hoisted(() => ({
         isLoading: false,
         profileId: 'adult-a' as string | undefined,
     },
+}));
+
+const replayStart = vi.hoisted(() => vi.fn());
+const replayStop = vi.hoisted(() => vi.fn<() => Promise<void>>().mockResolvedValue(undefined));
+const sentrySend = vi.hoisted(() => vi.fn(() => Promise.resolve({ statusCode: 200 })));
+const analyticsConsent = vi.hoisted(() => ({
+    enabled: true,
+    identityKey: 'adult-a' as string | null,
 }));
 
 const configureLoggerContext = vi.hoisted(() => vi.fn());
@@ -37,12 +46,33 @@ vi.mock('../feedback/reporting/eligibility', () => ({
     useFeedbackReportingEligibility: () => state.eligibility,
 }));
 
-vi.mock('../config/bootstrapTenantConfig', () => ({
-    getResolvedTenantConfig: vi.fn(),
+vi.mock('learn-card-base/hooks/usePrivacyGate', () => ({
+    usePrivacyConsent: () => ({
+        analyticsEnabled: analyticsConsent.enabled,
+        identityKey: analyticsConsent.identityKey,
+    }),
+}));
+
+vi.mock('../config/tenantConfigState', () => ({
+    isTenantAnalyticsEnabled: () => state.tenantEnabled,
+    getResolvedTenantConfig: () => ({
+        observability: {
+            sentryDsn: 'https://public@example.test/1',
+            sentryEnv: 'production',
+            sentryTraceDomains: [],
+        },
+    }),
 }));
 
 vi.mock('@sentry/react', () => ({
     getClient: () => undefined,
+    getReplay: () => ({
+        start: replayStart,
+        startBuffering: vi.fn(),
+        flush: vi.fn(),
+        stop: replayStop,
+    }),
+    makeFetchTransport: vi.fn(() => ({ send: sentrySend, flush: vi.fn() })),
     init: vi.fn(),
     setUser: vi.fn(),
     setTag: vi.fn(),
@@ -55,11 +85,21 @@ vi.mock('@sentry/react', () => ({
     replayIntegration: vi.fn(),
 }));
 
-import { useSentryIdentify } from './sentry';
+import { init } from '@sentry/react';
+import {
+    initSentryFromTenant,
+    setSentryOptionalTelemetryEnabled,
+    useSentryIdentify,
+} from './sentry';
+
+afterEach(cleanup);
 
 describe('useSentryIdentify diagnostic collection lifecycle', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        state.tenantEnabled = true;
+        analyticsConsent.enabled = true;
+        analyticsConsent.identityKey = 'adult-a';
         state.currentUser = { uid: 'firebase-user' };
         state.preferences = { bugReportsEnabled: true };
         state.preferencesLoading = false;
@@ -69,6 +109,61 @@ describe('useSentryIdentify diagnostic collection lifecycle', () => {
             isLoading: false,
             profileId: 'adult-a',
         };
+    });
+    it('drops queued replay envelopes after revoke while retaining security error envelopes', async () => {
+        setSentryOptionalTelemetryEnabled(false);
+        initSentryFromTenant();
+        const options = vi.mocked(init).mock.calls[0][0];
+        const transport = options.transport?.({
+            url: 'https://sentry.example/api/1/envelope/',
+            recordDroppedEvent: vi.fn(),
+        } as never);
+        expect(transport).toBeDefined();
+
+        await transport!.send([
+            {},
+            [
+                [{ type: 'replay_event' }, {}],
+                [{ type: 'replay_recording' }, {}],
+            ],
+        ] as never);
+        expect(sentrySend).not.toHaveBeenCalled();
+
+        await transport!.send([
+            [{}],
+            [[{ type: 'event' }, { message: 'security error' }]],
+        ] as never);
+        expect(sentrySend).toHaveBeenCalledOnce();
+
+        sentrySend.mockClear();
+        setSentryOptionalTelemetryEnabled(true);
+        await transport!.send([[{}], [[{ type: 'replay_event' }, {}]]] as never);
+        expect(sentrySend).toHaveBeenCalledOnce();
+        setSentryOptionalTelemetryEnabled(false);
+    });
+
+    it('keeps replay envelopes blocked until every outstanding prior-session stop settles', async () => {
+        initSentryFromTenant();
+        const options = vi.mocked(init).mock.calls[0][0];
+        const transport = options.transport!({
+            url: 'https://sentry.example/api/1/envelope/',
+            recordDroppedEvent: vi.fn(),
+        } as never);
+        const stopped = Promise.withResolvers<void>();
+        replayStop.mockReturnValueOnce(stopped.promise);
+        const { rerender } = renderHook(() => useSentryIdentify());
+        await act(async () => {});
+        analyticsConsent.enabled = false;
+        rerender();
+        analyticsConsent.enabled = true;
+        analyticsConsent.identityKey = 'adult-b';
+        rerender();
+        await act(async () => {});
+        await transport.send([{}, [[{ type: 'replay_recording' }, {}]]] as never);
+        expect(sentrySend).not.toHaveBeenCalled();
+        await act(async () => stopped.resolve());
+        await transport.send([{}, [[{ type: 'replay_recording' }, {}]]] as never);
+        expect(sentrySend).toHaveBeenCalledOnce();
     });
 
     it('keeps remote crash reporting enabled while adult feedback diagnostics are ineligible', () => {

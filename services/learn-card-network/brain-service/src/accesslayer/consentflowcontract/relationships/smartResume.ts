@@ -80,7 +80,7 @@ export const publishSmartResume = async ({
                     WHERE request.requestId = $expectedRequestId AND request.status = 'accepted'
                 })
                 AND terms.smartResumeMutationVersion = coalesce(terms.mutationVersion, 0)
-                AND (terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true))
+                AND (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true))
                 AND CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime.realtime() END
                 AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime.realtime() END
                 AND (terms.smartResumePublicationStatus IN ['pending', 'failed', 'succeeded']

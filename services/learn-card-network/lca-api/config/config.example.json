@@ -1,6 +1,7 @@
 {
     "APPLE_OAUTH_CLIENT_IDS": "com.example.app,app.example.www",
     "DOMAIN_NAME": "api.example.com",
+    "NETWORK_BRAIN_SERVICE_URL": "https://network.example.com/trpc",
     "ESCROW_ENCLAVE_ACTIVE_KEY_ID": "example-2026-01",
     "ESCROW_HOLD_DURATION_MS": "604800000",
     "ESCROW_HOLD_RESTART_MIN_AGE_MS": "86400000",

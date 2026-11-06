@@ -7,6 +7,7 @@ import { environment } from '@environment';
 import {
     ConsentFlowTransactionValidator,
     ConsentFlowWebhookMetadataValidator,
+    ConsentFlowContractNotificationDataValidator,
     LCNNotificationTypeEnumValidator,
     type ConsentFlowTransaction,
     type ConsentFlowWebhookMetadata,
@@ -25,8 +26,10 @@ import { sanitizeProfileForTier, stripSensitiveProfileListFields } from './profi
 import { getStoredContractRequest } from '@accesslayer/consentflowcontract/read';
 import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 import { ensureContractEventMaintenance } from './contract-event-maintenance.helpers';
+import { updateDidForProfile } from './did.helpers';
+import { buildContractUpdatePreview } from '@learncard/helpers';
 
-type EventKind = ConsentFlowWebhookMetadata['event'];
+type EventKind = ConsentFlowWebhookMetadata['event'] | 'contract_updated';
 const defaultDomain = (): string => environment.DOMAIN_NAME ?? 'network.learncard.com';
 
 const MAX_DELIVERY_ATTEMPTS = 12;
@@ -62,7 +65,7 @@ export const appendConsentEvent = (
     const kind: EventKind =
         transaction.action === 'consent'
             ? 'consent_created'
-            : transaction.action === 'update'
+            : transaction.action === 'update' || transaction.action === 'reconsent'
               ? 'consent_updated'
               : transaction.action === 'withdraw'
                 ? 'consent_withdrawn'
@@ -210,7 +213,7 @@ export const authorizeContractNotification = async (
     if (!relationship || !parsedTerms.success) return false;
     const terms = parsedTerms.data;
     if (
-        !(terms.status === 'live' || (terms.status === 'stale' && terms.oneTime)) ||
+        !(terms.status === 'live' || (terms.status === 'consumed' && terms.oneTime)) ||
         !expiryActive(terms.expiresAt) ||
         !expiryActive(relationship.contract.expiresAt)
     )
@@ -245,6 +248,35 @@ const buildNotification = async (
         getContractById(event.contractId),
     ]);
     if (!from || !to || !owner) return null;
+    if (event.kind === 'contract_updated') {
+        if (!contract) return null;
+        const data = ConsentFlowContractNotificationDataValidator.parse(
+            JSON.parse(event.payload ?? '')
+        );
+        const preview =
+            data.preview ??
+            buildContractUpdatePreview({
+                name: contract.name,
+                kind: data.kind,
+                diff: data.diff,
+            });
+        const sender = updateDidForProfile(event.domain, from);
+        return {
+            type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_CONTRACT_UPDATED,
+            from: {
+                ...stripSensitiveProfileListFields(
+                    sanitizeProfileForTier(sender, 'unauthenticated')
+                ),
+                did: sender.did,
+            },
+            to: updateDidForProfile(event.domain, to),
+            sent: event.createdAt,
+            ...(data.kind === 'requires_consent'
+                ? { message: { title: preview.headline, body: data.reason ?? preview.subhead } }
+                : {}),
+            data,
+        };
+    }
     const eventKind =
         delivery.role === 'requester' && event.requestAccepted ? 'request_accepted' : event.kind;
     const metadata = ConsentFlowWebhookMetadataValidator.parse({

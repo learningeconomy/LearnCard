@@ -8,7 +8,7 @@
 | **cursor**                    | **str**                                                                                             |             | [optional]                   |
 | **sort**                      | **str**                                                                                             |             | [optional]                   |
 | **include_unaccepted_boosts** | **bool**                                                                                            |             | [optional] [default to True] |
-| **query**                     | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md) |             | [optional]                   |
+| **query**                     | [**BoostGetPaginatedBoostRecipientsRequestQuery**](BoostGetPaginatedBoostRecipientsRequestQuery.md) |             | [optional]                   |
 
 ## Example
 

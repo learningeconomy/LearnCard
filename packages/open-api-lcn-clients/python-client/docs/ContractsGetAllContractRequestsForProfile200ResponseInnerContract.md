@@ -2,11 +2,14 @@
 
 ## Properties
 
-| Name      | Type                                                                                                                                                                                | Description | Notes |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **read**  | [**StorageResolve200ResponseAnyOfAnyOf1Read**](StorageResolve200ResponseAnyOfAnyOf1Read.md)                                                                                         |             |
-| **write** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.md) |             |
-| **uri**   | **str**                                                                                                                                                                             |             |
+| Name            | Type                                                                                                                                                                                | Description | Notes      |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **read**        | [**StorageResolve200ResponseAnyOfAnyOf1Read**](StorageResolve200ResponseAnyOfAnyOf1Read.md)                                                                                         |             |
+| **write**       | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.md) |             |
+| **uri**         | **str**                                                                                                                                                                             |             |
+| **name**        | **str**                                                                                                                                                                             |             | [optional] |
+| **image**       | **str**                                                                                                                                                                             |             | [optional] |
+| **description** | **str**                                                                                                                                                                             |             | [optional] |
 
 ## Example
 

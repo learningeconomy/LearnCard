@@ -1,7 +1,8 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { ensureSQLiteSchema, withSQLiteDatabase } from 'learn-card-base/SQL/connection';
 
-const mocks = vi.hoisted(() => ({ getDb: vi.fn(), ensureTable: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getDb: vi.fn(), ensureTable: vi.fn(), waitReady: vi.fn() }));
+vi.mock('learn-card-base/SQL/sqliteReady', () => ({ waitForSQLiteReady: mocks.waitReady }));
 vi.mock('learn-card-base', () => ({
     sqliteStore: { get: { db: mocks.getDb } },
     ensureReactQueryTableExists: mocks.ensureTable,
@@ -121,10 +122,25 @@ it.each(['query', 'executeSet', 'run', 'execute'] as const)(
     }
 );
 
-it('preserves the existing unavailable-database behavior without acquiring a connection', async () => {
+it('waits for SQLite readiness before saving instead of silently dropping the write', async () => {
+    const db = database();
+    const ready = deferred();
     mocks.getDb.mockReturnValue(undefined);
-    expect(await queryCacheStorage.getItem('key')).toBeUndefined();
-    await queryCacheStorage.setItem('key', 'snapshot');
-    await queryCacheStorage.removeItem('key');
+    mocks.waitReady.mockReturnValue(ready.promise);
+
+    const save = queryCacheStorage.setItem('key', 'snapshot');
+    mocks.getDb.mockReturnValue(db);
+    ready.resolve();
+    await save;
+
+    expect(await queryCacheStorage.getItem('key')).toBe('snapshot');
+});
+
+it('rejects loudly when SQLite never becomes available', async () => {
+    mocks.getDb.mockReturnValue(undefined);
+    mocks.waitReady.mockResolvedValue(undefined);
+    await expect(queryCacheStorage.getItem('key')).rejects.toThrow('unavailable');
+    await expect(queryCacheStorage.setItem('key', 'snapshot')).rejects.toThrow('unavailable');
+    await expect(queryCacheStorage.removeItem('key')).rejects.toThrow('unavailable');
     expect(mocks.ensureTable).not.toHaveBeenCalled();
 });

@@ -225,6 +225,7 @@ export * from './helpers/aiPassportAuth';
 export * from './helpers/credentialHelpers';
 export * from './helpers/credentialIngestion';
 export * from './helpers/credentialRefresh';
+export * from './helpers/ingestManagedCredential';
 export * from './helpers/credentials/queries';
 export * from './helpers/credentials/clr';
 export * from './helpers/openid4vcErrors';
@@ -273,6 +274,8 @@ export * from './types/careerOneStop';
 
 export * from './react-query/queries/queries';
 export * from './react-query/queries/vcQueries';
+export * from './react-query/queries/useCredentialCollection';
+export * from './helpers/credentialCollection';
 export * from './react-query/queries/notifications';
 export * from './react-query/queries/aiPassport-queries';
 export * from './react-query/connectionPrompts';
