@@ -244,6 +244,7 @@ services:
             PORT: 5100
             SEED: c
             AUTHORIZED_DIDS: did:web:localhost%3A4000
+            NETWORK_BRAIN_SERVICE_URL: http://brain:4000/trpc
             SKIP_DIDKIT_NAPI: '1'
             MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0&directConnection=true}
             MONGO_DB_NAME: ${MONGO_DB_NAME:-lca-api}

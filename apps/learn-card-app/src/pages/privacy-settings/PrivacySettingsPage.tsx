@@ -24,12 +24,12 @@ import {
     isLearnCardAiPassportContractUri,
     ModalTypes,
     useModal,
+    usePrivacyConsent,
 } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
-import { useAnalytics } from '../../analytics';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
 import DataSharingCenterView from './DataSharingCenterView';
@@ -62,8 +62,8 @@ const PrivacySettingsPage: React.FC = () => {
     });
     const { currentLCNUser, refetch: refetchUser } = useGetCurrentLCNUser();
     const { data: preferences } = useGetPreferencesForDid();
-    const { mutate: updatePreferences } = useUpdatePreferences();
-    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
+    const { mutate: updatePreferences, isPending: preferencesSaving } = useUpdatePreferences();
+    const { analyticsEnabled, isResolved: privacyResolved } = usePrivacyConsent();
     const { data: consentedContracts, isLoading, refetch } = useConsentedContracts();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
@@ -223,7 +223,6 @@ const PrivacySettingsPage: React.FC = () => {
     const locale = useLocale();
 
     const vm = useMemo<DataSharingCenterViewModel>(() => {
-        const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
         const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
 
         return {
@@ -275,11 +274,20 @@ const PrivacySettingsPage: React.FC = () => {
                 brandName,
                 analyticsEnabled,
                 bugReportsEnabled,
-                disabled: isMinor,
+                disabled: isMinor || !privacyResolved || preferencesSaving,
+                saving: preferencesSaving,
                 lockedNote: isMinor ? m['dataShareCenter.diagLockedNote']() : undefined,
                 onToggleAnalytics: enabled => {
-                    updatePreferences({ analyticsEnabled: enabled });
-                    setAnalyticsEnabled(enabled);
+                    if (isMinor || !privacyResolved) return;
+                    updatePreferences(
+                        { analyticsEnabled: enabled },
+                        {
+                            onError: () =>
+                                presentToast(m['settings.privacy.unableToUpdate'](), {
+                                    type: ToastTypeEnum.Error,
+                                }),
+                        }
+                    );
                 },
                 onToggleBugReports: enabled => {
                     updatePreferences({ bugReportsEnabled: enabled });
@@ -294,6 +302,10 @@ const PrivacySettingsPage: React.FC = () => {
         refetch,
         isAiEnabled,
         aiReason,
+        analyticsEnabled,
+        privacyResolved,
+        preferencesSaving,
+        presentToast,
         preferences?.aiEnabled,
         preferences?.analyticsEnabled,
         preferences?.bugReportsEnabled,
@@ -306,7 +318,6 @@ const PrivacySettingsPage: React.FC = () => {
         savingField,
         handleProfileUpdate,
         updatePreferences,
-        setAnalyticsEnabled,
         shared,
         locale,
     ]);

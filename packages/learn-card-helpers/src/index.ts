@@ -111,3 +111,4 @@ export * from './share-content-canonical';
 export * from './consent-flow-contract-updates';
 
 export * from './credential-materialization';
+export * from './age-policy';

@@ -1,5 +1,6 @@
 {
     "DOMAIN_NAME": "api.scoutnetwork.org",
+    "NETWORK_BRAIN_SERVICE_URL": "https://scoutnetwork.org/trpc",
     "POSTMARK_BRAND_NAME": "ScoutPass",
     "POSTMARK_FROM_EMAIL": "scoutnetwork.org",
     "POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS": "sp-login-verification",
