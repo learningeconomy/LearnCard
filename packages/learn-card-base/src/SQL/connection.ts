@@ -68,6 +68,9 @@ export const withSQLiteDatabase = async <T, Database extends SQLiteConnectionAcc
         connection.users--;
         await transition(connection, async () => {
             if (!connection.users && connection.open === true) {
+                // The next open may load a different database: on web, jeep-sqlite
+                // reloads it from IndexedDB, which logout deletes. Re-check schemas.
+                schemas.delete(db);
                 try {
                     await db.close();
                     connection.open = false;
@@ -84,7 +87,7 @@ export const withSQLiteDatabase = async <T, Database extends SQLiteConnectionAcc
     }
 };
 
-/** Ensure an idempotent schema once per connection, sharing concurrent initialization. */
+/** Ensure an idempotent schema once per open of the connection, sharing concurrent initialization. */
 export const ensureSQLiteSchema = (
     db: Pick<SQLiteDBConnection, 'open' | 'close' | 'execute'>,
     name: string,

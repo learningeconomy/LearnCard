@@ -153,4 +153,15 @@ describe('shared SQLite connection ownership', () => {
         expect(methods.execute).toHaveBeenLastCalledWith(sql);
         expect(methods.close).toHaveBeenCalledTimes(2);
     });
+
+    it('re-checks schemas after the connection closes, as the reopened database may be empty', async () => {
+        const { db, methods } = database();
+        const sql = 'CREATE TABLE IF NOT EXISTS users (uid TEXT);';
+        await ensureSQLiteSchema(db, 'users', sql);
+        await withSQLiteDatabase(db, async () => {
+            await ensureSQLiteSchema(db, 'users', sql);
+            await ensureSQLiteSchema(db, 'users', sql);
+        });
+        expect(methods.execute).toHaveBeenCalledTimes(2);
+    });
 });
