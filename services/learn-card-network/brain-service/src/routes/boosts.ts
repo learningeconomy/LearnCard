@@ -1896,8 +1896,10 @@ export const boostsRouter = t.router({
                                             recipientDid: input.recipient,
                                         })
                                 );
-                            } catch (e) {
-                                console.error('Failed to prepare boost credential', e);
+                            } catch (error) {
+                                if (error instanceof TRPCError && error.code === 'BAD_REQUEST')
+                                    throw error;
+                                console.error('CREDENTIAL_PREPARATION_FAILED');
                                 throw new TRPCError({
                                     code: 'INTERNAL_SERVER_ERROR',
                                     message: 'Failed to prepare boost credential',
@@ -2069,8 +2071,10 @@ export const boostsRouter = t.router({
                                     recipientName: targetProfile.displayName,
                                 })
                             );
-                        } catch (e) {
-                            console.error('Failed to prepare boost credential', e);
+                        } catch (error) {
+                            if (error instanceof TRPCError && error.code === 'BAD_REQUEST')
+                                throw error;
+                            console.error('CREDENTIAL_PREPARATION_FAILED');
                             throw new TRPCError({
                                 code: 'INTERNAL_SERVER_ERROR',
                                 message: 'Failed to prepare boost credential',

@@ -430,6 +430,25 @@ describe('managed Universal Inbox refresh', () => {
         ).toBeTruthy();
     });
 
+    it('keeps stored public names on pending publication without copying the private VC name', async () => {
+        const issued = await issue();
+        const refreshId = issued.refresh!.refreshId;
+        await neogma.queryRunner.run(
+            `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:INBOX]->(ic:InboxCredential)
+             SET ic.credentialName = 'Stored label', refresh.credentialDisplayName = 'Stored label'`,
+            { refreshId }
+        );
+        await queue(issued, 'Private Updated Name');
+        const rows = await neogma.queryRunner.run(
+            `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:INBOX]->(ic:InboxCredential)
+             RETURN ic.credentialName AS inboxName, refresh.credentialDisplayName AS displayName`,
+            { refreshId }
+        );
+        expect(rows.records[0]!.get('inboxName')).toBe('Stored label');
+        expect(rows.records[0]!.get('displayName')).toBe('Stored label');
+        expect((await getCredentialRefresh(refreshId))?.currentVersion).toBe(2);
+    });
+
     it('concurrent pending publications with one key create one revision', async () => {
         const issued = await issue();
         const outcomes = await Promise.all([

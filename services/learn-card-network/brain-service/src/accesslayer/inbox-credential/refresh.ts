@@ -102,9 +102,10 @@ export const advancePendingInboxRefresh = async (params: {
            AND ic.currentStatus = 'PENDING' AND datetime(ic.expiresAt) > datetime()
            AND ($key IS NULL OR NOT EXISTS { MATCH (:InboxRefreshPublication {refreshIdempotencyKey: $key}) })
          CREATE (p:InboxRefreshPublication $publication)
-         SET ic.credential = $credential, ic.credentialName = $credentialName,
+         SET ic.credential = $credential,
+             ic.credentialName = coalesce($credentialName, ic.credentialName),
              refresh.currentVersion = $version, refresh.materialDigest = $materialDigest,
-              refresh.credentialDisplayName = $credentialName,
+             refresh.credentialDisplayName = coalesce($credentialName, refresh.credentialDisplayName),
              refresh.lastPublishedAt = $publishedAt, refresh.updatedAt = $publishedAt,
               refresh.updateSummary = $updateSummary,
               refresh.updateReason = $updateReason

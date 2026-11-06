@@ -20,6 +20,9 @@ import { AUTH_GRANT_NO_ACCESS_SCOPE } from '../constants/auth-grant';
 import { ensureCredentialRefreshConstraints } from '../models/credential-refresh-constraints';
 import { getCredentialRefresh, generateRefreshId } from '@accesslayer/credential-refresh';
 import { getInboxCredentialById } from '@accesslayer/inbox-credential/read';
+import { getBoostById } from '@accesslayer/boost/read';
+import { getPublicBoostDisplayName } from './credential-display.helpers';
+import { extractBoundedCredentialDisplayTitle } from './credential-refresh-email-content.helpers';
 import {
     advancePendingInboxRefresh,
     bindPendingInboxRefresh,
@@ -238,10 +241,16 @@ export const publishPendingInboxRefresh = async (
             message: 'Credential effective time is older than the current version',
         });
     const prepared = injectManagedRefreshService(body, serviceFor(aggregate.refreshId, domain));
+    // Public label only: the anchor's explicit display name, never the VC's own name.
+    const displayBoost = aggregate.boostId ? await getBoostById(aggregate.boostId) : null;
+    const credentialName = extractBoundedCredentialDisplayTitle(
+        getPublicBoostDisplayName(displayBoost)
+    );
     const result = await advancePendingInboxRefresh({
         refreshId: aggregate.refreshId,
         expectedVersion: aggregate.currentVersion,
         credential: await encryptInboxCredential(JSON.stringify(prepared)),
+        ...(credentialName ? { credentialName } : {}),
         materialDigest: computeCredentialMaterialDigest(prepared),
         idempotencyKey: input.idempotencyKey,
         updateSummary: input.updateSummary,
