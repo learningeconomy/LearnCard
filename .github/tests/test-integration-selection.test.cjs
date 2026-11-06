@@ -107,6 +107,24 @@ test('root named inputs and target defaults retain explicitly referenced workspa
     }
 });
 
+test('every workspace reference in a command is included; ambiguous parent traversal cannot skip', () => {
+    const g = graph();
+    g.graph.nodes['network-brain-service'].data.targets = {
+        build: {
+            options: {
+                command: `node "{workspaceRoot}/tools/builder/run.js" --source '{workspaceRoot}/packages/input/src'`,
+            },
+        },
+    };
+    assert.equal(decideFromGraph(['packages/input/src/a.ts'], g).brain.run, true);
+    g.graph.nodes['network-brain-service'].data.targets.build.options.command =
+        '{workspaceRoot}/packages/unrelated/../input/src';
+    assert.throws(
+        () => decideFromGraph(['packages/input/src/a.ts'], g),
+        /Ambiguous workspace input/
+    );
+});
+
 test('unknown ownership runs; root projects and incomplete graphs cannot authorize skips', () => {
     assert.deepEqual(runs(decideFromGraph(['packages/missing/a.ts'], graph())), full);
     for (const mutate of [

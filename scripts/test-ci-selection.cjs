@@ -1,7 +1,7 @@
 const { appendFileSync, readFileSync } = require('node:fs');
 const { spawnSync } = require('node:child_process');
 const { join } = require('node:path');
-const { loadNxGraph } = require('./mock-e2e-ci.cjs');
+const { loadNxGraph, isProse, isConfigOrUnknownPath } = require('./mock-e2e-ci.cjs');
 
 const brainTasks = [
     'test:integration',
@@ -37,11 +37,7 @@ const independentInputs = new Set([
     '.github/tests/test-hosted-e2e-workflow-contract.test.sh',
     'scripts/e2e-hosted/README.md',
 ]);
-const isNonInput = path =>
-    independentInputs.has(path) ||
-    ['README.md', 'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md', 'LICENSE'].includes(path) ||
-    /^docs\/.+\.md$/.test(path) ||
-    /^\.changeset\/[^/]+\.md$/.test(path);
+const isNonInput = path => independentInputs.has(path) || isProse(path);
 
 const decideFromGraph = (paths, { graph, tasks, workspaceConfig = {} }) => {
     const owners = Object.entries(graph.nodes)
@@ -74,13 +70,17 @@ const decideFromGraph = (paths, { graph, tasks, workspaceConfig = {} }) => {
                 // without an import edge. Include its dependency closure too.
                 const inspect = value => {
                     if (typeof value === 'string' && value.includes('{workspaceRoot}/')) {
-                        const prefix = value.split('{workspaceRoot}/')[1].split(/[*!?{[]/)[0];
-                        for (const project of owners) {
-                            if (
-                                prefix.startsWith(`${project.root}/`) ||
-                                `${project.root}/`.startsWith(prefix)
-                            )
-                                visit(project.name);
+                        for (const segment of value.split('{workspaceRoot}/').slice(1)) {
+                            const prefix = segment.split(/[*!?{[\s'"]/)[0];
+                            if (prefix.split('/').includes('..'))
+                                throw new Error('Ambiguous workspace input');
+                            for (const project of owners) {
+                                if (
+                                    prefix.startsWith(`${project.root}/`) ||
+                                    `${project.root}/`.startsWith(prefix)
+                                )
+                                    visit(project.name);
+                            }
                         }
                     } else if (value && typeof value === 'object') {
                         Object.values(value).forEach(inspect);
@@ -157,16 +157,7 @@ const select = ({ eventName, baseSha, headSha, cwd = process.cwd(), getGraph = l
     } catch {
         return all('comparison-unavailable');
     }
-    if (
-        paths.some(
-            path =>
-                !isNonInput(path) &&
-                (!/^(apps|packages|services|examples|tests|tools)\//.test(path) ||
-                    /(^|\/)(package\.json|project\.json|tsconfig[^/]*\.json|\.gitignore|\.nxignore)$/.test(
-                        path
-                    ))
-        )
-    )
+    if (paths.some(path => !isNonInput(path) && isConfigOrUnknownPath(path)))
         return all('configuration-or-unknown-input');
     try {
         return decideFromGraph(paths, {

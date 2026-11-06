@@ -18,6 +18,10 @@ const isProse = path =>
     /^docs\/.+\.md$/.test(path) ||
     /^\.changeset\/[^/]+\.md$/.test(path);
 
+const isConfigOrUnknownPath = path =>
+    !/^(apps|packages|services|examples|tests|tools)\//.test(path) ||
+    /(^|\/)(package\.json|project\.json|tsconfig[^/]*\.json|\.gitignore|\.nxignore)$/.test(path);
+
 const decideFromGraph = (paths, { graph, tasks }) => {
     const app = graph.nodes['learn-card-app'];
     const planned = Object.values(tasks.tasks);
@@ -181,16 +185,7 @@ const decideEligibility = ({ eventName, baseSha, headSha, cwd = process.cwd(), g
     }
     // Global/unknown locations and dependency metadata always run. Do not trust a
     // head-only graph to explain a changed/deleted dependency declaration.
-    if (
-        paths.some(
-            path =>
-                !isProse(path) &&
-                (!/^(apps|packages|services|examples|tests|tools)\//.test(path) ||
-                    /(^|\/)(package\.json|project\.json|tsconfig[^/]*\.json|\.gitignore|\.nxignore)$/.test(
-                        path
-                    ))
-        )
-    )
+    if (paths.some(path => !isProse(path) && isConfigOrUnknownPath(path)))
         return { run: true, reason: 'code-config-or-unknown-path' };
     if (!getGraph) return { run: true, reason: 'graph-unavailable' };
     try {
@@ -263,6 +258,8 @@ const main = () => {
 
 if (require.main === module) main();
 module.exports = {
+    isProse,
+    isConfigOrUnknownPath,
     decideEligibility,
     decideFromGraph,
     loadNxGraph,
