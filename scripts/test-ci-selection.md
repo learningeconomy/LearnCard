@@ -94,8 +94,36 @@ is needed when integration jobs install directly.
 
 Apply `benchmark-integration-cache` to compare the existing warm dependency
 archive against fresh installs on one commit. Two rounds each run graph and
-delivery in both modes: eight jobs total, at most four in parallel. Verify the
+delivery in both modes: eight jobs total, at most four in parallel. Both modes
+explicitly enable graph build-once, so this comparison isolates the dependency
+archive after the prerequisite-build optimization. Verify the
 cached jobs restored the expected archive, uncached jobs skipped restore/save,
 and all modes installed the same package count and passed the same tests. Compare
 workspace setup, total runner time and elapsed span; include observed variance.
 Manual dispatch becomes available once the workflow reaches the default branch.
+
+## Build graph prerequisites once
+
+The graph group runs `network-brain-service:build:integration-dependencies` before
+profile search and boost recipients. This uncached no-op target depends on the
+same `^build` graph as both suites, preserving Nx build ordering and parallelism.
+After it succeeds, both suites use `--excludeTaskDependencies` against outputs
+from that checkout. Tests still execute independently with fresh databases;
+a test failure does not suppress the next suite. A failed or skipped prerequisite
+phase blocks both dependent suites. Share-link security remains independent.
+The workflow contracts require both suites' prerequisites to match the build
+phase, so changes to that contract require updating the orchestration.
+
+Single-suite runners retain their ordinary Nx prerequisites. Delivery is unchanged:
+only campaign permissions requests dependency builds there. No cross-run cache
+policy changes and no additional build artifacts are persisted.
+
+Apply `benchmark-integration-builds` after ordinary CI finishes to compare grouped
+runs with repeated builds against build-once at the exact same PR head. Four
+sequential phases use repeated → once → once → repeated, each with graph and
+delivery (eight jobs total, at most two concurrent). Every phase runs the same
+369 tests. Compare graph build/suite durations as well as setup, total runner
+occupancy and completion span; delivery provides an unchanged control. Include
+the new shared build step in optimized totals. Never infer whole-job savings
+solely from the absent second prerequisite build. The original grouping benchmark
+remains available through `benchmark-integrations`.

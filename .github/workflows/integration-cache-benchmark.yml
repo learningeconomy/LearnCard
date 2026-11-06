@@ -24,6 +24,7 @@ jobs:
             group: ${{ matrix.group }}
             ref: ${{ github.event.pull_request.head.sha || github.sha }}
             dependency_cache: ${{ matrix.cache }}
+            build_once: true
         secrets:
             DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
             DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
@@ -41,6 +42,7 @@ jobs:
             group: ${{ matrix.group }}
             ref: ${{ github.event.pull_request.head.sha || github.sha }}
             dependency_cache: ${{ matrix.cache }}
+            build_once: true
         secrets:
             DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
             DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}

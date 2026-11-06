@@ -45,6 +45,7 @@ on:
             - Service Health Check
             - Tailwind visual regression
             - Test Runner
+            - Integration build-once benchmark
             - Integration runner benchmark
             - Integration cache benchmark
             - Update DIDKit WASM

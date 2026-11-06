@@ -91,6 +91,7 @@ test('production groups opt out while the benchmark compares both modes twice at
     const inputs = (helper.on ?? helper.true).workflow_call.inputs;
     assert.equal(inputs.dependency_cache.type, 'boolean');
     assert.equal(inputs.dependency_cache.default, false);
+    assert.equal(inputs.build_once.default, true);
     assert.equal(
         helper.jobs.integration.steps.find(step => step.name === 'Setup workspace').with[
             'dependency-cache'
@@ -107,5 +108,6 @@ test('production groups opt out while the benchmark compares both modes twice at
         assert.equal(job.uses, './.github/workflows/brain-integration.yml');
         assert.equal(job.with.ref, '${{ github.event.pull_request.head.sha || github.sha }}');
         assert.equal(job.with.dependency_cache, '${{ matrix.cache }}');
+        assert.equal(job.with.build_once, true, 'both cache modes must retain build-once');
     }
 });

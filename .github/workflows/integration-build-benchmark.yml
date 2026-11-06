@@ -1,0 +1,76 @@
+name: Integration build-once benchmark
+
+# Opt-in only. Adding this label starts one controlled ABBA comparison on the
+# PR's exact head. Manual dispatch becomes available after the workflow merges.
+on:
+    pull_request:
+        types: [labeled]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    repeated-before:
+        if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'benchmark-integration-builds'
+        name: Repeated builds before (${{ matrix.group }})
+        strategy:
+            fail-fast: false
+            matrix:
+                group: [graph, delivery]
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            build_once: false
+            group: ${{ matrix.group }}
+            ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+    once-first:
+        name: Build once first (${{ matrix.group }})
+        needs: repeated-before
+        strategy:
+            fail-fast: false
+            matrix:
+                group: [graph, delivery]
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            build_once: true
+            group: ${{ matrix.group }}
+            ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+    once-repeat:
+        name: Build once repeat (${{ matrix.group }})
+        needs: once-first
+        strategy:
+            fail-fast: false
+            matrix:
+                group: [graph, delivery]
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            build_once: true
+            group: ${{ matrix.group }}
+            ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+    repeated-after:
+        name: Repeated builds after (${{ matrix.group }})
+        needs: once-repeat
+        strategy:
+            fail-fast: false
+            matrix:
+                group: [graph, delivery]
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            build_once: false
+            group: ${{ matrix.group }}
+            ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
