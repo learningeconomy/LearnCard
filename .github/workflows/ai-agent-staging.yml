@@ -17,8 +17,8 @@ permissions:
     actions: read
 
 env:
-    NODE_OPTIONS: '--max-old-space-size=4096'
-    NX_NO_CLOUD: true
+    CI: true
+    MONGOMS_DISABLE_POSTINSTALL: '1'
 
 jobs:
     select:

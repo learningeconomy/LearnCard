@@ -297,3 +297,34 @@ test('independent handoff shares target lock and approvals with manual/productio
         'same AI tests in both entrypoints'
     );
 });
+
+test('Trigger receives the deployed SHA even when the workflow default SHA is newer', t => {
+    const cwd = mkdtempSync(path.join(tmpdir(), 'ai-trigger-sha-'));
+    t.after(() => rmSync(cwd, { recursive: true, force: true }));
+    const trigger = read('ai-agent-rollout.yml').jobs['deploy-ai-agent'].steps.find(
+        s => s.name === 'Deploy Trigger.dev tasks'
+    );
+    assert.equal(trigger.env.DEPLOY_REVISION, '${{ inputs.revision }}');
+    writeFileSync(path.join(cwd, 'bunx'), '#!/bin/sh\nprintf "%s\\n" "$GITHUB_SHA" "$@"\n', {
+        mode: 0o755,
+    });
+    const result = execFileSync('bash', ['-e', '-c', trigger.run], {
+        encoding: 'utf8',
+        env: {
+            ...process.env,
+            PATH: `${cwd}:${process.env.PATH}`,
+            GITHUB_SHA: 'b'.repeat(40),
+            DEPLOY_REVISION: 'a'.repeat(40),
+        },
+    })
+        .trim()
+        .split('\n');
+    assert.deepEqual(result, [
+        'a'.repeat(40),
+        'trigger',
+        'deploy',
+        '--env',
+        'prod',
+        '--skip-update-check',
+    ]);
+});

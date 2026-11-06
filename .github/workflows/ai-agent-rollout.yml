@@ -262,10 +262,13 @@ jobs:
               if: steps.current.outputs.current == 'true'
               working-directory: services/learn-card-network/ai-agent
               env:
+                  DEPLOY_REVISION: ${{ inputs.revision }}
                   AI_AGENT_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
                   AI_AGENT_TRIGGER_ENVIRONMENT: ${{ env.TARGET_ENVIRONMENT }}
                   TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
-              run: bunx trigger deploy --env prod --skip-update-check
+              # trigger.config.ts uses GITHUB_SHA for its Sentry release. Override
+              # it only in this process; workflow_run's default SHA can be newer.
+              run: env GITHUB_SHA="$DEPLOY_REVISION" bunx trigger deploy --env prod --skip-update-check
 
             - name: Deploy ECS/Fargate service
               if: steps.current.outputs.current == 'true'
