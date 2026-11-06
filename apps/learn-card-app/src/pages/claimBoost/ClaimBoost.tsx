@@ -761,7 +761,9 @@ const ClaimBoost: React.FC<{
             claimStatusMessage = m['claim.recovery.pending']();
             actionButtonText = m['claim.recovery.check']();
         } else if (claimProgress.status === 'context-changed') {
-            claimStatusMessage = m['claim.recovery.contextChanged']();
+            claimStatusMessage = isClaimed
+                ? m['claim.recovery.savedToOriginalAccount']()
+                : m['claim.recovery.contextChanged']();
         } else if (claimProgress.status === 'terminal') {
             const terminalMessages = {
                 expired: m['claim.recovery.expired'](),

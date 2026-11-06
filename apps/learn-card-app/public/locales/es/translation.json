@@ -3360,6 +3360,7 @@
             "exhausted": "Este enlace ha alcanzado su límite de solicitudes. Pide un nuevo enlace al emisor.",
             "unavailable": "Este enlace no está disponible. Pide al emisor que lo revise.",
             "contextChanged": "Tu cuenta o los ajustes de conexión cambiaron; cierra esta página y vuelve a abrir el enlace original para continuar.",
+            "savedToOriginalAccount": "Tu credencial se guardó en tu cuenta original.",
             "tryAgain": "Intentar de nuevo",
             "check": "Buscar mi credencial",
             "save": "Guardar mi credencial",

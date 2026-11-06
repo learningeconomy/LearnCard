@@ -163,6 +163,8 @@ vi.mock('../../paraglide/messages.js', () => ({
     'claim.recovery.unavailable': () => 'This claim link is not available',
     'claim.recovery.contextChanged': () =>
         'Account or connection changed; close and reopen the link',
+    'claim.recovery.savedToOriginalAccount': () =>
+        'Your credential was saved to your original account.',
     'claim.recovery.tryAgain': () => 'Try again',
     'claim.recovery.check': () => 'Check for my credential',
     'claim.recovery.save': () => 'Save my credential',

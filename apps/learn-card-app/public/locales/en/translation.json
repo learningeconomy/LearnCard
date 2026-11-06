@@ -3081,6 +3081,7 @@
             "exhausted": "This claim link has reached its claim limit. Ask the issuer for a new link.",
             "unavailable": "This claim link isn't available. Ask the issuer to check the link.",
             "contextChanged": "Your account or connection settings changed; close this page and reopen the original link to continue.",
+            "savedToOriginalAccount": "Your credential was saved to your original account.",
             "tryAgain": "Try again",
             "check": "Check for my credential",
             "save": "Save my credential",

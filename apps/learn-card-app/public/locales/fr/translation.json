@@ -3357,6 +3357,7 @@
             "exhausted": "Ce lien a atteint sa limite d'utilisation. Demandez un nouveau lien à l'émetteur.",
             "unavailable": "Ce lien n'est pas disponible. Demandez à l'émetteur de le vérifier.",
             "contextChanged": "Votre compte ou les paramètres de connexion ont changé ; fermez cette page et rouvrez le lien d’origine pour continuer.",
+            "savedToOriginalAccount": "Votre justificatif a été enregistré dans votre compte d’origine.",
             "tryAgain": "Réessayer",
             "check": "Rechercher mon justificatif",
             "save": "Enregistrer mon justificatif",
