@@ -17,6 +17,16 @@ interface ConnectionState {
 
 const connections = new WeakMap<SQLiteConnectionAccess, ConnectionState>();
 const schemas = new WeakMap<SQLiteConnectionAccess, Map<string, Promise<void>>>();
+const reloadedOnOpen = new WeakSet<SQLiteConnectionAccess>();
+
+/**
+ * Mark a connection whose every open may load a different database, so ensured
+ * schemas are re-checked after each close. On web, jeep-sqlite reloads the
+ * database from IndexedDB on open, and logout deletes that store.
+ */
+export const markSQLiteReloadedOnOpen = (db: SQLiteConnectionAccess): void => {
+    reloadedOnOpen.add(db);
+};
 
 const transition = (state: ConnectionState, operation: () => Promise<void>): Promise<void> => {
     const result = state.transition.then(operation);
@@ -68,9 +78,7 @@ export const withSQLiteDatabase = async <T, Database extends SQLiteConnectionAcc
         connection.users--;
         await transition(connection, async () => {
             if (!connection.users && connection.open === true) {
-                // The next open may load a different database: on web, jeep-sqlite
-                // reloads it from IndexedDB, which logout deletes. Re-check schemas.
-                schemas.delete(db);
+                if (reloadedOnOpen.has(db)) schemas.delete(db);
                 try {
                     await db.close();
                     connection.open = false;
@@ -87,7 +95,10 @@ export const withSQLiteDatabase = async <T, Database extends SQLiteConnectionAcc
     }
 };
 
-/** Ensure an idempotent schema once per open of the connection, sharing concurrent initialization. */
+/**
+ * Ensure an idempotent schema once per connection (once per open for connections
+ * marked with `markSQLiteReloadedOnOpen`), sharing concurrent initialization.
+ */
 export const ensureSQLiteSchema = (
     db: Pick<SQLiteDBConnection, 'open' | 'close' | 'execute'>,
     name: string,
