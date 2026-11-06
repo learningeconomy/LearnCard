@@ -517,3 +517,63 @@ test('failed or mismatched mixed proofs never expose projects for exclusion', as
         assert.notEqual(result.reason, 'partial-matching-queue-proof');
     }
 });
+
+test('downloaded allProjects must exactly match the current selection before any exclusion', async t => {
+    for (const mutate of [
+        proof => {
+            delete proof.allProjects;
+        },
+        proof => {
+            proof.allProjects = [];
+        },
+        proof => {
+            proof.allProjects = ['escrow-enclave-app'];
+        },
+        proof => {
+            proof.allProjects.push('injected');
+        },
+        proof => {
+            proof.allProjects = 'escrow-enclave-app,outside';
+        },
+    ]) {
+        const f = fixture(t);
+        addTestProject(f.graph, 'outside');
+        record(f);
+        mutate(f.proof);
+        assert.deepEqual(await f.resolve(), { reused: false, reason: 'proof-mismatch' });
+    }
+});
+
+test('shared prerequisites and cycles terminate without dropping the audited closure', async t => {
+    const f = fixture(t);
+    addTestProject(f.graph, 'core', roots.core);
+    for (const project of ['types', 'helpers']) {
+        const id = `${project}:build`;
+        f.graph.tasks.tasks[id] = { id, target: { project, target: 'build' } };
+        f.graph.tasks.dependencies[id] = [];
+    }
+    f.graph.tasks.dependencies['core:test'] = ['helpers:build', 'types:build'];
+    f.graph.tasks.dependencies['helpers:build'] = ['types:build'];
+    record(f);
+    assert.deepEqual(f.proof.tasks, [
+        'core:test',
+        'escrow-enclave-app:test',
+        'helpers:build',
+        'types:build',
+    ]);
+    assert.equal((await f.resolve()).reused, true);
+    // The visitor terminates even on a cycle; only a successful real queue run
+    // can supply reusable evidence, so this graph fixture alone never grants it.
+    f.graph.tasks.dependencies['types:build'] = ['helpers:build'];
+    record(f);
+    assert.deepEqual(f.proof.tasks, [
+        'core:test',
+        'escrow-enclave-app:test',
+        'helpers:build',
+        'types:build',
+    ]);
+    f.graph.tasks.dependencies['types:build'].push('outside:build');
+    record(f);
+    assert.deepEqual(f.proof.projects, ['escrow-enclave-app']);
+    assert.deepEqual((await f.resolve()).remainingProjects, ['core']);
+});

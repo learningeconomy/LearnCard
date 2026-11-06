@@ -105,10 +105,26 @@ test('Deploy excludes only projects returned by a verified proof and retains fre
         determine.outputs.reused_test_projects,
         "${{ steps.test-proof.outputs.projects || '' }}"
     );
-    assert.match(
-        step(determine, 'Check merge-queue test proof').with.script,
-        /core.setOutput\('projects', \(result.projects \|\| \[\]\).join\(','\)\)/
-    );
+    const outputLine = step(determine, 'Check merge-queue test proof')
+        .with.script.split('\n')
+        .find(line => line.includes("core.setOutput('projects'"));
+    assert.ok(outputLine);
+    for (const [result, expected] of [
+        [{ reused: true, projects: ['core'] }, ''],
+        [{ reused: false, projects: ['core'] }, 'core'],
+        [{ reused: false }, ''],
+    ]) {
+        const outputs = {};
+        require('node:vm').runInNewContext(outputLine, {
+            result,
+            core: {
+                setOutput: (key, value) => {
+                    outputs[key] = value;
+                },
+            },
+        });
+        assert.equal(outputs.projects, expected);
+    }
     const run = step(consumer, 'Run tests');
     assert.equal(
         run.env.REUSED_TEST_PROJECTS,

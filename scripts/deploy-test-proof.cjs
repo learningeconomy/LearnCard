@@ -101,6 +101,7 @@ function reusableSelection(document) {
         try {
             const closure = new Set();
             const visit = id => {
+                if (closure.has(id)) return;
                 requireProof(Object.hasOwn(tasks, id), 'unsupported-test-scope');
                 // A test prerequisite could introduce another test configuration
                 // that cannot safely be excluded by project name.
@@ -109,7 +110,6 @@ function reusableSelection(document) {
                     'unsupported-test-scope'
                 );
                 requireProof(Array.isArray(dependencies[id]), 'unsupported-test-scope');
-                if (closure.has(id)) return;
                 closure.add(id);
                 for (const dependency of dependencies[id]) visit(dependency);
             };
@@ -323,7 +323,8 @@ async function resolveReuse({
             attempt: run.run_attempt,
             actualRuntime: runtime(cwd),
         });
-        // Exact range, selection, runtime and protocol; unknown fields are rejected.
+        // Exact range, selection (including allProjects), runtime and protocol;
+        // unknown fields are rejected before any exclusions are returned.
         try {
             assert.deepEqual(proof, expected);
         } catch {
