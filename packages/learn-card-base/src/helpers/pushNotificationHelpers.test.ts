@@ -207,6 +207,25 @@ describe('parseNotificationFromPushRaw', () => {
         expect(parsed?.data?.metadata).toMatchObject({ refreshId: 'r-1' });
     });
 });
+
+describe('campaign notification entry', () => {
+    it.each([
+        ['campaign-one', '/m/campaign-one'],
+        ['a/b ?#', '/m/a%2Fb%20%3F%23'],
+        ['', '/notifications'],
+        ['  ', '/notifications'],
+        [undefined, '/notifications'],
+        [42, '/notifications'],
+    ])('routes ID %s safely', (campaignId, route) => {
+        expect(
+            resolveNotificationRoute({
+                type: 'ANNOUNCEMENT',
+                data: { metadata: { campaignId, campaignHasInApp: true } },
+            } as unknown as LCNNotification)
+        ).toBe(route);
+    });
+});
+
 describe('CONSENT_FLOW_CONTRACT_UPDATED notification boundaries', () => {
     const updateNotification = (data?: Record<string, unknown>): LCNNotification =>
         ({
@@ -247,3 +266,15 @@ describe('CONSENT_FLOW_CONTRACT_UPDATED notification boundaries', () => {
         );
     });
 });
+
+it.each([false, undefined, 'true'])(
+    'keeps announcements without a confirmed destination in the inbox (%s)',
+    campaignHasInApp => {
+        expect(
+            resolveNotificationRoute({
+                type: 'ANNOUNCEMENT',
+                data: { metadata: { campaignId: 'pilot', campaignHasInApp } },
+            } as unknown as LCNNotification)
+        ).toBe('/notifications');
+    }
+);

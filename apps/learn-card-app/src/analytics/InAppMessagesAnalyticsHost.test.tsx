@@ -10,10 +10,14 @@ const state = vi.hoisted(() => ({
     onEvent: undefined as InAppMessageHostProps['onEvent'],
 }));
 vi.mock('learn-card-base', () => ({
+    useMyCampaigns: () => undefined,
     InAppMessageHost: (props: InAppMessageHostProps) => {
         state.onEvent = props.onEvent;
         return null;
     },
+}));
+vi.mock('../pages/campaigns/useCampaignTestDelivery', () => ({
+    useCampaignTestDelivery: () => undefined,
 }));
 vi.mock('./context', () => ({ useAnalytics: () => ({ track: state.track }) }));
 afterEach(() => {
@@ -50,5 +54,6 @@ it('forwards only allowlisted metadata and excludes previews', () => {
         stepIndex: 1,
     });
     state.onEvent?.({ ...event, source: 'override' });
+    state.onEvent?.({ ...event, source: 'test' });
     expect(state.track).toHaveBeenCalledOnce();
 });

@@ -24,6 +24,7 @@ import type { KeyDerivationStrategy, ServerKeyStatus } from '@learncard/types';
 import { AuthSessionError } from '@learncard/types';
 import { getLogger } from '../logging/logger';
 import { isNetworkError } from '../helpers/networkError';
+import { ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE } from './accountSignInErrors';
 
 const log = getLogger('web3auth-key-derivation');
 const DERIVATION_LOCK = 'learncard:web3auth:key-derivation';
@@ -59,6 +60,130 @@ class Web3AuthNetworkError extends Error {
         this.name = 'Web3AuthNetworkError';
     }
 }
+
+/**
+ * The account already signs in with SSS. Deriving a Web3Auth key for it would
+ * produce a different, empty identity, so sign-in stops instead.
+ */
+export class AccountUsesNewerSignInError extends Error {
+    readonly code = 'account_uses_newer_sign_in';
+
+    constructor() {
+        super(ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE);
+        this.name = 'AccountUsesNewerSignInError';
+    }
+}
+
+/**
+ * Per-attempt lookup deadlines. Each failed attempt (e.g. a cold lca-api that
+ * missed the first deadline) gets the next, longer one when the user retries;
+ * a successful lookup starts over. Kept under the coordinator's status deadline
+ * (`ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS`), so a slow lookup ends in a visible
+ * retryable error rather than the coordinator's silent return to idle.
+ */
+const ACCOUNT_LOOKUP_TIMEOUTS_MS = [3_500, 7_000, 14_000, 28_000] as const;
+
+/**
+ * Coordinator `serverStatusTimeoutMs` for strategies that set `accountLookup`:
+ * the longest lookup deadline plus headroom.
+ */
+export const ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS =
+    ACCOUNT_LOOKUP_TIMEOUTS_MS[ACCOUNT_LOOKUP_TIMEOUTS_MS.length - 1] + 2_000;
+
+const LOOKUP_FAILED_MESSAGE = 'We couldn’t finish signing you in. Please try again.';
+
+/** lca-api's `verifyAndGetContactMethod` refusal (`routes/keys.ts`). */
+const MISSING_CONTACT_METHOD_MESSAGE = 'User must have an email or phone number';
+
+const isMissingContactMethod = async (response: Response): Promise<boolean> => {
+    const body = (await response.json().catch(() => undefined)) as
+        { code?: unknown; message?: unknown } | undefined;
+    return body?.code === 'BAD_REQUEST' && body.message === MISSING_CONTACT_METHOD_MESSAGE;
+};
+
+/** Linear, unlike a `/\/+$/` replace on configured input. */
+const trimTrailingSlashes = (url: string): string => {
+    let end = url.length;
+    while (end > 0 && url[end - 1] === '/') end--;
+    return url.slice(0, end);
+};
+
+/**
+ * Whether Web3Auth would derive a different key than the signed-in account's:
+ * lca-api has a key record for this login and does not confirm
+ * (`isWeb3AuthLogin`) that Web3Auth through this login derives that account's
+ * key. That covers SSS accounts and logins linked to a mid-migration account by
+ * PIN sign-in. Only a missing record (a `null` body) skips the check. lca-api
+ * answers a missing record with `null`, never 404, so a 404 means a wrong URL.
+ *
+ * Anything that cannot be read fails closed. A device the browser reports as
+ * offline gets a network error (the offline UI owns it); a timeout or an
+ * unreachable server on an online device gets a visible, retryable error, since
+ * a network error would return a signed-in user to the login page silently.
+ */
+const web3AuthWouldSplitAccount = async (
+    lookup: NonNullable<Web3AuthStrategyConfig['accountLookup']>,
+    token: string,
+    providerType: string,
+    timeoutMs: number
+): Promise<boolean> => {
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+    }, timeoutMs);
+
+    try {
+        let response: Response;
+        try {
+            response = await fetch(`${trimTrailingSlashes(lookup.serverUrl)}/keys/auth-share`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(lookup.tenantId ? { 'X-Tenant-Id': lookup.tenantId } : {}),
+                },
+                signal: controller.signal,
+                body: JSON.stringify({ authToken: token, providerType }),
+            });
+        } catch (error) {
+            const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+            log.warn('Web3Auth account lookup failed', {
+                timedOut,
+                timeoutMs,
+                offline,
+                networkFailure: isNetworkError(error),
+            });
+            if (offline) throw new Web3AuthNetworkError();
+            throw new Error(LOOKUP_FAILED_MESSAGE, { cause: error });
+        }
+
+        if (!response.ok) {
+            // lca-api refuses a login with no email or phone before any lookup. Every
+            // route that creates or links an SSS login requires one, so such a login
+            // cannot reach an SSS account: keep Web3Auth (it signed in before lookups).
+            if (response.status === 400 && (await isMissingContactMethod(response))) {
+                log.info('Web3Auth account lookup skipped: login has no email or phone');
+                return false;
+            }
+            log.warn('Web3Auth account lookup refused', { httpStatus: response.status });
+            throw new Error(LOOKUP_FAILED_MESSAGE);
+        }
+
+        // The body includes the SSS auth share; only `isWeb3AuthLogin` is read.
+        const data = (await response.json().catch(() => undefined)) as
+            { isWeb3AuthLogin?: unknown } | null | undefined;
+        if (data === undefined) {
+            log.warn('Web3Auth account lookup unreadable', { timedOut, timeoutMs });
+            throw new Error(LOOKUP_FAILED_MESSAGE);
+        }
+
+        // An older lca-api omits `isWeb3AuthLogin`: every existing record then stops.
+        return data !== null && data.isWeb3AuthLogin !== true;
+    } finally {
+        clearTimeout(timer);
+    }
+};
 
 /**
  * The shape of a JWT: a base64url JSON header (`{"` encodes to `eyJ`) followed
@@ -145,6 +270,18 @@ export interface Web3AuthStrategyConfig {
     /** Recheck live auth after waiting for another tab, and before returning its key. */
     isSessionCurrent?: (uid: string) => Promise<boolean>;
 
+    /**
+     * Before deriving, ask lca-api which method this account signs in with and
+     * stop if it is already SSS (see `AccountUsesNewerSignInError`). Set for
+     * sign-in, so a stale build or a config rollback cannot split an SSS
+     * account; omit for legacy-key extraction during migration.
+     */
+    accountLookup?: {
+        /** lca-api base URL (`auth.sss.serverUrl`). */
+        serverUrl: string;
+        tenantId?: string;
+    };
+
     /** Optional Ethereum chain config overrides */
     chainConfig?: {
         chainId?: string;
@@ -208,6 +345,8 @@ export const createWeb3AuthStrategy = (
     // Cached credentials from fetchServerKeyStatus → used by reconstructKey
     let cachedToken: string | null = null;
     let cachedUid: string | null = null;
+    // Consecutive failed account lookups; picks the next lookup deadline.
+    let lookupFailures = 0;
 
     /**
      * Connect to Web3Auth SFA and extract the Ethereum private key.
@@ -454,11 +593,53 @@ export const createWeb3AuthStrategy = (
 
         fetchServerKeyStatus: async (
             token: string,
-            _providerType: string
+            providerType: string
         ): Promise<ServerKeyStatus> => {
-            // Cache the token and decode the uid for use in reconstructKey
+            // Credentials are replaced only once this sign-in may proceed, and cleared
+            // when it stops, so an in-flight derivation keeps its own until then.
+            const forgetCredentials = (): void => {
+                cachedToken = null;
+                cachedUid = null;
+            };
+            let uid: string;
+            try {
+                uid = decodeJwtSub(token);
+            } catch (error) {
+                forgetCredentials();
+                throw error;
+            }
+
+            if (config.accountLookup) {
+                const timeoutMs =
+                    ACCOUNT_LOOKUP_TIMEOUTS_MS[
+                        Math.min(lookupFailures, ACCOUNT_LOOKUP_TIMEOUTS_MS.length - 1)
+                    ]!;
+                let wouldSplit: boolean;
+                try {
+                    wouldSplit = await web3AuthWouldSplitAccount(
+                        config.accountLookup,
+                        token,
+                        providerType,
+                        timeoutMs
+                    );
+                } catch (error) {
+                    lookupFailures++;
+                    forgetCredentials();
+                    throw error;
+                }
+                lookupFailures = 0;
+                if (wouldSplit) {
+                    forgetCredentials();
+                    log.warn(
+                        'Web3Auth sign-in stopped: this login does not derive the account key'
+                    );
+                    throw new AccountUsesNewerSignInError();
+                }
+            }
+
+            // Cache the token and uid for use in reconstructKey
             cachedToken = token;
-            cachedUid = decodeJwtSub(token);
+            cachedUid = uid;
 
             // Web3Auth always has a key for any authenticated user —
             // the key is derived deterministically from token + verifier.

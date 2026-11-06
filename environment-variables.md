@@ -104,8 +104,82 @@ Whitespace is trimmed. An empty/unset value grants nobody campaign administratio
 In non-bundle Lambda deployments it is forwarded like `APP_STORE_ADMIN_PROFILE_IDS`.
 No administrators or production campaigns are enabled by this change.
 
-LC-2265 adds setup, audiences and engagement state only. Dispatch settings and queue
-configuration belong to LC-2266; this setting does not enable notification delivery.
+Campaign notification delivery additionally uses:
+
+| Variable                          | Default       | Purpose                                                                                                                     |
+| --------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `CAMPAIGN_QUEUE_URL`              | unset locally | Serverless injects the `campaign-queue` URL. Missing URL or `IS_OFFLINE=true` uses the awaited, non-durable local fallback. |
+| `CAMPAIGN_DISPATCH_PAGE_SIZE`     | `1000`        | Recipients per wave, integer 1–1000.                                                                                        |
+| `CAMPAIGN_DISPATCH_DELAY_SECONDS` | `60`          | Delay between full pages, integer 0–900 (SQS maximum).                                                                      |
+
+Put non-secret page-size/delay tuning in the brain-service stage config, or override it in
+runtime environment configuration. Empty values use defaults; invalid values fail startup.
+The queue uses batch size 1, three retries, a 300-second worker timeout and the inbox VPC.
+The notification worker also needs that VPC to recheck eligibility and acknowledge delivery.
+Monitor the construct's dead-letter queue; redrive failed jobs or re-dispatch after fixing
+the cause. Retried notifications retain their receiver identity.
+
+Deploy lca-api's ANNOUNCEMENT enum **and campaign deduplication support first**, then brain,
+then the app integration. Only an explicit admin dispatch sends audience notifications.
+See [campaign delivery](services/learn-card-network/brain-service/src/accesslayer/campaign/README.md#notification-delivery-lc-2266)
+for retry semantics and the pilot sequence. No rollout is authorized by these changes.
+
+### Campaign email runtime settings (brain-service)
+
+For bundle-enabled deployments, manage both settings below in the **LearnCard Runtime**
+Infisical project, folder **`/learncard/brain-service/runtime`**, in **`staging`**
+and **`prod`**. ScoutPass uses `/scouts/brain-service/runtime` when campaign email
+is enabled there. These are service runtime values, not new GitHub Actions inputs.
+
+| Setting                       | Value / behavior                                                                                                                                                                                                                       |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POSTMARK_BROADCAST_STREAM`   | Postmark broadcast stream ID; defaults to `broadcast`. It is not a secret, but can be managed alongside the email credentials in the runtime bundle. The configured stream must have type Broadcasts.                                  |
+| `CAMPAIGN_UNSUBSCRIBE_SECRET` | Dedicated random signing secret of at least 32 bytes. Required for campaign email sends and unsubscribe validation; no default. Generate once per environment (for example, `openssl rand -hex 32`) and keep it stable across deploys. |
+
+Campaign CTA origins are public deployment configuration in `CAMPAIGN_APP_ORIGINS`,
+a JSON object mapping tenant IDs to trusted app origins. The checked-in Brain stage
+configs provide LearnCard and VetPass production/staging origins and separate
+ScoutPass production/staging origins. Local development can use
+`CAMPAIGN_APP_ORIGINS={"learncard":"http://localhost:3000"}`. Custom deployments
+must supply their own mapping. Missing or invalid origins reject in-app campaign
+email preparation before reserving a send. Runtime bundle overrides use the same
+JSON string value; GitHub per-key wiring is unnecessary in bundle mode.
+
+The visible unsubscribe footer opens the sending Brain service's anonymous
+`/campaigns/unsubscribe/browser` confirmation page. This works for LearnCard,
+VetPass and ScoutPass and keeps staging links on staging Brain. The separate
+`/campaigns/unsubscribe` endpoint continues to handle provider one-click POSTs.
+Version 2 tokens use a durable recipient ID. Old name-based test links are rejected;
+send a new test email when checking the updated unsubscribe flow.
+
+Infisical auto-sync writes the folder as a flat JSON string map to
+`brain-service/dev/runtime-secrets` for `staging`, or
+`brain-service/production/runtime-secrets` for `prod`. LearnCard uses `us-east-1`;
+ScoutPass uses `eu-west-1`. Add these keys to the existing folder without replacing
+its other credentials, including `POSTMARK_API_KEY`.
+
+The deployment's existing `RUNTIME_SECRETS_ID` selects that bundle. Brain loads
+all bundle keys before validating configuration or importing the application;
+the API, campaign queue worker, and unsubscribe handler share this bootstrap.
+No per-key Serverless passthrough, GitHub secret, or checked-in stage override is
+needed for these two settings in bundle mode. Explicit non-empty Lambda environment
+values override the bundle, so an old explicit override must be removed if Infisical
+should control that value.
+
+After updating Infisical, confirm the sync succeeded and recycle/redeploy the Brain
+functions so warm processes reload the bundle. Keep the unsubscribe secret unchanged
+unless rotating intentionally: changing it invalidates links in previously sent emails.
+
+Local/Docker development still uses the private Brain `.env`; `env:pull` reads the
+separate **LearnCard** project at `/LearnCard/brain-service`, not the **LearnCard Runtime**
+sync folder. Configure local values there or in the local `.env` and restart/recreate
+Brain. See the service `.env.example` for key names; never commit the signing secret.
+
+A deployment without `RUNTIME_SECRETS_ID` does not read Infisical's AWS bundle.
+The existing deploy workflow does not forward `CAMPAIGN_UNSUBSCRIBE_SECRET` from
+GitHub; such a legacy stage needs explicit credential wiring before campaign email
+can be enabled. Prefer the runtime-bundle setup above. The stream can still use its
+`broadcast` default or checked-in non-secret stage config.
 
 ## Quick Start
 
@@ -431,7 +505,9 @@ Brain's bundle holds `SEED`, `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`,
 `SKILL_EMBEDDING_GOOGLE_API_KEY`, `SMART_RESUME_CLIENT_ID`, `SMART_RESUME_ACCESS_KEY`,
 `SMART_RESUME_CONTRACT_URI`, `CREDENTIAL_REFRESH_DIGEST_SECRET`,
 `SHARE_LINK_REQUEST_HASH_SECRET`, `APP_STORE_ADMIN_PROFILE_IDS`, `LOGIN_PROVIDER_DID`,
-and `NOTIFICATIONS_SERVICE_WEBHOOK_URL` when those integrations are used.
+and `NOTIFICATIONS_SERVICE_WEBHOOK_URL` when those integrations are used. Campaign email
+also uses `CAMPAIGN_UNSUBSCRIBE_SECRET` and optionally `POSTMARK_BROADCAST_STREAM`
+(default `broadcast`); manage them in the Infisical runtime folder described above.
 Optional provider credentials `SKILLS_PROVIDER_API_KEY`, `TWILIO_ACCOUNT_SID`, and
 `TWILIO_AUTH_TOKEN` also belong in the bundle, never stage files.
 Both checked-in Brain stages enable credential refresh, so include its digest secret;
