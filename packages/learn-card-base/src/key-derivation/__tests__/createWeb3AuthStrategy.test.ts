@@ -310,6 +310,7 @@ describe('Web3Auth account setup coordination', () => {
     });
 
     it('keeps the web SDK session on web and skips the session server on native', async () => {
+        vi.stubGlobal('window', { location: new URL('https://learncard.app') });
         const web = createWeb3AuthStrategy(config);
         await credentials(web);
         await derive(web);
@@ -320,6 +321,48 @@ describe('Web3Auth account setup coordination', () => {
         await credentials(native);
         expect(await derive(native)).toBe('synthetic-private-key');
         expect(sdk.options[1]).toMatchObject({ mode: 'node' });
+    });
+
+    it.each(['http://localhost:3000', 'https://localhost:3000', 'http://localhost:5173'])(
+        'skips the session write on %s without changing key derivation inputs',
+        async origin => {
+            vi.stubGlobal('window', { location: new URL(origin) });
+            const strategy = createWeb3AuthStrategy(config);
+            await credentials(strategy);
+
+            expect(await derive(strategy)).toBe('synthetic-private-key');
+            expect(sdk.options[0]).toMatchObject({
+                clientId: config.clientId,
+                web3AuthNetwork: config.web3AuthNetwork,
+                usePnPKey: true,
+                mode: 'node',
+            });
+            expect(sdk.connect).toHaveBeenCalledWith({
+                verifier: config.verifier,
+                verifierId: 'test-user',
+                idToken: token(),
+            });
+        }
+    );
+
+    it.each([
+        'http://127.0.0.1:3000',
+        'http://learncard.localhost:3000',
+        'https://localhost.example.com',
+    ])('preserves web sessions on %s', async origin => {
+        vi.stubGlobal('window', { location: new URL(origin) });
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        await derive(strategy);
+        expect(sdk.options[0]).not.toHaveProperty('mode');
+    });
+
+    it('can derive without a browser window', async () => {
+        vi.stubGlobal('window', undefined);
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        expect(await derive(strategy)).toBe('synthetic-private-key');
+        expect(sdk.options[0]).not.toHaveProperty('mode');
     });
 
     it('reports the failing SDK step and a redacted error without exposing credentials', async () => {
