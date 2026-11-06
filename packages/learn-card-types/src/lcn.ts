@@ -1368,6 +1368,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'GUARDIAN_APPROVED',
     'GUARDIAN_REJECTED',
     'APP_NOTIFICATION',
+    'ANNOUNCEMENT',
     'CREDENTIAL_REVOKED',
     'CREDENTIAL_SUSPENDED',
     'CREDENTIAL_UNSUSPENDED',
@@ -1415,6 +1416,13 @@ export type LCNNotificationInbox = z.infer<typeof LCNNotificationInboxValidator>
 export const LCNNotificationMetadataValidator = z
     .object({
         connectionPrompt: LCNConnectionPromptMetadataValidator.optional(),
+        campaignId: z
+            .string()
+            .regex(/^[a-z0-9-]{3,64}$/)
+            .optional(),
+        campaignCreatedAt: z.iso.datetime().optional(),
+        campaignHasInApp: z.boolean().optional(),
+        campaignTestId: z.uuid().optional(),
     })
     .catchall(z.unknown());
 export type LCNNotificationMetadata = z.infer<typeof LCNNotificationMetadataValidator>;
