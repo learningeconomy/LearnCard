@@ -6,7 +6,7 @@ inputs:
         description: 'Save the Bun dependency cache after the job; disable for cache consumers.'
         default: 'true'
     dependency-profile:
-        description: 'workspace (default) or brain-integration with its workspace dependencies'
+        description: 'workspace (legacy fallback) or brain-integration (clean exact-key cache)'
         default: 'workspace'
     cache-suffix:
         description: 'Optional isolated cache namespace for cold/warm benchmarks'
@@ -78,12 +78,4 @@ runs:
           env:
               PROFILE: ${{ inputs.dependency-profile }}
               BUN_INSTALL_CACHE_DIR: ${{ steps.cache.outputs.path }}
-          run: |
-              if [[ "$PROFILE" == brain-integration ]]; then
-                bun install --frozen-lockfile \
-                  --filter '@learncard/network-brain-service...' \
-                  --filter '@learncard/lca-api-service...' \
-                  --filter '@learncard/nx-run-command...'
-              else
-                bun install --frozen-lockfile
-              fi
+          run: bun install --frozen-lockfile

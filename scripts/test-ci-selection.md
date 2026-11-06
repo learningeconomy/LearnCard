@@ -83,20 +83,20 @@ application verification catalog.
 ## Integration dependency cache
 
 The two integration groups opt into the setup action's `brain-integration`
-profile. Bun installs Brain, LCA and the Nx executor plus their transitive
-workspace dependencies (`...` filters); the root toolchain remains included.
-Other setup consumers use the existing full-workspace profile by default.
+cache profile. Every job still installs the full workspace with the same frozen
+lockfile. Other setup consumers retain the existing cache and fallback behavior.
 
 The profile restores only its own Bun package cache under the runner temporary
 directory. Its key includes OS/architecture, Bun version, Node pin, lockfile,
 workspace manifests, Bun configuration and the setup action. It uses exact hits,
-without falling back to the large full-workspace cache or older dependency graphs.
-Every run still performs a frozen install; neither installed modules nor test
+without carrying packages forward from older lockfiles through a broad fallback.
+Every new key starts with an empty package store, so the saved archive contains
+packages downloaded for the current install. Neither installed modules nor test
 results are cached by this change.
 
 Apply `benchmark-integration-cache` to opt into a cold/warm comparison. A unique
-run-ID cache suffix forces two cold filtered jobs (graph and delivery). Two later
-rounds each run both groups with both the full and filtered profiles, for ten
+run-ID cache suffix forces two cold scoped jobs (graph and delivery). Two later
+rounds each run both groups with both the legacy and scoped profiles, for ten
 jobs total and at most four in parallel. Inspect cache misses/hits and archive
 size in setup logs, and compare setup time, total runner time, elapsed span and
 identical test counts. A failed cold run blocks the warm comparison. Manual

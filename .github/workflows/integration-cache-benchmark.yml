@@ -1,7 +1,7 @@
 name: Integration cache benchmark
 
-# A unique namespace forces a cold filtered-cache sample, then two concurrent
-# comparisons exercise the same six commands with full and filtered warm caches.
+# A unique namespace forces a cold scoped-cache sample, then two concurrent
+# comparisons exercise the same six commands with full and scoped warm caches.
 on:
     pull_request:
         types: [labeled]
@@ -13,7 +13,7 @@ permissions:
 jobs:
     cold:
         if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'benchmark-integration-cache'
-        name: Cold filtered (${{ matrix.group }})
+        name: Cold scoped (${{ matrix.group }})
         strategy:
             fail-fast: false
             matrix:

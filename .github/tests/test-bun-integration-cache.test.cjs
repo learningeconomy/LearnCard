@@ -64,7 +64,7 @@ test('default workspace behavior retains the existing cache key and restore fall
     assert.equal(result.outputs['restore-key'], 'Linux-bun-');
 });
 
-test('filtered cache is isolated from full workspace and old dependency graphs', t => {
+test('scoped cache is isolated from full workspace and old dependency graphs', t => {
     const normal = choose(t, 'brain-integration');
     const cold = choose(t, 'brain-integration', 'benchmark-123');
     assert.equal(normal.status, 0, normal.stderr);
@@ -93,7 +93,7 @@ test('filtered cache is isolated from full workspace and old dependency graphs',
     assert.equal(choose(t, 'brain-integration', 'bad\nkey').status, 1);
 });
 
-test('both real shell branches retain frozen installs; filtered install includes workspace dependency closures', t => {
+test('both profiles retain the identical full frozen install', t => {
     const dir = mkdtempSync(join(tmpdir(), 'lc-bun-install-'));
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     writeFileSync(
@@ -115,32 +115,9 @@ test('both real shell branches retain frozen installs; filtered install includes
         });
         assert.equal(result.status, 0, result.stderr);
         const args = readFileSync(join(dir, 'args'), 'utf8').trim().split('\n');
-        assert.deepEqual(
-            args,
-            profile === 'workspace'
-                ? ['install', '--frozen-lockfile']
-                : [
-                      'install',
-                      '--frozen-lockfile',
-                      '--filter',
-                      '@learncard/network-brain-service...',
-                      '--filter',
-                      '@learncard/lca-api-service...',
-                      '--filter',
-                      '@learncard/nx-run-command...',
-                  ]
-        );
+        assert.deepEqual(args, ['install', '--frozen-lockfile']);
         assert.equal(readFileSync(join(dir, 'cache'), 'utf8'), dir);
     }
-    for (const [path, name] of [
-        [
-            '../../services/learn-card-network/brain-service/package.json',
-            '@learncard/network-brain-service',
-        ],
-        ['../../services/learn-card-network/lca-api/package.json', '@learncard/lca-api-service'],
-        ['../../tools/executors/workspace/run-command/package.json', '@learncard/nx-run-command'],
-    ])
-        assert.equal(require(path).name, name);
 });
 
 test('production groups opt in; benchmark forces a cold cache then compares identical warm suites twice', () => {
