@@ -188,7 +188,13 @@ test('different deployment range, target selection, runtime and protocol retain 
             f.proof.runtime.os = 'darwin';
         },
         f => {
-            f.proof.version = 2;
+            f.proof.version = 3;
+        },
+        f => {
+            f.proof.version = 1;
+        },
+        f => {
+            f.proof.allProjects = [];
         },
         f => {
             f.proof.extra = 'unexpected';
@@ -370,4 +376,144 @@ test('native-capable dependencies, unknown prerequisites and cached tests are ou
     }
     assert.throws(() => selection({}), /unsupported-test-scope/);
     assert.throws(() => selection({ ...graph(), tasks: { tasks: {} } }), /unsupported-test-scope/);
+});
+
+const addTestProject = (g, project, root = `packages/${project}`) => {
+    g.graph.nodes[project] = { data: { root } };
+    g.graph.dependencies[project] = [];
+    const id = `${project}:test`;
+    g.tasks.tasks[id] = { id, target: { project, target: 'test' }, cache: false };
+    g.tasks.dependencies[id] = [];
+};
+const record = f => {
+    f.proof = createProof({
+        graph: f.graph,
+        base,
+        head,
+        repository: 'learningeconomy/LearnCard',
+        repositoryId: 1,
+        runId: 100,
+        attempt: 2,
+        actualRuntime: { ...runtime },
+    });
+};
+
+test('mixed deployment reuses only audited tests and keeps native-capable tests fresh', async t => {
+    const f = fixture(t);
+    addTestProject(f.graph, 'network-brain-service', 'services/learn-card-network/brain-service');
+    f.graph.graph.dependencies['network-brain-service'] = [
+        { target: 'npm:@learncard/didkit-plugin-node' },
+    ];
+    record(f);
+    assert.equal(f.proof.version, 2);
+    assert.deepEqual(f.proof.projects, ['escrow-enclave-app']);
+    assert.deepEqual(f.proof.tasks, ['escrow-enclave-app:test']);
+    assert.deepEqual(await f.resolve(), {
+        reused: false,
+        reason: 'partial-matching-queue-proof',
+        runId: 100,
+        attempt: 2,
+        projects: ['escrow-enclave-app'],
+        remainingProjects: ['network-brain-service'],
+    });
+});
+
+test('each audited project must independently pass dependency and task prerequisite checks', async t => {
+    for (const mutate of [
+        g => g.graph.dependencies.core.push({ target: 'npm:@learncard/didkit-plugin-node' }),
+        g => g.tasks.dependencies['core:test'].push('missing:build'),
+        g => {
+            g.tasks.tasks['core:test'].cache = true;
+        },
+        g => {
+            g.tasks.tasks['core:test'].target.configuration = 'other';
+        },
+        g => {
+            g.tasks.tasks['core:test'].continuous = true;
+        },
+        g => {
+            g.graph.nodes.core.data.root = 'packages/other';
+        },
+        g => g.tasks.dependencies['core:test'].push('escrow-enclave-app:test'),
+    ]) {
+        const f = fixture(t);
+        addTestProject(f.graph, 'core', roots.core);
+        mutate(f.graph);
+        record(f);
+        assert.deepEqual(f.proof.projects, ['escrow-enclave-app']);
+        assert.deepEqual((await f.resolve()).remainingProjects, ['core']);
+    }
+});
+
+test('mixed proof includes audited build prerequisites and binds the whole test selection', async t => {
+    const f = fixture(t);
+    addTestProject(f.graph, 'core', roots.core);
+    addTestProject(f.graph, 'outside');
+    f.graph.graph.dependencies.core = [{ target: 'types' }];
+    f.graph.tasks.tasks['types:build'] = {
+        id: 'types:build',
+        target: { project: 'types', target: 'build' },
+    };
+    f.graph.tasks.dependencies['types:build'] = [];
+    f.graph.tasks.dependencies['core:test'] = ['types:build'];
+    record(f);
+    assert.deepEqual(f.proof.tasks, ['core:test', 'escrow-enclave-app:test', 'types:build']);
+    assert.deepEqual((await f.resolve()).projects, ['core', 'escrow-enclave-app']);
+    addTestProject(f.graph, 'another-outside');
+    assert.deepEqual(await f.resolve(), { reused: false, reason: 'proof-mismatch' });
+});
+
+test('large mixed graphs can prove a small audited closure without auditing unrelated tests', async t => {
+    const f = fixture(t);
+    for (let i = 0; i < 110; i++) addTestProject(f.graph, `outside-${i}`);
+    record(f);
+    assert.deepEqual(f.proof.tasks, ['escrow-enclave-app:test']);
+    assert.equal((await f.resolve()).remainingProjects.length, 110);
+});
+
+test('ambiguous duplicate test configurations and entirely unaudited graphs cannot skip tests', async t => {
+    const f = fixture(t);
+    f.graph.tasks.tasks['escrow-enclave-app:test:other'] = {
+        id: 'escrow-enclave-app:test:other',
+        target: { project: 'escrow-enclave-app', target: 'test', configuration: 'other' },
+        cache: false,
+    };
+    f.graph.tasks.dependencies['escrow-enclave-app:test:other'] = [];
+    assert.throws(() => record(f), /unsupported-test-scope/);
+    assert.deepEqual(await f.resolve(), { reused: false, reason: 'unsupported-test-scope' });
+    f.graph = graph();
+    f.graph.tasks.tasks = {};
+    f.graph.tasks.dependencies = {};
+    addTestProject(f.graph, 'outside');
+    assert.throws(() => record(f), /unsupported-test-scope/);
+    assert.deepEqual(await f.resolve(), { reused: false, reason: 'unsupported-test-scope' });
+});
+
+test('failed or mismatched mixed proofs never expose projects for exclusion', async t => {
+    for (const mutate of [
+        f => {
+            f.proof.base = 'c'.repeat(40);
+        },
+        f => {
+            f.proof.runtime.node = 'v22.1.0';
+        },
+        f => {
+            f.proof.allProjects = ['escrow-enclave-app'];
+        },
+        f => {
+            f.job.conclusion = 'failure';
+        },
+        f => {
+            f.proof.projects.push('outside');
+        },
+    ]) {
+        const f = fixture(t);
+        addTestProject(f.graph, 'outside');
+        record(f);
+        mutate(f);
+        const result = await f.resolve();
+        assert.equal(result.reused, false);
+        assert.equal(result.projects, undefined);
+        assert.notEqual(result.reason, 'partial-matching-queue-proof');
+    }
 });

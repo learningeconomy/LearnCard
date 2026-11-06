@@ -79,6 +79,66 @@ function selection(document) {
     return { projects: sorted(projects), tasks: ids };
 }
 
+/** Keep unaudited tests fresh while proving each audited test's entire prerequisite closure. */
+function reusableSelection(document) {
+    const tasks = document?.tasks?.tasks;
+    const dependencies = document?.tasks?.dependencies;
+    requireProof(tasks && dependencies, 'unsupported-test-scope');
+    const ids = Object.keys(tasks);
+    requireProof(ids.length > 0 && ids.length <= 1000, 'unsupported-test-scope');
+    const tests = ids.filter(id => tasks[id]?.target?.target === 'test');
+    const allProjects = tests.map(id => tasks[id].target.project);
+    requireProof(
+        allProjects.length > 0 &&
+            allProjects.every(project => typeof project === 'string' && project.length > 0) &&
+            new Set(allProjects).size === allProjects.length,
+        'unsupported-test-scope'
+    );
+    const covered = new Set();
+    for (const testId of tests) {
+        const project = tasks[testId].target.project;
+        if (!Object.hasOwn(ROOTS, project) || project === 'nx-run-command') continue;
+        try {
+            const closure = new Set();
+            const visit = id => {
+                requireProof(Object.hasOwn(tasks, id), 'unsupported-test-scope');
+                // A test prerequisite could introduce another test configuration
+                // that cannot safely be excluded by project name.
+                requireProof(
+                    id === testId || tasks[id].target?.target === 'build',
+                    'unsupported-test-scope'
+                );
+                requireProof(Array.isArray(dependencies[id]), 'unsupported-test-scope');
+                if (closure.has(id)) return;
+                closure.add(id);
+                for (const dependency of dependencies[id]) visit(dependency);
+            };
+            visit(testId);
+            const subset = {
+                ...document,
+                tasks: {
+                    tasks: Object.fromEntries([...closure].map(id => [id, tasks[id]])),
+                    dependencies: Object.fromEntries(
+                        [...closure].map(id => [id, dependencies[id]])
+                    ),
+                },
+            };
+            selection(subset);
+            for (const id of closure) covered.add(id);
+        } catch (error) {
+            if (error.proofReason !== 'unsupported-test-scope') throw error;
+        }
+    }
+    const scope = selection({
+        ...document,
+        tasks: {
+            tasks: Object.fromEntries([...covered].map(id => [id, tasks[id]])),
+            dependencies: Object.fromEntries([...covered].map(id => [id, dependencies[id]])),
+        },
+    });
+    return { ...scope, allProjects: sorted(allProjects) };
+}
+
 function runtime(cwd) {
     return {
         os: 'linux',
@@ -110,7 +170,7 @@ function createProof({
     );
     requireProof([repositoryId, runId, attempt].every(positive), 'invalid-proof');
     return {
-        version: 1,
+        version: 2,
         repository,
         repositoryId,
         runId,
@@ -119,7 +179,7 @@ function createProof({
         environment: 'ci-tests-fixture-v1',
         base,
         head,
-        ...selection(graph),
+        ...reusableSelection(graph),
         runtime: actualRuntime,
     };
 }
@@ -159,7 +219,7 @@ async function resolveReuse({
             SHA.test(base) && SHA.test(head) && base !== head && base !== EMPTY_TREE,
             'invalid-range'
         );
-        const scope = selection(graph);
+        const scope = reusableSelection(graph);
         const workflow = (
             await github.rest.actions.getWorkflow({ ...repo, workflow_id: 'test.yml', request })
         ).data;
@@ -283,12 +343,17 @@ async function resolveReuse({
             trusted(latest) && latest.run_attempt === run.run_attempt,
             'queue-run-changed'
         );
+        const remainingProjects = scope.allProjects.filter(
+            project => !scope.projects.includes(project)
+        );
+        const partial = remainingProjects.length > 0;
         return {
-            reused: true,
-            reason: 'matching-queue-proof',
+            reused: !partial,
+            reason: partial ? 'partial-matching-queue-proof' : 'matching-queue-proof',
             runId: run.id,
             attempt: run.run_attempt,
             projects: scope.projects,
+            ...(partial ? { remainingProjects } : {}),
         };
     } catch (error) {
         // API, expiry, selection and parser failures retain the existing test path.
