@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, QueryObserver } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 import { createHash, randomBytes } from 'crypto';
@@ -8,6 +8,11 @@ import { createHash, randomBytes } from 'crypto';
 import ClaimBoost from './ClaimBoost';
 
 const mocks = vi.hoisted(() => ({
+    did: 'did:key:learner',
+    networkUrl: 'http://network.example.test/trpc',
+    cloudUrl: 'http://cloud.example.test/trpc',
+    switchedDid: '',
+    flowCount: 0,
     addVCtoWallet: vi.fn(),
     claimBoostWithLink: vi.fn(),
     getClaimBoostWithLinkStatus: vi.fn(),
@@ -46,8 +51,12 @@ vi.mock('learn-card-base', () => ({
         set: { updateSelectedDisplayView: vi.fn() },
         useTracked: { selectedDisplayView: () => 'default' },
     },
-    connectionPromptKeys: { all: ['connectionPrompts'] },
-    getLogger: () => ({ error: vi.fn(), warn: vi.fn() }),
+    connectionPromptKeys: {
+        all: ['connectionPrompts'],
+        pending: (did: string) => ['connectionPrompts', 'pending', did],
+    },
+    switchedProfileStore: { get: { switchedDid: () => mocks.switchedDid } },
+    getLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn() }),
     redirectStore: { set: { lcnRedirect: vi.fn() } },
     useDeviceTypeByWidth: () => ({ isMobile: true }),
     useGetCredentialWithEdits: () => ({ credentialWithEdits: undefined }),
@@ -75,11 +84,18 @@ vi.mock('@analytics', () => ({
     },
     ProfileBuildMethod: { ClaimLink: 'claim_link' },
     SESSION_START_KEY: 'session-start',
-    createFlowLifecycle: () => ({
-        durationMs: () => 10,
-        id: 'flow-id',
-        terminate: vi.fn(() => true),
-    }),
+    createFlowLifecycle: () => {
+        let terminated = false;
+        return {
+            durationMs: () => 10,
+            id: `flow-${++mocks.flowCount}`,
+            terminate: () => {
+                if (terminated) return false;
+                terminated = true;
+                return true;
+            },
+        };
+    },
     newFlowId: () => 'presented-flow-id',
     useAnalytics: () => ({ track: mocks.track }),
     useProfileSnapshotCapture: () => ({
@@ -120,7 +136,8 @@ vi.mock('learn-card-base/stores/NetworkStore', () => ({
     networkStore: {
         get: {
             networkApiUrl: () => 'https://network.example',
-            networkUrl: () => 'https://network.example/trpc',
+            networkUrl: () => mocks.networkUrl,
+            cloudUrl: () => mocks.cloudUrl,
         },
     },
 }));
@@ -144,6 +161,8 @@ vi.mock('../../paraglide/messages.js', () => ({
     'claim.recovery.expired': () => 'This claim link has expired',
     'claim.recovery.exhausted': () => 'This claim link has reached its claim limit',
     'claim.recovery.unavailable': () => 'This claim link is not available',
+    'claim.recovery.contextChanged': () =>
+        'Account or connection changed; close and reopen the link',
     'claim.recovery.tryAgain': () => 'Try again',
     'claim.recovery.check': () => 'Check for my credential',
     'claim.recovery.save': () => 'Save my credential',
@@ -241,6 +260,11 @@ describe('ClaimBoost recovery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.did = 'did:key:learner';
+        mocks.networkUrl = 'http://network.example.test/trpc';
+        mocks.cloudUrl = 'http://cloud.example.test/trpc';
+        mocks.switchedDid = '';
+        mocks.flowCount = 0;
         sessionStorage.clear();
         vi.stubGlobal('crypto', {
             randomUUID: () => randomBytes(16).toString('hex'),
@@ -263,7 +287,7 @@ describe('ClaimBoost recovery', () => {
         });
         mocks.syncCredentialToContracts.mockResolvedValue(true);
         mocks.initWallet.mockResolvedValue({
-            id: { did: () => 'did:key:learner' },
+            id: { did: () => mocks.did },
             index: { LearnCloud: { get: mocks.getIndex } },
             invoke: {
                 claimBoostWithLink: mocks.claimBoostWithLink,
@@ -298,23 +322,37 @@ describe('ClaimBoost recovery', () => {
         expect(screen.getByText('Credential preview')).toBeVisible();
         expect(mocks.push).not.toHaveBeenCalled();
         expect(mocks.replace).not.toHaveBeenCalled();
+        expect(mocks.track).toHaveBeenCalledWith(
+            'credential_claim_failed',
+            expect.objectContaining({ error_code: 'TypeError' })
+        );
         fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
         await waitFor(() => expect(mocks.presentClaimSuccessToast).toHaveBeenCalledTimes(1));
         expect(records.map(record => record.uri)).toEqual(['lc:credential:claimed']);
+        const failed = mocks.track.mock.calls.filter(
+            ([event]) => event === 'credential_claim_failed'
+        );
+        const succeeded = mocks.track.mock.calls.filter(
+            ([event]) => event === 'credential_claim_succeeded'
+        );
+        expect(failed).toHaveLength(1);
+        expect(succeeded).toHaveLength(1);
+        expect(succeeded[0][1].flow_id).not.toBe(failed[0][1].flow_id);
     });
 
     it.each(['expired', 'exhausted', 'unavailable'] as const)(
-        'shows confirmed %s without claiming',
+        'stops a confirmed %s claim, reports its reason and allows close',
         async reason => {
             mocks.getClaimBoostWithLinkStatus.mockResolvedValue({ status: 'terminal', reason });
             await renderClaim();
             fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
-            const messages = {
-                expired: 'This claim link has expired',
-                exhausted: 'This claim link has reached its claim limit',
-                unavailable: 'This claim link is not available',
-            };
-            expect(await screen.findByText(messages[reason])).toBeVisible();
+            await waitFor(() =>
+                expect(mocks.track).toHaveBeenCalledWith(
+                    'credential_claim_failed',
+                    expect.objectContaining({ error_code: `claim_link_${reason}` })
+                )
+            );
+            expect(screen.getByRole('button', { name: 'Accept' })).toBeDisabled();
             expect(mocks.claimBoostWithLink).not.toHaveBeenCalled();
             fireEvent.click(screen.getByRole('button', { name: 'Close' }));
             expect(mocks.push).toHaveBeenCalledWith('/');
@@ -346,18 +384,34 @@ describe('ClaimBoost recovery', () => {
         expect(records.map(record => record.uri)).toEqual(['lc:credential:committed']);
     });
 
-    it('retains saved success and retries only refresh after a display failure', async () => {
+    it('retains saved success after the relevant active category fails, then retries only refresh', async () => {
         const queryClient = await renderClaim();
-        vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValueOnce(
-            new Error('refresh failed')
-        );
-        fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
-        expect(await screen.findByText('Your credential is saved')).toBeVisible();
-        fireEvent.click(screen.getByRole('button', { name: 'Refresh my collection' }));
-        await waitFor(() => expect(mocks.presentClaimSuccessToast).toHaveBeenCalledTimes(1));
-        expect(mocks.claimBoostWithLink).toHaveBeenCalledTimes(1);
-        expect(mocks.addVCtoWallet).toHaveBeenCalledTimes(1);
-        expect(records.map(record => record.uri)).toEqual(['lc:credential:claimed']);
+        const fetchRecords = vi
+            .fn()
+            .mockRejectedValueOnce(new Error('collection unavailable'))
+            .mockImplementation(async () => records.map(record => record.uri));
+        const observer = new QueryObserver(queryClient, {
+            queryKey: ['useGetCredentialList', '', 'Achievement'],
+            queryFn: fetchRecords,
+            initialData: [] as string[],
+            staleTime: Infinity,
+            retry: false,
+        });
+        const unsubscribe = observer.subscribe(() => {});
+        try {
+            fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+            const refresh = await screen.findByRole('button', { name: 'Refresh my collection' });
+            expect(records.map(record => record.uri)).toEqual(['lc:credential:claimed']);
+            expect(mocks.presentClaimSuccessToast).not.toHaveBeenCalled();
+            fireEvent.click(refresh);
+            await waitFor(() => expect(mocks.presentClaimSuccessToast).toHaveBeenCalledTimes(1));
+            expect(observer.getCurrentResult().data).toEqual(['lc:credential:claimed']);
+            expect(mocks.claimBoostWithLink).toHaveBeenCalledTimes(1);
+            expect(mocks.addVCtoWallet).toHaveBeenCalledTimes(1);
+        } finally {
+            unsubscribe();
+            queryClient.clear();
+        }
     });
 
     it('prevents double clicks and cancellation while the claim is in flight', async () => {
@@ -388,6 +442,128 @@ describe('ClaimBoost recovery', () => {
         await act(async () => claim.reject(new TypeError('response lost')));
         await screen.findByRole('button', { name: 'Check for my credential' });
         expect(other).toHaveFocus();
+    });
+
+    it.each(['account', 'network'] as const)(
+        'closes recovery if the %s changes while confirmation is in flight',
+        async changed => {
+            const confirmation = deferred<{ status: 'complete'; credentialUri: string }>();
+            mocks.getClaimBoostWithLinkStatus.mockReturnValue(confirmation.promise);
+            await renderClaim();
+            fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+            await waitFor(() => expect(mocks.getClaimBoostWithLinkStatus).toHaveBeenCalledOnce());
+            if (changed === 'account') mocks.did = 'did:key:another-account';
+            else {
+                mocks.networkUrl = 'http://another-network.example.test/trpc';
+                mocks.initWallet.mockRejectedValue(new Error('new network unavailable'));
+            }
+            await act(async () =>
+                confirmation.resolve({
+                    status: 'complete',
+                    credentialUri: 'lc:credential:prior-account',
+                })
+            );
+            await waitFor(() =>
+                expect(screen.getByRole('button', { name: 'Close' })).toBeEnabled()
+            );
+            expect(screen.getByRole('button', { name: 'Accept' })).toBeDisabled();
+            expect(screen.getByRole('status')).toHaveFocus();
+            expect(mocks.claimBoostWithLink).not.toHaveBeenCalled();
+            expect(records).toEqual([]);
+            expect(mocks.presentClaimSuccessToast).not.toHaveBeenCalled();
+            expect(mocks.track).toHaveBeenCalledWith(
+                'credential_claim_failed',
+                expect.objectContaining({ error_code: 'claim_context_changed' })
+            );
+            fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+            expect(mocks.push).toHaveBeenCalledWith('/');
+        }
+    );
+
+    it('does not announce success or refresh another context when settings change during saving', async () => {
+        const save = deferred<boolean>();
+        mocks.addVCtoWallet.mockReturnValue(save.promise);
+        await renderClaim();
+        fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+        await waitFor(() => expect(mocks.addVCtoWallet).toHaveBeenCalledOnce());
+        mocks.cloudUrl = 'http://another-cloud.example.test/trpc';
+        await act(async () => save.resolve(true));
+        await waitFor(() => expect(screen.getByRole('button', { name: 'Close' })).toBeEnabled());
+        expect(screen.getByRole('button', { name: 'Accept' })).toBeDisabled();
+        expect(mocks.syncCredentialToContracts).not.toHaveBeenCalled();
+        expect(mocks.presentClaimSuccessToast).not.toHaveBeenCalled();
+        expect(
+            mocks.track.mock.calls.filter(([event]) => event === 'credential_claim_succeeded')
+        ).toEqual([]);
+    });
+
+    it('reports pending activations and starts a separate telemetry attempt for successful recovery', async () => {
+        mocks.getClaimBoostWithLinkStatus.mockResolvedValueOnce({ status: 'pending' });
+        await renderClaim();
+        fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+        const check = await screen.findByRole('button', { name: 'Check for my credential' });
+        expect(mocks.claimBoostWithLink).not.toHaveBeenCalled();
+        const failed = mocks.track.mock.calls.filter(
+            ([event]) => event === 'credential_claim_failed'
+        );
+        expect(failed).toHaveLength(1);
+        expect(failed[0][1].error_code).toBe('claim_pending');
+        fireEvent.click(check);
+        await waitFor(() => expect(mocks.presentClaimSuccessToast).toHaveBeenCalledOnce());
+        const started = mocks.track.mock.calls.filter(
+            ([event]) => event === 'credential_claim_started'
+        );
+        const succeeded = mocks.track.mock.calls.filter(
+            ([event]) => event === 'credential_claim_succeeded'
+        );
+        expect(started).toHaveLength(2);
+        expect(succeeded).toHaveLength(1);
+        expect(failed[0][1].flow_id).toBe(started[0][1].flow_id);
+        expect(succeeded[0][1].flow_id).toBe(started[1][1].flow_id);
+        expect(succeeded[0][1].flow_id).not.toBe(failed[0][1].flow_id);
+        expect(mocks.claimBoostWithLink).toHaveBeenCalledOnce();
+        expect(records.map(record => record.uri)).toEqual(['lc:credential:claimed']);
+    });
+
+    it('refreshes the original actor and category without fetching unrelated active failures', async () => {
+        mocks.switchedDid = 'did:web:test:child';
+        const queryClient = await renderClaim();
+        const unrelated = vi.fn().mockRejectedValue(new Error('unrelated category unavailable'));
+        const otherActor = vi.fn().mockRejectedValue(new Error('another account unavailable'));
+        const relevant = new QueryObserver(queryClient, {
+            queryKey: ['useGetCredentialList', mocks.switchedDid, 'Achievement'],
+            queryFn: async () => records.map(record => record.uri),
+            initialData: [] as string[],
+            staleTime: Infinity,
+        });
+        const unrelatedObserver = new QueryObserver(queryClient, {
+            queryKey: ['useGetCredentialList', mocks.switchedDid, 'ID'],
+            queryFn: unrelated,
+            initialData: [] as string[],
+            staleTime: Infinity,
+        });
+        const otherActorObserver = new QueryObserver(queryClient, {
+            queryKey: ['useGetCredentialCount', 'did:web:test:another', 'Achievement'],
+            queryFn: otherActor,
+            initialData: 0,
+            staleTime: Infinity,
+        });
+        const unsubscribe = [
+            relevant.subscribe(() => {}),
+            unrelatedObserver.subscribe(() => {}),
+            otherActorObserver.subscribe(() => {}),
+        ];
+        try {
+            fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+            await waitFor(() => expect(mocks.presentClaimSuccessToast).toHaveBeenCalledOnce());
+            expect(relevant.getCurrentResult().data).toEqual(['lc:credential:claimed']);
+            expect(unrelated).not.toHaveBeenCalled();
+            expect(otherActor).not.toHaveBeenCalled();
+            expect(mocks.claimBoostWithLink).toHaveBeenCalledOnce();
+        } finally {
+            unsubscribe.forEach(stop => stop());
+            queryClient.clear();
+        }
     });
 
     it.each(['cancel', 'skip'])(

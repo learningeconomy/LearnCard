@@ -35,6 +35,7 @@ import {
     ToastTypeEnum,
     boostPreviewStore,
     connectionPromptKeys,
+    switchedProfileStore,
 } from 'learn-card-base';
 
 import {
@@ -74,6 +75,13 @@ import {
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import * as m from '../../paraglide/messages.js';
+
+class ClaimContextChangedError extends Error {
+    constructor() {
+        super('Claim context changed');
+        this.name = 'ClaimContextChangedError';
+    }
+}
 
 const ClaimBoostBodyPreviewOverride: React.FC<{
     boostVC: VC;
@@ -202,6 +210,9 @@ const ClaimBoost: React.FC<{
     const [claimProgress, setClaimProgress] = useState<ClaimProgress>({ status: 'idle' });
     const claimSessionRef = useRef<{
         context: string;
+        networkUrl: string;
+        cloudUrl: string;
+        collectionDid: string;
         storageKey: string;
         attempt: ClaimAttempt;
     } | null>(null);
@@ -218,7 +229,8 @@ const ClaimBoost: React.FC<{
     }, []);
 
     useEffect(() => {
-        if (!['failed', 'pending', 'terminal'].includes(claimProgress.status)) return;
+        if (!['failed', 'pending', 'terminal', 'context-changed'].includes(claimProgress.status))
+            return;
         const focused = document.activeElement;
         if (focused === document.body || focused === claimTriggerRef.current) {
             statusRef.current?.focus({ preventScroll: true });
@@ -386,7 +398,8 @@ const ClaimBoost: React.FC<{
 
     const handleClaimBoost = async () => {
         if (claimBusyRef.current || isClaimed || !boost || !boostUri || !challenge) return;
-        if (claimProgress.status === 'terminal') return;
+        if (claimProgress.status === 'terminal' || claimProgress.status === 'context-changed')
+            return;
         claimBusyRef.current = true;
         claimTriggerRef.current = document.activeElement;
         setIsClaimLoading(true);
@@ -408,82 +421,165 @@ const ClaimBoost: React.FC<{
                 const { prompted } = await gate();
                 if (!mountedRef.current || prompted) return;
             }
-
-            const wallet = await initWallet();
-            const did = wallet.id.did();
-            const context = JSON.stringify([
-                did,
-                networkStore.get.networkUrl(),
-                boostUri,
-                challenge,
-            ]);
-            if (claimSessionRef.current && claimSessionRef.current.context !== context) {
-                throw new Error('Claim context changed');
-            }
-            if (!claimSessionRef.current) {
-                const { key, requestId } = await getClaimRequest(context);
-                claimSessionRef.current = {
-                    context,
-                    storageKey: key,
-                    attempt: { requestId, saved: false, running: false, complete: false },
-                };
+            if (!claimAttemptRef.current) {
                 beginClaimAttempt(boost);
                 capture();
             }
-            const session = claimSessionRef.current;
-            const assertActive = async () => {
-                if (!mountedRef.current || (await initWallet()).id.did() !== did) {
-                    throw new Error('Claim session is no longer active');
+
+            const networkUrl = networkStore.get.networkUrl();
+            const cloudUrl = networkStore.get.cloudUrl();
+            const collectionDid = switchedProfileStore.get.switchedDid() ?? '';
+            const assertSettings = () => {
+                if (
+                    !mountedRef.current ||
+                    networkStore.get.networkUrl() !== networkUrl ||
+                    networkStore.get.cloudUrl() !== cloudUrl ||
+                    (switchedProfileStore.get.switchedDid() ?? '') !== collectionDid
+                ) {
+                    throw new ClaimContextChangedError();
                 }
             };
+            if (
+                claimSessionRef.current &&
+                (claimSessionRef.current.networkUrl !== networkUrl ||
+                    claimSessionRef.current.cloudUrl !== cloudUrl ||
+                    claimSessionRef.current.collectionDid !== collectionDid)
+            ) {
+                throw new ClaimContextChangedError();
+            }
+            const wallet = await initWallet();
+            const did = wallet.id.did();
+            const context = JSON.stringify([did, networkUrl, boostUri, challenge]);
+            const assertActive = async () => {
+                assertSettings();
+                const currentWallet = await initWallet();
+                assertSettings();
+                if (currentWallet.id.did() !== did) throw new ClaimContextChangedError();
+            };
+            await assertActive();
+            if (
+                claimSessionRef.current &&
+                (claimSessionRef.current.context !== context ||
+                    claimSessionRef.current.cloudUrl !== cloudUrl ||
+                    claimSessionRef.current.collectionDid !== collectionDid)
+            ) {
+                throw new ClaimContextChangedError();
+            }
+            if (!claimSessionRef.current) {
+                const { key, requestId } = await getClaimRequest(context);
+                await assertActive();
+                claimSessionRef.current = {
+                    context,
+                    networkUrl,
+                    cloudUrl,
+                    collectionDid,
+                    storageKey: key,
+                    attempt: { requestId, saved: false, running: false, complete: false },
+                };
+            }
+            const session = claimSessionRef.current;
             const completed = await recoverClaim(
                 session.attempt,
                 {
                     check: async () => {
                         await assertActive();
-                        return wallet.invoke.getClaimBoostWithLinkStatus(
+                        const result = await wallet.invoke.getClaimBoostWithLinkStatus(
                             boostUri,
                             challenge,
                             session.attempt.requestId
                         );
+                        await assertActive();
+                        return result;
                     },
                     claim: async () => {
                         await assertActive();
-                        return wallet.invoke.claimBoostWithLink(
+                        const credentialUri = await wallet.invoke.claimBoostWithLink(
                             boostUri,
                             challenge,
                             session.attempt.requestId
                         );
+                        await assertActive();
+                        return credentialUri;
                     },
                     save: async credentialUri => {
                         await assertActive();
-                        await saveClaimToCollection(wallet, credentialUri, boostUri, addVCtoWallet);
+                        await saveClaimToCollection(
+                            wallet,
+                            credentialUri,
+                            boostUri,
+                            async input => {
+                                await assertActive();
+                                return addVCtoWallet(input);
+                            }
+                        );
+                        await assertActive();
                     },
                     refresh: async credentialUri => {
                         await assertActive();
                         const record = await getSavedClaimRecord(wallet, credentialUri);
+                        await assertActive();
                         await syncCredentialToContracts({ record, category: record.category });
+                        await assertActive();
+                        // Mark all of this actor's cached counts/lists stale without fetching
+                        // unrelated categories or cache-only entries with no query function.
+                        await queryClient.invalidateQueries({
+                            predicate: query =>
+                                query.queryKey[1] === collectionDid &&
+                                (query.queryKey[0] === 'useGetCredentialList' ||
+                                    query.queryKey[0] === 'useGetCredentialCount'),
+                            refetchType: 'none',
+                        });
+                        await assertActive();
                         await Promise.all([
-                            queryClient.invalidateQueries(
-                                { queryKey: ['useGetCredentialList'] },
+                            queryClient.refetchQueries(
+                                {
+                                    type: 'active',
+                                    predicate: query =>
+                                        query.queryKey[1] === collectionDid &&
+                                        (query.queryKey[0] === 'useGetCredentialList' ||
+                                            query.queryKey[0] === 'useGetCredentialCount') &&
+                                        typeof query.options.queryFn === 'function' &&
+                                        (!query.queryKey[2] ||
+                                            query.queryKey[2] === record.category),
+                                },
                                 { throwOnError: true }
                             ),
                             queryClient.invalidateQueries(
-                                { queryKey: ['useGetCredentialCount'] },
-                                { throwOnError: true }
-                            ),
-                            queryClient.invalidateQueries(
-                                { queryKey: connectionPromptKeys.all },
+                                { queryKey: connectionPromptKeys.pending(collectionDid) },
                                 { throwOnError: true }
                             ),
                         ]);
+                        await assertActive();
                     },
                 },
                 progress => {
-                    if (mountedRef.current) setClaimProgress(progress);
+                    if (!mountedRef.current) return;
+                    setClaimProgress(progress);
+                    if (progress.status === 'pending' || progress.status === 'terminal') {
+                        const code =
+                            progress.status === 'terminal'
+                                ? `claim_link_${progress.reason}`
+                                : 'claim_pending';
+                        log.info('Claim link confirmation outcome', { code });
+                        completeClaimAttempt(boost, AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, code);
+                    }
+                },
+                (stage, error) => {
+                    log.warn('Claim link recovery failed', error, { stage });
+                    completeClaimAttempt(
+                        boost,
+                        AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
+                        error instanceof ClaimContextChangedError
+                            ? 'claim_context_changed'
+                            : getClaimErrorCode(error)
+                    );
+                    if (mountedRef.current && error instanceof ClaimContextChangedError) {
+                        setClaimProgress({ status: 'context-changed' });
+                    }
                 }
             );
             if (!completed || !mountedRef.current) return;
+            await assertActive();
 
             const category = getDefaultCategoryForCredential(boost);
             completeClaimAttempt(boost, AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
@@ -512,14 +608,22 @@ const ClaimBoost: React.FC<{
                     : '/'
             );
             presentClaimSuccessToast();
-        } catch {
+        } catch (error) {
+            log.warn('Claim link activation failed', error);
+            completeClaimAttempt(
+                boost ?? vc ?? undefined,
+                AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
+                error instanceof ClaimContextChangedError
+                    ? 'claim_context_changed'
+                    : getClaimErrorCode(error)
+            );
             if (mountedRef.current) {
                 const saved = claimSessionRef.current?.attempt.saved ?? false;
-                setClaimProgress({
-                    status: 'failed',
-                    stage: saved ? 'refreshing' : 'checking',
-                    saved,
-                });
+                setClaimProgress(
+                    error instanceof ClaimContextChangedError
+                        ? { status: 'context-changed' }
+                        : { status: 'failed', stage: saved ? 'refreshing' : 'checking', saved }
+                );
             }
         } finally {
             claimBusyRef.current = false;
@@ -642,6 +746,8 @@ const ClaimBoost: React.FC<{
         } else if (claimProgress.status === 'pending') {
             claimStatusMessage = m['claim.recovery.pending']();
             actionButtonText = m['claim.recovery.check']();
+        } else if (claimProgress.status === 'context-changed') {
+            claimStatusMessage = m['claim.recovery.contextChanged']();
         } else if (claimProgress.status === 'terminal') {
             const terminalMessages = {
                 expired: m['claim.recovery.expired'](),
@@ -768,7 +874,10 @@ const ClaimBoost: React.FC<{
                         isClaimLoading ||
                         isCheckingDuplicate ||
                         isClaimed ||
-                        (!vc && (!boost || claimProgress.status === 'terminal')),
+                        (!vc &&
+                            (!boost ||
+                                claimProgress.status === 'terminal' ||
+                                claimProgress.status === 'context-changed')),
                     useFullCloseButton: !isMobile,
                 }}
             >

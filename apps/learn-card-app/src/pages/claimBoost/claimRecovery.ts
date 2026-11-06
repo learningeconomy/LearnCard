@@ -8,6 +8,7 @@ export type ClaimProgress =
     | { status: 'failed'; stage: ClaimStage; saved: boolean }
     | { status: 'pending' }
     | { status: 'terminal'; reason: ClaimLinkTerminalReason }
+    | { status: 'context-changed' }
     | { status: 'complete' };
 
 export type ClaimAttempt = {
@@ -29,7 +30,8 @@ type ClaimOperations = {
 export const recoverClaim = async (
     attempt: ClaimAttempt,
     operations: ClaimOperations,
-    onProgress: (progress: ClaimProgress) => void
+    onProgress: (progress: ClaimProgress) => void,
+    onFailure?: (stage: ClaimStage, error: unknown) => void
 ): Promise<boolean> => {
     if (attempt.running) return false;
     if (attempt.complete) return true;
@@ -69,9 +71,10 @@ export const recoverClaim = async (
         attempt.complete = true;
         onProgress({ status: 'complete' });
         return true;
-    } catch {
+    } catch (error) {
         // A mutation error is not proof of rejection: the next run checks its actual result.
         onProgress({ status: 'failed', stage, saved: attempt.saved });
+        onFailure?.(stage, error);
         return false;
     } finally {
         attempt.running = false;

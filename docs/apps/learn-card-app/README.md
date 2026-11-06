@@ -57,9 +57,9 @@ If completion stops, keep the page open and use its recovery action:
 | **Save my credential**      | Uses the already-issued credential to finish saving, without claiming another copy or adding a duplicate entry.         |
 | **Refresh my collection**   | Keeps the confirmed saved credential and retries refresh, not claiming or saving.                                       |
 
-Expired links and links that have reached their claim limit have different messages, shown only when the service confirms the condition. Ask the issuer for a new link. A temporary connection failure is not treated as expiration.
+Expired links and links that have reached their claim limit have different messages, shown only when the service confirms the condition. Ask the issuer for a new link. A temporary connection failure is not treated as expiration. If the active account or network changes during recovery, stop and reopen the link in the intended account/network; recovery must not continue using the prior context.
 
-Recovery keeps the original link and credential preview in place. Action buttons cannot start overlapping attempts; the existing duplicate choices and Close action remain available when no operation is running.
+Recovery retains the original request identifier for the same link context and keeps any confirmed saved credential associated with the account that saved it. Refresh failures are reported only for the claimed credential's category and relevant connection data, not unrelated credential categories.
 
 If you're signed out, **Accept** opens the sign-in prompt. **Close** returns to the original preview without starting a claim.
 
