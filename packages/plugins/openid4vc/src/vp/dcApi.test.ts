@@ -6,6 +6,8 @@ import { createEd25519KbSigner } from '../../../sd-jwt-vc/src/signer';
 import { sha256Hasher } from '../../../sd-jwt-vc/src/hasher';
 import { randomSalt } from '../../../sd-jwt-vc/src/salt';
 import { presentSdJwtVc } from '../../../sd-jwt-vc/src/present';
+import { parseSdJwtVc } from '../../../sd-jwt-vc/src/parse';
+import { selectCredentialsForDcql } from '../dcql/select';
 import { getOpenID4VCPlugin } from '../plugin';
 import type { OpenID4VCDependentLearnCard } from '../types';
 import { createDcApiResponse, DcApiError, parseDcApiRequest, type DcApiRequest } from './dcApi';
@@ -90,6 +92,65 @@ const setup = async () => {
 };
 
 describe('unsigned DC API response profile', () => {
+    it('matches and presents every claim in the documented Course Completion DCQL request', async () => {
+        const context = await setup();
+        // LC-1879 Phase 0's documented query includes the array-valued skills claim.
+        // https://welibrary.atlassian.net/wiki/spaces/LC/pages/1013219330
+        const input = request({
+            dcql_query: {
+                credentials: [
+                    {
+                        id: 'course_completion',
+                        format: 'dc+sd-jwt',
+                        meta: {
+                            vct_values: ['https://credentials.learncard.com/vct/course-completion'],
+                        },
+                        claims: [
+                            { path: ['course_name'] },
+                            { path: ['completion_date'] },
+                            { path: ['skills'] },
+                        ],
+                    },
+                ],
+            },
+        });
+        const parsed = parseDcApiRequest(input, ORIGIN);
+        const selection = await selectCredentialsForDcql(
+            [context.chosen[0]!.candidate],
+            parsed.query,
+            { sdJwtParser: parseSdJwtVc }
+        );
+        expect(selection.canSatisfy).toBe(true);
+        expect(selection.matches.course_completion?.candidates).toHaveLength(1);
+
+        const response = await context.plugin.methods.createDcApiResponse(
+            context.learnCard,
+            input,
+            ORIGIN,
+            [
+                {
+                    credentialQueryId: 'course_completion',
+                    candidate: selection.matches.course_completion!.candidates[0]!,
+                    disclose: { course_name: true, completion_date: true, skills: true },
+                },
+            ]
+        );
+        expect(JSON.parse(JSON.stringify(response))).toEqual(response);
+        expect(Object.keys(response)).toEqual(['vp_token']);
+        expect(Object.keys(response.vp_token)).toEqual(['course_completion']);
+        expect(response.vp_token.course_completion).toHaveLength(1);
+        const compact = response.vp_token.course_completion![0];
+        if (typeof compact !== 'string') throw new Error('Missing SD-JWT presentation');
+        const verified = await context.instance.verify(compact, {
+            keyBindingNonce: parsed.nonce,
+        });
+        expect(verified.payload.course_name).toBe(fixture.claims.course_name);
+        expect(verified.payload.completion_date).toBe(fixture.claims.completion_date);
+        expect(verified.payload.skills).toEqual(fixture.claims.skills);
+        expect(verified.payload.learner_name).toBeUndefined();
+        expect(context.fetchImpl).not.toHaveBeenCalled();
+    });
+
     it('rejects SD-JWT requests when the host cannot present them', async () => {
         const context = await setup();
 
