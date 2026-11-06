@@ -2277,6 +2277,8 @@
     },
     "recovery": {
         "pin": {
+            "setPin": "Définissez un PIN de récupération",
+            "setPinDesc": "Définissez un PIN à 6 chiffres pour une récupération instantanée.",
             "throttled": "Trop de tentatives. Veuillez réessayer plus tard.",
             "title": "PIN de récupération",
             "instantRecoveryOn": "Récupération instantanée : activée",
@@ -2287,6 +2289,10 @@
                 "body": "Votre PIN de récupération n'est plus actif. Choisissez-en un nouveau pour conserver la récupération instantanée.",
                 "hint": "Mêmes règles : 6 chiffres, rien d’évident."
             },
+            "afterHoldRecovery": {
+                "title": "Évitez l'attente la prochaine fois",
+                "body": "Vous êtes de retour. Définissez un PIN à 6 chiffres pour récupérer votre compte instantanément la prochaine fois, sans attendre 7 jours."
+            },
             "pinResetRequired": {
                 "title": "Définissez un nouveau PIN de récupération",
                 "body": "Votre ancien PIN de récupération ne peut plus être utilisé depuis la récupération de votre compte. Définissez un nouveau PIN à 6 chiffres pour rétablir la récupération automatique."
@@ -2296,14 +2302,27 @@
             "locked": "Trop de tentatives. Vous pouvez toujours récupérer votre compte en attendant 7 jours.",
             "confirmPin": "Confirmez votre PIN",
             "confirmPinDesc": "Saisissez à nouveau votre PIN pour le confirmer.",
+            "saving": "Enregistrement du PIN...",
+            "success": "PIN défini avec succès",
             "trivial": "Choisissez un PIN plus difficile à deviner.",
             "mismatch": "Les PIN ne correspondent pas.",
+            "saveFailed": "Impossible d'enregistrer le PIN. Veuillez réessayer.",
+            "enterPin": "Saisissez un PIN à 6 chiffres",
+            "removeConfirm": "Voulez-vous vraiment supprimer votre PIN de récupération ? Vous ne pourrez récupérer votre compte qu'en attendant 7 jours.",
+            "removing": "Suppression en cours...",
+            "remove": "Supprimer le PIN",
+            "resetBanner": "Votre PIN de récupération a été réinitialisé — ",
+            "setAgain": "définissez-le à nouveau",
+            "doYouHave": "Avez-vous un PIN de récupération ?",
+            "enterForInstant": "Saisissez votre PIN à 6 chiffres pour une récupération instantanée.",
+            "dontHave": "Je n'ai pas de PIN",
             "samePin": "Choisissez un PIN différent de celui que vous venez d'utiliser.",
             "newPinRequired": {
                 "title": "Choisissez un nouveau PIN de récupération",
                 "body": "Votre PIN de récupération a été saisi incorrectement auparavant : il lui reste donc moins d'essais. Choisissez un PIN différent à 6 chiffres pour retrouver tous vos essais.",
                 "skipNote": "Si vous passez cette étape, votre PIN actuel continue de fonctionner avec moins d'essais. Vous pourrez en choisir un nouveau plus tard dans Récupération du compte."
-            }
+            },
+            "escrowNotice": "Une partie chiffrée de la clé de votre compte est conservée par un service sécurisé. Votre PIN la déverrouille immédiatement, sans attendre 7 jours. <0>En savoir plus</0>"
         },
         "confirmCode": {
             "mismatch": "Ce code est incorrect. Réessayez.",
@@ -2608,12 +2627,33 @@
             }
         },
         "automatic": {
+            "title": "Récupération automatique",
+            "on": "Activée — votre compte peut être restauré après un délai d'attente de 7 jours.",
+            "off": "Désactivée",
+            "notOn": "Non activée",
+            "turningOn": "Activation...",
+            "turningOff": "Désactivation...",
+            "updating": "Mise à jour...",
+            "turnOn": "Activer",
+            "turnOff": "Désactiver",
+            "warning": "Sans récupération automatique, perdre tous vos appareils et toutes vos méthodes de récupération signifie perdre votre compte.",
+            "precondition": "Configurez d'abord une autre méthode de récupération.",
             "restoreWait": "Restaurer après un délai de 7 jours"
         },
         "addWayBackIn": "Ajoutez un moyen de vous reconnecter",
         "addAnotherMethod": "Ajouter une autre méthode",
         "fullyProtected": "Votre compte est entièrement protégé.",
         "added": "Ajouté",
+        "escrowHold": {
+            "title": "Était-ce vous ?",
+            "body": "Quelqu'un a commencé à récupérer votre compte {{timeAgo}}.",
+            "finishesIn": "La récupération se terminera {{when}}, sauf si vous l'arrêtez.",
+            "finishingSoon": "La récupération peut se terminer à tout moment, sauf si vous l'arrêtez.",
+            "stop": "Arrêter la récupération",
+            "stopping": "Arrêt en cours…",
+            "success": "Récupération arrêtée. Votre compte est en sécurité.",
+            "dismiss": "C'était moi"
+        },
         "whichWordIs": "Quel est le mot nº {{number}} ?",
         "tapTheWord": "Touchez le mot de votre phrase de récupération.",
         "wrongWord": "Ce n'est pas le mot nº {{number}}. Vérifiez votre phrase enregistrée et réessayez.",
