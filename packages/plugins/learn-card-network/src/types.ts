@@ -18,6 +18,7 @@ import type {
     PaginatedCampaigns,
     PaginatedCampaignAudience,
     PublishCredentialSharePreview,
+    ClaimLinkRequestStatus,
     ConsentFlowContractChanges,
     ConsentFlowContractUpdateResult,
     ConsentFlowContractVersion,
@@ -172,7 +173,11 @@ import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
 
-export type { BitstringCredentialStatusPurpose, BitstringCredentialStatusEntry };
+export type {
+    BitstringCredentialStatusPurpose,
+    BitstringCredentialStatusEntry,
+    ClaimLinkRequestStatus,
+};
 
 /** Object-form options for the network plugin's `sendBoost` */
 export type SendBoostNetworkOptions = {
@@ -720,7 +725,17 @@ export type LearnCardNetworkPluginMethods = {
         options?: LCNBoostClaimLinkOptionsType,
         challenge?: string
     ) => Promise<{ boostUri: string; challenge: string }>;
-    claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
+    claimBoostWithLink: (
+        boostUri: string,
+        challenge: string,
+        requestId?: string
+    ) => Promise<string>;
+    /** Reconcile a prior claim over POST; may finish acceptance/accounting but never signs again. */
+    getClaimBoostWithLinkStatus: (
+        boostUri: string,
+        challenge: string,
+        requestId: string
+    ) => Promise<ClaimLinkRequestStatus>;
 
     send: (input: SendBoostInputWithEncryption) => Promise<SendResponse>;
 

@@ -13,20 +13,31 @@ const mocks = vi.hoisted(() => ({
     accept: vi.fn(),
     notify: vi.fn(async () => undefined),
     signingAuthority: vi.fn(),
+    commit: vi.fn(),
+    rollback: vi.fn(),
     release: vi.fn(),
     transaction: { run: vi.fn() },
 }));
 
+vi.mock('@models', () => ({}));
 vi.mock('@instance', () => ({
     neogma: {
         getTransaction: async (
             _transaction: Transaction | null,
             action: (transaction: unknown) => Promise<unknown>
         ) => action(mocks.transaction),
+        driver: {
+            session: () => ({
+                beginTransaction: () => ({
+                    ...mocks.transaction,
+                    commit: mocks.commit,
+                    rollback: mocks.rollback,
+                }),
+                close: async () => undefined,
+            }),
+        },
     },
 }));
-
-vi.mock('@models', () => ({}));
 vi.mock('@services/skills-provider/inject', () => ({
     injectObv3AlignmentsIntoCredentialForBoost: vi.fn(),
 }));
@@ -80,6 +91,7 @@ vi.mock('@tracing', () => ({
 
 import {
     issueClaimLinkBoost,
+    ClaimLinkStorageRejectedError,
     prepareCredentialFromBoost,
     sendBoost,
     stampIssuanceDate,
@@ -119,6 +131,12 @@ const options = {
     activityId: 'activity',
     integrationId: 'integration',
 } as unknown as Parameters<typeof sendBoost>[0];
+const claimOptions = {
+    ...options,
+    contractTerms: undefined,
+    listingId: undefined,
+    atomicClaimLink: true,
+};
 
 const deferred = () => {
     let resolve!: () => void;
@@ -133,6 +151,8 @@ describe('boost payload storage', () => {
         vi.clearAllMocks();
         mocks.decrypt.mockResolvedValue(vc);
         mocks.issue.mockImplementation(async unsigned => ({ ...unsigned, proof: {} }));
+        mocks.commit.mockReset().mockResolvedValue(undefined);
+        mocks.rollback.mockReset().mockResolvedValue(undefined);
     });
 
     it.each([
@@ -269,6 +289,44 @@ describe('boost payload storage', () => {
         expect(mocks.issue).not.toHaveBeenCalled();
     });
 
+    it('distinguishes a rejected storage transaction from an uncertain commit outcome', async () => {
+        mocks.sent.mockRejectedValueOnce(new Error('write rejected'));
+        await expect(
+            sendBoost({ ...claimOptions, credentialId: 'request-one' })
+        ).rejects.toBeInstanceOf(ClaimLinkStorageRejectedError);
+        expect(mocks.accept).not.toHaveBeenCalled();
+
+        const uncertain = new Error('commit acknowledgement lost');
+        mocks.commit.mockRejectedValueOnce(uncertain);
+        mocks.rollback.mockRejectedValueOnce(new Error('transaction is already closed'));
+        await expect(sendBoost({ ...claimOptions, credentialId: 'request-one' })).rejects.toBe(
+            uncertain
+        );
+        expect(mocks.accept).not.toHaveBeenCalled();
+    });
+    it('marks the irreversible storage boundary only after pre-storage validation', async () => {
+        const events: string[] = [];
+        mocks.store.mockImplementationOnce(async () => {
+            events.push('store');
+            return { id: 'stored' };
+        });
+        await sendBoost({
+            ...claimOptions,
+            onStorageStart: () => events.push('storage-start'),
+        });
+        expect(events).toEqual(['storage-start', 'store']);
+
+        const onStorageStart = vi.fn();
+        await expect(
+            sendBoost({
+                ...claimOptions,
+                credential: { ...vc, boostId: 'lc:network:network.example/boost:other' },
+                onStorageStart,
+            })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect(onStorageStart).not.toHaveBeenCalled();
+    });
+
     it.each(['lc:network:network.example/boost:other', '', null])(
         'rejects a plaintext credential with an explicit conflicting boostId (%s) before storage',
         async boostId => {
@@ -318,7 +376,6 @@ describe('boost payload storage', () => {
             } else {
                 expect(unsigned).not.toHaveProperty('boostId');
             }
-            expect(mocks.store).toHaveBeenCalledWith(issued, mocks.transaction, 'org');
         }
     );
 

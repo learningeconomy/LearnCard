@@ -2,6 +2,21 @@
 
 This service exposes the LearnCard Network API and local Neo4j-backed skills flows.
 
+## Recoverable claim links
+
+`boost.claimBoostWithLink` accepts an optional `requestId`; `boost.claimBoostWithLinkStatus` reconciles the same authenticated recipient, Boost URI, challenge, and request ID. SDK consumers call `getClaimBoostWithLinkStatus`. Deploy this POST producer before an app that requires the status procedure; existing two-argument SDK claims remain supported.
+
+- A durable `ClaimLinkRequest` reserves one operation per context. Temporary Profile and request-node write locks serialize reservations without persistent counters or lock properties. Without the optional uniqueness index, concurrent `MERGE` statements can duplicate even the same request ID; holding the Profile write lock through reservation preserves one owner. A deterministic credential ID and explicit Neo4j transaction keep credential, Boost instance, and sent relationship together.
+- A completed receipt returns the original credential URI before checking current link availability. Generation-scoped Redis replay sets and capacity are atomically updated; the replay set lives for the full live generation lifetime, including non-expiring links, and is removed on invalidation/exhaustion. Exhausted evidence is retained 30 days; missing evidence means unavailable, not invented expiration. Corrupt live cache values are uncertain errors and are never classified as expired.
+- An active or uncertain operation without a provable result remains `pending`. There is no age-based takeover or blind re-signing. Definitive failures before the atomic credential storage entry can release the reservation; an uncertain commit cannot. Operators must reconcile pending work rather than retry issuance. Same-operation singleflight is supported; the existing `totalUses` setting remains a soft limit across different operations and does not reserve issuance capacity.
+- Legacy two-argument claims return their established credential URI even if subsequent usage accounting fails; they have no receipt to safely reconcile an error-driven retry. Request-aware claims keep accounting failures recoverable through their durable receipt instead.
+- Definite issuance rejection records a correlated `FAILED` activity. A request-aware operation with uncertain storage does not record terminal failure. Cleanup and activity-reporting failures cannot replace the original issuance error. Activity metadata uses controlled stage labels; route diagnostics retain the error class and tRPC code, with messages only for service-owned storage rejection and bounded usage contention. Raw errors, causes, credentials, and signing-authority payloads are not logged.
+- Invalidating an already absent link preserves confirmed expired/exhausted evidence, including when the last accepted claim wins the invalidation race.
+
+Collection indexing is still a separate, user-authenticated LearnCloud write. A successful network claim does not prove that collection saving or display refresh succeeded.
+
+Focused checks from this directory: `bun run test -- src/cache/claim-links.test.ts src/helpers/boost-storage.helpers.test.ts src/accesslayer/credential/create.test.ts`. `bunx vitest run --config vitest.claim-links.config.ts` exercises receipt recovery and concurrency against its own disposable Neo4j container and requires Docker.
+
 ## Live consent data for AI consumers
 
 `getConsentedDataForDid` returns data from live grants and authorized one-time grants (`oneTime: true`, stored with `status: 'consumed'`) between the authenticated contract owner and the requested profile. Pending and suspended updates retain reads under the user's previously accepted version; they do not enable newly requested data, writes, AutoBoosts, or synchronization. Withdrawn grants and consumed grants without the one-time flag are excluded. Term, contract and category expirations are enforced; empty expiry values mean no expiry, while malformed nonempty dates never authorize access. One-time means a fixed sharing grant, not a destructive read-once API; withdrawal still revokes subsequent retrieval. Malformed legacy terms are omitted rather than authorizing data or failing every grant in the response.
