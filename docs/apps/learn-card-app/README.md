@@ -61,6 +61,8 @@ Expired links and links that have reached their claim limit have different messa
 
 Recovery retains the original request identifier for the same link context and keeps any confirmed saved credential associated with the account that saved it. Refresh failures are reported only for the claimed credential's category and relevant connection data, not unrelated credential categories.
 
+If another tab is finishing the same claim, **Check for my credential** looks up its result without issuing another copy. A claim that is already saved and refreshed stays successful if your account or connection settings change before navigation; the page keeps the original recovery identifier and does not navigate in the changed context.
+
 If you're signed out, **Accept** opens the sign-in prompt. **Close** returns to the original preview without starting a claim.
 
 ### Receiving Credentials from a Website

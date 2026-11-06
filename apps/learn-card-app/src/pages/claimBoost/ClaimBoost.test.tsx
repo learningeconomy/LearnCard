@@ -497,33 +497,83 @@ describe('ClaimBoost recovery', () => {
         ).toEqual([]);
     });
 
-    it('reports pending activations and starts a separate telemetry attempt for successful recovery', async () => {
-        mocks.getClaimBoostWithLinkStatus.mockResolvedValueOnce({ status: 'pending' });
-        await renderClaim();
-        fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
-        const check = await screen.findByRole('button', { name: 'Check for my credential' });
-        expect(mocks.claimBoostWithLink).not.toHaveBeenCalled();
-        const failed = mocks.track.mock.calls.filter(
-            ([event]) => event === 'credential_claim_failed'
-        );
-        expect(failed).toHaveLength(1);
-        expect(failed[0][1].error_code).toBe('claim_pending');
-        fireEvent.click(check);
-        await waitFor(() => expect(mocks.presentClaimSuccessToast).toHaveBeenCalledOnce());
-        const started = mocks.track.mock.calls.filter(
-            ([event]) => event === 'credential_claim_started'
-        );
-        const succeeded = mocks.track.mock.calls.filter(
-            ([event]) => event === 'credential_claim_succeeded'
-        );
-        expect(started).toHaveLength(2);
-        expect(succeeded).toHaveLength(1);
-        expect(failed[0][1].flow_id).toBe(started[0][1].flow_id);
-        expect(succeeded[0][1].flow_id).toBe(started[1][1].flow_id);
-        expect(succeeded[0][1].flow_id).not.toBe(failed[0][1].flow_id);
-        expect(mocks.claimBoostWithLink).toHaveBeenCalledOnce();
-        expect(records.map(record => record.uri)).toEqual(['lc:credential:claimed']);
+    it('keeps completed success and skips stale-context navigation without clearing recovery identity', async () => {
+        mocks.track.mockImplementation(event => {
+            if (event === 'credential_claim_succeeded') {
+                mocks.networkUrl = 'http://changed-network.example.test/trpc';
+            }
+        });
+        try {
+            await renderClaim();
+            const accept = screen.getByRole('button', { name: 'Accept' });
+            fireEvent.click(accept);
+            await waitFor(() =>
+                expect(mocks.track).toHaveBeenCalledWith(
+                    'credential_claim_succeeded',
+                    expect.any(Object)
+                )
+            );
+            await waitFor(() => expect(screen.getByRole('status')).toHaveFocus());
+            expect(accept).toBeDisabled();
+            expect(records.map(record => record.uri)).toEqual(['lc:credential:claimed']);
+            expect(
+                mocks.track.mock.calls.filter(([event]) => event === 'credential_claim_failed')
+            ).toEqual([]);
+            expect(mocks.push).not.toHaveBeenCalled();
+            expect(mocks.replace).not.toHaveBeenCalled();
+            expect(mocks.presentClaimSuccessToast).not.toHaveBeenCalled();
+            expect(Object.values(sessionStorage)).toContain(
+                mocks.claimBoostWithLink.mock.calls[0][2]
+            );
+            fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+            expect(mocks.push).toHaveBeenCalledWith('/');
+        } finally {
+            mocks.track.mockReset();
+        }
     });
+
+    it.each(['status', 'claim-conflict'] as const)(
+        'ends a %s pending activation once, then reconciles the same operation without issuing again',
+        async source => {
+            if (source === 'status') {
+                mocks.getClaimBoostWithLinkStatus.mockResolvedValueOnce({ status: 'pending' });
+            } else {
+                mocks.claimBoostWithLink.mockRejectedValueOnce(
+                    Object.assign(new Error('another tab reserved the request'), {
+                        data: { code: 'CONFLICT' },
+                    })
+                );
+                mocks.getClaimBoostWithLinkStatus.mockResolvedValueOnce({ status: 'absent' });
+            }
+            mocks.getClaimBoostWithLinkStatus.mockResolvedValue({
+                status: 'complete',
+                credentialUri: 'lc:credential:reserved',
+            });
+            await renderClaim();
+            fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+            const check = await screen.findByRole('button', { name: 'Check for my credential' });
+            const failed = mocks.track.mock.calls.filter(
+                ([event]) => event === 'credential_claim_failed'
+            );
+            expect(failed).toHaveLength(1);
+            expect(failed[0][1].error_code).toBe('claim_pending');
+            fireEvent.click(check);
+            await waitFor(() => expect(mocks.presentClaimSuccessToast).toHaveBeenCalledOnce());
+            const started = mocks.track.mock.calls.filter(
+                ([event]) => event === 'credential_claim_started'
+            );
+            const succeeded = mocks.track.mock.calls.filter(
+                ([event]) => event === 'credential_claim_succeeded'
+            );
+            expect(started).toHaveLength(2);
+            expect(succeeded).toHaveLength(1);
+            expect(failed[0][1].flow_id).toBe(started[0][1].flow_id);
+            expect(succeeded[0][1].flow_id).toBe(started[1][1].flow_id);
+            expect(succeeded[0][1].flow_id).not.toBe(failed[0][1].flow_id);
+            expect(mocks.claimBoostWithLink).toHaveBeenCalledTimes(source === 'status' ? 0 : 1);
+            expect(records.map(record => record.uri)).toEqual(['lc:credential:reserved']);
+        }
+    );
 
     it('refreshes the original actor and category without fetching unrelated active failures', async () => {
         mocks.switchedDid = 'did:web:test:child';

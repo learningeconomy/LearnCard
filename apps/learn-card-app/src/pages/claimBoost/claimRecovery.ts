@@ -37,14 +37,11 @@ export const recoverClaim = async (
     if (attempt.complete) return true;
     attempt.running = true;
     let stage: ClaimStage = 'checking';
-    const progress = (next: ClaimStage) => {
-        stage = next;
-        onProgress({ status: 'working', stage });
-    };
+    const progress = () => onProgress({ status: 'working', stage });
 
     try {
         if (!attempt.credentialUri) {
-            progress('checking');
+            progress();
             const result = await operations.check();
             if (result.status === 'pending') {
                 onProgress({ status: 'pending' });
@@ -57,23 +54,31 @@ export const recoverClaim = async (
             if (result.status === 'complete') {
                 attempt.credentialUri = result.credentialUri;
             } else {
-                progress('claiming');
+                stage = 'claiming';
+                progress();
                 attempt.credentialUri = await operations.claim();
             }
         }
         if (!attempt.saved) {
-            progress('saving');
+            stage = 'saving';
+            progress();
             await operations.save(attempt.credentialUri);
             attempt.saved = true;
         }
-        progress('refreshing');
+        stage = 'refreshing';
+        progress();
         await operations.refresh(attempt.credentialUri);
         attempt.complete = true;
         onProgress({ status: 'complete' });
         return true;
     } catch (error) {
         // A mutation error is not proof of rejection: the next run checks its actual result.
-        onProgress({ status: 'failed', stage, saved: attempt.saved });
+        const claimError = error as { data?: { code?: unknown }; code?: unknown } | null;
+        if (stage === 'claiming' && (claimError?.data?.code ?? claimError?.code) === 'CONFLICT') {
+            onProgress({ status: 'pending' });
+        } else {
+            onProgress({ status: 'failed', stage, saved: attempt.saved });
+        }
         onFailure?.(stage, error);
         return false;
     } finally {

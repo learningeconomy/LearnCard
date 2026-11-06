@@ -61,6 +61,43 @@ describe('claim stage recovery', () => {
         expect(ops.claim).toHaveBeenCalledTimes(1);
         expect(ops.save).toHaveBeenCalledExactlyOnceWith('committed-credential');
     });
+    it('treats a claim reservation conflict as pending, then reconciles without another issuance', async () => {
+        const attempt = newAttempt();
+        const requestId = attempt.requestId;
+        const ops = operations();
+        ops.claim.mockRejectedValueOnce(
+            Object.assign(new Error('request reserved in another tab'), {
+                data: { code: 'CONFLICT' },
+            })
+        );
+        const progress = vi.fn();
+
+        expect(await recoverClaim(attempt, ops, progress)).toBe(false);
+        expect(progress).toHaveBeenLastCalledWith({ status: 'pending' });
+        expect(attempt.requestId).toBe(requestId);
+
+        ops.check.mockResolvedValue({ status: 'complete', credentialUri: 'reserved-credential' });
+        expect(await recoverClaim(attempt, ops, progress)).toBe(true);
+        expect(ops.check).toHaveBeenCalledTimes(2);
+        expect(ops.claim).toHaveBeenCalledTimes(1);
+        expect(ops.save).toHaveBeenCalledExactlyOnceWith('reserved-credential');
+    });
+
+    it('does not mask a conflict outside claiming as pending', async () => {
+        const ops = operations();
+        ops.save.mockRejectedValueOnce(
+            Object.assign(new Error('save conflict'), {
+                data: { code: 'CONFLICT' },
+            })
+        );
+        const progress = vi.fn();
+        expect(await recoverClaim(newAttempt(), ops, progress)).toBe(false);
+        expect(progress).toHaveBeenLastCalledWith({
+            status: 'failed',
+            stage: 'saving',
+            saved: false,
+        });
+    });
 
     it('does not issue while an earlier request is still pending', async () => {
         const ops = operations();

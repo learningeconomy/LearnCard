@@ -566,6 +566,7 @@ const ClaimBoost: React.FC<{
                 },
                 (stage, error) => {
                     log.warn('Claim link recovery failed', error, { stage });
+                    // Pending already ended this activation; lifecycle termination is idempotent.
                     completeClaimAttempt(
                         boost,
                         AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
@@ -579,10 +580,8 @@ const ClaimBoost: React.FC<{
                 }
             );
             if (!completed || !mountedRef.current) return;
-            await assertActive();
-
-            const category = getDefaultCategoryForCredential(boost);
             completeClaimAttempt(boost, AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
+            const category = getDefaultCategoryForCredential(boost);
             track(AnalyticsEvents.CLAIM_BOOST, {
                 boostType: category,
                 achievementType: getAchievementType(boost),
@@ -599,8 +598,18 @@ const ClaimBoost: React.FC<{
                     now - Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now),
                 msSinceSessionStart: now - Number(localStorage.getItem(SESSION_START_KEY) ?? now),
             });
-            sessionStorage.removeItem(session.storageKey);
             setIsClaimed(true);
+            try {
+                await assertActive();
+            } catch (error) {
+                log.warn('Claim completed; navigation context could not be confirmed', error);
+                if (mountedRef.current && error instanceof ClaimContextChangedError) {
+                    setClaimProgress({ status: 'context-changed' });
+                }
+                return;
+            }
+
+            sessionStorage.removeItem(session.storageKey);
             dismissClaimModal?.();
             history.replace(
                 category === CredentialCategoryEnum.family
