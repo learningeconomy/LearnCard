@@ -153,8 +153,9 @@ production host has run the brand-aware image since 2026-11-05 02:36Z (pins
       2026-11-06; measured count and forecast deferred by the owner, 2026-11-05).
       The 2026-11-06 measurement run could not count Roughtime requests (the
       enclave makes them), so the per-operation count is still the RT-table estimate.
-- [ ] P-c: the privacy-policy page the app links shows the current (2026-10-27)
-      wording, and the legal approver is named (LAUNCH-DECISIONS.md P-c).
+- [x] P-c: the app links the current (2026-10-27) privacy policy
+      (https://learncard.com/privacy-policy, in #1875), and the legal approver is
+      named: Yas (Legal), 2026-10-26 (LAUNCH-DECISIONS.md P-c).
 - [x] P-d fix merged (#1967, 2026-11-05).
 - [ ] Rollback guard live before the switch (replaces the native force-update):
       lca-api with #1971 (`isWeb3AuthLogin`) and #1972 (startup retry) deployed to
