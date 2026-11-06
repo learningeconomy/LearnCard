@@ -83,6 +83,8 @@ The assertion is a 5-minute EdDSA JWT. Verify it against the `did:web` document 
 
 Respond with HTTP `200` or `202` and `{ "status": "accepted" }`, or HTTP `200` and `{ "status": "none_yet" }` when there is no transcript yet. Any other response is treated as a failure.
 
+Respond within 15 seconds. Return `202` as soon as the request is queued and do the work afterwards. If LearnCard gets no response in time (or the connection drops after the request was sent), it cannot tell whether you accepted the request, so it keeps the request pending and keeps waiting for a transcript that echoes that `request_id`. Treat `request_id` as idempotent: process each one at most once.
+
 ### Delivery
 
 Send the transcript credential to the student's DID (`sub`) through the LearnCard Network send API, from the LearnCard Network profile LearnCard has configured for your district (its profile ID). Sign it with the issuer DID LearnCard has configured for your district.
@@ -104,9 +106,9 @@ The app auto-accepts a transcript only when all of these hold:
 
 - It was sent by the configured LearnCard Network profile. The network authenticates the sender, and the app checks the sending profile's ID. It does not check the profile's DID, because the network reports every profile's DID as its own `did:web:<network>:users:<profileId>`.
 - The credential's own `issuer` is the configured issuer DID (for example your own `did:web:records.example.org`). This DID does not need to be the sending profile's DID.
-- The credential verifies, is a `ClrCredential`, is for the student's DID, and was issued after the request.
+- The credential verifies, is a `ClrCredential`, is for the student's DID, and was issued after the request. "Issued" is `validFrom` (or `issuanceDate`). The app allows up to 5 minutes of clock difference, so a whole-second `validFrom` or a slightly slow issuer clock is fine. Keep your signing host's clock NTP-synced, and never set `validFrom` later than the time you send the credential: if `validFrom` is ahead of the student's device clock by up to 5 minutes the app re-checks it until it becomes valid, and anything further ahead is left for a manual accept.
 - If the credential echoes a request ID (the `urn:uuid:` evidence entry above, or `requestId` / `request_id` on `credentialSubject` or an evidence entry), it equals the student's current request. Do not add unrelated top-level evidence entries with a `urn:uuid:` ID: the app treats them as a mismatch.
 
-A transcript that does not match stays in the student's notifications for a manual accept.
+A transcript that does not match stays in the student's notifications for a manual accept. If the student accepts the requested transcript by hand, the app still recognises it (using the same rules) among the credentials already accepted from your profile and marks the request received.
 
 `id` is a core Verifiable Credentials term. `Evidence` is defined by the Open Badges 3.0 and CLR 2.0 contexts that transcript credentials normally use; if you sign with a different context, check that it defines `Evidence` before signing. Until every issuer sends it, the app still accepts a transcript without it when the sender, type and subject match.

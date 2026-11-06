@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     currentUser: null as null | { getIdTokenResult: ReturnType<typeof vi.fn> },
     typeOfLogin: null as string | null,
+    authStateReady: vi.fn(async () => undefined),
     log: { warn: vi.fn(), error: vi.fn() },
 }));
 
@@ -11,13 +12,22 @@ vi.mock('learn-card-base', () => ({
     getLogger: () => mocks.log,
     SocialLoginTypes: { classlink: 'classlink' },
 }));
-vi.mock('../../firebase/firebase', () => ({ auth: () => ({ currentUser: mocks.currentUser }) }));
+vi.mock('../../firebase/firebase', () => ({
+    auth: () => ({
+        get currentUser() {
+            return mocks.currentUser;
+        },
+        authStateReady: mocks.authStateReady,
+    }),
+}));
 
 import {
     applyClassLinkPrivateProfile,
+    AUTH_RESTORE_TIMEOUT_MS,
     CLASSLINK_PRIVATE_PROFILE,
     getClassLinkProfileDefaults,
     getClassLinkSession,
+    isClassLinkStudentSession,
 } from './classlinkProfileDefaults';
 
 const withClaims = (...results: Array<Record<string, unknown> | Error>): void => {
@@ -59,6 +69,36 @@ describe('getClassLinkProfileDefaults', () => {
         expect(mocks.log.error).toHaveBeenCalled();
     });
 
+    it('keeps a ClassLink login private when there is no Firebase user', async () => {
+        mocks.typeOfLogin = 'classlink';
+        await expect(getClassLinkProfileDefaults()).resolves.toEqual(CLASSLINK_PRIVATE_PROFILE);
+    });
+
+    it('returns no overrides when signed out of a non-ClassLink login', async () => {
+        await expect(getClassLinkProfileDefaults()).resolves.toEqual({});
+    });
+
+    it('waits for Firebase to restore the session before reading claims', async () => {
+        mocks.authStateReady.mockImplementationOnce(async () => {
+            withClaims({ classlink: true });
+        });
+        await expect(getClassLinkProfileDefaults()).resolves.toEqual(CLASSLINK_PRIVATE_PROFILE);
+        expect(mocks.authStateReady).toHaveBeenCalled();
+    });
+
+    it('stops waiting for session restore after the timeout', async () => {
+        vi.useFakeTimers();
+        try {
+            mocks.typeOfLogin = 'classlink';
+            mocks.authStateReady.mockImplementationOnce(() => new Promise<undefined>(() => {}));
+            const result = getClassLinkProfileDefaults();
+            await vi.advanceTimersByTimeAsync(AUTH_RESTORE_TIMEOUT_MS);
+            await expect(result).resolves.toEqual(CLASSLINK_PRIVATE_PROFILE);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('logs (does not silently drop) a failure for non-ClassLink logins', async () => {
         withClaims(new Error('network'), new Error('network'));
         await expect(getClassLinkProfileDefaults()).resolves.toEqual({});
@@ -81,6 +121,39 @@ describe('getClassLinkSession', () => {
         withClaims(new Error('x'), new Error('x'));
         mocks.typeOfLogin = 'classlink';
         await expect(getClassLinkSession()).resolves.toEqual({ classlink: true, student: true });
+    });
+
+    it('fails closed to student for a ClassLink login with no Firebase user', async () => {
+        mocks.currentUser = null;
+        mocks.typeOfLogin = 'classlink';
+        await expect(getClassLinkSession()).resolves.toEqual({ classlink: true, student: true });
+    });
+
+    it('reports no ClassLink session when signed out of another login', async () => {
+        mocks.currentUser = null;
+        await expect(getClassLinkSession()).resolves.toEqual({ classlink: false, student: false });
+    });
+});
+
+describe('isClassLinkStudentSession', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mocks.currentUser = null;
+        mocks.typeOfLogin = null;
+    });
+
+    it('reads the classlinkStudent claim', async () => {
+        withClaims({ classlinkStudent: true });
+        await expect(isClassLinkStudentSession()).resolves.toBe(true);
+    });
+
+    it('fails closed for a ClassLink login with no Firebase user', async () => {
+        mocks.typeOfLogin = 'classlink';
+        await expect(isClassLinkStudentSession()).resolves.toBe(true);
+    });
+
+    it('is false when signed out of another login', async () => {
+        await expect(isClassLinkStudentSession()).resolves.toBe(false);
     });
 });
 

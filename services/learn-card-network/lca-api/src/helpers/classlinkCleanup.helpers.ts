@@ -2,7 +2,6 @@ import cache from '@cache';
 import {
     clearExpiredStateStudentIds,
     countExpiredStateStudentIds,
-    deleteClassLinkIdentitiesByIdentityKeys,
     getClassLinkIdentitiesCollection,
 } from '../models/ClassLinkIdentity';
 import { getAuthSubjectsCollection } from '../models/AuthSubject';
@@ -54,8 +53,10 @@ export interface OrphanCleanupOptions {
     /** Delete (true) or only report (false). */
     apply: boolean;
     /**
-     * Only identities and requests older than this are considered, so a student who signed
-     * in but has not finished wallet setup yet is never deleted. Defaults to 30 days.
+     * Only identities with no activity (created and last updated) for this many days, and
+     * requests older than this, are considered. Every sign-in updates the identity, so a
+     * student who signed in recently but has not finished wallet setup yet is never deleted,
+     * even when the identity itself was first created long ago. Defaults to 30 days.
      */
     minAgeDays?: number;
     now?: Date;
@@ -83,7 +84,7 @@ const hasOwner = async ({
 
 /**
  * Remove ClassLink identities (and their `classlink:` AuthSubject) and transcript requests
- * that no account owns any more and that are older than `minAgeDays`. Dry run unless
+ * that no account owns any more and that have had no activity for `minAgeDays`. Dry run unless
  * `apply`. Logs only counts and opaque identity keys, never emails or state IDs.
  */
 export const cleanupOrphanClassLinkData = async (
@@ -98,7 +99,7 @@ export const cleanupOrphanClassLinkData = async (
     let deleted = 0;
 
     const identities = getClassLinkIdentitiesCollection().find(
-        { createdAt: { $lt: cutoff } },
+        { createdAt: { $lt: cutoff }, updatedAt: { $lt: cutoff } },
         { projection: { identityKey: 1, firebaseUid: 1, primaryDid: 1, subject: 1 } }
     );
     for await (const identity of identities) {
@@ -112,10 +113,19 @@ export const cleanupOrphanClassLinkData = async (
             continue;
         let count = 0;
         if (apply) {
-            count += await deleteClassLinkIdentitiesByIdentityKeys([identity.identityKey]);
+            // Delete only if still inactive: a sign-in during the scan updates the identity.
             count += (
-                await getAuthSubjectsCollection().deleteMany({ identityKey: identity.identityKey })
+                await getClassLinkIdentitiesCollection().deleteOne({
+                    identityKey: identity.identityKey,
+                    updatedAt: { $lt: cutoff },
+                })
             ).deletedCount;
+            if (count)
+                count += (
+                    await getAuthSubjectsCollection().deleteMany({
+                        identityKey: identity.identityKey,
+                    })
+                ).deletedCount;
         }
         deleted += count;
         console.log(`${apply ? 'orphan identity deleted' : 'orphan identity found'} (${count})`);

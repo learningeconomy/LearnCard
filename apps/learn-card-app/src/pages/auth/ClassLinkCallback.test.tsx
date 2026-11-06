@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     search: '',
     intent: 'signIn' as 'signIn' | 'connect',
+    peek: vi.fn(),
+    authStatus: 'ready',
     replace: vi.fn(),
     presentToast: vi.fn(),
     exchangeCode: vi.fn(),
@@ -41,11 +43,14 @@ vi.mock('../../hooks/useFirebase', () => ({
 }));
 vi.mock('../../providers/AuthCoordinatorProvider', () => ({
     useAuthCoordinator: () => ({ logout: mocks.logout }),
-    useAppAuth: () => ({ state: { status: 'ready' } }),
+    useAppAuth: () => ({ state: { status: mocks.authStatus } }),
 }));
 vi.mock('../../auth/classlink/classlinkPkce', () => ({
     consumeClassLinkAttempt: mocks.consume,
-    peekClassLinkAttemptIntent: () => mocks.intent,
+    peekClassLinkAttemptIntent: (state: string | null) => {
+        mocks.peek(state);
+        return mocks.intent;
+    },
 }));
 vi.mock('../../auth/classlink/classlinkProfileDefaults', () => ({
     applyClassLinkPrivateProfile: mocks.applyPrivate,
@@ -71,6 +76,8 @@ describe('ClassLinkCallback (sign-in)', () => {
         vi.clearAllMocks();
         resetClassLinkCallbackClaims();
         mocks.intent = 'signIn';
+        mocks.authStatus = 'ready';
+        sessionStorage.clear();
         mocks.search = '?code=code-1&state=state-1';
         // Real single-use behaviour: the second consume finds nothing.
         let stored: typeof ATTEMPT | null = ATTEMPT;
@@ -153,6 +160,20 @@ describe('ClassLinkCallback (sign-in)', () => {
         expect(mocks.presentToast).toHaveBeenCalledWith(message, expect.anything());
     });
 
+    it('routes by the callback state', async () => {
+        render(<ClassLinkCallback />);
+        await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/wallet'));
+        expect(mocks.peek).toHaveBeenCalledWith('state-1');
+    });
+
+    it('relaunches a state-less LaunchPad code through sign-in', async () => {
+        mocks.search = '?code=launch-code';
+        render(<ClassLinkCallback />);
+        await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/auth/classlink/start'));
+        expect(mocks.peek).toHaveBeenCalledWith(null);
+        expect(mocks.exchangeCode).not.toHaveBeenCalled();
+    });
+
     it('reports a closed sheet as cancelled', async () => {
         mocks.search = '?error=access_denied';
         render(<ClassLinkCallback />);
@@ -170,6 +191,7 @@ describe('ClassLinkCallback (School Connect)', () => {
         vi.clearAllMocks();
         resetClassLinkCallbackClaims();
         mocks.intent = 'connect';
+        mocks.authStatus = 'ready';
         mocks.search = '?code=code-2&state=state-1';
         let stored: (typeof ATTEMPT & { redirectTo?: string }) | null = {
             ...ATTEMPT,
@@ -214,5 +236,19 @@ describe('ClassLinkCallback (School Connect)', () => {
         render(<ClassLinkCallback />);
         await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/school-connect'));
         expect(mocks.applyPrivate).not.toHaveBeenCalled();
+    });
+
+    it('clears the pending attempt when the user never becomes ready', async () => {
+        vi.useFakeTimers();
+        try {
+            mocks.authStatus = 'loading';
+            render(<ClassLinkCallback />);
+            await vi.advanceTimersByTimeAsync(30_000);
+            expect(mocks.consume).toHaveBeenCalledWith('state-1');
+            expect(mocks.replace).toHaveBeenCalledWith('/login');
+            expect(mocks.connect).not.toHaveBeenCalled();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

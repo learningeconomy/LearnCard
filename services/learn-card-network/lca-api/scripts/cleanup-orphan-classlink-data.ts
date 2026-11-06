@@ -9,8 +9,9 @@
  *   bun scripts/cleanup-orphan-classlink-data.ts --delete-orphans [--min-age-days 30] [--apply]
  *       Additionally delete ClassLink identities (with their `classlink:` AuthSubject) and
  *       transcript requests that no account owns any more (no UserKey by Firebase uid,
- *       Keycloak subject or recorded DID) and that are older than --min-age-days, so a
- *       student who signed in but hasn't finished wallet setup is never deleted.
+ *       Keycloak subject or recorded DID) and that have had no activity for --min-age-days.
+ *       Every sign-in updates the identity, so a student who signed in recently but hasn't
+ *       finished wallet setup is never deleted.
  *
  * Always exits: the Mongo and Redis connections are closed and the process exits with 0
  * (or 1 on failure).

@@ -21,7 +21,12 @@ import {
     createTranscriptRequest,
 } from '../src/models/TranscriptRequest';
 import { getUserKeysCollection, type MongoUserKeyType } from '../src/models/UserKey';
-import { createMinorPreferencesIfAbsent } from '../src/models/Preferences';
+import {
+    CLASSLINK_PRIVACY_LOCK_SOURCE,
+    createMinorPreferencesIfAbsent,
+    enforceMinorPreferences,
+} from '../src/models/Preferences';
+import { getPrivacyLockState } from '../src/accesslayer/preferences/privacyLock';
 import { getAuthSubjectsCollection, getOrCreateAuthSubject } from '../src/models/AuthSubject';
 import { deleteClassLinkDataForAccount } from '../src/helpers/classlinkDeletion.helpers';
 import { Preferences } from '../src/accesslayer/preferences';
@@ -95,6 +100,7 @@ describe('ClassLink account cleanup', () => {
                 firebaseUid: 'orphan_uid',
                 identityKey: 'classlink:cleanup:orphan',
                 createdAt: old,
+                updatedAt: old,
             },
             // Mid-setup: no UserKey yet, but too new to be an orphan.
             {
@@ -110,6 +116,15 @@ describe('ClassLink account cleanup', () => {
                 identityKey: 'classlink:cleanup:rebound',
                 primaryDid: did,
                 createdAt: old,
+                updatedAt: old,
+            },
+            // Created long ago but signed in again recently (mid-setup): not an orphan.
+            {
+                ...identityWithoutId,
+                firebaseUid: 'returning_uid',
+                identityKey: 'classlink:cleanup:returning',
+                createdAt: old,
+                updatedAt: new Date(),
             },
         ]);
         await expect(cleanupOrphanClassLinkData(false)).resolves.toBe(0);
@@ -123,9 +138,15 @@ describe('ClassLink account cleanup', () => {
         });
         expect(
             await getClassLinkIdentitiesCollection().countDocuments({
-                identityKey: { $in: ['classlink:cleanup:new', 'classlink:cleanup:rebound'] },
+                identityKey: {
+                    $in: [
+                        'classlink:cleanup:new',
+                        'classlink:cleanup:rebound',
+                        'classlink:cleanup:returning',
+                    ],
+                },
             })
-        ).toBe(2);
+        ).toBe(3);
         const remainingLiveCount = await getClassLinkIdentitiesCollection().countDocuments({
             firebaseUid: uid,
         });
@@ -279,6 +300,42 @@ describe('ClassLink account cleanup', () => {
                 identities: 0,
                 transcriptRequests: 0,
                 authSubjects: 0,
+                privacyLocks: 0,
+            });
+        });
+
+        it('keeps the privacy lock while the account is live (deleteMyData by a signed-in student)', async () => {
+            await enforceMinorPreferences(did);
+            await caller(did).deleteMyData({});
+            const stored = await Preferences.findOne({ did });
+            expect(stored?.privacyLock).toMatchObject({ source: CLASSLINK_PRIVACY_LOCK_SOURCE });
+            await expect(getPrivacyLockState(did, stored)).resolves.toBe('locked');
+        });
+
+        it('lifts the ClassLink privacy lock on account deletion but keeps the minor values', async () => {
+            await enforceMinorPreferences(did);
+            const locked = await Preferences.findOne({ did });
+            await expect(getPrivacyLockState(did, locked)).resolves.toBe('locked');
+            await expect(
+                deleteClassLinkDataForAccount(userKey, { clearPrivacyLock: true })
+            ).resolves.toMatchObject({
+                privacyLocks: 1,
+            });
+            const stored = await Preferences.findOne({ did });
+            expect(stored?.privacyLock).toBeUndefined();
+            expect(stored).toMatchObject({ aiEnabled: false, analyticsEnabled: false });
+            await expect(getPrivacyLockState(did, stored)).resolves.toBe('unlocked');
+        });
+
+        it('keeps a privacy lock from another source', async () => {
+            await enforceMinorPreferences(did, 'other-source');
+            await expect(
+                deleteClassLinkDataForAccount(userKey, { clearPrivacyLock: true })
+            ).resolves.toMatchObject({
+                privacyLocks: 0,
+            });
+            expect((await Preferences.findOne({ did }))?.privacyLock).toMatchObject({
+                source: 'other-source',
             });
         });
     });

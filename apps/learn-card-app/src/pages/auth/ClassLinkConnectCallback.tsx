@@ -52,6 +52,9 @@ const ClassLinkConnectCallback: React.FC = () => {
         const timer = window.setTimeout(() => {
             if (hasRun.current) return;
             hasRun.current = true;
+            // Clear the pending attempt so it cannot linger and capture later callbacks.
+            const state = query.get('state');
+            if (state) void consumeClassLinkAttempt(state);
             fail(m['schoolConnect.signInFirst'](), '/login');
         }, READY_TIMEOUT_MS);
         return () => window.clearTimeout(timer);

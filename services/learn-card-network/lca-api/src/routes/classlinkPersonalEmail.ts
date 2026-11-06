@@ -3,9 +3,8 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { didAndChallengeRoute } from '@routes';
 import cache from '@cache';
-import { getDel } from '@cache/getDel';
-import { isRateLimited, recordFailure } from '@helpers/rate-limit.helpers';
 import { resolveClassLinkContext } from '@helpers/classlinkContext.helpers';
+import { canDeletePersonalEmailSubject } from '@helpers/classlinkDeletion.helpers';
 import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
 import { getDeliveryService, getFrom } from '../services/delivery';
 import {
@@ -36,9 +35,47 @@ const sha256Hex = (value: string): string => createHash('sha256').update(value).
 const tooMany = (message: string): TRPCError =>
     new TRPCError({ code: 'TOO_MANY_REQUESTS', message });
 
+// INCR first, then compare, in one round trip: parallel calls cannot all read the old count.
+const CONSUME_BUDGET = `
+local used = redis.call('INCR', KEYS[1])
+if redis.call('TTL', KEYS[1]) < 0 then
+    redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return used
+`;
+
 /**
- * Count one use of a per-DID budget and refuse once it is spent. Uses the shared
- * failures-only limiter, recording every call because each call is the costed action.
+ * Atomically check one guess against the issued code. The attempt is counted before the
+ * comparison, so concurrent guesses cannot exceed the per-code limit; the code is deleted on
+ * a match or once the limit is reached. KEYS: code, attempts. ARGV: expected, limit, ttl.
+ */
+const CHECK_CODE = `
+local stored = redis.call('GET', KEYS[1])
+if not stored then return 'missing' end
+local attempts = redis.call('INCR', KEYS[2])
+if redis.call('TTL', KEYS[2]) < 0 then
+    redis.call('EXPIRE', KEYS[2], ARGV[3])
+end
+local limit = tonumber(ARGV[2])
+if attempts > limit then
+    redis.call('DEL', KEYS[1])
+    return 'locked'
+end
+if stored == ARGV[1] then
+    redis.call('DEL', KEYS[1], KEYS[2])
+    return 'ok'
+end
+if attempts >= limit then redis.call('DEL', KEYS[1]) end
+return 'wrong'
+`;
+
+const getRedis = () => cache.redis ?? cache.node;
+
+/**
+ * Count one use of a per-DID budget and refuse once it is spent. The increment and the
+ * check are one atomic script, so a burst of parallel calls cannot overrun the budget.
+ * Fails open on Redis errors, like the shared limiter: the budget is a speed bump, and the
+ * code check below does not fail open.
  */
 const consumeBudget = async (
     key: string,
@@ -46,9 +83,20 @@ const consumeBudget = async (
     windowSeconds: number,
     message: string
 ): Promise<void> => {
-    if (await isRateLimited(key, limit)) throw tooMany(message);
-    await recordFailure(key, windowSeconds);
+    let used: number;
+    try {
+        used = Number(await getRedis().eval(CONSUME_BUDGET, 1, key, windowSeconds)) || 0;
+    } catch {
+        return;
+    }
+    if (used > limit) throw tooMany(message);
 };
+
+const codeKey = (identityKey: string): string =>
+    `classlink-personal-email:${sha256Hex(identityKey)}`;
+/** Wrong guesses against the current code. Reset whenever a new code is issued. */
+const attemptKey = (identityKey: string): string =>
+    `classlink-personal-email-attempts:${sha256Hex(identityKey)}`;
 
 /**
  * Validate the address for the caller's ClassLink account. Rate-limited per DID so the
@@ -117,8 +165,9 @@ export const personalEmailProcedures = {
             );
             const code = randomInt(100000, 1000000).toString();
             // Keyed by the identity (stable across Firebase provider changes).
-            const key = `classlink-personal-email:${sha256Hex(identity.identityKey)}`;
-            await cache.set(key, JSON.stringify({ email, code }), 300);
+            await cache.set(codeKey(identity.identityKey), JSON.stringify({ email, code }), 300);
+            // The attempt limit applies per issued code.
+            await getRedis().del(attemptKey(identity.identityKey));
             try {
                 await getDeliveryService().send({
                     to: email,
@@ -143,32 +192,21 @@ export const personalEmailProcedures = {
         .input(z.object({ email: personalEmail, code: z.string().regex(/^\d{6}$/) }))
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ input: { email, code }, ctx }) => {
-            const { identity } = await validateEmail(ctx.user.did, email);
-            const key = `classlink-personal-email:${sha256Hex(identity.identityKey)}`;
-            const stored = await cache.get(key);
-            const invalid = () =>
-                new TRPCError({
+            const { identity, userKey } = await validateEmail(ctx.user.did, email);
+            const result = await getRedis().eval(
+                CHECK_CODE,
+                2,
+                codeKey(identity.identityKey),
+                attemptKey(identity.identityKey),
+                JSON.stringify({ email, code }),
+                PERSONAL_EMAIL_ATTEMPT_LIMIT,
+                300
+            );
+            if (result !== 'ok')
+                throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Invalid or expired code. Please try again.',
                 });
-            if (!stored) throw invalid();
-            const expected = JSON.stringify({ email, code });
-            if (stored !== expected) {
-                // Scope failures to this issuance, without exposing the code in cache keys.
-                const attemptKey = `classlink-personal-email-attempts:${sha256Hex(identity.identityKey)}:${createHash('sha256').update(stored).digest('hex')}`;
-                await recordFailure(attemptKey, 300);
-                if (await isRateLimited(attemptKey, PERSONAL_EMAIL_ATTEMPT_LIMIT)) {
-                    const redis = cache.redis ?? cache.node;
-                    await redis.eval(
-                        "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end return 0",
-                        1,
-                        key,
-                        stored
-                    );
-                }
-                throw invalid();
-            }
-            if ((await getDel(key)) !== expected) throw invalid();
             // The caller proved they read the code, so it is safe to say the address is taken.
             await assertEmailAvailable(email, identity.subject);
             // Reserve without modifying existing attributes, including when another
@@ -204,6 +242,18 @@ export const personalEmailProcedures = {
                 email,
                 emailVerified: true,
             });
+            // Release the replaced address, so it stops signing in to this account and is
+            // not left behind by account deletion (which only knows the current address).
+            const previous = identity.personalEmail?.trim().toLowerCase();
+            if (
+                previous &&
+                previous !== email &&
+                (await canDeletePersonalEmailSubject(previous, identity.subject, userKey))
+            )
+                await getAuthSubjectsCollection().deleteOne({
+                    identityKey: `email:${previous}`,
+                    subject: identity.subject,
+                });
             await updateClassLinkIdentity(identity.identityKey, {
                 personalEmail: email,
                 personalEmailVerifiedAt: new Date(),

@@ -176,7 +176,8 @@ const ClassLinkSignInCallback: React.FC = () => {
 };
 
 const ClassLinkCallback: React.FC = () => {
-    const [intent] = React.useState(peekClassLinkAttemptIntent);
+    const query = usePathQuery();
+    const [intent] = React.useState(() => peekClassLinkAttemptIntent(query.get('state')));
     return intent === 'connect' ? <ClassLinkConnectCallback /> : <ClassLinkSignInCallback />;
 };
 

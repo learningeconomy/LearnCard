@@ -368,6 +368,42 @@ describe('transcript requests', () => {
         });
         expect(axios.post).toHaveBeenCalledTimes(1);
     });
+    it('keeps a request pending when the issuer may have received it before a timeout', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        vi.mocked(axios.post).mockRejectedValue(
+            Object.assign(new Error('timeout of 15000ms exceeded private-jwt'), {
+                isAxiosError: true,
+                code: 'ECONNABORTED',
+            })
+        );
+        const first = await caller().request({ consent: true });
+        expect(first.status).toBe('requested');
+        expect(warn).toHaveBeenCalledWith('transcripts.request.issuer_outcome_unknown');
+        const row = await getTranscriptRequestsCollection().findOne({});
+        expect(row).toMatchObject({ status: 'requested', issuerResponseCode: 'no_response' });
+        expect(row?.issuerHttpStatus).toBeUndefined();
+        // Deduped within ten minutes: no second assertion reaches the issuer or the budget.
+        expect(await caller().request({ consent: true })).toEqual(first);
+        expect(axios.post).toHaveBeenCalledTimes(1);
+        // A transcript echoing this request_id can still be acknowledged.
+        expect(await caller().markReceived({ requestId: first.requestId })).toEqual({
+            success: true,
+        });
+    });
+    it('fails a request when the issuer was definitely not reached', async () => {
+        vi.mocked(axios.post).mockRejectedValue(
+            Object.assign(new Error('connect ECONNREFUSED'), {
+                isAxiosError: true,
+                code: 'ECONNREFUSED',
+            })
+        );
+        await expect(caller().request({ consent: true })).rejects.toMatchObject({
+            code: 'BAD_GATEWAY',
+        });
+        expect(await getTranscriptRequestsCollection().findOne({})).toMatchObject({
+            status: 'failed',
+        });
+    });
     it('deduplicates sequential requests but permits a request after ten minutes', async () => {
         const first = await caller().request({ consent: true });
         expect(await caller().request({ consent: true })).toEqual(first);

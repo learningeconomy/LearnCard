@@ -9,17 +9,24 @@ const { isNative, openSession } = vi.hoisted(() => ({
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: isNative } }));
 vi.mock('learn-card-base', () => ({ getLogger: () => ({ error: vi.fn() }) }));
 vi.mock('../nativeAuthSession', () => ({ openNativeAuthSession: openSession }));
-vi.mock('./classlinkPkce', () => ({
-    CLASSLINK_CALLBACK_PATH: '/auth/classlink/callback',
-    createClassLinkAttempt: vi.fn(async () => ({
-        state: 'state-1',
-        nonce: 'nonce-1',
-        codeVerifier: 'v'.repeat(64),
-        codeChallenge: 'challenge',
-        redirectUri: 'com.example.app://auth/classlink/callback',
-    })),
-}));
+vi.mock('./classlinkPkce', async importOriginal => {
+    const actual = await importOriginal<typeof import('./classlinkPkce')>();
+    return {
+        toClassLinkCallbackPath: actual.toClassLinkCallbackPath,
+        setClassLinkNativeSessionInFlight: actual.setClassLinkNativeSessionInFlight,
+        isClassLinkNativeSessionInFlight: actual.isClassLinkNativeSessionInFlight,
+        CLASSLINK_CALLBACK_PATH: '/auth/classlink/callback',
+        createClassLinkAttempt: vi.fn(async () => ({
+            state: 'state-1',
+            nonce: 'nonce-1',
+            codeVerifier: 'v'.repeat(64),
+            codeChallenge: 'challenge',
+            redirectUri: 'com.example.app://auth/classlink/callback',
+        })),
+    };
+});
 
+import { isClassLinkNativeSessionInFlight } from './classlinkPkce';
 import {
     CLASSLINK_NATIVE_SESSION_TIMEOUT_MS,
     runClassLinkLogin,
@@ -49,6 +56,21 @@ describe('startClassLinkLogin', () => {
             timeoutMs: CLASSLINK_NATIVE_SESSION_TIMEOUT_MS,
         });
         expect(navigate).toHaveBeenCalledWith('/auth/classlink/callback?code=abc&state=state-1');
+    });
+
+    it('marks the native session in flight only while the sheet is open', async () => {
+        let inFlightDuringSession: boolean | undefined;
+        openSession.mockImplementation(async () => {
+            inFlightDuringSession = isClassLinkNativeSessionInFlight();
+            return 'com.example.app://auth/classlink/callback?code=abc&state=state-1';
+        });
+        await runClassLinkLogin(getAuthorizeUrl, vi.fn());
+        expect(inFlightDuringSession).toBe(true);
+        expect(isClassLinkNativeSessionInFlight()).toBe(false);
+
+        openSession.mockRejectedValue(new AuthSessionError('cancelled', 'no_session'));
+        await expect(runClassLinkLogin(getAuthorizeUrl, vi.fn())).resolves.toBe('handled');
+        expect(isClassLinkNativeSessionInFlight()).toBe(false);
     });
 
     it('gives interactive ClassLink logins far longer than the 60 s silent-hop default', () => {

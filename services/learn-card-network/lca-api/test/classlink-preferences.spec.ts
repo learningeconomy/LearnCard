@@ -35,12 +35,14 @@ import {
 } from '../src/models/ClassLinkIdentity';
 import { Preferences } from '../src/accesslayer/preferences';
 import {
+    clearNotStudentCache,
     getNotStudentCacheKey,
     NOT_STUDENT_CACHE_TTL_SECS,
 } from '../src/accesslayer/preferences/privacyLock';
 import { createMinorPreferencesIfAbsent, enforceMinorPreferences } from '../src/models/Preferences';
 import { getClassLinkConfig } from '../src/helpers/classlink.config';
 import { getClassLinkStudentStatus } from '../src/helpers/classlinkContext.helpers';
+import { createUserKeysIndexes } from '../src/models/UserKey';
 import { ThemeEnum } from '../src/types/preferences';
 import type { ClassLinkConfig } from '../src/types/classlink';
 
@@ -275,6 +277,53 @@ describe('ClassLink student privacy lock', () => {
             ...minor,
             privacyLock: { source: 'classlink' },
         });
+    });
+
+    it('keeps a linked DID locked when a racing read re-caches "not a student" after sign-in', async () => {
+        const primary = 'did:key:joining-primary';
+        const linked = 'did:key:joining-linked';
+        await cache.delete([primary, linked].map(getNotStudentCacheKey));
+        await mongodb.collection('userkeys').insertOne({
+            primaryDid: primary,
+            linkedDids: [linked],
+            authProviders: [{ type: 'firebase', id: 'uid-joining' }],
+        });
+        const actual = studentLookups.getMockImplementation()!;
+        // The read on the linked DID finds no identity, then the account becomes a student
+        // (as ClassLink sign-in/connect does: lock every account DID, then clear the cache),
+        // and only then does the read cache its stale "not a student" answer.
+        studentLookups.mockImplementationOnce(async did => {
+            const status = await actual(did);
+            await upsertClassLinkIdentity(identity('uid-joining', 'student-joining', true));
+            await Promise.all([primary, linked].map(d => enforceMinorPreferences(d)));
+            await Promise.all([primary, linked].map(clearNotStudentCache));
+            return status;
+        });
+
+        await caller(linked).getPreferencesForDid();
+        expect(await cache.get(getNotStudentCacheKey(linked))).toBe('not_student');
+
+        await caller(linked).updatePreferences({ aiEnabled: true, analyticsEnabled: true });
+        expect(await Preferences.findOne({ did: linked })).toMatchObject({
+            ...minor,
+            privacyLock: { source: 'classlink' },
+        });
+        expect(await caller(linked).getPreferencesForDid()).toMatchObject({
+            ...minor,
+            locked: true,
+        });
+        await cache.delete([primary, linked].map(getNotStudentCacheKey));
+    });
+
+    it('indexes linkedDids so the DID lookup behind the lock does not scan userkeys', async () => {
+        await createUserKeysIndexes();
+        const indexes = await mongodb.collection('userkeys').listIndexes().toArray();
+        expect(indexes).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ name: 'linked_dids_lookup', key: { linkedDids: 1 } }),
+                expect.objectContaining({ key: { primaryDid: 1 } }),
+            ])
+        );
     });
 
     it('fails safe when the student lookup fails and no lock is stored', async () => {

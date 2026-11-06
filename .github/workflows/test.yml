@@ -142,6 +142,23 @@ jobs:
                   test/jobs/escrowBlobRewrap.spec.ts
                   test/jobs/escrowHoldReminders.spec.ts
 
+            # ClassLink SSO + transcript live-Mongo specs (account linking/CONFLICT,
+            # trusted-email gate, transcript lock/ownership, deletion cascade). Same
+            # gap as above: only vitest.integration.config.ts picks these up.
+            - name: Run ClassLink and transcript integration specs
+              if: steps.changes.outputs.run == 'true'
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run --config vitest.integration.config.ts
+                  test/classlink-router.spec.ts
+                  test/classlink-connect.spec.ts
+                  test/classlink-models.spec.ts
+                  test/classlink-personal-email.spec.ts
+                  test/classlink-preferences.spec.ts
+                  test/classlink-cleanup.spec.ts
+                  test/classlink-synthetic-email.spec.ts
+                  test/transcripts.spec.ts
+
     ai-agent:
         name: AI Agent CI
         if: github.event_name == 'pull_request'

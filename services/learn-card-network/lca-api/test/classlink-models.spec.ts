@@ -226,6 +226,50 @@ describe('account-keyed ClassLink lookup', () => {
         expect(context.firebaseUid).toBe('uid-x');
     });
 
+    it('never lets an account matched only by a stale Firebase uid take over the recorded DID', async () => {
+        await upsertClassLinkIdentity({
+            ...identity(),
+            isMinorHint: true,
+            primaryDid: did,
+            sealedStateStudentId: null,
+        });
+        // The real account was rebound off uid-x; a fresh wallet was then made for uid-x.
+        await getUserKeysCollection().insertOne(account([{ type: 'firebase', id: 'rebound-uid' }]));
+        await getUserKeysCollection().insertOne({
+            ...account([{ type: 'firebase', id: 'uid-x' }]),
+            primaryDid: 'did:key:fresh',
+            linkedDids: [],
+        });
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        await getClassLinkStudentStatus('did:key:fresh');
+        expect(warn).toHaveBeenCalledWith('classlink.identity.did_kept');
+        warn.mockRestore();
+        expect(
+            (await getClassLinkIdentitiesCollection().findOne({ firebaseUid: 'uid-x' }))?.primaryDid
+        ).toBe(did);
+        expect((await resolveClassLinkContext(did)).identity.identityKey).toBe(
+            'classlink:tenant-test:source-1'
+        );
+    });
+
+    it("replaces a recorded DID that no account holds any more, or that is this account's", async () => {
+        await upsertClassLinkIdentity({
+            ...identity(),
+            primaryDid: 'did:key:gone',
+            sealedStateStudentId: null,
+        });
+        await getUserKeysCollection().insertOne(account([{ type: 'firebase', id: 'uid-x' }]));
+        await getClassLinkStudentStatus(did);
+        expect((await getClassLinkIdentitiesCollection().findOne({}))?.primaryDid).toBe(did);
+        // The account's linked DID was recorded; its primary DID replaces it.
+        await getClassLinkIdentitiesCollection().updateOne(
+            {},
+            { $set: { primaryDid: 'did:key:linked' } }
+        );
+        await getClassLinkStudentStatus(did);
+        expect((await getClassLinkIdentitiesCollection().findOne({}))?.primaryDid).toBe(did);
+    });
+
     it('matches a Keycloak provider whose id is the identity subject, and a linked DID', async () => {
         await upsertClassLinkIdentity({ ...identity(), sealedStateStudentId: null });
         expect(

@@ -19,9 +19,9 @@ import { useLocale } from '../../i18n';
 import * as m from '../../paraglide/messages.js';
 import { SchoolConnectView } from './SchoolConnectView';
 
-const SchoolConnectPage: React.FC = () => {
+/** Holds every lca-api query, so it only mounts once the School Connect flags are on. */
+const SchoolConnectPageContent: React.FC = () => {
     const history = useHistory();
-    const features = useFeatureConfig();
     const links = useLinksConfig();
     const { state: coordinatorState } = useAppAuth();
     const isReady = coordinatorState.status === 'ready';
@@ -36,8 +36,6 @@ const SchoolConnectPage: React.FC = () => {
     const [connecting, setConnecting] = useState(false);
     const [connectError, setConnectError] = useState('');
     const locale = useLocale();
-
-    if (!features.schoolConnect || !features.classlinkSso) return <Redirect to="/launchpad" />;
 
     const formatDate = (iso: string): string => {
         const date = new Date(iso);
@@ -84,6 +82,16 @@ const SchoolConnectPage: React.FC = () => {
             </IonContent>
         </IonPage>
     );
+};
+
+/**
+ * School Connect page. Checks the tenant flags before mounting any query hook, so tenants
+ * without School Connect make no ClassLink calls (same pattern as TranscriptOptInCard).
+ */
+const SchoolConnectPage: React.FC = () => {
+    const features = useFeatureConfig();
+    if (!features.schoolConnect || !features.classlinkSso) return <Redirect to="/launchpad" />;
+    return <SchoolConnectPageContent />;
 };
 
 export default SchoolConnectPage;

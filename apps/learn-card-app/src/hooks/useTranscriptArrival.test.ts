@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
         invoke: {
             verifyCredential: vi.fn(),
             transcriptsMarkReceived: vi.fn().mockResolvedValue(undefined),
+            getReceivedCredentials: vi.fn().mockResolvedValue([]),
             // Must never be needed: the sender is matched by profileId, not looked up.
             getProfile: vi.fn(),
         },
@@ -106,6 +107,7 @@ vi.mock('@capacitor/push-notifications', () => ({
 }));
 
 import {
+    evaluateTranscriptCandidate,
     getEchoedRequestIds,
     isMatchingTranscript,
     resetTranscriptArrivalSessionState,
@@ -231,6 +233,63 @@ describe('isMatchingTranscript', () => {
         await expect(match({ vc })).resolves.toBe(false);
     });
 
+    it('tolerates clock skew: a whole-second validFrom just before requestedAt matches', async () => {
+        const vc = { ...VALID_VC, validFrom: '2024-01-01T10:00:00Z' } as unknown as VC;
+        await expect(match({ vc, requestedAt: '2024-01-01T10:00:00.350Z' })).resolves.toBe(true);
+        // A few minutes of issuer/server clock disagreement is still accepted.
+        await expect(match({ vc, requestedAt: '2024-01-01T10:04:00.000Z' })).resolves.toBe(true);
+    });
+
+    it('still rejects a credential issued before the request beyond the skew allowance', async () => {
+        const vc = { ...VALID_VC, validFrom: '2024-01-01T10:00:00Z' } as unknown as VC;
+        await expect(match({ vc, requestedAt: '2024-01-01T10:05:01.000Z' })).resolves.toBe(false);
+    });
+
+    describe('when the device clock is behind the issuer', () => {
+        const NOW = new Date('2024-01-02T00:00:00.000Z');
+        const evaluate = (vc: VC) =>
+            evaluateTranscriptCandidate({
+                vc,
+                senderProfileId: ISSUER_PROFILE_ID,
+                expectedSenderProfileId: ISSUER_PROFILE_ID,
+                expectedIssuerDid: ISSUER_DID,
+                userDid: USER_DID,
+                requestedAt: REQUESTED_AT,
+                wallet,
+            });
+
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.setSystemTime(NOW);
+            mocks.wallet.invoke.verifyCredential.mockResolvedValue({
+                warnings: [],
+                errors: ['expiration error: Credential is not valid yet'],
+            });
+        });
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('retries (does not reject) a credential that becomes valid within the skew', async () => {
+            const vc = { ...VALID_VC, validFrom: '2024-01-02T00:00:03.000Z' } as unknown as VC;
+            await expect(evaluate(vc)).resolves.toBe('retry');
+        });
+
+        it('rejects a credential that is not valid until well in the future', async () => {
+            const vc = { ...VALID_VC, validFrom: '2024-01-03T00:00:00.000Z' } as unknown as VC;
+            await expect(evaluate(vc)).resolves.toBe('reject');
+        });
+
+        it('rejects when "not valid yet" comes with any other verification problem', async () => {
+            mocks.wallet.invoke.verifyCredential.mockResolvedValue({
+                warnings: [],
+                errors: ['expiration error: Credential is not valid yet', 'bad proof'],
+            });
+            const vc = { ...VALID_VC, validFrom: '2024-01-02T00:00:03.000Z' } as unknown as VC;
+            await expect(evaluate(vc)).resolves.toBe('reject');
+        });
+    });
+
     it('rejects a credential that fails verification (errors)', async () => {
         mocks.wallet.invoke.verifyCredential.mockResolvedValue({
             warnings: [],
@@ -272,6 +331,7 @@ describe('useTranscriptArrival', () => {
             .mockReset()
             .mockResolvedValue({ warnings: [], errors: [] });
         mocks.wallet.invoke.transcriptsMarkReceived.mockClear();
+        mocks.wallet.invoke.getReceivedCredentials.mockReset().mockResolvedValue([]);
         mocks.addVCtoWallet.mockClear();
         mocks.claimIncomingCredential.mockClear();
         mocks.track.mockClear();
@@ -633,5 +693,189 @@ describe('useTranscriptArrival', () => {
 
         mocks.pushHandler?.({ type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED });
         expect(mocks.incomingCredentials.refetch).toHaveBeenCalledTimes(1);
+    });
+    it('re-reads a "not valid yet" candidate on a later tick instead of caching a rejection', async () => {
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
+        const soon = new Date(Date.now() + 3_000).toISOString();
+        mocks.wallet.read.get.mockResolvedValue({ ...VALID_VC, validFrom: soon });
+        mocks.wallet.invoke.verifyCredential.mockResolvedValueOnce({
+            warnings: [],
+            errors: ['expiration error: Credential is not valid yet'],
+        });
+
+        renderHook(() => useTranscriptArrival(activeParams));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(5_000);
+        expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1);
+        expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledWith({
+            requestId: 'req-1',
+        });
+    });
+
+    describe('a transcript the student already accepted by hand', () => {
+        const SENT_AFTER_REQUEST = '2024-01-02T00:00:00.000Z';
+
+        it('is acknowledged (never claimed again) once it has left the incoming list', async () => {
+            mocks.incomingCredentials.data = [];
+            mocks.wallet.invoke.getReceivedCredentials.mockResolvedValue([
+                { uri: 'u1', from: ISSUER_PROFILE_ID, to: 'me', sent: SENT_AFTER_REQUEST },
+            ]);
+            mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+
+            renderHook(() => useTranscriptArrival(activeParams));
+            await vi.waitFor(() =>
+                expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledWith({
+                    requestId: 'req-1',
+                })
+            );
+
+            expect(mocks.wallet.invoke.getReceivedCredentials).toHaveBeenCalledWith(
+                ISSUER_PROFILE_ID
+            );
+            expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+            expect(mocks.addVCtoWallet).not.toHaveBeenCalled();
+            expect(mocks.invalidateQueries).toHaveBeenCalledWith({
+                queryKey: ['transcriptStatus'],
+            });
+            expect(mocks.track).toHaveBeenCalledWith('transcript_arrived', {});
+
+            await vi.advanceTimersByTimeAsync(5_000 + 10_000);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
+        });
+
+        it('is found by checkAgain after polling ran out', async () => {
+            mocks.incomingCredentials.data = [];
+            mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+
+            const { result } = renderHook(() => useTranscriptArrival(activeParams));
+            await vi.advanceTimersByTimeAsync(31 * 60_000);
+            expect(result.current.isPollingExhausted).toBe(true);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
+
+            // Claimed from Notifications: accepted, so no longer incoming.
+            mocks.wallet.invoke.getReceivedCredentials.mockResolvedValue([
+                { uri: 'u1', from: ISSUER_PROFILE_ID, to: 'me', sent: SENT_AFTER_REQUEST },
+            ]);
+            act(() => result.current.checkAgain());
+            await vi.advanceTimersByTimeAsync(0);
+
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
+            expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+        });
+
+        it('retries a failed acknowledgement on the next tick', async () => {
+            mocks.incomingCredentials.data = [];
+            mocks.wallet.invoke.getReceivedCredentials.mockResolvedValue([
+                { uri: 'u1', from: ISSUER_PROFILE_ID, to: 'me', sent: SENT_AFTER_REQUEST },
+            ]);
+            mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+            mocks.wallet.invoke.transcriptsMarkReceived.mockRejectedValueOnce(new Error('offline'));
+
+            renderHook(() => useTranscriptArrival(activeParams));
+            await vi.advanceTimersByTimeAsync(0);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
+            expect(localStorage.getItem('transcript_pending_received:did:user:req-1')).toBe('true');
+
+            await vi.advanceTimersByTimeAsync(5_000);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(2);
+            expect(localStorage.getItem('transcript_pending_received:did:user:req-1')).toBeNull();
+        });
+
+        it('ignores accepted credentials sent long before the request, without reading them', async () => {
+            mocks.incomingCredentials.data = [];
+            mocks.wallet.invoke.getReceivedCredentials.mockResolvedValue([
+                { uri: 'old', from: ISSUER_PROFILE_ID, to: 'me', sent: '2023-06-01T00:00:00.000Z' },
+            ]);
+            mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+
+            renderHook(() => useTranscriptArrival(activeParams));
+            await vi.advanceTimersByTimeAsync(5_000);
+
+            expect(mocks.wallet.read.get).not.toHaveBeenCalled();
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
+        });
+
+        it('applies the full rule set (e.g. rejects a non-transcript)', async () => {
+            mocks.incomingCredentials.data = [];
+            mocks.wallet.invoke.getReceivedCredentials.mockResolvedValue([
+                { uri: 'u1', from: ISSUER_PROFILE_ID, to: 'me', sent: SENT_AFTER_REQUEST },
+            ]);
+            mocks.wallet.read.get.mockResolvedValue({
+                ...VALID_VC,
+                type: ['VerifiableCredential'],
+            });
+
+            renderHook(() => useTranscriptArrival(activeParams));
+            await vi.advanceTimersByTimeAsync(5_000 + 10_000);
+
+            // Rejected once, then never re-read.
+            expect(mocks.wallet.read.get).toHaveBeenCalledTimes(1);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
+        });
+
+        it('leaves acknowledgement to a claim already made this session', async () => {
+            await claimTranscriptOnce('req-1', async () => undefined);
+            mocks.incomingCredentials.data = [];
+            mocks.wallet.invoke.getReceivedCredentials.mockResolvedValue([
+                { uri: 'u1', from: ISSUER_PROFILE_ID, to: 'me', sent: SENT_AFTER_REQUEST },
+            ]);
+            mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+
+            renderHook(() => useTranscriptArrival(activeParams));
+            await vi.advanceTimersByTimeAsync(5_000);
+
+            expect(mocks.wallet.invoke.getReceivedCredentials).not.toHaveBeenCalled();
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
+        });
+
+        it('re-checks on app foreground', async () => {
+            mocks.incomingCredentials.data = [];
+            renderHook(() => useTranscriptArrival(activeParams));
+            await vi.waitFor(() => expect(mocks.appStateHandler).toBeDefined());
+            await vi.advanceTimersByTimeAsync(0);
+
+            mocks.wallet.invoke.getReceivedCredentials.mockResolvedValue([
+                { uri: 'u1', from: ISSUER_PROFILE_ID, to: 'me', sent: SENT_AFTER_REQUEST },
+            ]);
+            mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+            mocks.appStateHandler?.({ isActive: true });
+            await vi.advanceTimersByTimeAsync(0);
+
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
+        });
+
+        it('still claims a transcript the foreground refetch delivers while the re-check runs', async () => {
+            mocks.incomingCredentials.data = [];
+            const { result, rerender } = renderHook(props => useTranscriptArrival(props), {
+                initialProps: activeParams,
+            });
+            await vi.waitFor(() => expect(mocks.appStateHandler).toBeDefined());
+            await vi.advanceTimersByTimeAsync(30 * 60_000);
+            expect(result.current.isPollingExhausted).toBe(true);
+
+            // The foreground re-check is stuck on the received-credentials lookup...
+            let resolveReceived: (value: unknown[]) => void = () => undefined;
+            mocks.wallet.invoke.getReceivedCredentials.mockImplementationOnce(
+                () => new Promise(resolve => (resolveReceived = resolve))
+            );
+            mocks.appStateHandler?.({ isActive: true });
+            await vi.advanceTimersByTimeAsync(0);
+            expect(mocks.wallet.invoke.getReceivedCredentials).toHaveBeenCalled();
+
+            // ...when the refetch lands with the transcript in the incoming list.
+            mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+            mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
+            rerender({ ...activeParams });
+            await vi.advanceTimersByTimeAsync(0);
+            expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+
+            await act(async () => resolveReceived([]));
+            await vi.advanceTimersByTimeAsync(0);
+
+            expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
+        });
     });
 });

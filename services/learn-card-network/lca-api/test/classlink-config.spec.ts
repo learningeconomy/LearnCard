@@ -300,6 +300,62 @@ describe('ClassLink configuration', () => {
             expect(getTranscriptIssuerConfig({ transcriptIssuer: 'local' })).toBeNull();
         });
 
+        describe('legacy TRANSCRIPT_ISSUER_* validation', () => {
+            it('ignores an http non-localhost legacy endpoint and warns once', async () => {
+                vi.resetModules();
+                const fresh = await import('../src/helpers/classlink.config');
+                env.TRANSCRIPT_ISSUER_ENDPOINT = 'http://records.example.org/transcript-requests';
+                env.TRANSCRIPT_ISSUER_AUDIENCE = 'legacy-service';
+                const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+                expect(fresh.getTranscriptIssuerConfig()).toBeNull();
+                // A district without its own transcriptIssuer resolves to no issuer at all.
+                expect(fresh.getTranscriptIssuerConfig({})).toBeNull();
+                expect(warn).toHaveBeenCalledExactlyOnceWith(
+                    'TRANSCRIPT_ISSUER_* is invalid and will be ignored'
+                );
+            });
+
+            it('allows an http localhost legacy endpoint outside production only', () => {
+                env.TRANSCRIPT_ISSUER_ENDPOINT = 'http://localhost:4000/transcript-requests';
+                env.TRANSCRIPT_ISSUER_AUDIENCE = 'local-service';
+                expect(getTranscriptIssuerConfig()).toEqual({
+                    key: 'default',
+                    endpoint: 'http://localhost:4000/transcript-requests',
+                    audience: 'local-service',
+                });
+                env.NODE_ENV = 'production';
+                vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+                expect(getTranscriptIssuerConfig()).toBeNull();
+            });
+
+            it('rejects a malformed legacy endpoint or TRANSCRIPT_ISSUER_DID', () => {
+                vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+                env.TRANSCRIPT_ISSUER_ENDPOINT = 'not a url';
+                env.TRANSCRIPT_ISSUER_AUDIENCE = 'legacy-service';
+                expect(getTranscriptIssuerConfig()).toBeNull();
+                env.TRANSCRIPT_ISSUER_ENDPOINT = 'https://legacy.example/issue';
+                env.TRANSCRIPT_ISSUER_DID = 'web:legacy.example';
+                expect(getTranscriptIssuerConfig()).toBeNull();
+            });
+
+            it('does not report an explicit default as overriding a rejected legacy entry', async () => {
+                vi.resetModules();
+                const fresh = await import('../src/helpers/classlink.config');
+                env.NODE_ENV = 'production';
+                env.TRANSCRIPT_ISSUER_ENDPOINT = 'http://legacy.example/issue';
+                env.TRANSCRIPT_ISSUER_AUDIENCE = 'legacy-service';
+                env.TRANSCRIPT_ISSUERS = JSON.stringify({ default: exampleRecordsIssuer });
+                const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+                expect(fresh.getTranscriptIssuerConfig()).toEqual({
+                    key: 'default',
+                    ...exampleRecordsIssuer,
+                });
+                expect(warn).toHaveBeenCalledExactlyOnceWith(
+                    'TRANSCRIPT_ISSUER_* is invalid and will be ignored'
+                );
+            });
+        });
+
         it('district with no issuer and no default reports unavailable', () => {
             expect(getTranscriptIssuerConfig({})).toBeNull();
         });

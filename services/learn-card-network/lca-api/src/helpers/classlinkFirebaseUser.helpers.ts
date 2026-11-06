@@ -34,11 +34,14 @@ const getUserOrUndefined = (
  *
  * For the deterministic user:
  * - an existing user with that uid is the same person (left behind when the ClassLinkIdentity
- *   row was deleted), so it is reused rather than failing on `auth/uid-already-exists`;
+ *   row was deleted), so it is reused rather than failing on `auth/uid-already-exists` (or
+ *   `auth/email-already-exists`, when that user is found by uid);
  * - an empty email is backfilled;
  * - a synthetic email is upgraded to the school email once that email is trusted, so a later
- *   email-code sign-in lands on the same account. The caller must already have checked that no
- *   other Firebase user holds `trustedEmail`.
+ *   email-code sign-in lands on the same account. The caller must pass `trustedEmail` only when
+ *   no other Firebase user holds it.
+ *
+ * `isNew` skips the initial lookup; pass it only when the user is not known to exist.
  */
 export const ensureClassLinkFirebaseUser = async (
     auth: FirebaseAuth,
@@ -60,7 +63,11 @@ export const ensureClassLinkFirebaseUser = async (
             await auth.createUser({ uid, displayName, ...contact });
             return;
         } catch (error) {
-            if (firebaseErrorCode(error) !== 'auth/uid-already-exists') throw error;
+            // The left-behind user holds both the uid and the (deterministic or school)
+            // email, so Firebase may report either collision first.
+            const code = firebaseErrorCode(error);
+            if (code !== 'auth/uid-already-exists' && code !== 'auth/email-already-exists')
+                throw error;
             console.info('classlink.firebase_user.reused');
             user = await getUserOrUndefined(auth, uid);
             if (!user) throw error;

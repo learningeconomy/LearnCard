@@ -1,4 +1,5 @@
 import { authStore, getLogger, SocialLoginTypes } from 'learn-card-base';
+import type { User } from 'firebase/auth';
 import { auth } from '../../firebase/firebase';
 
 const log = getLogger('classlink-profile');
@@ -9,12 +10,35 @@ export const CLASSLINK_PRIVATE_PROFILE = { isPrivate: true, profileVisibility: '
 type ClassLinkPrivateProfile = typeof CLASSLINK_PRIVATE_PROFILE;
 type Claims = Record<string, unknown>;
 
+/** Upper bound on waiting for Firebase to restore a persisted session, so callers never hang. */
+export const AUTH_RESTORE_TIMEOUT_MS = 3_000;
+
+/**
+ * The current Firebase user, after Firebase has finished restoring a persisted session
+ * (web restores from IndexedDB asynchronously, and the app can reach `ready` through the
+ * cached private key before that). Gives up after {@link AUTH_RESTORE_TIMEOUT_MS}.
+ */
+const getRestoredUser = async (): Promise<User | null> => {
+    const instance = auth();
+    if (!instance.currentUser && typeof instance.authStateReady === 'function') {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        await Promise.race([
+            instance.authStateReady().catch(() => undefined),
+            new Promise<void>(resolve => {
+                timer = setTimeout(() => resolve(), AUTH_RESTORE_TIMEOUT_MS);
+            }),
+        ]);
+        clearTimeout(timer);
+    }
+    return instance.currentUser;
+};
+
 /**
  * Reads the current Firebase user's custom claims, retrying once with a forced token
  * refresh. Returns `null` when signed out; throws when both attempts fail.
  */
 const readClaims = async (): Promise<Claims | null> => {
-    const user = auth().currentUser;
+    const user = await getRestoredUser();
     if (!user) return null;
     try {
         return (await user.getIdTokenResult()).claims;
@@ -39,15 +63,17 @@ const isClassLinkLogin = (): boolean => {
  * lca-api marks these accounts with the `classlink` custom claim on the sign-in token.
  *
  * Client-side only: brain-service does not yet enforce LCN profile visibility for
- * ClassLink accounts (follow-up). If the claims cannot be read even after one retry, this
- * falls back to the recorded login method, so a ClassLink session still starts private.
+ * ClassLink accounts (follow-up). If there is no Firebase user (session not restored or
+ * expired while the cached key keeps the wallet usable) or the claims cannot be read even
+ * after one retry, this falls back to the recorded login method, so a ClassLink session
+ * still starts private.
  */
 export const getClassLinkProfileDefaults = async (): Promise<
     ClassLinkPrivateProfile | Record<string, never>
 > => {
     try {
         const claims = await readClaims();
-        if (!claims) return {};
+        if (!claims) return isClassLinkLogin() ? CLASSLINK_PRIVATE_PROFILE : {};
         return claims.classlink === true || isClassLinkLogin() ? CLASSLINK_PRIVATE_PROFILE : {};
     } catch (error) {
         const classlink = isClassLinkLogin();
@@ -92,13 +118,16 @@ export const applyClassLinkPrivateProfile = async (
 
 /**
  * Whether the current Firebase session is a ClassLink sign-in, and whether lca-api
- * marked it as a student. Fails closed (`student: true`) when the claims cannot be read
- * for a ClassLink login, so student-gated UI stays hidden.
+ * marked it as a student. Fails closed (`student: true`) when there is no Firebase user or
+ * the claims cannot be read for a ClassLink login, so student-gated UI stays hidden.
  */
 export const getClassLinkSession = async (): Promise<{ classlink: boolean; student: boolean }> => {
     try {
         const claims = await readClaims();
-        if (!claims) return { classlink: false, student: false };
+        if (!claims) {
+            const classlink = isClassLinkLogin();
+            return { classlink, student: classlink };
+        }
         return {
             classlink: claims.classlink === true || isClassLinkLogin(),
             student: claims.classlinkStudent === true,
@@ -112,12 +141,13 @@ export const getClassLinkSession = async (): Promise<{ classlink: boolean; stude
 
 /**
  * True when this session came from a ClassLink student sign-in. lca-api sets the
- * `classlinkStudent` claim, and enforces the same settings on the server.
+ * `classlinkStudent` claim, and enforces the same settings on the server. With no
+ * Firebase user, a recorded ClassLink login fails closed (treated as a student).
  */
 export const isClassLinkStudentSession = async (): Promise<boolean> => {
     try {
-        const user = auth().currentUser;
-        if (!user) return false;
+        const user = await getRestoredUser();
+        if (!user) return isClassLinkLogin();
         const { claims } = await user.getIdTokenResult();
         return claims.classlinkStudent === true;
     } catch (error) {

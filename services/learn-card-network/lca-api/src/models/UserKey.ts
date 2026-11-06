@@ -412,6 +412,11 @@ export const createUserKeysIndexes = async (): Promise<void> => {
     await runIndexMigrationOperation('create primary DID index', () =>
         collection.createIndex({ primaryDid: 1 })
     );
+    // findUserKeyByDid ORs primaryDid with linkedDids; Mongo only uses indexes for an $or when
+    // every clause is indexed, so without this the hot preferences lock lookup scans the collection.
+    await runIndexMigrationOperation('create linked DID index', () =>
+        collection.createIndex({ linkedDids: 1 }, { name: 'linked_dids_lookup' })
+    );
     await runIndexMigrationOperation('create verified recovery email index', () =>
         collection.createIndex(
             { recoveryEmail: 1, recoveryEmailVerifiedAt: 1 },

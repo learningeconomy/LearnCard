@@ -2000,7 +2000,7 @@ export const keysRouter = t.router({
 
             // Cascade the account's ClassLink data. Best effort: the key is already gone, and
             // classlink.deleteMyData (idempotent, DID-keyed) can finish the job later.
-            await deleteClassLinkDataForAccount(userKey).catch(() =>
+            await deleteClassLinkDataForAccount(userKey, { clearPrivacyLock: true }).catch(() =>
                 console.error('classlink.account_deletion.cascade_failed')
             );
 

@@ -4,7 +4,15 @@ import { getLogger } from 'learn-card-base';
 import { createClassLinkAttempt, type ClassLinkAttemptIntent } from './classlinkPkce';
 import { AuthSessionError } from '@learncard/types';
 import { openNativeAuthSession } from '../nativeAuthSession';
-import { CLASSLINK_CALLBACK_PATH } from './classlinkPkce';
+import {
+    CLASSLINK_CALLBACK_PATH,
+    setClassLinkNativeSessionInFlight,
+    toClassLinkCallbackPath,
+} from './classlinkPkce';
+
+// Re-exported for existing callers; lives in classlinkPkce so AppUrlListener can use it
+// without pulling in the native auth session module.
+export { toClassLinkCallbackPath };
 
 const log = getLogger('classlink-start-login');
 
@@ -27,19 +35,6 @@ export type ClassLinkAuthorizeUrlFn = (args: {
     state: string;
     nonce: string;
 }) => Promise<{ url: string }>;
-
-/** Turns a native callback URL into the in-app callback route, keeping only the OAuth params. */
-export const toClassLinkCallbackPath = (callbackUrl: string): string => {
-    const query = callbackUrl.includes('?') ? callbackUrl.slice(callbackUrl.indexOf('?') + 1) : '';
-    const source = new URLSearchParams(query.split('#')[0]);
-    const params = new URLSearchParams();
-    for (const key of ['code', 'state', 'error']) {
-        const value = source.get(key);
-        if (value) params.set(key, value);
-    }
-    const search = params.toString();
-    return search ? `${CLASSLINK_CALLBACK_PATH}?${search}` : CLASSLINK_CALLBACK_PATH;
-};
 
 /**
  * Outcome of {@link runClassLinkLogin}:
@@ -78,6 +73,9 @@ export const runClassLinkLogin = async (
 
         if (Capacitor.isNativePlatform()) {
             let callbackUrl: string;
+            // While the sheet is open its own listener owns the callback; AppUrlListener
+            // only routes ClassLink callbacks no live session will handle (cold start).
+            setClassLinkNativeSessionInFlight(true);
             try {
                 callbackUrl = await openNativeAuthSession(url, {
                     callbackUrlPrefix: attempt.redirectUri,
@@ -99,6 +97,8 @@ export const runClassLinkLogin = async (
                     return 'handled';
                 }
                 throw e;
+            } finally {
+                setClassLinkNativeSessionInFlight(false);
             }
             // The native session hands the callback URL straight back; process it in-app.
             navigate(toClassLinkCallbackPath(callbackUrl));

@@ -85,6 +85,17 @@ describe('SchoolConnectPage', () => {
         expect(mockRedirect).toHaveBeenCalledWith('/launchpad');
     });
 
+    it.each([
+        { schoolConnect: false, classlinkSso: true },
+        { schoolConnect: true, classlinkSso: false },
+    ])('makes no ClassLink calls when a flag is off (%o)', flags => {
+        stub(useFeatureConfig, flags);
+        render(<SchoolConnectPage />);
+        expect(mockRedirect).toHaveBeenCalledWith('/launchpad');
+        expect(useSchoolConnection).not.toHaveBeenCalled();
+        expect(useGetPreferencesForDid).not.toHaveBeenCalled();
+    });
+
     it('renders intro state when not connected', () => {
         render(<SchoolConnectPage />);
         expect(screen.getByText('Your school records, in your hands')).toBeTruthy();

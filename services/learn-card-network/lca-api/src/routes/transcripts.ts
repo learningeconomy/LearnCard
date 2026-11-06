@@ -53,6 +53,33 @@ const project = ({ status, requestedAt, jti }: MongoTranscriptRequestType) => ({
 const recent = (record: MongoTranscriptRequestType | null): record is MongoTranscriptRequestType =>
     record?.status === 'requested' &&
     Date.now() - record.requestedAt.getTime() < DEDUPE_SECONDS * 1000;
+/**
+ * Axios error codes where the issuer may have received the request before the connection
+ * ended (a timeout or reset after sending). Anything else, including errors that never left
+ * this host (DNS failure, connection refused), is a definite failure.
+ */
+const AMBIGUOUS_ISSUER_ERROR_CODES = new Set([
+    'ECONNABORTED',
+    'ETIMEDOUT',
+    'ECONNRESET',
+    'EPIPE',
+    'ERR_CANCELED',
+]);
+/** An axios error with no HTTP response whose outcome at the issuer is unknown. */
+const isAmbiguousIssuerError = (error: unknown): boolean => {
+    if (!error || typeof error !== 'object') return false;
+    const { isAxiosError, response, code } = error as {
+        isAxiosError?: unknown;
+        response?: unknown;
+        code?: unknown;
+    };
+    return (
+        isAxiosError === true &&
+        response === undefined &&
+        typeof code === 'string' &&
+        AMBIGUOUS_ISSUER_ERROR_CODES.has(code)
+    );
+};
 const keyHash = (value: string) => createHash('sha256').update(value).digest('hex');
 const issuerBody = (assertion: string, requestId: string) => ({
     assertion,
@@ -257,6 +284,7 @@ export const transcriptsRouter = t.router({
                     status: 'requested',
                 });
                 let issuerHttpStatus: number | undefined;
+                let issuerResponseCode: string | undefined;
                 let status: MongoTranscriptRequestType['status'] = 'failed';
                 try {
                     const response = await axios.post<unknown>(
@@ -282,12 +310,21 @@ export const transcriptsRouter = t.router({
                         if (response.status === 200 && body.data.status === 'none_yet')
                             status = 'none_yet';
                     }
-                } catch {
+                } catch (error) {
                     // Do not retain HTTP errors: their config contains the signed assertion.
+                    if (isAmbiguousIssuerError(error)) {
+                        // The issuer may have accepted it (e.g. it answered after the timeout).
+                        // Keep it `requested` so it is deduped, the app keeps polling for a
+                        // transcript echoing this request_id, and markReceived still matches.
+                        status = 'requested';
+                        issuerResponseCode = 'no_response';
+                        console.warn('transcripts.request.issuer_outcome_unknown');
+                    }
                 }
                 await updateTranscriptRequest(jti, {
                     status,
                     ...(issuerHttpStatus === undefined ? {} : { issuerHttpStatus }),
+                    ...(issuerResponseCode === undefined ? {} : { issuerResponseCode }),
                 });
                 if (status === 'failed')
                     throw new TRPCError({ code: 'BAD_GATEWAY', message: FAILURE });

@@ -5,6 +5,7 @@ import {
     consumeClassLinkAttempt,
     createClassLinkAttempt,
     getClassLinkRedirectUri,
+    peekClassLinkAttemptIntent,
 } from './classlinkPkce';
 
 vi.mock('@capacitor/core', () => ({
@@ -97,5 +98,38 @@ describe('ClassLink PKCE attempt store', () => {
     it('returns custom scheme redirect URI on native', () => {
         vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
         expect(getClassLinkRedirectUri()).toBe(`com.learncard.app:/${CLASSLINK_CALLBACK_PATH}`);
+    });
+
+    describe('peekClassLinkAttemptIntent', () => {
+        it('returns connect for the matching, fresh connect attempt without consuming it', async () => {
+            const { state } = await createClassLinkAttempt({ intent: 'connect' });
+            expect(peekClassLinkAttemptIntent(state)).toBe('connect');
+            expect(await consumeClassLinkAttempt(state)).not.toBeNull();
+        });
+
+        it('returns signIn for a sign-in attempt', async () => {
+            const { state } = await createClassLinkAttempt();
+            expect(peekClassLinkAttemptIntent(state)).toBe('signIn');
+        });
+
+        it('returns signIn when the callback has no state (LaunchPad launch)', async () => {
+            await createClassLinkAttempt({ intent: 'connect' });
+            expect(peekClassLinkAttemptIntent(null)).toBe('signIn');
+        });
+
+        it('returns signIn when the state does not match the stored connect attempt', async () => {
+            await createClassLinkAttempt({ intent: 'connect' });
+            expect(peekClassLinkAttemptIntent('other-state')).toBe('signIn');
+        });
+
+        it('returns signIn for a stale connect attempt', async () => {
+            const { state } = await createClassLinkAttempt({ intent: 'connect' });
+            const stored = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? '{}');
+            sessionStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify({ ...stored, createdAt: Date.now() - TEN_MINUTES_MS - 1000 })
+            );
+            expect(peekClassLinkAttemptIntent(state)).toBe('signIn');
+        });
     });
 });

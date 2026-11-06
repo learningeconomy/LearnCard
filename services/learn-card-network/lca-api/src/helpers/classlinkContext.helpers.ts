@@ -77,16 +77,36 @@ export const findClassLinkIdentityForAccount = async (
 
 /**
  * Record the account's primary DID on an identity so the link survives provider changes.
+ *
+ * An unset DID is filled. A recorded DID is replaced only when no account holds it any more,
+ * or when it belongs to this same account (e.g. its primary DID changed). While another
+ * account still holds it, that account keeps the identity: an account that matches only by a
+ * stale Firebase uid (e.g. a fresh wallet made for the old uid after a recovery rebind) must
+ * not take it over. School Connect is the explicit way to move an identity.
+ *
  * Best effort: a failure is logged (no values) and retried on the next resolution.
  */
 export const recordClassLinkIdentityDid = async (
     identity: Pick<MongoClassLinkIdentityType, 'identityKey' | 'primaryDid'>,
     userKey: Pick<MongoUserKeyType, 'primaryDid'>
 ): Promise<void> => {
-    if (!userKey.primaryDid || identity.primaryDid === userKey.primaryDid) return;
-    await setClassLinkIdentityPrimaryDid(identity.identityKey, userKey.primaryDid).catch(() =>
-        console.warn('classlink.identity.did_backfill_failed')
-    );
+    const did = userKey.primaryDid;
+    const recorded = identity.primaryDid;
+    if (!did || recorded === did) return;
+    try {
+        if (!recorded) {
+            await setClassLinkIdentityPrimaryDid(identity.identityKey, did);
+            return;
+        }
+        const holder = await findUserKeyByDid(recorded);
+        if (holder && !getAccountDids(holder).includes(did)) {
+            console.warn('classlink.identity.did_kept');
+            return;
+        }
+        await setClassLinkIdentityPrimaryDid(identity.identityKey, did, { replace: recorded });
+    } catch {
+        console.warn('classlink.identity.did_backfill_failed');
+    }
 };
 
 /** Whether the DID belongs to a ClassLink student. Lookup failures return 'unknown'. */

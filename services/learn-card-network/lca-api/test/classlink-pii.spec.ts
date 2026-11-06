@@ -198,6 +198,23 @@ describe('ClassLink identity key', () => {
         expect(fresh.classLinkSubjectDigest('tenant-test', 'source-1')).toBe(digestWith(KEY));
     });
 
+    it('refuses the CLASSLINK_PII_KEY fallback while a rotation is in progress', () => {
+        // Rotated without first pinning CLASSLINK_IDENTITY_KEY to the old PII key.
+        env.CLASSLINK_PII_KEY = OTHER_KEY;
+        env.CLASSLINK_PII_KEY_PREVIOUS = KEY;
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        expect(() => classLinkSubjectDigest('tenant-test', 'source-1')).toThrow(
+            expect.objectContaining({ code: 'PRECONDITION_FAILED' })
+        );
+        expect(() => classLinkFirebaseUid('classlink:tenant-test:v1:x')).toThrow(
+            expect.objectContaining({ code: 'PRECONDITION_FAILED' })
+        );
+        expect(warn).toHaveBeenCalledWith('classlink.identity_key.fallback_during_rotation');
+        // Pinning the identity key to the pre-rotation key restores the original identities.
+        env.CLASSLINK_IDENTITY_KEY = KEY;
+        expect(classLinkSubjectDigest('tenant-test', 'source-1')).toBe(digestWith(KEY));
+    });
+
     it('fails closed for an invalid CLASSLINK_IDENTITY_KEY rather than falling back', () => {
         env.CLASSLINK_IDENTITY_KEY = 'not-a-key';
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

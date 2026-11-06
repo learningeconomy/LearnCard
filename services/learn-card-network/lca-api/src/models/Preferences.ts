@@ -125,3 +125,20 @@ export const enforceMinorPreferences = async (
     );
     return result.upsertedCount > 0 || result.modifiedCount > 0 || locked.modifiedCount > 0;
 };
+
+/**
+ * Remove privacy locks set by `source` from these DIDs' preferences. The stored preference
+ * values (AI, analytics, bug reports off) are kept; only the lock that forces them is removed.
+ * Returns the number of records unlocked.
+ */
+export const clearPrivacyLocks = async (dids: string[], source: string): Promise<number> => {
+    const unique = [...new Set(dids.filter(Boolean))];
+    if (!unique.length) return 0;
+    const result = await mongodb
+        .collection<MongoPreferencesType>(PREFERENCES_COLLECTION)
+        .updateMany(
+            { did: { $in: unique }, 'privacyLock.source': source },
+            { $unset: { privacyLock: '' }, $set: { updatedAt: new Date() } }
+        );
+    return result.modifiedCount;
+};

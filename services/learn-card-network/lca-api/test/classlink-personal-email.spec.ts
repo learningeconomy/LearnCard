@@ -14,6 +14,7 @@ import {
     getOrCreateAuthSubject,
     findAuthSubjectByIdentityKey,
 } from '../src/models/AuthSubject';
+import { deleteClassLinkDataForAccount } from '../src/helpers/classlinkDeletion.helpers';
 
 const { send } = vi.hoisted(() => ({ send: vi.fn() }));
 vi.mock('../src/services/delivery', () => ({
@@ -226,5 +227,100 @@ describe('ClassLink personal email', () => {
         ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         await getClassLinkIdentitiesCollection().deleteMany({});
         await expect(caller().getPersonalEmail()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    });
+    it('counts every guess before comparing, so parallel guesses cannot exceed the limit', async () => {
+        await caller().startPersonalEmail({ email });
+        const results = await Promise.allSettled(
+            Array.from({ length: 12 }, () =>
+                caller().verifyPersonalEmail({ email, code: '000000' })
+            )
+        );
+        expect(results.every(result => result.status === 'rejected')).toBe(true);
+        expect(await cache.get(key)).toBeNull();
+        await expect(
+            caller().verifyPersonalEmail({ email, code: getCode() })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    });
+    it('enforces the send budget for parallel requests', async () => {
+        const results = await Promise.allSettled(
+            Array.from({ length: 8 }, (_, i) =>
+                caller().startPersonalEmail({ email: `parallel${i}@example.com` })
+            )
+        );
+        expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(3);
+        expect(send).toHaveBeenCalledTimes(3);
+    });
+    it('resets the attempt limit when a new code is issued', async () => {
+        await caller().startPersonalEmail({ email });
+        for (let i = 0; i < 4; i++)
+            await expect(
+                caller().verifyPersonalEmail({ email, code: '000000' })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await caller().startPersonalEmail({ email });
+        for (let i = 0; i < 4; i++)
+            await expect(
+                caller().verifyPersonalEmail({ email, code: '000000' })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await expect(caller().verifyPersonalEmail({ email, code: getCode() })).resolves.toEqual({
+            success: true,
+        });
+    });
+    describe('changing the personal email', () => {
+        const first = 'first@example.com';
+        const second = 'second@example.com';
+        const verify = async (address: string) => {
+            await caller().startPersonalEmail({ email: address });
+            await caller().verifyPersonalEmail({ email: address, code: getCode() });
+        };
+
+        it('releases the replaced address', async () => {
+            await verify(first);
+            await verify(second);
+            expect(await findAuthSubjectByIdentityKey(`email:${first}`)).toBeNull();
+            expect(await findAuthSubjectByIdentityKey(`email:${second}`)).toMatchObject({
+                subject: 'same-subject',
+            });
+            expect(await caller().getPersonalEmail()).toEqual({ email: second, verified: true });
+        });
+
+        it('keeps the replaced address when an account uses it as its contact', async () => {
+            await verify(first);
+            await mongodb.collection('userkeys').insertOne({
+                primaryDid: 'did:key:other',
+                authProviders: [{ type: 'firebase', id: 'other' }],
+                contactMethod: { type: 'email', value: first },
+            });
+            await verify(second);
+            expect(await findAuthSubjectByIdentityKey(`email:${first}`)).toMatchObject({
+                subject: 'same-subject',
+            });
+        });
+
+        it('leaves no email subject after deletion, and the old address can be added again', async () => {
+            await verify(first);
+            await verify(second);
+            const account = await mongodb.collection('userkeys').findOne({ primaryDid: did });
+            await deleteClassLinkDataForAccount(account as never);
+            expect(
+                await getAuthSubjectsCollection().countDocuments({ subject: 'same-subject' })
+            ).toBe(0);
+            // A fresh ClassLink sign-in gets a new subject.
+            await upsertClassLinkIdentity({
+                identityKey: 'classlink:tenant-test:source-1',
+                tenantId: 'tenant-test',
+                sub: 'upstream',
+                role: 'student',
+                email: 'student@example.edu',
+                sealedStateStudentId: null,
+                state: 'XX',
+                firebaseUid: 'uid-test',
+                subject: 'new-subject',
+                lastAuthTime: new Date(),
+            });
+            await verify(first);
+            expect(await findAuthSubjectByIdentityKey(`email:${first}`)).toMatchObject({
+                subject: 'new-subject',
+            });
+        });
     });
 });

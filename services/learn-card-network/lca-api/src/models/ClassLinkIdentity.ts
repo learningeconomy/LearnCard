@@ -144,14 +144,26 @@ export const findClassLinkIdentitiesBySubjects = (
               .toArray()
         : Promise.resolve([]);
 
-/** Record the account DID on an identity (no-op when already recorded). */
+/**
+ * Record the account DID on an identity. By default it only fills an unset `primaryDid`, so an
+ * account that merely matches the identity some other way cannot take it over. Pass `replace`
+ * (the DID that is recorded now) to swap it; the update is skipped if the recorded DID changed
+ * meanwhile. School Connect reassigns `primaryDid` explicitly through `upsertClassLinkIdentity`.
+ * Returns whether the identity changed.
+ */
 export const setClassLinkIdentityPrimaryDid = async (
     identityKey: string,
-    primaryDid: string
+    primaryDid: string,
+    { replace }: { replace?: string } = {}
 ): Promise<boolean> =>
     (
         await getClassLinkIdentitiesCollection().updateOne(
-            { identityKey, primaryDid: { $ne: primaryDid } },
+            replace
+                ? { identityKey, primaryDid: replace }
+                : ({
+                      identityKey,
+                      $or: [{ primaryDid: { $exists: false } }, { primaryDid: null }],
+                  } as Filter<MongoClassLinkIdentityType>),
             { $set: { primaryDid, updatedAt: new Date() } }
         )
     ).modifiedCount > 0;

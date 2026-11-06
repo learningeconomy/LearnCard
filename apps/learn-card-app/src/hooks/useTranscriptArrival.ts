@@ -33,14 +33,23 @@ export const MAX_POLL_MS = 60_000;
  * stops polling and reports `isPollingExhausted` so the UI can offer a manual path.
  */
 export const POLL_WINDOW_MS = 30 * 60_000;
+/**
+ * Clock-skew allowance for the issuance-time check. `requestedAt` is the lca-api
+ * server's millisecond timestamp, while issuers often sign `validFrom` at whole-second
+ * precision on their own clock (and the device clock drives the "not valid yet"
+ * verification check), so the comparison tolerates this much disagreement.
+ */
+export const ISSUANCE_SKEW_MS = 5 * 60_000;
+const NOT_VALID_YET_ERROR = 'expiration error: Credential is not valid yet';
 
 export type TranscriptRequestStatus = 'requested' | 'none_yet' | 'failed' | undefined;
 
 /**
  * `match` — the credential is the requested transcript.
  * `reject` — it definitively is not (safe to never re-read it for this request).
- * `retry` — the decision depends on a transient failure (verification threw), so it
- * must be evaluated again later.
+ * `retry` — the decision depends on a transient condition (verification threw, or the
+ * credential only fails as "not valid yet" within `ISSUANCE_SKEW_MS`), so it must be
+ * evaluated again later.
  */
 export type TranscriptCandidateResult = 'match' | 'reject' | 'retry';
 
@@ -170,7 +179,11 @@ export const evaluateTranscriptCandidate = async ({
     if (subject?.id !== userDid) return 'reject';
 
     const issuedAt = vc.validFrom ?? vc.issuanceDate;
-    if (!issuedAt || new Date(issuedAt).getTime() < new Date(requestedAt).getTime()) {
+    const issuedAtMs = issuedAt ? new Date(issuedAt).getTime() : NaN;
+    if (
+        Number.isNaN(issuedAtMs) ||
+        issuedAtMs < new Date(requestedAt).getTime() - ISSUANCE_SKEW_MS
+    ) {
         return 'reject';
     }
 
@@ -185,7 +198,16 @@ export const evaluateTranscriptCandidate = async ({
 
     try {
         const verification = await wallet.invoke.verifyCredential(vc);
-        if ((verification?.warnings?.length ?? 0) > 0 || (verification?.errors?.length ?? 0) > 0) {
+        const problems = [...(verification?.warnings ?? []), ...(verification?.errors ?? [])];
+        if (problems.length > 0) {
+            // The device clock is slightly behind the issuer's: the credential becomes
+            // valid shortly, so decide again later instead of rejecting it for good.
+            const becomesValidSoon =
+                vc.validFrom !== undefined &&
+                new Date(vc.validFrom).getTime() - Date.now() <= ISSUANCE_SKEW_MS;
+            if (becomesValidSoon && problems.every(problem => problem === NOT_VALID_YET_ERROR)) {
+                return 'retry';
+            }
             return 'reject';
         }
     } catch (error) {
@@ -235,7 +257,9 @@ export type UseTranscriptArrivalResult = {
  * `POLL_WINDOW_MS` per app session. Refetches on app foreground/resume and on any
  * `CREDENTIAL_RECEIVED` push received in the foreground. Credentials already
  * rejected for a request are never re-read. Never accepts more than one credential
- * per request, across every mounted instance (see `claimTranscriptOnce`).
+ * per request, across every mounted instance (see `claimTranscriptOnce`). A matching
+ * transcript the student already accepted by hand (it is no longer incoming) is found
+ * via `getReceivedCredentials` and only acknowledged, never claimed again.
  */
 export const useTranscriptArrival = ({
     status,
@@ -255,6 +279,9 @@ export const useTranscriptArrival = ({
     const hasAcceptedRef = useRef(false);
     const pendingMarkRef = useRef<string>();
     const busyRef = useRef(false);
+    /** A check was requested while one was running; run it again with the latest inputs. */
+    const rerunRef = useRef(false);
+    const checkCredentialsRef = useRef<() => Promise<void>>(async () => undefined);
     const retryRef = useRef({ delay: INITIAL_POLL_MS, at: 0 });
     const [isVisible, setIsVisible] = useState(
         typeof document === 'undefined' ? true : document.visibilityState === 'visible'
@@ -289,7 +316,14 @@ export const useTranscriptArrival = ({
     }, []);
 
     const checkCredentials = useCallback(async (): Promise<void> => {
-        if (!isActive || busyRef.current || Date.now() < retryRef.current.at) return;
+        if (!isActive) return;
+        // Never drop a request made mid-check (e.g. a refetch delivering a new incoming
+        // list while a foreground re-check runs): queue one rerun of the latest closure.
+        if (busyRef.current) {
+            rerunRef.current = true;
+            return;
+        }
+        if (Date.now() < retryRef.current.at) return;
         if (!issuerDid || !issuerProfileId || !requestId || !requestedAt) return;
 
         busyRef.current = true;
@@ -393,12 +427,64 @@ export const useTranscriptArrival = ({
                     if (pendingMarkRef.current === requestId) throw error;
                 }
             }
+
+            // A transcript claimed by hand (notifications list, generic claim modal) is
+            // accepted on the network and leaves the incoming list without anyone
+            // acknowledging the request. Look for it among the credentials already
+            // accepted from the issuer and acknowledge it here, whichever path claimed
+            // it. Skipped while (or after) a claim this session owns the acknowledgement.
+            if (hasAcceptedRef.current || isTranscriptClaimStarted(requestId)) return;
+            try {
+                const received = await wallet.invoke.getReceivedCredentials(issuerProfileId);
+                const earliestSentAt = new Date(requestedAt).getTime() - ISSUANCE_SKEW_MS;
+                for (const credInfo of received ?? []) {
+                    if (hasAcceptedRef.current || isTranscriptClaimStarted(requestId)) break;
+                    if (rejected.has(credInfo.uri)) continue;
+                    if (
+                        credInfo.from !== issuerProfileId ||
+                        new Date(credInfo.sent).getTime() < earliestSentAt
+                    ) {
+                        rejected.add(credInfo.uri);
+                        continue;
+                    }
+
+                    const vc = await wallet.read.get(credInfo.uri);
+                    if (!vc) continue;
+
+                    const result = await evaluateTranscriptCandidate({
+                        vc: vc as VC,
+                        senderProfileId: credInfo.from,
+                        expectedSenderProfileId: issuerProfileId,
+                        expectedIssuerDid: issuerDid,
+                        userDid,
+                        requestedAt,
+                        expectedRequestId: requestId,
+                        wallet,
+                    });
+                    if (result === 'reject') rejected.add(credInfo.uri);
+                    if (result !== 'match') continue;
+
+                    log.info('transcript-arrival.accepted-elsewhere.found');
+                    hasAcceptedRef.current = true;
+                    pendingMarkRef.current = requestId;
+                    persistPending(true);
+                    await markReceived();
+                    break;
+                }
+            } catch (error) {
+                if (pendingMarkRef.current === requestId) throw error;
+                log.warn('transcript-arrival.received-check.failed', error);
+            }
         } catch (error) {
             retryRef.current.at = Date.now() + retryRef.current.delay;
             retryRef.current.delay = Math.min(retryRef.current.delay * 2, MAX_POLL_MS);
             log.error('transcript-arrival.retry.pending', error);
         } finally {
             busyRef.current = false;
+            if (rerunRef.current) {
+                rerunRef.current = false;
+                void checkCredentialsRef.current();
+            }
         }
     }, [
         isActive,
@@ -410,7 +496,6 @@ export const useTranscriptArrival = ({
         queryClient,
     ]);
 
-    const checkCredentialsRef = useRef(checkCredentials);
     checkCredentialsRef.current = checkCredentials;
 
     useEffect(() => {
@@ -465,7 +550,11 @@ export const useTranscriptArrival = ({
         let pushHandle: PluginListenerHandle | undefined;
 
         App.addListener('appStateChange', ({ isActive: appIsActive }) => {
-            if (appIsActive) void refetch();
+            if (appIsActive) {
+                void refetch();
+                // Also re-checks credentials claimed by hand while the app was away.
+                void checkCredentialsRef.current();
+            }
         })
             .then(handle => {
                 if (disposed) void handle.remove();

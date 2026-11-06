@@ -57,8 +57,10 @@ import {
     findClassLinkIdentityByFirebaseUid,
     findClassLinkIdentityByIdentityKey,
     upsertClassLinkIdentity,
+    type MongoClassLinkIdentityType,
 } from '../models/ClassLinkIdentity';
 import { findUserKeyByAuthProvider, findUserKeyByDid } from '../models/UserKey';
+import { enforceMinorPreferences } from '../models/Preferences';
 import { personalEmailProcedures } from './classlinkPersonalEmail';
 import { connectProcedures } from './classlinkConnect';
 
@@ -77,7 +79,23 @@ export const CLASSLINK_EMAIL_ACCOUNT_CONFLICT_MESSAGE =
 export const CLASSLINK_OTHER_SCHOOL_CONFLICT_MESSAGE =
     'This LearnCard account is already connected to a different school account.';
 
-type ConflictReason = 'other_account' | 'email_account' | 'other_school';
+/**
+ * Shown when the identity's Firebase uid was unlinked from its account (a recovery rebind or
+ * "Secure my account") and the account still signs in with Firebase. School Connect from that
+ * login moves the identity to it, with proof of ownership.
+ */
+export const CLASSLINK_ACCOUNT_MOVED_MESSAGE =
+    'Your school account is connected to a LearnCard account that now signs in another way. Sign in the way you usually do, then reconnect your school account from School Connect.';
+
+/**
+ * Shown when the identity's Firebase uid was unlinked and the account has no Firebase login
+ * (e.g. Keycloak only). School Connect cannot restore ClassLink sign-in for it, so it is not
+ * suggested.
+ */
+export const CLASSLINK_ACCOUNT_MOVED_NO_FIREBASE_MESSAGE =
+    'Your school account is connected to a LearnCard account that now signs in another way. Sign in the way you usually do.';
+
+type ConflictReason = 'email_account' | 'other_school';
 
 const conflict = (tenantId: string, reason: ConflictReason): never => {
     console.warn('classlink.link.conflict', { tenantId, reason });
@@ -122,6 +140,32 @@ const assertNoOtherClassLinkIdentity = async (
     const userKey = await findUserKeyByAuthProvider('firebase', firebaseUid);
     const byAccount = userKey ? await findClassLinkIdentityForAccount(userKey) : null;
     if (byAccount && byAccount.identityKey !== identityKey) conflict(tenantId, 'other_school');
+};
+
+/**
+ * Fail closed when a known identity's Firebase uid was deliberately unlinked from its account.
+ * A recovery rebind or "Secure my account" (`keys.revokeOtherDevices`) removes the
+ * deterministic uid from the UserKey. If the account recorded in `primaryDid` still exists,
+ * signing in to the orphaned uid would mint an empty wallet, and signing in to the account's
+ * current uid would silently undo the owner's revoke. Neither happens: no token is minted and
+ * the identity is left as is. The owner re-links from School Connect while signed in.
+ */
+const assertIdentityAccountNotMoved = async (
+    identity: Pick<MongoClassLinkIdentityType, 'firebaseUid' | 'primaryDid'>,
+    tenantId: string
+): Promise<void> => {
+    if (!identity.primaryDid) return;
+    if (await findUserKeyByAuthProvider('firebase', identity.firebaseUid)) return;
+    const account = await findUserKeyByDid(identity.primaryDid);
+    if (!account) return;
+    const hasFirebase = account.authProviders?.some(provider => provider.type === 'firebase');
+    console.warn('classlink.identity.account_moved', { tenantId });
+    throw new TRPCError({
+        code: 'PRECONDITION_FAILED',
+        message: hasFirebase
+            ? CLASSLINK_ACCOUNT_MOVED_MESSAGE
+            : CLASSLINK_ACCOUNT_MOVED_NO_FIREBASE_MESSAGE,
+    });
 };
 
 /**
@@ -216,15 +260,18 @@ export const classlinkRouter = t.router({
                 // account's post-rebind uid, or after the identity row was deleted.
                 const ownUid = classLinkFirebaseUid(identityKey);
                 const otherEmailUser = emailUser?.uid === ownUid ? undefined : emailUser;
-                // A known identity whose trusted email now belongs to someone else fails closed.
-                // Untrusted emails are never put on the Firebase user, so they cannot collide.
-                if (
-                    existing &&
+                if (existing) await assertIdentityAccountNotMoved(existing, tenantId);
+                const existingUid = existing?.firebaseUid;
+                // A known identity always signs in to its own account. If another Firebase user
+                // (e.g. an email-code or Google account) holds its trusted school email, only
+                // the email upgrade and email-subject link are skipped.
+                const emailHeldElsewhere = Boolean(
+                    existingUid &&
                     emailTrusted &&
                     otherEmailUser &&
-                    otherEmailUser.uid !== existing.firebaseUid
-                )
-                    conflict(tenantId, 'other_account');
+                    otherEmailUser.uid !== existingUid
+                );
+                if (emailHeldElsewhere) console.warn('classlink.email.collision', { tenantId });
                 if (!existing && otherEmailUser) {
                     // Join an existing email account only for a trusted domain and verified email.
                     if (!emailTrusted || !otherEmailUser.emailVerified)
@@ -238,7 +285,7 @@ export const classlinkRouter = t.router({
                     displayName,
                 };
                 const joined = !existing && otherEmailUser ? otherEmailUser.uid : undefined;
-                const uid = existing?.firebaseUid ?? joined ?? ownUid;
+                const uid = existingUid ?? joined ?? ownUid;
                 // The identity moved off its deterministic user, which still holds the school
                 // email: release it so the email resolves to no stale account.
                 if (auth && existing && uid !== ownUid && emailUser?.uid === ownUid)
@@ -247,8 +294,9 @@ export const classlinkRouter = t.router({
                     await ensureClassLinkFirebaseUser(auth, uid, {
                         identityKey,
                         displayName,
-                        trustedEmail: emailTrusted ? email : undefined,
-                        isNew: !existing,
+                        trustedEmail: emailTrusted && !emailHeldElsewhere ? email : undefined,
+                        // The deterministic user can outlive its identity row (deleteMyData).
+                        isNew: !existing && emailUser?.uid !== ownUid,
                     });
                 let subject = existing?.subject;
                 if (!subject) {
@@ -265,7 +313,8 @@ export const classlinkRouter = t.router({
                             : await getOrCreateAuthSubject(identityKey, attrs)
                     ).subject;
                 }
-                if (emailTrusted && email) await linkTrustedEmailSubject(email, subject, tenantId);
+                if (emailTrusted && email && !emailHeldElsewhere)
+                    await linkTrustedEmailSubject(email, subject, tenantId);
                 // Time of this verified sign-in. ClassLink's auth_time is the start of the
                 // ClassLink session and does not move on later sign-ins, so it cannot prove
                 // freshness; iat is checked to be within five minutes of now.
@@ -297,8 +346,14 @@ export const classlinkRouter = t.router({
                     // deleteMyData) or its student hint changed: drop any cached "not a student"
                     // answer so its privacy lock applies on the next read.
                     const accountKey = await findUserKeyByAuthProvider('firebase', uid);
-                    if (accountKey)
-                        await Promise.all(getAccountDids(accountKey).map(clearNotStudentCache));
+                    if (accountKey) {
+                        const accountDids = getAccountDids(accountKey);
+                        // A stored lock, not an empty cache, is the guarantee: a preferences
+                        // read racing this sign-in could re-cache a stale "not a student".
+                        if (isStudent)
+                            await Promise.all(accountDids.map(d => enforceMinorPreferences(d)));
+                        await Promise.all(accountDids.map(clearNotStudentCache));
+                    }
                 }
                 await maybeClearExpiredStateStudentIds();
                 return {
@@ -342,7 +397,9 @@ export const classlinkRouter = t.router({
         .mutation(async ({ ctx }) => {
             const userKey = await findUserKeyByDid(ctx.user.did);
             const result = await deleteClassLinkDataForAccount(
-                userKey ?? { authProviders: [], primaryDid: ctx.user.did, linkedDids: [] }
+                userKey ?? { authProviders: [], primaryDid: ctx.user.did, linkedDids: [] },
+                // The lock is lifted only after the account's key is gone (account deletion).
+                { clearPrivacyLock: !userKey }
             );
             return { deleted: result.identities + result.transcriptRequests };
         }),

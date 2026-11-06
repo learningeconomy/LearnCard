@@ -53,10 +53,19 @@ let identityKeyFallbackWarned = false;
  * derives every identity key and new Firebase UID. Until it is set, CLASSLINK_PII_KEY is
  * used (logged once) so identities created before the split keep resolving; set
  * CLASSLINK_IDENTITY_KEY to that same value before rotating CLASSLINK_PII_KEY.
+ *
+ * The fallback is refused while CLASSLINK_PII_KEY_PREVIOUS is set: that means
+ * CLASSLINK_PII_KEY has been rotated, so it would derive different identity keys and UIDs
+ * for every student (new empty accounts or CONFLICT lockouts). School sign-in fails closed
+ * until CLASSLINK_IDENTITY_KEY is set to the pre-rotation key.
  */
 const getIdentityKey = (): Buffer | null => {
     const explicit = environment.CLASSLINK_IDENTITY_KEY?.trim();
     if (explicit) return decodeKey(explicit);
+    if (decodeKey(environment.CLASSLINK_PII_KEY_PREVIOUS)) {
+        console.warn('classlink.identity_key.fallback_during_rotation');
+        return null;
+    }
     const fallback = decodeKey(environment.CLASSLINK_PII_KEY);
     if (fallback && !identityKeyFallbackWarned) {
         identityKeyFallbackWarned = true;

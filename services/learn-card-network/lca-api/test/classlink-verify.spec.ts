@@ -134,7 +134,13 @@ afterEach(() => {
 
 describe('ClassLink token verification', () => {
     it('returns verified typed claims', async () => {
-        expect(await verify(await sign())).toMatchObject(claims());
+        // Compare against the signed claims themselves: a fresh claims() call can cross a
+        // second boundary and produce a different iat/exp.
+        const expected = claims();
+        const token = await new SignJWT(expected)
+            .setProtectedHeader({ alg: 'RS256', kid: 'key-test' })
+            .sign(privateKey);
+        expect(await verify(token)).toMatchObject(expected);
     });
     it.each(['tokens-public.apis.classlink.com', 'https://tokens-public.apis.classlink.com'])(
         'accepts the documented ClassLink token issuer %s alongside discovery',

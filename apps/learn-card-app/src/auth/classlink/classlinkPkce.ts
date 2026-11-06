@@ -23,7 +23,9 @@ import { getResolvedTenantConfig } from '../../config/tenantConfigState';
  *    Capacitor's WKWebView/Android WebView persists `localStorage` to disk,
  *    so the pending attempt survives the app being backgrounded (and even an
  *    OS-initiated process kill) while the system browser/ASWebAuthenticationSession
- *    is in the foreground.
+ *    is in the foreground. After a process kill the callback arrives as the app's
+ *    launch URL; `AppUrlListener` routes it to the callback route via
+ *    {@link isClassLinkNativeCallbackUrl} / {@link toClassLinkCallbackPath}.
  *
  * Never store or log the exchanged `code`, `id_token`, or any custom token here.
  */
@@ -102,6 +104,53 @@ export const getClassLinkRedirectUri = (): string => {
     return `${window.location.origin}${CLASSLINK_CALLBACK_PATH}`;
 };
 
+/** Turns a native callback URL into the in-app callback route, keeping only the OAuth params. */
+export const toClassLinkCallbackPath = (callbackUrl: string): string => {
+    const query = callbackUrl.includes('?') ? callbackUrl.slice(callbackUrl.indexOf('?') + 1) : '';
+    const source = new URLSearchParams(query.split('#')[0]);
+    const params = new URLSearchParams();
+    for (const key of ['code', 'state', 'error']) {
+        const value = source.get(key);
+        if (value) params.set(key, value);
+    }
+    const search = params.toString();
+    return search ? `${CLASSLINK_CALLBACK_PATH}?${search}` : CLASSLINK_CALLBACK_PATH;
+};
+
+/** Native ClassLink auth sessions currently open in this JS context. */
+let nativeSessionsInFlight = 0;
+
+/**
+ * Marks a native ClassLink auth session as open (`true`) or settled (`false`). While one is
+ * open, its own `appUrlOpen` listener owns the callback, so AppUrlListener must not route it.
+ */
+export const setClassLinkNativeSessionInFlight = (inFlight: boolean): void => {
+    nativeSessionsInFlight = Math.max(0, nativeSessionsInFlight + (inFlight ? 1 : -1));
+};
+
+/**
+ * True while a native ClassLink auth session started in this JS context is still open.
+ * False after a cold start (the session that opened the sheet died with the old context).
+ */
+export const isClassLinkNativeSessionInFlight = (): boolean => nativeSessionsInFlight > 0;
+
+/**
+ * True when `url` is this tenant's native ClassLink callback (custom bundle-ID scheme).
+ * False on web or when the tenant has no `native.bundleId`.
+ */
+export const isClassLinkNativeCallbackUrl = (url: string): boolean => {
+    if (!Capacitor.isNativePlatform()) return false;
+    let redirectUri: string;
+    try {
+        redirectUri = getClassLinkRedirectUri();
+    } catch {
+        return false;
+    }
+    if (!url.startsWith(redirectUri)) return false;
+    const rest = url.slice(redirectUri.length);
+    return rest === '' || rest.startsWith('?') || rest.startsWith('#');
+};
+
 const isClassLinkAttempt = (value: unknown): value is ClassLinkAttempt =>
     typeof value === 'object' &&
     value !== null &&
@@ -152,11 +201,22 @@ export const createClassLinkAttempt = async (
     return { state, nonce, codeVerifier, codeChallenge, redirectUri };
 };
 
-/** Reads the pending attempt's intent without consuming it (UI routing only). */
-export const peekClassLinkAttemptIntent = (): ClassLinkAttemptIntent => {
+/**
+ * Reads the pending attempt's intent without consuming it (UI routing only). Returns
+ * 'connect' only for a connect attempt that matches the callback's `state` and is within
+ * the 10-minute window, so a stranded connect attempt cannot capture unrelated callbacks
+ * (e.g. a state-less ClassLink LaunchPad launch, which must go to the sign-in relaunch).
+ */
+export const peekClassLinkAttemptIntent = (
+    state: string | null | undefined
+): ClassLinkAttemptIntent => {
+    if (!state) return 'signIn';
     try {
         const parsed: unknown = JSON.parse(getStorage().getItem(STORAGE_KEY) ?? 'null');
-        return isClassLinkAttempt(parsed) && parsed.intent === 'connect' ? 'connect' : 'signIn';
+        if (!isClassLinkAttempt(parsed) || parsed.intent !== 'connect') return 'signIn';
+        if (parsed.state !== state) return 'signIn';
+        const age = Date.now() - parsed.createdAt;
+        return age >= 0 && age <= MAX_AGE_MS ? 'connect' : 'signIn';
     } catch {
         return 'signIn';
     }

@@ -2,6 +2,7 @@ import { environment } from '@environment';
 import {
     ClassLinkTenantsValidator,
     DEFAULT_CLASSLINK_TENANT,
+    TranscriptIssuerValidator,
     TranscriptIssuersValidator,
     type ClassLinkConfig,
     type ClassLinkTenantConfig,
@@ -41,6 +42,7 @@ const isAllowedTranscriptIssuerEndpoint = (url: string): boolean => {
 
 // Once per container, like services/escrow-enclave/index.ts's remoteConfigMissingReported.
 let explicitDefaultOverridesLegacyWarned = false;
+let invalidLegacyIssuerWarned = false;
 let invalidRegistryWarned = false;
 let invalidTenantsWarned = false;
 const unknownIssuerWarnings = new Set<string>();
@@ -54,17 +56,24 @@ const getTranscriptIssuerRegistry = (): Record<string, ResolvedTranscriptIssuer>
     const registry: Record<string, ResolvedTranscriptIssuer> = {};
     const legacyEndpoint = environment.TRANSCRIPT_ISSUER_ENDPOINT;
     const legacyAudience = environment.TRANSCRIPT_ISSUER_AUDIENCE;
-    const hasLegacyDefault = Boolean(legacyEndpoint && legacyAudience);
+    let hasLegacyDefault = false;
 
-    if (hasLegacyDefault) {
-        registry.default = {
-            key: 'default',
-            endpoint: legacyEndpoint as string,
-            audience: legacyAudience as string,
+    if (legacyEndpoint && legacyAudience) {
+        // Same checks as TRANSCRIPT_ISSUERS entries, except `did` stays optional here.
+        const legacy = TranscriptIssuerValidator.partial({ did: true }).safeParse({
+            endpoint: legacyEndpoint,
+            audience: legacyAudience,
             ...(environment.TRANSCRIPT_ISSUER_DID
                 ? { did: environment.TRANSCRIPT_ISSUER_DID }
                 : {}),
-        };
+        });
+        if (legacy.success && isAllowedTranscriptIssuerEndpoint(legacy.data.endpoint)) {
+            hasLegacyDefault = true;
+            registry.default = { key: 'default', ...legacy.data };
+        } else if (!invalidLegacyIssuerWarned) {
+            invalidLegacyIssuerWarned = true;
+            console.warn('TRANSCRIPT_ISSUER_* is invalid and will be ignored');
+        }
     }
 
     if (environment.TRANSCRIPT_ISSUERS) {

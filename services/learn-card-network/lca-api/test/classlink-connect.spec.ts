@@ -235,6 +235,30 @@ describe('School Connect', () => {
         expect(deletedKeys).toContain(getNotStudentCacheKey(did));
     });
 
+    it('stores the student lock on every DID of the account, not only the caller', async () => {
+        const linked = 'did:key:existing-account-linked';
+        await mongodb
+            .collection('userkeys')
+            .updateOne({ primaryDid: did }, { $set: { linkedDids: [linked] } });
+        await Preferences.insertOne({ did: linked, theme: ThemeEnum.Formal, aiEnabled: true });
+
+        await expect(caller().connect(exchange)).resolves.toMatchObject({ isStudent: true });
+
+        for (const accountDid of [did, linked])
+            expect(await Preferences.findOne({ did: accountDid })).toMatchObject({
+                aiEnabled: false,
+                analyticsEnabled: false,
+                isMinor: true,
+                privacyLock: { source: 'classlink' },
+            });
+        expect(await Preferences.findOne({ did: linked })).toMatchObject({
+            theme: ThemeEnum.Formal,
+        });
+        expect(deletedKeys).toEqual(
+            expect.arrayContaining([getNotStudentCacheKey(did), getNotStudentCacheKey(linked)])
+        );
+    });
+
     it('refreshes an existing connection, and a later ClassLink sign-in lands in the same account', async () => {
         await caller().connect(exchange);
         claims.iat += 60;

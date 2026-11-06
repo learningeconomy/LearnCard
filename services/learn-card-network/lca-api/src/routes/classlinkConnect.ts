@@ -223,9 +223,12 @@ export const connectProcedures = {
                     const auth = environment.IS_E2E_TEST ? undefined : app?.auth();
                     if (auth) await releaseClassLinkFirebaseEmail(auth, identityKey);
                 }
-                if (isStudent) await enforceMinorPreferences(ctx.user.did);
-                // Other DIDs of this account may hold a cached "not a student" answer.
-                await Promise.all(getAccountDids(userKey).map(clearNotStudentCache));
+                // Lock every DID of the account, not just the caller's: a stored lock wins before
+                // the "not a student" cache is consulted, so a preferences read racing this
+                // connection cannot re-cache a stale answer that leaves another DID unlocked.
+                const accountDids = [...new Set([ctx.user.did, ...getAccountDids(userKey)])];
+                if (isStudent) await Promise.all(accountDids.map(d => enforceMinorPreferences(d)));
+                await Promise.all(accountDids.map(clearNotStudentCache));
                 return {
                     isStudent,
                     ...(tenant.displayName ? { schoolName: tenant.displayName } : {}),
