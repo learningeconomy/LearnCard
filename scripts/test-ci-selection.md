@@ -1,8 +1,9 @@
 # Integration test selection
 
-`Test Runner` uses its existing `Deployment recovery tools` job to select integration
-jobs before allocating their runners. It does not add a selector or summary runner.
-The required `Test` job and AI Agent CI keep their existing behavior.
+`Test Runner` repurposes the former recovery-tools runner as `Select integration tests`
+to select integration jobs before allocating their runners. Recovery-tool regressions
+move into the existing required `Test` job and run alongside the integration jobs.
+The total runner count does not increase. AI Agent CI keeps its existing behavior.
 
 | Output      | Jobs                                                                  | Inputs                                                                      |
 | ----------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -28,9 +29,9 @@ explicit `false` decision from a successful job skips an integration runner. The
 job summary labels these decisions as “not applicable,” not test passes.
 
 Each selected job retains its suite commands, timeout and isolated environment.
-There are no required-check setting changes. On a relevant change, the integration
-jobs wait for the lightweight selector; measure that overhead alongside runners
-avoided when evaluating the rollout.
+There are no required-check setting changes. On a relevant change, integration
+jobs wait only for checkout and selection, not the recovery regressions. Measure
+that preflight overhead alongside runners avoided when evaluating the rollout.
 
 ## Validate
 
@@ -38,8 +39,7 @@ avoided when evaluating the rollout.
 node --test .github/tests/test-integration-selection.test.cjs scripts/mock-e2e-ci.test.cjs
 ```
 
-Inspect `Select integration tests` in the workflow's `Deployment recovery tools`
-job for each decision and reason. Shared dependency changes should run affected
+Inspect the workflow's `Select integration tests` job for each decision and reason. Shared dependency changes should run affected
 suites; unrelated project changes should skip them. If the graph cannot be built,
 `graph-unavailable` intentionally runs all suites. A skip is never inferred from
 an empty or missing output.

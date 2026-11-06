@@ -20,8 +20,8 @@ concurrency:
     cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-    deployment-tools:
-        name: Deployment recovery tools
+    integration-selection:
+        name: Select integration tests
         runs-on: ubuntu-latest
         outputs:
             brain: ${{ steps.selection.outputs.brain }}
@@ -35,7 +35,7 @@ jobs:
             - uses: actions/setup-node@v6
               with:
                   node-version-file: .nvmrc
-            # Reuse this existing lightweight runner; do not install the workspace
+            # Repurpose the former recovery-tools runner; do not install the workspace
             # or allocate integration runners just to decide whether tests apply.
             - name: Select integration tests
               id: selection
@@ -44,12 +44,6 @@ jobs:
                   BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
                   HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
               run: node scripts/test-ci-selection.cjs
-
-            - name: Test recovery validation, manifest diagnostics, and registry retries
-              run: node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs .github/tests/test-deploy-test-proof.test.cjs
-
-            - name: Test shared native registry readiness gate
-              run: node --test scripts/wait-for-didkit-registry.test.mjs
 
     Test:
         runs-on: ubuntu-latest
@@ -67,6 +61,14 @@ jobs:
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
+
+            # Keep recovery regressions on the existing unit-test runner so they
+            # cannot delay integration job selection.
+            - name: Test recovery validation, manifest diagnostics, and registry retries
+              run: node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs .github/tests/test-deploy-test-proof.test.cjs
+
+            - name: Test shared native registry readiness gate
+              run: node --test scripts/wait-for-didkit-registry.test.mjs
 
             # The escrow Rust crates share one pinned toolchain; installing it here
             # stops nx's parallel `cargo test` runs racing to install it.
@@ -147,9 +149,9 @@ jobs:
 
     escrow-integration:
         name: Escrow integration (lca-api)
-        needs: deployment-tools
+        needs: integration-selection
         # Only an explicit, successful skip decision can avoid allocating a runner.
-        if: ${{ !cancelled() && (needs.deployment-tools.result != 'success' || needs.deployment-tools.outputs.escrow != 'false') }}
+        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.escrow != 'false') }}
         runs-on: ubuntu-latest
         timeout-minutes: 20
         permissions:
@@ -237,8 +239,8 @@ jobs:
               run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
 
     share-link-security:
-        needs: deployment-tools
-        if: ${{ !cancelled() && (needs.deployment-tools.result != 'success' || needs.deployment-tools.outputs.brain != 'false') }}
+        needs: integration-selection
+        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false') }}
         runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
@@ -252,8 +254,8 @@ jobs:
               run: bunx vitest run --config vitest.share-links-neo4j.config.ts
 
     profile-search:
-        needs: deployment-tools
-        if: ${{ !cancelled() && (needs.deployment-tools.result != 'success' || needs.deployment-tools.outputs.brain != 'false') }}
+        needs: integration-selection
+        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false') }}
         runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
@@ -271,8 +273,8 @@ jobs:
               run: bunx nx run network-brain-service:test:profile-search
 
     inbox-security:
-        needs: deployment-tools
-        if: ${{ !cancelled() && (needs.deployment-tools.result != 'success' || needs.deployment-tools.outputs.brain != 'false') }}
+        needs: integration-selection
+        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false') }}
         runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
@@ -290,8 +292,8 @@ jobs:
               run: bunx nx run network-brain-service:test:inbox:e2e
 
     boost-recipients:
-        needs: deployment-tools
-        if: ${{ !cancelled() && (needs.deployment-tools.result != 'success' || needs.deployment-tools.outputs.brain != 'false') }}
+        needs: integration-selection
+        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false') }}
         runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
@@ -309,8 +311,8 @@ jobs:
               run: bunx nx run network-brain-service:test:boost-recipients
 
     campaigns:
-        needs: deployment-tools
-        if: ${{ !cancelled() && (needs.deployment-tools.result != 'success' || needs.deployment-tools.outputs.campaigns != 'false') }}
+        needs: integration-selection
+        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.campaigns != 'false') }}
         runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:

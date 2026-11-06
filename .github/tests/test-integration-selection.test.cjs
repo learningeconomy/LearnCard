@@ -337,7 +337,13 @@ test('job gates reuse an existing runner, fail toward execution and retain all s
     );
     const jobs = workflow.jobs;
     assert.equal(Object.keys(jobs).length, 10, 'no extra selector or aggregate runner');
-    const selector = jobs['deployment-tools'];
+    const selector = jobs['integration-selection'];
+    assert.equal(selector.name, 'Select integration tests');
+    assert.equal(
+        selector.steps.length,
+        3,
+        'integration jobs must not wait for unrelated recovery regressions'
+    );
     assert.equal(selector.steps[0].with['fetch-depth'], 0);
     assert.ok(!selector.steps.some(step => step.uses === './.github/actions/setup'));
     const selection = selector.steps.find(step => step.id === 'selection');
@@ -352,16 +358,26 @@ test('job gates reuse an existing runner, fail toward execution and retain all s
         campaigns: 'campaigns',
         'escrow-integration': 'escrow',
     })) {
-        assert.equal(jobs[job].needs, 'deployment-tools');
+        assert.equal(jobs[job].needs, 'integration-selection');
         assert.equal(
             jobs[job].if,
-            `\${{ !cancelled() && (needs.deployment-tools.result != 'success' || needs.deployment-tools.outputs.${group} != 'false') }}`
+            `\${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.${group} != 'false') }}`
         );
         for (const step of jobs[job].steps)
             assert.equal(step['continue-on-error'], undefined, 'suite failures stay failures');
     }
     assert.equal(jobs.Test.needs, undefined, 'required unit tests are not delayed or filtered');
     assert.equal(jobs.Test.if, undefined);
+    for (const command of [
+        'node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs .github/tests/test-deploy-test-proof.test.cjs',
+        'node --test scripts/wait-for-didkit-registry.test.mjs',
+    ]) {
+        const index = jobs.Test.steps.findIndex(step => step.run === command);
+        assert.ok(
+            index > jobs.Test.steps.findIndex(step => step.uses === './.github/actions/setup')
+        );
+        assert.equal(jobs.Test.steps[index]['continue-on-error'], undefined);
+    }
     assert.equal(jobs['ai-agent'].if, "github.event_name == 'pull_request'");
     assert.ok(
         jobs['escrow-integration'].steps
