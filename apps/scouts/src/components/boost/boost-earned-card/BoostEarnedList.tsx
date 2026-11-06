@@ -182,18 +182,16 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                             <IonGrid className="max-w-[600px] pt-[25px]">
                                 {(searching || boostError) && searchResultsElement}
                                 <IonRow>{credentials}</IonRow>
-                                <div role="presentation" ref={infiniteScrollRef} />
                             </IonGrid>
                         )}
                         {!isCardView && (
-                            <>
-                                <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px] pt-[25px]">
-                                    {(searching || boostError) && searchResultsElement}
-                                    {credentials}
-                                </div>
-                                <div role="presentation" ref={infiniteScrollRef} />
-                            </>
+                            <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px] pt-[25px]">
+                                {(searching || boostError) && searchResultsElement}
+                                {credentials}
+                            </div>
                         )}
+                        {/* Keep the observed node stable across Card/List switches. */}
+                        <div role="presentation" ref={infiniteScrollRef} className="h-px w-full" />
                         {credentialsFetching && (
                             <div className="w-full flex items-center justify-center">
                                 <IonSpinner

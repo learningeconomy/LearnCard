@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { LCR } from '../../../../../../packages/learn-card-base/src/types/credential-records';
 import type { BespokeLearnCard } from '../../../../../../packages/learn-card-base/src/types/learn-card';
@@ -59,7 +59,6 @@ vi.mock('learn-card-base/hooks/useConsentedContracts', () => ({
 vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
     getOrFetchCredentialRecordForBoost: vi.fn(),
 }));
-vi.mock('learn-card-base/hooks/useOnScreen', () => ({ default: () => host.onScreen }));
 vi.mock('learn-card-base/stores/credentialSearchStore', () => ({
     default: { use: { isSearchActive: () => false, searchString: () => '' } },
 }));
@@ -99,6 +98,7 @@ import { AllCredentialsModal } from '../../../pages/wallet/activity-feed/AllCred
 import LcaBoostEarnedList from './BoostEarnedList';
 import BoostEarnedIDList from './BoostEarnedIDList';
 let client: QueryClient;
+const intersections = new Map<Element, (visible: boolean) => void>();
 const record = (
     i: number,
     title: string | undefined = `Badge ${i}`,
@@ -128,6 +128,25 @@ const makeWallet = (rows: LCR[], did = 'account-a') => {
     return { getPage, read };
 };
 beforeEach(() => {
+    intersections.clear();
+    vi.stubGlobal(
+        'IntersectionObserver',
+        class {
+            constructor(private readonly callback: IntersectionObserverCallback) {}
+            observe(target: Element) {
+                const emit = (isIntersecting: boolean) =>
+                    this.callback(
+                        [{ target, isIntersecting } as IntersectionObserverEntry],
+                        this as unknown as IntersectionObserver
+                    );
+                intersections.set(target, emit);
+                emit(host.onScreen);
+            }
+            unobserve(target: Element) {
+                intersections.delete(target);
+            }
+        }
+    );
     client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
     host.switchedDid = undefined;
     host.wallet = null;
@@ -138,6 +157,7 @@ afterEach(() => {
     cleanup();
     client.clear();
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
 });
 
 describe('buffered collection consumers', () => {
@@ -163,10 +183,10 @@ describe('buffered collection consumers', () => {
         {
             name: 'LCA BoostEarnedList',
             category: 'Social Badge' as never,
-            consumer: () => (
+            consumer: (viewMode = 'list') => (
                 <LcaBoostEarnedList
                     category={'Social Badge' as never}
-                    viewMode={'list' as never}
+                    viewMode={viewMode as never}
                     defaultImg=""
                     title="Badges"
                 />
@@ -175,16 +195,52 @@ describe('buffered collection consumers', () => {
         {
             name: 'LCA BoostEarnedIDList',
             category: 'ID' as never,
-            consumer: () => (
+            consumer: (viewMode = 'list') => (
                 <BoostEarnedIDList
                     category={'ID' as never}
-                    viewMode={'list' as never}
+                    viewMode={viewMode as never}
                     defaultImg=""
                     title="IDs"
                 />
             ),
         },
     ];
+
+    it.each(
+        scenarios.slice(1).flatMap(scenario =>
+            [
+                { initialView: 'card', nextView: 'list' },
+                { initialView: 'list', nextView: 'card' },
+            ].map(views => ({ ...scenario, ...views }))
+        )
+    )(
+        '$name paginates after switching from $initialView to $nextView off-screen',
+        async ({ category, consumer, initialView, nextView }) => {
+            const rows = Array.from({ length: 37 }, (_, index) =>
+                record(index, `Credential ${index + 1}`, category!)
+            );
+            makeWallet(rows);
+            const view = (mode: string) => (
+                <QueryClientProvider client={client}>{consumer(mode)}</QueryClientProvider>
+            );
+            const rendered = render(view(initialView));
+            await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(12));
+            rendered.rerender(view(nextView));
+            for (const count of [24, 36, 37]) {
+                const sentinel = rendered.container.querySelector('[role="presentation"]');
+                act(() => {
+                    if (sentinel) intersections.get(sentinel)?.(true);
+                });
+                await waitFor(() => {
+                    const displayed = screen
+                        .getAllByRole('article')
+                        .map(card => card.getAttribute('data-credential-uri'));
+                    expect(displayed).toEqual(rows.slice(0, displayed.length).map(row => row.uri));
+                    expect(displayed).toContain(rows[count - 1].uri);
+                });
+            }
+        }
+    );
 
     it.each(scenarios)(
         '$name scrolls all buffered identities after a count consumer exhausts server pages',
@@ -220,6 +276,7 @@ describe('buffered collection consumers', () => {
                     <CountAndBrowse />
                 </QueryClientProvider>
             );
+            act(() => intersections.forEach(emit => emit(true)));
 
             await waitFor(() => {
                 expect(screen.getAllByRole('article')).toHaveLength(37);

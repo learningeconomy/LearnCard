@@ -157,7 +157,6 @@ const BoostEarnedIDList: React.FC<{
                                     className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                                 />
                                 {credentials}
-                                <div role="presentation" ref={infiniteScrollRef} />
                                 {credentialsFetching && (
                                     <div className="w-full flex items-center justify-center">
                                         <IonSpinner
@@ -179,7 +178,6 @@ const BoostEarnedIDList: React.FC<{
                                 {(searching || boostError) && searchResultsElement}
                                 {credentials}
                             </div>
-                            <div role="presentation" ref={infiniteScrollRef} />
                             {credentialsFetching && (
                                 <div className="w-full flex items-center justify-center">
                                     <IonSpinner
@@ -191,6 +189,8 @@ const BoostEarnedIDList: React.FC<{
                             )}
                         </IonCol>
                     )}
+                    {/* Keep the observed node stable across Card/List switches. */}
+                    <div role="presentation" ref={infiniteScrollRef} className="h-px w-full" />
                 </>
             )}
         </>
