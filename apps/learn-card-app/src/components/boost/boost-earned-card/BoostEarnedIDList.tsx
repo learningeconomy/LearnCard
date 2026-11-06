@@ -49,7 +49,7 @@ const BoostEarnedIDList: React.FC<{
         mode: searching ? 'search' : 'browse',
         search: searchString,
     });
-    const onScreen = useOnScreen(infiniteScrollRef, '-100px', [records.length]);
+    const onScreen = useOnScreen(infiniteScrollRef, '300px', [records.length]);
     useEffect(() => {
         if (onScreen && hasNextPage && !credentialsFetching && !boostError && !searching)
             fetchNextPage();
@@ -93,18 +93,9 @@ const BoostEarnedIDList: React.FC<{
                         : boostError
                           ? m['credentialCollection.searchIncomplete']({ count: matches.length })
                           : m['credentialCollection.searching']({ count: matches.length })
-                    : boostError
-                      ? records.length > 0
-                          ? m['credentialCollection.loadError']({ count: records.length })
-                          : m['credentialCollection.loadErrorEmpty']()
-                      : isComplete
-                        ? m['credentialCollection.complete']({ count: records.length })
-                        : m['credentialCollection.loaded']({
-                              count: records.length,
-                              state: credentialsFetching
-                                  ? m['credentialCollection.loadingMore']()
-                                  : m['credentialCollection.moreAvailable'](),
-                          })}
+                    : records.length > 0
+                      ? m['credentialCollection.loadError']({ count: records.length })
+                      : m['credentialCollection.loadErrorEmpty']()}
             </span>
             {boostError && (
                 <button
@@ -118,20 +109,6 @@ const BoostEarnedIDList: React.FC<{
                     {credentialsFetching
                         ? m['credentialCollection.retrying']()
                         : m['credentialCollection.retry']()}
-                </button>
-            )}
-            {!searching && hasNextPage && !boostError && (
-                <button
-                    type="button"
-                    aria-disabled={credentialsFetching}
-                    className="self-start py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 focus-visible:ring-2 focus-visible:ring-emerald-500"
-                    onClick={() => {
-                        if (!credentialsFetching) void fetchNextPage();
-                    }}
-                >
-                    {credentialsFetching
-                        ? m['credentialCollection.loading']()
-                        : m['credentialCollection.continue']()}
                 </button>
             )}
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
@@ -169,7 +146,7 @@ const BoostEarnedIDList: React.FC<{
                 <>
                     {isCardView && (
                         <div className="flex flex-col">
-                            {(searchActive || hasNextPage || boostError) && searchResultsElement}
+                            {(searching || boostError) && searchResultsElement}
                             <section className="relative flex flex-wrap text-center justify-center items-center gap-4 max-w-[800px]">
                                 <div
                                     className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
@@ -194,8 +171,7 @@ const BoostEarnedIDList: React.FC<{
                                 className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                             />
                             <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px]">
-                                {(searchActive || hasNextPage || boostError) &&
-                                    searchResultsElement}
+                                {(searching || boostError) && searchResultsElement}
                                 {credentials}
                             </div>
                             <div role="presentation" ref={infiniteScrollRef} />

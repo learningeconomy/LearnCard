@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { LCR } from '../../../../../../packages/learn-card-base/src/types/credential-records';
 import type { BespokeLearnCard } from '../../../../../../packages/learn-card-base/src/types/learn-card';
@@ -198,6 +198,81 @@ describe('buffered collection consumers', () => {
                 ).toEqual(rows.map(row => row.uri));
             });
             expect(getPage).toHaveBeenCalledTimes(4);
+        }
+    );
+    it.each(scenarios)(
+        '$name keeps loaded identities through a failed page and resumes scrolling after retry',
+        async ({ category, consumer }) => {
+            const rows = Array.from({ length: 37 }, (_, index) =>
+                record(index, `Credential ${index + 1}`, category ?? 'Social Badge')
+            );
+            const { getPage } = makeWallet(rows);
+            const page = getPage.getMockImplementation()!;
+            let fail = true;
+            let retryStarted = false;
+            let release: () => void = () => undefined;
+            const gate = new Promise<void>(resolve => {
+                release = resolve;
+            });
+            getPage.mockImplementation(async (query, options) => {
+                if (options?.cursor === '12') {
+                    if (fail) throw new Error('Page unavailable');
+                    retryStarted = true;
+                    await gate;
+                }
+                return page(query, options);
+            });
+            host.onScreen = true;
+            render(<QueryClientProvider client={client}>{consumer()}</QueryClientProvider>);
+            try {
+                const retry = await vi.waitFor(() =>
+                    screen.getByRole('button', {
+                        name: 'Retry loading credentials',
+                    })
+                );
+                expect(
+                    screen
+                        .getAllByRole('article')
+                        .map(card => card.getAttribute('data-credential-uri'))
+                ).toEqual(rows.slice(0, 12).map(row => row.uri));
+                fail = false;
+                retry.focus();
+                fireEvent.click(retry);
+                await vi.waitFor(() => expect(retryStarted).toBe(true));
+                expect(document.activeElement).toBe(retry);
+            } finally {
+                release();
+            }
+            await vi.waitFor(() =>
+                expect(
+                    screen
+                        .getAllByRole('article')
+                        .map(card => card.getAttribute('data-credential-uri'))
+                ).toEqual(rows.map(row => row.uri))
+            );
+        }
+    );
+
+    it.each(scenarios)(
+        '$name automatically reaches visible records after internal-only pages',
+        async ({ category, consumer }) => {
+            const visible = Array.from({ length: 13 }, (_, index) =>
+                record(index, `Visible ${index}`, category ?? 'Social Badge')
+            );
+            const internal = Array.from({ length: 24 }, (_, index) => ({
+                ...record(index + 13, 'Internal', category ?? 'Social Badge'),
+                id: `__verifiable_data_${index}`,
+            }));
+            makeWallet([...internal, ...visible]);
+            host.onScreen = true;
+            render(<QueryClientProvider client={client}>{consumer()}</QueryClientProvider>);
+            await vi.waitFor(() =>
+                expect(
+                    screen
+                        .getAllByRole('article')
+                        .map(card => card.getAttribute('data-credential-uri'))
+                ).toEqual(visible.map(row => row.uri))
+            );
         }
     );
 });

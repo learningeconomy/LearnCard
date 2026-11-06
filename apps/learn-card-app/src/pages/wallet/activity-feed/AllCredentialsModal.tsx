@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { IonIcon } from '@ionic/react';
+import { IonIcon, IonSpinner } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
 import { useCredentialCollection } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
@@ -52,30 +52,28 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                 </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-5 py-4">
-                <p
-                    role="status"
-                    aria-live="polite"
-                    aria-atomic="true"
-                    className={`text-sm mb-4 ${isError ? 'rounded-2xl border border-red-100 bg-red-50 p-3 text-red-700' : 'text-grayscale-600'}`}
-                >
-                    {isError
-                        ? records.length > 0
-                            ? m['credentialCollection.loadError']({ count: records.length })
-                            : m['credentialCollection.initialError']()
-                        : isPending
-                          ? m['credentialCollection.loadingCredentials']()
-                          : isEmpty
-                            ? m['passport.activity.emptyAll']()
-                            : isComplete
-                              ? m['credentialCollection.complete']({ count: records.length })
-                              : m['credentialCollection.loaded']({
-                                    count: records.length,
-                                    state: isFetching
-                                        ? m['credentialCollection.loadingMore']()
-                                        : m['credentialCollection.moreAvailable'](),
-                                })}
-                </p>
+            <div
+                role="region"
+                aria-label={m['passport.activity.allCreds']()}
+                tabIndex={0}
+                className="overflow-y-auto flex-1 px-5 py-4 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
+            >
+                {(isError || isPending || isEmpty) && (
+                    <p
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        className={`text-sm mb-4 ${isError ? 'rounded-2xl border border-red-100 bg-red-50 p-3 text-red-700' : 'text-grayscale-600'}`}
+                    >
+                        {isError
+                            ? records.length > 0
+                                ? m['credentialCollection.loadError']({ count: records.length })
+                                : m['credentialCollection.initialError']()
+                            : isPending
+                              ? m['credentialCollection.loadingCredentials']()
+                              : m['passport.activity.emptyAll']()}
+                    </p>
+                )}
                 {groups.map(group => (
                     <div key={group.label} className="mb-6">
                         <p className="text-[12px] tracking-[1px] text-grayscale-600 uppercase py-2">
@@ -89,20 +87,27 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                     </div>
                 ))}
                 <div role="presentation" ref={sentinelRef} />
-                {(isError || hasNextPage) && (
+                {isFetching && !isPending && !isError && (
+                    <div
+                        role="status"
+                        aria-label={m['credentialCollection.loadingCredentials']()}
+                        className="flex justify-center py-4"
+                    >
+                        <IonSpinner name="crescent" />
+                    </div>
+                )}
+                {isError && (
                     <button
                         type="button"
                         onClick={() => {
-                            if (!isFetching) void (isError ? retry() : fetchNextPage());
+                            if (!isFetching) void retry();
                         }}
                         aria-disabled={isFetching}
                         className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-sm text-grayscale-700 hover:bg-grayscale-10 focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
                     >
                         {isFetching
-                            ? m['credentialCollection.loadingCredentials']()
-                            : isError
-                              ? m['credentialCollection.retry']()
-                              : m['credentialCollection.loadMore']()}
+                            ? m['credentialCollection.retrying']()
+                            : m['credentialCollection.retry']()}
                     </button>
                 )}
             </div>
