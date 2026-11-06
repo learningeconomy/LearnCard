@@ -72,7 +72,12 @@ test('scoped cache is isolated from full workspace and old dependency graphs', t
     assert.equal(normal.outputs.path, join(normal.dir, 'learncard-brain-bun-cache'));
     assert.equal(normal.outputs['restore-key'], '');
     assert.notEqual(normal.outputs.key, cold.outputs.key);
-    assert.equal(cold.outputs.key, `${normal.outputs.key}benchmark-123`);
+    assert.equal(
+        cold.outputs.key.startsWith(normal.outputs.key),
+        false,
+        'production must not prefix-match benchmark entries'
+    );
+    assert.equal(cold.outputs.key, 'Linux-X64-bun-1.4.4-brain-v1-inputs-benchmark-123-end');
     for (const input of [
         'runner.os',
         'runner.arch',

@@ -45,7 +45,7 @@ runs:
                 brain-integration)
                   cache_dir="$RUNNER_TEMP/learncard-brain-bun-cache"
                   echo "path=$cache_dir" >> "$GITHUB_OUTPUT"
-                  echo "key=$SERVICE_KEY$CACHE_SUFFIX" >> "$GITHUB_OUTPUT"
+                  echo "key=$SERVICE_KEY-${CACHE_SUFFIX:-shared}-end" >> "$GITHUB_OUTPUT"
                   # Exact hits keep this cache small: no fallback to the full
                   # workspace or an older dependency graph.
                   echo 'restore-key=' >> "$GITHUB_OUTPUT"
