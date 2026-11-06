@@ -145,11 +145,13 @@ flowchart LR
 
 The success message appears only after saving is confirmed. If saving fails, the
 collection stays open with an error and the option to try again.
+An unreadable earlier saved copy does not prevent saving the current collection.
 
 Saved status belongs to the signed collection contents and the account that saved
 them, not to every collection from the same sender. If the sender replaces a link's
-contents, you can save the new selection too. Distinct shared links remain separate
-in the saved list, even when they contain the same presentation.
+contents, you can save the new selection. The saved list shows only the newest saved
+selection for each link; earlier saved copies are not deleted. Distinct shared links
+remain separate in the list, even when they contain the same presentation.
 
 The sender bubble uses the sender's current profile photo when available, with
 initials as a fallback. Saving a collection does not copy the viewer's or issuer's photo.

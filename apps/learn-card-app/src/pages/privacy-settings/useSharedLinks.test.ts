@@ -170,11 +170,23 @@ describe('loadSavedCredentialCollections', () => {
                     },
                 ]),
             },
-            read: { get: vi.fn(async () => presentation(credential('Badge'))) },
+            read: {
+                get: vi.fn(async (uri: string) =>
+                    presentation(
+                        credential(uri.endsWith(':second') ? 'Updated badge' : 'Old badge')
+                    )
+                ),
+            },
         } as unknown as ShareWallet;
 
         await expect(loadSavedCredentialCollections(wallet)).resolves.toMatchObject([
-            { uri: 'lc:network:second', title: 'Career highlights' },
+            {
+                uri: 'lc:network:second',
+                title: 'Career highlights',
+                presentation: {
+                    verifiableCredential: [{ credentialSubject: { name: 'Updated badge' } }],
+                },
+            },
         ]);
     });
 
