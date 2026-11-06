@@ -152,8 +152,13 @@ describe('ClassLink configuration', () => {
 
     it('disables ClassLink when CLASSLINK_TENANTS is present but invalid', () => {
         env.CLASSLINK_TENANTS = '{not json';
-        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
         expect(getClassLinkConfig()).toBeNull();
+        expect(getClassLinkConfig()).toBeNull();
+        // Logged once per process, not on every call (preferences and sign-in call this often).
+        expect(
+            warn.mock.calls.filter(([message]) => String(message).includes('CLASSLINK_TENANTS'))
+        ).toHaveLength(1);
     });
 
     it('returns null when required ClassLink configuration is unset', () => {
@@ -305,6 +310,19 @@ describe('ClassLink configuration', () => {
             expect(TranscriptIssuerValidator.parse(exampleRecordsIssuer)).toEqual(
                 exampleRecordsIssuer
             );
+        });
+
+        it('accepts the optional LearnCard Network sender profile ID', () => {
+            expect(
+                TranscriptIssuerValidator.parse({
+                    ...exampleRecordsIssuer,
+                    profileId: ' example-records ',
+                })
+            ).toEqual({ ...exampleRecordsIssuer, profileId: 'example-records' });
+            expect(
+                TranscriptIssuerValidator.safeParse({ ...exampleRecordsIssuer, profileId: '' })
+                    .success
+            ).toBe(false);
         });
 
         it('rejects a non-URL endpoint', () => {

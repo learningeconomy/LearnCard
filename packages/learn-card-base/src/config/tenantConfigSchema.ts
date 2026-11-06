@@ -328,6 +328,13 @@ export const tenantFeatureConfigSchema = z
         /** Allow the tenant to opt users into ClassLink transcript sharing. */
         classlinkTranscriptOptIn: z.boolean().default(false),
 
+        /**
+         * Invite ClassLink-signed-in (non-student) accounts to add a verified personal email
+         * so they keep access after leaving school. Requires `classlinkSso`. Never shown to
+         * ClassLink student sessions or accounts locked as minors.
+         */
+        classlinkPersonalEmail: z.boolean().default(false),
+
         /** Show the School Connect app, where users connect a school account (ClassLink today). */
         schoolConnect: z.boolean().default(false),
 

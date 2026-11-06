@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
     usePathQuery,
     useToast,
+    useWallet,
     ToastTypeEnum,
     getLogger,
     SCHOOL_CONNECTION_QUERY_KEY,
@@ -12,6 +13,12 @@ import { useClassLinkConnect } from 'learn-card-base/react-query/mutations/fireb
 import { LoadingPageDumb } from '../loadingPage/LoadingPage';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import { consumeClassLinkAttempt } from '../../auth/classlink/classlinkPkce';
+import {
+    claimClassLinkCallback,
+    getClassLinkCallbackKey,
+} from '../../auth/classlink/classlinkCallbackGuard';
+import { applyClassLinkPrivateProfile } from '../../auth/classlink/classlinkProfileDefaults';
+import { CLASSLINK_TIMEOUT_ERROR } from '../../auth/classlink/startClassLinkLogin';
 import * as m from '../../paraglide/messages.js';
 
 const log = getLogger('classlink-connect');
@@ -31,6 +38,7 @@ const ClassLinkConnectCallback: React.FC = () => {
     const { presentToast } = useToast();
     const { state: authState } = useAppAuth();
     const { mutateAsync: connect } = useClassLinkConnect();
+    const { initWallet } = useWallet();
     const hasRun = useRef(false);
     const isReady = authState.status === 'ready';
 
@@ -53,10 +61,15 @@ const ClassLinkConnectCallback: React.FC = () => {
         if (!isReady || hasRun.current) return;
         hasRun.current = true;
 
+        const error = query.get('error');
+        const code = query.get('code');
+        const state = query.get('state');
+        // A second instance for the same callback (remount) must not re-consume the
+        // single-use attempt or connect the same code twice.
+        const release = claimClassLinkCallback(getClassLinkCallbackKey({ code, state, error }));
+        if (!release) return;
+
         const run = async () => {
-            const error = query.get('error');
-            const code = query.get('code');
-            const state = query.get('state');
             const attempt = state ? await consumeClassLinkAttempt(state) : null;
             const returnTo = attempt?.redirectTo || SCHOOL_CONNECT_PATH;
 
@@ -64,7 +77,9 @@ const ClassLinkConnectCallback: React.FC = () => {
                 fail(
                     error === 'access_denied'
                         ? m['login.classlink.cancelled']()
-                        : m['schoolConnect.connectFailed'](),
+                        : error === CLASSLINK_TIMEOUT_ERROR
+                          ? m['login.classlink.timedOut']()
+                          : m['schoolConnect.connectFailed'](),
                     returnTo
                 );
                 return;
@@ -75,12 +90,22 @@ const ClassLinkConnectCallback: React.FC = () => {
             }
 
             try {
-                await connect({
+                const result = await connect({
                     code,
                     codeVerifier: attempt.codeVerifier,
                     redirectUri: attempt.redirectUri,
                     nonce: attempt.nonce,
                 });
+                // Sign-in applies the private-profile default at profile creation; an
+                // existing account connecting a student school account needs it applied
+                // now. Logged (not fatal) on failure: the connection itself succeeded.
+                if (result?.isStudent) {
+                    await initWallet()
+                        .then(applyClassLinkPrivateProfile)
+                        .catch(profileError =>
+                            log.error('classlink.profile.private.failed', profileError)
+                        );
+                }
                 await Promise.all([
                     queryClient.invalidateQueries({ queryKey: [SCHOOL_CONNECTION_QUERY_KEY] }),
                     queryClient.invalidateQueries({ queryKey: ['transcriptStatus'] }),
@@ -94,13 +119,16 @@ const ClassLinkConnectCallback: React.FC = () => {
             } catch (e) {
                 log.error('School connect failed', e);
                 const trpcError = e as { data?: { code?: string }; message?: string };
+                const code = trpcError.data?.code ?? '';
                 const shown =
-                    SHOWN_ERROR_CODES.includes(trpcError.data?.code ?? '') && trpcError.message;
+                    code === 'SERVICE_UNAVAILABLE'
+                        ? m['login.classlink.unavailable']()
+                        : SHOWN_ERROR_CODES.includes(code) && trpcError.message;
                 fail(shown || m['schoolConnect.connectFailed'](), returnTo);
             }
         };
 
-        void run();
+        void run().finally(release);
     }, [isReady]);
 
     return <LoadingPageDumb />;

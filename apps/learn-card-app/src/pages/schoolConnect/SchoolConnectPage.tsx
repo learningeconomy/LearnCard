@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Redirect, useHistory } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
+import { Capacitor } from '@capacitor/core';
 
 import {
     useFeatureConfig,
@@ -11,7 +12,7 @@ import {
 } from 'learn-card-base';
 
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
-import { startClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
+import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
 import { TranscriptOptInCard } from '../../components/classlink/TranscriptOptInCard';
 import MainHeader from '../../components/main-header/MainHeader';
 import { useLocale } from '../../i18n';
@@ -49,16 +50,16 @@ const SchoolConnectPage: React.FC = () => {
         if (connecting) return;
         setConnecting(true);
         setConnectError('');
-        const ok = await startClassLinkLogin(
+        const outcome = await runClassLinkLogin(
             getClassLinkAuthorizeUrl,
             path => history.push(path),
             '/school-connect',
             'connect'
         );
-        if (!ok) {
-            setConnectError(m['schoolConnect.connectFailed']());
-            setConnecting(false);
-        }
+        // 'handled' (sheet closed / timed out): the callback route already shows the message.
+        if (outcome === 'failed') setConnectError(m['schoolConnect.connectFailed']());
+        // Web 'started' is leaving the page; keep the button disabled until it unloads.
+        if (outcome !== 'started' || Capacitor.isNativePlatform()) setConnecting(false);
     };
 
     return (

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline } from 'ionicons/icons';
 import type { VC } from '@learncard/types';
 import {
     useTranscriptStatus,
@@ -11,7 +11,6 @@ import {
     useGetCredentials,
     useWallet,
     useModal,
-    Checkbox,
     getIssuerDid,
 } from 'learn-card-base';
 import { ClrTranscriptSurface } from 'learn-card-base/helpers/credentials/clr/renderer';
@@ -23,7 +22,18 @@ import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/cred
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import * as m from '../../paraglide/messages.js';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
-import { startClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
+import { Capacitor } from '@capacitor/core';
+import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
+import {
+    TranscriptConsentCheckbox,
+    TranscriptErrorBanner as ErrorBanner,
+    getTranscriptErrorMessage as errorMessage,
+} from './TranscriptConsent';
+
+/** After this long without arrival, the card offers manual recovery instead of waiting. */
+export const TRANSCRIPT_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+/** After this long, the waiting copy changes to "this can take a while". */
+const TRANSCRIPT_SLOW_AFTER_MS = 15 * 60 * 1000;
 
 type RequestResult = {
     status: 'requested' | 'none_yet' | 'failed';
@@ -39,16 +49,6 @@ type TranscriptOptInCardProps = {
 
 const spinner = (
     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-);
-
-const ErrorBanner: React.FC<{ message: string }> = ({ message }) => (
-    <div
-        role="alert"
-        className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
-    >
-        <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
-        <span className="text-sm text-red-700 leading-relaxed">{message}</span>
-    </div>
 );
 
 const PrimaryButton: React.FC<
@@ -70,45 +70,32 @@ const PrimaryButton: React.FC<
     </button>
 );
 
-const errorMessage = (error: unknown): string =>
-    error instanceof Error && error.message ? error.message : m['transcriptOptIn.error']();
+type ReceivedTranscriptProps = {
+    issuerDid: string | undefined;
+    requestId: string | undefined;
+    receivedAt: string;
+};
 
-export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source }) => {
-    const history = useHistory();
-    const features = useFeatureConfig();
-    const { state: coordinatorState } = useAppAuth();
-    const isReady = coordinatorState.status === 'ready';
-    const queryEnabled = features.classlinkTranscriptOptIn && isReady;
-    const { track } = useAnalytics();
-
-    const status = useTranscriptStatus(queryEnabled);
-    const request = useRequestTranscript();
-    const { mutateAsync: getClassLinkAuthorizeUrl } = useClassLinkAuthorizeUrl();
+/**
+ * Received state. Mounted only once the server reports `receivedAt`, so the
+ * whole-wallet credential lookup below never runs for anyone who has not received
+ * a transcript. If the credential has not resolved locally yet, the card still
+ * shows "received" (from the server timestamp) rather than the opt-in form.
+ */
+const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
+    issuerDid,
+    requestId,
+    receivedAt,
+}) => {
     const { newModal } = useModal();
     const { initWallet } = useWallet();
-
-    const [consent, setConsent] = useState(false);
-    const [requestResult, setRequestResult] = useState<RequestResult | null>(null);
-    const [submitError, setSubmitError] = useState('');
-    const [reauthError, setReauthError] = useState('');
-    const [reauthing, setReauthing] = useState(false);
-
-    const data = status.data;
-    const latest = data?.latest ?? requestResult;
-
-    useTranscriptArrival({
-        status: latest?.status,
-        issuerDid: data?.issuerDid,
-        requestId: latest?.requestId,
-        requestedAt: latest?.requestedAt,
-        receivedAt: latest?.receivedAt,
-    });
 
     const { data: allCreds } = useGetCredentials(undefined, undefined, true);
     const transcriptEntry = allCreds?.find(
         (entry): entry is { vc: VC; uri?: string } =>
             'vc' in entry &&
-            getIssuerDid(entry.vc) === data?.issuerDid &&
+            Boolean(issuerDid) &&
+            getIssuerDid(entry.vc) === issuerDid &&
             Boolean(entry.vc.type?.includes('ClrCredential'))
     );
     const transcriptVc = transcriptEntry?.vc;
@@ -144,8 +131,8 @@ export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source
     };
 
     React.useEffect(() => {
-        if (latest?.receivedAt && latest?.requestId && transcriptModel) {
-            const key = `transcript_arrival_${latest.requestId}`;
+        if (receivedAt && requestId && transcriptModel) {
+            const key = `transcript_arrival_${requestId}`;
             if (!localStorage.getItem(key)) {
                 localStorage.setItem(key, 'true');
                 newModal(
@@ -161,9 +148,91 @@ export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [latest?.receivedAt, latest?.requestId, transcriptModel, newModal]);
+    }, [receivedAt, requestId, transcriptModel, newModal]);
 
-    if (!queryEnabled) return null;
+    return (
+        <div className="space-y-4 animate-fade-in-up">
+            <div className="flex items-center gap-2 mb-2">
+                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full flex items-center gap-1">
+                    <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500" />
+                    {m['transcriptOptIn.addedToAccount']()}
+                </span>
+                {unreadUpdate && updatedAt && (
+                    <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full">
+                        {m['transcriptOptIn.updated']({
+                            date: new Date(updatedAt).toLocaleDateString(),
+                        })}
+                    </span>
+                )}
+            </div>
+            <h2 className="text-xl font-semibold text-grayscale-900">
+                {schoolName || m['transcriptOptIn.transcript']()}
+            </h2>
+            {transcriptModel ? (
+                <>
+                    <div className="text-sm text-grayscale-600 space-y-1">
+                        {graduationYear && (
+                            <p>{m['transcriptOptIn.gradYear']({ year: graduationYear })}</p>
+                        )}
+                        {gpa !== undefined && (
+                            <p>{m['transcriptOptIn.gpa']({ gpa: String(gpa) })}</p>
+                        )}
+                    </div>
+                    <PrimaryButton onClick={openTranscript}>
+                        {m['transcriptOptIn.viewTranscript']()}
+                    </PrimaryButton>
+                </>
+            ) : (
+                <p
+                    data-testid="transcript-optin-received-pending"
+                    className="text-sm text-grayscale-600 leading-relaxed"
+                >
+                    {m['transcriptOptIn.receivedLoading']()}
+                </p>
+            )}
+        </div>
+    );
+};
+
+/**
+ * Wallet / School Connect transcript card. Renders (and fetches) nothing unless the
+ * tenant enables `classlinkTranscriptOptIn` and the account is ready; all queries
+ * live in the gated inner component so other tenants pay no network cost.
+ */
+export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source }) => {
+    const features = useFeatureConfig();
+    const { state: coordinatorState } = useAppAuth();
+
+    if (!features.classlinkTranscriptOptIn || coordinatorState.status !== 'ready') return null;
+
+    return <TranscriptOptInCardContent source={source} />;
+};
+
+const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source }) => {
+    const history = useHistory();
+    const { track } = useAnalytics();
+
+    const status = useTranscriptStatus(true);
+    const request = useRequestTranscript();
+    const { mutateAsync: getClassLinkAuthorizeUrl } = useClassLinkAuthorizeUrl();
+
+    const [consent, setConsent] = useState(false);
+    const [requestResult, setRequestResult] = useState<RequestResult | null>(null);
+    const [submitError, setSubmitError] = useState('');
+    const [reauthError, setReauthError] = useState('');
+    const [reauthing, setReauthing] = useState(false);
+
+    const data = status.data;
+    const latest = data?.latest ?? requestResult;
+
+    const { isPollingExhausted, checkAgain } = useTranscriptArrival({
+        status: latest?.status,
+        issuerDid: data?.issuerDid,
+        issuerProfileId: data?.issuerProfileId,
+        requestId: latest?.requestId,
+        requestedAt: latest?.requestedAt,
+        receivedAt: latest?.receivedAt,
+    });
 
     // A FORBIDDEN/NOT_FOUND response means the signed-in user isn't a ClassLink
     // user at all, so the card must hide silently rather than show an error.
@@ -190,16 +259,22 @@ export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source
         if (reauthing) return;
         setReauthing(true);
         setReauthError('');
-        const ok = await startClassLinkLogin(
+        const outcome = await runClassLinkLogin(
             getClassLinkAuthorizeUrl,
             path => history.push(path),
             window.location.pathname,
             'connect'
         );
-        if (!ok) {
-            setReauthError(m['transcriptOptIn.error']());
-            setReauthing(false);
-        }
+        // 'handled' (native sheet closed / timed out): the callback route already shows
+        // its own message, so only a genuine failure gets the inline error.
+        if (outcome === 'failed') setReauthError(m['transcriptOptIn.error']());
+        // On native the callback runs in-app and this card stays mounted underneath it.
+        if (outcome !== 'started' || Capacitor.isNativePlatform()) setReauthing(false);
+    };
+
+    const recheck = (): void => {
+        checkAgain();
+        void status.refetch();
     };
 
     let content: React.ReactNode;
@@ -240,56 +315,57 @@ export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source
                     {m['transcriptOptIn.noStateId']()}
                 </p>
             );
-        } else if (latest?.status === 'requested' && !latest?.receivedAt) {
+        } else if (latest?.receivedAt) {
+            content = (
+                <ReceivedTranscript
+                    issuerDid={data.issuerDid}
+                    requestId={latest.requestId}
+                    receivedAt={latest.receivedAt}
+                />
+            );
+        } else if (latest?.status === 'requested') {
             const elapsed = Date.now() - new Date(latest.requestedAt).getTime();
-            const isLong = elapsed > 15 * 60 * 1000;
+            const isStale = isPollingExhausted || elapsed > TRANSCRIPT_STALE_AFTER_MS;
+            const isSlow = elapsed > TRANSCRIPT_SLOW_AFTER_MS;
             content = (
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                        {!isLong && (
+                        {!isSlow && !isStale && (
                             <span className="w-5 h-5 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin shrink-0" />
                         )}
                         <p className="text-sm text-grayscale-900 font-medium">
                             {m['transcriptOptIn.requestingFrom']({ state: data.stateDisplayName })}
                         </p>
                     </div>
-                    {isLong && (
-                        <p className="text-sm text-grayscale-600">
-                            {m['transcriptOptIn.takingAWhile']()}
-                        </p>
+                    {isStale ? (
+                        <div data-testid="transcript-optin-stale" className="space-y-4">
+                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                {m['transcriptOptIn.checkManually']()}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                <PrimaryButton
+                                    data-testid="transcript-optin-check-again"
+                                    onClick={recheck}
+                                >
+                                    {m['transcriptOptIn.checkAgain']()}
+                                </PrimaryButton>
+                                <button
+                                    type="button"
+                                    data-testid="transcript-optin-open-notifications"
+                                    className="py-3 px-4 rounded-[20px] border border-grayscale-200 text-grayscale-900 font-medium text-sm hover:bg-grayscale-50 transition-colors"
+                                    onClick={() => history.push('/notifications')}
+                                >
+                                    {m['transcriptOptIn.openNotifications']()}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        isSlow && (
+                            <p className="text-sm text-grayscale-600">
+                                {m['transcriptOptIn.takingAWhile']()}
+                            </p>
+                        )
                     )}
-                </div>
-            );
-        } else if (latest?.receivedAt && transcriptModel) {
-            content = (
-                <div className="space-y-4 animate-fade-in-up">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full flex items-center gap-1">
-                            <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500" />
-                            {m['transcriptOptIn.addedToAccount']()}
-                        </span>
-                        {unreadUpdate && updatedAt && (
-                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full">
-                                {m['transcriptOptIn.updated']({
-                                    date: new Date(updatedAt).toLocaleDateString(),
-                                })}
-                            </span>
-                        )}
-                    </div>
-                    <h2 className="text-xl font-semibold text-grayscale-900">
-                        {schoolName || m['transcriptOptIn.transcript']()}
-                    </h2>
-                    <div className="text-sm text-grayscale-600 space-y-1">
-                        {graduationYear && (
-                            <p>{m['transcriptOptIn.gradYear']({ year: graduationYear })}</p>
-                        )}
-                        {gpa !== undefined && (
-                            <p>{m['transcriptOptIn.gpa']({ gpa: String(gpa) })}</p>
-                        )}
-                    </div>
-                    <PrimaryButton onClick={openTranscript}>
-                        {m['transcriptOptIn.viewTranscript']()}
-                    </PrimaryButton>
                 </div>
             );
         } else if (latest?.status === 'none_yet') {
@@ -310,13 +386,11 @@ export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source
                         {m['transcriptOptIn.body']()}
                     </p>
                     {submitError && <ErrorBanner message={submitError} />}
-                    <div data-testid="transcript-optin-consent" className="inline-block">
-                        <Checkbox
-                            checked={consent}
-                            onChange={setConsent}
-                            label={m['transcriptOptIn.consent']({ state: data.stateDisplayName })}
-                        />
-                    </div>
+                    <TranscriptConsentCheckbox
+                        checked={consent}
+                        onChange={setConsent}
+                        stateDisplayName={data.stateDisplayName}
+                    />
                     <div>
                         <PrimaryButton
                             data-testid="transcript-optin-submit"

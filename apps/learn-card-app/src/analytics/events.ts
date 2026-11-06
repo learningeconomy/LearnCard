@@ -492,6 +492,7 @@ export interface AnalyticsEventPayloads {
     };
 
     [AnalyticsEvents.LOGIN]: {
+        /** A `SocialLoginTypes` value (e.g. google, apple, passwordless, sms, classlink). */
         method: string;
     };
 
@@ -984,7 +985,7 @@ export interface AnalyticsEventPayloads {
 
     [AnalyticsEvents.SIGNUP_STARTED]: {
         flow_id: string;
-        /** Auth method that produced the new account (google/apple/passwordless/sms). */
+        /** Auth method that produced the new account (google/apple/passwordless/sms/classlink). */
         method?: string;
         entry_point?: string;
     };

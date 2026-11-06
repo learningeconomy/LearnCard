@@ -1,4 +1,10 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+    findClassLinkIdentityForAccount,
+    getClassLinkStudentStatus,
+    resolveClassLinkContext,
+} from '../src/helpers/classlinkContext.helpers';
+import { getUserKeysCollection, type MongoUserKeyType } from '../src/models/UserKey';
 import {
     clearExpiredStateStudentIds,
     clearStateStudentIdIfUnchanged,
@@ -30,6 +36,7 @@ afterEach(async () => {
     await Promise.all([
         getClassLinkIdentitiesCollection().deleteMany({}),
         getTranscriptRequestsCollection().deleteMany({}),
+        getUserKeysCollection().deleteMany({}),
     ]);
 });
 
@@ -154,5 +161,110 @@ describe('ClassLink and transcript models', () => {
             })
         ).toBeNull();
         expect(getStateStudentId({ identityKey: 'classlink:a:1', ...sealed })).toBe('state-1');
+    });
+
+    it('keeps the stored email when a later sign-in has none, and never stores null', async () => {
+        await upsertClassLinkIdentity({ ...identity(), sealedStateStudentId: null });
+        const { email: _email, ...withoutEmail } = identity();
+        const record = await upsertClassLinkIdentity({
+            ...withoutEmail,
+            sealedStateStudentId: null,
+        });
+        expect(record.email).toBe('student@example.edu');
+        await upsertClassLinkIdentity({
+            ...withoutEmail,
+            identityKey: 'classlink:tenant-test:no-email',
+            sealedStateStudentId: null,
+        });
+        expect(
+            await getClassLinkIdentitiesCollection().findOne({
+                identityKey: 'classlink:tenant-test:no-email',
+            })
+        ).not.toHaveProperty('email');
+    });
+});
+
+describe('account-keyed ClassLink lookup', () => {
+    const did = 'did:key:account';
+    const account = (authProviders: { type: string; id: string }[]) =>
+        ({
+            primaryDid: did,
+            linkedDids: ['did:key:linked'],
+            authProviders,
+            contactMethod: { type: 'email', value: 'student@example.edu' },
+        }) as unknown as MongoUserKeyType;
+
+    it('finds by Firebase uid and records the DID for later provider changes', async () => {
+        await upsertClassLinkIdentity({
+            ...identity(),
+            isMinorHint: true,
+            sealedStateStudentId: null,
+        });
+        await getUserKeysCollection().insertOne(account([{ type: 'firebase', id: 'uid-x' }]));
+        expect(await getClassLinkStudentStatus(did)).toBe('student');
+        expect(
+            (await getClassLinkIdentitiesCollection().findOne({ firebaseUid: 'uid-x' }))?.primaryDid
+        ).toBe(did);
+    });
+
+    it('keeps minor locks and transcript access after a recovery rebind removes the Firebase provider', async () => {
+        await upsertClassLinkIdentity({
+            ...identity(),
+            isMinorHint: true,
+            sealedStateStudentId: null,
+        });
+        await getUserKeysCollection().insertOne(account([{ type: 'firebase', id: 'uid-x' }]));
+        await resolveClassLinkContext(did); // records primaryDid
+        // completeIdentityRebind replaced the Firebase provider.
+        await getUserKeysCollection().updateOne(
+            { primaryDid: did },
+            { $set: { authProviders: [{ type: 'firebase', id: 'rebound-uid' }] } }
+        );
+        expect(await getClassLinkStudentStatus(did)).toBe('student');
+        const context = await resolveClassLinkContext(did);
+        expect(context.identity.identityKey).toBe('classlink:tenant-test:source-1');
+        expect(context.firebaseUid).toBe('uid-x');
+    });
+
+    it('matches a Keycloak provider whose id is the identity subject, and a linked DID', async () => {
+        await upsertClassLinkIdentity({ ...identity(), sealedStateStudentId: null });
+        expect(
+            (
+                await findClassLinkIdentityForAccount(
+                    account([{ type: 'keycloak', id: 'subject-x' }])
+                )
+            )?.identityKey
+        ).toBe('classlink:tenant-test:source-1');
+        await upsertClassLinkIdentity({
+            ...identity('classlink:tenant-test:source-2'),
+            firebaseUid: 'uid-y',
+            subject: 'subject-y',
+            primaryDid: 'did:key:linked',
+            sealedStateStudentId: null,
+        });
+        expect(
+            (
+                await findClassLinkIdentityForAccount(
+                    account([{ type: 'keycloak', id: 'unrelated' }])
+                )
+            )?.identityKey
+        ).toBe('classlink:tenant-test:source-2');
+        expect(await findClassLinkIdentityForAccount(account([]))).toMatchObject({
+            identityKey: 'classlink:tenant-test:source-2',
+        });
+    });
+
+    it('reports not_student without a link and unknown on lookup failure', async () => {
+        await getUserKeysCollection().insertOne(account([{ type: 'firebase', id: 'none' }]));
+        expect(await getClassLinkStudentStatus(did)).toBe('not_student');
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        // getClassLinkIdentitiesCollection returns a fresh handle, so stub the prototype.
+        const proto = Object.getPrototypeOf(getClassLinkIdentitiesCollection());
+        const spy = vi.spyOn(proto, 'find').mockImplementation(() => {
+            throw new Error('database down');
+        });
+        expect(await getClassLinkStudentStatus(did)).toBe('unknown');
+        spy.mockRestore();
+        warn.mockRestore();
     });
 });

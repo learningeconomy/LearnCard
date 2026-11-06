@@ -2,11 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { classlinkRouter } from '../src/routes/classlink';
 import { getClassLinkConfig } from '../src/helpers/classlink.config';
 import { exchangeClassLinkCode, verifyClassLinkIdToken } from '../src/helpers/classlink.helpers';
-import { ClassLinkEmailMissing, ClassLinkTokenInvalid } from '../src/helpers/classlink.errors';
+import {
+    ClassLinkProviderUnavailable,
+    ClassLinkTokenInvalid,
+} from '../src/helpers/classlink.errors';
 import {
     findClassLinkIdentityByIdentityKey,
     getClassLinkIdentitiesCollection,
+    upsertClassLinkIdentity,
 } from '../src/models/ClassLinkIdentity';
+import { getUserKeysCollection, type MongoUserKeyType } from '../src/models/UserKey';
+import { getNotStudentCacheKey } from '../src/accesslayer/preferences/privacyLock';
+import { syntheticEmailForUid } from '../src/helpers/syntheticEmail.helpers';
 import {
     getAuthSubjectsCollection,
     getOrCreateAuthSubject,
@@ -20,20 +27,25 @@ import {
 } from '../src/helpers/classlinkPii.helpers';
 import type { ClassLinkClaims, ClassLinkConfig } from '../src/types/classlink';
 
-const { env, firebase, counts, windows } = vi.hoisted(() => ({
+const { env, firebase, counts, windows, flags, deletedKeys } = vi.hoisted(() => ({
     env: {
         IS_E2E_TEST: false,
         IS_OFFLINE: false,
         CLASSLINK_PII_KEY: Buffer.alloc(32, 7).toString('base64') as string | undefined,
+        CLASSLINK_IDENTITY_KEY: undefined as string | undefined,
     },
     firebase: {
         getUserByEmail: vi.fn(),
+        getUser: vi.fn(),
         createUser: vi.fn(),
+        updateUser: vi.fn(),
         createCustomToken: vi.fn(),
         auth: vi.fn(),
     },
     counts: new Map<string, number>(),
     windows: new Map<string, number>(),
+    flags: new Set<string>(),
+    deletedKeys: [] as string[],
 }));
 vi.mock('@environment', () => ({ environment: env }));
 vi.mock('../src/firebase', () => ({ default: { auth: firebase.auth } }));
@@ -56,8 +68,18 @@ vi.mock('../src/helpers/classlink.helpers', async importOriginal => ({
 }));
 vi.mock('@cache', () => ({
     default: {
+        delete: async (keys: string[]) => {
+            deletedKeys.push(...keys);
+            return keys.length;
+        },
         node: {
             eval: async (script: string, _count: number, key: string, window: number) => {
+                // SET key value EX ttl NX, as used by the retention sweep throttle.
+                if (script.includes("'NX'")) {
+                    if (flags.has(key)) return null;
+                    flags.add(key);
+                    return 'OK';
+                }
                 if (script.includes("redis.call('INCR'"))
                     counts.set(key, (counts.get(key) ?? 0) + 1);
                 if (counts.has(key) && !windows.has(key)) windows.set(key, window);
@@ -96,9 +118,12 @@ beforeEach(async () => {
     vi.clearAllMocks();
     counts.clear();
     windows.clear();
+    flags.clear();
+    deletedKeys.length = 0;
     env.IS_E2E_TEST = false;
     env.IS_OFFLINE = false;
     env.CLASSLINK_PII_KEY = Buffer.alloc(32, 7).toString('base64');
+    env.CLASSLINK_IDENTITY_KEY = undefined;
     config = {
         clientId: 'client-test',
         clientSecret: 'secret-test',
@@ -138,9 +163,13 @@ beforeEach(async () => {
     firebase.auth.mockReturnValue(firebase);
     firebase.getUserByEmail.mockRejectedValue({ code: 'auth/user-not-found' });
     firebase.createUser.mockImplementation(async (user: { uid: string }) => user);
+    // The Firebase user of a known identity already has an email unless a test says otherwise.
+    firebase.getUser.mockImplementation(async (id: string) => ({ uid: id, email: claims.email }));
+    firebase.updateUser.mockImplementation(async (id: string) => ({ uid: id }));
     firebase.createCustomToken.mockImplementation(async (id: string) => `custom-${id}`);
     await getClassLinkIdentitiesCollection().deleteMany({});
     await getAuthSubjectsCollection().deleteMany({});
+    await getUserKeysCollection().deleteMany({});
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -196,7 +225,7 @@ describe('ClassLink sign-in broker', () => {
         expect(stored).not.toHaveProperty('stateStudentId');
         expect(stored).not.toHaveProperty('sourcedId');
         expect(identityKey).not.toContain('source-1');
-        expect(stored?.stateStudentIdEnc).toMatch(/^v1:/);
+        expect(stored?.stateStudentIdEnc).toMatch(/^v2:[0-9a-f]{8}:/);
         expect(JSON.stringify(stored)).not.toContain('private-student-id');
         expect(getStateStudentId(stored!)).toBe('private-student-id');
         expect(verifyClassLinkIdToken).toHaveBeenCalledWith('private-id-token', {
@@ -219,6 +248,22 @@ describe('ClassLink sign-in broker', () => {
             subject: subject.subject,
         });
         expect(firebase.createUser).not.toHaveBeenCalled();
+    });
+    it('drops cached "not a student" answers for an existing account that joins', async () => {
+        await getUserKeysCollection().insertOne({
+            primaryDid: 'did:key:existing',
+            linkedDids: ['did:key:linked'],
+            authProviders: [{ type: 'firebase', id: 'existing-user' }],
+            contactMethod: { type: 'email', value: 'student@example.edu' },
+        } as unknown as MongoUserKeyType);
+        firebase.getUserByEmail.mockResolvedValue({ uid: 'existing-user', emailVerified: true });
+        await caller().exchangeCode(exchange);
+        expect(deletedKeys).toEqual(
+            expect.arrayContaining([
+                getNotStudentCacheKey('did:key:existing'),
+                getNotStudentCacheKey('did:key:linked'),
+            ])
+        );
     });
     it.each(['disallowed', 'empty', 'firebase-unverified', 'claim-unverified'])(
         'refuses unsafe linking: %s',
@@ -246,42 +291,250 @@ describe('ClassLink sign-in broker', () => {
         await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({ code: 'CONFLICT' });
         expect(warn).toHaveBeenCalledExactlyOnceWith('classlink.link.conflict', {
             tenantId: 'tenant-test',
+            reason: 'other_account',
         });
         expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
             firebaseUid: uid,
         });
     });
-    it.each(['missing', 'unverified', 'helper-error'])(
-        'handles %s email without binding an unverified address',
+    it.each(['missing', 'malformed', 'unverified', 'untrusted-domain'])(
+        'signs in with a %s school email using an undeliverable synthetic account address',
         async reason => {
             if (reason === 'missing') delete claims.email;
-            if (reason === 'unverified') {
-                claims.email_verified = false;
-                await expect(caller().exchangeCode(exchange)).resolves.toEqual({
-                    token: `custom-${uid}`,
-                });
-                expect(firebase.createUser).toHaveBeenCalledExactlyOnceWith({
-                    uid,
-                    displayName: claims.name,
-                });
-                expect(await findAuthSubjectByIdentityKey(identityKey)).toMatchObject({
-                    emailVerified: false,
-                });
-                expect(await findAuthSubjectByIdentityKey(identityKey)).not.toHaveProperty('email');
-                return;
-            }
-            if (reason === 'helper-error')
-                vi.mocked(verifyClassLinkIdToken).mockRejectedValueOnce(
-                    new ClassLinkEmailMissing()
-                );
-            await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({
-                code: 'BAD_REQUEST',
-                message:
-                    "Your school account doesn't have an email address yet. Ask your school to add one, then try again.",
+            if (reason === 'malformed') claims.email = 'not an email';
+            if (reason === 'unverified') claims.email_verified = false;
+            if (reason === 'untrusted-domain')
+                config.tenants['tenant-test']!.allowedEmailDomains = ['other.edu'];
+            await expect(caller().exchangeCode(exchange)).resolves.toEqual({
+                token: `custom-${uid}`,
             });
-            expect(firebase.createUser).not.toHaveBeenCalled();
+            // Wallet key storage needs a contact method, so the Firebase user gets the
+            // reserved .invalid address, never marked verified.
+            expect(firebase.createUser).toHaveBeenCalledExactlyOnceWith({
+                uid,
+                displayName: claims.name,
+                email: `${uid}@users.classlink.invalid`,
+                emailVerified: false,
+            });
+            expect(syntheticEmailForUid(uid)).toBe(`${uid}@users.classlink.invalid`);
+            const subjectRecord = await findAuthSubjectByIdentityKey(identityKey);
+            expect(subjectRecord).toMatchObject({ emailVerified: false });
+            expect(subjectRecord).not.toHaveProperty('email');
+            // No email: subject is created for an untrusted address.
+            expect(await findAuthSubjectByIdentityKey('email:student@example.edu')).toBeNull();
+            const stored = await findClassLinkIdentityByIdentityKey(identityKey);
+            // The identity keeps the real school email (or nothing), never the synthetic one.
+            if (reason === 'missing' || reason === 'malformed')
+                expect(stored).not.toHaveProperty('email');
+            else expect(stored?.email).toBe('student@example.edu');
+            expect(JSON.stringify(stored)).not.toContain('classlink.invalid');
         }
     );
+    it('backfills the synthetic address on a known identity whose Firebase user has no email', async () => {
+        config.tenants['tenant-test']!.allowedEmailDomains = [];
+        await caller().exchangeCode(exchange);
+        firebase.getUser.mockResolvedValue({ uid, email: undefined });
+        await caller().exchangeCode(exchange);
+        expect(firebase.createUser).toHaveBeenCalledOnce();
+        expect(firebase.updateUser).toHaveBeenCalledExactlyOnceWith(uid, {
+            email: `${uid}@users.classlink.invalid`,
+            emailVerified: false,
+        });
+    });
+    it('signs in after School Connect moved the identity, releasing the old user email', async () => {
+        await caller().exchangeCode(exchange);
+        // A recovery rebind plus a School Connect refresh moved the identity to the account's
+        // current (phone) Firebase user; the old deterministic user still holds the email.
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey },
+            { $set: { firebaseUid: 'rebound-phone-uid' } }
+        );
+        firebase.getUserByEmail.mockResolvedValue({ uid, emailVerified: true });
+        firebase.getUser.mockImplementation(async (id: string) =>
+            id === uid
+                ? { uid, email: claims.email }
+                : { uid: id, phoneNumber: '+15555550100', email: undefined }
+        );
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        await expect(caller().exchangeCode(exchange)).resolves.toEqual({
+            token: 'custom-rebound-phone-uid',
+        });
+        expect(warn).not.toHaveBeenCalledWith('classlink.link.conflict', expect.anything());
+        // Only the deterministic user is changed, back to its synthetic address.
+        expect(firebase.updateUser).toHaveBeenCalledExactlyOnceWith(uid, {
+            email: syntheticEmailForUid(uid),
+            emailVerified: false,
+        });
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+            firebaseUid: 'rebound-phone-uid',
+        });
+    });
+    it('never writes an email onto a non-ClassLink Firebase user linked to the identity', async () => {
+        await caller().exchangeCode(exchange);
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey },
+            { $set: { firebaseUid: 'phone-only-uid' } }
+        );
+        for (const allowed of [[], ['example.edu']]) {
+            config.tenants['tenant-test']!.allowedEmailDomains = allowed;
+            firebase.getUser.mockImplementation(async (id: string) => ({
+                uid: id,
+                phoneNumber: '+15555550100',
+                email: undefined,
+            }));
+            await expect(caller().exchangeCode(exchange)).resolves.toEqual({
+                token: 'custom-phone-only-uid',
+            });
+        }
+        expect(firebase.updateUser).not.toHaveBeenCalled();
+        expect(firebase.createUser).toHaveBeenCalledOnce();
+    });
+    it('upgrades a synthetic address to the school email once that email becomes trusted', async () => {
+        config.tenants['tenant-test']!.allowedEmailDomains = [];
+        await caller().exchangeCode(exchange);
+        expect(firebase.createUser).toHaveBeenCalledWith(
+            expect.objectContaining({ uid, email: syntheticEmailForUid(uid) })
+        );
+        firebase.getUser.mockResolvedValue({ uid, email: syntheticEmailForUid(uid) });
+        // The district later allowlists its domain.
+        config.tenants['tenant-test']!.allowedEmailDomains = ['example.edu'];
+        await expect(caller().exchangeCode(exchange)).resolves.toEqual({ token: `custom-${uid}` });
+        expect(firebase.updateUser).toHaveBeenCalledExactlyOnceWith(uid, {
+            email: claims.email,
+            emailVerified: true,
+        });
+        const { subject } = (await findClassLinkIdentityByIdentityKey(identityKey))!;
+        expect(await findAuthSubjectByIdentityKey('email:student@example.edu')).toMatchObject({
+            subject,
+        });
+        // A later sign-in finds the upgraded user by email: it is this identity's, not a conflict.
+        firebase.getUser.mockResolvedValue({ uid, email: claims.email });
+        firebase.getUserByEmail.mockResolvedValue({ uid, emailVerified: true });
+        await expect(caller().exchangeCode(exchange)).resolves.toEqual({ token: `custom-${uid}` });
+        expect(firebase.updateUser).toHaveBeenCalledOnce();
+    });
+    it('drops cached "not a student" answers when a fresh identity binds to an existing account', async () => {
+        // e.g. the identity was re-created after deleteMyData; the wallet already exists.
+        await getUserKeysCollection().insertOne({
+            primaryDid: 'did:key:returning',
+            linkedDids: [],
+            authProviders: [{ type: 'firebase', id: uid }],
+            contactMethod: { type: 'email', value: 'student@example.edu' },
+        } as unknown as MongoUserKeyType);
+        await caller().exchangeCode(exchange);
+        expect(deletedKeys).toContain(getNotStudentCacheKey('did:key:returning'));
+        deletedKeys.length = 0;
+        // A repeat sign-in with an unchanged student hint does no cache work.
+        await caller().exchangeCode(exchange);
+        expect(deletedKeys).not.toContain(getNotStudentCacheKey('did:key:returning'));
+    });
+    it('reuses the deterministic Firebase user when its ClassLink identity row was deleted', async () => {
+        await caller().exchangeCode(exchange);
+        const subject = (await findClassLinkIdentityByIdentityKey(identityKey))?.subject;
+        await getClassLinkIdentitiesCollection().deleteMany({});
+        firebase.createUser.mockRejectedValueOnce({ code: 'auth/uid-already-exists' });
+        firebase.getUser.mockResolvedValue({ uid, email: undefined });
+        await expect(caller().exchangeCode(exchange)).resolves.toEqual({
+            token: `custom-${uid}`,
+        });
+        expect(firebase.updateUser).toHaveBeenCalledExactlyOnceWith(uid, {
+            email: claims.email,
+            emailVerified: true,
+        });
+        // The AuthSubject survived, so the person keeps the same subject.
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+            firebaseUid: uid,
+            subject,
+        });
+    });
+    it('recreates the Firebase user when it was deleted but the identity row remains', async () => {
+        await caller().exchangeCode(exchange);
+        firebase.getUser.mockRejectedValue({ code: 'auth/user-not-found' });
+        await expect(caller().exchangeCode(exchange)).resolves.toEqual({
+            token: `custom-${uid}`,
+        });
+        expect(firebase.createUser).toHaveBeenCalledTimes(2);
+    });
+    it.each(['firebase-uid', 'account'])(
+        'refuses to give an existing email account a second ClassLink identity (found by %s)',
+        async lookup => {
+            firebase.getUserByEmail.mockResolvedValue({
+                uid: 'existing-user',
+                emailVerified: true,
+            });
+            const other = {
+                identityKey: 'classlink:tenant-test:v1:other-student',
+                tenantId: 'tenant-test',
+                sub: 'other',
+                role: 'student',
+                sealedStateStudentId: null,
+                state: 'XX',
+                subject: 'other-subject',
+                lastAuthTime: new Date(),
+            };
+            if (lookup === 'firebase-uid')
+                await upsertClassLinkIdentity({ ...other, firebaseUid: 'existing-user' });
+            else {
+                // After a recovery rebind the old identity is only linked by its DID.
+                await getUserKeysCollection().insertOne({
+                    primaryDid: 'did:key:existing',
+                    linkedDids: [],
+                    authProviders: [{ type: 'firebase', id: 'existing-user' }],
+                    contactMethod: { type: 'email', value: 'student@example.edu' },
+                } as unknown as MongoUserKeyType);
+                await upsertClassLinkIdentity({
+                    ...other,
+                    firebaseUid: 'pre-rebind-uid',
+                    primaryDid: 'did:key:existing',
+                });
+            }
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({
+                code: 'CONFLICT',
+                message:
+                    'This LearnCard account is already connected to a different school account.',
+            });
+            expect(warn).toHaveBeenCalledWith('classlink.link.conflict', {
+                tenantId: 'tenant-test',
+                reason: 'other_school',
+            });
+            expect(await findClassLinkIdentityByIdentityKey(identityKey)).toBeNull();
+            expect(firebase.createCustomToken).not.toHaveBeenCalled();
+        }
+    );
+    it('links a trusted verified school email subject so a later email sign-in finds the same person', async () => {
+        await caller().exchangeCode(exchange);
+        const { subject } = (await findClassLinkIdentityByIdentityKey(identityKey))!;
+        expect(await findAuthSubjectByIdentityKey('email:student@example.edu')).toMatchObject({
+            subject,
+            email: 'student@example.edu',
+            emailVerified: true,
+        });
+    });
+    it('never changes an existing email subject that belongs to someone else', async () => {
+        await caller().exchangeCode(exchange);
+        await getAuthSubjectsCollection().updateOne(
+            { identityKey: 'email:student@example.edu' },
+            { $set: { subject: 'someone-else' } }
+        );
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        await caller().exchangeCode(exchange);
+        expect(await findAuthSubjectByIdentityKey('email:student@example.edu')).toMatchObject({
+            subject: 'someone-else',
+        });
+        expect(warn).toHaveBeenCalledWith('classlink.email_subject.mismatch', {
+            tenantId: 'tenant-test',
+        });
+    });
+    it('gives actionable guidance when the school email already has an account', async () => {
+        config.tenants['tenant-test']!.allowedEmailDomains = [];
+        firebase.getUserByEmail.mockResolvedValue({ uid: 'existing-user', emailVerified: true });
+        await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message:
+                'You already have a LearnCard account with this email. Sign in the way you usually do, then connect your school account from School Connect.',
+        });
+    });
     it('logs only the api_fields names a district sends, never values', async () => {
         const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
         await caller().exchangeCode(exchange);
@@ -338,7 +591,54 @@ describe('ClassLink sign-in broker', () => {
         expect(stored).not.toHaveProperty('stateStudentIdEnc');
         expect(stored).not.toHaveProperty('stateStudentIdExpiresAt');
     });
-    it('fails closed without an encryption key and logs no values', async () => {
+    it('signs in without storing a state ID when only the identity key is configured', async () => {
+        env.CLASSLINK_IDENTITY_KEY = Buffer.alloc(32, 7).toString('base64');
+        env.CLASSLINK_PII_KEY = undefined;
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        await expect(caller().exchangeCode(exchange)).resolves.toEqual({
+            token: `custom-${uid}`,
+        });
+        expect(
+            await getClassLinkIdentitiesCollection().findOne({ identityKey })
+        ).not.toHaveProperty('stateStudentIdEnc');
+        expect(warn).toHaveBeenCalledWith('classlink.pii.key_missing');
+    });
+    it('sweeps expired state IDs at most once per interval on sign-in', async () => {
+        const expired = {
+            identityKey: 'classlink:tenant-test:v1:expired',
+            tenantId: 'tenant-test',
+            sub: 'other',
+            role: 'student',
+            state: 'XX',
+            firebaseUid: 'other-uid',
+            subject: 'other-subject',
+            lastAuthTime: new Date(),
+            stateStudentIdEnc: 'v2:00000000:expired',
+            stateStudentIdExpiresAt: new Date(Date.now() - 1000),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+        await getClassLinkIdentitiesCollection().insertOne({ ...expired });
+        await caller().exchangeCode(exchange);
+        expect(
+            await getClassLinkIdentitiesCollection().findOne({ identityKey: expired.identityKey })
+        ).not.toHaveProperty('stateStudentIdEnc');
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey: expired.identityKey },
+            {
+                $set: {
+                    stateStudentIdEnc: expired.stateStudentIdEnc,
+                    stateStudentIdExpiresAt: expired.stateStudentIdExpiresAt,
+                },
+            }
+        );
+        await caller().exchangeCode(exchange);
+        // Throttled: the second sign-in within the interval does not sweep again.
+        expect(
+            await getClassLinkIdentitiesCollection().findOne({ identityKey: expired.identityKey })
+        ).toHaveProperty('stateStudentIdEnc');
+    });
+    it('fails closed without any identity key and logs no values', async () => {
         env.CLASSLINK_PII_KEY = undefined;
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
         await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({
@@ -360,11 +660,24 @@ describe('ClassLink sign-in broker', () => {
             code: 'PRECONDITION_FAILED',
         });
     });
-    it('limits the 21st failure per IP for ten minutes without counting successes', async () => {
+    it('limits only abuse-like failures per IP, with a NAT-friendly ceiling', async () => {
         await caller().exchangeCode(exchange);
         expect(counts.size).toBe(0);
+        // Refusals and outages are not abuse and never count.
+        firebase.getUserByEmail.mockResolvedValue({ uid: 'different-user', emailVerified: true });
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({ code: 'CONFLICT' });
+        vi.mocked(exchangeClassLinkCode).mockRejectedValueOnce(new ClassLinkProviderUnavailable());
+        await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({
+            code: 'SERVICE_UNAVAILABLE',
+        });
+        await expect(
+            caller().exchangeCode({ ...exchange, redirectUri: 'https://evil.example/cb' })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect(counts.size).toBe(0);
         vi.mocked(verifyClassLinkIdToken).mockRejectedValue(new ClassLinkTokenInvalid());
-        for (let i = 0; i < 20; i++)
+        for (let i = 0; i < 200; i++)
             await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
@@ -375,7 +688,7 @@ describe('ClassLink sign-in broker', () => {
             code: 'UNAUTHORIZED',
         });
         expect(windows.get('classlink:rate:exchange:test-ip')).toBe(600);
-        expect(counts.get('classlink:rate:exchange:test-ip')).toBe(20);
+        expect(counts.get('classlink:rate:exchange:test-ip')).toBe(200);
     });
     it('explicitly bypasses Firebase in E2E and returns a stable stub', async () => {
         env.IS_E2E_TEST = true;
@@ -414,7 +727,19 @@ describe('ClassLink sign-in broker', () => {
             cause: undefined,
             message: 'School sign-in could not be completed. Please try again.',
         });
-        spies.forEach(spy => expect(spy).not.toHaveBeenCalled());
+        // Only a PII-free line (error name/code) is logged, so the failure can be alerted on.
+        const [, , error] = spies;
+        expect(error).toHaveBeenCalledExactlyOnceWith('classlink.exchange.failed', {
+            name: 'Error',
+        });
+        const output = JSON.stringify(spies.map(spy => spy.mock.calls));
+        for (const secret of [
+            'private-code',
+            'private-nonce',
+            'student@example.edu',
+            'private-sub',
+        ])
+            expect(output).not.toContain(secret);
         expect(firebase.createUser).not.toHaveBeenCalled();
     });
 });

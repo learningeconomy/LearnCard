@@ -1,15 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { walletStore } from '../../stores/walletStore';
 
-export const useClassLinkPersonalEmail = () => {
+/**
+ * Personal-email status for a ClassLink sign-in. Each fetch is a DID-authenticated
+ * lca-api call, so callers must pass `enabled: false` unless the tenant flag
+ * (`features.classlinkPersonalEmail`) and session checks allow the prompt.
+ */
+export const useClassLinkPersonalEmail = (options: { enabled?: boolean } = {}) => {
     const learnCard = walletStore.use.wallet();
+    const enabled = options.enabled ?? true;
     return useQuery({
         queryKey: ['classlinkPersonalEmail', learnCard?.id.did()],
         queryFn: async () => {
             if (!learnCard) throw new Error('Account is not ready');
             return learnCard.invoke.classlinkGetPersonalEmail();
         },
-        enabled: !!learnCard,
+        enabled: enabled && !!learnCard,
         retry: false,
     });
 };

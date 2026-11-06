@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 import type { VC } from '@learncard/types';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -14,10 +14,14 @@ const mocks = vi.hoisted(() => ({
         invoke: {
             verifyCredential: vi.fn(),
             transcriptsMarkReceived: vi.fn().mockResolvedValue(undefined),
+            // Must never be needed: the sender is matched by profileId, not looked up.
+            getProfile: vi.fn(),
         },
     },
     initWallet: vi.fn(),
     addVCtoWallet: vi.fn().mockResolvedValue(true),
+    /** Real useWallet returns new function identities on every render. */
+    unstableWalletFns: false,
     claimIncomingCredential: vi.fn().mockResolvedValue({ added: true, accepted: true }),
     incomingCredentials: {
         data: undefined as Array<{ uri: string; from: string }> | undefined,
@@ -29,12 +33,38 @@ const mocks = vi.hoisted(() => ({
     pushHandler: undefined as ((payload: unknown) => void) | undefined,
 }));
 
+/**
+ * In-memory Storage: Node 25 ships an experimental global `localStorage` that
+ * shadows jsdom's and lacks `clear()`, so the hook's persistence is exercised
+ * against this deterministic stand-in instead.
+ */
+const createMemoryStorage = (): Storage => {
+    const store = new Map<string, string>();
+    return {
+        get length() {
+            return store.size;
+        },
+        clear: () => store.clear(),
+        getItem: (key: string) => store.get(key) ?? null,
+        key: (index: number) => [...store.keys()][index] ?? null,
+        removeItem: (key: string) => void store.delete(key),
+        setItem: (key: string, value: string) => void store.set(key, String(value)),
+    };
+};
+vi.stubGlobal('localStorage', createMemoryStorage());
+
 // `mocks.wallet` is a minimal, mutable mock surface; this typed view is what gets
 // passed into production call sites that expect a real `BespokeLearnCard`.
 const wallet = mocks.wallet as unknown as BespokeLearnCard;
 
 vi.mock('learn-card-base', () => ({
-    useWallet: () => ({ initWallet: mocks.initWallet, addVCtoWallet: mocks.addVCtoWallet }),
+    useWallet: () =>
+        mocks.unstableWalletFns
+            ? {
+                  initWallet: (...args: unknown[]) => mocks.initWallet(...args),
+                  addVCtoWallet: (...args: unknown[]) => mocks.addVCtoWallet(...args),
+              }
+            : { initWallet: mocks.initWallet, addVCtoWallet: mocks.addVCtoWallet },
     useGetIncomingCredentials: () => mocks.incomingCredentials,
     claimIncomingCredential: mocks.claimIncomingCredential,
     parseForegroundPushNotification: (payload: { type?: string }) => payload ?? null,
@@ -51,8 +81,10 @@ vi.mock('@analytics', () => ({
     AnalyticsEvents: { TRANSCRIPT_ARRIVED: 'transcript_arrived' },
 }));
 
+// Like the real QueryClient, the same instance on every render.
+const queryClient = { invalidateQueries: mocks.invalidateQueries };
 vi.mock('@tanstack/react-query', () => ({
-    useQueryClient: () => ({ invalidateQueries: mocks.invalidateQueries }),
+    useQueryClient: () => queryClient,
 }));
 
 vi.mock('@capacitor/app', () => ({
@@ -73,16 +105,47 @@ vi.mock('@capacitor/push-notifications', () => ({
     },
 }));
 
-import { isMatchingTranscript, useTranscriptArrival } from './useTranscriptArrival';
+import {
+    getEchoedRequestIds,
+    isMatchingTranscript,
+    resetTranscriptArrivalSessionState,
+    useTranscriptArrival,
+} from './useTranscriptArrival';
+import type {
+    EvaluateTranscriptCandidateParams,
+    UseTranscriptArrivalParams,
+} from './useTranscriptArrival';
+import { claimTranscriptOnce } from './transcriptClaim';
 
-const ISSUER_DID = 'did:issuer';
+/** The partner's own signing DID, as documented for TRANSCRIPT_ISSUERS[*].did. */
+const ISSUER_DID = 'did:web:records.example.org';
 const USER_DID = 'did:user';
 const REQUESTED_AT = '2024-01-01T00:00:00.000Z';
+/** Brain-service sets `from` to the sender's profileId, never a DID. */
+const ISSUER_PROFILE_ID = 'state-records-issuer';
+/**
+ * What the network really reports as a profile's DID (getOtherProfile and notification
+ * `from.did` both rewrite it): never equal to the partner's signing DID.
+ */
+const NETWORK_DID_FOR_ISSUER = `did:web:network.learncard.com:users:${ISSUER_PROFILE_ID}`;
 const VALID_VC = {
     type: ['VerifiableCredential', 'ClrCredential'],
+    issuer: { id: ISSUER_DID, name: 'Example State' },
     credentialSubject: { id: USER_DID },
     validFrom: '2024-01-02T00:00:00.000Z',
 } as unknown as VC;
+
+const match = (overrides: Partial<EvaluateTranscriptCandidateParams>): Promise<boolean> =>
+    isMatchingTranscript({
+        vc: VALID_VC,
+        senderProfileId: ISSUER_PROFILE_ID,
+        expectedSenderProfileId: ISSUER_PROFILE_ID,
+        expectedIssuerDid: ISSUER_DID,
+        userDid: USER_DID,
+        requestedAt: REQUESTED_AT,
+        wallet,
+        ...overrides,
+    });
 
 describe('isMatchingTranscript', () => {
     beforeEach(() => {
@@ -91,36 +154,81 @@ describe('isMatchingTranscript', () => {
     });
 
     it('matches a credential satisfying every rule', async () => {
-        await expect(
-            isMatchingTranscript(VALID_VC, ISSUER_DID, ISSUER_DID, USER_DID, REQUESTED_AT, wallet)
-        ).resolves.toBe(true);
+        await expect(match({ vc: VALID_VC })).resolves.toBe(true);
+    });
+
+    it('never authenticates the sender by the network-rewritten profile DID', async () => {
+        // The network reports did:web:<network>:users:<profileId> for every profile, so a
+        // DID passed where a profile ID belongs never matches.
+        await expect(match({ senderProfileId: NETWORK_DID_FOR_ISSUER })).resolves.toBe(false);
+        await expect(match({ senderProfileId: ISSUER_DID })).resolves.toBe(false);
+        await expect(match({ expectedSenderProfileId: '', senderProfileId: '' })).resolves.toBe(
+            false
+        );
     });
 
     it('rejects a credential from the wrong sender', async () => {
-        await expect(
-            isMatchingTranscript(VALID_VC, 'did:wrong', ISSUER_DID, USER_DID, REQUESTED_AT, wallet)
-        ).resolves.toBe(false);
+        await expect(match({ vc: VALID_VC, senderProfileId: 'other-profile' })).resolves.toBe(
+            false
+        );
+    });
+
+    it('rejects a credential whose own issuer is not the expected issuer', async () => {
+        const vc = { ...VALID_VC, issuer: 'did:web:other.example.com' } as unknown as VC;
+        await expect(match({ vc })).resolves.toBe(false);
+    });
+
+    it('matches when the issuer is a plain string equal to the expected issuer', async () => {
+        const vc = { ...VALID_VC, issuer: ISSUER_DID } as unknown as VC;
+        await expect(match({ vc })).resolves.toBe(true);
+    });
+
+    it('never accepts on the credential issuer alone when the sender does not match', async () => {
+        await expect(match({ vc: VALID_VC, senderProfileId: undefined })).resolves.toBe(false);
+    });
+
+    it('requires an echoed request ID to equal the active request', async () => {
+        const echoed = {
+            ...VALID_VC,
+            credentialSubject: { id: USER_DID, requestId: 'req-1' },
+        } as unknown as VC;
+        await expect(match({ vc: echoed, expectedRequestId: 'req-1' })).resolves.toBe(true);
+        await expect(match({ vc: echoed, expectedRequestId: 'req-2' })).resolves.toBe(false);
+    });
+
+    it('reads an echoed request ID from evidence too, and ignores its absence', async () => {
+        const viaEvidence = {
+            ...VALID_VC,
+            evidence: [{ id: 'urn:x', request_id: 'req-9' }],
+        } as unknown as VC;
+        expect(getEchoedRequestIds(viaEvidence)).toEqual(['req-9']);
+        await expect(match({ vc: viaEvidence, expectedRequestId: 'req-1' })).resolves.toBe(false);
+        expect(getEchoedRequestIds(VALID_VC)).toEqual([]);
+
+        // The documented partner contract: evidence id `urn:uuid:<request_id>`.
+        const viaUrn = {
+            ...VALID_VC,
+            evidence: [{ id: 'urn:uuid:req-1', type: ['Evidence'] }],
+        } as unknown as VC;
+        expect(getEchoedRequestIds(viaUrn)).toEqual(['req-1']);
+        await expect(match({ vc: viaUrn, expectedRequestId: 'req-1' })).resolves.toBe(true);
+        await expect(match({ vc: viaUrn, expectedRequestId: 'req-2' })).resolves.toBe(false);
+        await expect(match({ vc: VALID_VC, expectedRequestId: 'req-1' })).resolves.toBe(true);
     });
 
     it('rejects a credential missing the ClrCredential type', async () => {
         const vc = { ...VALID_VC, type: ['VerifiableCredential'] };
-        await expect(
-            isMatchingTranscript(vc, ISSUER_DID, ISSUER_DID, USER_DID, REQUESTED_AT, wallet)
-        ).resolves.toBe(false);
+        await expect(match({ vc })).resolves.toBe(false);
     });
 
     it('rejects a credential for the wrong subject', async () => {
         const vc = { ...VALID_VC, credentialSubject: { id: 'did:someone-else' } };
-        await expect(
-            isMatchingTranscript(vc, ISSUER_DID, ISSUER_DID, USER_DID, REQUESTED_AT, wallet)
-        ).resolves.toBe(false);
+        await expect(match({ vc })).resolves.toBe(false);
     });
 
     it('rejects a credential issued before the request', async () => {
         const vc = { ...VALID_VC, validFrom: '2023-12-31T00:00:00.000Z' };
-        await expect(
-            isMatchingTranscript(vc, ISSUER_DID, ISSUER_DID, USER_DID, REQUESTED_AT, wallet)
-        ).resolves.toBe(false);
+        await expect(match({ vc })).resolves.toBe(false);
     });
 
     it('rejects a credential that fails verification (errors)', async () => {
@@ -128,9 +236,7 @@ describe('isMatchingTranscript', () => {
             warnings: [],
             errors: ['bad proof'],
         });
-        await expect(
-            isMatchingTranscript(VALID_VC, ISSUER_DID, ISSUER_DID, USER_DID, REQUESTED_AT, wallet)
-        ).resolves.toBe(false);
+        await expect(match({ vc: VALID_VC })).resolves.toBe(false);
     });
 
     it('rejects a credential that fails verification (warnings)', async () => {
@@ -138,16 +244,12 @@ describe('isMatchingTranscript', () => {
             warnings: ['revoked'],
             errors: [],
         });
-        await expect(
-            isMatchingTranscript(VALID_VC, ISSUER_DID, ISSUER_DID, USER_DID, REQUESTED_AT, wallet)
-        ).resolves.toBe(false);
+        await expect(match({ vc: VALID_VC })).resolves.toBe(false);
     });
 
     it('rejects a credential when verification throws', async () => {
         mocks.wallet.invoke.verifyCredential.mockRejectedValue(new Error('network error'));
-        await expect(
-            isMatchingTranscript(VALID_VC, ISSUER_DID, ISSUER_DID, USER_DID, REQUESTED_AT, wallet)
-        ).resolves.toBe(false);
+        await expect(match({ vc: VALID_VC })).resolves.toBe(false);
     });
 });
 
@@ -155,7 +257,16 @@ describe('useTranscriptArrival', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         localStorage.clear();
-        mocks.initWallet.mockResolvedValue(wallet);
+        resetTranscriptArrivalSessionState();
+        mocks.unstableWalletFns = false;
+        // The real API shape: getOtherProfile rewrites every DID to the network's did:web.
+        mocks.wallet.invoke.getProfile
+            .mockReset()
+            .mockImplementation(async (profileId: string) => ({
+                profileId,
+                did: `did:web:network.learncard.com:users:${profileId}`,
+            }));
+        mocks.initWallet.mockReset().mockResolvedValue(wallet);
         mocks.wallet.read.get.mockReset();
         mocks.wallet.invoke.verifyCredential
             .mockReset()
@@ -175,16 +286,17 @@ describe('useTranscriptArrival', () => {
         vi.useRealTimers();
     });
 
-    const activeParams = {
-        status: 'requested' as const,
+    const activeParams: UseTranscriptArrivalParams = {
+        status: 'requested',
         issuerDid: ISSUER_DID,
+        issuerProfileId: ISSUER_PROFILE_ID,
         requestId: 'req-1',
         requestedAt: REQUESTED_AT,
         receivedAt: undefined,
     };
 
     it('does nothing when inactive (no status) — no listeners, no claim', async () => {
-        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_DID }];
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
         mocks.wallet.read.get.mockResolvedValue(VALID_VC);
 
         renderHook(() => useTranscriptArrival({ ...activeParams, status: undefined }));
@@ -196,7 +308,7 @@ describe('useTranscriptArrival', () => {
     });
 
     it('does nothing once a receivedAt is already set', async () => {
-        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_DID }];
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
         mocks.wallet.read.get.mockResolvedValue(VALID_VC);
 
         renderHook(() =>
@@ -207,19 +319,96 @@ describe('useTranscriptArrival', () => {
         expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
     });
 
-    it('ignores a non-matching credential (wrong sender) and leaves the request outstanding', async () => {
-        mocks.incomingCredentials.data = [{ uri: 'u1', from: 'did:wrong' }];
+    it('does nothing without a configured issuer profile ID', async () => {
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
+        mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+
+        renderHook(() => useTranscriptArrival({ ...activeParams, issuerProfileId: undefined }));
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(mocks.wallet.read.get).not.toHaveBeenCalled();
+        expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+    });
+
+    it('auto-accepts with the documented config: partner-signed CLR sent from its network profile', async () => {
+        // vc.issuer is the partner's own DID; the sending profile's network DID differs.
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
         mocks.wallet.read.get.mockResolvedValue(VALID_VC);
 
         renderHook(() => useTranscriptArrival(activeParams));
-        await vi.waitFor(() => expect(mocks.wallet.read.get).toHaveBeenCalled());
+        await vi.waitFor(() => expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1));
+        expect(mocks.wallet.invoke.getProfile).not.toHaveBeenCalled();
+    });
 
+    it('rejects a different sender profile without any lookup or credential read', async () => {
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: 'someone-else' }];
+        mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+
+        renderHook(() => useTranscriptArrival(activeParams));
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(mocks.wallet.invoke.getProfile).not.toHaveBeenCalled();
+        expect(mocks.wallet.read.get).not.toHaveBeenCalled();
         expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
         expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
     });
 
+    it('rejects an app-listing sender once, with no lookups on later polls', async () => {
+        // `from` can be an AppStoreListing listing_id, which has no profile.
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: 'listing-123' }];
+        mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+
+        renderHook(() => useTranscriptArrival(activeParams));
+        await vi.advanceTimersByTimeAsync(5_000 + 10_000 + 20_000);
+
+        expect(mocks.wallet.invoke.getProfile).not.toHaveBeenCalled();
+        expect(mocks.wallet.read.get).not.toHaveBeenCalled();
+        expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+    });
+
+    it('never treats a DID in `from` as the issuer, even the issuer DID itself', async () => {
+        mocks.incomingCredentials.data = [
+            { uri: 'u1', from: ISSUER_DID },
+            { uri: 'u2', from: NETWORK_DID_FOR_ISSUER },
+        ];
+        mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+
+        renderHook(() => useTranscriptArrival(activeParams));
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+    });
+
+    it('never re-reads an already rejected URI', async () => {
+        const otherVc = { ...VALID_VC, type: ['VerifiableCredential'] } as unknown as VC;
+        mocks.incomingCredentials.data = [{ uri: 'not-a-transcript', from: ISSUER_PROFILE_ID }];
+        mocks.wallet.read.get.mockResolvedValue(otherVc);
+
+        renderHook(() => useTranscriptArrival(activeParams));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(mocks.wallet.read.get).toHaveBeenCalledTimes(1);
+
+        await vi.advanceTimersByTimeAsync(5_000 + 10_000 + 20_000);
+        expect(mocks.wallet.read.get).toHaveBeenCalledTimes(1);
+        expect(mocks.wallet.invoke.getProfile).not.toHaveBeenCalled();
+        expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+    });
+
+    it('re-evaluates a candidate when verification failed transiently', async () => {
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
+        mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+        mocks.wallet.invoke.verifyCredential.mockRejectedValueOnce(new Error('offline'));
+
+        renderHook(() => useTranscriptArrival(activeParams));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(5_000);
+        expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1);
+    });
+
     it('claims a matching transcript exactly once: adds, marks received, invalidates, tracks arrival', async () => {
-        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_DID }];
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
         mocks.wallet.read.get.mockResolvedValue(VALID_VC);
 
         const { rerender } = renderHook(props => useTranscriptArrival(props), {
@@ -240,15 +429,71 @@ describe('useTranscriptArrival', () => {
         // A later refetch that still includes the same matching credential (e.g. a
         // slow second poll tick) must never trigger a second claim for one request.
         rerender({ ...activeParams });
-        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_DID }];
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
         rerender({ ...activeParams });
         await Promise.resolve();
 
         expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1);
     });
 
+    it('claims once across two mounted instances (e.g. WalletPage and SchoolConnect)', async () => {
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
+        mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+        let release: () => void = () => undefined;
+        mocks.claimIncomingCredential.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    release = () => resolve({ added: true, accepted: true });
+                })
+        );
+
+        renderHook(() => useTranscriptArrival(activeParams));
+        renderHook(() => useTranscriptArrival(activeParams));
+        await vi.waitFor(() => expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1));
+        await vi.advanceTimersByTimeAsync(5_000);
+        await act(async () => release());
+        await vi.advanceTimersByTimeAsync(10_000);
+
+        expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1);
+        expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
+        expect(mocks.track).toHaveBeenCalledTimes(1);
+    });
+
+    it('never claims a transcript the notification deep link already claimed', async () => {
+        await claimTranscriptOnce('req-1', async () => undefined);
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
+        mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+
+        renderHook(() => useTranscriptArrival(activeParams));
+        await vi.advanceTimersByTimeAsync(5_000);
+
+        expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
+        expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
+    });
+
+    it('does not re-run the check on every render when useWallet returns new functions', async () => {
+        mocks.unstableWalletFns = true;
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
+        // A candidate that resolves to `retry` would be re-verified by every extra check.
+        mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+        mocks.wallet.invoke.verifyCredential.mockRejectedValue(new Error('offline'));
+
+        const { rerender } = renderHook(props => useTranscriptArrival(props), {
+            initialProps: activeParams,
+        });
+        await vi.advanceTimersByTimeAsync(0);
+        const initialChecks = mocks.initWallet.mock.calls.length;
+        expect(initialChecks).toBe(1);
+
+        for (let i = 0; i < 5; i++) rerender({ ...activeParams });
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(mocks.initWallet).toHaveBeenCalledTimes(initialChecks);
+        expect(mocks.wallet.invoke.verifyCredential).toHaveBeenCalledTimes(1);
+    });
+
     it('resets the accept guard when a new request starts', async () => {
-        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_DID }];
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
         mocks.wallet.read.get.mockResolvedValue(VALID_VC);
 
         const { rerender } = renderHook(props => useTranscriptArrival(props), {
@@ -256,7 +501,7 @@ describe('useTranscriptArrival', () => {
         });
         await vi.waitFor(() => expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1));
 
-        mocks.incomingCredentials.data = [{ uri: 'u2', from: ISSUER_DID }];
+        mocks.incomingCredentials.data = [{ uri: 'u2', from: ISSUER_PROFILE_ID }];
         rerender({ ...activeParams, requestId: 'req-2', receivedAt: undefined });
 
         await vi.waitFor(() => expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(2));
@@ -268,7 +513,7 @@ describe('useTranscriptArrival', () => {
     it.each([false, true])(
         'retries acknowledgement without claiming again (remount: %s)',
         async remount => {
-            mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_DID }];
+            mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
             mocks.wallet.read.get.mockResolvedValue(VALID_VC);
             mocks.wallet.invoke.transcriptsMarkReceived.mockRejectedValueOnce(new Error('offline'));
             const hook = renderHook(() => useTranscriptArrival(activeParams));
@@ -290,32 +535,79 @@ describe('useTranscriptArrival', () => {
         }
     );
 
-    it('polls every 5s for the first minute, then backs off to 60s, and stops after 15 minutes', async () => {
+    it('polls with exponential backoff capped at 60s and stops after 30 minutes', async () => {
         mocks.incomingCredentials.data = undefined;
 
-        renderHook(() => useTranscriptArrival(activeParams));
+        const { result } = renderHook(() => useTranscriptArrival(activeParams));
+        const calls = (): number => mocks.incomingCredentials.refetch.mock.calls.length;
 
-        // First minute: 5s cadence.
+        await vi.advanceTimersByTimeAsync(5_000); // t=5s
+        expect(calls()).toBe(1);
+        await vi.advanceTimersByTimeAsync(9_999); // t=~15s: next tick is 10s later
+        expect(calls()).toBe(1);
+        await vi.advanceTimersByTimeAsync(1); // t=15s
+        expect(calls()).toBe(2);
+        await vi.advanceTimersByTimeAsync(20_000); // t=35s
+        expect(calls()).toBe(3);
+        await vi.advanceTimersByTimeAsync(40_000); // t=75s
+        expect(calls()).toBe(4);
+        await vi.advanceTimersByTimeAsync(60_000); // t=135s: capped at 60s
+        expect(calls()).toBe(5);
+        await vi.advanceTimersByTimeAsync(59_000);
+        expect(calls()).toBe(5);
+
+        expect(result.current.isPollingExhausted).toBe(false);
+        await vi.advanceTimersByTimeAsync(30 * 60_000);
+        const callsAtStop = calls();
+        expect(result.current.isPollingExhausted).toBe(true);
+        await vi.advanceTimersByTimeAsync(10 * 60_000);
+        expect(calls()).toBe(callsAtStop);
+    });
+
+    it('keeps the polling window across remounts in the same session', async () => {
+        const first = renderHook(() => useTranscriptArrival(activeParams));
+        await vi.advanceTimersByTimeAsync(31 * 60_000);
+        expect(first.result.current.isPollingExhausted).toBe(true);
+        first.unmount();
+
+        mocks.incomingCredentials.refetch.mockClear();
+        const second = renderHook(() => useTranscriptArrival(activeParams));
+        await vi.advanceTimersByTimeAsync(0);
+        expect(second.result.current.isPollingExhausted).toBe(true);
+        await vi.advanceTimersByTimeAsync(5 * 60_000);
+        expect(mocks.incomingCredentials.refetch).not.toHaveBeenCalled();
+    });
+
+    it('checkAgain restarts polling and re-reads previously rejected credentials', async () => {
+        const otherVc = { ...VALID_VC, type: ['VerifiableCredential'] } as unknown as VC;
+        mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_PROFILE_ID }];
+        mocks.wallet.read.get.mockResolvedValue(otherVc);
+
+        const { result } = renderHook(() => useTranscriptArrival(activeParams));
+        await vi.advanceTimersByTimeAsync(31 * 60_000);
+        expect(result.current.isPollingExhausted).toBe(true);
+        expect(mocks.wallet.read.get).toHaveBeenCalledTimes(1);
+
+        mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+        mocks.incomingCredentials.refetch.mockClear();
+        act(() => result.current.checkAgain());
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(result.current.isPollingExhausted).toBe(false);
+        expect(mocks.incomingCredentials.refetch).toHaveBeenCalled();
+        expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1);
+    });
+
+    it('stops polling once the request is received', async () => {
+        const { rerender } = renderHook(props => useTranscriptArrival(props), {
+            initialProps: activeParams,
+        });
         await vi.advanceTimersByTimeAsync(5_000);
         expect(mocks.incomingCredentials.refetch).toHaveBeenCalledTimes(1);
-        await vi.advanceTimersByTimeAsync(5_000);
-        expect(mocks.incomingCredentials.refetch).toHaveBeenCalledTimes(2);
 
-        // Cross into the backoff window (60s total elapsed): subsequent ticks are 60s apart.
-        await vi.advanceTimersByTimeAsync(50_000); // t=60s
-        const callsAtOneMinute = mocks.incomingCredentials.refetch.mock.calls.length;
-        await vi.advanceTimersByTimeAsync(30_000); // t=90s — too soon for another 60s tick
-        expect(mocks.incomingCredentials.refetch.mock.calls.length).toBe(callsAtOneMinute);
-        await vi.advanceTimersByTimeAsync(30_000); // t=120s
-        expect(mocks.incomingCredentials.refetch.mock.calls.length).toBeGreaterThan(
-            callsAtOneMinute
-        );
-
-        // Stop polling after 15 minutes total.
-        await vi.advanceTimersByTimeAsync(15 * 60_000);
-        const callsAtStop = mocks.incomingCredentials.refetch.mock.calls.length;
-        await vi.advanceTimersByTimeAsync(5 * 60_000);
-        expect(mocks.incomingCredentials.refetch.mock.calls.length).toBe(callsAtStop);
+        rerender({ ...activeParams, receivedAt: '2024-01-03T00:00:00.000Z' });
+        await vi.advanceTimersByTimeAsync(10 * 60_000);
+        expect(mocks.incomingCredentials.refetch).toHaveBeenCalledTimes(1);
     });
 
     it('refetches on app foreground/resume', async () => {

@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import {
     useClassLinkPersonalEmail,
+    useFeatureConfig,
+    useGetPreferencesForDid,
     useStartPersonalEmail,
     useVerifyPersonalEmail,
 } from 'learn-card-base';
+import { getClassLinkSession } from '../../auth/classlink/classlinkProfileDefaults';
 import * as m from '../../paraglide/messages.js';
 
 const DISMISSED_KEY = 'classlink-personal-email-dismissed-at';
@@ -26,8 +29,51 @@ const friendlyError = (error: unknown): string => {
     return m['classlinkPersonalEmail.error']();
 };
 
+/** Tenant flags that allow the personal-email invitation at all. */
+export const isPersonalEmailPromptEnabled = (features: {
+    classlinkSso?: boolean;
+    classlinkPersonalEmail?: boolean;
+}): boolean => features.classlinkSso === true && features.classlinkPersonalEmail === true;
+
+/**
+ * Invitation for ClassLink accounts to add a verified personal email.
+ *
+ * Gated, conservatively: off unless the tenant enables both `classlinkSso` and
+ * `classlinkPersonalEmail`, and never shown to ClassLink student sessions
+ * (`classlinkStudent` claim) or accounts locked as minors (`preferences.isMinor`).
+ * Collecting a minor's personal contact address needs a separate, explicit policy
+ * decision, so there is deliberately no flag to turn it on for students. Until every
+ * gate passes, no personal-email request is made.
+ */
 export const PersonalEmailPrompt: React.FC = () => {
-    const status = useClassLinkPersonalEmail();
+    const features = useFeatureConfig();
+    const flagEnabled = isPersonalEmailPromptEnabled(features);
+    const { data: preferences, isLoading: preferencesLoading } =
+        useGetPreferencesForDid(flagEnabled);
+    const [eligibleSession, setEligibleSession] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        if (!flagEnabled) return;
+        let active = true;
+        void getClassLinkSession().then(session => {
+            if (active) setEligibleSession(session.classlink && !session.student);
+        });
+        return () => {
+            active = false;
+        };
+    }, [flagEnabled]);
+
+    const allowed =
+        flagEnabled &&
+        eligibleSession === true &&
+        !preferencesLoading &&
+        preferences?.isMinor !== true;
+
+    return allowed ? <PersonalEmailPromptCard /> : null;
+};
+
+const PersonalEmailPromptCard: React.FC = () => {
+    const status = useClassLinkPersonalEmail({ enabled: true });
     const start = useStartPersonalEmail();
     const verify = useVerifyPersonalEmail();
     const [email, setEmail] = useState('');

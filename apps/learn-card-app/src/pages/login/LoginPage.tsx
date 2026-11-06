@@ -25,6 +25,8 @@ import {
     useAuthStatus,
     resumeAuthRedirect,
     useFeatureConfig,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import { getLogger } from 'learn-card-base';
@@ -35,7 +37,7 @@ import { Capacitor } from '@capacitor/core';
 import { useFirebase } from '../../hooks/useFirebase';
 import useLogout from '../../hooks/useLogout';
 import { useClassLinkAuthorizeUrl } from 'learn-card-base/react-query/mutations/firebase';
-import { startClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
+import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
 import ClassLinkIcon from 'learn-card-base/assets/images/classlink-logo.png';
 
 import { changeSignInPersistence, useSignInPersistence } from '../../auth/signInPersistence';
@@ -336,8 +338,22 @@ export const LoginContent: React.FC = () => {
     const features = useFeatureConfig();
     const { mutateAsync: getClassLinkAuthorizeUrl } = useClassLinkAuthorizeUrl();
 
-    const classLinkLogin = () =>
-        startClassLinkLogin(getClassLinkAuthorizeUrl, path => history.push(path));
+    const { presentToast: presentClassLinkToast } = useToast();
+
+    /** Resolves `true` while navigating away, so the button keeps its loading state. */
+    const classLinkLogin = async (): Promise<boolean> => {
+        const outcome = await runClassLinkLogin(getClassLinkAuthorizeUrl, path =>
+            history.push(path)
+        );
+        // 'handled' (sheet closed / timed out) is reported by the callback route.
+        if (outcome === 'failed') {
+            presentClassLinkToast(m['login.classlink.failed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+        return outcome === 'started';
+    };
 
     // custom logins associated with the app
     const extraSocialLogins = [

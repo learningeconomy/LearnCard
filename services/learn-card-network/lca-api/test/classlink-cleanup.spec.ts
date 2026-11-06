@@ -22,6 +22,8 @@ import {
 } from '../src/models/TranscriptRequest';
 import { getUserKeysCollection, type MongoUserKeyType } from '../src/models/UserKey';
 import { createMinorPreferencesIfAbsent } from '../src/models/Preferences';
+import { getAuthSubjectsCollection, getOrCreateAuthSubject } from '../src/models/AuthSubject';
+import { deleteClassLinkDataForAccount } from '../src/helpers/classlinkDeletion.helpers';
 import { Preferences } from '../src/accesslayer/preferences';
 import { ThemeEnum } from '../src/types/preferences';
 
@@ -40,6 +42,7 @@ beforeEach(async () => {
         getUserKeysCollection().deleteMany({}),
         getClassLinkIdentitiesCollection().deleteMany({}),
         getTranscriptRequestsCollection().deleteMany({}),
+        getAuthSubjectsCollection().deleteMany({}),
         Preferences.deleteMany({}),
     ]);
     await getUserKeysCollection().insertOne(userKey);
@@ -85,20 +88,44 @@ describe('ClassLink account cleanup', () => {
             await import('../src/helpers/classlinkCleanup.helpers');
         const liveIdentity = await getClassLinkIdentitiesCollection().findOne({});
         const { _id: _ignoredId, ...identityWithoutId } = liveIdentity!;
-        await getClassLinkIdentitiesCollection().insertOne({
-            ...identityWithoutId,
-            firebaseUid: 'orphan_uid',
-            identityKey: 'classlink:cleanup:orphan',
-        });
+        const old = new Date(Date.now() - 31 * 86_400_000);
+        await getClassLinkIdentitiesCollection().insertMany([
+            {
+                ...identityWithoutId,
+                firebaseUid: 'orphan_uid',
+                identityKey: 'classlink:cleanup:orphan',
+                createdAt: old,
+            },
+            // Mid-setup: no UserKey yet, but too new to be an orphan.
+            {
+                ...identityWithoutId,
+                firebaseUid: 'new_uid',
+                identityKey: 'classlink:cleanup:new',
+                createdAt: new Date(),
+            },
+            // Rebound: its Firebase uid is gone, but its recorded DID still has an account.
+            {
+                ...identityWithoutId,
+                firebaseUid: 'rebound_uid',
+                identityKey: 'classlink:cleanup:rebound',
+                primaryDid: did,
+                createdAt: old,
+            },
+        ]);
         await expect(cleanupOrphanClassLinkData(false)).resolves.toBe(0);
         const liveCount = await getClassLinkIdentitiesCollection().countDocuments({
             firebaseUid: uid,
         });
         expect(liveCount).toBe(1);
-        await expect(cleanupOrphanClassLinkData(true)).resolves.toBe(1);
+        await expect(cleanupOrphanClassLinkData({ apply: true })).resolves.toBe(1);
         const orphanCount = await getClassLinkIdentitiesCollection().countDocuments({
             firebaseUid: 'orphan_uid',
         });
+        expect(
+            await getClassLinkIdentitiesCollection().countDocuments({
+                identityKey: { $in: ['classlink:cleanup:new', 'classlink:cleanup:rebound'] },
+            })
+        ).toBe(2);
         const remainingLiveCount = await getClassLinkIdentitiesCollection().countDocuments({
             firebaseUid: uid,
         });
@@ -153,6 +180,150 @@ describe('ClassLink account cleanup', () => {
         await expect(createMinorPreferencesIfAbsent(minorDid)).resolves.toBe(false);
         expect(await Preferences.findOne({ did: minorDid })).toMatchObject({
             aiEnabled: true,
+        });
+    });
+
+    describe('account deletion cascade', () => {
+        const caller = (callerDid = did) =>
+            classlinkRouter.createCaller({
+                user: { did: callerDid, isChallengeValid: true },
+                domain: 'api.example',
+                tenant: { id: 'learncard', resolvedVia: 'default', emailBranding: {} },
+            });
+
+        it('removes the ClassLink and personal-email subjects but keeps the school email subject', async () => {
+            await getClassLinkIdentitiesCollection().updateOne(
+                { identityKey: 'classlink:cleanup:identity' },
+                { $set: { personalEmail: 'me@personal.example' } }
+            );
+            await getOrCreateAuthSubject('classlink:cleanup:identity', { emailVerified: false });
+            await getAuthSubjectsCollection().updateOne(
+                { identityKey: 'classlink:cleanup:identity' },
+                { $set: { subject: 'subject' } }
+            );
+            await getAuthSubjectsCollection().insertMany([
+                {
+                    identityKey: 'email:me@personal.example',
+                    subject: 'subject',
+                    emailVerified: true,
+                    createdAt: new Date(),
+                    lastLoginAt: new Date(),
+                },
+                {
+                    identityKey: 'email:cleanup@example.test',
+                    subject: 'subject',
+                    emailVerified: true,
+                    createdAt: new Date(),
+                    lastLoginAt: new Date(),
+                },
+            ]);
+            await expect(caller().deleteMyData({})).resolves.toEqual({ deleted: 2 });
+            const remaining = await getAuthSubjectsCollection()
+                .find({}, { projection: { identityKey: 1 } })
+                .toArray();
+            expect(remaining.map(record => record.identityKey)).toEqual([
+                'email:cleanup@example.test',
+            ]);
+        });
+
+        it('keeps a personal-email subject that another account signs in with', async () => {
+            await getClassLinkIdentitiesCollection().updateOne(
+                { identityKey: 'classlink:cleanup:identity' },
+                { $set: { personalEmail: 'shared@personal.example' } }
+            );
+            await getUserKeysCollection().insertOne({
+                primaryDid: 'did:key:other',
+                linkedDids: [],
+                authProviders: [{ type: 'firebase', id: 'other' }],
+                contactMethod: { type: 'email', value: 'shared@personal.example' },
+            } as unknown as MongoUserKeyType);
+            await getAuthSubjectsCollection().insertOne({
+                identityKey: 'email:shared@personal.example',
+                subject: 'subject',
+                emailVerified: true,
+                createdAt: new Date(),
+                lastLoginAt: new Date(),
+            });
+            await caller().deleteMyData({});
+            expect(
+                await getAuthSubjectsCollection().countDocuments({
+                    identityKey: 'email:shared@personal.example',
+                })
+            ).toBe(1);
+        });
+
+        it('finds a rebound identity by DID and still works after the UserKey is gone', async () => {
+            // Recovery rebind: the identity's Firebase uid is no longer on the account.
+            await getClassLinkIdentitiesCollection().updateOne(
+                { identityKey: 'classlink:cleanup:identity' },
+                { $set: { firebaseUid: 'pre-rebind-uid', primaryDid: did } }
+            );
+            await getUserKeysCollection().deleteMany({});
+            await expect(caller().deleteMyData({})).resolves.toEqual({ deleted: 2 });
+            await expect(caller().deleteMyData({})).resolves.toEqual({ deleted: 0 });
+        });
+
+        it('never deletes another account by DID', async () => {
+            await expect(caller('did:key:someone-else').deleteMyData({})).resolves.toEqual({
+                deleted: 0,
+            });
+            expect(await getClassLinkIdentitiesCollection().countDocuments({})).toBe(1);
+        });
+
+        it('is exported for the key-deletion route and is idempotent', async () => {
+            await expect(deleteClassLinkDataForAccount(userKey)).resolves.toMatchObject({
+                identities: 1,
+                transcriptRequests: 1,
+            });
+            await expect(deleteClassLinkDataForAccount(userKey)).resolves.toEqual({
+                identities: 0,
+                transcriptRequests: 0,
+                authSubjects: 0,
+            });
+        });
+    });
+
+    describe('automatic state ID retention', () => {
+        it('clears expired state IDs at most once per interval and never throws', async () => {
+            const { maybeClearExpiredStateStudentIds } =
+                await import('../src/helpers/classlinkCleanup.helpers');
+            const cache = (await import('@cache')).default;
+            await (cache.redis ?? cache.node).del('classlink:retention:state-id-sweep');
+            const expire = () =>
+                getClassLinkIdentitiesCollection().updateOne(
+                    { identityKey: 'classlink:cleanup:identity' },
+                    {
+                        $set: {
+                            stateStudentIdEnc: 'v2:00000000:expired',
+                            stateStudentIdExpiresAt: new Date(Date.now() - 1000),
+                        },
+                    }
+                );
+            await expire();
+            await expect(maybeClearExpiredStateStudentIds()).resolves.toBe(1);
+            await expire();
+            await expect(maybeClearExpiredStateStudentIds()).resolves.toBeNull();
+            expect(
+                await getClassLinkIdentitiesCollection().countDocuments({
+                    stateStudentIdEnc: { $exists: true },
+                })
+            ).toBe(1);
+        });
+    });
+
+    describe('maintenance script arguments', () => {
+        it('defaults to a state-ID-only dry run and requires an explicit orphan flag', async () => {
+            const { parseCleanupArgs } = await import('../scripts/cleanup-orphan-classlink-data');
+            expect(parseCleanupArgs([])).toEqual({
+                apply: false,
+                deleteOrphans: false,
+                minAgeDays: 30,
+            });
+            expect(
+                parseCleanupArgs(['--', '--apply', '--delete-orphans', '--min-age-days', '45'])
+            ).toEqual({ apply: true, deleteOrphans: true, minAgeDays: 45 });
+            expect(() => parseCleanupArgs(['--min-age-days', '0'])).toThrow('--min-age-days');
+            expect(() => parseCleanupArgs(['--unknown'])).toThrow();
         });
     });
 });

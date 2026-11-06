@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import mongodb from '@mongo';
 import cache from '@cache';
@@ -44,7 +45,10 @@ const caller = () =>
         tenant: { id: 'learncard', resolvedVia: 'default', emailBranding: branding },
     });
 const email = 'personal@example.com';
-const key = 'classlink-personal-email:uid-test';
+// Codes are keyed by a hash of the identity key, which survives Firebase provider changes.
+const key = `classlink-personal-email:${createHash('sha256')
+    .update('classlink:tenant-test:source-1')
+    .digest('hex')}`;
 const getCode = () => String(send.mock.calls.at(-1)?.[0].templateModel.verificationCode);
 
 beforeEach(async () => {
@@ -104,19 +108,52 @@ describe('ClassLink personal email', () => {
         ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         expect(send).not.toHaveBeenCalled();
     });
-    it('rejects another subject without changing either record', async () => {
+    it('does not reveal a taken address until the code is proven, and never changes it', async () => {
         const other = await getOrCreateAuthSubject(`email:${email}`, {
             email,
             emailVerified: false,
         });
-        await expect(caller().startPersonalEmail({ email })).rejects.toMatchObject({
-            code: 'CONFLICT',
-        });
-        await expect(caller().verifyPersonalEmail({ email, code: '123456' })).rejects.toMatchObject(
-            { code: 'CONFLICT' }
+        // start answers exactly as for a free address (the code goes to the address owner).
+        await expect(caller().startPersonalEmail({ email })).resolves.toEqual({ success: true });
+        await expect(caller().verifyPersonalEmail({ email, code: '000000' })).rejects.toMatchObject(
+            { code: 'BAD_REQUEST' }
         );
+        await expect(
+            caller().verifyPersonalEmail({ email, code: getCode() })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
         expect(await findAuthSubjectByIdentityKey(`email:${email}`)).toEqual(other);
         expect(await caller().getPersonalEmail()).toEqual({ verified: false });
+    });
+    it('rate-limits address checks per DID so accounts cannot be probed', async () => {
+        for (let i = 0; i < 20; i++)
+            await expect(
+                caller().verifyPersonalEmail({ email: `probe${i}@example.com`, code: '000000' })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await expect(
+            caller().verifyPersonalEmail({ email: 'probe-final@example.com', code: '000000' })
+        ).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+    });
+    it('rejects a synthetic ClassLink account address', async () => {
+        await expect(
+            caller().startPersonalEmail({ email: 'classlink_x@users.classlink.invalid' })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect(send).not.toHaveBeenCalled();
+    });
+    it('still finds the identity by DID after a recovery rebind drops the Firebase provider', async () => {
+        await getClassLinkIdentitiesCollection().updateOne(
+            { firebaseUid: 'uid-test' },
+            { $set: { primaryDid: did } }
+        );
+        await mongodb
+            .collection('userkeys')
+            .updateOne(
+                { primaryDid: did },
+                { $set: { authProviders: [{ type: 'firebase', id: 'new-uid' }] } }
+            );
+        await expect(caller().startPersonalEmail({ email })).resolves.toEqual({ success: true });
+        expect(await caller().verifyPersonalEmail({ email, code: getCode() })).toEqual({
+            success: true,
+        });
     });
     it('invalidates on the fifth incorrect attempt', async () => {
         await caller().startPersonalEmail({ email });

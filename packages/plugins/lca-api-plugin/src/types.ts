@@ -377,7 +377,10 @@ export type LCAPluginMethods = {
     }) => Promise<{ isStudent: boolean; schoolName?: string }>;
     transcriptsGetStatus: () => Promise<{
         eligible: boolean;
+        /** DID the issuer signs transcripts with (`vc.issuer`). */
         issuerDid?: string;
+        /** LearnCard Network profile ID the issuer sends transcripts from. */
+        issuerProfileId?: string;
         reason?: 'no_state_id' | 'reauth_required' | 'not_enabled';
         stateDisplayName: string;
         latest?: {

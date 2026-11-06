@@ -4,7 +4,12 @@ import { z } from 'zod';
 import { ObjectId, type Collection } from 'mongodb';
 import { client } from '../src/mongo';
 import { getUserKeysCollection, type MongoUserKeyType } from '../src/models/UserKey';
-import { getAuthSubjectsCollection, getOrCreateAuthSubject } from '../src/models/AuthSubject';
+import {
+    getAuthSubjectsCollection,
+    getOrCreateAuthSubject,
+    getOrCreateAuthSubjectLinkedTo,
+} from '../src/models/AuthSubject';
+import { isSyntheticEmail, SYNTHETIC_EMAIL_DOMAIN } from '../src/helpers/syntheticEmail.helpers';
 import { findClassLinkIdentityByFirebaseUid } from '../src/models/ClassLinkIdentity';
 import { maskEmail } from '../src/helpers/maskEmail';
 import { createKeycloakAdmin } from './keycloak-admin';
@@ -34,6 +39,13 @@ export interface ProvisionSummary extends ProviderLinkSummary {
     missingMappings: number;
     /** UserKeys with no `email:` AuthSubject that fell back to a ClassLinkIdentity subject. */
     classlinkFallbackUsed: number;
+    /**
+     * UserKeys whose contact is a synthetic ClassLink address (`@users.classlink.invalid`).
+     * They are skipped: the address must never become a verified Keycloak email or an
+     * `email:` AuthSubject, and Keycloak sign-in needs a verified contact these students
+     * don't have yet. They also count in `skipped` and are excluded from `missingMappings`.
+     */
+    syntheticSkipped: number;
 }
 const log = (message: string): void => {
     process.stdout.write(`${message}\n`);
@@ -113,6 +125,7 @@ export const provisionKeycloakUsers = async (
         mapped: 0,
         missingMappings: 0,
         classlinkFallbackUsed: 0,
+        syntheticSkipped: 0,
         linked: 0,
         alreadyLinked: 0,
         conflicts: 0,
@@ -162,6 +175,14 @@ export const provisionKeycloakUsers = async (
                             continue;
                         }
                         const normalized = key.contactMethod.value.trim().toLowerCase();
+                        if (isSyntheticEmail(normalized)) {
+                            summary.skipped++;
+                            summary.syntheticSkipped++;
+                            log(
+                                '[classlink-synthetic]\tSKIP: no deliverable contact; cutover deferred'
+                            );
+                            continue;
+                        }
                         const label = maskEmail(normalized);
                         const refuse = (reason: string): void => {
                             summary.refused++;
@@ -220,6 +241,10 @@ export const provisionKeycloakUsers = async (
                         let subject: { subject: string } | null = await subjects.findOne({
                             identityKey,
                         });
+                        // Set when the subject came from a ClassLink identity: the `email:`
+                        // subject is then linked to it, so a later email-code sign-in through
+                        // the lca-api broker lands on the same Keycloak user.
+                        let linkEmailSubject = false;
                         // ClassLink-only users have no `email:` AuthSubject; reuse their
                         // ClassLinkIdentity subject (keyed by the same Firebase uid) instead of
                         // minting a second, disconnected one.
@@ -230,6 +255,7 @@ export const provisionKeycloakUsers = async (
                                 if (classlinkIdentity) {
                                     subject = { subject: classlinkIdentity.subject };
                                     summary.classlinkFallbackUsed++;
+                                    linkEmailSubject = true;
                                     break;
                                 }
                             }
@@ -287,6 +313,7 @@ export const provisionKeycloakUsers = async (
                         }
                         const actions = [
                             !subject && 'create subject',
+                            linkEmailSubject && 'link email subject',
                             !user && 'create user',
                             !link && 'link lca-api',
                             !mappings.length && 'append mapping',
@@ -303,6 +330,17 @@ export const provisionKeycloakUsers = async (
                             email: normalized,
                             emailVerified: true,
                         });
+                        if (linkEmailSubject) {
+                            const linked = await getOrCreateAuthSubjectLinkedTo(
+                                identityKey,
+                                subject.subject,
+                                { email: normalized, emailVerified: true }
+                            );
+                            if (linked.subject !== subject.subject)
+                                throw new Error(
+                                    'Concurrent email subject change; rerun after review'
+                                );
+                        }
                         if (!user) {
                             const phone = z
                                 .object({
@@ -381,6 +419,10 @@ export const provisionKeycloakUsers = async (
         }
         summary.missingMappings = await keys.countDocuments({
             'contactMethod.type': 'email',
+            // Synthetic ClassLink addresses are reported separately (syntheticSkipped).
+            'contactMethod.value': {
+                $not: new RegExp(`@${escapeRegex(SYNTHETIC_EMAIL_DOMAIN)}\\s*$`, 'i'),
+            },
             'authProviders.type': { $ne: 'keycloak' },
         });
         log(
@@ -389,9 +431,9 @@ export const provisionKeycloakUsers = async (
         log(
             'Cutover approval: NOT EVALUATED. Presence is necessary, not sufficient; validate all existing mappings and authoritative Firebase UID ownership before cutover.'
         );
-        if (options.reportClasslink)
+        if (options.reportClasslink || summary.syntheticSkipped)
             log(
-                `ClassLink coverage: ${summary.classlinkFallbackUsed} user(s) resolved via ClassLink identity`
+                `ClassLink coverage: ${summary.classlinkFallbackUsed} user(s) resolved via ClassLink identity; ${summary.syntheticSkipped} ClassLink user(s) without a deliverable email skipped (they need a verified contact before cutover)`
             );
         return summary;
     } finally {

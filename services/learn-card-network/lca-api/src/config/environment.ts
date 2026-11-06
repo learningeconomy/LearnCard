@@ -64,6 +64,8 @@ export const lcaApiEnvironmentShape = {
     CLASSLINK_REDIRECT_URIS: optionalEnvironmentString,
     CLASSLINK_TENANTS: optionalEnvironmentString,
     CLASSLINK_PII_KEY: optionalEnvironmentString,
+    CLASSLINK_PII_KEY_PREVIOUS: optionalEnvironmentString,
+    CLASSLINK_IDENTITY_KEY: optionalEnvironmentString,
     CLASSLINK_MAX_AUTH_AGE_SECONDS: optionalEnvironmentString
         .transform(value => (value === undefined ? 86_400 : Number(value)))
         .pipe(z.number().int().positive()),

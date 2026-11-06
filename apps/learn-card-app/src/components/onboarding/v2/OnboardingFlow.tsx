@@ -28,7 +28,7 @@ import {
     getSSSConfig,
     authStore,
     SocialLoginTypes,
-    useRequestTranscript,
+    useFeatureConfig,
 } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
@@ -83,6 +83,10 @@ import {
     getClassLinkProfileDefaults,
     isClassLinkStudentSession,
 } from '../../../auth/classlink/classlinkProfileDefaults';
+import {
+    TranscriptOnboardingStep,
+    getOnboardingTranscriptEligibility,
+} from './TranscriptOnboardingStep';
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
 const log = getLogger('onboarding-flow-v2');
@@ -101,6 +105,41 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     // Async handlers must read the live coordinator state, not their render-time snapshot.
     const coordinatorStateRef = useRef(coordinatorState);
     coordinatorStateRef.current = coordinatorState;
+
+    /**
+     * The PIN is required at sign-up but fail-open: when escrow is not confirmed
+     * available in time the step is skipped and the user is asked later (see
+     * requiredPinStep.ts). Reads live coordinator state through the ref.
+     */
+    const decidePinStep = useCallback(
+        (): Promise<boolean> =>
+            decideOnboardingPinStep({
+                waitForPinAvailable: () =>
+                    waitForEscrowEnrollment(
+                        () => {
+                            const state = coordinatorStateRef.current;
+                            return {
+                                status: state.status,
+                                escrowEnrollment:
+                                    state.status === 'ready' ? state.escrowEnrollment : undefined,
+                            };
+                        },
+                        { escrowEnabled: getSSSConfig().escrowEnclaveMode !== 'off' }
+                    ),
+                getSnapshot: () => {
+                    const state = coordinatorStateRef.current;
+                    return state.status === 'ready'
+                        ? {
+                              status: state.status,
+                              did: state.did,
+                              escrowPinEnabled: state.escrowPin?.enabled,
+                          }
+                        : { status: state.status };
+                },
+                readPromptFlag: readRecoveryPinPromptFlag,
+            }),
+        []
+    );
     const { initWallet } = useWallet();
     const { track } = useAnalytics();
     const { mutateAsync: updatePreferences } = useUpdatePreferences();
@@ -112,7 +151,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const countryNames = new Intl.DisplayNames([locale], { type: 'region' });
     const { handleLogout } = useLogout();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
-    const requestTranscript = useRequestTranscript();
+    const features = useFeatureConfig();
     const { updateCurrentUser } = useSQLiteStorage();
 
     const brandingConfig = useBrandingConfig();
@@ -715,58 +754,18 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 trackOnboardingStepCompleted('profile', 2);
 
-                // The PIN is required at sign-up but fail-open: when escrow is not
-                // confirmed available in time the step is skipped and the user is
-                // asked later (see requiredPinStep.ts).
-                const showPinStep = await decideOnboardingPinStep({
-                    waitForPinAvailable: () =>
-                        waitForEscrowEnrollment(
-                            () => {
-                                const state = coordinatorStateRef.current;
-                                return {
-                                    status: state.status,
-                                    escrowEnrollment:
-                                        state.status === 'ready'
-                                            ? state.escrowEnrollment
-                                            : undefined,
-                                };
-                            },
-                            { escrowEnabled: getSSSConfig().escrowEnclaveMode !== 'off' }
-                        ),
-                    getSnapshot: () => {
-                        const state = coordinatorStateRef.current;
-                        return state.status === 'ready'
-                            ? {
-                                  status: state.status,
-                                  did: state.did,
-                                  escrowPinEnabled: state.escrowPin?.enabled,
-                              }
-                            : { status: state.status };
-                    },
-                    readPromptFlag: readRecoveryPinPromptFlag,
-                });
-
-                // Read transcript eligibility imperatively from the wallet we just
-                // created, rather than the `useTranscriptStatus` hook: that hook's
-                // `data` was captured at the last render and the profile — and the
-                // wallet it depends on — did not exist yet at that time.
-                const isClassLinkStudent = await isClassLinkStudentSession();
-                let transcriptEligible = false;
-                if (isClassLinkStudent) {
-                    try {
-                        const transcriptStatus = await wallet.invoke.transcriptsGetStatus();
-                        transcriptEligible =
-                            Boolean(transcriptStatus?.eligible) && !transcriptStatus?.latest;
-                        setTranscriptStateDisplayName(transcriptStatus?.stateDisplayName ?? '');
-                    } catch (err) {
-                        log.warn('transcript.status.unavailable', err);
-                    }
-                }
-
-                if (isClassLinkStudent && transcriptEligible) {
+                // ClassLink students on tenants with the transcript feature are offered
+                // their transcript first; the PIN decision then happens after that step.
+                const transcriptEligibility = await getOnboardingTranscriptEligibility(
+                    wallet,
+                    Boolean(features.classlinkTranscriptOptIn)
+                );
+                if (transcriptEligibility.eligible) {
+                    setTranscriptStateDisplayName(transcriptEligibility.stateDisplayName);
                     track(AnalyticsEvents.TRANSCRIPT_ONBOARDING_SHOWN, {});
                     setStep('transcript');
                 } else {
+                    const showPinStep = await decidePinStep();
                     setStep(showPinStep ? 'pin' : 'celebrate');
                 }
             }
@@ -1434,131 +1433,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             )}
 
             {step === 'transcript' && (
-                <div className="relative z-10 w-full h-full flex flex-col">
-                    <div className="flex-1 flex flex-col items-center justify-center px-4 pt-[calc(var(--ion-safe-area-top,0px)+2rem)] pb-8 overflow-y-auto">
-                        <div className="w-full max-w-[420px] animate-fade-in-up text-center">
-                            <h1 className="text-2xl font-semibold text-grayscale-900 mb-2">
-                                {m['onboarding.transcript.title']()}
-                            </h1>
-                            <p className="text-sm text-grayscale-600 mb-8">
-                                {m['onboarding.transcript.desc']()}
-                            </p>
-
-                            <div className="bg-white/80 backdrop-blur-xs border border-grayscale-200/60 rounded-3xl shadow-xs p-5 mb-8 text-left">
-                                <p className="text-sm text-grayscale-700 leading-relaxed">
-                                    {m['transcriptOptIn.consent']({
-                                        state: transcriptStateDisplayName,
-                                    })}
-                                </p>
-                            </div>
-
-                            <div className="space-y-3">
-                                <button
-                                    type="button"
-                                    disabled={requestTranscript.isPending}
-                                    onClick={async () => {
-                                        try {
-                                            await requestTranscript.mutateAsync();
-                                            setTranscriptRequested(true);
-                                            track(AnalyticsEvents.TRANSCRIPT_REQUESTED, {
-                                                source: 'onboarding',
-                                            });
-
-                                            const showPinStep = await decideOnboardingPinStep({
-                                                waitForPinAvailable: () =>
-                                                    waitForEscrowEnrollment(
-                                                        () => {
-                                                            const state =
-                                                                coordinatorStateRef.current;
-                                                            return {
-                                                                status: state.status,
-                                                                escrowEnrollment:
-                                                                    state.status === 'ready'
-                                                                        ? state.escrowEnrollment
-                                                                        : undefined,
-                                                            };
-                                                        },
-                                                        {
-                                                            escrowEnabled:
-                                                                getSSSConfig().escrowEnclaveMode !==
-                                                                'off',
-                                                        }
-                                                    ),
-                                                getSnapshot: () => {
-                                                    const state = coordinatorStateRef.current;
-                                                    return state.status === 'ready'
-                                                        ? {
-                                                              status: state.status,
-                                                              did: state.did,
-                                                              escrowPinEnabled:
-                                                                  state.escrowPin?.enabled,
-                                                          }
-                                                        : { status: state.status };
-                                                },
-                                                readPromptFlag: readRecoveryPinPromptFlag,
-                                            });
-                                            setStep(showPinStep ? 'pin' : 'celebrate');
-                                        } catch (e) {
-                                            log.error('Failed to request transcript', e);
-                                        }
-                                    }}
-                                    className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-md"
-                                >
-                                    {requestTranscript.isPending ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                    ) : (
-                                        m['onboarding.transcript.get']()
-                                    )}
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={requestTranscript.isPending}
-                                    onClick={async () => {
-                                        track(AnalyticsEvents.TRANSCRIPT_AUTO_ACCEPT_SKIPPED, {
-                                            reason: 'onboarding_skipped',
-                                        });
-                                        const showPinStep = await decideOnboardingPinStep({
-                                            waitForPinAvailable: () =>
-                                                waitForEscrowEnrollment(
-                                                    () => {
-                                                        const state = coordinatorStateRef.current;
-                                                        return {
-                                                            status: state.status,
-                                                            escrowEnrollment:
-                                                                state.status === 'ready'
-                                                                    ? state.escrowEnrollment
-                                                                    : undefined,
-                                                        };
-                                                    },
-                                                    {
-                                                        escrowEnabled:
-                                                            getSSSConfig().escrowEnclaveMode !==
-                                                            'off',
-                                                    }
-                                                ),
-                                            getSnapshot: () => {
-                                                const state = coordinatorStateRef.current;
-                                                return state.status === 'ready'
-                                                    ? {
-                                                          status: state.status,
-                                                          did: state.did,
-                                                          escrowPinEnabled:
-                                                              state.escrowPin?.enabled,
-                                                      }
-                                                    : { status: state.status };
-                                            },
-                                            readPromptFlag: readRecoveryPinPromptFlag,
-                                        });
-                                        setStep(showPinStep ? 'pin' : 'celebrate');
-                                    }}
-                                    className="w-full py-3.5 px-4 rounded-[20px] bg-transparent text-grayscale-600 font-medium text-base hover:bg-grayscale-50 transition-all disabled:opacity-40"
-                                >
-                                    {m['onboarding.transcript.notNow']()}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <TranscriptOnboardingStep
+                    stateDisplayName={transcriptStateDisplayName}
+                    onComplete={async ({ requested }) => {
+                        setTranscriptRequested(requested);
+                        const showPinStep = await decidePinStep();
+                        setStep(showPinStep ? 'pin' : 'celebrate');
+                    }}
+                />
             )}
 
             {step === 'celebrate' && (

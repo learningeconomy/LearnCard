@@ -7,7 +7,7 @@ import { getPreferencesForDid } from '@accesslayer/preferences/read';
 import { updatePreferences } from '@accesslayer/preferences/update';
 
 import { ThemeEnum } from '../types/preferences';
-import { getClassLinkStudentStatus } from '@helpers/classlinkContext.helpers';
+import { getPrivacyLockState } from '@accesslayer/preferences/privacyLock';
 import { enforceMinorPreferences, MINOR_PREFERENCE_VALUES } from '../models/Preferences';
 
 const preferencesInputSchema = z.object({
@@ -38,6 +38,8 @@ const preferencesOutputSchema = z.object({
     bugReportsEnabled: z.boolean().optional(),
     bugReportsAutoDisabled: z.boolean().optional(),
     isMinor: z.boolean().optional(),
+    /** True when a server-owned privacy lock keeps AI, analytics and bug reports off. */
+    locked: z.boolean().optional(),
 });
 
 export const preferencesRouter = t.router({
@@ -58,11 +60,12 @@ export const preferencesRouter = t.router({
         )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            const status = await getClassLinkStudentStatus(ctx.user.did);
-            if (status === 'unknown') throw studentLookupFailed();
+            const stored = await getPreferencesForDid(ctx.user.did);
+            const lock = await getPrivacyLockState(ctx.user.did, stored);
+            if (lock === 'unknown') throw studentLookupFailed();
             const success = await createPreferences(ctx.user.did, input.theme);
-            // ClassLink student accounts always get minor settings, whatever the client sends.
-            if (success && status === 'student') await enforceMinorPreferences(ctx.user.did);
+            // ClassLink student accounts always get locked minor settings, whatever the client sends.
+            if (success && lock === 'student') await enforceMinorPreferences(ctx.user.did);
 
             if (!success) {
                 throw new TRPCError({
@@ -87,12 +90,15 @@ export const preferencesRouter = t.router({
         .input(preferencesInputSchema)
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            const status = await getClassLinkStudentStatus(ctx.user.did);
-            if (status === 'unknown') throw studentLookupFailed();
-            const isStudent = status === 'student';
+            const stored = await getPreferencesForDid(ctx.user.did);
+            const lock = await getPrivacyLockState(ctx.user.did, stored);
+            if (lock === 'unknown') throw studentLookupFailed();
+            // Persist the lock first so later calls skip the student lookup entirely.
+            if (lock === 'student') await enforceMinorPreferences(ctx.user.did);
+            const locked = lock === 'locked' || lock === 'student';
             const success = await updatePreferences(
                 ctx.user.did,
-                isStudent ? { ...input, ...MINOR_PREFERENCE_VALUES } : input
+                locked ? { ...input, ...MINOR_PREFERENCE_VALUES } : input
             );
 
             if (!success) {
@@ -118,12 +124,15 @@ export const preferencesRouter = t.router({
         .input(z.void())
         .output(preferencesOutputSchema)
         .query(async ({ ctx }) => {
-            const status = await getClassLinkStudentStatus(ctx.user.did);
-            // Repairs student accounts whose settings were saved before the rule applied.
-            if (status === 'student') await enforceMinorPreferences(ctx.user.did);
-            const preferences = await getPreferencesForDid(ctx.user.did);
-            // Fail safe: when the lookup fails, report locked settings without saving them.
-            const locked = status === 'unknown' ? MINOR_PREFERENCE_VALUES : {};
+            const stored = await getPreferencesForDid(ctx.user.did);
+            const lock = await getPrivacyLockState(ctx.user.did, stored);
+            // Locks (and repairs) a student account once; later reads find the stored lock.
+            if (lock === 'student') await enforceMinorPreferences(ctx.user.did);
+            const preferences =
+                lock === 'student' ? await getPreferencesForDid(ctx.user.did) : stored;
+            // Locked values always win; on a failed lookup they are reported without being saved.
+            const isLocked = lock !== 'unlocked';
+            const locked = isLocked ? MINOR_PREFERENCE_VALUES : {};
 
             return {
                 theme: preferences?.theme,
@@ -135,6 +144,7 @@ export const preferencesRouter = t.router({
                 bugReportsAutoDisabled: preferences?.bugReportsAutoDisabled,
                 isMinor: preferences?.isMinor,
                 ...locked,
+                ...(isLocked ? { locked: true } : {}),
             };
         }),
 });

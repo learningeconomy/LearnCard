@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { useToast, ToastTypeEnum } from 'learn-card-base';
 import { useClassLinkAuthorizeUrl } from 'learn-card-base/react-query/mutations/firebase';
 import { LoadingPageDumb } from '../loadingPage/LoadingPage';
-import { startClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
+import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
 import * as m from '../../paraglide/messages.js';
 
 /**
@@ -20,8 +20,9 @@ const ClassLinkStart: React.FC = () => {
     useEffect(() => {
         if (hasRun.current) return;
         hasRun.current = true;
-        void startClassLinkLogin(getAuthorizeUrl, path => history.replace(path)).then(started => {
-            if (started) return;
+        void runClassLinkLogin(getAuthorizeUrl, path => history.replace(path)).then(outcome => {
+            // 'handled' already navigated to the callback route, which shows the message.
+            if (outcome !== 'failed') return;
             presentToast(m['login.classlink.failed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

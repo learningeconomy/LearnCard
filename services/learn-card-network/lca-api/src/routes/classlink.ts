@@ -34,9 +34,19 @@ import {
     requireClassLinkConfig,
     verifyClassLinkExchange,
 } from '@helpers/classlinkExchange.helpers';
-import { ClassLinkEmailMissing, ClassLinkTokenInvalid } from '@helpers/classlink.errors';
+import { ClassLinkProviderUnavailable, ClassLinkTokenInvalid } from '@helpers/classlink.errors';
 import { resolveStateStudentId } from '@helpers/classlink.stateId';
 import { classLinkFirebaseUid, sealStateStudentId } from '@helpers/classlinkPii.helpers';
+import { maybeClearExpiredStateStudentIds } from '@helpers/classlinkCleanup.helpers';
+import { findClassLinkIdentityForAccount, getAccountDids } from '@helpers/classlinkContext.helpers';
+import { clearNotStudentCache } from '@accesslayer/preferences/privacyLock';
+import { deleteClassLinkDataForAccount } from '@helpers/classlinkDeletion.helpers';
+import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
+import {
+    ensureClassLinkFirebaseUser,
+    firebaseErrorCode,
+    releaseClassLinkFirebaseEmail,
+} from '@helpers/classlinkFirebaseUser.helpers';
 import { isRateLimited, recordFailure } from '@helpers/rate-limit.helpers';
 import {
     findAuthSubjectByIdentityKey,
@@ -44,22 +54,95 @@ import {
     getOrCreateAuthSubjectLinkedTo,
 } from '../models/AuthSubject';
 import {
+    findClassLinkIdentityByFirebaseUid,
     findClassLinkIdentityByIdentityKey,
-    deleteClassLinkIdentitiesByFirebaseUid,
     upsertClassLinkIdentity,
 } from '../models/ClassLinkIdentity';
-import { deleteTranscriptRequestsByFirebaseUid } from '../models/TranscriptRequest';
-import { findUserKeyByDid } from '../models/UserKey';
+import { findUserKeyByAuthProvider, findUserKeyByDid } from '../models/UserKey';
 import { personalEmailProcedures } from './classlinkPersonalEmail';
 import { connectProcedures } from './classlinkConnect';
 
-const conflict = (tenantId: string): never => {
-    console.warn('classlink.link.conflict', { tenantId });
+/**
+ * Failed exchanges allowed per client IP per 10-minute window. Only failures that suggest
+ * abuse (invalid or forged tokens, bad codes, nonce/PKCE mismatch) count, and the ceiling
+ * is high because a whole school can share one NAT address.
+ */
+export const CLASSLINK_EXCHANGE_FAILURE_LIMIT = 200;
+
+/** Shown when the school account's email already belongs to a LearnCard account. */
+export const CLASSLINK_EMAIL_ACCOUNT_CONFLICT_MESSAGE =
+    'You already have a LearnCard account with this email. Sign in the way you usually do, then connect your school account from School Connect.';
+
+/** Shown when the account is already connected to a different school account. */
+export const CLASSLINK_OTHER_SCHOOL_CONFLICT_MESSAGE =
+    'This LearnCard account is already connected to a different school account.';
+
+type ConflictReason = 'other_account' | 'email_account' | 'other_school';
+
+const conflict = (tenantId: string, reason: ConflictReason): never => {
+    console.warn('classlink.link.conflict', { tenantId, reason });
     throw new TRPCError({
         code: 'CONFLICT',
         message:
-            'An account with this email already exists. Sign in with your email code, then try again.',
+            reason === 'other_school'
+                ? CLASSLINK_OTHER_SCHOOL_CONFLICT_MESSAGE
+                : CLASSLINK_EMAIL_ACCOUNT_CONFLICT_MESSAGE,
     });
+};
+
+/** Error name and code only, so unexpected failures can be alerted on without PII. */
+const safeErrorDetail = (error: unknown): Record<string, unknown> => {
+    const detail: Record<string, unknown> = {};
+    if (error instanceof Error) detail.name = error.name;
+    const code = firebaseErrorCode(error);
+    if (typeof code === 'string' || typeof code === 'number') detail.code = code;
+    return detail;
+};
+
+/** The school email from verified claims, or undefined when absent, malformed or reserved. */
+const getSchoolEmail = (claims: { email?: string; or_email?: string }): string | undefined => {
+    const email = (claims.email?.trim() || claims.or_email?.trim())?.toLowerCase();
+    if (!email || !z.string().email().safeParse(email).success || isSyntheticEmail(email))
+        return undefined;
+    return email;
+};
+
+/**
+ * Refuse to give an existing account a second ClassLink identity. Same rule as School
+ * Connect's `other_school`: one ClassLink identity per account, checked both by Firebase uid
+ * and by everything else that identifies the account (Keycloak subject, recorded DID).
+ */
+const assertNoOtherClassLinkIdentity = async (
+    firebaseUid: string,
+    identityKey: string,
+    tenantId: string
+): Promise<void> => {
+    const byUid = await findClassLinkIdentityByFirebaseUid(firebaseUid);
+    if (byUid && byUid.identityKey !== identityKey) conflict(tenantId, 'other_school');
+    const userKey = await findUserKeyByAuthProvider('firebase', firebaseUid);
+    const byAccount = userKey ? await findClassLinkIdentityForAccount(userKey) : null;
+    if (byAccount && byAccount.identityKey !== identityKey) conflict(tenantId, 'other_school');
+};
+
+/**
+ * For a trusted, verified school email, make sure `email:<address>` resolves to this
+ * person's subject, so a later email-code (Keycloak) sign-in lands on the same account.
+ * An existing record is never changed; a different subject is only logged.
+ */
+const linkTrustedEmailSubject = async (
+    email: string,
+    subject: string,
+    tenantId: string
+): Promise<void> => {
+    const identityKey = `email:${email}`;
+    const existing = await findAuthSubjectByIdentityKey(identityKey);
+    const record =
+        existing ??
+        (await getOrCreateAuthSubjectLinkedTo(identityKey, subject, {
+            email,
+            emailVerified: true,
+        }));
+    if (record.subject !== subject) console.warn('classlink.email_subject.mismatch', { tenantId });
 };
 
 export const classlinkRouter = t.router({
@@ -98,7 +181,7 @@ export const classlinkRouter = t.router({
         .output(z.object({ token: z.string() }))
         .mutation(async ({ input, ctx }) => {
             const rateKey = `classlink:rate:exchange:${ctx.clientIp ?? 'unknown'}`;
-            if (await isRateLimited(rateKey, 20)) {
+            if (await isRateLimited(rateKey, CLASSLINK_EXCHANGE_FAILURE_LIMIT)) {
                 throw new TRPCError({
                     code: 'TOO_MANY_REQUESTS',
                     message: 'Too many sign-in attempts. Please try again later.',
@@ -107,53 +190,69 @@ export const classlinkRouter = t.router({
             try {
                 const { config, claims, tenantId, tenant, identityKey } =
                     await verifyClassLinkExchange(input);
-                // Lookup before the verification guard so an unsafe existing-email join is CONFLICT.
-                const email = (claims.email?.trim() || claims.or_email?.trim())?.toLowerCase();
-                if (!email || !z.string().email().safeParse(email).success)
-                    throw new ClassLinkEmailMissing();
+                // A missing email no longer blocks sign-in: the account gets a synthetic one.
+                const email = getSchoolEmail(claims);
                 const emailTrusted =
+                    email !== undefined &&
                     tenant.allowedEmailDomains.some(
                         domain => domain.toLowerCase() === email.split('@')[1]
-                    ) && claims.email_verified !== false;
+                    ) &&
+                    claims.email_verified !== false;
                 const existing = await findClassLinkIdentityByIdentityKey(identityKey);
                 const auth = environment.IS_E2E_TEST ? undefined : app?.auth();
                 if (!environment.IS_E2E_TEST && !auth)
                     throw new Error('Authentication unavailable');
-                const emailUser = auth
-                    ? await auth.getUserByEmail(email).catch((error: unknown) => {
-                          if (
-                              typeof error === 'object' &&
-                              error !== null &&
-                              'code' in error &&
-                              error.code === 'auth/user-not-found'
-                          )
-                              return undefined;
-                          throw error;
-                      })
-                    : undefined;
-                if (existing && emailUser && emailUser.uid !== existing.firebaseUid)
-                    conflict(tenantId);
-                if (!existing && emailUser && (!emailTrusted || !emailUser.emailVerified))
-                    conflict(tenantId);
+                // Lookup before the verification guard so an unsafe existing-email join is CONFLICT.
+                const emailUser =
+                    auth && email
+                        ? await auth.getUserByEmail(email).catch((error: unknown) => {
+                              if (firebaseErrorCode(error) === 'auth/user-not-found')
+                                  return undefined;
+                              throw error;
+                          })
+                        : undefined;
+                // The identity's own deterministic Firebase user is never "someone else": it
+                // can still hold the school email after School Connect moved the identity to the
+                // account's post-rebind uid, or after the identity row was deleted.
+                const ownUid = classLinkFirebaseUid(identityKey);
+                const otherEmailUser = emailUser?.uid === ownUid ? undefined : emailUser;
+                // A known identity whose trusted email now belongs to someone else fails closed.
+                // Untrusted emails are never put on the Firebase user, so they cannot collide.
+                if (
+                    existing &&
+                    emailTrusted &&
+                    otherEmailUser &&
+                    otherEmailUser.uid !== existing.firebaseUid
+                )
+                    conflict(tenantId, 'other_account');
+                if (!existing && otherEmailUser) {
+                    // Join an existing email account only for a trusted domain and verified email.
+                    if (!emailTrusted || !otherEmailUser.emailVerified)
+                        conflict(tenantId, 'email_account');
+                    await assertNoOtherClassLinkIdentity(otherEmailUser.uid, identityKey, tenantId);
+                }
                 const displayName = typeof claims.name === 'string' ? claims.name : undefined;
                 const attrs = {
                     ...(emailTrusted ? { email } : {}),
                     emailVerified: emailTrusted,
                     displayName,
                 };
-                let uid = existing?.firebaseUid ?? emailUser?.uid;
-                if (!uid) {
-                    uid = classLinkFirebaseUid(identityKey);
-                    if (auth)
-                        await auth.createUser({
-                            uid,
-                            displayName,
-                            ...(emailTrusted ? { email, emailVerified: true } : {}),
-                        });
-                }
+                const joined = !existing && otherEmailUser ? otherEmailUser.uid : undefined;
+                const uid = existing?.firebaseUid ?? joined ?? ownUid;
+                // The identity moved off its deterministic user, which still holds the school
+                // email: release it so the email resolves to no stale account.
+                if (auth && existing && uid !== ownUid && emailUser?.uid === ownUid)
+                    await releaseClassLinkFirebaseEmail(auth, identityKey);
+                if (auth && uid !== joined)
+                    await ensureClassLinkFirebaseUser(auth, uid, {
+                        identityKey,
+                        displayName,
+                        trustedEmail: emailTrusted ? email : undefined,
+                        isNew: !existing,
+                    });
                 let subject = existing?.subject;
                 if (!subject) {
-                    const emailSubject = emailUser
+                    const emailSubject = emailTrusted
                         ? await findAuthSubjectByIdentityKey(`email:${email}`)
                         : null;
                     subject = (
@@ -166,6 +265,7 @@ export const classlinkRouter = t.router({
                             : await getOrCreateAuthSubject(identityKey, attrs)
                     ).subject;
                 }
+                if (emailTrusted && email) await linkTrustedEmailSubject(email, subject, tenantId);
                 // Time of this verified sign-in. ClassLink's auth_time is the start of the
                 // ClassLink session and does not move on later sign-ins, so it cannot prove
                 // freshness; iat is checked to be within five minutes of now.
@@ -176,7 +276,8 @@ export const classlinkRouter = t.router({
                     tenantId,
                     sub: claims.sub,
                     role: claims.classLink_role ?? '',
-                    email,
+                    // The real school email (trusted or not), never the synthetic address.
+                    ...(email ? { email } : {}),
                     // Kept only for the transcript sign-in window, encrypted.
                     sealedStateStudentId: sealStateStudentId(
                         await resolveStateStudentId(claims, tenant),
@@ -191,6 +292,15 @@ export const classlinkRouter = t.router({
                     // Preferences require a DID; apply this hint when the account first binds one.
                     isMinorHint: isStudent,
                 });
+                if (!existing || existing.isMinorHint !== isStudent) {
+                    // The account gained a ClassLink identity (new, joined or re-created after
+                    // deleteMyData) or its student hint changed: drop any cached "not a student"
+                    // answer so its privacy lock applies on the next read.
+                    const accountKey = await findUserKeyByAuthProvider('firebase', uid);
+                    if (accountKey)
+                        await Promise.all(getAccountDids(accountKey).map(clearNotStudentCache));
+                }
+                await maybeClearExpiredStateStudentIds();
                 return {
                     token: auth
                         ? await auth.createCustomToken(uid, {
@@ -201,40 +311,39 @@ export const classlinkRouter = t.router({
                         : `classlink-e2e-${uid}`,
                 };
             } catch (error) {
-                await recordFailure(rateKey);
-                if (error instanceof ClassLinkEmailMissing) {
-                    throw new TRPCError({
-                        code: 'BAD_REQUEST',
-                        message:
-                            "Your school account doesn't have an email address yet. Ask your school to add one, then try again.",
-                    });
+                // Only failures that suggest abuse count toward the per-IP limit.
+                if (error instanceof ClassLinkTokenInvalid) {
+                    await recordFailure(rateKey);
+                    throw error;
                 }
-                if (error instanceof ClassLinkTokenInvalid) throw error;
+                if (error instanceof ClassLinkProviderUnavailable) throw error;
                 if (
                     error instanceof TRPCError &&
                     ['CONFLICT', 'BAD_REQUEST', 'PRECONDITION_FAILED'].includes(error.code)
                 )
                     throw error;
-                // Provider and database errors may contain secrets or PII. Do not retain their cause.
+                // Provider and database errors may contain secrets or PII: log only the
+                // error name/code and never retain the cause.
+                console.error('classlink.exchange.failed', safeErrorDetail(error));
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'School sign-in could not be completed. Please try again.',
                 });
             }
         }),
+    /**
+     * Delete the caller's ClassLink data (identities, their AuthSubjects, personal-email
+     * subject when safe, transcript requests). Idempotent, and still works after the
+     * account's Firebase user or UserKey is gone: it then matches by the caller's DID.
+     */
     deleteMyData: didAndChallengeRoute
         .input(z.object({}).strict().optional())
         .output(z.object({ deleted: z.number().int().nonnegative() }))
         .mutation(async ({ ctx }) => {
             const userKey = await findUserKeyByDid(ctx.user.did);
-            if (!userKey) return { deleted: 0 };
-
-            let deleted = 0;
-            for (const provider of userKey.authProviders) {
-                if (provider.type !== 'firebase') continue;
-                deleted += await deleteClassLinkIdentitiesByFirebaseUid(provider.id);
-                deleted += await deleteTranscriptRequestsByFirebaseUid(provider.id);
-            }
-            return { deleted };
+            const result = await deleteClassLinkDataForAccount(
+                userKey ?? { authProviders: [], primaryDid: ctx.user.did, linkedDids: [] }
+            );
+            return { deleted: result.identities + result.transcriptRequests };
         }),
 });

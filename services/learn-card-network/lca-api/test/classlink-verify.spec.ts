@@ -13,6 +13,7 @@ import {
 import { apiFieldsResolver, resolveStateStudentId } from '../src/helpers/classlink.stateId';
 import {
     ClassLinkEmailMissing,
+    ClassLinkProviderUnavailable,
     ClassLinkStateIdMissing,
     ClassLinkTokenInvalid,
 } from '../src/helpers/classlink.errors';
@@ -393,9 +394,42 @@ describe('discovery and code exchange', () => {
         await getClassLinkDiscovery();
         expect(axios.get).toHaveBeenCalledTimes(2);
     });
-    it('rejects malformed discovery', async () => {
+    it('reports malformed discovery as a provider outage', async () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
         vi.mocked(axios.get).mockResolvedValue({ data: { issuer: 'invalid' } });
-        await expect(getClassLinkDiscovery()).rejects.toBeInstanceOf(ClassLinkTokenInvalid);
+        await expect(getClassLinkDiscovery()).rejects.toBeInstanceOf(ClassLinkProviderUnavailable);
+        expect(error).toHaveBeenCalledWith('classlink.provider.unavailable', {
+            stage: 'discovery',
+            name: 'ZodError',
+        });
+    });
+    it('reports a discovery network failure as a provider outage with only safe fields', async () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.mocked(axios.get).mockRejectedValue(
+            Object.assign(new Error('connect ECONNREFUSED https://secret.example?token=abc'), {
+                code: 'ECONNREFUSED',
+            })
+        );
+        const thrown = await getClassLinkDiscovery().catch(value => value);
+        expect(thrown).toBeInstanceOf(ClassLinkProviderUnavailable);
+        expect(thrown.code).toBe('SERVICE_UNAVAILABLE');
+        expect(thrown.cause).toBeUndefined();
+        expect(error).toHaveBeenCalledExactlyOnceWith('classlink.provider.unavailable', {
+            stage: 'discovery',
+            name: 'Error',
+            code: 'ECONNREFUSED',
+        });
+        expect(JSON.stringify(error.mock.calls)).not.toContain('token=abc');
+    });
+    it('reports an unreachable JWKS as a provider outage, not an invalid token', async () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        discovery.jwks_uri = 'http://127.0.0.1:1/unreachable-jwks';
+        vi.mocked(axios.get).mockResolvedValue({ data: discovery });
+        await expect(verify(await sign())).rejects.toBeInstanceOf(ClassLinkProviderUnavailable);
+        expect(error).toHaveBeenCalledWith(
+            'classlink.provider.unavailable',
+            expect.objectContaining({ stage: 'jwks' })
+        );
     });
     it('sends client_secret_post with PKCE and a ten second timeout', async () => {
         const result = await exchangeClassLinkCode({
@@ -430,35 +464,65 @@ describe('discovery and code exchange', () => {
         ).rejects.toBeInstanceOf(ClassLinkTokenInvalid);
         expect(axios.post).not.toHaveBeenCalled();
     });
-    it('validates the token response', async () => {
-        vi.mocked(axios.post).mockResolvedValue({ data: { id_token: 123 } });
-        await expect(
-            exchangeClassLinkCode({
-                code: 'code',
-                codeVerifier: 'verifier',
-                redirectUri: 'https://app.test/callback',
-            })
-        ).rejects.toBeInstanceOf(ClassLinkTokenInvalid);
-    });
-    it('sanitizes upstream errors rather than retaining request secrets', async () => {
-        vi.mocked(axios.post).mockRejectedValue(new Error('sensitive-code-and-secret'));
-        const error = await exchangeClassLinkCode({
+    const exchange = (): Promise<unknown> =>
+        exchangeClassLinkCode({
             code: 'code',
             codeVerifier: 'verifier',
             redirectUri: 'https://app.test/callback',
-        }).catch(value => value);
-        expect(error).toBeInstanceOf(ClassLinkTokenInvalid);
+        });
+    it('treats a malformed token response as a provider outage', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.mocked(axios.post).mockResolvedValue({ data: { id_token: 123 } });
+        await expect(exchange()).rejects.toBeInstanceOf(ClassLinkProviderUnavailable);
+    });
+    it('treats a rejected code (OAuth 400 invalid_grant) as an invalid sign-in', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        vi.mocked(axios.post).mockRejectedValue(
+            Object.assign(new Error('Request failed'), {
+                response: { status: 400, data: { error: 'invalid_grant' } },
+            })
+        );
+        await expect(exchange()).rejects.toBeInstanceOf(ClassLinkTokenInvalid);
+        expect(warn).toHaveBeenCalledWith('classlink.verify.failed', {
+            stage: 'exchange',
+            httpStatus: 400,
+            oauthError: 'invalid_grant',
+        });
+    });
+    it.each([
+        ['a 5xx', { status: 503, data: {} }],
+        ['a client registration error', { status: 401, data: { error: 'invalid_client' } }],
+    ])('reports %s from the token endpoint as a provider outage', async (_label, response) => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.mocked(axios.post).mockRejectedValue(
+            Object.assign(new Error('Request failed'), { response })
+        );
+        await expect(exchange()).rejects.toBeInstanceOf(ClassLinkProviderUnavailable);
+        expect(error).toHaveBeenCalledWith(
+            'classlink.provider.unavailable',
+            expect.objectContaining({ stage: 'exchange', httpStatus: response.status })
+        );
+    });
+    it('sanitizes upstream errors rather than retaining request secrets', async () => {
+        const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.mocked(axios.post).mockRejectedValue(new Error('sensitive-code-and-secret'));
+        const error = (await exchange().catch(value => value)) as ClassLinkProviderUnavailable;
+        expect(error).toBeInstanceOf(ClassLinkProviderUnavailable);
         expect(error.cause).toBeUndefined();
         expect(JSON.stringify(error)).not.toContain('sensitive-code-and-secret');
+        expect(JSON.stringify(logged.mock.calls)).not.toContain('sensitive-code-and-secret');
     });
     it('provides typed errors with tRPC codes and message keys', () => {
         for (const ErrorType of [
             ClassLinkEmailMissing,
             ClassLinkStateIdMissing,
             ClassLinkTokenInvalid,
+            ClassLinkProviderUnavailable,
         ]) {
             const error = new ErrorType();
-            expect(['FORBIDDEN', 'BAD_REQUEST', 'UNAUTHORIZED']).toContain(error.code);
+            expect(['FORBIDDEN', 'BAD_REQUEST', 'UNAUTHORIZED', 'SERVICE_UNAVAILABLE']).toContain(
+                error.code
+            );
             expect(error.messageKey).toMatch(/^classlink\./);
         }
     });

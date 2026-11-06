@@ -20,7 +20,12 @@ vi.mock('./classlinkPkce', () => ({
     })),
 }));
 
-import { startClassLinkLogin, toClassLinkCallbackPath } from './startClassLinkLogin';
+import {
+    CLASSLINK_NATIVE_SESSION_TIMEOUT_MS,
+    runClassLinkLogin,
+    startClassLinkLogin,
+    toClassLinkCallbackPath,
+} from './startClassLinkLogin';
 
 const getAuthorizeUrl = vi.fn(async () => ({ url: 'https://idp.example/authorize?x=1' }));
 
@@ -41,15 +46,38 @@ describe('startClassLinkLogin', () => {
         expect(openSession).toHaveBeenCalledWith('https://idp.example/authorize?x=1', {
             callbackUrlPrefix: 'com.example.app://auth/classlink/callback',
             callbackScheme: 'com.example.app',
+            timeoutMs: CLASSLINK_NATIVE_SESSION_TIMEOUT_MS,
         });
         expect(navigate).toHaveBeenCalledWith('/auth/classlink/callback?code=abc&state=state-1');
     });
 
-    it('treats a cancelled native session as access_denied', async () => {
+    it('gives interactive ClassLink logins far longer than the 60 s silent-hop default', () => {
+        expect(CLASSLINK_NATIVE_SESSION_TIMEOUT_MS).toBe(10 * 60 * 1000);
+    });
+
+    it('treats a cancelled native session as access_denied and carries the state', async () => {
         openSession.mockRejectedValue(new AuthSessionError('cancelled', 'no_session'));
         const navigate = vi.fn();
         await expect(startClassLinkLogin(getAuthorizeUrl, navigate)).resolves.toBe(false);
-        expect(navigate).toHaveBeenCalledWith('/auth/classlink/callback?error=access_denied');
+        expect(navigate).toHaveBeenCalledWith(
+            '/auth/classlink/callback?error=access_denied&state=state-1'
+        );
+    });
+
+    it('reports a timed-out native session as login_timeout, not a cancellation', async () => {
+        openSession.mockRejectedValue(new AuthSessionError('expired', 'expired'));
+        const navigate = vi.fn();
+        await expect(runClassLinkLogin(getAuthorizeUrl, navigate)).resolves.toBe('handled');
+        expect(navigate).toHaveBeenCalledWith(
+            '/auth/classlink/callback?error=login_timeout&state=state-1'
+        );
+    });
+
+    it('reports failed when the authorize URL cannot be fetched', async () => {
+        getAuthorizeUrl.mockRejectedValueOnce(new Error('network'));
+        const navigate = vi.fn();
+        await expect(runClassLinkLogin(getAuthorizeUrl, navigate)).resolves.toBe('failed');
+        expect(navigate).not.toHaveBeenCalled();
     });
 
     it('uses a full-page redirect on web', async () => {

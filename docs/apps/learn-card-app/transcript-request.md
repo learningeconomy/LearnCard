@@ -42,6 +42,71 @@ The transcript request feature is available to students who:
 ## User Experience
 
 1. **Opt-In**: Eligible students see a "Get your transcript" card in their wallet or during onboarding.
-2. **Requesting**: After consenting, the card shows a progress indicator. The app polls for the incoming transcript.
+2. **Requesting**: After consenting, the card shows a progress indicator. The app checks for the incoming transcript every 5 seconds at first, backing off to once a minute, and stops after 30 minutes in an app session. Returning to the app or receiving a credential notification triggers another check.
 3. **Arrival**: When the transcript arrives, it is automatically verified and added to the wallet. The card updates to show a summary of the transcript (e.g., school name, graduation year, GPA) and a button to view the full details.
-4. **Notifications**: If the student leaves the app before the transcript arrives, they will receive a push notification. Tapping the notification opens the transcript directly.
+4. **Notifications**: If the student leaves the app before the transcript arrives, they will receive a push notification. Tapping the notification opens the transcript directly. The app waits up to 5 seconds for the request status; if it cannot confirm the match in time, it shows the normal claim screen instead.
+5. **Still waiting**: If the request is more than 24 hours old, or the app has stopped checking, the card says the transcript may already be in their notifications and offers **Check Again** and **Open Notifications**.
+
+## Partner Issuer Contract (draft)
+
+{% hint style="warning" %}
+The partner contract is not signed yet. This section describes what LearnCard sends today. Field names are provider neutral so they do not change if another school sign-in provider is added.
+{% endhint %}
+
+### Request
+
+LearnCard Network sends `POST <issuer endpoint>` with `Authorization: Bearer <assertion>` and this JSON body:
+
+```json
+{
+    "assertion": "<signed JWT>",
+    "request_id": "6f1c2a5e-0c4f-4b8e-9d2a-3e7b1f0a9c11"
+}
+```
+
+The assertion is a 5-minute EdDSA JWT. Verify it against the `did:web` document of the `iss` (the `kid` is `<iss>#owner`). `iss` is always the configured LearnCard Network domain, for example `did:web:api.learncard.app`, never the hostname a request happened to use.
+
+| Claim              | Meaning                                                          |
+| ------------------ | ---------------------------------------------------------------- |
+| `iss`              | LearnCard Network's `did:web`                                    |
+| `aud`              | The audience configured for your issuer                          |
+| `sub`              | The student's DID. Issue the transcript to this DID              |
+| `jti`              | Unique request ID. Reject replays                                |
+| `request_id`       | Same value as `jti`, and the `request_id` in the body            |
+| `iat`, `exp`       | Issue and expiry time (unix seconds)                             |
+| `state`            | State code of the student's district, for example `CA`           |
+| `state_student_id` | The student's state-issued ID                                    |
+| `idp`              | The school sign-in provider, for example `classlink`             |
+| `idp_tenant`       | The provider's district (tenant) ID                              |
+| `auth_time`        | When the student last signed in with the provider (unix seconds) |
+| `consent_at`       | When the student agreed to the request (unix seconds)            |
+
+Respond with HTTP `200` or `202` and `{ "status": "accepted" }`, or HTTP `200` and `{ "status": "none_yet" }` when there is no transcript yet. Any other response is treated as a failure.
+
+### Delivery
+
+Send the transcript credential to the student's DID (`sub`) through the LearnCard Network send API, from the LearnCard Network profile LearnCard has configured for your district (its profile ID). Sign it with the issuer DID LearnCard has configured for your district.
+
+The credential **must** echo the request ID so the app can match it to the request. Add one entry to the top-level `evidence` array whose `id` is `urn:uuid:<request_id>`:
+
+```json
+{
+    "evidence": [
+        {
+            "id": "urn:uuid:6f1c2a5e-0c4f-4b8e-9d2a-3e7b1f0a9c11",
+            "type": ["Evidence"]
+        }
+    ]
+}
+```
+
+The app auto-accepts a transcript only when all of these hold:
+
+- It was sent by the configured LearnCard Network profile. The network authenticates the sender, and the app checks the sending profile's ID. It does not check the profile's DID, because the network reports every profile's DID as its own `did:web:<network>:users:<profileId>`.
+- The credential's own `issuer` is the configured issuer DID (for example your own `did:web:records.example.org`). This DID does not need to be the sending profile's DID.
+- The credential verifies, is a `ClrCredential`, is for the student's DID, and was issued after the request.
+- If the credential echoes a request ID (the `urn:uuid:` evidence entry above, or `requestId` / `request_id` on `credentialSubject` or an evidence entry), it equals the student's current request. Do not add unrelated top-level evidence entries with a `urn:uuid:` ID: the app treats them as a mismatch.
+
+A transcript that does not match stays in the student's notifications for a manual accept.
+
+`id` is a core Verifiable Credentials term. `Evidence` is defined by the Open Badges 3.0 and CLR 2.0 contexts that transcript credentials normally use; if you sign with a different context, check that it defines `Evidence` before signing. Until every issuer sends it, the app still accepts a transcript without it when the sender, type and subject match.

@@ -1,9 +1,18 @@
 import axios from 'axios';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { z } from 'zod';
 import cache from '@cache';
 import { getClassLinkConfig } from './classlink.config';
-import { ClassLinkEmailMissing, ClassLinkTokenInvalid } from './classlink.errors';
+import {
+    ClassLinkEmailMissing,
+    ClassLinkProviderUnavailable,
+    ClassLinkTokenInvalid,
+} from './classlink.errors';
+import {
+    getRemoteJwks,
+    isOidcProviderUnavailableError,
+    OidcIatSkewError,
+    verifyOidcIdToken,
+} from './oidcIdToken.helpers';
 import type { ClassLinkClaims, ClassLinkConfig } from 'types/classlink';
 
 export type { ClassLinkClaims } from 'types/classlink';
@@ -35,6 +44,9 @@ const CLASSLINK_TOKEN_ISSUERS = [
     'https://tokens-public.apis.classlink.com',
 ];
 
+/** Allowed difference between a token's `iat` and now, in seconds. */
+const MAX_IAT_SKEW_SECONDS = 300;
+
 /** Log only a failure category and claim/field names; never token or claim values. */
 const logVerifyFailure = (stage: string, error: unknown): void => {
     const detail: Record<string, unknown> = { stage };
@@ -52,6 +64,46 @@ const logVerifyFailure = (stage: string, error: unknown): void => {
     }
     console.warn('classlink.verify.failed', detail);
 };
+
+/**
+ * Report a ClassLink outage (network failure, timeout, 5xx, client-registration error or
+ * malformed provider response) and return the error to throw. Logs only the stage, the
+ * error name/code and the HTTP status — never tokens, codes, secrets, emails or bodies —
+ * so the line is safe to alert on.
+ */
+const providerUnavailable = (stage: string, error: unknown): ClassLinkProviderUnavailable => {
+    const detail: Record<string, unknown> = { stage };
+    if (error instanceof z.ZodError) detail.name = 'ZodError';
+    else if (error && typeof error === 'object') {
+        if ('name' in error && typeof error.name === 'string') detail.name = error.name;
+        if ('code' in error && typeof error.code === 'string') detail.code = error.code;
+        if ('response' in error && error.response && typeof error.response === 'object') {
+            const response = error.response as { status?: unknown; data?: unknown };
+            if (typeof response.status === 'number') detail.httpStatus = response.status;
+            const data = response.data as { error?: unknown } | undefined;
+            if (data && typeof data.error === 'string') detail.oauthError = data.error;
+        }
+    }
+    console.error('classlink.provider.unavailable', detail);
+    return new ClassLinkProviderUnavailable();
+};
+
+/** OAuth errors that mean our client registration is broken, not that the user's code is bad. */
+const CLIENT_CONFIGURATION_ERRORS = new Set(['invalid_client', 'unauthorized_client']);
+
+/**
+ * Whether a token-endpoint failure was caused by the request itself (bad, reused or
+ * expired code, PKCE mismatch: an OAuth 4xx) rather than by ClassLink or our client setup.
+ */
+const isTokenRequestRejected = (error: unknown): boolean => {
+    if (!error || typeof error !== 'object' || !('response' in error)) return false;
+    const response = error.response as { status?: unknown; data?: unknown } | undefined;
+    if (!response || typeof response.status !== 'number') return false;
+    if (response.status < 400 || response.status >= 500) return false;
+    const data = response.data as { error?: unknown } | undefined;
+    return !(data && typeof data.error === 'string' && CLIENT_CONFIGURATION_ERRORS.has(data.error));
+};
+
 const claimsValidator = z
     .object({
         iss: nonblank,
@@ -77,10 +129,14 @@ const requireConfig = (): ClassLinkConfig => {
     return config;
 };
 
-/** Fetch provider metadata with a one-hour, discovery-URL-scoped cache. */
+/**
+ * Fetch provider metadata with a one-hour, discovery-URL-scoped cache. Throws
+ * `ClassLinkTokenInvalid` when unconfigured and `ClassLinkProviderUnavailable` when the
+ * document cannot be fetched or is malformed.
+ */
 export const getClassLinkDiscovery = async (): Promise<z.infer<typeof discoveryValidator>> => {
+    const { discoveryUrl } = requireConfig();
     try {
-        const { discoveryUrl } = requireConfig();
         const key = `classlink:discovery:${discoveryUrl}`;
         const cached = await cache.get(key);
         if (cached) return discoveryValidator.parse(JSON.parse(cached));
@@ -88,12 +144,17 @@ export const getClassLinkDiscovery = async (): Promise<z.infer<typeof discoveryV
         const discovery = discoveryValidator.parse(data);
         await cache.set(key, JSON.stringify(discovery), 3600);
         return discovery;
-    } catch {
-        throw new ClassLinkTokenInvalid();
+    } catch (error) {
+        throw providerUnavailable('discovery', error);
     }
 };
 
-/** Exchange the authorization code server-side without exposing upstream request errors. */
+/**
+ * Exchange the authorization code server-side without exposing upstream request errors.
+ * A rejected code (OAuth 4xx) is `ClassLinkTokenInvalid`; network failures, timeouts, 5xx,
+ * client-registration errors and malformed responses are `ClassLinkProviderUnavailable`.
+ * Neither retains the upstream error as a cause.
+ */
 export const exchangeClassLinkCode = async ({
     code,
     codeVerifier,
@@ -103,12 +164,12 @@ export const exchangeClassLinkCode = async ({
     codeVerifier: string;
     redirectUri: string;
 }): Promise<z.infer<typeof tokenResponseValidator>> => {
+    const config = requireConfig();
+    if (!code || !codeVerifier || !config.redirectUris.includes(redirectUri)) {
+        throw new ClassLinkTokenInvalid();
+    }
+    const discovery = await getClassLinkDiscovery();
     try {
-        const config = requireConfig();
-        if (!code || !codeVerifier || !config.redirectUris.includes(redirectUri)) {
-            throw new ClassLinkTokenInvalid();
-        }
-        const discovery = await getClassLinkDiscovery();
         const body = new URLSearchParams({
             grant_type: 'authorization_code',
             client_id: config.clientId,
@@ -124,51 +185,51 @@ export const exchangeClassLinkCode = async ({
         });
         return tokenResponseValidator.parse(data);
     } catch (error) {
-        logVerifyFailure('exchange', error);
         // Axios errors can retain the secret-bearing form body; never propagate their cause.
-        throw new ClassLinkTokenInvalid();
+        if (isTokenRequestRejected(error)) {
+            logVerifyFailure('exchange', error);
+            throw new ClassLinkTokenInvalid();
+        }
+        throw providerUnavailable('exchange', error);
     }
 };
 
-let remoteKeys: { uri: string; resolve: ReturnType<typeof createRemoteJWKSet> } | undefined;
-
-/** Verify signatures and all identity bindings before returning any provider claims. */
+/**
+ * Verify signatures and all identity bindings before returning any provider claims.
+ * Uses the shared OIDC verifier (JWKS cache, RS256 pinning, iss/aud/exp/iat checks).
+ * Throws `ClassLinkTokenInvalid` for a bad token and `ClassLinkProviderUnavailable` when
+ * discovery or the JWKS cannot be fetched.
+ */
 export const verifyClassLinkIdToken = async (
     idToken: string,
     { nonce }: { nonce: string }
 ): Promise<ClassLinkClaims> => {
+    const config = requireConfig();
+    const discovery = await getClassLinkDiscovery();
     try {
-        const config = requireConfig();
-        const discovery = await getClassLinkDiscovery();
-        if (!remoteKeys || remoteKeys.uri !== discovery.jwks_uri) {
-            remoteKeys = {
-                uri: discovery.jwks_uri,
-                // Keep jose's cooldown to bound unknown-kid fetches during invalid-token floods.
-                resolve: createRemoteJWKSet(new URL(discovery.jwks_uri), {
-                    timeoutDuration: 10000,
-                }),
-            };
-        }
-        const { payload } = await jwtVerify(idToken, remoteKeys.resolve, {
-            issuer: [discovery.issuer, ...CLASSLINK_TOKEN_ISSUERS],
-            audience: config.clientId,
+        const payload = await verifyOidcIdToken(idToken, {
+            jwks: getRemoteJwks(discovery.jwks_uri),
+            issuers: [discovery.issuer, ...CLASSLINK_TOKEN_ISSUERS],
+            audiences: [config.clientId],
             algorithms: ['RS256'],
             requiredClaims: ['exp', 'iat', 'sub'],
+            maxIatSkewSeconds: MAX_IAT_SKEW_SECONDS,
         });
         const claims = claimsValidator.parse(payload);
-        if (
-            !nonce ||
-            claims.nonce !== nonce ||
-            Math.abs(Math.floor(Date.now() / 1000) - claims.iat) > 300
-        ) {
-            logVerifyFailure('binding', {
-                code: !nonce || claims.nonce !== nonce ? 'nonce' : 'iat_skew',
-            });
+        if (!nonce || claims.nonce !== nonce) {
+            logVerifyFailure('binding', { code: 'nonce' });
             throw new ClassLinkTokenInvalid();
         }
         return claims;
     } catch (error) {
-        if (!(error instanceof ClassLinkTokenInvalid)) logVerifyFailure('verify', error);
+        if (error instanceof ClassLinkTokenInvalid) throw error;
+        if (error instanceof OidcIatSkewError) {
+            logVerifyFailure('binding', { code: 'iat_skew' });
+            throw new ClassLinkTokenInvalid();
+        }
+        if (!(error instanceof z.ZodError) && isOidcProviderUnavailableError(error))
+            throw providerUnavailable('jwks', error);
+        logVerifyFailure('verify', error);
         // Validation and JOSE errors may carry raw claims. Do not log or retain them.
         throw new ClassLinkTokenInvalid();
     }

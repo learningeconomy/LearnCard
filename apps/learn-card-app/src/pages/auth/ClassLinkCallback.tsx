@@ -1,6 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
-import { usePathQuery, useToast, ToastTypeEnum, authUserStore } from 'learn-card-base';
+import {
+    usePathQuery,
+    useToast,
+    ToastTypeEnum,
+    authUserStore,
+    SocialLoginTypes,
+} from 'learn-card-base';
 import { useClassLinkExchangeCode } from 'learn-card-base/react-query/mutations/firebase';
 import { LoadingPageDumb } from '../loadingPage/LoadingPage';
 import { useFirebase } from '../../hooks/useFirebase';
@@ -9,6 +15,11 @@ import {
     consumeClassLinkAttempt,
     peekClassLinkAttemptIntent,
 } from '../../auth/classlink/classlinkPkce';
+import {
+    claimClassLinkCallback,
+    getClassLinkCallbackKey,
+} from '../../auth/classlink/classlinkCallbackGuard';
+import { CLASSLINK_TIMEOUT_ERROR } from '../../auth/classlink/startClassLinkLogin';
 import ClassLinkConnectCallback from './ClassLinkConnectCallback';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
@@ -16,6 +27,13 @@ import * as m from '../../paraglide/messages.js';
 const log = getLogger('classlink');
 
 const RELAUNCH_KEY = 'classlink-relaunch-at';
+
+/** Message for an `error` param on the ClassLink sign-in callback. */
+const getClassLinkCallbackErrorMessage = (error: string, fallback: string): string => {
+    if (error === 'access_denied') return m['login.classlink.cancelled']();
+    if (error === CLASSLINK_TIMEOUT_ERROR) return m['login.classlink.timedOut']();
+    return fallback;
+};
 
 /**
  * A launch from the ClassLink dashboard arrives with a code we did not request (no stored
@@ -44,23 +62,25 @@ const ClassLinkSignInCallback: React.FC = () => {
         if (hasRun.current) return;
         hasRun.current = true;
 
-        const processCallback = async () => {
-            const code = query.get('code');
-            const state = query.get('state');
-            const error = query.get('error');
+        const code = query.get('code');
+        const state = query.get('state');
+        const error = query.get('error');
+        // A second instance for the same callback (remount) must not re-consume the
+        // single-use attempt or exchange the code twice.
+        const release = claimClassLinkCallback(getClassLinkCallbackKey({ code, state, error }));
+        if (!release) return;
 
+        const processCallback = async () => {
             if (error) {
-                if (error === 'access_denied') {
-                    presentToast(m['login.classlink.cancelled'](), {
+                // Clear the abandoned attempt so it cannot be replayed later.
+                if (state) await consumeClassLinkAttempt(state);
+                presentToast(
+                    getClassLinkCallbackErrorMessage(error, m['login.classlink.failed']()),
+                    {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
-                    });
-                } else {
-                    presentToast(m['login.classlink.failed'](), {
-                        type: ToastTypeEnum.Error,
-                        hasDismissButton: true,
-                    });
-                }
+                    }
+                );
                 history.replace('/login');
                 return;
             }
@@ -105,7 +125,12 @@ const ClassLinkSignInCallback: React.FC = () => {
                     if (currentAuthUser) {
                         await coordinatorLogout();
                     }
-                    await signInWithCustomFirebaseToken(response.token);
+                    // Throws on failure so the catch below shows the error and returns to
+                    // /login, instead of landing on /wallet without a session.
+                    await signInWithCustomFirebaseToken(response.token, {
+                        loginMethod: SocialLoginTypes.classlink,
+                        throwOnError: true,
+                    });
                     history.replace(attempt.redirectTo || '/wallet');
                 } else {
                     throw new Error('No token returned');
@@ -124,6 +149,8 @@ const ClassLinkSignInCallback: React.FC = () => {
                     code === 'TOO_MANY_REQUESTS'
                 ) {
                     errorMessage = trpcError.message || errorMessage;
+                } else if (code === 'SERVICE_UNAVAILABLE') {
+                    errorMessage = m['login.classlink.unavailable']();
                 }
 
                 presentToast(errorMessage, {
@@ -134,7 +161,7 @@ const ClassLinkSignInCallback: React.FC = () => {
             }
         };
 
-        void processCallback();
+        void processCallback().finally(release);
     }, [
         query,
         history,

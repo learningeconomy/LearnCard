@@ -38,7 +38,12 @@
         "arrivedTitle": "Your transcript arrived",
         "transcript": "Transcript",
         "gradYear": "Class of {{year}}",
-        "gpa": "GPA: {{gpa}}"
+        "gpa": "GPA: {{gpa}}",
+        "receivedLoading": "Your transcript was received. It will appear here in a moment.",
+        "checkManually": "It may already be waiting in your notifications. Open it there to add it to your account, or check again.",
+        "checkAgain": "Check Again",
+        "openNotifications": "Open Notifications",
+        "autoAcceptFailed": "We couldn't add your transcript automatically. You can accept it here instead."
     },
     "consentUpdate": {
         "summary": {
@@ -1582,7 +1587,9 @@
         "classlink": {
             "cancelled": "ClassLink sign-in was cancelled.",
             "expired": "That sign-in link expired. Please try again.",
-            "failed": "We couldn't sign you in with ClassLink. Please try again."
+            "failed": "We couldn't sign you in with ClassLink. Please try again.",
+            "timedOut": "ClassLink sign-in took too long. Please try again.",
+            "unavailable": "School sign-in is temporarily unavailable. Please try again in a few minutes."
         },
         "welcome": {
             "heading": "Welcome to {{brand}}",
@@ -1906,7 +1913,8 @@
             "loading": "Loading...",
             "deleting": "Deleting Account...",
             "recentLoginRequired": "A recent login is required!",
-            "reauthenticateHere": "Reauthenticate here"
+            "reauthenticateHere": "Reauthenticate here",
+            "fallbackPhrase": "DELETE"
         },
         "deleteAccount": "Delete Account",
         "didCopied": "DID copied to clipboard",
@@ -1946,7 +1954,8 @@
             "button": "Export Seed Phrase",
             "revealPrompt": "I understand - Reveal My Seed",
             "confirm": "Confirm",
-            "cancel": "Cancel"
+            "cancel": "Cancel",
+            "fallbackPhrase": "EXPORT"
         },
         "exportSeedPhrase": "Export Seed Phrase",
         "fullName": "Full Name",

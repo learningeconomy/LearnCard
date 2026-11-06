@@ -4,8 +4,9 @@ import { z } from 'zod';
 import { didAndChallengeRoute } from '@routes';
 import cache from '@cache';
 import { getDel } from '@cache/getDel';
-import { checkRateLimit } from '@helpers/rateLimit.helpers';
+import { isRateLimited, recordFailure } from '@helpers/rate-limit.helpers';
 import { resolveClassLinkContext } from '@helpers/classlinkContext.helpers';
+import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
 import { getDeliveryService, getFrom } from '../services/delivery';
 import {
     findAuthSubjectByIdentityKey,
@@ -22,12 +23,56 @@ const conflict = (): never => {
         message: 'This email is already used by another account.',
     });
 };
+
+/** Address checks (start or verify) allowed per DID per 10 minutes. */
+const PERSONAL_EMAIL_CHECK_LIMIT = 20;
+/** Codes sent per DID per 10 minutes. */
+const PERSONAL_EMAIL_SEND_LIMIT = 3;
+/** Wrong codes allowed per issued code before it is invalidated. */
+const PERSONAL_EMAIL_ATTEMPT_LIMIT = 5;
+
+const sha256Hex = (value: string): string => createHash('sha256').update(value).digest('hex');
+
+const tooMany = (message: string): TRPCError =>
+    new TRPCError({ code: 'TOO_MANY_REQUESTS', message });
+
+/**
+ * Count one use of a per-DID budget and refuse once it is spent. Uses the shared
+ * failures-only limiter, recording every call because each call is the costed action.
+ */
+const consumeBudget = async (
+    key: string,
+    limit: number,
+    windowSeconds: number,
+    message: string
+): Promise<void> => {
+    if (await isRateLimited(key, limit)) throw tooMany(message);
+    await recordFailure(key, windowSeconds);
+};
+
+/**
+ * Validate the address for the caller's ClassLink account. Rate-limited per DID so the
+ * flow cannot be used to probe which addresses have LearnCard accounts. Whether the address
+ * is already taken is only revealed once the caller has proven they read the code (see
+ * `assertEmailAvailable`), so `start` answers the same for every address.
+ */
 const validateEmail = async (did: string, email: string) => {
+    await consumeBudget(
+        `classlink:rate:personal-email-check:${sha256Hex(did)}`,
+        PERSONAL_EMAIL_CHECK_LIMIT,
+        600,
+        'Too many attempts. Please try again later.'
+    );
     const context = await resolveClassLinkContext(did);
     if (!context.tenant)
         throw new TRPCError({
             code: 'PRECONDITION_FAILED',
             message: 'School settings are unavailable. Please try again later.',
+        });
+    if (isSyntheticEmail(email))
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Enter an email address you can receive mail at.',
         });
     const domain = email.split('@')[1];
     const schoolDomain = context.identity.email?.split('@')[1]?.toLowerCase();
@@ -40,9 +85,13 @@ const validateEmail = async (did: string, email: string) => {
             message: 'Use a personal email, not your school email',
         });
     }
-    const existing = await findAuthSubjectByIdentityKey(`email:${email}`);
-    if (existing && existing.subject !== context.identity.subject) conflict();
     return context;
+};
+
+/** Refuse an address another account already signs in with. Call only after code proof. */
+const assertEmailAvailable = async (email: string, subject: string): Promise<void> => {
+    const existing = await findAuthSubjectByIdentityKey(`email:${email}`);
+    if (existing && existing.subject !== subject) conflict();
 };
 
 export const personalEmailProcedures = {
@@ -59,15 +108,16 @@ export const personalEmailProcedures = {
         .input(z.object({ email: personalEmail }))
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ input: { email }, ctx }) => {
-            const { firebaseUid } = await validateEmail(ctx.user.did, email);
-            if (!(await checkRateLimit(`classlink-personal-email-send:${ctx.user.did}`, 3, 600))) {
-                throw new TRPCError({
-                    code: 'TOO_MANY_REQUESTS',
-                    message: 'Too many codes requested. Please try again later.',
-                });
-            }
+            const { identity } = await validateEmail(ctx.user.did, email);
+            await consumeBudget(
+                `classlink:rate:personal-email-send:${sha256Hex(ctx.user.did)}`,
+                PERSONAL_EMAIL_SEND_LIMIT,
+                600,
+                'Too many codes requested. Please try again later.'
+            );
             const code = randomInt(100000, 1000000).toString();
-            const key = `classlink-personal-email:${firebaseUid}`;
+            // Keyed by the identity (stable across Firebase provider changes).
+            const key = `classlink-personal-email:${sha256Hex(identity.identityKey)}`;
             await cache.set(key, JSON.stringify({ email, code }), 300);
             try {
                 await getDeliveryService().send({
@@ -93,8 +143,8 @@ export const personalEmailProcedures = {
         .input(z.object({ email: personalEmail, code: z.string().regex(/^\d{6}$/) }))
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ input: { email, code }, ctx }) => {
-            const { firebaseUid, identity } = await validateEmail(ctx.user.did, email);
-            const key = `classlink-personal-email:${firebaseUid}`;
+            const { identity } = await validateEmail(ctx.user.did, email);
+            const key = `classlink-personal-email:${sha256Hex(identity.identityKey)}`;
             const stored = await cache.get(key);
             const invalid = () =>
                 new TRPCError({
@@ -105,8 +155,9 @@ export const personalEmailProcedures = {
             const expected = JSON.stringify({ email, code });
             if (stored !== expected) {
                 // Scope failures to this issuance, without exposing the code in cache keys.
-                const attemptKey = `classlink-personal-email-attempts:${firebaseUid}:${createHash('sha256').update(stored).digest('hex')}`;
-                if (!(await checkRateLimit(attemptKey, 4, 300))) {
+                const attemptKey = `classlink-personal-email-attempts:${sha256Hex(identity.identityKey)}:${createHash('sha256').update(stored).digest('hex')}`;
+                await recordFailure(attemptKey, 300);
+                if (await isRateLimited(attemptKey, PERSONAL_EMAIL_ATTEMPT_LIMIT)) {
                     const redis = cache.redis ?? cache.node;
                     await redis.eval(
                         "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end return 0",
@@ -118,6 +169,8 @@ export const personalEmailProcedures = {
                 throw invalid();
             }
             if ((await getDel(key)) !== expected) throw invalid();
+            // The caller proved they read the code, so it is safe to say the address is taken.
+            await assertEmailAvailable(email, identity.subject);
             // Reserve without modifying existing attributes, including when another
             // account races the initial lookup. Subjects are immutable after insertion.
             await ensureAuthSubjectIndexes();

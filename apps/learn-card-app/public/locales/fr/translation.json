@@ -38,7 +38,12 @@
         "arrivedTitle": "Votre relevé de notes est arrivé",
         "transcript": "Relevé de Notes",
         "gradYear": "Promotion {{year}}",
-        "gpa": "Moyenne : {{gpa}}"
+        "gpa": "Moyenne : {{gpa}}",
+        "receivedLoading": "Votre relevé de notes a été reçu. Il apparaîtra ici dans un instant.",
+        "checkManually": "Il vous attend peut-être déjà dans vos notifications. Ouvrez-le là-bas pour l'ajouter à votre compte, ou vérifiez à nouveau.",
+        "checkAgain": "Vérifier à Nouveau",
+        "openNotifications": "Ouvrir les Notifications",
+        "autoAcceptFailed": "Nous n'avons pas pu ajouter votre relevé de notes automatiquement. Vous pouvez l'accepter ici."
     },
     "consentUpdate": {
         "summary": {
@@ -1461,7 +1466,9 @@
         "classlink": {
             "cancelled": "La connexion avec ClassLink a été annulée.",
             "expired": "Ce lien de connexion a expiré. Veuillez réessayer.",
-            "failed": "Nous n'avons pas pu vous connecter avec ClassLink. Veuillez réessayer."
+            "failed": "Nous n'avons pas pu vous connecter avec ClassLink. Veuillez réessayer.",
+            "timedOut": "La connexion avec ClassLink a pris trop de temps. Veuillez réessayer.",
+            "unavailable": "La connexion scolaire est temporairement indisponible. Veuillez réessayer dans quelques minutes."
         },
         "welcome": {
             "heading": "Bienvenue sur {{brand}}",
@@ -1924,7 +1931,8 @@
             "loading": "Chargement...",
             "deleting": "Suppression du compte...",
             "recentLoginRequired": "Une connexion récente est requise !",
-            "reauthenticateHere": "Réauthentifiez-vous ici"
+            "reauthenticateHere": "Réauthentifiez-vous ici",
+            "fallbackPhrase": "SUPPRIMER"
         },
         "export": {
             "title": "Phrase d'exportation de semences",
@@ -1937,7 +1945,8 @@
             "button": "Phrase d'exportation de semences",
             "revealPrompt": "Je comprends - Révéler ma graine",
             "confirm": "Confirmer",
-            "cancel": "Annuler"
+            "cancel": "Annuler",
+            "fallbackPhrase": "EXPORTER"
         },
         "email": {
             "header": "Adresses e-mail",

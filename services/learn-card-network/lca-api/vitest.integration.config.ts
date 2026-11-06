@@ -24,6 +24,8 @@ export default createVitestConfig(serviceIntegrationPreset, {
             ESCROW_RELAY_AUTH_TOKEN: 'relay-auth-token',
             // Test-only key (32 bytes of 0x07).
             CLASSLINK_PII_KEY: 'BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=',
+            // Identity HMAC key (never rotated); same test bytes so identity fixtures stay stable.
+            CLASSLINK_IDENTITY_KEY: 'BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=',
         },
         // Fully-mocked unit specs (mock @cache/@models/@environment) run under
         // vitest.config.ts; they must not load the live-Mongo integration setup.

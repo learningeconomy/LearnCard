@@ -36,6 +36,11 @@ test.describe('Transcript Arrival @mocked', () => {
             () => window.transcriptArrivalHarness.markReceivedCalls
         );
         expect(markReceivedCalls).toEqual([]);
+
+        // The request is older than a day, so the card offers a manual path rather
+        // than an indefinite spinner: check again, or accept it from notifications.
+        await expect(page.getByRole('button', { name: 'Check Again' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Open Notifications' })).toBeVisible();
     });
 
     test('Arrival sheet: shown once per request, not on reload', async ({ page }) => {

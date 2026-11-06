@@ -420,9 +420,11 @@ using its GitHub secret fallbacks, so services and stages can migrate independen
 | Brain      | `learn-cloud-network-api-staging` / `learn-cloud-network-api-production` | `brain-service/dev/runtime-secrets` / `brain-service/production/runtime-secrets`             |
 | LearnCloud | `learn-cloud-storage-api-staging` / `learn-cloud-storage-api-production` | `learn-cloud-service/dev/runtime-secrets` / `learn-cloud-service/production/runtime-secrets` |
 
-lca-api's bundle holds `GOOGLE_APPLICATION_CREDENTIAL`, `OPENAI_API_KEY`, `SEED`, and escrow secrets when used. It also holds the ClassLink and transcript-issuer settings `CLASSLINK_CLIENT_SECRET`, `CLASSLINK_PII_KEY`, `CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS`, and `TRANSCRIPT_ISSUERS`: the client ID is not secret, but the tenant map and issuer endpoints name specific districts and partners, so they stay out of the public stage files. `CLASSLINK_PII_KEY` encrypts stored state student IDs (base64 of 32 random bytes, for example `openssl rand -base64 32`); without it, state student IDs are not stored and transcript requests report `no_state_id`. Changing the key makes stored IDs unreadable until the next sign-in, which is safe because they expire after `CLASSLINK_MAX_AUTH_AGE_SECONDS`. Do not put these keys in `config/config.<stage>.json` (a stage-file value would override the bundle). Only the generic keys `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS` and `CLASSLINK_MAX_AUTH_AGE_SECONDS` belong in `config/config.<stage>.json`.
+lca-api's bundle holds `GOOGLE_APPLICATION_CREDENTIAL`, `OPENAI_API_KEY`, `SEED`, and escrow secrets when used. It also holds the ClassLink and transcript-issuer settings `CLASSLINK_CLIENT_SECRET`, `CLASSLINK_IDENTITY_KEY`, `CLASSLINK_PII_KEY`, `CLASSLINK_PII_KEY_PREVIOUS`, `CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS`, and `TRANSCRIPT_ISSUERS`: the client ID is not secret, but the tenant map and issuer endpoints name specific districts and partners, so they stay out of the public stage files. See "ClassLink district identity configuration" below for the two ClassLink keys: `CLASSLINK_IDENTITY_KEY` must never change, while `CLASSLINK_PII_KEY` can be rotated with `CLASSLINK_PII_KEY_PREVIOUS`. Do not put these keys in `config/config.<stage>.json` (a stage-file value would override the bundle). Only the generic keys `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS` and `CLASSLINK_MAX_AUTH_AGE_SECONDS` belong in `config/config.<stage>.json`.
 
-`TRANSCRIPT_ISSUERS` is a JSON object mapping an issuer key to `{ endpoint, audience, did }`, for example `{"example-records":{"endpoint":"https://records.example.org/transcript-requests","audience":"example-records","did":"did:web:records.example.org"}}`. A `CLASSLINK_TENANTS` district selects one with its own `transcriptIssuer` key; districts that don't set one use the `"default"` key. `transcripts.getStatus` exposes the resolved issuer's `did` as `issuerDid`, omitted when no matching issuer is configured. `getClassLinkConfig` throws at startup if a district references a `transcriptIssuer` key that isn't in the registry. `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE` and `TRANSCRIPT_ISSUER_DID` are deprecated: they register the `"default"` entry and are ignored for any key an explicit `TRANSCRIPT_ISSUERS["default"]` also defines.
+`TRANSCRIPT_ISSUERS` is a JSON object mapping an issuer key to `{ endpoint, audience, did, profileId? }`, for example `{"example-records":{"endpoint":"https://records.example.org/transcript-requests","audience":"example-records","did":"did:web:records.example.org","profileId":"example-records"}}`. `did` is the DID the partner signs transcripts with (`vc.issuer`). `profileId` is the partner's LearnCard Network profile that sends them; the app only auto-accepts a transcript sent by that profile, and without `profileId` it never auto-accepts (the student accepts it from notifications). The network rewrites every profile's DID to `did:web:<network>:users:<profileId>`, so the sender is matched by profile ID, never by DID. A `CLASSLINK_TENANTS` district selects one with its own `transcriptIssuer` key; districts that don't set one use the `"default"` key. `transcripts.getStatus` exposes the resolved issuer's `did` as `issuerDid` and its `profileId` as `issuerProfileId`, each omitted when not configured. If a district references a `transcriptIssuer` key that isn't in the registry, `getClassLinkConfig` logs a warning and turns transcripts off for that district (sign-in keeps working). `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE` and `TRANSCRIPT_ISSUER_DID` are deprecated: they register the `"default"` entry and are ignored for any key an explicit `TRANSCRIPT_ISSUERS["default"]` also defines.
+
+lca-api signs transcript requests as `did:web:<DOMAIN_NAME>` (the same identity `/.well-known/did.json` publishes when `DOMAIN_NAME` is set), never as the hostname a request arrived on. `DOMAIN_NAME` is already set in each stage's `config/config.<stage>.json`. Offline runs and tests without it sign as `did:web:localhost%3A<PORT>`; any other deployment without `DOMAIN_NAME` refuses transcript requests (`PRECONDITION_FAILED`, logged as `transcripts.request.requester_did_unconfigured`) rather than sign as localhost.
 
 Brain's bundle holds `SEED`, `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`,
 `POSTMARK_API_KEY`, `MESSAGEBIRD_AUTH_TOKEN`, `SENTRY_DSN`, `POSTHOG_API_KEY`,
@@ -601,8 +603,26 @@ Optional `stateStudentIdPattern` is a compilable regex of at most 200 characters
 fully matched after trimming (`^(?:pattern)$`); `"[0-9]{10}"` is an example only.
 Mismatch means missing, with the existing test-stage-only fallback still available.
 
-`CLASSLINK_PII_KEY` (base64, exactly 32 bytes) is required for sign-in. A separate
-HMAC-derived identity sub-key produces opaque identity keys and new Firebase UIDs;
-roster sourcedId is not stored or sent to transcript issuers. Missing/invalid keys
-fail closed. Rotation changes identity keys. Recreate staging identities; no
-production migration is provided.
+ClassLink uses two keys, each base64 of exactly 32 random bytes (for example
+`openssl rand -base64 32`), both in the runtime secrets bundle:
+
+- `CLASSLINK_IDENTITY_KEY` derives the opaque identity keys
+  (`classlink:<tenant>:v1:<HMAC>`) and new Firebase UIDs. **Never rotate it**: a
+  different key gives every student a new identity key and Firebase UID, so they
+  would land in a new, empty account. If it is unset, lca-api falls back to
+  `CLASSLINK_PII_KEY` and logs `classlink.identity_key.fallback` once per process, so
+  identities created before the split keep resolving. Before you ever rotate
+  `CLASSLINK_PII_KEY`, set `CLASSLINK_IDENTITY_KEY` to the current
+  `CLASSLINK_PII_KEY` value. Without either key, or with an invalid
+  `CLASSLINK_IDENTITY_KEY` (no fallback then), sign-in fails closed with
+  `PRECONDITION_FAILED`.
+- `CLASSLINK_PII_KEY` encrypts stored state student IDs (AES-256-GCM, payload
+  `v2:<key id>:<data>`; older `v1:` payloads are still read). It can be rotated:
+  move the old value to `CLASSLINK_PII_KEY_PREVIOUS`, set a new
+  `CLASSLINK_PII_KEY`, and remove the previous key after
+  `CLASSLINK_MAX_AUTH_AGE_SECONDS` (IDs expire by then anyway). Without
+  `CLASSLINK_PII_KEY`, sign-in still works but state student IDs are not stored, so
+  transcript requests report `no_state_id` and `classlink.pii.key_missing` is
+  logged.
+
+The roster sourcedId is not stored or sent to transcript issuers.

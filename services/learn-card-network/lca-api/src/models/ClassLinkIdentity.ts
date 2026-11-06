@@ -9,7 +9,11 @@ export interface MongoClassLinkIdentityType {
     tenantId: string;
     sub: string;
     role: string;
-    email: string;
+    /**
+     * The real school email from the id_token, when ClassLink sent one. Never a synthetic
+     * `@users.classlink.invalid` address (see syntheticEmail.helpers.ts).
+     */
+    email?: string;
     /** Legacy plaintext field. Never written; removed on every write and by cleanup. */
     stateStudentId?: string | null;
     /** AES-256-GCM payload from sealStateStudentId, kept only until stateStudentIdExpiresAt. */
@@ -18,6 +22,12 @@ export interface MongoClassLinkIdentityType {
     state: string;
     firebaseUid: string;
     subject: string;
+    /**
+     * The wallet DID of the account this identity belongs to, recorded whenever the
+     * identity is resolved for an authenticated DID and on School Connect. Keeps the link
+     * when the account's Firebase provider is replaced (recovery rebind, Keycloak cutover).
+     */
+    primaryDid?: string;
     lastAuthTime: Date;
     isMinorHint?: boolean;
     personalEmail?: string;
@@ -60,6 +70,11 @@ export const ensureClassLinkIdentityIndexes = (): Promise<void> => {
             getClassLinkIdentitiesCollection().createIndex({ identityKey: 1 }, { unique: true }),
             getClassLinkIdentitiesCollection().createIndex({ firebaseUid: 1 }),
             getClassLinkIdentitiesCollection().createIndex({ subject: 1 }),
+            getClassLinkIdentitiesCollection().createIndex({ primaryDid: 1 }, { sparse: true }),
+            getClassLinkIdentitiesCollection().createIndex(
+                { stateStudentIdExpiresAt: 1 },
+                { sparse: true }
+            ),
         ])
             .then(() => undefined)
             .catch(error => {
@@ -75,7 +90,11 @@ export const upsertClassLinkIdentity = async (
 ): Promise<MongoClassLinkIdentityType> => {
     await ensureClassLinkIdentityIndexes();
     const now = new Date();
-    const { identityKey, sealedStateStudentId, ...fields } = input;
+    const { identityKey, sealedStateStudentId, ...rest } = input;
+    // Optional fields that are absent keep their stored value rather than becoming null.
+    const fields = Object.fromEntries(
+        Object.entries(rest).filter(([, value]) => value !== undefined)
+    ) as Partial<typeof rest>;
     const upsert = () =>
         getClassLinkIdentitiesCollection().findOneAndUpdate(
             { identityKey },
@@ -104,6 +123,38 @@ export const findClassLinkIdentityByFirebaseUid = (
     firebaseUid: string
 ): Promise<MongoClassLinkIdentityType | null> =>
     getClassLinkIdentitiesCollection().findOne({ firebaseUid });
+
+/** Identities recorded for any of the given wallet DIDs (see `primaryDid`). */
+export const findClassLinkIdentitiesByPrimaryDids = (
+    dids: string[]
+): Promise<MongoClassLinkIdentityType[]> =>
+    dids.length
+        ? getClassLinkIdentitiesCollection()
+              .find({ primaryDid: { $in: dids } })
+              .toArray()
+        : Promise.resolve([]);
+
+/** Identities whose AuthSubject subject is one of `subjects`. */
+export const findClassLinkIdentitiesBySubjects = (
+    subjects: string[]
+): Promise<MongoClassLinkIdentityType[]> =>
+    subjects.length
+        ? getClassLinkIdentitiesCollection()
+              .find({ subject: { $in: subjects } })
+              .toArray()
+        : Promise.resolve([]);
+
+/** Record the account DID on an identity (no-op when already recorded). */
+export const setClassLinkIdentityPrimaryDid = async (
+    identityKey: string,
+    primaryDid: string
+): Promise<boolean> =>
+    (
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey, primaryDid: { $ne: primaryDid } },
+            { $set: { primaryDid, updatedAt: new Date() } }
+        )
+    ).modifiedCount > 0;
 
 export const findClassLinkIdentityByIdentityKey = (
     identityKey: string
@@ -172,3 +223,15 @@ export const deleteClassLinkIdentitiesByFirebaseUid = async (
     firebaseUid: string
 ): Promise<number> =>
     (await getClassLinkIdentitiesCollection().deleteMany({ firebaseUid })).deletedCount;
+
+/** Delete identities by identity key. Returns the number deleted. */
+export const deleteClassLinkIdentitiesByIdentityKeys = async (
+    identityKeys: string[]
+): Promise<number> =>
+    identityKeys.length
+        ? (
+              await getClassLinkIdentitiesCollection().deleteMany({
+                  identityKey: { $in: identityKeys },
+              })
+          ).deletedCount
+        : 0;

@@ -10,7 +10,7 @@ import {
     useSchoolConnection,
 } from 'learn-card-base';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
-import { startClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
+import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
 
 vi.mock('learn-card-base', () => ({
     useFeatureConfig: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock('../../providers/AuthCoordinatorProvider', () => ({
 }));
 
 vi.mock('../../auth/classlink/startClassLinkLogin', () => ({
-    startClassLinkLogin: vi.fn(),
+    runClassLinkLogin: vi.fn(),
 }));
 
 vi.mock('../../components/classlink/TranscriptOptInCard', () => ({
@@ -101,11 +101,29 @@ describe('SchoolConnectPage', () => {
 
     it('skips warning and connects directly when locked', () => {
         stub(useGetPreferencesForDid, { data: { isMinor: true } });
-        vi.mocked(startClassLinkLogin).mockResolvedValue(true);
+        vi.mocked(runClassLinkLogin).mockResolvedValue('started');
         render(<SchoolConnectPage />);
         fireEvent.click(screen.getAllByText('Connect with ClassLink')[0]);
         expect(screen.queryAllByText('Before you connect').length).toBe(0);
-        expect(startClassLinkLogin).toHaveBeenCalled();
+        expect(runClassLinkLogin).toHaveBeenCalled();
+    });
+
+    it('shows its own error only when the login could not start', async () => {
+        stub(useGetPreferencesForDid, { data: { isMinor: true } });
+        vi.mocked(runClassLinkLogin).mockResolvedValue('failed');
+        render(<SchoolConnectPage />);
+        fireEvent.click(screen.getAllByText('Connect with ClassLink')[0]);
+        expect(await screen.findByText(/couldn.t connect|could not connect/i)).toBeTruthy();
+    });
+
+    it('leaves a closed or timed-out sheet to the callback route message', async () => {
+        stub(useGetPreferencesForDid, { data: { isMinor: true } });
+        vi.mocked(runClassLinkLogin).mockResolvedValue('handled');
+        render(<SchoolConnectPage />);
+        fireEvent.click(screen.getAllByText('Connect with ClassLink')[0]);
+        await vi.waitFor(() => expect(runClassLinkLogin).toHaveBeenCalled());
+        await Promise.resolve();
+        expect(screen.queryByText(/couldn.t connect|could not connect/i)).toBeNull();
     });
 
     it('renders connected state with TranscriptOptInCard', () => {

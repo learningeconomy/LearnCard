@@ -17,6 +17,8 @@ import { cancelHoldInEnclave } from '../services/escrow-enclave/cancellation';
 import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
 import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import { maskEmail } from '@helpers/maskEmail';
+import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
+import { deleteClassLinkDataForAccount } from '@helpers/classlinkDeletion.helpers';
 import cache from '@cache';
 import { setValidChallengeForDid } from '@cache/challenges';
 import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
@@ -292,6 +294,10 @@ const notifyIdentityRebind = async (
     if (userKey.contactMethod.type === 'email') recipients.add(userKey.contactMethod.value);
     if (userKey.recoveryEmail) recipients.add(userKey.recoveryEmail);
     if (newContactMethod.type === 'email') recipients.add(newContactMethod.value);
+    // Synthetic ClassLink account addresses are undeliverable; never mail them.
+    for (const recipient of recipients) {
+        if (isSyntheticEmail(recipient)) recipients.delete(recipient);
+    }
 
     const results = await Promise.allSettled(
         [...recipients].map(to =>
@@ -334,7 +340,8 @@ const getAccountSecuredRecipients = (userKey: MongoUserKeyType): string[] => {
 
     for (const candidate of candidates) {
         const normalized = candidate?.trim().toLowerCase();
-        if (normalized) recipients.add(normalized);
+        // Synthetic ClassLink account addresses are undeliverable; never mail them.
+        if (normalized && !isSyntheticEmail(normalized)) recipients.add(normalized);
     }
 
     return [...recipients];
@@ -1990,6 +1997,12 @@ export const keysRouter = t.router({
 
             assertDidOwner(userKey, ctx.user.did);
             await deleteUserKeyByAuthProvider(authProvider);
+
+            // Cascade the account's ClassLink data. Best effort: the key is already gone, and
+            // classlink.deleteMyData (idempotent, DID-keyed) can finish the job later.
+            await deleteClassLinkDataForAccount(userKey).catch(() =>
+                console.error('classlink.account_deletion.cascade_failed')
+            );
 
             return { success: true };
         }),

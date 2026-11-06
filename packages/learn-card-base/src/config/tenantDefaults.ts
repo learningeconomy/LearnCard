@@ -108,6 +108,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         launchPadQuickActions: true,
         classlinkSso: false,
         classlinkTranscriptOptIn: false,
+        classlinkPersonalEmail: false,
         schoolConnect: false,
         pathways: false,
         dashboardHome: false,

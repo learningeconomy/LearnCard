@@ -31,6 +31,15 @@ const ISSUER_DID = 'did:key:z6MkHarnessIssuer';
 const REQUEST_ID = 'req-harness-1';
 const REQUESTED_AT = '2026-01-01T00:00:00.000Z';
 const STATE_DISPLAY_NAME = 'Example State';
+/**
+ * The network reports `from` as the sender's LCN profileId (never a DID); the app
+ * compares it with the issuer's configured profile ID (`issuerProfileId`).
+ */
+const ISSUER_PROFILE_ID = 'example-state-records';
+const OTHER_PROFILE_ID = 'someone-else';
+/** Like getOtherProfile: every profile DID is rewritten to the network's did:web. */
+const networkDidFor = (profileId: string): string =>
+    `did:web:network.learncard.com:users:${profileId}`;
 
 /**
  * Real production code reads `useAppAuth()` via a `React.Context` cached on
@@ -87,6 +96,7 @@ const transcriptsGetStatus = async () => ({
     eligible: true,
     stateDisplayName: STATE_DISPLAY_NAME,
     issuerDid: ISSUER_DID,
+    issuerProfileId: ISSUER_PROFILE_ID,
     latest: {
         status: 'requested' as const,
         requestedAt: REQUESTED_AT,
@@ -97,11 +107,11 @@ const transcriptsGetStatus = async () => ({
 
 const getIncomingCredentials = async () => {
     if (scenario === 'non-matching-sender') {
-        return [{ uri: 'lc:credential:wrong-sender', from: 'did:key:z6MkSomeoneElse' }];
+        return [{ uri: 'lc:credential:wrong-sender', from: OTHER_PROFILE_ID }];
     }
     if (scenario === 'requesting-arrived') {
         credentialsByUri.set('lc:credential:transcript', CLR_VC);
-        return [{ uri: 'lc:credential:transcript', from: ISSUER_DID }];
+        return [{ uri: 'lc:credential:transcript', from: ISSUER_PROFILE_ID }];
     }
     return [];
 };
@@ -135,6 +145,7 @@ const fakeWallet = {
             receivedAt = new Date().toISOString();
         },
         getIncomingCredentials,
+        getProfile: async (profileId: string) => ({ profileId, did: networkDidFor(profileId) }),
         verifyCredential: async () => ({ warnings: [], errors: [] }),
         acceptCredential: async () => true,
         queryNotifications: async () => ({ notifications: [] }),

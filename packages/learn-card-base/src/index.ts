@@ -239,6 +239,7 @@ export * from './helpers/statusBarHelpers';
 export * from './helpers/platformHelpers';
 export * from './helpers/navBarHelpers';
 export * from './helpers/loginHelpers';
+export * from './helpers/syntheticEmail';
 export * from './helpers/colorHelpers';
 export * from './helpers/authHelpers';
 export * from './helpers/fetchHelpers';

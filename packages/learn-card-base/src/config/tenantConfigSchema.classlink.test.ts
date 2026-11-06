@@ -4,17 +4,22 @@ import { tenantFeatureConfigSchema, tenantLinksConfigSchema } from './tenantConf
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from './tenantDefaults';
 
 describe('ClassLink tenant feature flags', () => {
-    it('defaults both flags to false', () => {
+    it('defaults every ClassLink flag to false', () => {
         const features = tenantFeatureConfigSchema.parse({});
 
         expect(features.classlinkSso).toBe(false);
         expect(features.classlinkTranscriptOptIn).toBe(false);
+        expect(features.classlinkPersonalEmail).toBe(false);
         expect(features.schoolConnect).toBe(false);
+        expect(DEFAULT_LEARNCARD_TENANT_CONFIG.features.classlinkPersonalEmail).toBe(false);
     });
 
     it('rejects non-boolean values', () => {
         expect(() => tenantFeatureConfigSchema.parse({ classlinkSso: 'yes' })).toThrow(ZodError);
         expect(() => tenantFeatureConfigSchema.parse({ classlinkTranscriptOptIn: 'yes' })).toThrow(
+            ZodError
+        );
+        expect(() => tenantFeatureConfigSchema.parse({ classlinkPersonalEmail: 'yes' })).toThrow(
             ZodError
         );
     });
@@ -23,10 +28,12 @@ describe('ClassLink tenant feature flags', () => {
         const features = tenantFeatureConfigSchema.parse({
             classlinkSso: true,
             classlinkTranscriptOptIn: true,
+            classlinkPersonalEmail: true,
         });
 
         expect(features.classlinkSso).toBe(true);
         expect(features.classlinkTranscriptOptIn).toBe(true);
+        expect(features.classlinkPersonalEmail).toBe(true);
     });
 });
 

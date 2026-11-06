@@ -38,7 +38,12 @@
         "arrivedTitle": "Tu expediente académico llegó",
         "transcript": "Expediente Académico",
         "gradYear": "Generación {{year}}",
-        "gpa": "Promedio: {{gpa}}"
+        "gpa": "Promedio: {{gpa}}",
+        "receivedLoading": "Recibimos tu expediente académico. Aparecerá aquí en un momento.",
+        "checkManually": "Es posible que ya esté esperando en tus notificaciones. Ábrelo allí para agregarlo a tu cuenta, o vuelve a comprobar.",
+        "checkAgain": "Comprobar de Nuevo",
+        "openNotifications": "Abrir Notificaciones",
+        "autoAcceptFailed": "No pudimos agregar tu expediente académico automáticamente. Puedes aceptarlo aquí."
     },
     "consentUpdate": {
         "summary": {
@@ -1461,7 +1466,9 @@
         "classlink": {
             "cancelled": "El inicio de sesión con ClassLink fue cancelado.",
             "expired": "Ese enlace de inicio de sesión expiró. Por favor, inténtalo de nuevo.",
-            "failed": "No pudimos iniciar sesión con ClassLink. Por favor, inténtalo de nuevo."
+            "failed": "No pudimos iniciar sesión con ClassLink. Por favor, inténtalo de nuevo.",
+            "timedOut": "El inicio de sesión con ClassLink tardó demasiado. Por favor, inténtalo de nuevo.",
+            "unavailable": "El inicio de sesión escolar no está disponible temporalmente. Por favor, inténtalo de nuevo en unos minutos."
         },
         "welcome": {
             "heading": "Bienvenido a {{brand}}",
@@ -1924,7 +1931,8 @@
             "loading": "Cargando...",
             "deleting": "Eliminando cuenta...",
             "recentLoginRequired": "¡Se requiere un inicio de sesión reciente!",
-            "reauthenticateHere": "Volver a autenticarse aquí"
+            "reauthenticateHere": "Volver a autenticarse aquí",
+            "fallbackPhrase": "ELIMINAR"
         },
         "export": {
             "title": "Exportar frase inicial",
@@ -1937,7 +1945,8 @@
             "button": "Exportar frase inicial",
             "revealPrompt": "Entiendo - Revela Mi Semilla",
             "confirm": "Confirmar",
-            "cancel": "Cancelar"
+            "cancel": "Cancelar",
+            "fallbackPhrase": "EXPORTAR"
         },
         "email": {
             "header": "Direcciones de correo electrónico",

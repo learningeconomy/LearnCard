@@ -36,6 +36,16 @@ test.describe('ClassLink callback handling @mocked', () => {
         await page.waitForURL(/\/login/);
         await expect(page.getByText(/cancel/i)).toBeVisible();
     });
+
+    test('error=login_timeout (native sheet timed out) says it took too long, not cancelled', async ({
+        page,
+    }) => {
+        await page.goto('/auth/classlink/callback?error=login_timeout&state=unknown-state');
+
+        await page.waitForURL(/\/login/);
+        await expect(page.getByText(/took too long/i)).toBeVisible();
+        await expect(page.getByText(/cancel/i)).toHaveCount(0);
+    });
 });
 
 test.describe('ClassLink sign-in hand-off @mocked', () => {

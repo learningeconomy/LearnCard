@@ -12,6 +12,13 @@ export const TranscriptIssuerValidator = z
             .string()
             .trim()
             .regex(/^did:[a-z0-9]+:.+/),
+        /**
+         * The issuer's LearnCard Network profile ID, the one that sends transcripts to students.
+         * The app only auto-accepts a transcript sent by this profile. The network rewrites every
+         * profile's DID to its own `did:web:<network>:users:<profileId>`, so the sender can only be
+         * authenticated by profile ID, never by comparing a profile DID to `did`.
+         */
+        profileId: z.string().trim().min(1).max(256).optional(),
     })
     .strict();
 
@@ -33,6 +40,7 @@ export type ResolvedTranscriptIssuer = {
     endpoint: string;
     audience: string;
     did?: string;
+    profileId?: string;
 };
 
 export const ClassLinkTenantConfigValidator = z.object({

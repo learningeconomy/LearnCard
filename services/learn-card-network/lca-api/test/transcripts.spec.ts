@@ -3,6 +3,7 @@ import { exportJWK, generateKeyPair, jwtVerify } from 'jose';
 import axios from 'axios';
 import mongodb from '@mongo';
 import cache from '@cache';
+import { environment } from '@environment';
 import { transcriptsRouter } from '../src/routes/transcripts';
 import { getClassLinkConfig, getTranscriptIssuerConfig } from '../src/helpers/classlink.config';
 import {
@@ -10,7 +11,13 @@ import {
     upsertClassLinkIdentity,
     updateClassLinkIdentity,
 } from '../src/models/ClassLinkIdentity';
-import { getTranscriptRequestsCollection } from '../src/models/TranscriptRequest';
+import {
+    createTranscriptRequest,
+    deleteTranscriptRequestsForAccount,
+    findLatestTranscriptRequest,
+    getTranscriptRequestsCollection,
+} from '../src/models/TranscriptRequest';
+import { PREFERENCES_COLLECTION } from '../src/models/Preferences';
 import { getStateStudentId, sealStateStudentId } from '../src/helpers/classlinkPii.helpers';
 import type { ClassLinkConfig, ResolvedTranscriptIssuer } from '../src/types/classlink';
 
@@ -30,13 +37,22 @@ vi.mock('@cache', async () => {
 });
 
 const did = 'did:key:caller';
+const linkedDid = 'did:key:caller-linked';
 const identityKey = 'classlink:tenant-test:source-1';
+/** The pinned service domain (DOMAIN_NAME); requests arrive on a different hostname. */
+const serviceDomain = 'api.example';
+const requesterDid = `did:web:${serviceDomain}`;
+const originalEnvironment = {
+    DOMAIN_NAME: environment.DOMAIN_NAME,
+    NODE_ENV: environment.NODE_ENV,
+    IS_OFFLINE: environment.IS_OFFLINE,
+};
 const caller = (
     user: { did: string; isChallengeValid: boolean } | undefined = { did, isChallengeValid: true }
 ) =>
     transcriptsRouter.createCaller({
         user,
-        domain: 'api.example',
+        domain: 'alias-host.example',
         tenant: { id: 'learncard', emailBranding: {}, resolvedVia: 'default' },
     });
 let publicKey: Awaited<ReturnType<typeof generateKeyPair>>['publicKey'];
@@ -51,14 +67,18 @@ beforeAll(async () => {
     mocks.keypair.mockReturnValue(await exportJWK(pair.privateKey));
 });
 beforeEach(async () => {
+    Object.assign(environment, { DOMAIN_NAME: serviceDomain, IS_OFFLINE: false });
     vi.mocked(axios.post).mockReset();
     await cache.node.flushall();
     await mongodb.collection('userkeys').deleteMany({});
     await getClassLinkIdentitiesCollection().deleteMany({});
     await getTranscriptRequestsCollection().deleteMany({});
-    await mongodb
-        .collection('userkeys')
-        .insertOne({ primaryDid: did, authProviders: [{ type: 'firebase', id: 'uid-test' }] });
+    await mongodb.collection(PREFERENCES_COLLECTION).deleteMany({});
+    await mongodb.collection('userkeys').insertOne({
+        primaryDid: did,
+        linkedDids: [linkedDid],
+        authProviders: [{ type: 'firebase', id: 'uid-test' }],
+    });
     await upsertClassLinkIdentity({
         identityKey,
         firebaseUid: 'uid-test',
@@ -98,13 +118,17 @@ beforeEach(async () => {
             endpoint: 'https://issuer.example/transcripts',
             audience: 'issuer-test',
             did: 'did:web:issuer.example',
+            profileId: 'issuer-records',
         },
     };
     vi.mocked(getClassLinkConfig).mockImplementation(() => config);
     vi.mocked(getTranscriptIssuerConfig).mockImplementation(resolveIssuer);
     vi.mocked(axios.post).mockResolvedValue({ status: 202, data: { status: 'accepted' } });
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+    Object.assign(environment, originalEnvironment);
+    vi.restoreAllMocks();
+});
 
 describe('transcript requests', () => {
     it('exposes issuer identity and the stored request jti without a received marker', async () => {
@@ -112,6 +136,8 @@ describe('transcript requests', () => {
         const stored = await getTranscriptRequestsCollection().findOne({});
         const status = await caller().getStatus();
         expect(status.issuerDid).toBe('did:web:issuer.example');
+        // The app authenticates the sender by this network profile ID, not by a profile DID.
+        expect(status.issuerProfileId).toBe('issuer-records');
         expect(status.latest?.requestId).toBe(stored?.jti);
         expect(result.requestId).toBe(stored?.jti);
         expect(status.latest?.receivedAt).toBeUndefined();
@@ -187,13 +213,13 @@ describe('transcript requests', () => {
         await expect(
             jwtVerify((bodyA as { assertion: string }).assertion, publicKey, {
                 audience: 'audience-a',
-                issuer: 'did:web:api.example',
+                issuer: requesterDid,
             })
         ).resolves.toBeDefined();
         await expect(
             jwtVerify((bodyB as { assertion: string }).assertion, publicKey, {
                 audience: 'audience-b',
-                issuer: 'did:web:api.example',
+                issuer: requesterDid,
             })
         ).resolves.toBeDefined();
         expect((await caller().getStatus()).issuerDid).toBe('did:web:issuer-a.example');
@@ -254,20 +280,34 @@ describe('transcript requests', () => {
                 const { assertion } = body as { assertion: string };
                 const { payload } = await jwtVerify(assertion, publicKey, {
                     audience: 'issuer-test',
-                    issuer: 'did:web:api.example',
+                    issuer: requesterDid,
                 });
+                const { protectedHeader } = await jwtVerify(assertion, publicKey);
+                expect(protectedHeader.kid).toBe(`${requesterDid}#owner`);
                 expect(payload).toMatchObject({
                     sub: did,
                     state_student_id: 'private-student-id',
-                    classlink_tenant_id: 'tenant-test',
+                    idp: 'classlink',
+                    idp_tenant: 'tenant-test',
+                    auth_time: expect.any(Number),
+                    consent_at: expect.any(Number),
+                    request_id: payload.jti,
                 });
-                expect(payload).not.toHaveProperty('classlink_sourced_id');
-                expect(body).not.toHaveProperty('classlink_sourced_id');
+                for (const legacy of [
+                    'classlink_sourced_id',
+                    'classlink_tenant_id',
+                    'classlink_auth_time',
+                ]) {
+                    expect(payload).not.toHaveProperty(legacy);
+                    expect(body).not.toHaveProperty(legacy);
+                }
+                expect(body).toEqual({ assertion, request_id: payload.jti });
                 const record = await getTranscriptRequestsCollection().findOne({
                     jti: payload.jti,
                 });
                 expect(record?.consentAt).toBeInstanceOf(Date);
                 expect(record?.status).toBe('requested');
+                expect(record?.primaryDid).toBe(did);
                 expect(options).toMatchObject({
                     headers: { Authorization: `Bearer ${assertion}` },
                     timeout: 15000,
@@ -355,6 +395,64 @@ describe('transcript requests', () => {
             cause: undefined,
         });
         expect(axios.post).not.toHaveBeenCalled();
+    });
+    it('fails closed when Redis cannot count the issuer budget', async () => {
+        const realEval = cache.node.eval.bind(cache.node);
+        let budgetResult: () => Promise<unknown> = async () => {
+            throw new Error('private-cache-details');
+        };
+        // The lock is taken, then the budget count fails (e.g. a failover mid-request).
+        vi.spyOn(cache.node, 'eval').mockImplementation((async (...args: unknown[]) =>
+            String(args[2]).startsWith('transcripts:budget:')
+                ? budgetResult()
+                : (realEval as (...a: unknown[]) => Promise<unknown>)(...args)) as never);
+        await expect(caller().request({ consent: true })).rejects.toMatchObject({
+            code: 'INTERNAL_SERVER_ERROR',
+            cause: undefined,
+        });
+        budgetResult = async () => null;
+        await expect(caller().request({ consent: true })).rejects.toMatchObject({
+            code: 'INTERNAL_SERVER_ERROR',
+        });
+        expect(axios.post).not.toHaveBeenCalled();
+    });
+    it('gives accounts with an empty primaryDid their own lock and budget', async () => {
+        const otherIdentityKey = 'classlink:tenant-test:source-2';
+        await mongodb
+            .collection('userkeys')
+            .updateOne({ primaryDid: did }, { $set: { primaryDid: '', linkedDids: [did] } });
+        await mongodb.collection('userkeys').insertOne({
+            primaryDid: '',
+            linkedDids: ['did:key:other-legacy'],
+            authProviders: [{ type: 'firebase', id: 'uid-other' }],
+        });
+        await upsertClassLinkIdentity({
+            identityKey: otherIdentityKey,
+            firebaseUid: 'uid-other',
+            subject: 'subject-other',
+            tenantId: 'tenant-test',
+            sub: 'other-sub',
+            role: 'student',
+            state: 'XX',
+            sealedStateStudentId: sealStateStudentId(
+                'other-student-id',
+                otherIdentityKey,
+                new Date(),
+                86400
+            ),
+            lastAuthTime: new Date(),
+        });
+        vi.mocked(axios.post).mockResolvedValue({ status: 200, data: { status: 'none_yet' } });
+        for (let i = 0; i < 5; i++) await caller().request({ consent: true });
+        // Another legacy account is not blocked by the first one's budget.
+        await expect(
+            caller({ did: 'did:key:other-legacy', isChallengeValid: true }).request({
+                consent: true,
+            })
+        ).resolves.toMatchObject({ status: 'none_yet' });
+        expect(await cache.node.keys('transcripts:budget:*')).toHaveLength(2);
+        const stored = await getTranscriptRequestsCollection().find({}).toArray();
+        expect(stored.every(record => !('primaryDid' in record))).toBe(true);
     });
     it('requires a bound account and ClassLink identity', async () => {
         await expect(
@@ -456,5 +554,146 @@ describe('transcript requests', () => {
                 code: 'UNAUTHORIZED',
             });
         }
+    });
+    describe('pinned requester DID', () => {
+        it('refuses to sign without DOMAIN_NAME outside local runs and logs why', async () => {
+            Object.assign(environment, { DOMAIN_NAME: undefined, NODE_ENV: 'production' });
+            const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+            expect(await caller().getStatus()).toMatchObject({
+                eligible: false,
+                reason: 'not_enabled',
+            });
+            await expect(caller().request({ consent: true })).rejects.toMatchObject({
+                code: 'PRECONDITION_FAILED',
+            });
+            expect(log).toHaveBeenCalledWith(
+                expect.stringContaining('transcripts.request.requester_did_unconfigured')
+            );
+            expect(axios.post).not.toHaveBeenCalled();
+            expect(await getTranscriptRequestsCollection().countDocuments()).toBe(0);
+        });
+    });
+
+    describe('account ownership', () => {
+        it('lets another DID of the same account mark the request received', async () => {
+            const { requestId } = await caller().request({ consent: true });
+            await expect(
+                caller({ did: linkedDid, isChallengeValid: true }).markReceived({ requestId })
+            ).resolves.toEqual({ success: true });
+            expect(
+                (await getTranscriptRequestsCollection().findOne({ jti: requestId }))?.receivedAt
+            ).toBeInstanceOf(Date);
+        });
+
+        it('returns NOT_FOUND to another account and a DID with no account', async () => {
+            const { requestId } = await caller().request({ consent: true });
+            await mongodb.collection('userkeys').insertOne({
+                primaryDid: 'did:key:other-account',
+                authProviders: [{ type: 'firebase', id: 'uid-other' }],
+            });
+            for (const otherDid of ['did:key:other-account', 'did:key:no-account'])
+                await expect(
+                    caller({ did: otherDid, isChallengeValid: true }).markReceived({ requestId })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            expect(
+                (await getTranscriptRequestsCollection().findOne({ jti: requestId }))?.receivedAt
+            ).toBeUndefined();
+        });
+
+        it('keeps transcript history after the ClassLink identity is rebound to a new uid', async () => {
+            const { requestId } = await caller().request({ consent: true });
+            await mongodb
+                .collection('userkeys')
+                .updateOne(
+                    { primaryDid: did },
+                    { $set: { authProviders: [{ type: 'firebase', id: 'uid-rebound' }] } }
+                );
+            await getClassLinkIdentitiesCollection().updateOne(
+                { identityKey },
+                { $set: { firebaseUid: 'uid-rebound' } }
+            );
+            expect((await caller().getStatus()).latest?.requestId).toBe(requestId);
+            expect(await caller().request({ consent: true })).toMatchObject({ requestId });
+            expect(axios.post).toHaveBeenCalledTimes(1);
+            await expect(caller().markReceived({ requestId })).resolves.toEqual({
+                success: true,
+            });
+        });
+
+        it('still finds legacy requests stored without primaryDid by Firebase uid', async () => {
+            await createTranscriptRequest({
+                jti: 'legacy-jti',
+                firebaseUid: 'uid-test',
+                did: 'did:key:old-session',
+                identityKey,
+                state: 'XX',
+                consentAt: new Date(),
+                status: 'requested',
+            });
+            expect((await caller().getStatus()).latest?.requestId).toBe('legacy-jti');
+        });
+
+        it('shares one issuer budget across every DID of the account', async () => {
+            vi.mocked(axios.post).mockResolvedValue({ status: 200, data: { status: 'none_yet' } });
+            for (let i = 0; i < 5; i++) {
+                const user = { did: i % 2 ? linkedDid : did, isChallengeValid: true };
+                expect((await caller(user).request({ consent: true })).status).toBe('none_yet');
+            }
+            await expect(
+                caller({ did: linkedDid, isChallengeValid: true }).request({ consent: true })
+            ).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+            expect(axios.post).toHaveBeenCalledTimes(5);
+        });
+
+        it("deletes an account's requests by Firebase uid, primaryDid or DID only", async () => {
+            const base = {
+                identityKey,
+                state: 'XX',
+                consentAt: new Date(),
+                status: 'failed' as const,
+            };
+            await createTranscriptRequest({ ...base, jti: 'a', firebaseUid: 'uid-old', did });
+            await createTranscriptRequest({
+                ...base,
+                jti: 'b',
+                firebaseUid: 'uid-new',
+                did: linkedDid,
+                primaryDid: did,
+            });
+            await createTranscriptRequest({
+                ...base,
+                jti: 'c',
+                firebaseUid: 'uid-z',
+                did: 'did:key:z',
+            });
+            expect(await deleteTranscriptRequestsForAccount({ firebaseUids: [], dids: [] })).toBe(
+                0
+            );
+            expect(
+                await deleteTranscriptRequestsForAccount({ firebaseUids: ['uid-new'], dids: [did] })
+            ).toBe(2);
+            expect(await findLatestTranscriptRequest('uid-z', 'XX')).toMatchObject({ jti: 'c' });
+        });
+    });
+
+    it('enforces minor preferences for a student even when preferences already exist', async () => {
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey },
+            { $set: { isMinorHint: true } }
+        );
+        await mongodb.collection(PREFERENCES_COLLECTION).insertOne({
+            _id: 'prefs-1' as never,
+            did,
+            theme: 'colorful',
+            aiEnabled: true,
+            analyticsEnabled: true,
+        });
+        await caller().getStatus();
+        expect(await mongodb.collection(PREFERENCES_COLLECTION).findOne({ did })).toMatchObject({
+            aiEnabled: false,
+            analyticsEnabled: false,
+            bugReportsEnabled: false,
+            isMinor: true,
+        });
     });
 });

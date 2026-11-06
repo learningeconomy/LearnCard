@@ -9,6 +9,8 @@ const { env, cacheStore, randomUUIDMock } = vi.hoisted(() => ({
         SEED: 'b'.repeat(64),
         IS_OFFLINE: false,
         PORT: 3000,
+        NODE_ENV: 'test' as 'development' | 'test' | 'production',
+        DOMAIN_NAME: undefined as string | undefined,
         LEARN_CLOUD_URL: undefined as string | undefined,
         SKIP_DIDKIT_NAPI: undefined as boolean | undefined,
     },
@@ -44,11 +46,13 @@ import { didFastifyPlugin } from '../src/dids';
 import {
     ISSUER_ASSERTION_TTL_SECONDS,
     getServiceDidWeb,
+    getTranscriptRequesterDid,
     signIssuerAssertion,
     type IssuerAssertionClaims,
 } from '../src/helpers/issuerAssertion.helpers';
 
 const domain = 'api.test';
+const issuerDid = `did:web:${domain}`;
 const audience = 'https://issuer.example/assertions';
 const fixedNow = new Date('2026-01-01T00:00:00.000Z');
 const fixedIat = Math.floor(fixedNow.getTime() / 1000);
@@ -58,8 +62,9 @@ const baseClaims: IssuerAssertionClaims = {
     learncard_profile_id: 'profile-123',
     state: 'XX',
     state_student_id: 'state-student-456',
-    classlink_tenant_id: 'tenant-test',
-    classlink_auth_time: 1_770_000_000,
+    idp: 'classlink',
+    idp_tenant: 'tenant-test',
+    auth_time: 1_770_000_000,
     consent_at: 1_770_000_100,
 };
 
@@ -89,7 +94,7 @@ const extractEd25519PublicJwk = (vm: VerificationMethod | undefined): JWK => {
     throw new Error('Unsupported verification method format');
 };
 
-const fetchOwnerPublicJwk = async (): Promise<JWK> => {
+const fetchOwnerPublicJwk = async (host = domain): Promise<JWK> => {
     const app = Fastify();
     await app.register(didFastifyPlugin);
     await app.ready();
@@ -97,7 +102,7 @@ const fetchOwnerPublicJwk = async (): Promise<JWK> => {
         const response = await app.inject({
             method: 'GET',
             url: '/.well-known/did.json',
-            headers: { host: domain },
+            headers: { host },
         });
         expect(response.statusCode).toBe(200);
         const didDoc = response.json();
@@ -120,6 +125,8 @@ describe('issuer assertion signer', () => {
             SEED: 'b'.repeat(64),
             IS_OFFLINE: false,
             PORT: 3000,
+            NODE_ENV: 'test',
+            DOMAIN_NAME: undefined,
             LEARN_CLOUD_URL: undefined,
             SKIP_DIDKIT_NAPI: undefined,
         });
@@ -136,10 +143,34 @@ describe('issuer assertion signer', () => {
         });
     });
 
+    describe('getTranscriptRequesterDid', () => {
+        it('pins the requester DID to DOMAIN_NAME', () => {
+            Object.assign(env, { NODE_ENV: 'production', DOMAIN_NAME: 'api.learncard.app' });
+            expect(getTranscriptRequesterDid()).toBe('did:web:api.learncard.app');
+            env.DOMAIN_NAME = 'api.example:8443';
+            expect(getTranscriptRequesterDid()).toBe('did:web:api.example%3A8443');
+        });
+
+        it('uses localhost only offline or in tests without DOMAIN_NAME', () => {
+            Object.assign(env, { IS_OFFLINE: true, DOMAIN_NAME: 'api.learncard.app' });
+            expect(getTranscriptRequesterDid()).toBe('did:web:localhost%3A3000');
+            Object.assign(env, { IS_OFFLINE: false, DOMAIN_NAME: undefined, NODE_ENV: 'test' });
+            expect(getTranscriptRequesterDid()).toBe('did:web:localhost%3A3000');
+        });
+
+        it.each(['production', 'development'] as const)(
+            'returns null in a deployed %s environment without DOMAIN_NAME',
+            nodeEnv => {
+                Object.assign(env, { NODE_ENV: nodeEnv, DOMAIN_NAME: undefined });
+                expect(getTranscriptRequesterDid()).toBeNull();
+            }
+        );
+    });
+
     describe('signIssuerAssertion', () => {
         it('produces a claim snapshot with every Must-Have claim and exp - iat === 300', async () => {
             const { jwt, jti, exp } = await signIssuerAssertion(baseClaims, {
-                domain,
+                issuerDid,
                 audience,
                 now: fixedNow,
             });
@@ -166,16 +197,20 @@ describe('issuer assertion signer', () => {
                 learncard_profile_id: baseClaims.learncard_profile_id,
                 state: baseClaims.state,
                 state_student_id: baseClaims.state_student_id,
-                classlink_tenant_id: baseClaims.classlink_tenant_id,
-                classlink_auth_time: baseClaims.classlink_auth_time,
+                idp: 'classlink',
+                idp_tenant: baseClaims.idp_tenant,
+                auth_time: baseClaims.auth_time,
                 consent_at: baseClaims.consent_at,
+                request_id: jti,
             });
+            for (const legacy of ['classlink_tenant_id', 'classlink_auth_time'])
+                expect(payload).not.toHaveProperty(legacy);
         });
 
         it('omits the optional learncard_profile_id claim when the caller does not supply one', async () => {
             const { learncard_profile_id: _drop, ...withoutProfile } = baseClaims;
             const { jwt } = await signIssuerAssertion(withoutProfile, {
-                domain,
+                issuerDid,
                 audience,
                 now: fixedNow,
             });
@@ -186,7 +221,7 @@ describe('issuer assertion signer', () => {
 
         it('verifies against the did:web document served by didFastifyPlugin, with a matching kid', async () => {
             const { jwt } = await signIssuerAssertion(baseClaims, {
-                domain,
+                issuerDid,
                 audience,
                 now: fixedNow,
             });
@@ -205,9 +240,26 @@ describe('issuer assertion signer', () => {
             expect(payload.state_student_id).toBe(baseClaims.state_student_id);
         });
 
+        it('publishes the pinned DOMAIN_NAME did:web whatever hostname serves did.json', async () => {
+            env.DOMAIN_NAME = domain;
+            const { jwt } = await signIssuerAssertion(baseClaims, {
+                issuerDid: getTranscriptRequesterDid()!,
+                audience,
+                now: fixedNow,
+            });
+            const publicJwk = await fetchOwnerPublicJwk('alias.execute-api.example');
+            const publicKey = await importJWK({ ...publicJwk, alg: 'EdDSA' }, 'EdDSA');
+            const { protectedHeader } = await jwtVerify(jwt, publicKey, {
+                issuer: issuerDid,
+                audience,
+                currentDate: fixedNow,
+            });
+            expect(protectedHeader.kid).toBe(`${issuerDid}#owner`);
+        });
+
         it('rejects a tampered payload', async () => {
             const { jwt } = await signIssuerAssertion(baseClaims, {
-                domain,
+                issuerDid,
                 audience,
                 now: fixedNow,
             });

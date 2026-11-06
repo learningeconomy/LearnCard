@@ -42,6 +42,7 @@ const isAllowedTranscriptIssuerEndpoint = (url: string): boolean => {
 // Once per container, like services/escrow-enclave/index.ts's remoteConfigMissingReported.
 let explicitDefaultOverridesLegacyWarned = false;
 let invalidRegistryWarned = false;
+let invalidTenantsWarned = false;
 const unknownIssuerWarnings = new Set<string>();
 
 /**
@@ -110,7 +111,10 @@ export const getClassLinkConfig = (): ClassLinkConfig | null => {
     try {
         if (tenantsJson) tenants = ClassLinkTenantsValidator.parse(JSON.parse(tenantsJson));
     } catch {
-        console.warn('ClassLink configuration disabled: CLASSLINK_TENANTS is invalid');
+        if (!invalidTenantsWarned) {
+            invalidTenantsWarned = true;
+            console.warn('ClassLink configuration disabled: CLASSLINK_TENANTS is invalid');
+        }
         return null;
     }
 
