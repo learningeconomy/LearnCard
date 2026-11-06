@@ -120,6 +120,60 @@ const allocateAndSign = async (): Promise<{ allocation: AllocationResult; creden
 };
 
 describe('Credential Refresh Allocation', () => {
+    it('returns a content-free receipt to the pending holder, never issuer or outsider', async () => {
+        const { allocation, credential } = await allocateAndSign();
+        const uri = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+            refreshId: allocation.refreshId,
+            credential,
+        });
+        expect((await getCredentialRefresh(allocation.refreshId))?.state).toBe('awaiting_claim');
+        const receipt = await holder.clients.fullAuth.credentialRefresh.getReceipt({ uri });
+        expect(receipt).toEqual({
+            refreshId: allocation.refreshId,
+            credentialId: credential.id,
+            issuerDid: issuer.learnCard.id.did(),
+            holderDid: holder.learnCard.id.did(),
+            refreshService: allocation.refreshService,
+            encryptionMode: 'network',
+        });
+        await expect(
+            issuer.clients.fullAuth.credentialRefresh.getReceipt({ uri })
+        ).rejects.toThrow();
+        await expect(
+            outsider.clients.fullAuth.credentialRefresh.getReceipt({ uri })
+        ).rejects.toThrow();
+        await expect(noAuthClient.credentialRefresh.getReceipt({ uri })).rejects.toThrow();
+        await expect(
+            holder.clients.fullAuth.credentialRefresh.getReceipt({
+                uri: uri.replace('localhost%3A3000', 'foreign.example'),
+            })
+        ).rejects.toThrow();
+    });
+
+    it('does not authorize a receipt after the pending delivery edge is removed', async () => {
+        const { allocation, credential } = await allocateAndSign();
+        const uri = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+            refreshId: allocation.refreshId,
+            credential,
+        });
+        await runQuery('MATCH ()-[sent:CREDENTIAL_SENT]->() DELETE sent');
+        await expect(
+            holder.clients.fullAuth.credentialRefresh.getReceipt({ uri })
+        ).rejects.toThrow();
+    });
+
+    it('fails closed when a legacy delivery lacks its exact public status binding', async () => {
+        const { allocation, credential } = await allocateAndSign();
+        const uri = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+            refreshId: allocation.refreshId,
+            credential,
+        });
+        await runQuery('MATCH (r:CredentialRefresh) REMOVE r.credentialStatusBinding');
+        await expect(holder.clients.fullAuth.credentialRefresh.getReceipt({ uri })).rejects.toThrow(
+            'Delivery binding unavailable'
+        );
+    });
+
     beforeAll(async () => {
         process.env.CREDENTIAL_REFRESH_ENABLED = 'true';
 

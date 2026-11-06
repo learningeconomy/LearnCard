@@ -138,13 +138,15 @@ export const useCredentialCollection = (
         }
         return load();
     }, [mode, reader, isError, browseLimit, records.length, hasNextPage, scope, load]);
+    // Filtered pages still advance the index even when the visible record count stays unchanged.
     useEffect(() => {
         const shouldContinue =
             mode === 'complete' ||
             mode === 'search' ||
-            (mode === 'recent' && records.length < (options.limit ?? 5));
+            (mode === 'recent' && records.length < (options.limit ?? 5)) ||
+            (mode === 'browse' && records.length === 0);
         if (shouldContinue) void load();
-    }, [mode, records.length, options.limit, load]);
+    }, [mode, records.length, data?.pages.length, options.limit, load]);
     const retry = useCallback(async () => {
         if (isError) {
             if (data?.pages.length && query.isFetchNextPageError)

@@ -17,6 +17,7 @@ import { resumeBuilderStore } from '../stores/resumeBuilderStore';
 
 import { useAuthCoordinator } from '../providers/AuthCoordinatorProvider';
 import { getLoginRedirectUrl } from '../config/bootstrapTenantConfig';
+import { persister } from '../helpers/queryPersistence';
 
 const useLogout = () => {
     const adapter = useSignInAdapter();
@@ -84,6 +85,15 @@ const useLogout = () => {
                 resumeBuilderStore.set.resetStore();
                 // (onLogout clears stores, queryClient, SQLite, localStorage, IndexedDB, etc.)
                 await coordinatorLogout();
+
+                // localStorage.clear() does not touch localforage (IndexedDB), and the persister
+                // throttles writes by 1s. Drop any pending snapshot and delete the saved cache
+                // before the hard redirect so the next user never restores it (LC-2353).
+                try {
+                    await persister.removeClient();
+                } catch (e) {
+                    log.error('Error clearing persisted query cache on logout', e);
+                }
 
                 // Hard redirect — localStorage.clear() in the logout callback wipes
                 // Ionic's internal router state, so client-side history.push would

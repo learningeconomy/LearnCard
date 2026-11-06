@@ -271,7 +271,6 @@ export const getOpenID4VCPlugin = (
                     selection: {
                         descriptors: [],
                         canSatisfy: true,
-                        reason: undefined,
                     },
                 };
             },
@@ -472,7 +471,7 @@ export const getOpenID4VCPlugin = (
                         dcqlBuilt,
                         dcqlSigned: dcqlResponse.presentations,
                         dcqlVpToken: dcqlResponse.vpToken,
-                        signedIdToken,
+                        ...(signedIdToken === undefined ? {} : { signedIdToken }),
                         submitted,
                     };
                 }
@@ -519,7 +518,13 @@ export const getOpenID4VCPlugin = (
                     ...buildJarmOptions(request, await maybeJarmSigner(learnCard, request)),
                 });
 
-                return { request, prepared, signed, signedIdToken, submitted };
+                return {
+                    request,
+                    prepared,
+                    signed,
+                    ...(signedIdToken === undefined ? {} : { signedIdToken }),
+                    submitted,
+                };
             },
         },
     };

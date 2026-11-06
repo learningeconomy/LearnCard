@@ -4,6 +4,7 @@ import { checkmarkCircleOutline } from 'ionicons/icons';
 import { Overlay, isSameEscrowPinError } from 'learn-card-base';
 import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
+import { EscrowPinNotice } from './EscrowPinNotice';
 import { m } from '../../paraglide/messages.js';
 
 export type RecoveryPinSetupReason =
@@ -149,6 +150,8 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
                                 {m['recovery.pin.newPinRequired.skipNote']()}
                             </p>
                         )}
+                        {/* Every reason sets the PIN that guards escrow, so all of them say so. */}
+                        <EscrowPinNotice />
                     </>
                 )}
 

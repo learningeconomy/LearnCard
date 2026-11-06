@@ -1,3 +1,4 @@
+import stringify from 'json-stringify-deterministic';
 import {
     CreateShareLinkInputValidator,
     ShareRecoveryPlaintextValidator,
@@ -164,6 +165,39 @@ export const parseSavedShareLinkMetadata = (value: unknown): SavedShareLinkMetad
             displayName: sharerRecord.displayName as string,
         },
     };
+};
+
+/**
+ * Link URLs can keep their identity while their signed contents change. A saved
+ * relationship proves acceptance, not that this presentation snapshot was saved.
+ */
+export const findSavedSharePresentation = async (
+    wallet: ShareWallet,
+    records: readonly SentCredentialInfo[],
+    payload: SharePayload,
+    recipientProfileId: string
+): Promise<SentCredentialInfo | undefined> => {
+    let expected: string | undefined;
+    for (const record of records) {
+        if (record.from !== recipientProfileId || record.to !== recipientProfileId) continue;
+        const metadata = parseSavedShareLinkMetadata(record.metadata);
+        if (
+            !metadata ||
+            metadata.shareId !== payload.shareId ||
+            metadata.sharer.profileId !== payload.sharer.profileId
+        )
+            continue;
+        expected ??= stringify(payload.presentation);
+        let stored: unknown;
+        try {
+            stored = await wallet.read.get(record.uri);
+        } catch {
+            // An unreadable older snapshot must not block saving the current one.
+            continue;
+        }
+        if (stringify(stored) === expected) return record;
+    }
+    return undefined;
 };
 
 /** Bounded, order-preserving fan-out so a picker never opens unbounded reads. */
