@@ -129,6 +129,8 @@ const world = () => {
         }) as unknown as LoadStrategy;
     let t = 0;
     const out: string[] = [];
+    const deletedUids: string[] = [];
+    const deleteFails = { value: false };
     const deps: RunDeps = {
         admin: {
             createUser: async ({ email, emailVerified }) => {
@@ -138,6 +140,11 @@ const world = () => {
                 return { uid: `uid-${email.split('-').pop()!.split('@')[0]}` };
             },
             createCustomToken: async uid => `custom:${uid}`,
+            deleteUsers: async uids => {
+                if (deleteFails.value) throw new Error('unavailable');
+                deletedUids.push(...uids);
+                return { successCount: uids.length, failureCount: 0, errors: [] };
+            },
         },
         recordUser: user => {
             if (record.fail) throw new Error('ENOSPC');
@@ -169,6 +176,8 @@ const world = () => {
         out,
         recorded,
         record,
+        deletedUids,
+        deleteFails,
         created: () => createdUsers,
     };
 };
@@ -484,6 +493,19 @@ describe('runLoad', () => {
         expect(w.created()).toBe(1);
         expect(setup.scenarios.createUser.errors).toEqual({ manifest_write: 1 });
         expect(s1.started).toBe(0);
+        expect(w.deletedUids).toEqual(['uid-0']);
+        expect(w.out.some(line => line.includes('unrecorded'))).toBe(false);
+    });
+
+    it('names a user it could neither record nor delete', async () => {
+        const w = world();
+        w.record.fail = true;
+        w.deleteFails.value = true;
+        const summary = await runLoad(options([{ rate: 1, durationSec: 5 }]), w.deps, {
+            requested: false,
+        });
+        expect(summary.stopped).toBe('fatal_manifest_write');
+        expect(w.out).toContain('unrecorded Firebase user uid-0: delete it manually');
     });
 
     it('records a fatal guard hit by an operation still in flight after the last start', async () => {

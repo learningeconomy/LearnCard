@@ -562,7 +562,7 @@ id only.
 ### Guards (fail closed; `--dry-run` runs them all and sends nothing)
 
 - `--lca-api-url` must be https and its host must equal `--staging-host`, carry a
-  `staging` DNS label, and not be a known production host.
+  `staging` or `staging-*` DNS label, and not be a known production host.
 - `GOOGLE_APPLICATION_CREDENTIALS` must be a service-account file whose
   `project_id` equals `--firebase-project`; known production projects and ids
   that look like production are refused. Each ID token's audience is also
@@ -636,7 +636,9 @@ prefix, domain, Firebase project and creation time. After each successful
 before the user is used, so a crash leaves a usable manifest (a torn last line
 is ignored; a user created but not yet recorded at the moment of a crash is the
 only possible miss). If the manifest cannot be written, the run stops
-(`fatal_manifest_write`, exit 3). The manifest holds no keys, PINs, tokens or
+(`fatal_manifest_write`, exit 3) and deletes the user it could not record; if
+that delete also fails it prints the uid (`unrecorded Firebase user <uid>`) to
+delete by hand in the Firebase console. The manifest holds no keys, PINs, tokens or
 shares. It is JSON Lines; cleanup appends its progress to it.
 
 The manifest is the **only** cleanup source: the tool never lists or scans the

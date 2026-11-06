@@ -52,7 +52,7 @@ export interface RunOptions {
 }
 
 export interface RunDeps extends Omit<ScenarioDeps, 'time' | 'customToken'>, ScheduleDeps {
-    admin: Pick<AdminAuth, 'createUser' | 'createCustomToken'>;
+    admin: Pick<AdminAuth, 'createUser' | 'createCustomToken' | 'deleteUsers'>;
     /**
      * Durably records a created user in the run manifest (the only cleanup
      * source) before it is used. A throw stops the run (`fatal_manifest_write`).
@@ -162,6 +162,12 @@ export const runLoad = async (
         try {
             deps.recordUser({ uid, email });
         } catch {
+            // Cleanup only knows manifest users: delete this one now, or name it.
+            const deleted = await deps.admin
+                .deleteUsers([uid])
+                .then(result => result.successCount === 1)
+                .catch(() => false);
+            if (!deleted) deps.out(`unrecorded Firebase user ${uid}: delete it manually`);
             throw new LoadError('manifest_write');
         }
         return { n, email, uid };

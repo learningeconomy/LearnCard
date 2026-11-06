@@ -48,6 +48,7 @@ describe('checkServerUrl', () => {
         ['https://staging.api.learncard.app/api', '', 'staging_host_required'],
         ['https://lca.example.org/api', 'lca.example.org', 'host_not_staging'],
         ['https://notstaging.example.org/api', 'notstaging.example.org', 'host_not_staging'],
+        ['https://stagingfoo.example.org/api', 'stagingfoo.example.org', 'host_not_staging'],
         ['http://staging.api.learncard.app/api', 'staging.api.learncard.app', 'server_url'],
         ['https://u:p@staging.api.learncard.app/api', 'staging.api.learncard.app', 'server_url'],
         ['https://staging.api.learncard.app/api?x=1', 'staging.api.learncard.app', 'server_url'],

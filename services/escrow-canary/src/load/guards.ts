@@ -61,7 +61,7 @@ const HOSTNAME =
 
 /**
  * The lca-api REST base must be https, its host must equal the operator's
- * explicit `--staging-host`, carry a `staging` DNS label, and not be a known
+ * explicit `--staging-host`, carry a `staging` (or `staging-*`) DNS label, and not be a known
  * production host.
  */
 export const checkServerUrl = (serverUrl: string, stagingHost: string | undefined): void => {
@@ -77,7 +77,7 @@ export const checkServerUrl = (serverUrl: string, stagingHost: string | undefine
     const host = url.hostname.toLowerCase();
     if (host !== stagingHost.toLowerCase()) throw refuse('staging_host_mismatch');
     if (PRODUCTION_API_HOSTS.has(host)) throw refuse('production_host');
-    if (!host.split('.').some(label => label === 'staging' || label.startsWith('staging')))
+    if (!host.split('.').some(label => label === 'staging' || label.startsWith('staging-')))
         throw refuse('host_not_staging');
 };
 
