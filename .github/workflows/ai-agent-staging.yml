@@ -1,0 +1,140 @@
+name: AI Agent Staging
+run-name: AI Agent staging after Deploy ${{ github.event.workflow_run.run_number }}
+
+on:
+    workflow_run:
+        workflows: [Deploy]
+        branches: [main]
+        types: [completed]
+
+# Independent of Deploy-main; a slow AI rollout cannot hold the core deploy queue.
+concurrency:
+    group: ai-agent-staging
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+    actions: read
+
+env:
+    NODE_OPTIONS: '--max-old-space-size=4096'
+    NX_NO_CLOUD: true
+
+jobs:
+    select:
+        name: Select AI Agent staging revision
+        if: >-
+            github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.event == 'push' &&
+            github.event.workflow_run.head_branch == 'main' &&
+            github.event.workflow_run.head_repository.id == github.event.repository.id
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        outputs:
+            head: ${{ steps.source.outputs.head }}
+            affected: ${{ steps.affected.outputs.affected }}
+        steps:
+            # Bootstrap only from this trusted default-branch workflow revision.
+            - uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+            - name: Validate source and find last successful AI rollout
+              id: source
+              uses: actions/github-script@v8
+              with:
+                  script: |
+                      const { eligibleSource, resolveRange } = require('./scripts/ai-agent-staging.cjs');
+                      const event = context.payload.workflow_run;
+                      const args = { github, repo: context.repo, repositoryId: context.payload.repository.id,
+                        runId: event.id, attempt: event.run_attempt, head: event.head_sha };
+                      const source = await eligibleSource(args);
+                      core.setOutput('current', String(source.current));
+                      if (!source.current) { core.notice(source.reason); return; }
+                      const range = await resolveRange({ ...args, runId: context.runId, warn: core.warning });
+                      core.setOutput('head', range.head);
+                      core.setOutput('base', range.base);
+                      await core.summary.addHeading('AI Agent staging comparison').addCodeBlock(JSON.stringify(range, null, 2)).write();
+            - uses: actions/checkout@v7
+              if: steps.source.outputs.current == 'true'
+              with:
+                  ref: ${{ steps.source.outputs.head }}
+                  fetch-depth: 0
+            - uses: ./.github/actions/setup
+              if: steps.source.outputs.current == 'true'
+            - name: Select affected AI Agent
+              id: affected
+              if: steps.source.outputs.current == 'true'
+              env:
+                  NX_BASE: ${{ steps.source.outputs.base }}
+                  NX_HEAD: ${{ steps.source.outputs.head }}
+              run: |
+                  # Make full-tree fallback usable after the second checkout too.
+                  git hash-object -t tree -w --stdin </dev/null
+                  bunx nx show projects --affected --base="$NX_BASE" --head="$NX_HEAD" --json > /tmp/ai-affected.json
+                  affected=$(jq -r 'index("ai-agent-service") != null' /tmp/ai-affected.json)
+                  # Changes to rollout machinery also require a real rollout.
+                  if git diff --name-only "$NX_BASE" "$NX_HEAD" -- .github/workflows/ai-agent-staging.yml .github/workflows/ai-agent-rollout.yml scripts/ai-agent-staging.cjs | grep -q .; then
+                    affected=true
+                  fi
+                  echo "affected=$affected" >> "$GITHUB_OUTPUT"
+
+    validate:
+        name: AI Agent CI
+        needs: [select]
+        if: needs.select.outputs.affected == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        env:
+            CI: true
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ needs.select.outputs.head }}
+
+            - name: Set up AI Agent Node LTS
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: services/learn-card-network/ai-agent/.nvmrc
+                  package-manager-cache: false
+
+            - name: Use composite setup action
+              uses: ./.github/actions/setup
+
+            - name: Verify Trigger.dev deployment CLI startup
+              working-directory: services/learn-card-network/ai-agent
+              run: bunx trigger deploy --help
+
+            - name: Test Trigger native package readiness gate
+              run: node --test scripts/wait-for-trigger-native-package.test.mjs
+
+            - name: Run AI Agent tests
+              run: bun run --cwd services/learn-card-network/ai-agent test -- run
+
+            - name: Verify feed with real DIDKit WASM
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:feed-wasm
+
+            - name: Verify private Sentry telemetry
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:sentry
+
+            - name: Build AI Agent
+              run: bun run --cwd services/learn-card-network/ai-agent build
+
+            - name: Lint CloudFormation template
+              run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
+
+    rollout:
+        name: Roll out AI Agent
+        needs: [select, validate]
+        permissions:
+            contents: read
+            actions: read
+            id-token: write
+        uses: ./.github/workflows/ai-agent-rollout.yml
+        with:
+            revision: ${{ needs.select.outputs.head }}
+            target-environment: staging
+            automatic: true
+            source-run-id: ${{ format('{0}', github.event.workflow_run.id) }}
+            source-attempt: ${{ format('{0}', github.event.workflow_run.run_attempt) }}
+        secrets: inherit

@@ -31,6 +31,9 @@ const agent = readWorkflow(process.argv[3] || path.join(root, '.github/workflows
 const determine = main.jobs['determine-affected'];
 const validate = main.jobs['validate-ai-agent'];
 const deploy = main.jobs['deploy-ai-agent'];
+const rollout = readWorkflow(path.join(root, '.github/workflows/ai-agent-rollout.yml')).jobs[
+    'deploy-ai-agent'
+];
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'learncard-ai-deploy-'));
 let invocation = 0;
 let base;
@@ -146,11 +149,12 @@ const route = ({
     };
     context.needs = Object.fromEntries(deploy.needs.map(name => [name, results[name]]));
     if (!evaluate(deploy.if, context)) return undefined;
-    const target = evaluate(deploy.env.TARGET_ENVIRONMENT, context);
+    const target = evaluate(deploy.with['target-environment'], context);
+    context.inputs = { 'target-environment': target };
     const interpolate = value =>
         value.replace(/\$\{\{.*?\}\}/g, expression => evaluate(expression, context));
-    assert.equal(interpolate(deploy.environment), `learn-card-ai-agent-${target}`);
-    assert.equal(interpolate(deploy.concurrency.group), `deploy-ai-agent-${target}`);
+    assert.equal(interpolate(rollout.environment), `learn-card-ai-agent-${target}`);
+    assert.equal(interpolate(rollout.concurrency.group), `deploy-ai-agent-${target}`);
     return target;
 };
 
@@ -179,7 +183,7 @@ try {
     git('commit', '-m', 'routing baseline');
     base = git('rev-parse', 'HEAD');
 
-    assert.equal(route(), 'staging', 'affected main pushes must deploy staging');
+    assert.equal(route(), undefined, 'automatic staging belongs to its independent workflow');
     assert.equal(
         route({ tests: 'failure' }),
         undefined,
@@ -272,7 +276,7 @@ try {
     assert.deepEqual(aiChecks.permissions, { contents: 'read' });
     assert.equal(agent.on.pull_request.paths, undefined, 'AI CI must also report on unrelated PRs');
     console.log(
-        'AI Agent routing passed: affected staging, Changesets production, failure/cancellation gates, manual overrides, and PR isolation.'
+        'AI Agent routing passed: independent automatic staging, Changesets production, failure/cancellation gates, manual overrides, and PR isolation.'
     );
 } finally {
     fs.rmSync(temporary, { recursive: true, force: true });

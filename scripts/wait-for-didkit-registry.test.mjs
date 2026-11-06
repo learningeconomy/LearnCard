@@ -595,7 +595,10 @@ test('supported workspace platforms and release entry points stay gated', () => 
         .split('\n    smoketest-published-packages:')[0];
     assert.ok(publishing.indexOf(gate) >= 0);
     assert.ok(publishing.indexOf(gate) < publishing.indexOf('run: bunx changeset publish'));
-    const agent = workflow.split('\n    deploy-ai-agent:')[1];
+    const agent = readFileSync(
+        new URL('../.github/workflows/ai-agent-rollout.yml', import.meta.url),
+        'utf8'
+    );
     assert.ok(agent.indexOf(gate) >= 0);
     assert.ok(
         agent.indexOf(gate) < agent.indexOf('run: node scripts/wait-for-trigger-native-package.mjs')
