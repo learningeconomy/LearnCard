@@ -2616,7 +2616,8 @@
                 "title": "Choose a new recovery PIN",
                 "body": "Your recovery PIN was entered incorrectly before, so it has fewer tries left. Choose a different 6-digit PIN to get all your tries back.",
                 "skipNote": "If you skip this, your current PIN keeps working with fewer tries left. You can choose a new one later in Account Recovery."
-            }
+            },
+            "escrowNotice": "An encrypted piece of your account key is held by a secure service. Your PIN unlocks it right away, without a 7-day wait. <0>Learn more</0>"
         },
         "confirmCode": {
             "mismatch": "That code isn't right. Try again.",
