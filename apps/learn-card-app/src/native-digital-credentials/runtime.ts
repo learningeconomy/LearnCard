@@ -34,17 +34,23 @@ export const readNativeInventory = (): Promise<AccountInventory | null> => local
 export const clearNativeInventory = (): Promise<void> => {
     refreshCache = undefined;
     // Start native invalidation immediately, before any outstanding inventory read completes.
-    const clearing = nativeDigitalCredentials.clear();
+    const clearing = nativeDigitalCredentials.clear().then(
+        () => true,
+        () => false
+    );
     return serial(async () => {
-        await clearing;
+        const cleared = await clearing;
+        // A platform failure must not retain the previous account's local mapping.
         await localforage.removeItem(KEY);
+        if (!cleared) throw new Error('Native registry clear unavailable');
     });
 };
 
 export const synchronizeNativeInventory = (
     wallet: DigitalCredentialWallet,
     isCurrent: () => boolean,
-    title: string
+    title: string,
+    reassert = false
 ): Promise<{ retryRequired: boolean }> =>
     serial(async () => {
         const previous = await readNativeInventory();
@@ -71,6 +77,8 @@ export const synchronizeNativeInventory = (
         const state = await nativeDigitalCredentials.status();
         const registered = state.registeredEntryIds ?? [];
         if (
+            !reassert &&
+            inventory.entries.length > 0 &&
             JSON.stringify(previous) === JSON.stringify(inventory) &&
             registered.length === inventory.entries.length &&
             inventory.entries.every(entry => registered.includes(entry.id))

@@ -115,7 +115,6 @@ describe('shared consent on the native transport', () => {
         render(<RequestConsent {...props} />);
         const share = await screen.findByRole('button', { name: 'Share details' });
         await waitFor(() => expect(share).toBeEnabled());
-        expect(screen.getByText('Android app')).toBeVisible();
         expect(screen.getByText('com.example.verifier')).toBeVisible();
         expect(screen.getByRole('heading', { name: 'Course Completion' })).toBeVisible();
         expect(screen.queryByText('Untrusted request branding')).not.toBeInTheDocument();
@@ -138,6 +137,25 @@ describe('shared consent on the native transport', () => {
             disclose: { 'course::encrypted-uri': { course_name: true } },
         });
     });
+
+    it.each(['android:apk-key-hash:test', 'https://verifier.example'])(
+        'leads with authenticated identity and ignores installed-app branding for %s',
+        async origin => {
+            const props = nativeProps();
+            props.nativeRequester = {
+                name: 'Trusted Bank — Verified',
+                packageName: 'com.example.verifier',
+                origin,
+            };
+            render(<RequestConsent {...props} />);
+            await waitFor(() =>
+                expect(screen.getByRole('button', { name: 'Share details' })).toBeEnabled()
+            );
+            expect(screen.queryByText('Trusted Bank — Verified')).not.toBeInTheDocument();
+            const identity = origin.startsWith('https:') ? origin : 'com.example.verifier';
+            expect(screen.getAllByText(identity)[0]).toBeVisible();
+        }
+    );
 
     it('prevents changing or canceling a native approval in flight and supports cancellation before approval', async () => {
         const props = nativeProps();

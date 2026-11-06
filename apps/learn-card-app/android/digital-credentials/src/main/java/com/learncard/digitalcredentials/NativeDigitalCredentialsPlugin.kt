@@ -32,12 +32,12 @@ class NativeDigitalCredentialsPlugin : Plugin() {
                     require(context.resources.getBoolean(R.bool.lc_digital_credentials_enabled))
                     val entries = RegistryProjection.map(call.getArray("entries") ?: error("Missing entries"))
                     val state = RegistryState(context)
-                    state.replace(emptySet())
-                    RegistryManager.create(context).registerCredentials(OpenId4VpRegistry(
-                        credentialEntries = entries, id = RegistryState.REGISTRY_ID,
-                        supportedProtocols = listOf(OpenId4VpRegistry.PROTOCOL_OPENID4VP_1_0_UNSIGNED),
-                    ))
-                    state.replace(entries.map { it.id }.toSet())
+                    registerRegistry(state, entries.map { it.id }.toSet()) {
+                        RegistryManager.create(context).registerCredentials(OpenId4VpRegistry(
+                            credentialEntries = entries, id = RegistryState.REGISTRY_ID,
+                            supportedProtocols = listOf(OpenId4VpRegistry.PROTOCOL_OPENID4VP_1_0_UNSIGNED),
+                        ))
+                    }
                     call.resolve(JSObject().put("registered", entries.size) as JSObject)
                 } catch (_: Exception) { call.reject("Could not register credentials", "registration_failed") }
             }
