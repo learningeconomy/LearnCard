@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, afterAll, describe, expect, it, vi } from 'vitest';
 import type { BitstringStatusListEntry, UnsignedVC } from '@learncard/types';
 import { VPValidator } from '@learncard/types';
-import { injectManagedRefreshService } from '@learncard/helpers';
+import { assertManagedCredentialBinding, injectManagedRefreshService } from '@learncard/helpers';
 
 import { neogma } from '@instance';
 import { getUser } from './helpers/getClient';
@@ -298,6 +298,128 @@ describe('Managed public status', () => {
         await expect(
             storeCredential(credential, undefined, 'status-issuer')
         ).resolves.toBeDefined();
+    });
+
+    it.each([false, true])(
+        'recovers authenticated absent legacy status (array=%s)',
+        async arrayShape => {
+            const allocation =
+                await issuer.clients.fullAuth.credentialRefresh.allocateCredentialRefresh({
+                    holder: { profileId: 'status-holder', did: holder.learnCard.id.did() },
+                    credentialId: 'urn:uuid:legacy-absent',
+                });
+            const unsigned = injectManagedRefreshService(
+                {
+                    '@context': ['https://www.w3.org/2018/credentials/v1'],
+                    id: 'urn:uuid:legacy-absent',
+                    type: ['VerifiableCredential'],
+                    issuer: issuer.learnCard.id.did(),
+                    issuanceDate: '2026-01-01T00:00:00Z',
+                    credentialSubject: { id: holder.learnCard.id.did() },
+                },
+                allocation.refreshService
+            );
+            if (arrayShape)
+                unsigned.refreshService = [
+                    allocation.refreshService,
+                    {
+                        id: 'https://issuer.example/refresh',
+                        type: 'ManualRefreshService2018',
+                    },
+                ];
+            const credential = await issuer.learnCard.invoke.issueCredential(unsigned);
+            expect(credential.credentialStatus).toBeUndefined();
+            const uri = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                refreshId: allocation.refreshId,
+                credential,
+            });
+            await neogma.queryRunner.run(
+                'MATCH (r:CredentialRefresh {refreshId: $refreshId}) REMOVE r.statusEntries, r.credentialStatusBinding, r.refreshServiceBinding',
+                { refreshId: allocation.refreshId }
+            );
+            const receipt = await holder.clients.fullAuth.credentialRefresh.getReceipt({ uri });
+            expect(receipt?.refreshServiceBinding).toBe('managed-entry');
+            expect(receipt?.credentialStatus).toBeUndefined();
+            expect(() => assertManagedCredentialBinding(credential, receipt!)).not.toThrow();
+            const stored = await neogma.queryRunner.run(
+                'MATCH (r:CredentialRefresh {refreshId: $refreshId}) RETURN r.credentialStatusBinding AS binding',
+                { refreshId: allocation.refreshId }
+            );
+            expect(stored.records[0]!.get('binding')).toBe('null');
+            await expect(
+                issuer.clients.fullAuth.credentialRefresh.attachStatusEntries({
+                    refreshId: allocation.refreshId,
+                    credentialStatus: null,
+                })
+            ).resolves.toBe(true);
+            expect(await holder.clients.fullAuth.credential.acceptCredential({ uri })).toBeTruthy();
+        }
+    );
+
+    it.each([false, true])(
+        'repairs the exact legacy receipt before claim (array=%s)',
+        async arrayShape => {
+            const { allocation, credential, uri } = await send(arrayShape);
+            await neogma.queryRunner.run(
+                'MATCH (r:CredentialRefresh {refreshId: $refreshId}) REMOVE r.statusEntries, r.credentialStatusBinding',
+                { refreshId: allocation.refreshId }
+            );
+            await expect(
+                holder.clients.fullAuth.credentialRefresh.getReceipt({ uri })
+            ).rejects.toThrow('Delivery binding unavailable');
+            await expect(
+                issuer.clients.fullAuth.credentialRefresh.attachStatusEntries({
+                    refreshId: allocation.refreshId,
+                    credentialStatus: null,
+                })
+            ).rejects.toThrow('Credential status does not match the original credential');
+            await issuer.clients.fullAuth.credentialRefresh.attachStatusEntries({
+                refreshId: allocation.refreshId,
+                credentialStatus: credential.credentialStatus!,
+            });
+            const receipt = await holder.clients.fullAuth.credentialRefresh.getReceipt({ uri });
+            expect(receipt?.credentialStatus).toEqual(credential.credentialStatus);
+            expect(await holder.clients.fullAuth.credential.acceptCredential({ uri })).toBeTruthy();
+        }
+    );
+
+    it.each([false, true])(
+        'returns the exact signed status shape before acceptance (array=%s)',
+        async arrayShape => {
+            const { credential, uri } = await send(arrayShape);
+            const receipt = await holder.clients.fullAuth.credentialRefresh.getReceipt({ uri });
+            expect(receipt?.credentialStatus).toEqual(credential.credentialStatus);
+            expect(receipt?.refreshService).toEqual(credential.refreshService);
+            expect(receipt).not.toHaveProperty('credentialSubject');
+            expect(receipt).not.toHaveProperty('proof');
+        }
+    );
+
+    it('never exposes a managed receipt after delivery revocation', async () => {
+        const { uri, root } = await send();
+        await neogma.queryRunner.run(
+            'MATCH ()-[sent:CREDENTIAL_SENT]->(:Credential {id: $root}) SET sent.status = "revoked"',
+            { root }
+        );
+        await expect(
+            holder.clients.fullAuth.credentialRefresh.getReceipt({ uri })
+        ).rejects.toThrow();
+    });
+
+    it('distinguishes an authorized ordinary delivery from a missing delivery', async () => {
+        await neogma.queryRunner.run(
+            'MATCH (p:Profile {profileId: "status-issuer"}) CREATE (p)-[:CREDENTIAL_SENT {to: "status-holder"}]->(:Credential {id: "ordinary-root"})'
+        );
+        expect(
+            await holder.clients.fullAuth.credentialRefresh.getReceipt({
+                uri: getCredentialUri('ordinary-root', 'localhost%3A3000'),
+            })
+        ).toBeNull();
+        await expect(
+            holder.clients.fullAuth.credentialRefresh.getReceipt({
+                uri: getCredentialUri('unknown-root', 'localhost%3A3000'),
+            })
+        ).rejects.toThrow();
     });
 
     it.each([false, true])(

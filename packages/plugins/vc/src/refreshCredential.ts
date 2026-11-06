@@ -10,9 +10,11 @@ import {
 } from '@learncard/types';
 import {
     credentialContentsEqual,
+    credentialRefreshBindingsEqual,
     getCredentialEffectiveTime,
     getCredentialIssuerId,
     getSupportedRefreshService,
+    isVC2Format,
 } from '@learncard/helpers';
 
 import { fetchWithPinnedAddress, type PinnedAddress } from './refreshCredential.fetch';
@@ -27,10 +29,8 @@ import { RefreshCredentialOptions, VCDependentLearnCard, VCImplicitLearnCard } f
  * proofs, enforces identity stability and non-regressing freshness, and returns a
  * typed result. It performs no storage or index mutation.
  *
- * The generic primitive permits same-issuer-signed changes to credentialStatus and
- * refreshService. It does not pin those fields; applications requiring immutable
- * revocation/refresh handles must enforce that policy. Managed brain-service
- * publication enforces both. Any new endpoint is revalidated on the next refresh.
+ * Supplying a baseline pins credentialStatus and refreshService to the locally
+ * validated delivery binding, before fetching and before returning a replacement.
  *
  * Because `refreshService.id` is credential-controlled input, every request is
  * SSRF-hardened: HTTPS-only by default, private/loopback/link-local destinations are
@@ -747,6 +747,10 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
 
         if (!service) return { status: 'unsupported' };
 
+        if (options.baseline && !credentialRefreshBindingsEqual(credential, options.baseline)) {
+            return failed('BINDING_MISMATCH', false);
+        }
+
         // Verify the currently held credential before contacting the endpoint.
         try {
             const check = await _learnCard.invoke.verifyCredential(credential);
@@ -915,21 +919,41 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
 
         if (!holdersEqual(credential, candidate)) return failed('ID_MISMATCH', false);
 
-        // Freshness: reject a strictly older effective timestamp.
+        if (options.baseline && !credentialRefreshBindingsEqual(candidate, options.baseline)) {
+            return failed('BINDING_MISMATCH', false);
+        }
+
+        // An identical signed payload is not a new version (including re-signing alone).
+        if (credentialContentsEqual(credential, candidate)) {
+            return { status: 'unchanged', checkedAt: new Date().toISOString(), etag: decoded.etag };
+        }
+
+        // Managed updates require a strictly newer signed effective time, not unsigned metadata.
         const currentTime = getCredentialEffectiveTime(credential);
         const candidateTime = getCredentialEffectiveTime(candidate);
 
+        if (service.type === 'LearnCardCredentialRefresh2026') {
+            const managedEffectiveTime = (vc: VC): number | undefined =>
+                getCredentialEffectiveTime({
+                    validFrom: isVC2Format(vc) ? vc.validFrom : vc.issuanceDate,
+                });
+            const currentEffectiveTime = managedEffectiveTime(credential);
+            const candidateEffectiveTime = managedEffectiveTime(candidate);
+            if (
+                currentEffectiveTime === undefined ||
+                candidateEffectiveTime === undefined ||
+                candidateEffectiveTime <= currentEffectiveTime
+            )
+                return failed('ROLLBACK', false);
+        }
+
         if (
+            service.type !== 'LearnCardCredentialRefresh2026' &&
             currentTime !== undefined &&
             candidateTime !== undefined &&
             candidateTime < currentTime
         ) {
             return failed('ROLLBACK', false);
-        }
-
-        // Proof-insensitive canonical comparison distinguishes updated from unchanged.
-        if (credentialContentsEqual(credential, candidate)) {
-            return { status: 'unchanged', checkedAt: new Date().toISOString(), etag: decoded.etag };
         }
 
         return {

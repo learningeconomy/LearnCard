@@ -3,6 +3,8 @@ import {
     SupportedCredentialRefreshServiceValidator,
     type ManagedCredentialRefreshService,
     type SupportedCredentialRefreshService,
+    type CredentialRefreshReceipt,
+    type JWE,
 } from '@learncard/types';
 import { getBitstringStatusListEntries } from './bitstring-status-list';
 
@@ -112,6 +114,78 @@ export const canonicalizeCredentialContent = <T>(value: T): T => {
 /** Serializes a value to a deterministic canonical JSON string */
 export const canonicalizeCredentialJson = (value: unknown): string =>
     JSON.stringify(canonicalizeCredentialContent(value));
+
+/** Structural recipient check only; decryption and credential verification remain mandatory. */
+export const assertExactJweRecipients = (jwe: JWE, recipientKeyIds: string[]): void => {
+    const expected = new Set(recipientKeyIds);
+    const recipients = jwe.recipients ?? [];
+    const actual = recipients.map(recipient => recipient.header.kid);
+    if (
+        expected.size === 0 ||
+        expected.size !== recipientKeyIds.length ||
+        actual.length !== expected.size ||
+        new Set(actual).size !== actual.length ||
+        actual.some(kid => !kid || !expected.has(kid))
+    ) {
+        throw new Error('ENCRYPTION_RECIPIENTS_MISMATCH');
+    }
+};
+
+/** Compares exact public bindings while ignoring JSON object-key order, never array order. */
+export const credentialRefreshBindingsEqual = (
+    credential: { credentialStatus?: unknown; refreshService?: unknown },
+    baseline: { credentialStatus?: unknown; refreshService?: unknown }
+): boolean =>
+    canonicalizeCredentialJson(credential.credentialStatus) ===
+        canonicalizeCredentialJson(baseline.credentialStatus) &&
+    canonicalizeCredentialJson(credential.refreshService) ===
+        canonicalizeCredentialJson(baseline.refreshService);
+
+/** Checks signed identity and public bindings. Legacy managed-entry receipts bind only the
+ * unique managed service; exact receipts also bind additional services and array shape.
+ * This does not replace proof/status verification.
+ */
+export const assertManagedCredentialBinding = (
+    credential: RefreshableCredential,
+    receipt: CredentialRefreshReceipt
+): void => {
+    const subjects = Array.isArray(credential.credentialSubject)
+        ? credential.credentialSubject
+        : [credential.credentialSubject];
+    const holderMatches =
+        subjects.length > 0 &&
+        subjects.every(
+            (subject: unknown) =>
+                typeof subject === 'object' &&
+                subject !== null &&
+                'id' in subject &&
+                subject.id === receipt.holderDid
+        );
+    const managedServices = getManagedRefreshServices(credential);
+    const services = Array.isArray(credential.refreshService)
+        ? credential.refreshService
+        : [credential.refreshService];
+    const managedEntryCount = services.filter(
+        service => service?.type === 'LearnCardCredentialRefresh2026'
+    ).length;
+    const bindingsMatch =
+        receipt.refreshServiceBinding === 'managed-entry'
+            ? managedServices.length === 1 &&
+              managedEntryCount === 1 &&
+              credentialRefreshBindingsEqual(
+                  { ...credential, refreshService: managedServices[0] },
+                  receipt
+              )
+            : credentialRefreshBindingsEqual(credential, receipt);
+    if (
+        credential.id !== receipt.credentialId ||
+        getCredentialIssuerId(credential) !== receipt.issuerDid ||
+        !holderMatches ||
+        !bindingsMatch
+    ) {
+        throw new Error('MANAGED_CREDENTIAL_BINDING_MISMATCH');
+    }
+};
 
 // --- Managed refresh JSON-LD context preparation (LC-2198) --------------------
 

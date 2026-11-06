@@ -4,11 +4,17 @@ import {
     AllocateCredentialRefreshInputValidator,
     AttachCredentialRefreshStatusEntriesInputValidator,
     AllocateCredentialRefreshResultValidator,
+    EncryptionRecipientsResultValidator,
     GetCredentialRefreshHistoryInputValidator,
     GetCredentialRefreshHistoryResultValidator,
+    GetEncryptionRecipientsInputValidator,
     PublishCredentialRefreshInputValidator,
     PublishCredentialRefreshResultValidator,
+    PublishHolderEncryptedRefreshInputValidator,
+    SendHolderEncryptedRefreshableInputValidator,
     VCValidator,
+    GetCredentialRefreshReceiptInputValidator,
+    CredentialRefreshReceiptValidator,
 } from '@learncard/types';
 import type { PublishCredentialRefreshInput } from '@learncard/types';
 
@@ -18,10 +24,14 @@ import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/rea
 import {
     getCredentialRefresh,
     getCredentialRefreshVersions,
+    getCredentialRefreshReceiptBinding,
 } from '@accesslayer/credential-refresh';
 import {
     allocateCredentialRefresh,
+    getCurrentEncryptionRecipients,
     publishCredentialRefresh,
+    publishHolderEncryptedRefreshableCredential,
+    sendHolderEncryptedRefreshableCredential,
     sendRefreshableCredential,
 } from '@helpers/credential-refresh.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
@@ -31,6 +41,9 @@ import { getBitstringStatusListEntries } from '@learncard/helpers';
 import { neogma } from '@instance';
 import { matchesCredentialStatusDigest } from '@helpers/credential-refresh-materiality.helpers';
 import { bindRefreshStatusEntries } from '@helpers/managed-status.helpers';
+import { getStatusManagement } from '@helpers/status-list.helpers';
+import { constructUri, getUriParts } from '@helpers/uri.helpers';
+import { getCredentialRefreshServiceUrl } from '@helpers/credential-refresh.helpers';
 
 const credentialRefreshRoute = credentialProfileRoute.use(async ({ ctx, next }) => {
     if (!getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_ENABLED) {
@@ -46,6 +59,88 @@ const credentialRefreshRoute = credentialProfileRoute.use(async ({ ctx, next }) 
 });
 
 export const credentialRefreshesRouter = t.router({
+    getReceipt: credentialRefreshRoute
+        .meta({ requiredScope: 'credentials:read' })
+        .input(GetCredentialRefreshReceiptInputValidator)
+        .output(CredentialRefreshReceiptValidator.nullable())
+        .query(async ({ ctx, input }) => {
+            const { id, type } = getUriParts(input.uri);
+            if (type !== 'credential' || input.uri !== constructUri('credential', id, ctx.domain)) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid delivery URI' });
+            }
+            const refresh = await getCredentialRefreshReceiptBinding(
+                id,
+                ctx.user.profile.profileId
+            );
+            if (refresh === null) return null;
+            if (
+                !refresh ||
+                !refresh.holderDid ||
+                refresh.holderProfileId !== ctx.user.profile.profileId ||
+                !['awaiting_claim', 'active'].includes(refresh.state)
+            ) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Delivery not found' });
+            }
+            // Coordinates alone cannot reconstruct the exact signed descriptor of legacy sends.
+            let binding = refresh.credentialStatusBinding ?? refresh.inboxCredentialStatus;
+            if (binding === undefined) {
+                binding = await neogma.getTransaction(null, async tx => {
+                    const result = await tx.run(
+                        `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+                         SET refresh._statusBindingLock = true
+                         REMOVE refresh._statusBindingLock
+                         RETURN refresh.credentialStatusBinding AS binding,
+                                refresh.inboxCredentialStatus AS inboxBinding,
+                                refresh.credentialStatusDigest AS digest`,
+                        { refreshId: refresh.refreshId }
+                    );
+                    const row = result.records[0];
+                    const existing: unknown = row?.get('binding') ?? row?.get('inboxBinding');
+                    if (typeof existing === 'string') return existing;
+                    const digest: unknown = row?.get('digest');
+                    if (
+                        typeof digest !== 'string' ||
+                        !matchesCredentialStatusDigest(null, digest)
+                    ) {
+                        return undefined;
+                    }
+                    // The JSON string "null" authenticates absence; an unset property
+                    // means an unknown legacy descriptor. Never store Neo4j null.
+                    await tx.run(
+                        `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+                         SET refresh.credentialStatusBinding = 'null'`,
+                        { refreshId: refresh.refreshId }
+                    );
+                    return 'null';
+                });
+            }
+            if (binding === undefined) {
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: 'Delivery binding unavailable',
+                });
+            }
+            const status: unknown = JSON.parse(binding);
+            return CredentialRefreshReceiptValidator.parse({
+                refreshId: refresh.refreshId,
+                credentialId: refresh.credentialId,
+                issuerDid: refresh.issuerDid,
+                holderDid: refresh.holderDid,
+                ...(refresh.refreshServiceBinding
+                    ? {}
+                    : { refreshServiceBinding: 'managed-entry' }),
+                refreshService: refresh.refreshServiceBinding
+                    ? JSON.parse(refresh.refreshServiceBinding)
+                    : {
+                          id: getCredentialRefreshServiceUrl(refresh.refreshId, ctx.domain),
+                          type: 'LearnCardCredentialRefresh2026',
+                          authorization: { type: 'LearnCardDIDAuth' },
+                      },
+                ...(status === null ? {} : { credentialStatus: status }),
+                encryptionMode: refresh.encryptionMode ?? 'network',
+            });
+        }),
+
     attachStatusEntries: credentialRefreshRoute
         .meta({ requiredScope: 'credentials:write' })
         .input(AttachCredentialRefreshStatusEntriesInputValidator)
@@ -67,9 +162,9 @@ export const credentialRefreshesRouter = t.router({
                 });
             }
             const entries = getBitstringStatusListEntries({
-                credentialStatus: input.credentialStatus,
+                credentialStatus: input.credentialStatus ?? undefined,
             });
-            if (entries.length === 0) {
+            if (entries.length === 0 && input.credentialStatus !== null) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Credential has no supported public status entries',
@@ -94,6 +189,14 @@ export const credentialRefreshesRouter = t.router({
                     refresh.issuerProfileId,
                     ctx.domain,
                     tx
+                );
+                await tx.run(
+                    `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+                     SET refresh.credentialStatusBinding = $credentialStatusBinding`,
+                    {
+                        refreshId: input.refreshId,
+                        credentialStatusBinding: JSON.stringify(input.credentialStatus),
+                    }
                 );
             });
             return true;
@@ -194,6 +297,83 @@ export const credentialRefreshesRouter = t.router({
             return uri;
         }),
 
+    /**
+     * Holder-mode counterpart of `sendRefreshableCredential` (LC-2345): a separate
+     * route rather than a branch of `send`/`sendRefreshableCredential`, so the
+     * ciphertext-only input shape (`HolderEncryptedHandoffValidator`) never has to
+     * share a validator with the plaintext `credential`/`signedCredential` paths.
+     */
+    sendHolderEncryptedRefreshable: credentialRefreshRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/credential-refresh/send-holder-encrypted',
+                tags: ['Credential Refresh'],
+                summary: 'Send a holder-mode (student-only encrypted) refreshable credential',
+                description:
+                    'Binds an already-encrypted handoff to its allocated refresh aggregate. The server never decrypts or processes the credential.',
+            },
+            requiredScope: 'credentials:write',
+        })
+        .input(SendHolderEncryptedRefreshableInputValidator)
+        .output(
+            z.object({
+                uri: z.string(),
+                activityId: z.string(),
+                statusManagement: z.enum(['network', 'external', 'mixed', 'none']),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { uri, activityId } = await sendHolderEncryptedRefreshableCredential({
+                issuerProfile: profile,
+                handoff: input.handoff,
+                idempotencyKey: input.idempotencyKey,
+                boostUri: input.boostUri,
+                skipNotification: input.skipNotification,
+                domain: ctx.domain,
+                onBehalfOf: ctx.user.onBehalfOf,
+            });
+
+            return {
+                uri,
+                activityId,
+                statusManagement: getStatusManagement(
+                    getBitstringStatusListEntries(input.handoff),
+                    ctx.domain
+                ),
+            };
+        }),
+
+    /** Issuer-only: the current recipient set a holder-mode handoff must encrypt to. */
+    getEncryptionRecipients: credentialRefreshRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/credential-refresh/encryption-recipients',
+                tags: ['Credential Refresh'],
+                summary: 'Get the current holder-mode encryption recipients',
+                description:
+                    'Returns the current key-agreement verification-method ids (holder + managers) a holder-mode handoff must encrypt to. Used after a RECIPIENTS_CHANGED conflict.',
+            },
+            requiredScope: 'credentials:read',
+        })
+        .input(GetEncryptionRecipientsInputValidator)
+        .output(EncryptionRecipientsResultValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const recipientKeyIds = await getCurrentEncryptionRecipients({
+                issuerProfile: profile,
+                refreshId: input.refreshId,
+            });
+
+            return { recipientKeyIds };
+        }),
+
     publishCredentialRefresh: credentialRefreshRoute
         .meta({
             openapi: {
@@ -215,6 +395,38 @@ export const credentialRefreshesRouter = t.router({
             return publishCredentialRefresh({
                 issuerProfile: profile,
                 input: input as PublishCredentialRefreshInput,
+                domain: ctx.domain,
+                branding: ctx.tenant?.emailBranding,
+            });
+        }),
+
+    /**
+     * Holder-mode counterpart of `publishCredentialRefresh`: a separate route, for the
+     * same reason as `sendHolderEncryptedRefreshable`. `PublishCredentialRefreshInputValidator`
+     * has no signing-authority equivalent for a handoff — a holder aggregate rejects
+     * signing-authority publication outright (`publishCredentialRefresh` enforces this).
+     */
+    publishHolderEncryptedRefreshable: credentialRefreshRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/credential-refresh/publish-holder-encrypted',
+                tags: ['Credential Refresh'],
+                summary: 'Publish a holder-mode (student-only encrypted) refresh version',
+                description:
+                    'Publishes a new immutable version from an already-encrypted handoff and atomically advances the refresh head. `notify` replaces server-inferred materiality.',
+            },
+            requiredScope: 'credentials:write',
+        })
+        .input(PublishHolderEncryptedRefreshInputValidator)
+        .output(PublishCredentialRefreshResultValidator)
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            return publishHolderEncryptedRefreshableCredential({
+                issuerProfile: profile,
+                input,
                 domain: ctx.domain,
                 branding: ctx.tenant?.emailBranding,
             });

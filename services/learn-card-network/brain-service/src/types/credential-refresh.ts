@@ -46,6 +46,11 @@ export const CredentialRefreshRecordValidator = z.object({
     rootMaterialDigest: z.string().optional(),
     /** Server-keyed fingerprint of the original credentialStatus descriptor */
     credentialStatusDigest: z.string().optional(),
+    /** Exact public status descriptor, including object/array shape. JSON null means absent. */
+    credentialStatusBinding: z.string().optional(),
+    /** Exact signed refresh-service descriptor, including additional services and array order. */
+    refreshServiceBinding: z.string().optional(),
+    encryptionMode: z.enum(['network', 'holder']).optional(),
     statusEntries: z.string().optional(),
     /** Keyed fingerprint of version 1 subject identifiers; no extra subject DIDs persisted. */
     credentialSubjectDigest: z.string().optional(),

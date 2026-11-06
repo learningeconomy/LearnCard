@@ -1,11 +1,16 @@
 import { z } from 'zod/v4';
 
-import { CredentialStatusValidator, UnsignedVCValidator, VCValidator } from './vc';
+import {
+    CredentialStatusValidator,
+    RefreshServiceValidator,
+    UnsignedVCValidator,
+    VCValidator,
+} from './vc';
 import { JWEValidator } from './crypto';
 
 export const AttachCredentialRefreshStatusEntriesInputValidator = z.object({
     refreshId: z.string().min(1),
-    credentialStatus: CredentialStatusValidator.or(CredentialStatusValidator.array()),
+    credentialStatus: CredentialStatusValidator.or(CredentialStatusValidator.array()).nullable(),
 });
 export type AttachCredentialRefreshStatusEntriesInput = z.infer<
     typeof AttachCredentialRefreshStatusEntriesInputValidator
@@ -42,6 +47,17 @@ export const ManagedCredentialRefreshServiceValidator = z
 export type ManagedCredentialRefreshService = z.infer<
     typeof ManagedCredentialRefreshServiceValidator
 >;
+
+/** Exact signed descriptor, including additional services and their order. */
+export const ManagedCredentialRefreshBindingValidator = ManagedCredentialRefreshServiceValidator.or(
+    RefreshServiceValidator.array().refine(
+        services =>
+            services.some(
+                service => ManagedCredentialRefreshServiceValidator.safeParse(service).success
+            ),
+        'A managed refresh service is required'
+    )
+);
 
 /** Standard 1EdTech protocol: HTTPS GET returning a signed VC or VC-JWT. */
 export const StandardCredentialRefreshServiceValidator = z
@@ -96,7 +112,9 @@ export type AllocateCredentialRefreshResult = z.infer<
 export const ManagedCredentialRefreshReceiptValidator = z
     .object({
         refreshId: z.string().min(1),
-        refreshService: ManagedCredentialRefreshServiceValidator,
+        refreshService: ManagedCredentialRefreshBindingValidator,
+        /** Legacy receipts authenticate only the allocated managed entry, not other services. */
+        refreshServiceBinding: z.literal('managed-entry').optional(),
         credentialId: z.string().min(1),
         issuerDid: z.string().min(1),
         holderDid: z.string().min(1),
@@ -108,6 +126,50 @@ export const ManagedCredentialRefreshReceiptValidator = z
 export type ManagedCredentialRefreshReceipt = z.infer<
     typeof ManagedCredentialRefreshReceiptValidator
 >;
+
+/** Public delivery binding, authenticated independently of the encrypted payload. */
+export const GetCredentialRefreshReceiptInputValidator = z.object({ uri: z.string().min(1) });
+export type GetCredentialRefreshReceiptInput = z.infer<
+    typeof GetCredentialRefreshReceiptInputValidator
+>;
+export const CredentialRefreshReceiptValidator = ManagedCredentialRefreshReceiptValidator.extend({
+    encryptionMode: z.enum(['network', 'holder']),
+});
+export type CredentialRefreshReceipt = z.infer<typeof CredentialRefreshReceiptValidator>;
+
+/** Ciphertext-only issuer handoff. No claims, templates, or content-derived digests. */
+export const HolderEncryptedHandoffValidator = z
+    .object({
+        refreshId: z.string().min(1),
+        credentialId: z.string().min(1),
+        holderDid: z.string().min(1),
+        issuerDid: z.string().min(1),
+        credentialStatus: CredentialStatusValidator.or(CredentialStatusValidator.array()),
+        refreshService: ManagedCredentialRefreshBindingValidator.optional(),
+        jwe: JWEValidator,
+    })
+    .strict();
+export type HolderEncryptedHandoff = z.infer<typeof HolderEncryptedHandoffValidator>;
+
+/** Delivers version 1 of a holder-mode (student-only encrypted) managed refresh. */
+export const SendHolderEncryptedRefreshableInputValidator = z.object({
+    handoff: HolderEncryptedHandoffValidator,
+    idempotencyKey: z.string().min(1).optional(),
+    boostUri: z.string().optional(),
+    skipNotification: z.boolean().optional(),
+});
+export type SendHolderEncryptedRefreshableInput = z.infer<
+    typeof SendHolderEncryptedRefreshableInputValidator
+>;
+
+export const GetEncryptionRecipientsInputValidator = z.object({ refreshId: z.string().min(1) });
+export type GetEncryptionRecipientsInput = z.infer<typeof GetEncryptionRecipientsInputValidator>;
+
+/** Current key-agreement verification-method ids a holder-mode handoff must encrypt to. */
+export const EncryptionRecipientsResultValidator = z.object({
+    recipientKeyIds: z.array(z.string()),
+});
+export type EncryptionRecipientsResult = z.infer<typeof EncryptionRecipientsResultValidator>;
 
 /** Allocation metadata for deferred Inbox issuance. No holder is invented before claim. */
 export const InboxCredentialRefreshReceiptValidator = ManagedCredentialRefreshReceiptValidator.omit(
@@ -248,6 +310,31 @@ export const PublishCredentialRefreshResultValidator = z.object({
     publishedAt: z.string().min(1),
     notification: PublishCredentialRefreshNotificationValidator,
 });
+
+/**
+ * Publishes a version of a holder-mode aggregate: a handoff replaces the signed/unsigned
+ * credential, and `notify` replaces server-inferred materiality (the server cannot
+ * compare encrypted content across versions). Signing-authority publication is not
+ * supported for holder aggregates.
+ */
+export const PublishHolderEncryptedRefreshInputValidator = z.object({
+    handoff: HolderEncryptedHandoffValidator,
+    notify: z.boolean(),
+    updateSummary: z
+        .string()
+        .max(280)
+        .optional()
+        .describe(
+            'Public legacy update summary. Do not include private claims; prefer updateReason.'
+        ),
+    updateReason: CredentialRefreshUpdateReasonValidator.optional().describe(
+        'Public reason for this update'
+    ),
+    idempotencyKey: z.string().optional(),
+});
+export type PublishHolderEncryptedRefreshInput = z.infer<
+    typeof PublishHolderEncryptedRefreshInputValidator
+>;
 export type PublishCredentialRefreshResult = z.infer<
     typeof PublishCredentialRefreshResultValidator
 >;
@@ -343,6 +430,7 @@ export const CredentialRefreshFailureCodeValidator = z.enum([
     'INVALID_PROOF',
     'ISSUER_MISMATCH',
     'ID_MISMATCH',
+    'BINDING_MISMATCH',
     'ROLLBACK',
     'REVOKED',
     'UNSAFE_ENDPOINT',

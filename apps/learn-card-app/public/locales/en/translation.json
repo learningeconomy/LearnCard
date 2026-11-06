@@ -3080,6 +3080,7 @@
         "modal": {
             "earnedTitle": "You've Earned a Credential!",
             "claimedTitle": "Credential Claimed!",
+            "verificationFailed": "We couldn't verify this",
             "claimedBody": "The credential has been added to your wallet.",
             "loadingCredential": "Loading credential...",
             "loadErrorTitle": "Unable to Load Credential",

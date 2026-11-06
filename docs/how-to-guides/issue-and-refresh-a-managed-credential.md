@@ -530,6 +530,7 @@ This uses the issuer's primary registered signing authority, including for seed-
 
 ## Next steps
 
+- [Send a Private, Refreshable Credential](send-a-private-refreshable-credential.md): encrypt the credential so only the recipient — never LearnCard's servers — can read it
 - [Credential Refresh](../core-concepts/credential-refresh.md): how the pieces fit and what the network can and can't see
 - [Revoke or Update a Credential](revoke-or-update-a-credential.md): for changes that don't need in-place refresh
 - [Who Signs Your Credentials?](create-signing-authority.md): to publish updates in signing-authority mode

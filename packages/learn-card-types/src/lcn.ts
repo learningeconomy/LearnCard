@@ -654,6 +654,13 @@ export const PrepareRefreshableSendInputValidator = z
         /** Credential ID to allocate for; generated server-side when omitted. */
         credentialId: z.string().min(1).optional(),
         idempotencyKey: z.string().min(1).max(200).optional(),
+        /**
+         * `'holder'` requests student-only encryption (LC-2345): the SDK signs and
+         * encrypts locally and the server never receives plaintext. Requires a
+         * profile or DID recipient; rejected for signedCredential-only sends and for
+         * inbox (email/phone) recipients. Defaults to `'network'`.
+         */
+        encryption: z.enum(['network', 'holder']).optional(),
     })
     .refine(data => !(data.templateUri && data.template), {
         message: 'Provide at most one of templateUri or template.',
@@ -672,6 +679,14 @@ export const PrepareRefreshableSendResultValidator = z.object({
     holderDid: z.string(),
     /** Present when this idempotencyKey already completed: return it without signing. */
     completed: SendBoostResponseValidator.optional(),
+    /**
+     * Present only when `encryption: 'holder'` was requested: the exact
+     * key-agreement verification-method ids (holder + current managers) the SDK
+     * must encrypt to. Recomputed on every call, so a later manager change can
+     * make a previously-prepared set stale (see `credentialRefresh.sendHolderEncryptedRefreshable`
+     * and `credentialRefresh.getEncryptionRecipients`).
+     */
+    recipientKeyIds: z.array(z.string()).optional(),
 });
 export type PrepareRefreshableSendResult = z.infer<typeof PrepareRefreshableSendResultValidator>;
 

@@ -148,6 +148,82 @@ describe('refreshCredential', () => {
     });
 
     describe('public services', () => {
+        it('pins the held binding before making a request', async () => {
+            expect(
+                await runRefresh(currentCredential, {
+                    baseline: {
+                        refreshService: {
+                            id: 'https://other.example/refresh',
+                            type: 'LearnCardCredentialRefresh2026',
+                        },
+                    },
+                })
+            ).toMatchObject({ status: 'failed', code: 'BINDING_MISMATCH' });
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            {
+                credentialStatus: {
+                    id: 'https://example.com/status/1',
+                    type: 'BitstringStatusListEntry',
+                },
+            },
+            {
+                refreshService: {
+                    id: 'https://other.example/refresh',
+                    type: 'LearnCardCredentialRefresh2026',
+                },
+            },
+        ])('rejects a replacement that switches the baseline: %j', async overrides => {
+            fetchMock.mockResolvedValue(jsonResponse({ ...updatedCredential, ...overrides }));
+            expect(
+                await runRefresh(currentCredential, {
+                    baseline: { refreshService: currentCredential.refreshService },
+                })
+            ).toMatchObject({ status: 'failed', code: 'BINDING_MISMATCH' });
+        });
+
+        it.each([currentCredential.validFrom, undefined, 'not-a-date'])(
+            'rejects a changed managed version without strictly newer validFrom: %s',
+            async validFrom => {
+                fetchMock.mockResolvedValue(jsonResponse({ ...updatedCredential, validFrom }));
+                expect(await runRefresh()).toMatchObject({ status: 'failed', code: 'ROLLBACK' });
+            }
+        );
+
+        it.each([
+            ['2026-02-01T00:00:00.000Z', 'updated'],
+            ['2026-01-01T00:00:00.000Z', 'failed'],
+            ['2025-12-01T00:00:00.000Z', 'failed'],
+        ])('uses the signed VC 1.1 issuanceDate %s', async (issuanceDate, status) => {
+            const held = makeCredential({
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                validFrom: undefined,
+                issuanceDate: '2026-01-01T00:00:00.000Z',
+            });
+            const candidate = {
+                ...held,
+                issuanceDate,
+                credentialSubject: updatedCredential.credentialSubject,
+            };
+            fetchMock.mockResolvedValue(jsonResponse(candidate));
+            expect(await runRefresh(held)).toMatchObject(
+                status === 'updated' ? { status } : { status, code: 'ROLLBACK' }
+            );
+        });
+
+        it('does not substitute issuanceDate for a missing VC 2.0 validFrom', async () => {
+            fetchMock.mockResolvedValue(
+                jsonResponse({
+                    ...updatedCredential,
+                    validFrom: undefined,
+                    issuanceDate: '2026-03-01T00:00:00.000Z',
+                })
+            );
+            expect(await runRefresh()).toMatchObject({ status: 'failed', code: 'ROLLBACK' });
+        });
+
         it('returns the verified updated credential on a public GET success', async () => {
             fetchMock.mockResolvedValue(
                 jsonResponse(updatedCredential, { headers: { etag: 'W/"v2"' } })
@@ -529,17 +605,17 @@ describe('refreshCredential', () => {
             expect(result).toEqual({ status: 'failed', code: 'ROLLBACK', retryable: false });
         });
 
-        it('accepts an equal timestamp with changed content as an update', async () => {
+        it('rejects an equal timestamp with changed managed content', async () => {
             fetchMock.mockResolvedValue(
                 jsonResponse({ ...updatedCredential, validFrom: currentCredential.validFrom })
             );
 
             const result = await runRefresh();
 
-            expect(result.status).toBe('updated');
+            expect(result).toEqual({ status: 'failed', code: 'ROLLBACK', retryable: false });
         });
 
-        it('accepts changed content when neither credential carries a timestamp', async () => {
+        it('rejects changed managed content when neither credential carries a timestamp', async () => {
             const { validFrom: _a, ...current } = makeCredential();
             const { validFrom: _b, ...candidate } = { ...updatedCredential };
 
@@ -547,7 +623,7 @@ describe('refreshCredential', () => {
 
             const result = await runRefresh(current);
 
-            expect(result.status).toBe('updated');
+            expect(result).toEqual({ status: 'failed', code: 'ROLLBACK', retryable: false });
         });
 
         it('rejects plain-HTTP endpoints as UNSAFE_ENDPOINT', async () => {

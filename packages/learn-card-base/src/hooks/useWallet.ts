@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { initLearnCard } from '@learncard/init';
 import type { CredentialRecord, UnsignedVP, VC, Boost } from '@learncard/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getManagedRefreshServices } from '@learncard/helpers';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 
 import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
@@ -78,6 +79,8 @@ export type BoostAndVCType = {
     boost: Boost;
     boostVC: VC;
 };
+
+import { resolveCredentialForClaim } from '../helpers/ingestManagedCredential';
 
 type AddVCInput = Omit<LCR, 'id'>;
 
@@ -724,7 +727,9 @@ export const useWallet = () => {
             const context = await createWalletMutationContext(originProfileDid);
             const wallet = context.wallet;
 
-            const vc = await wallet.read.get(uri);
+            const { credential: vc, baseline } = await resolveCredentialForClaim(wallet, uri);
+            // The receipt may carry the signed service list; the managed entry identifies it.
+            const managedService = baseline ? getManagedRefreshServices(baseline)[0] : undefined;
 
             if (!vc) throw new Error('No credential was found at the provided URI');
 
@@ -749,6 +754,17 @@ export const useWallet = () => {
                 ...(boostUri ? { boostUri } : {}),
                 ...(networkUri ? { networkUri } : {}),
                 __v: 1,
+                ...(baseline && managedService
+                    ? {
+                          refresh: {
+                              baseline,
+                              serviceId: managedService.id,
+                              serviceType: managedService.type,
+                              credentialId: baseline.credentialId,
+                              history: [],
+                          },
+                      }
+                    : {}),
             };
 
             // get VC From stream given streamId
