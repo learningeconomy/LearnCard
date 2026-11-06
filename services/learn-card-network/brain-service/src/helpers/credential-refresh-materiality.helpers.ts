@@ -1,6 +1,9 @@
 import { createHmac } from 'crypto';
 
-import { getCredentialRefreshRuntimeEnvironment } from '@environment';
+import {
+    getCredentialRefreshRuntimeEnvironment,
+    getCredentialRefreshPreviousDigestKeys,
+} from '@environment';
 import { canonicalizeCredentialContent, canonicalizeCredentialJson } from '@learncard/helpers';
 import type { PublishCredentialRefreshNotification } from '@learncard/types';
 
@@ -36,6 +39,55 @@ export const getCredentialRefreshDigestSecret = (): string => {
         'CREDENTIAL_REFRESH_DIGEST_SECRET is required for managed credential refresh digests'
     );
 };
+
+/**
+ * Returns current then explicitly retained previous HMAC secrets for legacy digests.
+ * A version prefix restricts matching to that version's key, just as status digests do.
+ * Candidates are read-only compatibility keys; new writes use the current secret.
+ * Rotate SECRET and KEY_VERSION together, retaining the old secret under its old
+ * version in CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS until all aggregates republish.
+ * Original subject/status/root fingerprints survive republishing, so retain their
+ * keys while those aggregates still need publication, repair, or initial-send retries.
+ * Notification route/delivery keys also rotate, potentially producing one duplicate
+ * notification across the rotation boundary.
+ */
+export const getCredentialRefreshDigestCandidateSecrets = (version?: string): string[] => {
+    const runtime = getCredentialRefreshRuntimeEnvironment();
+    const current = getCredentialRefreshDigestSecret();
+    if (version === runtime.CREDENTIAL_REFRESH_DIGEST_KEY_VERSION) return [current];
+    const previous = getCredentialRefreshPreviousDigestKeys();
+    if (version === undefined) return [current, ...Object.values(previous)];
+    return Object.prototype.hasOwnProperty.call(previous, version) ? [previous[version]!] : [];
+};
+
+const matchesStoredDigest = (
+    stored: string | undefined,
+    compute: (secret: string) => string
+): boolean => {
+    if (!stored) return false;
+    const separator = stored.indexOf(':');
+    const version = separator < 0 ? undefined : stored.slice(0, separator);
+    const digest = separator < 0 ? stored : stored.slice(separator + 1);
+    return getCredentialRefreshDigestCandidateSecrets(version).some(
+        secret => compute(secret) === digest
+    );
+};
+
+/** Matches persisted material fingerprints across explicitly retained key rotations. */
+export const matchesCredentialMaterialDigest = (
+    credential: CredentialLike,
+    stored?: string
+): boolean =>
+    matchesStoredDigest(stored, secret => computeCredentialMaterialDigest(credential, secret));
+
+/** Matches persisted subject identities across explicitly retained key rotations. */
+export const matchesCredentialSubjectDigest = (
+    credentialSubject: unknown,
+    stored?: string
+): boolean =>
+    matchesStoredDigest(stored, secret =>
+        computeCredentialSubjectDigest(credentialSubject, secret)
+    );
 
 /**
  * Keys excluded from the user-visible projection:
@@ -96,10 +148,19 @@ export const computeCredentialStatusDigest = (
     credentialStatus: unknown,
     secret: string = getCredentialRefreshDigestSecret()
 ): string =>
+    `${getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_DIGEST_KEY_VERSION}:${statusDigest(credentialStatus, secret)}`;
+
+const statusDigest = (credentialStatus: unknown, secret: string): string =>
     createHmac('sha256', secret)
         .update('credential-status:v1\0')
         .update(canonicalizeCredentialJson(credentialStatus ?? null))
         .digest('base64url');
+
+/** Legacy fingerprints accept the current key or explicitly retained previous keys. */
+export const matchesCredentialStatusDigest = (
+    credentialStatus: unknown,
+    stored?: string
+): boolean => matchesStoredDigest(stored, secret => statusDigest(credentialStatus, secret));
 
 /** Keyed fingerprint matching the holder SDK's sorted subject identity comparison. */
 export const computeCredentialSubjectDigest = (

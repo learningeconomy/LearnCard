@@ -57,6 +57,7 @@ if (publishRequestBody && !('$ref' in publishRequestBody)) {
             refreshId: properties.refreshId,
             notifyHolder: properties.notifyHolder!,
             updateSummary: properties.updateSummary!,
+            updateReason: properties.updateReason!,
             idempotencyKey: properties.idempotencyKey!,
         };
         // Generator 7.25.0 loses the OpenAPI 3.1 closed-object flag. Keep the

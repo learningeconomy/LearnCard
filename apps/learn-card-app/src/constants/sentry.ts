@@ -1,13 +1,21 @@
 import { isSharePrivateSession, scrubShareTelemetry } from '../components/share-links/sharePrivacy';
 import * as Sentry from '@sentry/react';
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useGetPreferencesForDid, useWallet } from 'learn-card-base';
 import { configureSentryTransport, configureLoggerContext } from 'learn-card-base';
-import { getResolvedTenantConfig } from '../config/tenantConfigState';
+import { getResolvedTenantConfig, isTenantAnalyticsEnabled } from '../config/tenantConfigState';
 import { getLogger } from 'learn-card-base';
 import { useFeedbackReportingEligibility } from '../feedback/reporting/eligibility';
 const log = getLogger('sentry');
+import { usePrivacyConsent } from 'learn-card-base/hooks/usePrivacyGate';
+let optionalTelemetryEnabled = false;
+const OPTIONAL_SENTRY_ENVELOPE_ITEMS: Record<string, true> = {
+    replay_event: true,
+    replay_recording: true,
+    transaction: true,
+    profile: true,
+};
 
 export type UseSentryIdentifyOptions = {
     debug?: boolean;
@@ -19,6 +27,9 @@ export type UseSentryIdentifyOptions = {
  * Call this after bootstrapTenantConfig() has resolved.
  */
 const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export const setSentryOptionalTelemetryEnabled = (enabled: boolean): void => {
+    optionalTelemetryEnabled = enabled && isTenantAnalyticsEnabled();
+};
 
 export const initSentryFromTenant = (): void => {
     const config = getResolvedTenantConfig();
@@ -35,7 +46,15 @@ export const initSentryFromTenant = (): void => {
 
     Sentry.init({
         dsn,
-        beforeSend: event => (isSharePrivateSession() ? null : scrubShareTelemetry(event)),
+        beforeSend: event => {
+            if (isSharePrivateSession()) return null;
+            // Preserve error-triggered replay only within an authorized session;
+            // startup errors must not start a recorder.
+            if (optionalTelemetryEnabled && event.exception) {
+                void Sentry.getReplay()?.flush();
+            }
+            return scrubShareTelemetry(event);
+        },
         beforeSendTransaction: event =>
             isSharePrivateSession() ? null : scrubShareTelemetry(event),
         beforeBreadcrumb: breadcrumb =>
@@ -52,14 +71,39 @@ export const initSentryFromTenant = (): void => {
             Sentry.replayIntegration({
                 maskAllText: true,
                 blockAllMedia: true,
+                beforeAddRecordingEvent: event =>
+                    optionalTelemetryEnabled && !isSharePrivateSession() ? event : null,
             }),
             // captureConsoleIntegration removed: logger is now the only path to Sentry,
             // ensuring PII scrubbing and bugReportsEnabled gate are always applied.
         ],
         // Performance Monitoring
-        tracesSampleRate: 0.5,
-        replaysSessionSampleRate: 0.1,
-        replaysOnErrorSampleRate: 1.0,
+        // Optional performance and replay data are enabled only after the
+        // authenticated profile's analytics consent has resolved.
+        tracesSampler: () => (optionalTelemetryEnabled && !isSharePrivateSession() ? 0.5 : 0),
+        replaysSessionSampleRate: 0,
+        replaysOnErrorSampleRate: 0,
+        // Sentry Replay.stop() force-flushes a session recording. This
+        // supported transport filter drops queued optional envelopes on revoke
+        // while allowing error events and security reporting through.
+        transport: options => {
+            const transport = Sentry.makeFetchTransport(options);
+            return {
+                send: envelope => {
+                    if (optionalTelemetryEnabled && !isSharePrivateSession()) {
+                        return transport.send(envelope);
+                    }
+                    const [headers, items] = envelope;
+                    const retainedItems = items.filter(
+                        ([itemHeaders]) => !OPTIONAL_SENTRY_ENVELOPE_ITEMS[itemHeaders.type]
+                    );
+                    if (retainedItems.length === items.length) return transport.send(envelope);
+                    if (retainedItems.length === 0) return Promise.resolve({ statusCode: 200 });
+                    return transport.send([headers, retainedItems] as typeof envelope);
+                },
+                flush: timeout => transport.flush(timeout),
+            };
+        },
     });
 
     // Wire the injectable transport so learn-card-base logger forwards to Sentry.
@@ -94,10 +138,49 @@ export const initSentryFromTenant = (): void => {
 };
 
 export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
+    const { analyticsEnabled, identityKey } = usePrivacyConsent();
     const currentUser = useCurrentUser();
     const { getDID } = useWallet();
     const { data: preferences, isLoading: preferencesLoading } = useGetPreferencesForDid();
     const reportingEligibility = useFeedbackReportingEligibility();
+    const optionalTelemetryAllowed =
+        analyticsEnabled &&
+        identityKey !== null &&
+        isTenantAnalyticsEnabled() &&
+        !isSharePrivateSession();
+    const activeReplayIdentity = useRef<string | null>(null);
+    const stoppingReplay = useRef<Promise<void>>(Promise.resolve());
+    const [sampleReplaySession] = useState(() => Math.random() < 0.1);
+    // Revoke during render so an already-queued transport/recording callback
+    // cannot observe the old permission while layout-effect cleanup is pending.
+    if (!optionalTelemetryAllowed || activeReplayIdentity.current !== identityKey) {
+        setSentryOptionalTelemetryEnabled(false);
+    }
+
+    useLayoutEffect(() => {
+        let cancelled = false;
+        const replay = Sentry.getReplay();
+        if (optionalTelemetryAllowed) {
+            // A previous session's stop flush must finish while transport is
+            // blocked before a newly authorized identity can start recording.
+            void stoppingReplay.current.then(() => {
+                if (cancelled || isSharePrivateSession()) return;
+                activeReplayIdentity.current = identityKey;
+                setSentryOptionalTelemetryEnabled(true);
+                if (sampleReplaySession) replay?.start();
+                else replay?.startBuffering();
+            });
+        }
+        return () => {
+            cancelled = true;
+            activeReplayIdentity.current = null;
+            setSentryOptionalTelemetryEnabled(false);
+            stoppingReplay.current = Promise.all([
+                stoppingReplay.current,
+                replay?.stop().catch(() => {}) ?? Promise.resolve(),
+            ]).then(() => undefined);
+        };
+    }, [optionalTelemetryAllowed, identityKey, sampleReplaySession]);
     // Remote crash reporting preserves the existing preference semantics so
     // login/onboarding/logout failures remain observable. Cached preferences
     // are trusted only for a fully resolved authenticated profile; only the
@@ -110,6 +193,7 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
         (canTrustPreferences ? (preferences?.bugReportsEnabled ?? true) : true);
 
     useEffect(() => {
+        let cancelled = false;
         // Keep logger privacy gate in sync with user preferences
         configureLoggerContext({
             bugReportsEnabled,
@@ -122,7 +206,7 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
                 if (options.debug) log.debug('Identify user! 🎸', { uid: currentUser.uid });
                 getDID()
                     .then(did => {
-                        if (typeof did !== 'string' || did.trim() === '') {
+                        if (cancelled || typeof did !== 'string' || did.trim() === '') {
                             return;
                         }
 
@@ -147,5 +231,9 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
                 Sentry.setTag('packageVersion', __PACKAGE_VERSION__);
             }
         }
+        return () => {
+            cancelled = true;
+            Sentry.setUser(null);
+        };
     }, [currentUser, bugReportsEnabled, reportingEligibility.bug, reportingEligibility.profileId]);
 };

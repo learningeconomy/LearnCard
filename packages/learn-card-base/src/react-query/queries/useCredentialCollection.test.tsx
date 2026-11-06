@@ -220,6 +220,37 @@ describe('progressive credential collection', () => {
         expect(result.current.isComplete).toBe(false);
         expect(read).not.toHaveBeenCalled();
     });
+    it('browses past internal-only pages without a scroll trigger and stops at visible records', async () => {
+        const visible = Array.from({ length: 25 }, (_, index) => record(index + 24));
+        const internal = Array.from({ length: 24 }, (_, index) => ({
+            ...record(index),
+            id: `__verifiable_data_${index}`,
+        }));
+        const { getPage } = makeWallet([...internal, ...visible]);
+        const { result } = renderHook(
+            () => useCredentialCollection(undefined, { mode: 'browse' }),
+            { wrapper }
+        );
+        await waitFor(() => expect(result.current.records).toEqual(visible.slice(0, 12)));
+        expect(result.current.isComplete).toBe(false);
+        expect(result.current.hasNextPage).toBe(true);
+        expect(getPage).toHaveBeenCalledTimes(3);
+    });
+    it('finishes an entirely internal collection in browse mode without a scroll trigger', async () => {
+        makeWallet(
+            Array.from({ length: 25 }, (_, index) => ({
+                ...record(index),
+                id: `__verifiable_data_${index}`,
+            }))
+        );
+        const { result } = renderHook(
+            () => useCredentialCollection(undefined, { mode: 'browse' }),
+            { wrapper }
+        );
+        await waitFor(() => expect(result.current.isComplete).toBe(true));
+        expect(result.current.records).toEqual([]);
+        expect(result.current.hasNextPage).toBe(false);
+    });
     it('keeps counts unknown until metadata ends, excludes internal/hidden rows and deduplicates', async () => {
         const rows = [
             ...Array.from({ length: 37 }, (_, i) => record(i)),

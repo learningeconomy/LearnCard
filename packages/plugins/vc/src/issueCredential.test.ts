@@ -81,6 +81,28 @@ const getLearnCard = () => {
 };
 
 describe('issueCredential', () => {
+    test.each([
+        ['production', 'true', false],
+        ['development', 'false', false],
+        ['development', 'true', true],
+    ] as const)('debug privacy with %s / %s', async (environment, flag, enabled) => {
+        vi.stubEnv('NODE_ENV', environment);
+        vi.stubEnv('LEARNCARD_DEBUG_CREDENTIALS', flag);
+        try {
+            const { initLearnCard, learnCard } = getLearnCard();
+            const debug = vi.fn();
+            await issueCredential(initLearnCard as never)(
+                { ...learnCard, debug } as never,
+                credential as never
+            );
+            expect(debug).toHaveBeenCalledTimes(enabled ? 1 : 0);
+            expect(JSON.stringify(debug.mock.calls)).not.toContain(keypair.d);
+            expect(JSON.stringify(debug.mock.calls)).not.toContain(keypair.x);
+        } finally {
+            vi.unstubAllEnvs();
+        }
+    });
+
     test('defaults to DataIntegrityProof with eddsa-rdfc-2022', async () => {
         const { initLearnCard, issueCredentialMock, learnCard } = getLearnCard();
 

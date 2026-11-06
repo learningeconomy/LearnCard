@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
     setCurrentUser: vi.fn(),
     track: vi.fn(),
     refetch: vi.fn(),
+    updatePreferences: vi.fn(),
 }));
 const stableAdapter = vi.hoisted(() => ({
     getCurrentUser: () => ({ displayName: mocks.authName }),
@@ -37,14 +38,16 @@ vi.mock('learn-card-base', () => ({
     useGetCurrentLCNUser: () => ({ refetch: mocks.refetch }),
     useIsCurrentUserLCNUser: () => ({ refetch: mocks.refetch }),
     getNotificationsEndpoint: () => 'https://example.com/notifications',
-    useUpdatePreferences: () => ({ mutateAsync: async () => undefined }),
+    useUpdatePreferences: () => ({ mutateAsync: mocks.updatePreferences }),
     useSQLiteStorage: () => ({ updateCurrentUser: mocks.updateCurrentUser }),
     currentUserStore: { set: { currentUser: mocks.setCurrentUser } },
     ModalTypes: {},
     useDeviceTypeByWidth: () => ({ isDesktop: false }),
     useImageUpload: () => ({ handleFileSelect: vi.fn(), isLoading: false }),
     getLogger: () => ({ error: vi.fn(), warn: vi.fn() }),
-    Toggle: () => null,
+    Toggle: (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+        <input type="checkbox" {...props} />
+    ),
     getSSSConfig: () => ({ escrowEnclaveMode: 'off' }),
 }));
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
@@ -116,9 +119,46 @@ beforeEach(() => {
     mocks.authName = '';
     mocks.localName = '';
     mocks.createProfile.mockResolvedValue('did:web:example.com');
+    mocks.updatePreferences.mockReset().mockResolvedValue(true);
 });
 
 describe('Apple profile onboarding', () => {
+    it('preserves AI and bug-report opt-outs after an unavailable analytics authority', async () => {
+        mocks.updatePreferences.mockRejectedValueOnce({ data: { code: 'SERVICE_UNAVAILABLE' } });
+        await openProfile();
+        fireEvent.click(
+            screen.getByRole('checkbox', {
+                name: m['onboarding.v2.brandAi']({ brand: 'LearnCard' }),
+            })
+        );
+        fireEvent.click(screen.getByRole('checkbox', { name: m['onboarding.v2.bugReports']() }));
+        await waitFor(() => expect(createButton()).toBeEnabled());
+        fireEvent.click(createButton());
+        await waitFor(() => expect(mocks.updatePreferences).toHaveBeenCalledTimes(2));
+        expect(mocks.updatePreferences.mock.calls[0][0]).toMatchObject({
+            analyticsEnabled: true,
+            aiEnabled: false,
+            bugReportsEnabled: false,
+        });
+        const retry = mocks.updatePreferences.mock.calls[1][0];
+        expect(retry).toMatchObject({ aiEnabled: false, bugReportsEnabled: false });
+        expect(retry).not.toHaveProperty('analyticsEnabled');
+    });
+
+    it.each(['SERVICE_UNAVAILABLE', 'UNAUTHORIZED'])(
+        'does not loop when preference persistence fails with %s',
+        async code => {
+            mocks.updatePreferences.mockRejectedValue({ data: { code } });
+            await openProfile();
+            await waitFor(() => expect(createButton()).toBeEnabled());
+            fireEvent.click(createButton());
+            await waitFor(() => expect(mocks.updateCurrentUser).toHaveBeenCalled());
+            expect(mocks.updatePreferences).toHaveBeenCalledTimes(
+                code === 'SERVICE_UNAVAILABLE' ? 2 : 1
+            );
+        }
+    );
+
     it('creates a profile with no name or email entry using the generated public handle', async () => {
         await openProfile();
         expect(screen.getByLabelText('Full Name (optional)')).not.toBeRequired();

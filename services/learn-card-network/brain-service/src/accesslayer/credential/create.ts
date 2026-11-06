@@ -6,10 +6,14 @@ import { isIssuedCredential } from '@helpers/issuedCredentialStatus.helpers';
 import type { IssuedCredential } from 'types/credential';
 
 import { Credential, CredentialInstance } from '@models';
+import { neogma } from '@instance';
+import { reserveCredentialStatusEntries } from '@helpers/status-list.helpers';
 
 export const storeCredential = async (
     input: UnsignedVC | VC | JWE | IssuedCredential,
-    transaction?: Transaction
+    transaction?: Transaction,
+    statusOwnerProfileId?: string,
+    options: { lenient?: boolean } = {}
 ): Promise<CredentialInstance> => {
     const id = uuid();
 
@@ -21,6 +25,7 @@ export const storeCredential = async (
         ? BitstringStatusListEntryValidator.array().parse(input.statusEntries)
         : undefined;
     const encrypted = isEncrypted(credential);
+    const lenient = options.lenient === true && !issued && !encrypted;
     if (
         !statusEntries?.length &&
         (encrypted || !getBitstringStatusListEntries(credential).length)
@@ -30,12 +35,31 @@ export const storeCredential = async (
             { credentialId: id }
         );
     }
-    return Credential.createOne(
-        {
-            id,
-            credential: JSON.stringify(credential),
-            ...(statusEntries?.length ? { statusEntries: JSON.stringify(statusEntries) } : {}),
-        },
-        transaction ? { session: transaction } : undefined
-    );
+    const create = (session?: Transaction, validatedOwner?: string) =>
+        Credential.createOne(
+            {
+                id,
+                credential: JSON.stringify(credential),
+                ...(statusEntries?.length ? { statusEntries: JSON.stringify(statusEntries) } : {}),
+                ...(validatedOwner
+                    ? {
+                          statusOwnerProfileId: validatedOwner,
+                          statusReservationMode: lenient
+                              ? ('lenient' as const)
+                              : ('strict' as const),
+                      }
+                    : {}),
+            },
+            session ? { session } : undefined
+        );
+    const entries = statusEntries ?? getBitstringStatusListEntries(credential);
+    if (!statusOwnerProfileId || entries.length === 0) return create(transaction);
+    return neogma.getTransaction(transaction ?? null, async tx => {
+        await reserveCredentialStatusEntries(entries, statusOwnerProfileId, id, tx, {
+            lenient,
+            ...(!encrypted ? { credential } : {}),
+        });
+        // Inbox deliveries need a validated owner even without a CREDENTIAL_SENT edge.
+        return create(tx, statusOwnerProfileId);
+    });
 };

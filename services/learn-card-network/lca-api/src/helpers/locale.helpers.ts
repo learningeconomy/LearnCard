@@ -2,14 +2,16 @@ import { environment } from '@environment';
 import axios from 'axios';
 
 import cache from '@cache';
+import { getBrainOpenApiBase } from './brainUrl';
 
 /**
  * Base URL for the LearnCard Network (brain-service) OpenAPI, used to resolve a
  * recipient's saved locale by email before they authenticate. Overridable via
  * `NETWORK_BRAIN_SERVICE_URL`; defaults to production.
  */
-const BRAIN_SERVICE_URL =
-    environment.NETWORK_BRAIN_SERVICE_URL || 'https://network.learncard.com/api';
+const BRAIN_SERVICE_URL = getBrainOpenApiBase(
+    environment.NETWORK_BRAIN_SERVICE_URL || 'https://network.learncard.com/api'
+);
 
 /** Max time we'll wait on the locale lookup before falling back. Login must not block on it. */
 const LOOKUP_TIMEOUT_MS = 1500;
