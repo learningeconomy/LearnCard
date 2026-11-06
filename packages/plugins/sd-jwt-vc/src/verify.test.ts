@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import { generateKeyPair, exportJWK, importJWK, SignJWT } from 'jose';
+import { base58 } from '@scure/base';
 
 import { verifySdJwtVc } from './verify';
 import { getSdJwtVcPlugin } from './plugin';
@@ -96,6 +97,39 @@ const issueTestCredential = async (
 };
 
 describe('verifySdJwtVc', () => {
+    it('verifies authorized LearnCard Ed25519 multibase keys and rejects a different codec', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const learnCard = buildLearnCardMock(publicJwk);
+        const document = await learnCard.invoke.resolveDid(ISSUER_DID);
+        const method = document.verificationMethod[0];
+        const bytes = new Uint8Array(Buffer.from(publicJwk.x as string, 'base64url'));
+        delete method.publicKeyJwk;
+        method.type = 'Ed25519VerificationKey2020';
+        method.publicKeyMultibase = `z${base58.encode(new Uint8Array([0xed, 0x01, ...bytes]))}`;
+        expect((await verifySdJwtVc(learnCard, compact)).errors).toEqual([]);
+        method.publicKeyMultibase = `z${base58.encode(new Uint8Array([0xec, 0x01, ...bytes]))}`;
+        expect((await verifySdJwtVc(learnCard, compact)).errors.join()).toContain(
+            'verification_method_not_found'
+        );
+    });
+
+    it('retains assertion-method authorization for decoded Ed25519 keys', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const learnCard = buildLearnCardMock(publicJwk);
+        const document = await learnCard.invoke.resolveDid(ISSUER_DID);
+        const method = document.verificationMethod[0];
+        delete method.publicKeyJwk;
+        method.type = 'Ed25519VerificationKey2018';
+        method.publicKeyBase58 = base58.encode(
+            new Uint8Array(Buffer.from(publicJwk.x as string, 'base64url'))
+        );
+        expect((await verifySdJwtVc(learnCard, compact)).errors).toEqual([]);
+        document.assertionMethod = [];
+        expect((await verifySdJwtVc(learnCard, compact)).errors.join()).toContain(
+            'verification_method_not_authorized'
+        );
+    });
+
     it('verifies a well-formed SD-JWT-VC issued by a resolvable DID', async () => {
         const { compact, publicJwk } = await issueTestCredential();
         const learnCard = buildLearnCardMock(publicJwk);

@@ -1,0 +1,31 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace = 'com.learncard.dclab'
+    compileSdk = 36
+    defaultConfig { minSdk = 28; targetSdk = 36; versionCode = 1; versionName = '0.1' }
+    buildFeatures { resValues = true }
+    flavorDimensions += 'role'
+    productFlavors {
+        holder { dimension = 'role'; applicationId = 'com.learncard.dclab.holder'; resValue 'string', 'app_name', 'LearnCard Holder Lab' }
+        verifier { dimension = 'role'; applicationId = 'com.learncard.dclab.verifier'; resValue 'string', 'app_name', 'LearnCard Verifier Lab' }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_21; targetCompatibility JavaVersion.VERSION_21 }
+    // This development harness has no release variant and never ships test credentials in LearnCard.
+    androidComponents { beforeVariants(selector().withBuildType('release')) { it.enable = false } }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation project(':capacitor-android')
+    implementation project(':learncard-digital-credentials')
+    implementation 'androidx.credentials:credentials:1.6.0'
+    implementation 'androidx.credentials:credentials-play-services-auth:1.6.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+}
+
+tasks.register('buildLabWeb', Exec) {
+    workingDir rootProject.projectDir
+    commandLine 'bun', 'web/build.ts'
+}
+tasks.named('preBuild') { dependsOn 'buildLabWeb' }

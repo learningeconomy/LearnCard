@@ -147,6 +147,7 @@ describe('classifyMethod', () => {
         // Generic signers can mint the same DID-Auth VP / API token as the gated wrappers.
         for (const name of [
             'issuePresentation',
+            'createDcApiResponse',
             'signPresentation',
             'signIdToken',
             'presentSdJwtVc',
@@ -657,6 +658,32 @@ describe('secret audit (OpenID4VC)', () => {
                 runCall('presentCredentials', { write: true, args: '["openid4vp://x", []]' }, noIo)
             )
         ).toBe('SECRET_REQUIRES_FLAG');
+        expect(mocks.initLearnCard).not.toHaveBeenCalled();
+    });
+
+    it('refuses a DC API response without --show-secret before signing or other I/O', async () => {
+        await writeEnv(`SECURE_SEED=${SEED}\n`);
+        expect(
+            await failCode(
+                runCall(
+                    'createDcApiResponse',
+                    { write: true, args: '[{}, "https://verifier.example", []]' },
+                    noIo
+                )
+            )
+        ).toBe('SECRET_REQUIRES_FLAG');
+        expect(mocks.initLearnCard).not.toHaveBeenCalled();
+    });
+
+    it('describes the DC API response signing and secret-output requirements without connecting', async () => {
+        await runCall('createDcApiResponse', { describe: true }, noIo);
+        expect(out.result).toMatchObject({
+            method: 'createDcApiResponse',
+            effect: 'write',
+            secret: true,
+            plugin: 'openid4vc',
+            needs: ['--write', '--show-secret'],
+        });
         expect(mocks.initLearnCard).not.toHaveBeenCalled();
     });
 

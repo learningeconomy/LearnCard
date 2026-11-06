@@ -167,12 +167,18 @@
                 "label": "Learning History",
                 "description": "Structured programs of learning."
             },
-            "ids": { "label": "IDs", "description": "Credentials used to verify identity." },
+            "ids": {
+                "label": "IDs",
+                "description": "Credentials used to verify identity."
+            },
             "socialBadges": {
                 "label": "Social Badges",
                 "description": "Digital labels recognizing participation or group membership."
             },
-            "memberships": { "label": "Memberships", "description": "Records of memberships." },
+            "memberships": {
+                "label": "Memberships",
+                "description": "Records of memberships."
+            },
             "accomplishments": {
                 "label": "Accomplishments",
                 "description": "Collections of work that showcase skills and experience."
@@ -189,9 +195,18 @@
                 "label": "Family",
                 "description": "Family profiles connected through shared learning journeys."
             },
-            "name": { "label": "Name", "description": "Your name." },
-            "email": { "label": "Email", "description": "Your email address." },
-            "profilePhoto": { "label": "Profile photo", "description": "Your profile photo." },
+            "name": {
+                "label": "Name",
+                "description": "Your name."
+            },
+            "email": {
+                "label": "Email",
+                "description": "Your email address."
+            },
+            "profilePhoto": {
+                "label": "Profile photo",
+                "description": "Your profile photo."
+            },
             "qualifications": {
                 "label": "Qualifications",
                 "description": "Education, training, and professional qualifications."
@@ -10360,5 +10375,33 @@
         "retry": "Try Again",
         "unsubscribing": "Unsubscribing…",
         "unsubscribed": "You’re unsubscribed from announcements."
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Digital credential",
+        "unavailableTitle": "Request unavailable",
+        "unavailableDescription": "Return to the requesting app and try again.",
+        "canceling": "Canceling…",
+        "preparing": "Preparing…",
+        "requiredFields": "These fields are required. You can cancel instead.",
+        "reviewTitle": "Share these details?",
+        "reviewDescription": "Check the requested details before sharing.",
+        "requestedBy": "Requested by",
+        "androidApp": "Android app",
+        "requestDetails": "Request details",
+        "requestIdentity": "App signing identity",
+        "selectedCredential": "Selected credential",
+        "requestedDetails": "Requested details",
+        "required": "Required",
+        "notShared": "Not shared",
+        "metadataIncluded": "The issuer and credential type are also included.",
+        "credentialDetails": "Credential details",
+        "issuer": "Issuer",
+        "credentialType": "Credential type",
+        "expires": "Expires",
+        "sharing": "Sharing…",
+        "shareDetails": "Share details",
+        "loadingTitle": "Preparing your request",
+        "loadingDescription": "Checking the details you can share.",
+        "returnToApp": "Return to app"
     }
 }

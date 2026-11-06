@@ -15,6 +15,7 @@ import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';
+import NativeDigitalCredentialsListener from './native-digital-credentials/NativeDigitalCredentialsListener';
 import {
     sqliteInit,
     PushNotificationListener,
@@ -225,6 +226,7 @@ const FullApp: React.FC = () => {
                                         <PushNotificationListener />
                                         <PresentVcModalListener />
                                         <CredentialSyncListener />
+                                        <NativeDigitalCredentialsListener />
                                         {/* Foreground refresh of stale refreshable
                                             credentials; gated by the LaunchDarkly
                                             credentialRefreshForegroundEnabled flag. */}

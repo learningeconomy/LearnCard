@@ -195,12 +195,18 @@
                 "label": "Familia",
                 "description": "Perfiles familiares conectados mediante experiencias de aprendizaje compartidas."
             },
-            "name": { "label": "Nombre", "description": "Tu nombre." },
+            "name": {
+                "label": "Nombre",
+                "description": "Tu nombre."
+            },
             "email": {
                 "label": "Correo electrónico",
                 "description": "Tu dirección de correo electrónico."
             },
-            "profilePhoto": { "label": "Foto de perfil", "description": "Tu foto de perfil." },
+            "profilePhoto": {
+                "label": "Foto de perfil",
+                "description": "Tu foto de perfil."
+            },
             "qualifications": {
                 "label": "Cualificaciones",
                 "description": "Estudios, formación y cualificaciones profesionales."
@@ -10363,5 +10369,33 @@
         "retry": "Reintentar",
         "unsubscribing": "Cancelando la suscripción…",
         "unsubscribed": "Ya no recibirás anuncios."
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Credencial digital",
+        "unavailableTitle": "Solicitud no disponible",
+        "unavailableDescription": "Vuelve a la aplicación que hizo la solicitud e inténtalo de nuevo.",
+        "canceling": "Cancelando…",
+        "preparing": "Preparando…",
+        "requiredFields": "Estos campos son obligatorios. Puedes cancelar si lo prefieres.",
+        "reviewTitle": "¿Compartir estos datos?",
+        "reviewDescription": "Revisa los datos solicitados antes de compartirlos.",
+        "requestedBy": "Solicitado por",
+        "androidApp": "Aplicación de Android",
+        "requestDetails": "Detalles de la solicitud",
+        "requestIdentity": "Identidad de firma de la aplicación",
+        "selectedCredential": "Credencial seleccionada",
+        "requestedDetails": "Datos solicitados",
+        "required": "Obligatorio",
+        "notShared": "No se comparte",
+        "metadataIncluded": "También se incluyen el emisor y el tipo de credencial.",
+        "credentialDetails": "Detalles de la credencial",
+        "issuer": "Emisor",
+        "credentialType": "Tipo de credencial",
+        "expires": "Vence",
+        "sharing": "Compartiendo…",
+        "shareDetails": "Compartir datos",
+        "loadingTitle": "Preparando tu solicitud",
+        "loadingDescription": "Comprobando los datos que puedes compartir.",
+        "returnToApp": "Volver a la aplicación"
     }
 }
