@@ -84,7 +84,9 @@ application verification catalog.
 
 The two integration groups opt into the setup action's `brain-integration`
 cache profile. Every job still installs the full workspace with the same frozen
-lockfile. Other setup consumers retain the existing cache and fallback behavior.
+lockfile. The existing SDK preparation job on main also uses this profile to populate a
+cache that new PR and merge-queue refs can restore. It adds no runner. Other setup
+consumers retain the existing cache and fallback behavior.
 
 The profile restores only its own Bun package cache under the runner temporary
 directory. Its key includes OS/architecture, Bun version, Node pin, lockfile,

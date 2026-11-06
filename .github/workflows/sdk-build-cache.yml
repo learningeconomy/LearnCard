@@ -26,7 +26,11 @@ jobs:
               with:
                   node-version-file: .nvmrc
 
+            # Populate the exact dependency cache on main so new PR and queue
+            # refs can restore it without relying on another PR's private cache.
             - uses: ./.github/actions/setup
+              with:
+                  dependency-profile: brain-integration
 
             - name: Calculate fixed SDK identity
               id: key

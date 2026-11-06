@@ -151,3 +151,13 @@ test('production groups opt in; benchmark forces a cold cache then compares iden
         assert.equal(job.strategy['fail-fast'], false);
     }
 });
+
+test('existing main SDK producer warms the shared dependency cache without another job', () => {
+    const producer = yaml('workflows/sdk-build-cache.yml');
+    assert.deepEqual((producer.on ?? producer.true).push.branches, ['main']);
+    assert.equal(Object.keys(producer.jobs).length, 1);
+    const setup = producer.jobs.sdk.steps.find(step => step.uses === './.github/actions/setup');
+    assert.equal(setup.with['dependency-profile'], 'brain-integration');
+    assert.equal(setup.with['cache-suffix'], undefined);
+    assert.equal(setup.with['save-cache'], undefined);
+});
