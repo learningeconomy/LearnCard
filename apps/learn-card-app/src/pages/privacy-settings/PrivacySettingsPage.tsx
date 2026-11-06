@@ -1,3 +1,4 @@
+import { AnnouncementPreferences } from './AnnouncementPreferences';
 import { useVerifierHistoryEligibility } from '../../helpers/verifier-history/useEligibility';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
@@ -326,6 +327,14 @@ const PrivacySettingsPage: React.FC = () => {
             <IonContent>
                 <DataSharingCenterView
                     vm={vm}
+                    announcements={
+                        currentLCNUser?.profileId ? (
+                            <AnnouncementPreferences
+                                key={currentLCNUser.profileId}
+                                profileId={currentLCNUser.profileId}
+                            />
+                        ) : undefined
+                    }
                     openSaved={openSavedOnEntry && savedDestinationReady}
                     onSavedOpened={handleSavedOpened}
                     showOwnerLinks={shareFeatureEnabled}

@@ -109,6 +109,7 @@
         "@learncard/credential-library": "workspace:*",
         "@learncard/embed-sdk": "workspace:^",
         "@learncard/helpers": "workspace:*",
+        "@learncard/network-brain-client": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
         "@learncard/ler-rs-plugin": "workspace:*",
         "@learncard/open-badge-v2-plugin": "workspace:*",
