@@ -7,7 +7,7 @@ import {
 } from '../../preferences.shared';
 
 describe('preferences cache helpers', () => {
-    it('updates cached preferences immediately for every DID-scoped preferences query', () => {
+    it('changes only the active DID, leaving another account consent untouched', () => {
         const queryClient = new QueryClient();
         const firstDidKey = ['useGetPreferencesForDid', 'did:example:one'];
         const secondDidKey = ['useGetPreferencesForDid', 'did:example:two'];
@@ -23,14 +23,14 @@ describe('preferences cache helpers', () => {
         });
         queryClient.setQueryData(unrelatedKey, { aiEnabled: false });
 
-        optimisticallyMergePreferenceQueries(queryClient, { aiEnabled: true });
+        optimisticallyMergePreferenceQueries(queryClient, { aiEnabled: true }, 'did:example:one');
 
         expect(queryClient.getQueryData(firstDidKey)).toEqual({
             aiEnabled: true,
             analyticsEnabled: true,
         });
         expect(queryClient.getQueryData(secondDidKey)).toEqual({
-            aiEnabled: true,
+            aiEnabled: false,
             bugReportsEnabled: false,
         });
         expect(queryClient.getQueryData(unrelatedKey)).toEqual({ aiEnabled: false });
@@ -45,10 +45,11 @@ describe('preferences cache helpers', () => {
             analyticsEnabled: true,
         });
 
-        const snapshot = optimisticallyMergePreferenceQueries(queryClient, {
-            aiEnabled: true,
-            bugReportsEnabled: true,
-        });
+        const snapshot = optimisticallyMergePreferenceQueries(
+            queryClient,
+            { aiEnabled: true, bugReportsEnabled: true },
+            'did:example:one'
+        );
 
         restorePreferenceQueries(queryClient, snapshot);
 

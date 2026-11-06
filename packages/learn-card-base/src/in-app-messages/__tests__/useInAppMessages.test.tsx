@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { inAppMessageValidator, type MyCampaign } from '@learncard/types';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import type { CredentialFactsState } from '../useCredentialFacts';
 import { useInAppMessages } from '../useInAppMessages';
@@ -203,5 +204,77 @@ describe('message evaluation lifecycle', () => {
             presentationSupported: !native,
             willShow: !native,
         });
+    });
+});
+
+describe('campaign source', () => {
+    beforeEach(() => {
+        localStorage.clear();
+        resetInAppMessageDismissals();
+        state.flags = {
+            inAppMessagesV2: { messages: [{ id: 'flag', title: 'Flag', priority: 1 }] },
+        };
+        state.facts = {
+            accountDid: 'alice',
+            summaries: [],
+            complete: true,
+            total: 0,
+            readsUsed: 0,
+            backfillNow: vi.fn(),
+            clearFacts: vi.fn(),
+        };
+    });
+    afterEach(cleanup);
+    it('shares targeting, priority and frequency with flags and drops paused campaigns on fetch', () => {
+        const item = {
+            campaign: {
+                id: 'campaign',
+                selfEnroll: false,
+                message: inAppMessageValidator.parse({
+                    id: 'campaign',
+                    title: 'Campaign',
+                    priority: 2,
+                    frequency: 'once',
+                    targeting: { platform: ['ios'] },
+                }),
+            },
+            state: { shownCount: 0 },
+        };
+        const { result, rerender } = renderHook(
+            ({ campaigns }) => useInAppMessages(undefined, { campaigns }),
+            { initialProps: { campaigns: [item] as MyCampaign[] } }
+        );
+        expect(result.current.message?.id).toBe('flag');
+        item.campaign.message.targeting = { platform: ['web'] };
+        rerender({ campaigns: [{ ...item }] });
+        expect(result.current.message?.id).toBe('campaign');
+        rerender({
+            campaigns: [
+                { ...item, state: { shownCount: 1, firstShownAt: new Date().toISOString() } },
+            ],
+        });
+        expect(result.current.message?.id).toBe('flag');
+        expect(result.current.report.diagnostics.find(d => d.id === 'campaign')).toMatchObject({
+            source: 'campaign',
+            suppressed: true,
+        });
+        rerender({ campaigns: [] });
+        expect(result.current.messages.map(m => m.id)).toEqual(['flag']);
+    });
+    it('loads credential facts for campaign rules, even when flags do not need them', () => {
+        const item = {
+            campaign: {
+                id: 'credential-campaign',
+                selfEnroll: true,
+                message: inAppMessageValidator.parse({
+                    id: 'credential-campaign',
+                    title: 'Targeted',
+                    targeting: { credential: { issuers: ['did:example:issuer'] } },
+                }),
+            },
+            state: { shownCount: 0 },
+        };
+        renderHook(() => useInAppMessages(undefined, { campaigns: [item] }));
+        expect(state.factsRequired).toBe(true);
     });
 });

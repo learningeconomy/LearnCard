@@ -369,6 +369,7 @@ export const credentialRefreshFastifyPlugin: FastifyPluginAsync<
                         ...(record.etag ? { etag: record.etag } : {}),
                         ...(record.signingMode ? { signingMode: record.signingMode } : {}),
                         ...(record.updateSummary ? { updateSummary: record.updateSummary } : {}),
+                        ...(record.updateReason ? { updateReason: record.updateReason } : {}),
                     })),
                     hasMore,
                     ...(nextCursor ? { cursor: nextCursor } : {}),
