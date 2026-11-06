@@ -3,6 +3,13 @@ import { ProxyOAuthServerProvider } from '@modelcontextprotocol/sdk/server/auth/
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth.js';
 
+export {
+    OAuthError,
+    InvalidTokenError,
+    InsufficientScopeError,
+    ServerError,
+} from '@modelcontextprotocol/sdk/server/auth/errors.js';
+
 export const DEFAULT_OAUTH_PATHS = {
     AUTHORIZE: '/oauth/authorize',
     CALLBACK: '/oauth/callback',
@@ -20,7 +27,7 @@ export type OAuthProxyOptions = {
     revocationPath?: string;
     registrationPath?: string;
     /**
-     * Verify a bearer token. Throw the SDK's InvalidTokenError for invalid tokens (401).
+     * Verify a bearer token. Throw InvalidTokenError from @learncard/mcp for invalid tokens (401).
      * Other errors remain service failures (500); OAuthError subclasses keep their SDK status.
      * OAuthError messages reach the client, so use client-safe text.
      */

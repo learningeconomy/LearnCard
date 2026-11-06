@@ -1,10 +1,10 @@
 import * as Sentry from '@sentry/node';
 import jwt from 'jsonwebtoken';
-import { InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import {
     createMcpApp,
     createMcpServer as createSharedMcpServer,
     createOAuthProxyProvider,
+    InvalidTokenError,
     listenMcpApp,
     type McpServerInfo,
 } from '@learncard/mcp';

@@ -50,7 +50,10 @@ The AI Passport backend (`services/ai-passport-backend/src/mcp-server/app.ts`) i
 
 ## Bearer verification errors
 
-`verifyAccessToken` throws the SDK's `InvalidTokenError` for invalid tokens. The bearer middleware returns 401 with a `WWW-Authenticate` challenge.
+Import `OAuthError`, `InvalidTokenError`, `InsufficientScopeError`, and `ServerError` from `@learncard/mcp`, not a separate SDK installation.
+These exports use the same SDK instance as this package's bearer middleware.
+
+`verifyAccessToken` throws `InvalidTokenError` for invalid tokens. The bearer middleware returns 401 with a `WWW-Authenticate` challenge.
 Other `OAuthError` subclasses keep their SDK status, including `InsufficientScopeError` (403) and `ServerError` (500).
 Unexpected errors return a generic 500, not a token rejection. `OAuthError` messages reach the client, so hosts must use client-safe text.
 

@@ -9,3 +9,5 @@ Preserve verifier service failures as 500 responses and scope failures as 403. H
 Publish this MIT-licensed package publicly on npm. Sanitize unknown tool-handler failures as generic `internal_error` results, preserve intended `McpToolError` messages, and emit only content-free diagnostics.
 
 Preserve authentication and cancellation context when a tool omits `inputSchema`, keeping request context out of handler arguments.
+
+Export the middleware SDK's OAuth error classes and use them in the AI Passport host so separate SDK copies do not turn intended 401 or 403 responses into 500s.

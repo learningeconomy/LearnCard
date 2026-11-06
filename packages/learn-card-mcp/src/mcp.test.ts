@@ -1,15 +1,18 @@
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
+import { copyFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { z } from 'zod';
-import {
-    InsufficientScopeError,
-    InvalidTokenError,
-    ServerError,
-} from '@modelcontextprotocol/sdk/server/auth/errors.js';
 
 import {
     createMcpApp,
+    OAuthError,
+    InvalidTokenError,
+    InsufficientScopeError,
+    ServerError,
     createOAuthProxyProvider,
     defineMcpTool,
     getAuthenticatedDid,
@@ -22,9 +25,20 @@ import {
 const VALID_TOKEN = 'valid-token';
 const PRIVATE_DETAIL = 'SYNTHETIC_PRIVATE_DRIVER_DETAIL';
 
+const require = createRequire(import.meta.url);
+const foreignSdkDirectory = mkdtempSync(join(tmpdir(), 'learncard-mcp-sdk-'));
+const foreignSdkPath = join(foreignSdkDirectory, 'errors.cjs');
+copyFileSync(require.resolve('@modelcontextprotocol/sdk/server/auth/errors.js'), foreignSdkPath);
+const foreignSdk = require(foreignSdkPath);
+
 const provider = createOAuthProxyProvider({
     authorizationServerUrl: 'https://auth.example.test/',
     verifyAccessToken: async token => {
+        if (token === 'foreign-invalid-token')
+            throw new foreignSdk.InvalidTokenError(PRIVATE_DETAIL);
+        if (token === 'foreign-insufficient-scope') {
+            throw new foreignSdk.InsufficientScopeError(PRIVATE_DETAIL);
+        }
         if (token === 'verifier-outage') throw new Error('private database connection detail');
         if (token === 'server-error') throw new ServerError('Verifier unavailable');
         if (token === 'insufficient-scope') throw new InsufficientScopeError('Insufficient scope');
@@ -142,6 +156,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
     await new Promise<void>(resolve => server.close(() => resolve()));
+    rmSync(foreignSdkDirectory, { recursive: true, force: true });
 });
 
 const rpc = (token: string | undefined, id: number, method: string, params: unknown = {}) =>
@@ -183,6 +198,15 @@ describe('defineMcpTool', () => {
 });
 
 describe('createOAuthProxyProvider', () => {
+    it('exports OAuth classes from the middleware SDK, not an independent host copy', () => {
+        expect(new InvalidTokenError('Invalid token')).toBeInstanceOf(OAuthError);
+        expect(new InsufficientScopeError('Missing scope')).toBeInstanceOf(OAuthError);
+        expect(new foreignSdk.InvalidTokenError('Invalid token')).not.toBeInstanceOf(OAuthError);
+        expect(new foreignSdk.InsufficientScopeError('Missing scope')).not.toBeInstanceOf(
+            OAuthError
+        );
+    });
+
     it.each([
         new InvalidTokenError('Invalid access token'),
         new InsufficientScopeError('Insufficient scope'),
@@ -220,6 +244,8 @@ describe('createMcpApp', () => {
     });
 
     it.each([
+        ['foreign-invalid-token', 500, 'server_error', 'Internal Server Error'],
+        ['foreign-insufficient-scope', 500, 'server_error', 'Internal Server Error'],
         ['verifier-outage', 500, 'server_error', 'Internal Server Error'],
         ['server-error', 500, 'server_error', 'Verifier unavailable'],
         ['insufficient-scope', 403, 'insufficient_scope', 'Insufficient scope'],
