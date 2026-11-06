@@ -80,7 +80,9 @@ type LooseRegisterTool = (
         outputSchema?: McpSchemaShape;
         annotations: McpToolAnnotations & { title: string };
     },
-    callback: (args: Record<string, unknown>, extra: McpToolContext) => Promise<McpToolResponse>
+    callback: (
+        ...args: [extra: McpToolContext] | [args: Record<string, unknown>, extra: McpToolContext]
+    ) => Promise<McpToolResponse>
 ) => unknown;
 
 /** Registers tools, preserving intended McpToolError messages and sanitizing unknown failures. */
@@ -107,7 +109,10 @@ export const registerMcpTools = (
                 ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
                 annotations: { title: tool.title, ...tool.annotations },
             },
-            async (args, extra) => {
+            async (...callbackArgs) => {
+                // The SDK calls schema-less tools with only the request context.
+                const args = callbackArgs.length === 1 ? {} : callbackArgs[0];
+                const extra = callbackArgs.length === 1 ? callbackArgs[0] : callbackArgs[1];
                 try {
                     return await tool.handler(args ?? {}, {
                         authInfo: extra?.authInfo,

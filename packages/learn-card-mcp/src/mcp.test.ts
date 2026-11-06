@@ -93,6 +93,22 @@ const tools: McpToolDefinition[] = [
             throw new Error(PRIVATE_DETAIL);
         },
     }),
+    defineMcpTool({
+        name: 'no-input-context',
+        title: 'No-input context',
+        description: 'Observes context separation without declaring an input schema.',
+        annotations: readOnly,
+        handler: async (args, context) =>
+            jsonToolResponse({
+                did: getAuthenticatedDid(context) ?? null,
+                signalPresent: context.signal instanceof AbortSignal,
+                signalAborted: context.signal?.aborted ?? null,
+                argsEmpty: Object.keys(args).length === 0,
+                argsContainAuthInfo: 'authInfo' in args,
+                argsContainSignal: 'signal' in args,
+                argsContainToken: 'token' in args,
+            }),
+    }),
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -344,6 +360,30 @@ describe('createMcpApp', () => {
             await new Promise<void>(resolve => listener.close(() => resolve()));
         }
     });
+
+    it.each([{}, { arguments: {} }])(
+        'preserves authenticated context for an omitted inputSchema with params %j',
+        async params => {
+            expect(tools[3]).not.toHaveProperty('inputSchema');
+            const response = await rpc(VALID_TOKEN, 22, 'tools/call', {
+                name: 'no-input-context',
+                ...params,
+            });
+            expect(response.status).toBe(200);
+            const body = await readJson(response);
+            expect(body.error).toBeUndefined();
+            expect(body.result.isError).not.toBe(true);
+            expect(body.result.structuredContent).toEqual({
+                did: 'did:example:anon',
+                signalPresent: true,
+                signalAborted: false,
+                argsEmpty: true,
+                argsContainAuthInfo: false,
+                argsContainSignal: false,
+                argsContainToken: false,
+            });
+        }
+    );
 
     it('gives overlapping requests their own server', async () => {
         gates.length = 0;
