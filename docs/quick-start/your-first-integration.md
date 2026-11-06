@@ -10,6 +10,10 @@ Send a badge to an email address. The recipient gets a claim link and does not n
 You can issue credentials without code from the [LearnCard app](https://learncard.app). The options below send them programmatically.
 {% endhint %}
 
+{% hint style="info" %}
+**Using an AI coding agent?** Run `npx @learncard/cli skill install`, then send it to [Use LearnCard from an AI Agent](../introduction/for-ai-agents.md). It covers the staging-first, non-interactive version of this quickstart.
+{% endhint %}
+
 Choose one option.
 
 {% tabs %}
@@ -164,6 +168,27 @@ Run it with **a real email address you can open**. Placeholder domains like `exa
 ```bash
 node --env-file=.env send.mjs you@example.com
 ```
+
+{% endtab %}
+
+{% tab title="Automated / AI agent" %}
+
+For scripts, CI jobs, and AI agents: run on **staging**, never prompt, and read one JSON result per command. You need **Node.js 20 or newer**. In an empty folder dedicated to staging, run:
+
+```bash
+npx @learncard/cli init --network staging --name "Acme Test Issuer" -y --json
+npx @learncard/cli send you@yourdomain.com --network staging -y --json --suppress-delivery
+```
+
+`init` creates the folder's identity and staging profile. `send` prints one line of JSON on stdout. With `--suppress-delivery`, no email is sent: the credential still waits in the recipient's inbox on staging, and `claimUrl` in the result is the link to open instead. Keep `activityId` and check where the credential got to:
+
+```bash
+npx @learncard/cli status <activityId> --network staging --json
+```
+
+`state` in the result is the latest event, for example `CREATED`, `DELIVERED`, or `CLAIMED`. A failure prints `{"ok":false,"error":…,"code":…}` and exits 1.
+
+See [Use LearnCard from an AI Agent](../introduction/for-ai-agents.md) for the JSON contract, which commands change state, and how to move to production.
 
 {% endtab %}
 {% endtabs %}

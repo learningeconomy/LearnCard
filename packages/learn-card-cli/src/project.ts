@@ -10,6 +10,7 @@ import {
 import { getLCAPlugin, initLCALearnCard, type LCALearnCard } from '@learncard/lca-api-plugin';
 import { generateRandomSeed } from './random';
 import { out } from './out';
+import { CliError, NoIdentityError, UsageError } from './errors';
 
 export const KEYS = {
     SECURE_SEED: 'SECURE_SEED', // Private issuer seed; never regenerate or print.
@@ -40,7 +41,39 @@ export interface ProjectOptions {
     didkit?: Promise<Buffer>;
     json?: boolean;
     readOnly?: boolean;
+    /**
+     * `false` turns off LearnCloud's automatic DID association, so the wallet never
+     * registers a new DID (`addDid` / `setPrimaryDid`) as a side effect of a LearnCloud
+     * call. Unset keeps the SDK default (on), except `connectAsDidWeb` with `readOnly`.
+     */
+    associateDids?: boolean;
+    /** Ethereum plugin chain (`ethereumConfig.network`). Unset keeps the SDK default (mainnet). */
+    ethereumChain?: string;
 }
+
+/**
+ * The `cloud` / `ethereumConfig` init fields `options` asks for (omitted when all are
+ * defaults). With `readOnlyStopsAssociation`, `readOnly` also turns association off.
+ */
+const walletConfig = (
+    options: ProjectOptions,
+    cloudUrl: string | undefined,
+    readOnlyStopsAssociation: boolean
+): {
+    cloud?: { url?: string; automaticallyAssociateDids?: false };
+    ethereumConfig?: { network: string };
+} => {
+    const noAssociation =
+        options.associateDids === false || (readOnlyStopsAssociation && !!options.readOnly);
+    const cloud = {
+        ...(cloudUrl && { url: cloudUrl }),
+        ...(noAssociation && { automaticallyAssociateDids: false as const }),
+    };
+    return {
+        ...(Object.keys(cloud).length > 0 && { cloud }),
+        ...(options.ethereumChain && { ethereumConfig: { network: options.ethereumChain } }),
+    };
+};
 
 export type NetworkCard = NetworkLearnCardFromSeed['returnValue'];
 export type DidWebCard = DidWebNetworkLearnCardFromSeed['returnValue'];
@@ -172,9 +205,15 @@ export const saveProject = async (
     }
 };
 
-/** Never block on input from a script, CI job, or agent: only prompt when a human is at a real TTY. */
+/**
+ * Never block on input from a script, CI job, or agent: only prompt when a human is at a
+ * real TTY and neither `-y` nor `--json` was passed. A missing required value in
+ * non-interactive mode is a `UsageError` (`code: 'USAGE'`).
+ */
 export const createPrompts = (yes?: boolean) => {
-    const interactive = !yes && !!process.stdin.isTTY && process.env.LC_YES !== '1';
+    // `--json` is non-interactive too: readline would write prompt text onto stdout,
+    // which is reserved for the single JSON result line.
+    const interactive = !yes && !out.json && !!process.stdin.isTTY && process.env.LC_YES !== '1';
     const rl = interactive
         ? createInterface({ input: process.stdin, output: process.stdout })
         : null;
@@ -183,7 +222,7 @@ export const createPrompts = (yes?: boolean) => {
         ask: async (question: string, fallback: string): Promise<string> => {
             if (rl) return (await rl.question(`${question} [${fallback}] `)).trim() || fallback;
             if (!fallback)
-                throw new Error(
+                throw new UsageError(
                     `${question} is required when running non-interactively. Pass it as an argument or flag.`
                 );
             return fallback;
@@ -194,7 +233,26 @@ export const createPrompts = (yes?: boolean) => {
     };
 };
 
+/** For commands that must never create an identity: fail fast when this folder has none. */
+export const requireIdentity = (project: Project, hint?: string): string => {
+    const seed = project.env.SECURE_SEED;
+    if (!seed) throw new NoIdentityError(hint);
+    return seed;
+};
+
+/** Profile IDs the network accepts: 3-40 lowercase letters, digits or hyphens. */
+export const PROFILE_ID_PATTERN = /^[a-z0-9-]{3,40}$/;
+
+/** Reject a malformed `--profile-id` before anything is written to `.env`. */
+export const validateProfileIdOption = (profileId: string | undefined): void => {
+    if (profileId !== undefined && !PROFILE_ID_PATTERN.test(profileId))
+        throw new UsageError(
+            `--profile-id "${profileId}" is invalid. Use 3-40 lowercase letters, digits or hyphens (e.g. acme-academy).`
+        );
+};
+
 export const ensureIdentity = async (project: Project, options: ProjectOptions) => {
+    validateProfileIdOption(options.profileId);
     if (
         project.env.PROFILE_ID &&
         options.profileId &&
@@ -205,6 +263,8 @@ export const ensureIdentity = async (project: Project, options: ProjectOptions) 
                 `To act as a profile you manage from here, use --as ${options.profileId}. To create a separate identity, run from a new folder.`
         );
     }
+    // Validate --network before prompting or writing anything.
+    const { network } = resolveServices(project.env, options.network);
     const existingProfileId = project.env.PROFILE_ID || options.profileId;
     let displayName = options.name ?? project.env.DISPLAY_NAME ?? '';
     if (!existingProfileId && !displayName) {
@@ -219,16 +279,7 @@ export const ensureIdentity = async (project: Project, options: ProjectOptions) 
         }
     }
     if (!displayName) displayName = 'My Organization';
-    if (!project.env.SECURE_SEED) {
-        const { network } = resolveServices(project.env, options.network);
-        const where =
-            network === PRODUCTION_NETWORK
-                ? 'production'
-                : network === STAGING_NETWORK
-                  ? 'staging'
-                  : network;
-        out.log(`No .env here — creating a new ${where} identity in ${process.cwd()}`);
-    }
+    const created = !project.env.SECURE_SEED;
     const seed = project.env.SECURE_SEED || generateRandomSeed();
     const profileId = project.env.PROFILE_ID || options.profileId || toProfileId(displayName);
     await saveProject(project, {
@@ -236,8 +287,16 @@ export const ensureIdentity = async (project: Project, options: ProjectOptions) 
         PROFILE_ID: profileId,
         ...(existingProfileId ? {} : { DISPLAY_NAME: displayName }),
     });
+    if (created) {
+        // Always stderr: creating a new identity (and, on first connect, a public profile)
+        // is a side effect a script or agent must be able to see without parsing stdout.
+        console.error(
+            `Created a new ${networkLabel(network)} identity in ${path.dirname(project.envPath)} (seed saved to .env).`
+        );
+        out.set({ identityCreated: { profileId, network } });
+    }
     await ensureGitignored(path.dirname(project.envPath), '.env');
-    return { seed, profileId, displayName };
+    return { seed, profileId, displayName, created };
 };
 
 export const ensureGitignored = async (dir: string, entry: string): Promise<void> => {
@@ -256,13 +315,55 @@ export const ensureGitignored = async (dir: string, entry: string): Promise<void
 
 export const PRODUCTION_NETWORK = 'https://network.learncard.com/trpc';
 export const STAGING_NETWORK = 'https://staging.network.learncard.com/trpc';
+/** A brain service started locally (`docker compose` / `bun dev`); matches `demo refresh`. */
+export const LOCAL_NETWORK = 'http://localhost:4000/trpc';
+
+/** Every `--network` (and `NETWORK_URL`) accepts these names as well as a tRPC URL. */
+export const NETWORK_ALIASES: Readonly<Record<string, string>> = {
+    production: PRODUCTION_NETWORK,
+    prod: PRODUCTION_NETWORK,
+    staging: STAGING_NETWORK,
+    local: LOCAL_NETWORK,
+};
+
+/** Map `production|prod|staging|local` to its tRPC URL; anything else is returned unchanged. */
+export const resolveNetworkAlias = (network: string): string =>
+    NETWORK_ALIASES[network.trim().toLowerCase()] ?? network.trim();
+
+/**
+ * Resolve and check a `--network` value before any I/O, so a typo fails fast with a
+ * usage error instead of creating an identity or opening a connection first.
+ */
+export const validateNetwork = (network: string): string => {
+    const url = resolveNetworkAlias(network);
+    let parsed: URL;
+    try {
+        parsed = new URL(url);
+    } catch {
+        throw new UsageError(
+            `Unknown network "${network}". Use production, staging, local, or an http(s) tRPC URL.`
+        );
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol))
+        throw new UsageError(
+            `Unknown network "${network}". Use production, staging, local, or an http(s) tRPC URL.`
+        );
+    return url;
+};
+
+/** Short name for a resolved network URL in human-facing messages. */
+export const networkLabel = (network: string): string =>
+    network === PRODUCTION_NETWORK
+        ? 'production'
+        : network === STAGING_NETWORK
+          ? 'staging'
+          : network;
 
 /** Network-bound resources must not be silently reused on another deployment. */
 export const assertProjectNetwork = (project: Project, network: string): void => {
-    const previous =
-        project.env.NETWORK_URL === 'staging'
-            ? STAGING_NETWORK
-            : project.env.NETWORK_URL || PRODUCTION_NETWORK;
+    const previous = project.env.NETWORK_URL
+        ? resolveNetworkAlias(project.env.NETWORK_URL)
+        : PRODUCTION_NETWORK;
     const hasResources = [
         'SIGNING_AUTHORITY_NAME',
         'API_TOKEN',
@@ -272,23 +373,43 @@ export const assertProjectNetwork = (project: Project, network: string): void =>
         'INTEGRATION_ID',
     ].some(key => project.env[key]);
     if (previous !== network && hasResources) {
-        throw new Error(
-            'This project has resources on another network. Use a separate folder for staging or another network.'
+        throw new CliError(
+            `This folder is set up for ${networkLabel(previous)}, not ${networkLabel(network)}. Its signing authority, tokens and templates exist only there.`,
+            {
+                code: 'NETWORK_MISMATCH',
+                hint: `Drop --network to use ${networkLabel(previous)}, use a separate folder for ${networkLabel(network)} (e.g. \`npx @learncard/cli init --network ${networkLabel(network)}\` in a new folder), or copy an org spec there with \`npx @learncard/cli promote\`.`,
+            }
         );
     }
 };
 
-/** Resolve matching staging services; explicit process variables override project values. */
+/** Hosted signing service (lca-api) for production; staging has its own default. */
+export const PRODUCTION_LCA_API = 'https://api.learncard.app/trpc';
+
+/**
+ * The hosted signing service a command will actually use: an explicit LCA_API_URL (or the
+ * staging default), else the production service when the network is production. Undefined
+ * for local or custom networks without LCA_API_URL. Returns a tRPC URL.
+ */
+export const signingServiceUrl = (services: {
+    network: string;
+    lcaAPI?: string;
+}): string | undefined => {
+    if (services.lcaAPI) return services.lcaAPI.replace(/\/api\/?$/, '/trpc');
+    return services.network === PRODUCTION_NETWORK ? PRODUCTION_LCA_API : undefined;
+};
+
+/**
+ * Resolve the network (aliases included) and its matching services; explicit process
+ * variables override project values.
+ */
 export const resolveServices = (
     env: Record<string, string>,
     network?: string,
     runtime: Record<string, string | undefined> = process.env
 ) => {
     const requested = network || runtime.NETWORK_URL || env.NETWORK_URL || PRODUCTION_NETWORK;
-    const url = requested === 'staging' ? STAGING_NETWORK : requested;
-    const parsed = new URL(url);
-    if (!['http:', 'https:'].includes(parsed.protocol))
-        throw new Error('Network must be an HTTP(S) tRPC URL or staging.');
+    const url = validateNetwork(requested);
     const staging = url === STAGING_NETWORK;
     return {
         network: url,
@@ -367,7 +488,7 @@ export async function connect(
     options: ProjectOptions & { lca?: boolean }
 ): Promise<NetworkCard | LCALearnCard> {
     const seed = project.env.SECURE_SEED;
-    if (!seed) throw new Error('Create an identity before connecting.');
+    if (!seed) throw new NoIdentityError();
     const services = resolveServices(project.env, options.network);
     assertProjectNetwork(project, services.network);
     if (!options.readOnly && (services.network !== PRODUCTION_NETWORK || project.env.NETWORK_URL)) {
@@ -379,24 +500,57 @@ export async function connect(
     const config = {
         seed,
         network: services.network,
-        ...(services.cloud && { cloud: { url: services.cloud } }),
+        ...walletConfig(options, services.cloud, false),
         ...(options.didkit && { didkit: options.didkit }),
     };
-    return options.lca
-        ? initLCALearnCard({
+    const learnCard = options.lca
+        ? await initLCALearnCard({
               ...config,
               ...(services.lcaAPI && { lcaAPI: services.lcaAPI.replace(/\/api\/?$/, '/trpc') }),
           })
-        : initLearnCard({
+        : await initLearnCard({
               ...config,
               network: services.network === PRODUCTION_NETWORK ? true : services.network,
           });
+    noteCreatedIdentityDid(learnCard.id.did());
+    return learnCard;
 }
+
+type CreatedIdentity = { profileId: string; network: string; did?: string; keyDid?: string };
+
+/**
+ * `ensureIdentity` cannot derive the seed's key DID without a wallet; fill it in on first
+ * connect as `keyDid`. `did` is reserved for the profile's DID (the same value as the
+ * command result's `did`), recorded once the profile exists.
+ */
+const noteCreatedIdentityDid = (keyDid: string): void => {
+    const created = out.result?.identityCreated as CreatedIdentity | undefined;
+    if (!created || created.keyDid) return;
+    out.set({ identityCreated: { ...created, keyDid } });
+};
+
+/** Record the profile DID on `identityCreated` when this run created the identity. */
+export const noteCreatedProfileDid = (did: string | undefined): void => {
+    const created = out.result?.identityCreated as CreatedIdentity | undefined;
+    if (!created || !did || created.did) return;
+    out.set({
+        identityCreated: {
+            profileId: created.profileId,
+            did,
+            ...(created.keyDid ? { keyDid: created.keyDid } : {}),
+            network: created.network,
+        },
+    });
+};
 
 /**
  * Open a second wallet on the same seed that authenticates as a `did:web` the
  * network issued to this seed (e.g. a profile manager). Manager-only routes
  * reject the seed's base did:key, so `connect()` alone cannot call them.
+ *
+ * With `readOnly` (or `associateDids: false`), LearnCloud's automatic DID association is
+ * turned off, so opening the wallet does not register the did:web with LearnCloud (an
+ * `addDid` / `setPrimaryDid` write that otherwise happens the first time a did:web is used).
  */
 export const connectAsDidWeb = async (
     project: Project,
@@ -404,13 +558,13 @@ export const connectAsDidWeb = async (
     didWeb: string
 ): Promise<DidWebCard> => {
     const seed = project.env.SECURE_SEED;
-    if (!seed) throw new Error('Create an identity before connecting.');
+    if (!seed) throw new NoIdentityError();
     const services = resolveServices(project.env, options.network);
     return initLearnCard({
         seed,
         network: services.network === PRODUCTION_NETWORK ? true : services.network,
         didWeb,
-        ...(services.cloud && { cloud: { url: services.cloud } }),
+        ...walletConfig(options, services.cloud, true),
         ...(options.didkit && { didkit: options.didkit }),
     });
 };
@@ -425,7 +579,7 @@ export const connectAsDidWebSigner = async (
     didWeb: string
 ): Promise<LCALearnCard> => {
     const seed = project.env.SECURE_SEED;
-    if (!seed) throw new Error('Create an identity before connecting.');
+    if (!seed) throw new NoIdentityError();
     const services = resolveServices(project.env, options.network);
     const learnCard = await initLearnCard({
         seed,
@@ -434,15 +588,18 @@ export const connectAsDidWebSigner = async (
         ...(services.cloud && { cloud: { url: services.cloud } }),
         ...(options.didkit && { didkit: options.didkit }),
     });
-    const lcaAPI = services.lcaAPI?.replace(/\/api\/?$/, '/trpc');
     return learnCard.addPlugin(
         await getLCAPlugin(
             learnCard as unknown as Parameters<typeof getLCAPlugin>[0],
-            lcaAPI ?? 'https://api.learncard.app/trpc'
+            signingServiceUrl(services) ?? PRODUCTION_LCA_API
         )
     ) as unknown as LCALearnCard;
 };
 
+/**
+ * Open a wallet as a profile this folder manages (via the folder's profile manager).
+ * `options.readOnly` is forwarded to `connectAsDidWeb` for both wallets.
+ */
 export const connectAsManaged = async (
     project: Project,
     options: ProjectOptions,
@@ -474,16 +631,18 @@ export const ensureProfile = async (
 ): Promise<void> => {
     const existing = await learnCard.invoke.getProfile();
     if (existing) {
+        noteCreatedProfileDid('did' in existing ? existing.did : undefined);
         out.log(`Signed in as "${existing.displayName}" (${existing.profileId})`);
         if (project && project.env.DISPLAY_NAME !== existing.displayName)
             await saveProject(project, { DISPLAY_NAME: existing.displayName });
         return;
     }
-    await learnCard.invoke.createProfile({
+    const did = await learnCard.invoke.createProfile({
         profileId: identity.profileId,
         displayName: identity.displayName,
         bio: '',
         shortBio: '',
     });
+    noteCreatedProfileDid(typeof did === 'string' ? did : undefined);
     out.log(`Created profile "${identity.displayName}" (${identity.profileId})`);
 };

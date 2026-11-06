@@ -31,6 +31,22 @@ await build({
     outfile: `${root}dist/smoke.mjs`,
 });
 execFileSync('node', [`${root}dist/smoke.mjs`], { stdio: 'inherit' });
+// Operator-only provisioning tool. Lives next to didkit.wasm (createSdk loads it
+// relative to the bundle) and is deliberately NOT part of canary.zip.
+await build({
+    ...options,
+    entryPoints: [`${root}scripts/provision.ts`],
+    outfile: `${root}dist/provision.mjs`,
+});
+// Operator-only staging load test (README "Load testing"). Also NOT part of
+// canary.zip. firebase-admin stays external: it resolves from the workspace
+// node_modules when run from the repo, and is never bundled into the canary.
+await build({
+    ...options,
+    external: [...(options.external ?? []), 'firebase-admin', 'firebase-admin/*'],
+    entryPoints: [`${root}scripts/load.ts`],
+    outfile: `${root}dist/load.mjs`,
+});
 execFileSync('zip', ['-j', '-q', 'canary.zip', 'handler.mjs', 'didkit.wasm'], {
     cwd: `${root}dist`,
 });

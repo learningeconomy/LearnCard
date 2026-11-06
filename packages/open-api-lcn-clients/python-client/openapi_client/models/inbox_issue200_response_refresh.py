@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.boost_send200_response_inbox_refresh_refresh_service import BoostSend200ResponseInboxRefreshRefreshService
-from openapi_client.models.boost_send_boost_request_credential_any_of_credential_status import BoostSendBoostRequestCredentialAnyOfCredentialStatus
+from openapi_client.models.boost_send_boost_request_credential_any_of_refresh_service import BoostSendBoostRequestCredentialAnyOfRefreshService
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -34,7 +34,7 @@ class InboxIssue200ResponseRefresh(BaseModel):
     refresh_service: BoostSend200ResponseInboxRefreshRefreshService = Field(alias="refreshService")
     credential_id: Annotated[str, Field(min_length=1, strict=True)] = Field(alias="credentialId")
     issuer_did: Annotated[str, Field(min_length=1, strict=True)] = Field(alias="issuerDid")
-    credential_status: Optional[BoostSendBoostRequestCredentialAnyOfCredentialStatus] = Field(default=None, alias="credentialStatus")
+    credential_status: Optional[BoostSendBoostRequestCredentialAnyOfRefreshService] = Field(default=None, alias="credentialStatus")
     holder_did: Optional[Annotated[str, Field(min_length=1, strict=True)]] = Field(default=None, alias="holderDid")
     __properties: ClassVar[List[str]] = ["refreshId", "refreshService", "credentialId", "issuerDid", "credentialStatus", "holderDid"]
 
@@ -65,9 +65,8 @@ class InboxIssue200ResponseRefresh(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -99,7 +98,7 @@ class InboxIssue200ResponseRefresh(BaseModel):
             "refreshService": BoostSend200ResponseInboxRefreshRefreshService.from_dict(obj["refreshService"]) if obj.get("refreshService") is not None else None,
             "credentialId": obj.get("credentialId"),
             "issuerDid": obj.get("issuerDid"),
-            "credentialStatus": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["credentialStatus"]) if obj.get("credentialStatus") is not None else None,
+            "credentialStatus": BoostSendBoostRequestCredentialAnyOfRefreshService.from_dict(obj["credentialStatus"]) if obj.get("credentialStatus") is not None else None,
             "holderDid": obj.get("holderDid")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

@@ -2,16 +2,21 @@
 
 ## Properties
 
-| Name                  | Type                                                                                                                                                    | Description | Notes      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **expires_at**        | **str**                                                                                                                                                 |             | [optional] |
-| **one_time**          | **bool**                                                                                                                                                |             | [optional] |
-| **terms**             | [**StorageResolve200ResponseAnyOf1**](StorageResolve200ResponseAnyOf1.md)                                                                               |             | [optional] |
-| **guardian_approval** | [**ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval**](ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval.md) |             | [optional] |
-| **id**                | **str**                                                                                                                                                 |             |
-| **action**            | **str**                                                                                                                                                 |             |
-| **var_date**          | **str**                                                                                                                                                 |             |
-| **uris**              | **List[str]**                                                                                                                                           |             | [optional] |
+| Name                   | Type                                                                                                                                                                                        | Description | Notes      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **expires_at**         | **str**                                                                                                                                                                                     |             | [optional] |
+| **one_time**           | **bool**                                                                                                                                                                                    |             | [optional] |
+| **terms**              | [**StorageResolve200ResponseAnyOf1**](StorageResolve200ResponseAnyOf1.md)                                                                                                                   |             | [optional] |
+| **guardian_approval**  | [**ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval**](ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval.md)                                     |             | [optional] |
+| **referral**           | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral.md) |             | [optional] |
+| **id**                 | **str**                                                                                                                                                                                     |             |
+| **action**             | **str**                                                                                                                                                                                     |             |
+| **kind**               | **str**                                                                                                                                                                                     |             | [optional] |
+| **var_date**           | **str**                                                                                                                                                                                     |             |
+| **uris**               | **List[str]**                                                                                                                                                                               |             | [optional] |
+| **consented_version**  | **int**                                                                                                                                                                                     |             | [optional] |
+| **reconsent_deadline** | **str**                                                                                                                                                                                     |             | [optional] |
+| **new_options_until**  | **str**                                                                                                                                                                                     |             | [optional] |
 
 ## Example
 

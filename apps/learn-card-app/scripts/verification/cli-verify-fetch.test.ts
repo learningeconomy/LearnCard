@@ -84,8 +84,10 @@ describe('CLI verification fetch confinement', () => {
             );
             expect(valid.exitCode).toBe(0);
             expect(valid.json).toMatchObject({
-                errors: [],
-                checks: expect.arrayContaining(['proof']),
+                ok: true,
+                command: 'verify',
+                verified: true,
+                result: { errors: [], checks: expect.arrayContaining(['proof']) },
             });
 
             const remoteDid = `did:web:localhost%3A${foreign.port}`;

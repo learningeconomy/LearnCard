@@ -15,12 +15,11 @@ import {
     useToast,
     useWallet,
     useBrandingConfig,
-    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+    isLearnCardAiPassportContractUri,
     useAiFeatureGate,
+    usePrivacyConsent,
 } from 'learn-card-base';
-import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
-import { useAnalytics } from '../../analytics';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
 
@@ -37,14 +36,13 @@ type PrivacySettingsProfile = {
 const PrivacySettingsModal: React.FC = () => {
     const { closeModal } = useModal();
     const { data: preferences } = useGetPreferencesForDid();
-    const { mutate: updatePreferences } = useUpdatePreferences();
-    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
+    const { mutate: updatePreferences, isPending: preferencesSaving } = useUpdatePreferences();
+    const { analyticsEnabled, isMinor, isResolved: privacyResolved } = usePrivacyConsent();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
     const { data: consentedContracts } = useConsentedContracts();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const { name: brandName } = useBrandingConfig();
-    const profileType = switchedProfileStore.use.profileType();
     const [savingProfileField, setSavingProfileField] = useState<string | null>(null);
     const [retryingAiConsent, setRetryingAiConsent] = useState(false);
     const [isSyncingAiConsent, setIsSyncingAiConsent] = useState(false);
@@ -56,11 +54,8 @@ const PrivacySettingsModal: React.FC = () => {
     const aiConnectionClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const profile = currentLCNUser as PrivacySettingsProfile | null;
 
-    // Local DOB fallback so minor banner/locks work even without stored preferences.
-    // Uses GDPR country-specific thresholds for EU users, 18 for everyone else.
     const { isAiEnabled: aiFeatureEnabled, reason: aiFeatureGateReason } = useAiFeatureGate();
     const { handleAiToggle } = useAiConsentToggle();
-    const isMinor = profileType === 'child';
 
     const aiEnabled = aiFeatureEnabled;
     const [aiToggleOverride, setAiToggleOverride] = useState<boolean | null>(null);
@@ -68,8 +63,9 @@ const PrivacySettingsModal: React.FC = () => {
     const hasAiConsent = useMemo(() => {
         return consentedContracts?.some(
             consent =>
-                consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
-                consent?.status !== 'withdrawn'
+                isLearnCardAiPassportContractUri(consent?.contract?.uri) &&
+                consent?.status !== 'withdrawn' &&
+                consent?.status !== 'consumed'
         );
     }, [consentedContracts]);
     const showAiConsentWarning =
@@ -79,7 +75,6 @@ const PrivacySettingsModal: React.FC = () => {
         !isSyncingAiConsent &&
         !retryingAiConsent;
     const showAiConnectionStatus = aiConnectionStatus !== 'idle';
-    const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
     const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
 
     useEffect(() => {
@@ -157,10 +152,18 @@ const PrivacySettingsModal: React.FC = () => {
 
     const handleAnalyticsToggle = useCallback(
         (enabled: boolean) => {
-            updatePreferences({ analyticsEnabled: enabled });
-            setAnalyticsEnabled(enabled);
+            if (isMinor || !privacyResolved) return;
+            updatePreferences(
+                { analyticsEnabled: enabled },
+                {
+                    onError: () =>
+                        presentToast(m['settings.privacy.unableToUpdate'](), {
+                            type: ToastTypeEnum.Error,
+                        }),
+                }
+            );
         },
-        [updatePreferences, setAnalyticsEnabled]
+        [updatePreferences, isMinor, privacyResolved, presentToast]
     );
 
     const handleBugReportsToggle = useCallback(
@@ -457,6 +460,7 @@ const PrivacySettingsModal: React.FC = () => {
                         </div>
                         <IonToggle
                             checked={analyticsEnabled}
+                            disabled={isMinor || !privacyResolved || preferencesSaving}
                             onIonChange={e => handleAnalyticsToggle(e.detail.checked)}
                             aria-label={m['settings.analytics']()}
                         />
@@ -476,11 +480,17 @@ const PrivacySettingsModal: React.FC = () => {
                         </div>
                         <IonToggle
                             checked={bugReportsEnabled}
+                            disabled={isMinor || !privacyResolved || preferencesSaving}
                             onIonChange={e => handleBugReportsToggle(e.detail.checked)}
                             aria-label={m['settings.bugReports']()}
                         />
                     </div>
                 </div>
+                {preferencesSaving && (
+                    <p role="status" className="text-sm text-grayscale-600">
+                        {m['profile.saving']()}
+                    </p>
+                )}
             </div>
         </div>
     );

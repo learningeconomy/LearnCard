@@ -1,7 +1,7 @@
 import type { AuthUser } from '@learncard/types';
 import type { RecoverySetupType } from '../components/recovery/RecoverySetupModal';
 
-export type ReauthAction = 'account-recovery' | 'recovery-setup';
+export type ReauthAction = 'account-recovery' | 'recovery-setup' | 'secure-account';
 export interface PendingKeycloakReauth {
     id: string;
     userId: string;
@@ -65,7 +65,9 @@ export const readKeycloakReauth = (): PendingKeycloakReauth | null => {
             !value.returnTo.startsWith('//') &&
             !value.returnTo.includes('\\') &&
             'action' in value &&
-            (value.action === 'account-recovery' || value.action === 'recovery-setup') &&
+            (value.action === 'account-recovery' ||
+                value.action === 'recovery-setup' ||
+                value.action === 'secure-account') &&
             (!('initialMethod' in value) ||
                 (typeof value.initialMethod === 'string' &&
                     ['passkey', 'phrase', 'backup', 'email'].includes(value.initialMethod))) &&

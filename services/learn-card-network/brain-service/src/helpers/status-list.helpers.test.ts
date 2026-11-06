@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ findOne: vi.fn(), session: vi.fn(), transaction: vi.fn() }));
+const mocks = vi.hoisted(() => ({ run: vi.fn(), session: vi.fn(), transaction: vi.fn() }));
 vi.mock('@environment', () => ({ environment: {} }));
-vi.mock('@models', () => ({ Credential: { findOne: mocks.findOne } }));
 vi.mock('@instance', () => ({
-    neogma: { driver: { session: mocks.session }, getTransaction: mocks.transaction },
+    neogma: {
+        driver: { session: mocks.session },
+        getTransaction: mocks.transaction,
+        queryRunner: { run: mocks.run },
+    },
 }));
 vi.mock('@helpers/learnCard.helpers', () => ({
     getLearnCard: vi.fn(),
@@ -12,6 +15,21 @@ vi.mock('@helpers/learnCard.helpers', () => ({
 }));
 
 import { setCredentialBitstringStatus } from './status-list.helpers';
+
+type StoredRow = { direct?: string; body?: string; entries?: string };
+
+/** Mock the stored-status lookup, then the issuer-owner lookup. */
+const mockStored = (row: StoredRow | null, owner: string | null = 'issuer') => {
+    const record = (values: Record<string, unknown>) => ({
+        get: (key: string) => values[key] ?? null,
+    });
+    mocks.run.mockImplementation(async (query: string) => {
+        if (query.includes('AS owner')) {
+            return { records: owner ? [record({ owner })] : [] };
+        }
+        return { records: row ? [record({ ...row })] : [] };
+    });
+};
 
 describe('stored credential status validation', () => {
     beforeEach(() => {
@@ -21,7 +39,7 @@ describe('stored credential status validation', () => {
     it.each(['{truncated', 'null', '{}', '[null]', '[{}]', '"not an array"'])(
         'returns false for malformed status metadata (%s) without starting a status write',
         async statusEntries => {
-            mocks.findOne.mockResolvedValue({ statusEntries, credential: '{}' });
+            mockStored({ direct: statusEntries, body: '{}' });
             await expect(
                 setCredentialBitstringStatus('credential', 'revocation', true)
             ).resolves.toBe(false);
@@ -30,7 +48,7 @@ describe('stored credential status validation', () => {
     );
 
     it('returns false when legacy credential JSON cannot be parsed', async () => {
-        mocks.findOne.mockResolvedValue({ credential: '{truncated' });
+        mockStored({ body: '{truncated' });
         await expect(setCredentialBitstringStatus('credential', 'suspension', true)).resolves.toBe(
             false
         );
@@ -38,16 +56,15 @@ describe('stored credential status validation', () => {
     });
 
     it('returns false for valid empty metadata or a missing credential', async () => {
-        mocks.findOne
-            .mockResolvedValueOnce({ statusEntries: '[]', credential: '{}' })
-            .mockResolvedValueOnce(null);
+        mockStored({ direct: '[]', body: '{}' });
         expect(await setCredentialBitstringStatus('credential', 'revocation', true)).toBe(false);
+        mockStored(null);
         expect(await setCredentialBitstringStatus('missing', 'revocation', true)).toBe(false);
     });
 
     it('returns false when a valid entry cannot be updated', async () => {
-        mocks.findOne.mockResolvedValue({
-            statusEntries: JSON.stringify([
+        mockStored({
+            direct: JSON.stringify([
                 {
                     type: 'BitstringStatusListEntry',
                     statusPurpose: 'revocation',
@@ -61,8 +78,8 @@ describe('stored credential status validation', () => {
     });
 
     it('rejects malformed numeric coordinates before any status write', async () => {
-        mocks.findOne.mockResolvedValue({
-            statusEntries: JSON.stringify([
+        mockStored({
+            direct: JSON.stringify([
                 {
                     type: 'BitstringStatusListEntry',
                     statusPurpose: 'revocation',

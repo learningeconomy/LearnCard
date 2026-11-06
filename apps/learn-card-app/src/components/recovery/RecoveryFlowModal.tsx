@@ -21,11 +21,13 @@ import type { RecoveryReason } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { EscrowRecoveryPanel } from './EscrowRecoveryPanel';
 import type { EscrowRecoveryPanelProps } from './EscrowRecoveryPanel';
+import { EscrowPinSignIn, describePinSignInError } from './EscrowPinSignIn';
 
 export type RecoveryFlowType = 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
 
 interface RecoveryFlowModalProps {
-    escrowRecovery?: Omit<EscrowRecoveryPanelProps, 'available'>;
+    /** `pinAvailable` puts PIN sign-in first on Screen 1; the panel itself only runs the hold. */
+    escrowRecovery?: Omit<EscrowRecoveryPanelProps, 'available' | 'view' | 'onUsePin'>;
     availableMethods: { type: string; credentialId?: string; createdAt: string }[];
     recoveryReason?: RecoveryReason;
     maskedRecoveryEmail?: string | null;
@@ -42,10 +44,17 @@ interface RecoveryFlowModalProps {
     onVerifyIdentityCode?: (code: string) => Promise<void>;
     onContinueWithNewLogin?: () => void;
     onFinishIdentityRecovery?: () => void;
+    /** The lost-login recovery was a PIN sign-in, which kept devices and recovery methods. */
+    identityKeptAccount?: boolean;
     onCancel: () => void;
 }
 
+/** Matched by name: the class can come from another bundle copy of learn-card-base. */
+const isRecoveryInProgress = (e: unknown): boolean =>
+    e instanceof Error && e.name === 'RecoveryInProgressError';
+
 const friendlyError = (e: unknown): string => {
+    if (isRecoveryInProgress(e)) return m['recovery.inProgress']();
     if (e instanceof Error) {
         if (e.message.includes('decrypt')) return m['recovery.incorrectPassword']();
         if (e.message.includes('network') || e.message.includes('fetch'))
@@ -103,6 +112,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     onVerifyIdentityCode,
     onContinueWithNewLogin,
     onFinishIdentityRecovery,
+    identityKeptAccount = false,
     onCancel,
 }) => {
     const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
@@ -155,7 +165,16 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     const availableCount = methods.filter(m => m.available).length;
     const hasEscrow = hasMethod('escrow');
     const canShowScreen2 = !!escrowRecovery && hasEscrow;
-    const initialScreen = availableCount === 0 && canShowScreen2 ? 2 : 1;
+    // Locked or unavailable PINs are not offered again in this flow; the message stays visible.
+    const [pinBlockedMessage, setPinBlockedMessage] = useState<string | null>(null);
+    // A PIN sign-in is in flight. It shares one single-use session and one pending
+    // identity with every other method, so nothing else may start until it settles
+    // (the coordinator enforces the same rule with RecoveryInProgressError).
+    const [pinBusy, setPinBusy] = useState(false);
+    // A PIN sign-in keeps the account as it is, so it leads Screen 1. Screen 2 is the
+    // 7-day hold only, the one path that still resets the account.
+    const pinHero = canShowScreen2 && escrowRecovery?.pinAvailable === true && !pinBlockedMessage;
+    const initialScreen = !pinHero && availableCount === 0 && canShowScreen2 ? 2 : 1;
 
     const [chosenScreen, setScreen] = useState<1 | 2>(initialScreen);
     // Methods can load after mount: with nothing to pick, Screen 2 is the only useful view.
@@ -179,6 +198,37 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     const [emailShare, setEmailShare] = useState('');
     const [recoveryEmail, setRecoveryEmail] = useState(identityEmail ?? '');
     const [verificationCode, setVerificationCode] = useState('');
+
+    const handlePinSignIn = async (pin: string): Promise<void> => {
+        if (!escrowRecovery) return;
+        try {
+            await escrowRecovery.onRecover({ method: 'escrow-pin', pin });
+        } catch (cause) {
+            // After the recovery-email code, a failed try sends the flow back to the email
+            // step (each try needs a new code), so explain it there.
+            // A rejected second submission changed nothing, so no new code is needed.
+            if (identityPhase && !isRecoveryInProgress(cause)) {
+                const failure = describePinSignInError(cause);
+                setError(
+                    failure.blocked
+                        ? failure.message
+                        : `${failure.message} ${m['recovery.pinSignIn.newCodeNeeded']()}`
+                );
+                if (failure.blocked) setPinBlockedMessage(failure.message);
+            }
+            throw cause;
+        }
+    };
+
+    const pinBlockedAlert = pinBlockedMessage && (
+        <div
+            role="alert"
+            className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
+        >
+            <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+            <span className="text-sm text-red-700 leading-relaxed">{pinBlockedMessage}</span>
+        </div>
+    );
 
     const handleBack = (): void => {
         setActiveMethod(null);
@@ -444,7 +494,9 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     {m['recovery.identity.successTitle']()}
                 </h2>
                 <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
-                    {m['recovery.identity.successDescription']()}
+                    {identityKeptAccount
+                        ? m['recovery.identity.successDescriptionKept']()
+                        : m['recovery.identity.successDescription']()}
                 </p>
                 <button
                     onClick={onFinishIdentityRecovery}
@@ -461,6 +513,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
     if (!activeMethod) {
         const getTitle = () => {
+            if (pinHero) return m['recovery.pinHero.title']();
             if (recoveryReason === 'new_device') return m['recovery.signInOnThisDevice']();
             // Both mean this device's key no longer works; users just need to sign in again.
             if (recoveryReason === 'stale_local_key' || recoveryReason === 'missing_server_data')
@@ -470,6 +523,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         };
 
         const getDesc = () => {
+            if (pinHero) return m['recovery.pinHero.description']();
             if (recoveryReason === 'new_device') return m['recovery.signInOnThisDeviceDesc']();
             if (recoveryReason === 'stale_local_key' || recoveryReason === 'missing_server_data')
                 return m['recovery.signInAgainOnThisDeviceDesc']();
@@ -481,10 +535,16 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         const availableMethodsList = methods.filter(m => m.available);
         const unavailableMethodsList = methods.filter(m => !m.available);
 
-        let heroMethod = null;
+        let heroMethod: (typeof methods)[0] | null = null;
         let remainingMethods = availableMethodsList;
 
-        if (availableMethodsList.length > 0) {
+        if (pinHero) {
+            // The PIN is the hero; every other method is secondary.
+            const secondaryOrder = ['device', 'passkey', 'phrase', 'backup', 'email'];
+            remainingMethods = [...availableMethodsList].sort(
+                (a, b) => secondaryOrder.indexOf(a.id) - secondaryOrder.indexOf(b.id)
+            );
+        } else if (availableMethodsList.length > 0) {
             const passkeyMethod = availableMethodsList.find(m => m.id === 'passkey');
             const deviceMethod = availableMethodsList.find(m => m.id === 'device');
 
@@ -498,7 +558,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
             const secondaryOrder = ['device', 'passkey', 'phrase', 'backup', 'email'];
             remainingMethods = availableMethodsList
-                .filter(method => method.id !== heroMethod.id)
+                .filter(method => method.id !== heroMethod?.id)
                 .sort((a, b) => secondaryOrder.indexOf(a.id) - secondaryOrder.indexOf(b.id));
         }
 
@@ -518,19 +578,28 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         };
 
         const renderMethodButton = (method: (typeof methods)[0], isHero: boolean) => {
+            // Under the PIN hero the user has already signed in, so another device
+            // confirms it's them rather than signing them in.
+            const pinHeroDevice = pinHero && method.id === 'device';
             const copy = isHero
                 ? getHeroCopy(method.id)
                 : {
-                      label: method.label,
-                      desc: method.available ? method.desc : m['recovery.notSetUp'](),
+                      label: pinHeroDevice ? m['recovery.pinHero.device']() : method.label,
+                      desc: !method.available
+                          ? m['recovery.notSetUp']()
+                          : pinHeroDevice
+                            ? m['recovery.pinHero.deviceDesc']()
+                            : method.desc,
                   };
 
             return (
                 <button
                     key={method.id}
-                    onClick={() => method.available && setActiveMethod(method.id)}
-                    disabled={!method.available}
-                    className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all ${
+                    onClick={() => method.available && !pinBusy && setActiveMethod(method.id)}
+                    disabled={!method.available || pinBusy}
+                    className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all disabled:cursor-not-allowed ${
+                        method.available && pinBusy ? 'opacity-40 ' : ''
+                    }${
                         method.available
                             ? isHero
                                 ? 'bg-emerald-50 hover:bg-emerald-100 text-grayscale-900 border border-emerald-100'
@@ -571,16 +640,33 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             </p>
                         </div>
 
+                        {pinBlockedAlert}
+
                         {escrowRecovery && (
-                            <EscrowRecoveryPanel
-                                key={escrowRecovery.scope}
-                                {...escrowRecovery}
-                                view="status"
-                                pinAvailable={
-                                    !identityPhase && escrowRecovery.pinAvailable === true
-                                }
-                                available={hasEscrow}
+                            // Hold actions wait too while a PIN sign-in is in flight.
+                            <fieldset disabled={pinBusy} className="m-0 min-w-0 border-0 p-0">
+                                <EscrowRecoveryPanel
+                                    key={escrowRecovery.scope}
+                                    {...escrowRecovery}
+                                    view="status"
+                                    pinAvailable={false}
+                                    available={hasEscrow}
+                                />
+                            </fieldset>
+                        )}
+
+                        {pinHero && (
+                            <EscrowPinSignIn
+                                onRecover={handlePinSignIn}
+                                onBlocked={setPinBlockedMessage}
+                                onBusyChange={setPinBusy}
                             />
+                        )}
+
+                        {pinHero && availableMethodsList.length > 0 && (
+                            <p className="mt-6 mb-2 text-xs font-medium uppercase tracking-wide text-grayscale-500">
+                                {m['recovery.pinHero.otherWays']()}
+                            </p>
                         )}
 
                         <div className="space-y-v3-2">
@@ -602,11 +688,17 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                                 showMore ? 'rotate-180' : ''
                                             }`}
                                         />
-                                        {showMore
-                                            ? m['recovery.hideNotSetUp']()
-                                            : m['recovery.showNotSetUp']({
-                                                  count: String(unavailableMethodsList.length),
-                                              })}
+                                        {pinHero
+                                            ? showMore
+                                                ? m['recovery.pinHero.showLess']()
+                                                : m['recovery.pinHero.showMore']({
+                                                      count: String(unavailableMethodsList.length),
+                                                  })
+                                            : showMore
+                                              ? m['recovery.hideNotSetUp']()
+                                              : m['recovery.showNotSetUp']({
+                                                    count: String(unavailableMethodsList.length),
+                                                })}
                                     </button>
 
                                     {showMore && (
@@ -623,7 +715,21 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             )}
                         </div>
 
-                        {canShowScreen2 && (
+                        {canShowScreen2 && pinHero && (
+                            // One quiet way to the 7-day path: the PIN screen is a
+                            // "confirm it's you" step, not a list of fallbacks.
+                            <div className="mt-6 text-center">
+                                <button
+                                    onClick={() => setScreen(2)}
+                                    disabled={pinBusy}
+                                    className="py-2 px-2 min-h-[44px] text-sm text-grayscale-600 underline-offset-2 hover:underline hover:text-grayscale-900 transition-colors rounded-lg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    {m['recovery.pinHero.trouble']()}
+                                </button>
+                            </div>
+                        )}
+
+                        {canShowScreen2 && !pinHero && (
                             <div className="mt-6 pt-5 border-t border-grayscale-200 text-center">
                                 <p className="text-xs text-grayscale-500 mb-3">
                                     {availableCount === 1 && availableMethodsList[0].id === 'device'
@@ -632,7 +738,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                 </p>
                                 <button
                                     onClick={() => setScreen(2)}
-                                    className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    disabled={pinBusy}
+                                    className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     {m['recovery.getBackIntoAccount']()}
                                 </button>
@@ -641,7 +748,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
                         <button
                             onClick={onCancel}
-                            className="w-full mt-2 py-3 min-h-[44px] text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                            disabled={pinBusy}
+                            className="w-full mt-2 py-3 min-h-[44px] text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             {m['common.cancel']()}
                         </button>
@@ -674,6 +782,9 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             </p>
                         </div>
 
+                        {pinBlockedAlert}
+
+                        {/* Only the 7-day hold resets the account; a PIN sign-in never does. */}
                         <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-6">
                             <p className="text-sm font-medium text-amber-900 mb-2">
                                 {m['recovery.thisWill']()}
@@ -689,9 +800,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                 key={escrowRecovery.scope}
                                 {...escrowRecovery}
                                 view="start"
-                                pinAvailable={
-                                    !identityPhase && escrowRecovery.pinAvailable === true
-                                }
+                                pinAvailable={false}
+                                onUsePin={pinHero ? () => setScreen(1) : undefined}
                                 available={hasEscrow}
                             />
                         )}
@@ -707,7 +817,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             </div>
         );
 
-        return <Overlay onDismiss={onCancel}>{content}</Overlay>;
+        return <Overlay onDismiss={pinBusy ? undefined : onCancel}>{content}</Overlay>;
     }
 
     // ── Active method detail ─────────────────────────────────────

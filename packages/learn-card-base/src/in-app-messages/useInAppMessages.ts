@@ -3,6 +3,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import {
     type InAppMessage,
+    type MyCampaign,
     type InAppMessagePredicate,
     type InAppMessageSettings,
     type InvalidInAppMessage,
@@ -15,7 +16,7 @@ import {
     type InAppMessageRuntimeContext,
     type PredicateTrace,
 } from './predicates';
-import { filterSuppressed, shouldSuppressMessage, onDismissalsReset } from './dismissalStore';
+import { shouldSuppressMessage, onDismissalsReset } from './dismissalStore';
 import { useInAppMessageRuntimeContext } from './useRuntimeContext';
 import { iamDebug, isInAppMessagesDebug } from './debug';
 import { useCredentialFacts, type CredentialFactsState } from './useCredentialFacts';
@@ -28,10 +29,18 @@ import {
     readInAppMessagesFlags,
 } from './flagDelivery';
 
+import {
+    EMPTY_CAMPAIGNS,
+    mergeCampaignMessages,
+    isCampaignInWindow,
+    isCampaignFrequencySuppressed,
+} from './campaignMessages';
+
 export { IN_APP_MESSAGES_FLAG_KEY, LEGACY_IN_APP_MESSAGES_FLAG_KEY } from './flagDelivery';
 
 export interface InAppMessageDiagnostic {
     id: string;
+    source: 'flag' | 'campaign';
     priority: number;
     enabled: boolean;
     matched: boolean;
@@ -52,6 +61,7 @@ export interface InAppMessagesReport {
     ready: boolean;
     context: InAppMessagesReportContext | null;
     flagMessageCount: number;
+    campaignMessageCount?: number;
     diagnostics: InAppMessageDiagnostic[];
     winnerId: string | null;
     invalid: InvalidInAppMessage[];
@@ -70,6 +80,7 @@ export interface UseInAppMessagesResult {
 export interface UseInAppMessagesOptions {
     /** Load credential facts even when no active flag message currently requires them. */
     forceCredentialFacts?: boolean;
+    campaigns?: MyCampaign[];
 }
 
 const EMPTY_REPORT: InAppMessagesReport = {
@@ -125,12 +136,21 @@ export const useInAppMessages = (
     );
     const debugEnabled = isInAppMessagesDebug();
     const flag = parsed.flag;
+    const campaigns = options.campaigns ?? EMPTY_CAMPAIGNS;
+    const campaignById = useMemo(
+        () => new Map(campaigns.map(item => [item.campaign.id, item])),
+        [campaigns]
+    );
+    const messages = useMemo(
+        () => mergeCampaignMessages(flag.messages, campaigns),
+        [flag.messages, campaigns]
+    );
     const needsCredentialFacts =
         options.forceCredentialFacts ||
-        flag.messages.some(message => message.enabled && messageUsesCredentialFacts(message));
+        messages.some(message => message.enabled && messageUsesCredentialFacts(message));
     const credentialFacts = useCredentialFacts(needsCredentialFacts);
     const recentEvents = useRecentInAppMessageEvents(credentialFacts.accountDid ?? undefined);
-    const factsWaitKey = `${credentialFacts.accountDid ?? 'none'}:${flag.messages
+    const factsWaitKey = `${credentialFacts.accountDid ?? 'none'}:${messages
         .filter(message => message.enabled && messageUsesCredentialFacts(message))
         .map(message => message.id)
         .join(',')}`;
@@ -163,13 +183,20 @@ export const useInAppMessages = (
     }, [credentialFacts.complete, factsWaitKey, needsCredentialFacts]);
 
     useEffect(() => {
-        const deadlines = flag.messages.flatMap(message => {
-            if (!message.enabled || !message.trigger) return [];
+        const deadlines = messages.flatMap(message => {
+            if (!message.enabled) return [];
+            const campaign = campaignById.get(message.id);
+            const schedule = [campaign?.campaign.startsAt, campaign?.campaign.endsAt].flatMap(
+                value => (value ? [Date.parse(value)] : [])
+            );
+            if (!message.trigger) return schedule.filter(deadline => deadline > Date.now());
 
-            return recentEvents
-                .filter(event => event.event === message.trigger?.event)
-                .map(event => event.occurredAt + message.trigger!.windowMinutes * 60 * 1000)
-                .filter(deadline => deadline > Date.now());
+            return [
+                ...schedule,
+                ...recentEvents
+                    .filter(event => event.event === message.trigger?.event)
+                    .map(event => event.occurredAt + message.trigger!.windowMinutes * 60 * 1000),
+            ].filter(deadline => deadline > Date.now());
         });
 
         if (deadlines.length === 0) return;
@@ -181,7 +208,7 @@ export const useInAppMessages = (
         );
 
         return () => globalThis.clearTimeout(timeout);
-    }, [flag.messages, recentEvents, clock]);
+    }, [messages, campaignById, recentEvents, clock]);
 
     const waitingForFacts =
         needsCredentialFacts && !credentialFacts.complete && timedOutFactsKey !== factsWaitKey;
@@ -206,8 +233,8 @@ export const useInAppMessages = (
     ]);
 
     useEffect(() => {
-        lastMessages = flag.messages;
-    }, [flag]);
+        lastMessages = messages;
+    }, [messages]);
 
     useEffect(() => {
         lastCredentialFacts = credentialFacts;
@@ -223,18 +250,33 @@ export const useInAppMessages = (
                 report: {
                     ...EMPTY_REPORT,
                     flagMessageCount: flag.messages.length + parsed.invalid.length,
+                    campaignMessageCount: campaigns.length,
                     invalid: parsed.invalid,
                 },
             };
         }
 
-        const matching = flag.messages.filter(
-            m => isInAppMessagePresentationSupported(m) && messageMatches(m, context)
-        );
-        const frequencyEligible = filterSuppressed(
-            matching,
-            context.now,
-            credentialFacts.accountDid ?? undefined
+        const suppressed = (m: InAppMessage): boolean => {
+            const campaign = campaignById.get(m.id);
+            return (
+                shouldSuppressMessage(
+                    m.id,
+                    m.frequency,
+                    context.now,
+                    credentialFacts.accountDid ?? undefined
+                ) ||
+                Boolean(
+                    campaign &&
+                    (!isCampaignInWindow(campaign, context.now) ||
+                        isCampaignFrequencySuppressed(campaign, context.now))
+                )
+            );
+        };
+        const frequencyEligible = messages.filter(
+            m =>
+                isInAppMessagePresentationSupported(m) &&
+                messageMatches(m, context) &&
+                !suppressed(m)
         );
         const winner = pickHighestPriority(
             frequencyEligible.filter(
@@ -248,15 +290,10 @@ export const useInAppMessages = (
             )
         );
 
-        const diagnostics: InAppMessageDiagnostic[] = flag.messages.map(m => {
+        const diagnostics: InAppMessageDiagnostic[] = messages.map(m => {
             const explanation = explainMessage(m, context);
             const presentationSupported = isInAppMessagePresentationSupported(m);
-            const suppressed = shouldSuppressMessage(
-                m.id,
-                m.frequency,
-                context.now,
-                credentialFacts.accountDid ?? undefined
-            );
+            const frequencySuppressed = suppressed(m);
             const fatigueSuppressed = shouldSuppressByFatigue(
                 m,
                 flag.settings,
@@ -266,14 +303,15 @@ export const useInAppMessages = (
 
             return {
                 id: m.id,
+                source: campaignById.has(m.id) ? 'campaign' : 'flag',
                 priority: m.priority,
                 enabled: m.enabled,
                 matched: explanation.matched,
-                suppressed,
+                suppressed: frequencySuppressed,
                 willShow:
                     presentationSupported &&
                     explanation.matched &&
-                    !suppressed &&
+                    !frequencySuppressed &&
                     !fatigueSuppressed,
                 trace: explanation.trace,
                 triggerSatisfied: explanation.triggerSatisfied,
@@ -293,13 +331,24 @@ export const useInAppMessages = (
                 recentEventCount: context.recentEvents.length,
             },
             flagMessageCount: flag.messages.length + parsed.invalid.length,
+            campaignMessageCount: campaigns.length,
             diagnostics,
             winnerId: winner?.id ?? null,
             invalid: parsed.invalid,
         };
 
         return { message: winner, report: nextReport };
-    }, [credentialFacts.accountDid, flag, parsed.invalid, ready, context, suppressionRevision]);
+    }, [
+        credentialFacts.accountDid,
+        flag,
+        campaigns,
+        campaignById,
+        messages,
+        parsed.invalid,
+        ready,
+        context,
+        suppressionRevision,
+    ]);
 
     useEffect(() => {
         lastReport = report;
@@ -317,7 +366,7 @@ export const useInAppMessages = (
 
     return {
         message,
-        messages: flag.messages,
+        messages,
         context,
         ready,
         report,

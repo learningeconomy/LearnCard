@@ -23,7 +23,6 @@ import { configureLocalDevelopmentNetwork } from 'learn-card-base/config/localDe
 import { environment } from './environment';
 
 import { initSentryFromTenant } from '../constants/sentry';
-import { initUserflowFromTenant } from '../constants/userflow';
 import { enforceDefaultTheme } from '../theme/store/themeStore';
 import {
     createConfigResolutionListener,
@@ -91,15 +90,6 @@ const initializeTenantSubsystems = async (config: TenantConfig): Promise<void> =
     emitConfigDebugEvent(
         'bootstrap:sentry_init',
         `Sentry initialized (DSN: ${config.observability.sentryDsn ? 'configured' : 'none'})`
-    );
-
-    // 5. Initialize Userflow from tenant observability config
-    initUserflowFromTenant();
-    emitConfigDebugEvent(
-        'bootstrap:userflow_init',
-        `Userflow initialized (token: ${
-            config.observability.userflowToken ? 'configured' : 'none'
-        })`
     );
 
     // 6. Force theme to defaultTheme when tenant disables theme switching

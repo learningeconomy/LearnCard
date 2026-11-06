@@ -32,7 +32,33 @@ See [Tailwind's browser requirements](https://tailwindcss.com/docs/compatibility
 
 ---
 
+## Privacy and optional diagnostics
+
+Open **Privacy & Data** to change **Usage Analytics**. The control stays unavailable while account preferences are loading or when the current profile is age-restricted. Child profiles are restricted regardless of their saved birth date. Other profiles use the existing country-specific age threshold; guardian and school profiles have no exemption.
+
+Preference reads and updates check the authenticated profile's current birth date, country and profile type. The API ignores client-supplied age flags, forces restricted analytics off and repairs incorrectly enabled saved preferences when they are read. Profile edits refresh the app's preference authorization. Becoming eligible after an age restriction does not restore the old opt-in automatically. Birth dates retain the existing strict ISO formats, including compact, week, ordinal and minute-precision dates; eligibility uses the birth date's calendar day.
+
+Age-restricted reads stay off even if saving a correction fails; a later read attempts the repair again. Other preference values remain readable.
+
+PostHog, Userflow, Firebase collection and optional Sentry replay/tracing remain off until both account preferences and tenant analytics policy resolve. Web Firebase is not initialized merely to disable collection. Turning Usage Analytics off stops optional collection immediately, including queued PostHog retries and Sentry replay uploads. An initialized Userflow session must be replaced by a fresh document before another session starts, including after account/profile changes, so messages from the retired session cannot be delivered under a new identity or permission.
+
+Necessary security error reporting remains separate from Usage Analytics. LaunchDarkly still supplies feature flags, but its optional analytics events and diagnostics are disabled.
+
+**Service configuration:** configure `NETWORK_BRAIN_SERVICE_URL` for the matching tenant's Brain service (`/trpc` or `/api`). Lambda reads this non-secret URL from checked-in per-stage service config; local Docker/standalone processes can use an explicit environment override. If that service or the authenticated self-profile is unavailable, analytics stays off but onboarding, theme and other preference operations remain available. Requests to enable analytics receive a retryable `SERVICE_UNAVAILABLE` error until authority recovers; mixed writes are not partially saved. This temporary restriction does not erase saved analytics consent or invent age metadata; first-login initialization waits for age authority to recover. An explicit opt-out is still saved. Authority failures are logged without authorization headers or profile data. The API never falls back to another tenant's network. Server-side age enforcement here covers analytics; AI and bug-reporting age controls remain client-side.
+
+The app shares fresh preference responses between consumers for 30 seconds within the same account/profile session. A replacement account instance requires a fresh read even for the same identifier; focus, reconnect and app-owned profile edits revalidate preferences.
+
 ## User Flows
+
+### Finding Your Credentials
+
+Open a Passport category and choose **Search**. Search checks every eligible record in that category without requiring you to scroll first. **Searching…** and **found so far** mean results are incomplete; matching cards stay visible while the remaining records are checked. A final no-results message appears only after the search finishes.
+
+Dashboard credential and credential-category totals exclude hidden and internal records. Totals remain unknown while the collection is loading; a failed count offers **Retry credential totals** instead of showing zero or first-credential onboarding. Passport categories remain available when their count cannot be loaded, and the unavailable-count message follows the app language.
+
+**Recently added** fills up to five visible cards, including when the first page contains only internal records. **See all** stays available even if recent cards are empty or fail to load. Category lists and **All credentials** keep loading when you scroll, even if the collection total has already finished counting. In **All credentials**, **Load more credentials** also works with a keyboard. A loading failure preserves the cards already loaded, explains that the collection is incomplete, and offers **Retry loading credentials**.
+
+Titles already saved in the encrypted index are searched locally from metadata. Older records without saved titles may need their credential contents loaded before a search can finish; wrapped credentials can match both their displayed name and their achievement name. Collection totals use metadata rather than credential contents.
 
 ### Claiming a Credential
 
@@ -113,6 +139,28 @@ LinkedIn sharing controls follow your app language.
 Deploy the Brain service and LearnCard App together to enable previews. The `/share-boost` Netlify edge function resolves the request's tenant domain, reads only the matching public preview record, and returns Open Graph metadata to social crawlers. The canonical destination preserves the original link's decryption parameters so a card click can open the credential. Ordinary visitors continue to the app; unavailable or mismatched previews fall back to the normal page. After deployment, use [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/) to inspect a preview-enabled share link.
 
 Developer verification: `lc verify run sdk` covers owner-only refresh/deletion, immutable URI binding, creation/update times, and profile cleanup; `lc verify run sharing` checks private-record isolation, deleted-preview recovery, and that earlier and newer cards both resolve after sharing an endorsed credential again.
+
+### Saving a Shared Collection
+
+Saving someone else's shared collection keeps it for reference, even when it contains
+only one credential. It does not issue those credentials to you, change their subjects,
+or add them to your earned Passport credentials.
+
+```mermaid
+flowchart LR
+    A[Open a shared collection] --> B[Sign in if needed]
+    B --> C[Save collection]
+    C --> D[View saved collections]
+    D --> E[Data & Sharing: Shared with you]
+    E --> F[Open the saved collection]
+```
+
+The success message appears only after saving is confirmed. If saving fails, the
+collection stays open with an error and the option to try again.
+
+Saved collections remain available under **Data & Sharing → Shared with you**, even
+when creating shared links is not enabled for your account. **View saved collections**
+opens that list once; closing it does not make it reopen on later Back/Forward visits.
 
 ### Private Verifier History
 

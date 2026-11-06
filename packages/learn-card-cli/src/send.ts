@@ -12,10 +12,13 @@ import {
     type ProjectOptions,
     localizeSnippet,
     resolveServices,
+    PROFILE_ID_PATTERN,
+    validateProfileIdOption,
 } from './project';
 import { setupSigning } from './setup-signing';
 import { SEND_MJS, SEND_FROM_TEMPLATE_MJS } from './generated/snippets';
 import { out } from './out';
+import { UsageError } from './errors';
 
 export { SEND_MJS } from './generated/snippets';
 export { parseEnv, upsertEnv, toProfileId } from './project';
@@ -146,7 +149,16 @@ const learnCard = await initLearnCard(`
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE = /^\+?\d{10,15}$/;
 const DID = /^did:[a-z0-9]+:.+$/;
-const PROFILE_ID = /^[a-z0-9-]{3,40}$/;
+const PROFILE_ID = PROFILE_ID_PATTERN;
+
+const isHttpUrl = (value: string): boolean => {
+    try {
+        const { protocol } = new URL(value);
+        return protocol === 'http:' || protocol === 'https:';
+    } catch {
+        return false;
+    }
+};
 
 export type RecipientKind = 'email' | 'phone' | 'did' | 'profileId';
 
@@ -155,7 +167,7 @@ export const classifyRecipient = (value: string): RecipientKind => {
     if (PHONE.test(value)) return 'phone';
     if (DID.test(value)) return 'did';
     if (PROFILE_ID.test(value)) return 'profileId';
-    throw new Error(
+    throw new UsageError(
         `"${value}" is not an email, phone number, profile ID, or DID. Example: npx @learncard/cli send you@yourdomain.com`
     );
 };
@@ -202,14 +214,14 @@ export const resolveRecipient = async (
 ): Promise<string> => {
     let candidate = recipient?.trim() ?? '';
     if (!candidate && !prompts.interactive)
-        throw new Error(
+        throw new UsageError(
             'A recipient is required when running non-interactively. Example: npx @learncard/cli send you@yourdomain.com --yes'
         );
     if (!candidate) candidate = (await prompts.ask(RECIPIENT_PROMPT, '')).trim();
     let reason = invalidRecipientReason(candidate);
     while (reason) {
         if (!prompts.interactive)
-            throw new Error(`${reason} Example: npx @learncard/cli send you@yourdomain.com`);
+            throw new UsageError(`${reason} Example: npx @learncard/cli send you@yourdomain.com`);
         out.log(reason);
         candidate = (await prompts.ask(RECIPIENT_PROMPT, '')).trim();
         reason = invalidRecipientReason(candidate);
@@ -217,11 +229,31 @@ export const resolveRecipient = async (
     return candidate;
 };
 
+/** What to tell the sender after an inbox send; honest about `--suppress-delivery`. */
+export const inboxSentMessage = (
+    recipient: string,
+    kind: string,
+    claimUrl: string | undefined,
+    suppressDelivery: boolean
+): string => {
+    const channel = kind === 'phone' ? 'text' : 'email';
+    return suppressDelivery
+        ? `Sent. No claim ${channel} was sent (--suppress-delivery); share this link with ${recipient} yourself:\n${claimUrl}`
+        : `Sent. ${recipient} will get a claim ${channel}. You can also share this link directly:\n${claimUrl}`;
+};
+
 export const runSend = async (
     recipient: string | undefined,
     options: SendOptions
 ): Promise<void> => {
     const cwd = process.cwd();
+    validateProfileIdOption(options.profileId);
+    if (options.guardianEmail !== undefined && !EMAIL.test(options.guardianEmail))
+        throw new UsageError(
+            `--guardian-email "${options.guardianEmail}" is not an email address.`
+        );
+    if (options.webhookUrl !== undefined && !isHttpUrl(options.webhookUrl))
+        throw new UsageError(`--webhook-url "${options.webhookUrl}" is not an http(s) URL.`);
     const project = await loadProject(cwd);
     const prompts = createPrompts(options.yes);
     let resolvedRecipient: string;
@@ -241,6 +273,10 @@ export const runSend = async (
         prompts.close();
     }
     const recipientKind = classifyRecipient(resolvedRecipient);
+    if (options.as && !project.env.ORG_PROFILE_MANAGER_DID)
+        throw new UsageError(
+            `--as ${options.as} needs a profile manager in this folder. Run \`org apply\` with a profileManager section first.`
+        );
     const identity = await ensureIdentity(project, { ...options, name: displayName, yes: true });
     const asManaged = options.as ? await connectAsManaged(project, options, options.as) : undefined;
     const hostedSigning = !!project.env.SIGNING_AUTHORITY_NAME;
@@ -319,7 +355,12 @@ export const runSend = async (
     out.log('');
     if (result.inbox?.status === 'PENDING') {
         out.log(
-            `Sent. ${resolvedRecipient} will get a claim ${recipientKind === 'phone' ? 'text' : 'email'}. You can also share this link directly:\n${result.inbox.claimUrl}`
+            inboxSentMessage(
+                resolvedRecipient,
+                recipientKind,
+                result.inbox.claimUrl,
+                !!options.suppressDelivery
+            )
         );
     } else if (recipientKind === 'email' || recipientKind === 'phone') {
         out.log(

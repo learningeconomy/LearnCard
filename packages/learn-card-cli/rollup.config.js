@@ -10,7 +10,7 @@ export default [
         input: ['src/index.tsx'],
         output: [
             {
-                file: packageJson.bin,
+                file: packageJson.main,
                 format: 'cjs',
                 banner: '#!/usr/bin/env node',
                 inlineDynamicImports: true,

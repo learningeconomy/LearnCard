@@ -1,6 +1,8 @@
 # Escrow canary — staging first
 
-Implements tiers 1–2 of [CANARY.md](../escrow-enclave-app/CANARY.md). No AWS
+Implements tiers 1–3 of [CANARY.md](../escrow-enclave-app/CANARY.md). Tier 3 and
+the canary inbox are implemented but **off by default and not deployed**; see
+[Tier 3](#tier-3-7-day-recovery-and-canary-inbox) and [TIER3-DESIGN.md](TIER3-DESIGN.md). No AWS
 resources or canary accounts are created by building or testing this package.
 Deployment is **operator-only**, to a dedicated monitoring **member** account,
 never the escrow or Organizations management account. Production activation is
@@ -21,7 +23,14 @@ not implied by passing offline tests.
   slot modulo two. Both accounts run once per hour. Start with empty memory
   storage and call `executeRecovery({ input: { method: 'escrow-pin', ... } })`.
   The SDK creates/verifies a fresh PIN hold, releases and reconstructs the key,
-  then calls `completeIdentityRecovery` for authenticated atomic rebind/rotation.
+  then keeps the account: it stores the released share at the current version
+  and re-sets the same PIN, with no rebind or rotation (PIN sign-in, accepted
+  2026-11-03; see `services/escrow-enclave-app/SECURITY.md` D19). The
+  same-PIN re-set (fresh budget) only runs while no wrong attempt is recorded
+  against the PIN; if one ever is, each run uses up one more attempt and the
+  canary PIN locks after its remaining budget, so set a new PIN for that
+  canary account. Each
+  run triggers the server's PIN sign-in email to the canary account.
   Independently derive the recovered DID. Save device state **before** calling
   `setEscrowPin`, and save again afterward because setting a PIN also rotates shares.
 - The first run for each account in each UTC Monday-based week prepends one
@@ -69,7 +78,7 @@ browser UI. The ZIP bundles JS and DIDKit WASM, not the native addon or a CDN UR
 `bun run build` includes an offline **Node** smoke for DID/VP signing and SSS
 split/reconstruction with fetch forbidden. That does not prove real Nitro,
 Firebase, API rate limits, Lambda arm64 execution, or recovery against staging.
-The SDK's best-effort automatic post-rebind escrow enrollment does not receive a
+The SDK's best-effort PIN re-set after the sign-in does not receive a
 recovery contact on this path; the explicit final `setEscrowPin` supplies the
 verified recovery email/language and must succeed before the canary is green.
 
@@ -77,17 +86,24 @@ verified recovery email/language and must succeed before the canary is green.
 
 Environment variables (all non-secret deployment configuration):
 
-| Variable                   | Value                                                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `CANARY_ENVIRONMENT`       | `staging` initially; `production` only after separate approval                                                |
-| `CANARY_TIER`              | `1` or `2`, set by Terraform per Lambda; authoritative even if an event is malformed                          |
-| `LCA_API_URL`              | Staging **REST base**, including `/api` when applicable; not `/trpc`                                          |
-| `TENANT_ID`                | Registered staging tenant; sent as `X-Tenant-Id`, just like the app                                           |
-| `FIREBASE_API_KEY`         | That tenant's Firebase web API key (public identifier, not Admin credentials)                                 |
-| `ESCROW_KEY_ID`            | Reviewed current logical escrow key ID                                                                        |
-| `AUTHORITY_GENERATION`     | Reviewed measured authority generation                                                                        |
-| `ESCROW_MEASUREMENTS_JSON` | Array of complete `{pcr0,pcr1,pcr2}` tuples copied from resolved staging `auth.sss.escrowEnclaveMeasurements` |
-| `CANARY_ACCOUNTS_JSON`     | Exactly three `{id,secretArn}` objects, ordered read-only, PIN A, PIN B                                       |
+| Variable                   | Value                                                                                                                |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `CANARY_ENVIRONMENT`       | `staging` initially; `production` only after separate approval                                                       |
+| `CANARY_TIER`              | `1`, `2` or `3`, set by Terraform per Lambda; authoritative even if an event is malformed (anything else never runs) |
+| `LCA_API_URL`              | Staging **REST base**, including `/api` when applicable; not `/trpc`                                                 |
+| `TENANT_ID`                | Registered staging tenant; sent as `X-Tenant-Id`, just like the app                                                  |
+| `FIREBASE_API_KEY`         | That tenant's Firebase web API key (public identifier, not Admin credentials)                                        |
+| `ESCROW_KEY_ID`            | Reviewed current logical escrow key ID                                                                               |
+| `AUTHORITY_GENERATION`     | Reviewed measured authority generation                                                                               |
+| `ESCROW_MEASUREMENTS_JSON` | Array of complete `{pcr0,pcr1,pcr2}` tuples copied from resolved staging `auth.sss.escrowEnclaveMeasurements`        |
+| `CANARY_ACCOUNTS_JSON`     | Exactly three `{id,secretArn}` objects, ordered read-only, PIN A, PIN B                                              |
+
+Tier 3 adds `CANARY_ROLE` (`runner`/`evaluator`), `CANARY_HOLD_ACCOUNTS_JSON`
+(12 ids; secrets are addressed by name `TIER3_HOLD_SECRET_PREFIX` + id),
+`TIER3_*` (ledger table, pool size, start hour, hold duration, cancel cooldown)
+and `INBOX_*` (bucket, prefix, domain, local part, expected senders, DKIM domain,
+DMARC requirement); see [TIER3-DESIGN.md](TIER3-DESIGN.md) §9.
+The evaluator receives only the environment, ledger table and pool size.
 
 The explicit tenant header takes priority over Origin/Referer in lca-api; a domain
 header is not required. Trust pins are never downloaded from the probed server.
@@ -125,21 +141,18 @@ not be manually reset to force retries.
    differs from both escrow and management accounts. There are no cross-account
    roles, vault tokens, host access, SES or DynamoDB grants in this stack.
 2. Verify the staging app resolves to SSS + Nitro and the correct staging Firebase
-   project/API. Finish the existing escrow staging prerequisites first. Register
-   three **ordinary** accounts through normal sign-up, e.g. the placeholder pattern
-   `jackson+canary<n>@learningeconomy.io` with `<n>` replaced locally. Do not add
-   these addresses or actual account identifiers to tracked files. Verify recovery
-   email normally; enroll automatic recovery for all three; set distinct random
-   nontrivial PINs for PIN A/B. Keep the read-only account enrolled without a PIN.
-3. On a trusted, isolated workstation/browser with tracing, screen recording and
-   shell history disabled, sign each account in normally. Obtain the current user's
-   Firebase `User.refreshToken` from that signed-in session (not the short-lived ID
-   token), and the account's existing seed from the app's authorized key-export /
-   developer tooling. If using DevTools, inspect only that disposable account's
-   Firebase session and private-key store; do not print/copy an entire storage dump.
-   Cross-check the seed-derived `did:key` against the account before upload. Never
-   use a Firebase Admin service account or mint custom tokens. Never paste secrets
-   in shell arguments, tickets, PRs, Terraform inputs, logs or screenshots.
+   project/API. Finish the existing escrow staging prerequisites first. Choose three
+   addresses you control for the read-only, PIN A and PIN B accounts, e.g. the
+   placeholder pattern `<local>+canary<n>@<domain>` with the placeholders replaced
+   locally. Do not add these addresses or actual account identifiers to tracked
+   files. **Nobody signs in to the app with a canary address**: a key the app
+   creates for it is unknown to the canary secret and blocks provisioning (exit 3).
+3. Accounts are created in step 6 by the provisioning tool
+   ([PROVISIONING.md](PROVISIONING.md)), through the normal user path: email-code
+   login, a new SSS key, then escrow opt-in or PIN setup. The tool never holds a
+   Firebase Admin credential; it exchanges the custom token lca-api returns to
+   every email-code login, exactly as the app does. Never paste secrets in shell
+   arguments, tickets, PRs, Terraform inputs, logs or screenshots.
 4. From the repo root, install dependencies and build the workspace SDK dependencies:
 
     ```sh
@@ -165,14 +178,36 @@ not be manually reset to force retries.
     real values are out-of-band and `ignore_changes` prevents reconciliation of
     secret values/stages. Do not import current real secret versions into Terraform.
 
-6. Populate each secret using the monitoring-account Secrets Manager console's
-   plaintext JSON editor in the isolated session, or a trusted SDK process reading
-   the JSON via private stdin. Avoid CLI `--secret-string '<value>'` and files on
-   persistent disks. Close the editor/browser, clear the clipboard and remove any
-   temporary private material after confirming the secret's version metadata
-   (do not log its value). Only the tier's runner role has normal read/write access
-   to its exact secret ARNs; KMS use is restricted through Secrets Manager with
-   the exact secret encryption context. Revoke temporary operator grants.
+6. **Provision** each account from an operator SSO session in the monitoring
+   account, with Node 22 and the built bundle (it loads `didkit.wasm` from `dist/`).
+   Dry-run first; it reads Secrets Manager only and sends nothing:
+
+    ```sh
+    node services/escrow-canary/dist/provision.mjs --environment staging \
+      --expect-account <monitoring account id> --tier 1 --account read-only \
+      --email <read-only address> --dry-run
+    # then without --dry-run; repeat with --tier 2 --account pin-a / pin-b
+    ```
+
+    The tool sends a login code (type it at the hidden prompt), creates the key,
+    writes the secret to a new version and claims it as `PROVISIONING` with a
+    conditional label move **before** any server change (a concurrent run on the
+    same label stops; a later re-run waits out a 15-minute claim lease unless given
+    `--takeover`), enrolls escrow (tier 2: sets a random PIN and activates, as the app
+    does), runs the runner's checks and only then promotes the version to
+    `AWSCURRENT` with a compare-and-swap. It prints only labels, secret names,
+    version ids, `did:key`s and step results. Re-running resumes safely from the
+    staged version (exit 1 = re-run; 2 = refused, nothing changed; 3 = needs a
+    human). See [PROVISIONING.md](PROVISIONING.md) for the guards and resume rules.
+
+    **Manual fallback** (only if the tool cannot be used): sign each account in
+    on an isolated workstation with tracing, recording and shell history off; read
+    the seed from the app's authorized key-export tooling and the Firebase
+    `User.refreshToken` from that session (never a whole storage dump); cross-check
+    the `did:key`; then paste the JSON above in the Secrets Manager console's
+    plaintext editor (never CLI `--secret-string`, never a file on a persistent
+    disk), clear the clipboard and revoke temporary grants.
+
 7. Confirm the SNS email subscription. With schedules still disabled, invoke tier 1
    with `{"tier":1,"time":"<current UTC ISO timestamp>"}` and tier 2 similarly.
    Supply current timestamps, never replay old events. To exercise both PIN accounts,
@@ -227,6 +262,204 @@ not be manually reset to force retries.
   runner roles. Automated off-schedule secret-access detection is not provisioned
   here; security operations owns the independent trail and alert policy.
 
+## Tier 3: 7-day recovery and canary inbox
+
+Design and rationale: [TIER3-DESIGN.md](TIER3-DESIGN.md). Summary:
+
+- Two more Lambdas from the **same ZIP**: `escrow-canary-<env>-tier3-runner` and
+  `-tier3-evaluator`, both `rate(15 minutes)`, reserved concurrency 1, no retries.
+  The runner makes at most one daily start (from `tier3_start_hour_utc`, default
+  15:00 UTC) and one weekly cancel run (Mondays, one hour later), never two
+  code-sending calls in one tick. The evaluator only reads the ledger.
+- A DynamoDB run ledger (`escrow-canary-<env>-tier3`) records every expected step
+  and its due time. It holds no secrets. Every transition is a compare-and-swap
+  claimed **before** its side effect; `executeRecovery`, `confirmEscrowRecovery`
+  and start are never repeated blindly after a crash.
+- Resume material (`resumeToken`, ephemeral key, expectations) lives only in that
+  hold account's secret (`hold`), written before any later I/O. Runner-only fields
+  `hold` and `lastReleasedRunId` must **never** be edited by hand.
+- The user path only: `startEscrowRecovery` (no restart, no release policy, with
+  `expectedDid`), `confirmEscrowRecovery`, `getEscrowRecoveryStatus`,
+  `executeRecovery` (escrow input, recovery contact options) and the
+  DID-authenticated `cancelEscrowRecovery`. No `api/` or `app/` change.
+- The SDK drops refusal bodies, so a refused completion is classified from a
+  fresh status read: `pending` and before `releaseAfter` = waiting period;
+  `cancelled` = refused as cancelled; a 412 with the hold still `pending` =
+  retryable enclave Unavailable/Time refusal until the Released deadline.
+
+### Canary inbox
+
+`infra/escrow-canary-inbox` (account-scoped, its own state) owns the inbox
+zone, the SES domain identity and the account's **single active receipt rule
+set** (`prevent_destroy`). Each environment's `infra/escrow-canary` adds only its
+own 12 rules (`<local>+<n>@<domain>`, exact recipients, `inbox/hold-NN/` prefix),
+its bucket (SSE-KMS, 7-day expiry, TLS-only) and key. Staging's local part must end
+in `-staging`, so the two environments never match each other's mail. Each rule
+has a precondition that the shared set is active.
+
+The runner reads only its environment's prefix. It accepts a message only if the
+first `Authentication-Results` is SES's own (above any original header),
+`spf=pass`, `dmarc=pass` (unless `inbox_require_dmarc=false`), a `dkim=pass` in
+`inbox_expected_dkim_domain` **aligned with the From domain**, exactly one `From`
+in `inbox_expected_senders`, SES spam/virus `PASS`, and `To` = the account's
+recovery email. Mail from other senders is ignored; enclave-looking mail that
+fails is a `Step.Failure` diagnostic (`email_untrusted`) and never satisfies a
+step. Objects over 256 KiB and more than 10 candidates per poll are not read. The
+code is never logged, persisted or used twice.
+
+### Metrics and alarms (tier 3)
+
+Alarm series: `{Environment, Tier="3"}`. `Account=hold-NN` and `Kind` are
+diagnostic only (`Tier3.EmailLatency` also rolls up by `Kind`).
+
+| Alarm                      | Rule                                                                      | Missing      | Route  |
+| -------------------------- | ------------------------------------------------------------------------- | ------------ | ------ |
+| `tier3-overdue`            | `Tier3.Overdue` Max > 0, 1 × 900 s                                        | notBreaching | page   |
+| `tier3-evaluator-silent`   | `Tier3.EvaluatorHeartbeat` SampleCount < 1, 3 × 900 s                     | breaching    | page   |
+| `tier3-<step>-failed` (×6) | Started/Confirmed/Warned/Released/Reenrolled/Cancelled Min < 1, 1 × 300 s | notBreaching | page   |
+| `tier3-start-silent`       | `Tier3.StartAgeMinutes` Max > 1560 (26 h), 2 of 2 × 1800 s                | breaching    | page   |
+| `tier3-runner-auth`        | `Runner.AuthFailure` (Tier 3) Max > 0, 1 × 900 s                          | notBreaching | page   |
+| `tier3-pool-low`           | `Tier3.PoolAvailable` Min < 2, 2 of 2 × 1800 s                            | breaching    | ticket |
+| `tier3-email-slow`         | `Tier3.EmailLatency` (Kind=code) Max > `tier3_email_slow_ms`              | ignore       | ticket |
+
+Tickets go to the new `${name}-tickets` topic (`ticket_email`, default
+`alarm_email`). Tier-3 alarm actions require both `alarm_actions_enabled` and
+`tier3_enabled`. A separate `${name}-tier3` dashboard leaves the tier 1/2 one
+untouched.
+
+### Tier 3 operator steps (not performed by this change)
+
+> **Bundle note.** Tiers 1–3 share one ZIP. This change alters the handler
+> (strict `CANARY_TIER` parse) and adds dependencies, so the next production
+> apply after a rebuild **redeploys the live tier 1/2 functions** even with tier 3
+> off. Run the new bundle for tiers 1/2 in staging first, then apply production
+> with tier-3 variables still at their defaults and confirm the plan only updates
+> the two existing functions' code.
+
+1. **Preflight**, monitoring account, us-east-1:
+   `aws ses describe-active-receipt-rule-set`. If any rule set is already active,
+   stop and review; the shared stack would replace it.
+2. **Shared stack** with `delegation_complete=false` (its own backend key, see
+   `infra/escrow-canary-inbox/backend.hcl.example`):
+   `terraform -chdir=infra/escrow-canary-inbox apply -var monitoring_account_id=… -var inbox_domain=…`.
+3. **Delegate** the inbox domain from its parent zone to the output
+   `name_servers` (NS record in the parent's account). Check with `dig NS`.
+4. Re-apply the shared stack with `delegation_complete=true`; confirm the SES
+   identity shows as verified.
+5. **Sender settings**: copy `ESCROW_EMAIL_FROM` and `ESCROW_EMAIL_IDENTITY` from
+   that environment's escrow output `enclave_email_configuration` into
+   `inbox_expected_senders` / `inbox_expected_dkim_domain`. Never hardcode them.
+   If staging escrow SES is in the sandbox, it can only send to verified
+   recipients: verify the inbox domain in the escrow account or obtain production
+   access first.
+6. **Apply the environment** with the 12 `hold_account_ids` (at most 32
+   characters each), `inbox_enabled=true` and `tier3_enabled=false`. Then
+   `terraform output hold_secret_arns`, `inbox_recipients`, `ledger_table_name`,
+   `ticket_topic_arn`. **Confirm the new `${name}-tickets` email subscription**
+   (click the link in the confirmation mail). It is a separate subscription from
+   the tier 1/2 alarm topic even when `ticket_email` equals `alarm_email`; until it
+   is confirmed, `tier3-pool-low` and `tier3-email-slow` notifications are dropped.
+   Check that
+   `aws sns list-subscriptions-by-topic --topic-arn <ticket_topic_arn>` shows a real
+   `SubscriptionArn`, not `PendingConfirmation`, before step 9.
+7. **Provision the 12 hold accounts** with the tool (addresses are positional:
+   `hold-0n` = `<inbox_local_part>+<n>@<inbox_domain>`, English, escrow opted in,
+   **no PIN**). The login code is read from the account's own inbox prefix under
+   the full trust checks, with the **login** sender policy (lca-api's tenant
+   `login@` mailbox, not the enclave sender). Pass both values explicitly; they
+   have no defaults and the dry-run prints them:
+
+    ```sh
+    node services/escrow-canary/dist/provision.mjs --environment staging \
+      --expect-account <monitoring account id> --tier 3 --labels hold-01 \
+      --login-sender <lca-api login From address> --login-dkim-domain <its DKIM domain> \
+      --check-mail          # one code, trust + parse only, never verifies
+    # then --labels all --dry-run, then --labels all
+    ```
+
+    Reading the inbox is an operator action: use a dedicated, MFA-protected
+    provisioning permission set limited to the actions in
+    [PROVISIONING.md](PROVISIONING.md) §9 (not created by this change), recorded in
+    CloudTrail like break-glass. A label may only be provisioned while its pool item
+    is absent or quarantined, or the pool is paused. Manual fallback as in
+    "Staging operator setup" step 6 (`pin` may be a random valid placeholder;
+    `recoveryLanguage` must be `en`; `recoveryEmail` must be exactly the label's
+    address, or the runner refuses the account with `config`).
+
+8. **Seed the ledger**: `--init-pool` on the provisioning tool (runs only once all
+   12 hold secrets are live and pass the runner's checks), or
+   `bun scripts/tier3-admin.ts <env> <ledger_table_name> init-pool`.
+   Then, **within the hour before** the apply that sets `tier3_enabled=true`, run
+   `… ready`. It validates the pool and writes META (`enabledAt = now`; re-run it
+   to re-anchor while no run exists). StartAge is measured from it, so a runner
+   that fails every tick still pages after 26 h. Without `ready` the evaluator
+   throws (no META), no heartbeat is emitted and the silent alarm pages.
+9. **Staging drills** (below), then set `tier3_enabled=true` in staging. Production
+   follows only after the drills and a 7-day observation; the first release
+   signal comes 7 days after the first start.
+
+**Hold duration.** `tier3_hold_duration_ms` must be `604800000` (7 days) in **both**
+environments. The Nitro enclave signs every hold with the compile-time
+`HOLD_DURATION_MS` (`services/escrow-enclave-app/src/policy.rs`); lca-api's
+`ESCROW_HOLD_DURATION_MS` (600000 on staging) only affects the software enclave. With
+600000 the first two staging runs (2026-11-03/04) closed `Confirmed=0`
+`deadline_mismatch`; staging was set to 604800000 on 2026-11-04.
+
+**Rollout record.** Staging tier 3 has been enabled since 2026-11-03. Production tier 3
+was enabled 2026-11-04 22:25Z by owner decision, ahead of the staging drills and the
+7-day observation (staging's hold is also 7 days, so it gives no earlier signal); its
+first run (22:26Z, `hold-01`) reached `Started=1` and `Confirmed=1`. Production login
+mail from lca-api (`login@learncard.com`, Postmark pools `104.245.209.x`) was scored
+`X-SES-Spam-Verdict: FAIL` on every try while staging's identical mail passed, so
+production provisioning needs `--allow-login-spam-fail` (#1949).
+
+`tier3-admin` commands (ledger only; never secrets or escrow state; record each use):
+`list`, `close-step <runId> <Step>` (close a step left open by a crash),
+`close-run <runId> <orphaned|quarantined>` (close a run stuck in any open state,
+mark its open steps `operator_closed` and free the account),
+`unquarantine <hold-NN>` (after an owner-path repair), `pause` / `resume`,
+`inject-overdue` (refused in code unless the ledger is staging),
+`replay <snapshot.json> <ISO time>` (offline evaluator over an exported scan).
+
+**Pausing** (for example to rotate a hold account's refresh token): `pause`,
+wait one tick (15 min) for in-flight executions, rotate, `resume`. While paused
+the runner touches nothing and the evaluator reports `Overdue=0`, `StartAge=0`,
+`Paused=1`. `resume` re-anchors start age and gives open steps one hour to catch
+up. Disabling only the schedules instead would page through Overdue/StartAge.
+
+A daily run whose **warning email never arrives** pages through Overdue at
+confirm + max(0, hold − 24 h) + 2 h (6 d 2 h for the 7-day hold both environments
+use); a day later the runner closes it `Warned=0`
+`warning_missing` and orphans the account (cleanup below).
+
+**Quarantine** happens on release failure, DID mismatch, failed re-enrolment,
+an interrupted release, an early release, or a failed orphan cleanup. Repair
+through the ordinary owner/app flow, then `unquarantine`. Start/confirm failures
+leave the account `orphaned`; after 24 h the runner cancels the pending hold once
+through the user's DID-authenticated cancel and puts the account in a 48 h
+cooldown (UNVERIFIED: how long an unconfirmed enclave cancel blocks a new start).
+
+The warning job processes holds in batches (`escrowHoldReminders.ts`), so a
+backlog of real holds can legitimately delay a warning past its due time and page.
+
+### Tier 3 staging drills
+
+1. Warm-up and cancel gap: 8+ days enabled with no false page.
+2. `inject-overdue` pages within one evaluation; `close-step` clears it. Observed
+   2026-11-04: paged at the first evaluation (19:58Z), OK one evaluation after `close-step`.
+3. Disable only the evaluator schedule: the heartbeat alarm pages. Observed 2026-11-04:
+   76 min after the last heartbeat, not the ~45 min that 3 × 900 s suggests, because
+   CloudWatch keeps counting the last real datapoint while it is inside the alarm's
+   evaluation range. Cleared ~1 min after the schedule was re-enabled.
+4. Point `TIER3_LEDGER_TABLE` at a missing table: no heartbeat, pages.
+5. Send mail from a non-allowlisted sender to a pool address: ignored.
+6. Resolve every UNVERIFIED item in TIER3-DESIGN.md §11: capture a redacted
+   real code email (header order, `Authentication-Results` position, DKIM
+   `header.i`/`header.d`), the SES setup-notification object, SSE-KMS writes
+   (fallback: `AES256`), plus-address exact matching, the rules-per-set quota,
+   cancel cooldown, and that `apply production → apply staging → plan production`
+   shows no changes to either environment's receipt rules.
+
 ## Supporting signals and remaining phases
 
 `lca-api` now emits `LearnCard/Escrow / EnclaveFailure` EMF counts by its existing
@@ -238,9 +471,250 @@ EMF in its own account; the canary account does not read those logs.
 Escrow-account DynamoDB UserErrors (account aggregate), authority-table SystemErrors,
 SES delivery correlation, KMS decrypt alarms and host Roughtime probes are untouched
 and still require the owning escrow stack/operator. Ledger monitoring is unchanged.
-Tier 3/inbox, release gates/CI pin consistency, production account provisioning and
-two-week observation are not implemented. Offline tests do not replace the real
-staging drills, Linux owned-stack `lc verify`, or Lambda/CloudWatch delivery proof.
+Release gates/CI pin consistency and two-week production observation are not
+implemented. Tier 3 and the inbox are implemented but not deployed or
+live-verified. Offline tests do not replace the real staging drills, Linux
+owned-stack `lc verify`, or Lambda/CloudWatch delivery proof.
+
+## Load testing (staging only)
+
+`scripts/load.ts` (built to `dist/load.mjs`, **not** part of `canary.zip`) drives
+real client flows against **staging** at a controlled rate to find the first
+bottleneck in escrow. It uses the same SDK strategy and attestation trust
+configuration as the canary (`createSdk`, Nitro PCR pins, no software fallback).
+It is an operator tool: nothing in CI runs it, and its tests are offline.
+
+**Flows.** Each synthetic user is created with the Firebase Admin SDK
+(`createUser` with `emailVerified: true`, then `createCustomToken`), and signs in
+through the same Firebase REST custom-token exchange the provisioning tool uses
+(`src/provision/login.ts`). No login codes are sent. Per arrival:
+
+- `enrol`: new key (`atomicUpdateShares`, as the app's `setupNewKey`), then the
+  app's **automatic** enrolment, as `AuthCoordinator.refreshEscrow` runs it on
+  reaching `ready` (learn-card-base `src/auth-coordinator/AuthCoordinator.ts`):
+  the rollout-gate `getEscrowEnrollmentState` read, `ensureEscrowEnrollment`
+  with the recovery contact options (login email + locale), then
+  `getEscrowEnrollmentState` and `getEscrowRecoveryStatus`. The rollout gate
+  itself is assumed open for these accounts. `--enrol-opt-in` uses the explicit
+  settings opt-in (`enableEscrowRecovery`) instead. With `--enrol-with-pin`,
+  also `setEscrowPin` and activation, as the app's PIN setup.
+- `pin` (fraction `--pin-ratio`): a new-device PIN sign-in, as the coordinator
+  does it: fresh sign-in, empty memory storage, the status read that lands a new
+  device in `needs_recovery`, `executeRecovery({ method: 'escrow-pin' })` with
+  the own-typos attempt context from that status and the recovery contact
+  options, an independent DID check, then the same `refreshEscrow` as above.
+  The scenario latency therefore includes that post-`ready` refresh; the
+  `recovery` step is the user's wait. The canary's same-PIN re-set is off by
+  default (the SDK's PIN sign-in already refreshes the PIN budget);
+  `--pin-reset-after-recovery` adds it. Uses users from a PIN pool
+  (`--pin-pool`) prepared before the stages; one operation per pool user at a
+  time. A pool user whose recovery fails is retired, not reused, except when
+  lca-api refused the **start** with a 429: no hold exists then (both start-time
+  429s are raised before a hold is created), so the user goes back to the pool.
+
+All Firebase users are created in an unmeasured **setup** phase (`--setup-rate`,
+default 2/s) before the stages, so account creation (which real users already
+have) is not mistaken for the first bottleneck. The Firebase Admin API has its
+own quotas; raise `--setup-rate` only within them.
+
+**Load shape.** `--stages <rate/s>:<seconds>,...` (e.g. `0.5:120,1:300`) runs
+stages back to back with **open-loop** arrivals: starts happen on schedule
+regardless of earlier ones, bounded by `--max-in-flight`. A start that would
+exceed the bound is **dropped** (counted, never queued), so rising latency is
+visible rather than self-throttled. A start more than `--late-ms` behind schedule
+is counted **late**: the generator itself (one Node process doing DIDKit and SSS
+work) is then the limit, not the server. If you see late starts, split the load
+across several processes or hosts, each with its own `--run-id`.
+
+**PIN recovery is rate-limited per client IP.** lca-api (`limitPinCompletion` in
+`services/learn-card-network/lca-api/src/routes/escrow.ts`) counts, in Redis per
+client IP, every PIN-policy hold start (`escrow:pin-start:<ip>`) and every
+completion with a PIN proof (`escrow:pin-complete:<ip>`): a fixed 60 s window
+(`EXPIRE` set on the first hit) and a 429 once a count exceeds **20**. Each PIN
+recovery makes one of each, so one egress IP sustains at most 20 PIN recoveries
+per minute (a burst straddling two windows can pass up to 40). The client IP is
+the API Gateway source IP (or the first `X-Forwarded-For` hop), so several
+processes on one host share one budget. The plan prints a WARNING for any stage
+whose PIN rate (`rate x --pin-ratio x 60`) exceeds 20: PIN results above it
+measure the limiter, not escrow capacity. Measuring higher PIN rates needs
+multiple egress IPs, or a staging allowlist / raised limit for the load
+generator, which is a decision to record (with its owner) before such a run; it
+is not something to work around from one host. Enrolment and PIN setup are not
+limited this way.
+
+**Output.** Plan and progress lines (every `--progress-sec`) go to stderr; the
+final JSON summary is the only stdout. Per stage (`setup`, `s1`, ...) and per
+scenario/step: count, ok, errors by safe reason (the canary's `safeReason` plus
+HTTP status class, timeout, Firebase Admin code and SDK error class), latency
+p50/p95/p99/max over **ok** operations (`latencyMs`, the primary series) and,
+separately, over failed ones (`failedLatencyMs`), achieved start and success
+rates, dropped and late starts, plus request counts by class (escrow / other
+keys / Firebase) with 409/429/4xx/5xx/transport buckets. A 429 whose body is
+lca-api's per-IP PIN limiter message is counted as `throttledByClientIp` and
+the operation's outcome is `throttled_by_client_ip`, reported apart from
+capacity failures: it is not in `failed`, not in the stop-on-error ratio, and
+progress lines show it as its own count next to ok-only latency. The `firebase`
+request bucket covers only the custom-token exchange (Firebase REST); the Admin
+SDK's `createUser` volume is in `stages.setup` (`createUser` / `pinSetup`). It
+never prints keys, PINs, tokens, shares or email addresses: counts and the run
+id only.
+
+### Guards (fail closed; `--dry-run` runs them all and sends nothing)
+
+- `--lca-api-url` must be https and its host must equal `--staging-host`, carry a
+  `staging` or `staging-*` DNS label, and not be a known production host.
+- `GOOGLE_APPLICATION_CREDENTIALS` must be a service-account file whose
+  `project_id` equals `--firebase-project`; known production projects and ids
+  that look like production are refused. Each ID token's audience is also
+  checked against `--firebase-project`; a mismatch stops the run (exit 3).
+  The one exception is the shared project (next item); `scoutpass-9a67e` is
+  never allowed.
+- **Shared Firebase project.** Staging lca-api verifies sign-ins from the
+  Firebase project `learncard`, which production also uses (staging has no
+  Firebase project of its own), so the test users have to be created there.
+  That is refused unless the operator passes
+  `--shared-production-firebase learncard` (the value must equal
+  `--firebase-project`; the flag is refused for any other project). The plan
+  then prints a boxed WARNING. Consequences: the synthetic users sit beside
+  real production accounts in the Firebase console, count toward the
+  project's monthly active users (billing), and run any Auth-triggered
+  extension or function the project has. They are removed only by
+  `cleanup --manifest` (below).
+- `--manifest <path>` is required and must not exist yet (see "Run manifest").
+- `--domain` is required and is an **allowlist**: only subdomains of
+  `notify.learncard.com`, where the canary's receive-only SES inbox lives (e.g.
+  `canary.notify.learncard.com`), are accepted. The bare organisation domains
+  (`learningeconomy.io`, `learncard.com`, `learncard.app`, `learncard.ai`,
+  `learncloud.ai`, `vetpass.app`, `scoutnetwork.org`, and `notify.learncard.com`
+  itself) are refused by name; anything else is not allowlisted. Addresses are
+  `<prefix>+<runId>-<n>@<domain>`.
+- The canary inbox stores only its 12 fixed pool addresses (exact-recipient
+  receipt rules, `infra/escrow-canary/inbox.tf`) and drops everything else, so
+  the PIN-recovery emails to these synthetic addresses are **not read** by
+  anyone. Before a large PIN run, confirm with whoever owns the mail provider
+  that staging delivery to them won't bounce or hurt sender reputation, or
+  that staging lca-api has no `POSTMARK_SERVER_TOKEN`/`POSTMARK_FROM_EMAIL`, in
+  which case lca-api only logs emails
+  (`lca-api/src/services/delivery/delivery.factory.ts`).
+- `--i-understand-roughtime` is required: every enclave time sample queries the
+  three third-party Roughtime servers (Cloudflare, int08h, time.txryan.com; see
+  `services/escrow-enclave-app/LAUNCH-DECISIONS.md` "RT"). The plan prints an
+  estimated per-server request count before anything is sent (an estimate, not
+  measured); the summary reports the measured escrow request count.
+- `--max-users` (hard cap on Firebase users created) and `--max-emails` are
+  required. Enrolment sends no email. Each PIN recovery sends two
+  (`escrow-hold-started` and `escrow-pin-sign-in`) through lca-api's delivery
+  service; `--max-emails` must cover the upper bound of three per PIN recovery.
+  The file:line evidence is in the header of `scripts/load.ts`.
+- Scheduling stops (remaining starts counted as `stopped`) on Ctrl-C (a second
+  Ctrl-C aborts), on a fatal token guard, or when a stage's failure ratio exceeds
+  `--stop-error-rate` (default 0.5) after 20 completions (client-IP throttling
+  does not count). The summary's `stopped` records the reason, including a fatal
+  guard or Ctrl-C that arrives while in-flight work drains after the last start;
+  a fatal stop exits 3.
+
+### Before the first run against the shared project (one time)
+
+- **Credential.** Create a dedicated service account in `learncard` with only
+  the **Firebase Authentication Admin** role, use its key for the test window,
+  and delete the service account (not just the key) afterwards. Do not reuse a
+  broader production credential.
+- **Console check.** In the Firebase console for `learncard`, review
+  Extensions and Integrations (and any Cloud Functions on Auth `onCreate` /
+  `onDelete`): each created and deleted test user triggers them. Check the
+  billing plan: if the project is on Identity Platform's monthly-active-user
+  pricing, every synthetic user that signs in counts as an active user for that
+  month (billed above the free tier); size `--max-users` with that in mind.
+  Record the result with the run record (Confluence), not here.
+
+### Run manifest
+
+Before the first Firebase user is created, the tool creates `--manifest <path>`
+(exclusive create: an existing file is refused; mode 0600) with the run id,
+prefix, domain, Firebase project and creation time. After each successful
+`createUser` it appends the uid and that user's synthetic address and fsyncs
+before the user is used, so a crash leaves a usable manifest (a torn last line
+is ignored; a user created but not yet recorded at the moment of a crash is the
+only possible miss). If the manifest cannot be written, the run stops
+(`fatal_manifest_write`, exit 3) and deletes the user it could not record; if
+that delete also fails it prints the uid (`unrecorded Firebase user <uid>`) to
+delete by hand in the Firebase console. The manifest holds no keys, PINs, tokens or
+shares. It is JSON Lines; cleanup appends its progress to it.
+
+The manifest is the **only** cleanup source: the tool never lists or scans the
+project's users. Keep it until cleanup reports every user deleted or already
+gone; without it this run's users cannot be removed by this tool.
+
+### Usage
+
+Build from the repo root (as in "Staging operator setup" step 4):
+
+```sh
+NX_DAEMON=false bunx nx run-many -t build -p init sss-key-manager --parallel=3
+bun run --cwd services/escrow-canary build
+```
+
+Then run with Node 22 from the repo (firebase-admin is external to the bundle
+and resolves from the workspace). Non-secret trust configuration comes from the
+same environment variables as the canary:
+
+```sh
+export GOOGLE_APPLICATION_CREDENTIALS=<staging service-account JSON path>
+export FIREBASE_API_KEY=<staging web API key> ESCROW_KEY_ID=<id> AUTHORITY_GENERATION=<gen>
+export ESCROW_MEASUREMENTS_JSON='<reviewed staging PCR tuples>'
+node services/escrow-canary/dist/load.mjs \
+  --lca-api-url https://<staging host>/api --staging-host <staging host> --tenant-id <tenant> \
+  --firebase-project <staging project> --domain <canary inbox domain> \
+  --stages <rate:sec,...> --max-in-flight <n> --pin-ratio <0..1> --pin-pool <n> \
+  --max-users <n> --max-emails <n> --manifest <new file> --i-understand-roughtime \
+  [--shared-production-firebase learncard] --dry-run
+# optional: --enrol-with-pin, --enrol-opt-in, --pin-reset-after-recovery
+# then without --dry-run, redirecting stdout to keep the JSON summary
+```
+
+### Cleanup
+
+```sh
+export GOOGLE_APPLICATION_CREDENTIALS=<staging service-account JSON path>
+node services/escrow-canary/dist/load.mjs cleanup --manifest <file> \
+  --firebase-project <project> [--shared-production-firebase learncard] [--dry-run]
+```
+
+The same Firebase project guards run first (including the shared-project
+flag), and `--firebase-project` must equal the manifest's project. For each uid
+in the manifest the tool fetches the user (`getUsers`, batches of 100) and
+deletes it (`deleteUsers`) only if its **current** email still matches the run
+(`<prefix>+<runId>-<n>@<domain>`, exactly) and equals the address recorded for
+it. It reports `deleted`, `already-gone` and `skipped-mismatch` (`--dry-run`
+looks up and reports `would-delete`, deleting nothing). Progress is appended to
+the manifest after each batch, so re-running after a crash or a partial failure
+is safe: finished uids are skipped and the rest re-checked. Exit 4 means some
+deletions failed; re-run the same command. The tool does **not** delete anything in
+lca-api or the enclave: user keys (`contactMethod` = the synthetic address,
+`authProvider` = the deleted Firebase uid), escrow blobs and authority records,
+and completed PIN holds for these accounts remain in staging. They can be
+identified by the email prefix and run id; removing them is a separate,
+reviewed staging operation.
+
+### What to watch during a run
+
+- Enclave host: CPU, memory, vsock/proxy errors, enclave restarts.
+- KMS: `ThrottlingException` and attested `Decrypt` errors.
+- Authority DynamoDB: throttled requests, `UserErrors`/`SystemErrors`,
+  transaction conflicts, latency.
+- lca-api Lambda: throttles, duration, concurrent executions, errors, and the
+  `LearnCard/Escrow / EnclaveFailure` EMF reasons.
+- MongoDB: connections, operation latency, queueing.
+- Roughtime: per-source failures on the host probes (2 of 3 needed).
+- lca-api 429s on PIN routes: `throttledByClientIp` in progress lines and the
+  summary means the per-IP limiter answered (see above), not capacity.
+- Email: lca-api delivery sends/bounces for PIN notices; SES sends, bounces and
+  complaints on the recovery configuration set (hold-policy mail only).
+- The escrow canary itself (tiers 1 and 2) for user-visible impact.
+
+Capacity results and run records (run ids, shapes, first bottleneck) belong in
+Confluence, not in this repository. Do not add capacity numbers or traffic
+forecasts here.
 
 ## Local verification (no AWS)
 
@@ -248,11 +722,15 @@ staging drills, Linux owned-stack `lc verify`, or Lambda/CloudWatch delivery pro
 bun run --cwd services/escrow-canary typecheck
 bun run --cwd services/escrow-canary test
 bun run --cwd services/escrow-canary build
-export TF_DATA_DIR=/var/folders/vx/brx5cr1d36q01_wx9xh194ch0000gn/T/opencode/escrow-canary-tf
+export TF_DATA_DIR="$(mktemp -d)"  # keep provider caches out of the repo
 terraform -chdir=infra/escrow-canary init -backend=false -input=false
 terraform -chdir=infra/escrow-canary fmt -check -recursive
 terraform -chdir=infra/escrow-canary validate
 terraform -chdir=infra/escrow-canary test
+export TF_DATA_DIR="$(mktemp -d)"
+terraform -chdir=infra/escrow-canary-inbox init -backend=false -input=false
+terraform -chdir=infra/escrow-canary-inbox validate
+terraform -chdir=infra/escrow-canary-inbox test
 ```
 
 The native Terraform test uses a fully mocked provider; its `command = apply`

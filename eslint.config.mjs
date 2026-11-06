@@ -217,6 +217,7 @@ export default tseslint.config(
             'services/learn-card-network/brain-service/lambda.ts',
             'services/learn-card-network/brain-service/didWebLambda.ts',
             'services/learn-card-network/brain-service/contractEventsLambda.ts',
+            'services/learn-card-network/brain-service/consentFlowDeadlineLambda.ts',
             'services/learn-card-network/brain-service/shareLinkMaintenanceLambda.ts',
             'services/learn-card-network/brain-service/src/config/applyDockerStageConfig.ts',
             'services/learn-card-network/learn-cloud-service/lambda.ts',

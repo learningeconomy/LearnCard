@@ -300,7 +300,7 @@ describe('ClaimBoost recovery', () => {
 
     it('does not turn unused count cache entries into a failed claim', async () => {
         const queryClient = await renderClaim();
-        queryClient.setQueryData(['useGetCredentialCount', '', 'ID'], 0);
+        queryClient.setQueryData(['useGetCredentialCount', '', 'ID', mocks.did], 0);
 
         fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
 
@@ -391,7 +391,7 @@ describe('ClaimBoost recovery', () => {
             .mockRejectedValueOnce(new Error('collection unavailable'))
             .mockImplementation(async () => records.map(record => record.uri));
         const observer = new QueryObserver(queryClient, {
-            queryKey: ['useGetCredentialList', '', 'Achievement'],
+            queryKey: ['useGetCredentialList', '', 'Achievement', mocks.did],
             queryFn: fetchRecords,
             initialData: [] as string[],
             staleTime: Infinity,
@@ -580,21 +580,33 @@ describe('ClaimBoost recovery', () => {
         const queryClient = await renderClaim();
         const unrelated = vi.fn().mockRejectedValue(new Error('unrelated category unavailable'));
         const otherActor = vi.fn().mockRejectedValue(new Error('another account unavailable'));
+        const otherReader = vi.fn().mockRejectedValue(new Error('another reader unavailable'));
         const relevant = new QueryObserver(queryClient, {
-            queryKey: ['useGetCredentialList', mocks.switchedDid, 'Achievement'],
+            queryKey: ['useGetCredentialList', mocks.switchedDid, 'Achievement', mocks.did],
             queryFn: async () => records.map(record => record.uri),
             initialData: [] as string[],
             staleTime: Infinity,
         });
         const unrelatedObserver = new QueryObserver(queryClient, {
-            queryKey: ['useGetCredentialList', mocks.switchedDid, 'ID'],
+            queryKey: ['useGetCredentialList', mocks.switchedDid, 'ID', mocks.did],
             queryFn: unrelated,
             initialData: [] as string[],
             staleTime: Infinity,
         });
         const otherActorObserver = new QueryObserver(queryClient, {
-            queryKey: ['useGetCredentialCount', 'did:web:test:another', 'Achievement'],
+            queryKey: ['useGetCredentialCount', 'did:web:test:another', 'Achievement', mocks.did],
             queryFn: otherActor,
+            initialData: 0,
+            staleTime: Infinity,
+        });
+        const otherReaderObserver = new QueryObserver(queryClient, {
+            queryKey: [
+                'useGetCredentialCount',
+                mocks.switchedDid,
+                'Achievement',
+                'did:key:another-reader',
+            ],
+            queryFn: otherReader,
             initialData: 0,
             staleTime: Infinity,
         });
@@ -602,6 +614,7 @@ describe('ClaimBoost recovery', () => {
             relevant.subscribe(() => {}),
             unrelatedObserver.subscribe(() => {}),
             otherActorObserver.subscribe(() => {}),
+            otherReaderObserver.subscribe(() => {}),
         ];
         try {
             fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
@@ -609,6 +622,7 @@ describe('ClaimBoost recovery', () => {
             expect(relevant.getCurrentResult().data).toEqual(['lc:credential:claimed']);
             expect(unrelated).not.toHaveBeenCalled();
             expect(otherActor).not.toHaveBeenCalled();
+            expect(otherReader).not.toHaveBeenCalled();
             expect(mocks.claimBoostWithLink).toHaveBeenCalledOnce();
         } finally {
             unsubscribe.forEach(stop => stop());

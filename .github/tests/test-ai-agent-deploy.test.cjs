@@ -33,6 +33,19 @@ const validate = main.jobs['validate-ai-agent'];
 const deploy = main.jobs['deploy-ai-agent'];
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'learncard-ai-deploy-'));
 let invocation = 0;
+let base;
+const git = (...args) => {
+    const result = spawnSync(
+        'git',
+        ['-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false', ...args],
+        {
+            cwd: temporary,
+            encoding: 'utf8',
+        }
+    );
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+};
 
 // These routing expressions use JavaScript-compatible comparisons/boolean operators.
 // Bracket access preserves GitHub's hyphenated job/input names when evaluating them.
@@ -55,10 +68,10 @@ const runStep = (id, values) => {
     const output = path.join(temporary, `output-${invocation++}`);
     const step = determine.steps.find(candidate => candidate.id === id);
     const result = spawnSync('bash', ['-e', '-o', 'pipefail', '-c', step.run], {
+        cwd: temporary,
         encoding: 'utf8',
         env: {
             ...process.env,
-            PATH: `${temporary}${path.delimiter}${process.env.PATH}`,
             GITHUB_OUTPUT: output,
             ...values,
         },
@@ -75,7 +88,7 @@ const runStep = (id, values) => {
 
 const route = ({
     message = 'feat: update AI Agent',
-    files = [],
+    bumpedPackages = [],
     affected = 'ai-agent-service',
     tests = 'success',
     manual = false,
@@ -86,18 +99,30 @@ const route = ({
     validation = 'success',
     eventName = 'push',
 } = {}) => {
+    git('reset', '--hard', base);
+    for (const filename of bumpedPackages) {
+        fs.writeFileSync(path.join(temporary, filename), JSON.stringify({ version: '1.1.0' }));
+    }
+    git('add', '.');
+    git('commit', '--allow-empty', '-m', message);
+    const head = git('rev-parse', 'HEAD');
     const steps = {
         affected: { outputs: { affected } },
         check_manual: { outputs: { is_manual: String(manual) } },
         check_release: { outputs: manual ? {} : runStep('check_release', { COMMIT_MSG: message }) },
-        check_versions: { outputs: runStep('check_versions', { CHANGED_PATHS: files.join('\n') }) },
+        check_versions: {
+            outputs: manual ? {} : runStep('check_versions', { NX_BASE: base, NX_HEAD: head }),
+        },
     };
     const outputs = Object.fromEntries(
         Object.entries(determine.outputs)
             .filter(([name]) =>
                 ['affected', 'is_manual', 'is_release', 'ai_agent_changed'].includes(name)
             )
-            .map(([name, expression]) => [name, evaluate(expression, { steps })])
+            .map(([name, expression]) => [
+                name,
+                evaluate(expression, { steps, job: { status: detection } }),
+            ])
     );
     const results = {
         'determine-affected': { result: detection, outputs },
@@ -130,12 +155,29 @@ const route = ({
 };
 
 try {
-    // Execute the real version-detection shell, replacing only its git file-list input.
-    fs.writeFileSync(
-        path.join(temporary, 'git'),
-        '#!/usr/bin/env bash\nprintf "%s\\n" "$CHANGED_PATHS"\n',
-        { mode: 0o755 }
+    // Real versioned trees exercise the workflow command and its job-output gate.
+    git('init', '-b', 'main');
+    git('config', 'user.name', 'AI deployment routing fixture');
+    git('config', 'user.email', 'routing@example.invalid');
+    fs.writeFileSync(path.join(temporary, '.gitignore'), 'output-*\n');
+    for (const filename of [
+        'services/learn-card-network/brain-service/package.json',
+        'services/learn-card-network/learn-cloud-service/package.json',
+        'services/learn-card-network/lca-api/package.json',
+        'services/learn-card-network/ai-agent/package.json',
+        'apps/learn-card-app/package.json',
+    ]) {
+        fs.mkdirSync(path.dirname(path.join(temporary, filename)), { recursive: true });
+        fs.writeFileSync(path.join(temporary, filename), JSON.stringify({ version: '1.0.0' }));
+    }
+    fs.mkdirSync(path.join(temporary, 'scripts'));
+    fs.copyFileSync(
+        path.join(root, 'scripts/resolve-deploy-range.cjs'),
+        path.join(temporary, 'scripts/resolve-deploy-range.cjs')
     );
+    git('add', '.');
+    git('commit', '-m', 'routing baseline');
+    base = git('rev-parse', 'HEAD');
 
     assert.equal(route(), 'staging', 'affected main pushes must deploy staging');
     assert.equal(
@@ -157,12 +199,12 @@ try {
     const release = { message: 'chore(release): version packages', tests: 'skipped' };
     const aiPackage = 'services/learn-card-network/ai-agent/package.json';
     assert.equal(
-        route({ ...release, files: [aiPackage] }),
+        route({ ...release, bumpedPackages: [aiPackage] }),
         'production',
         'AI version releases must deploy production'
     );
     assert.equal(
-        route({ ...release, files: [aiPackage], validation: 'failure' }),
+        route({ ...release, bumpedPackages: [aiPackage], validation: 'failure' }),
         undefined,
         'failed AI validation must block production before environment approval'
     );
@@ -172,12 +214,12 @@ try {
         'ordinary staging deployments must not bypass skipped tests'
     );
     assert.equal(
-        route({ ...release, files: ['apps/learn-card-app/package.json'] }),
+        route({ ...release, bumpedPackages: ['apps/learn-card-app/package.json'] }),
         undefined,
         'other package releases must not deploy AI'
     );
     assert.equal(
-        route({ ...release, files: [aiPackage], cancelled: true }),
+        route({ ...release, bumpedPackages: [aiPackage], cancelled: true }),
         undefined,
         'cancelled releases must not deploy'
     );
@@ -185,6 +227,11 @@ try {
         route({ detection: 'failure' }),
         undefined,
         'failed affected detection must not deploy'
+    );
+    assert.equal(
+        route({ ...release, bumpedPackages: [aiPackage], detection: 'failure' }),
+        undefined,
+        'failed range determination must not enable production release routing'
     );
 
     const manual = { manual: true, selected: true, tests: 'skipped' };

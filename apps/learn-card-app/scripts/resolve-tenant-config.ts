@@ -17,7 +17,7 @@ const log = getLogger();
  * Examples:
  *   bun run lc resolve                        # learncard production
  *   bun run lc resolve vetpass                 # vetpass production
- *   bun run lc resolve vetpass alpha           # vetpass alpha stage
+ *   bun run lc resolve vetpass staging         # vetpass staging stage
  *   bun run lc resolve learncard local         # learncard local stage
  *
  * Merge order:

@@ -575,13 +575,7 @@ impl SesEmailClient {
         subject: &str,
         text: &str,
     ) -> Result<EmailReceipt, Error> {
-        if !email_address(recipient)
-            || subject.is_empty()
-            || subject.len() > 256
-            || subject.contains(['\r', '\n'])
-            || text.is_empty()
-            || text.len() > 16_384
-        {
+        if !email_address(recipient) || !super::email::ses_payload_ok(subject, text) {
             return Err(Error::InvalidRequest);
         }
         let execution_id = ExecutionId::generate()?;

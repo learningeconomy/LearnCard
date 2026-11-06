@@ -61,9 +61,8 @@ class ContractsGetConsentedContractsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -76,16 +75,6 @@ class ContractsGetConsentedContractsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
-            _dict['cursor'] = None
-
-        # set to None if sort (nullable) is None
-        # and model_fields_set contains the field
-        if self.sort is None and "sort" in self.model_fields_set:
-            _dict['sort'] = None
-
         return _dict
 
     @classmethod

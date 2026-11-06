@@ -518,13 +518,17 @@ const ClaimBoost: React.FC<{
                         await assertActive();
                         const record = await getSavedClaimRecord(wallet, credentialUri);
                         await assertActive();
-                        await syncCredentialToContracts({ record, category: record.category });
+                        await syncCredentialToContracts(
+                            { record, category: record.category },
+                            wallet
+                        );
                         await assertActive();
                         // Mark all of this actor's cached counts/lists stale without fetching
                         // unrelated categories or cache-only entries with no query function.
                         await queryClient.invalidateQueries({
                             predicate: query =>
                                 query.queryKey[1] === collectionDid &&
+                                query.queryKey[3] === did &&
                                 (query.queryKey[0] === 'useGetCredentialList' ||
                                     query.queryKey[0] === 'useGetCredentialCount'),
                             refetchType: 'none',
@@ -536,6 +540,7 @@ const ClaimBoost: React.FC<{
                                     type: 'active',
                                     predicate: query =>
                                         query.queryKey[1] === collectionDid &&
+                                        query.queryKey[3] === did &&
                                         (query.queryKey[0] === 'useGetCredentialList' ||
                                             query.queryKey[0] === 'useGetCredentialCount') &&
                                         typeof query.options.queryFn === 'function' &&

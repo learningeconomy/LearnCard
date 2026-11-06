@@ -1,5 +1,6 @@
 import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
-import { getLogger } from 'learn-card-base';
+import { Capacitor } from '@capacitor/core';
+import { getLogger } from 'learn-card-base/logging/logger';
 const log = getLogger('firebase');
 
 import type { AnalyticsProvider } from '../types';
@@ -12,8 +13,17 @@ import type { AnalyticsEventName, EventPayload, FeedbackIdeaPayload } from '../e
 export class FirebaseProvider implements AnalyticsProvider {
     readonly name = 'firebase';
 
+    private static started = false;
+
+    /** Stop an active SDK without initializing web analytics just to disable it. */
+    static async disableCollectionIfStarted(): Promise<void> {
+        if (!Capacitor.isNativePlatform() && !FirebaseProvider.started) return;
+        await FirebaseAnalytics.setEnabled({ enabled: false });
+    }
+
     async init(): Promise<void> {
         try {
+            FirebaseProvider.started = true;
             await FirebaseAnalytics.setEnabled({ enabled: true });
             log.debug('[Analytics:Firebase] Initialized');
         } catch (error) {
@@ -68,7 +78,12 @@ export class FirebaseProvider implements AnalyticsProvider {
 
     async setEnabled(enabled: boolean): Promise<void> {
         try {
-            await FirebaseAnalytics.setEnabled({ enabled });
+            if (enabled) {
+                FirebaseProvider.started = true;
+                await FirebaseAnalytics.setEnabled({ enabled: true });
+            } else {
+                await FirebaseProvider.disableCollectionIfStarted();
+            }
         } catch (error) {
             log.error('[Analytics:Firebase] setEnabled error', error);
         }

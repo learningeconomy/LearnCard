@@ -1,8 +1,6 @@
-import { isSharePrivateSession } from '../components/share-links/sharePrivacy';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAnalytics } from 'firebase/analytics';
 import { getAuth, deleteUser, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('firebase');
@@ -59,12 +57,6 @@ export const initializeFirebaseFromTenant = (tenantFirebase?: TenantFirebaseConf
         : DEFAULT_FIREBASE_CONFIG;
 
     initializeApp(config);
-
-    try {
-        if (!isSharePrivateSession()) getAnalytics(getApp());
-    } catch {
-        // Analytics may not be available in all environments
-    }
 
     _firebaseInitialized = true;
 

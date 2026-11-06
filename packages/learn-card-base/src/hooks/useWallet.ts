@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { initLearnCard } from '@learncard/init';
 import type { CredentialRecord, UnsignedVP, VC, Boost } from '@learncard/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getManagedRefreshServices } from '@learncard/helpers';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 
 import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
@@ -29,7 +30,7 @@ import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
 import { loadContractAudience } from './consentAudience';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
-import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
+import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPassport';
 import { getLogger } from '../logging/logger';
 import {
     addCredentialSummary,
@@ -79,6 +80,8 @@ export type BoostAndVCType = {
     boostVC: VC;
 };
 
+import { resolveCredentialForClaim } from '../helpers/ingestManagedCredential';
+
 type AddVCInput = Omit<LCR, 'id'>;
 /** Options for saving an existing credential, optionally deferring post-save work. */
 export type AddVCToWalletInput = AddVCInput & {
@@ -89,6 +92,19 @@ export type AddVCToWalletInput = AddVCInput & {
     /** Pin a staged save to its original account if the active account changes while awaiting it. */
     expectedDid?: string;
 };
+
+type StoreCredentialMetadata = Partial<{
+    id: string;
+    title: string;
+    imgUrl: string;
+    allowDuplicate: boolean;
+    inboxDeliveryId: string;
+    boostUri: string;
+    /** LearnNetwork URI `vc` was read from, so its revocation follows the copy. */
+    networkUri: string;
+    /** Batch callers synchronize once after all local saves are confirmed. */
+    deferContractSync: boolean;
+}>;
 /*
 Hook that servers as a simple wrapper exposing aspects of core wallet functionality
 */
@@ -147,6 +163,88 @@ export const useWallet = () => {
         } catch (error) {
             logWalletSyncError(`Failed to queue AI Passport refresh after ${reason}`, error, data);
         }
+    };
+    type WalletMutationContext = {
+        wallet: BespokeLearnCard;
+        profileDid: string | undefined;
+        readerDid: string;
+        batchRecords?: Map<CredentialCategory, CredentialRecord<CredentialMetadata>[]>;
+    };
+
+    const createWalletMutationContext = async (
+        profileDid: string | undefined,
+        initialWallet = walletStore.get.wallet()
+    ): Promise<WalletMutationContext> => {
+        const wallet = initialWallet ?? (await getWallet(undefined, profileDid));
+        if (switchedProfileStore.get.switchedDid() !== profileDid) {
+            throw new Error('Wallet profile changed while preparing credential mutation');
+        }
+        return { wallet, profileDid, readerDid: wallet.id.did() };
+    };
+
+    const refreshCredentialCaches = async (
+        recordsByCategory: Map<CredentialCategory, CredentialRecord<CredentialMetadata>[]>,
+        didWeb: string | undefined,
+        readerDid: string
+    ) => {
+        const profileDid = didWeb ?? '';
+        const listPrefix = ['useGetCredentialList', profileDid] as const;
+        const uniqueCategories = [...recordsByCategory.keys()];
+
+        for (const category of uniqueCategories) {
+            await queryClient.cancelQueries({
+                queryKey: [...listPrefix, category, readerDid],
+            });
+            queryClient.setQueryData<
+                InfiniteData<{
+                    cursor?: string;
+                    hasMore: boolean;
+                    records: CredentialRecord<CredentialMetadata>[];
+                }>
+            >([...listPrefix, category, readerDid], data => {
+                const records = recordsByCategory.get(category)!;
+                // Malformed persisted entries (no pages array) are rebuilt instead of crashing (LC-2352).
+                const firstPage = Array.isArray(data?.pages) ? data.pages[0] : undefined;
+                if (data && firstPage) {
+                    return {
+                        ...data,
+                        pages: [
+                            { ...firstPage, records: [...records, ...firstPage.records] },
+                            ...data.pages.slice(1),
+                        ],
+                    };
+                }
+                return {
+                    pages: [{ hasMore: false, records }],
+                    pageParams: [undefined],
+                };
+            });
+
+            await queryClient.cancelQueries({
+                queryKey: ['useGetCredentialCount', profileDid, category, readerDid],
+            });
+            queryClient.setQueryData<number>(
+                ['useGetCredentialCount', profileDid, category, readerDid],
+                currentCount => (currentCount ?? 0) + recordsByCategory.get(category)!.length
+            );
+        }
+
+        // Optimistic writes must settle before claim completion, but a background
+        // infinite-query rescan must not hold up the claim or its contract sync.
+        for (const category of uniqueCategories) {
+            void queryClient.refetchQueries({
+                queryKey: [...listPrefix, category, readerDid],
+                exact: true,
+            });
+            void queryClient.refetchQueries({
+                queryKey: ['useGetCredentialCount', profileDid, category, readerDid],
+                exact: true,
+            });
+        }
+        void queryClient.refetchQueries({
+            queryKey: [...listPrefix, '', readerDid],
+            exact: true,
+        });
     };
 
     const getWallet = async (
@@ -210,14 +308,11 @@ export const useWallet = () => {
         }
     };
 
-    const syncCredentialToContracts = async ({
-        record,
-        category,
-    }: {
-        record: LCR;
-        category: CredentialCategory;
-    }) => {
-        const learnCard = await getWallet();
+    const syncCredentialToContracts = async (
+        { record, category }: { record: LCR; category: CredentialCategory },
+        wallet?: BespokeLearnCard
+    ) => {
+        const learnCard = wallet ?? (await getWallet());
         // Fetch and cache all consented contracts for the user
         const allContracts = await getOrFetchConsentedContracts(queryClient, learnCard);
         logWalletSync('Starting credential sync to contracts', {
@@ -281,7 +376,7 @@ export const useWallet = () => {
                             category,
                         });
 
-                        if (contract.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI) {
+                        if (isLearnCardAiPassportContractUri(contract.uri)) {
                             logWalletSync('Queueing AI Passport refresh', {
                                 ownerDid: contract.owner.did,
                                 contractUri: contract.uri,
@@ -445,20 +540,12 @@ export const useWallet = () => {
         return wallet?.store?.[location]?.uploadEncrypted?.(credential);
     };
 
-    const storeAndAddVCToWallet = async (
+    const saveCredentialToWallet = async (
         vc: VC,
-        metadata: Partial<{
-            id: string;
-            title: string;
-            imgUrl: string;
-            allowDuplicate: boolean;
-            inboxDeliveryId: string;
-            boostUri: string;
-            /** Batch callers synchronize once after all local saves are confirmed. */
-            deferContractSync: boolean;
-        }> = {},
+        context: WalletMutationContext,
+        metadata: StoreCredentialMetadata = {},
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud',
-        skipLCNUser?: boolean // skip steps requiring a LCN account eg didweb
+        skipLCNUser?: boolean
     ): Promise<{ result: boolean; credentialUri: string; category: string }> => {
         const {
             id: recordId,
@@ -467,6 +554,7 @@ export const useWallet = () => {
             allowDuplicate,
             inboxDeliveryId,
             boostUri: sourceBoostUri,
+            networkUri,
             deferContractSync,
         } = metadata;
         const _id =
@@ -480,7 +568,7 @@ export const useWallet = () => {
         let stage = 'initialize';
 
         try {
-            const wallet = await getWallet();
+            const wallet = context.wallet;
 
             stage = 'category';
             const category = await getCategoryForCredential(vc, wallet);
@@ -511,6 +599,7 @@ export const useWallet = () => {
                     uri: uri2,
                     category,
                     ...(boostUri ? { boostUri } : {}),
+                    ...(networkUri ? { networkUri } : {}),
                     ...(inboxDeliveryId ? { inboxDeliveryId } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
@@ -532,6 +621,7 @@ export const useWallet = () => {
                     uri,
                     category,
                     ...(boostUri ? { boostUri } : {}),
+                    ...(networkUri ? { networkUri } : {}),
                     ...(inboxDeliveryId ? { inboxDeliveryId } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
@@ -543,58 +633,24 @@ export const useWallet = () => {
                 if (result) void recordCredentialClaim(wallet, uri, vc, category);
 
                 stage = 'cache';
-                const didWeb = switchedProfileStore.get.switchedDid();
-
                 if (result) {
-                    await queryClient.cancelQueries({
-                        queryKey: ['useGetCredentialList', didWeb ?? '', category],
-                    });
-                    queryClient.setQueryData<
-                        InfiniteData<{
-                            cursor?: string;
-                            hasMore: boolean;
-                            records: CredentialRecord<CredentialMetadata>[];
-                        }>
-                    >(['useGetCredentialList', didWeb ?? '', category], data => {
-                        const firstPage = data?.pages[0];
-
-                        if (firstPage) {
-                            return {
-                                ...data,
-                                pages: [
-                                    { ...firstPage, records: [record, ...firstPage.records] },
-                                    ...(data?.pages.slice(1) ?? []),
-                                ],
-                            };
-                        }
-
-                        return {
-                            pages: [{ hasMore: false, records: [record] }],
-                            pageParams: [undefined],
-                        };
-                    });
-                }
-                await queryClient.cancelQueries({
-                    queryKey: ['useGetCredentialCount', didWeb ?? '', category],
-                });
-                queryClient.setQueryData<number>(
-                    ['useGetCredentialCount', didWeb ?? '', category],
-                    currentCount => {
-                        if (currentCount) return currentCount + 1;
-
-                        return 1;
+                    const batchRecords = context.batchRecords;
+                    if (batchRecords) {
+                        const records = batchRecords.get(category) ?? [];
+                        records.push(record);
+                        batchRecords.set(category, records);
+                    } else {
+                        await refreshCredentialCaches(
+                            new Map([[category, [record]]]),
+                            context.profileDid,
+                            context.readerDid
+                        );
                     }
-                );
-                queryClient.refetchQueries({
-                    queryKey: ['useGetCredentialList', didWeb ?? '', category],
-                });
-                queryClient.refetchQueries({
-                    queryKey: ['useGetCredentialCount', didWeb ?? '', category],
-                });
+                }
 
                 if (!deferContractSync) {
                     stage = 'sync';
-                    await syncCredentialToContracts({ record, category });
+                    await syncCredentialToContracts({ record, category }, wallet);
                 }
             }
 
@@ -616,12 +672,41 @@ export const useWallet = () => {
         }
     };
 
+    const storeAndAddVCToWallet = async (
+        vc: VC,
+        metadata: StoreCredentialMetadata = {},
+        location: 'SQLite' | 'LearnCloud' = 'LearnCloud',
+        skipLCNUser?: boolean
+    ): Promise<{ result: boolean; credentialUri: string; category: string }> => {
+        const profileDid = switchedProfileStore.get.switchedDid();
+        const context = await createWalletMutationContext(profileDid);
+        return saveCredentialToWallet(vc, context, metadata, location, skipLCNUser);
+    };
+
     const storeAndAddManyVCsToWallet = async (
         vcs: VC[],
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud'
     ) => {
-        return Promise.all(
-            vcs.map(async vc => (await storeAndAddVCToWallet(vc, {}, location)).result)
+        if (vcs.length === 0) return [];
+        const profileDid = switchedProfileStore.get.switchedDid();
+        const context = await createWalletMutationContext(profileDid);
+        const recordsByCategory = new Map<
+            CredentialCategory,
+            CredentialRecord<CredentialMetadata>[]
+        >();
+        context.batchRecords = recordsByCategory;
+        const outcomes = await Promise.allSettled(
+            vcs.map(vc => saveCredentialToWallet(vc, context, {}, location))
+        );
+        if (recordsByCategory.size > 0) {
+            await refreshCredentialCaches(recordsByCategory, profileDid, context.readerDid);
+        }
+        const rejection = outcomes.find(
+            (outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected'
+        );
+        if (rejection) throw rejection.reason;
+        return outcomes.map(outcome =>
+            outcome.status === 'fulfilled' ? outcome.value.result : false
         );
     };
 
@@ -637,21 +722,26 @@ export const useWallet = () => {
             imgUrl,
             contractUri,
             boostUri: sourceBoostUri,
+            networkUri,
             skipSync,
             deferClaim,
             deferRefresh,
             expectedDid,
         } = input;
         const _id = id || uuidv4();
+        const originProfileDid = switchedProfileStore.get.switchedDid();
         if (!uri) throw new Error('No uri was provided, uri required');
 
         try {
-            const wallet = await getWallet();
+            const context = await createWalletMutationContext(originProfileDid);
+            const wallet = context.wallet;
             if (expectedDid && wallet.id.did() !== expectedDid) {
                 throw new Error('The account changed before saving the credential');
             }
 
-            const vc = await wallet.read.get(uri);
+            const { credential: vc, baseline } = await resolveCredentialForClaim(wallet, uri);
+            // The receipt may carry the signed service list; the managed entry identifies it.
+            const managedService = baseline ? getManagedRefreshServices(baseline)[0] : undefined;
 
             if (!vc) throw new Error('No credential was found at the provided URI');
 
@@ -674,70 +764,40 @@ export const useWallet = () => {
                 ...(imgUrl ? { imgUrl } : {}),
                 ...(contractUri ? { contractUri } : {}),
                 ...(boostUri ? { boostUri } : {}),
+                ...(networkUri ? { networkUri } : {}),
                 __v: 1,
+                ...(baseline && managedService
+                    ? {
+                          refresh: {
+                              baseline,
+                              serviceId: managedService.id,
+                              serviceType: managedService.type,
+                              credentialId: baseline.credentialId,
+                              history: [],
+                          },
+                      }
+                    : {}),
             };
 
             // get VC From stream given streamId
             // this does not return the added vc, it just adds the streamId to the wallet
             const result = await wallet.index[location].add(record);
-            const didWeb = switchedProfileStore.get.switchedDid();
-
             if (result) {
                 if (!deferClaim) void recordCredentialClaim(wallet, uri, vc as VC, category);
-                // Staged claim flows confirm storage before attempting display refresh or sharing sync.
+                // Staged flows confirm storage before attempting display refresh or sharing sync.
                 if (deferRefresh) return result;
-                await queryClient.cancelQueries({
-                    queryKey: ['useGetCredentialList', didWeb ?? '', category],
-                });
-                queryClient.setQueryData<
-                    InfiniteData<{
-                        cursor?: string;
-                        hasMore: boolean;
-                        records: CredentialRecord<CredentialMetadata>[];
-                    }>
-                >(['useGetCredentialList', didWeb ?? '', category], data => {
-                    const firstPage = data?.pages[0];
-
-                    if (firstPage) {
-                        return {
-                            ...data,
-                            pages: [
-                                { ...firstPage, records: [record, ...firstPage.records] },
-                                ...(data?.pages.slice(1) ?? []),
-                            ],
-                        };
-                    }
-
-                    return {
-                        pages: [{ hasMore: false, records: [record] }],
-                        pageParams: [undefined],
-                    };
-                });
-                await queryClient.cancelQueries({
-                    queryKey: ['useGetCredentialCount', didWeb ?? '', category],
-                });
-                queryClient.setQueryData<number>(
-                    ['useGetCredentialCount', didWeb ?? '', category],
-                    currentCount => {
-                        if (currentCount) return currentCount + 1;
-
-                        return 1;
-                    }
+                await refreshCredentialCaches(
+                    new Map([[category, [record]]]),
+                    context.profileDid,
+                    context.readerDid
                 );
-                queryClient.refetchQueries({
-                    queryKey: ['useGetCredentialList', didWeb ?? '', category],
-                });
-                queryClient.refetchQueries({
-                    queryKey: ['useGetCredentialCount', didWeb ?? '', category],
-                });
-
                 if (!skipSync) {
                     logWalletSync('Triggering automatic credential sync after add', {
                         uri,
                         contractUri,
                         category,
                     });
-                    await syncCredentialToContracts({ record, category });
+                    await syncCredentialToContracts({ record, category }, wallet);
                 } else {
                     logWalletSync('Skipping automatic credential sync after add', {
                         uri,

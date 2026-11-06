@@ -12,17 +12,20 @@
  * - AuthSessionError — typed auth session errors go to idle
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { AuthCoordinator, createAuthCoordinator } from '../AuthCoordinator';
 import {
     createSSSStrategy,
     EscrowPinMismatchError,
     IdentityRecoverySessionConsumedError,
-    splitAndVerify,
+    DuplicateShareCoordinateError,
+    reconstructFromShares,
     type SSSStorageFunctions,
 } from '@learncard/sss-key-manager';
 import { AuthSessionError } from '../types';
+import { RecoveryInProgressError, SameEscrowPinError } from '../errors';
+import pendingWriteSplits from './fixtures/pending-write-splits.json';
 
 const logoutLogs = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
 vi.mock('../../logging/logger', () => ({ getLogger: () => logoutLogs }));
@@ -1020,6 +1023,43 @@ describe('AuthCoordinator', () => {
                     expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
                 }
             );
+            it('does not clear a PIN the strategy kept after a PIN recovery', async () => {
+                const getEscrowEnrollmentState = vi.fn().mockResolvedValue({
+                    state: 'enrolled',
+                    escrowPin: { enabled: true, attemptsRemaining: 10 },
+                });
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockResolvedValue({ enrolled: true, changed: false });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(true);
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        executeRecovery: vi.fn().mockResolvedValue({
+                            privateKey: 'recovered-pk',
+                            did: 'did:key:z123',
+                            escrowEnrolled: true,
+                            escrowRecovery: true,
+                        }),
+                        ensureEscrowEnrollment,
+                        getEscrowEnrollmentState,
+                    },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                await vi.waitFor(() =>
+                    expect(coordinator.getState()).toMatchObject({
+                        status: 'ready',
+                        escrowEnrollment: 'enrolled',
+                        escrowPin: { enabled: true },
+                    })
+                );
+                // No scoped clear-PIN repair: direct re-enrollment kept the PIN.
+                for (const [params] of ensureEscrowEnrollment.mock.calls) {
+                    expect(params.options?.clearPin).toBeUndefined();
+                }
+            });
             it('calls ensureEscrowEnrollment with the DID when the gate allows it (no status prefetch available)', async () => {
                 const ensureEscrowEnrollment = vi
                     .fn()
@@ -1228,6 +1268,1297 @@ describe('AuthCoordinator', () => {
             ).rejects.toThrow('PIN recovery requires signing in first.');
             expect(keyDerivation.executeRecovery).not.toHaveBeenCalled();
         });
+        describe('PIN sign-in (keep by default)', () => {
+            const keptResult = {
+                privateKey: 'recovered-pk',
+                did: 'did:key:z123',
+                escrowEnrolled: true,
+                escrowRecovery: true,
+                pinSignIn: { mode: 'kept', pinRefreshed: true, newPinRequired: false },
+            };
+
+            it('carries pinSignIn and the wrong attempts recorded before this session into ready', async () => {
+                let wrongAttempts = 3;
+                const fetchServerKeyStatus = vi.fn().mockImplementation(async () => ({
+                    ...defaultServerStatus,
+                    escrowPin: {
+                        state: 'enabled',
+                        enabled: true,
+                        attemptsRemaining: 10 - wrongAttempts,
+                        wrongAttempts,
+                    },
+                }));
+                const executeRecovery = vi
+                    .fn()
+                    .mockRejectedValueOnce(new EscrowPinMismatchError(6))
+                    .mockResolvedValueOnce(keptResult);
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockResolvedValue({ enrolled: true, changed: false });
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        fetchServerKeyStatus,
+                        executeRecovery,
+                        ensureEscrowEnrollment,
+                    },
+                    config: { signDidAuthVp: vi.fn() },
+                });
+                await coordinator.initialize();
+                await expect(
+                    coordinator.recover({ method: 'escrow-pin', pin: '000000' })
+                ).rejects.toBeInstanceOf(EscrowPinMismatchError);
+                // A later status read includes this session's miss; it must not count.
+                wrongAttempts = 4;
+                await coordinator.initialize();
+                expect(coordinator.getState()).toMatchObject({
+                    status: 'needs_recovery',
+                    escrowPin: { wrongAttempts: 4 },
+                });
+                await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                expect(coordinator.getState()).toMatchObject({
+                    status: 'ready',
+                    did: 'did:key:z123',
+                    pinSignIn: { mode: 'kept', pinRefreshed: true, priorWrongAttempts: 3 },
+                });
+                // A kept PIN needs no clear-PIN repair.
+                await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalled());
+                for (const [params] of ensureEscrowEnrollment.mock.calls) {
+                    expect(params.options?.clearPin).toBeUndefined();
+                }
+
+                coordinator.acknowledgePinSignIn();
+                expect(coordinator.getState()).toMatchObject({ status: 'ready' });
+                expect(
+                    (coordinator.getState() as { pinSignIn?: unknown }).pinSignIn
+                ).toBeUndefined();
+            });
+
+            it('surfaces a failed same-PIN refresh without a clear-PIN repair or a new-PIN prompt', async () => {
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockResolvedValue({ enrolled: true, changed: false });
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        executeRecovery: vi.fn().mockResolvedValue({
+                            ...keptResult,
+                            pinSignIn: {
+                                mode: 'kept',
+                                pinRefreshed: false,
+                                newPinRequired: false,
+                                pinRefreshFailed: true,
+                            },
+                        }),
+                        ensureEscrowEnrollment,
+                    },
+                    config: { signDidAuthVp: vi.fn() },
+                });
+                await coordinator.initialize();
+                await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                expect(coordinator.getState()).toMatchObject({
+                    status: 'ready',
+                    pinSignIn: {
+                        pinRefreshed: false,
+                        newPinRequired: false,
+                        pinRefreshFailed: true,
+                    },
+                });
+                expect(
+                    (coordinator.getState() as { escrowPinChangeRequired?: boolean })
+                        .escrowPinChangeRequired
+                ).toBeUndefined();
+                // The PIN still works: never schedule a clear-PIN repair for it.
+                await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalled());
+                for (const [params] of ensureEscrowEnrollment.mock.calls) {
+                    expect(params.options?.clearPin).toBeUndefined();
+                }
+            });
+
+            describe("own-typos rule (this flow's own wrong entries)", () => {
+                const pinStatus = (wrongAttempts?: number) => ({
+                    state: 'enabled',
+                    enabled: true,
+                    attemptsRemaining: 10 - (wrongAttempts ?? 2),
+                    ...(wrongAttempts !== undefined ? { wrongAttempts } : {}),
+                });
+                const pinInputs = (executeRecovery: ReturnType<typeof vi.fn>) =>
+                    executeRecovery.mock.calls.map(([params]) => params.input.pinAttempts);
+
+                it('passes the flow start count and counts only its own mismatches', async () => {
+                    let wrongAttempts = 0;
+                    const executeRecovery = vi
+                        .fn()
+                        .mockImplementationOnce(async () => {
+                            wrongAttempts++;
+                            throw new EscrowPinMismatchError(9);
+                        })
+                        .mockImplementationOnce(async () => {
+                            wrongAttempts++;
+                            throw new EscrowPinMismatchError(8);
+                        })
+                        .mockResolvedValueOnce(keptResult);
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            fetchServerKeyStatus: vi.fn().mockImplementation(async () => ({
+                                ...defaultServerStatus,
+                                escrowPin: pinStatus(wrongAttempts),
+                            })),
+                            executeRecovery,
+                        },
+                        config: { signDidAuthVp: vi.fn() },
+                    });
+                    await coordinator.initialize();
+                    for (const pin of ['000001', '000002']) {
+                        await expect(
+                            coordinator.recover({ method: 'escrow-pin', pin })
+                        ).rejects.toBeInstanceOf(EscrowPinMismatchError);
+                    }
+                    // A later status read (which includes the misses) starts no new flow.
+                    await coordinator.initialize();
+                    await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+
+                    expect(pinInputs(executeRecovery)).toEqual([
+                        { priorWrongAttempts: 0, ownWrongAttempts: 0 },
+                        { priorWrongAttempts: 0, ownWrongAttempts: 1 },
+                        { priorWrongAttempts: 0, ownWrongAttempts: 2 },
+                    ]);
+                    expect(coordinator.getState()).toMatchObject({
+                        status: 'ready',
+                        pinSignIn: { newPinRequired: false, priorWrongAttempts: 0 },
+                    });
+                });
+
+                it('does not count errors other than a wrong PIN, and ignores caller-supplied counts', async () => {
+                    const executeRecovery = vi
+                        .fn()
+                        .mockRejectedValueOnce(new Error('network'))
+                        .mockResolvedValueOnce(keptResult);
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                                ...defaultServerStatus,
+                                escrowPin: pinStatus(1),
+                            }),
+                            executeRecovery,
+                        },
+                        config: { signDidAuthVp: vi.fn() },
+                    });
+                    await coordinator.initialize();
+                    await expect(
+                        coordinator.recover({ method: 'escrow-pin', pin: '135790' })
+                    ).rejects.toThrow('network');
+                    await coordinator.recover({
+                        method: 'escrow-pin',
+                        pin: '135790',
+                        pinAttempts: { priorWrongAttempts: 0, ownWrongAttempts: 1 },
+                    });
+                    expect(pinInputs(executeRecovery)).toEqual([
+                        { priorWrongAttempts: 1, ownWrongAttempts: 0 },
+                        { priorWrongAttempts: 1, ownWrongAttempts: 0 },
+                    ]);
+                });
+
+                it('sends no flow context when the status before the first attempt is unknown', async () => {
+                    const executeRecovery = vi.fn().mockResolvedValue(keptResult);
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            executeRecovery,
+                        },
+                    });
+                    await coordinator.initialize();
+                    await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    expect(pinInputs(executeRecovery)).toEqual([undefined]);
+                });
+
+                it('passes a legacy (unknown) prior count as missing so the strategy blocks the re-set', async () => {
+                    const executeRecovery = vi.fn().mockResolvedValue(keptResult);
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                                ...defaultServerStatus,
+                                escrowPin: pinStatus(undefined),
+                            }),
+                            executeRecovery,
+                        },
+                    });
+                    await coordinator.initialize();
+                    await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    expect(pinInputs(executeRecovery)).toEqual([{ ownWrongAttempts: 0 }]);
+                });
+
+                it('starts a new count for a new session (logout)', async () => {
+                    const executeRecovery = vi
+                        .fn()
+                        .mockRejectedValueOnce(new EscrowPinMismatchError(9))
+                        .mockResolvedValueOnce(keptResult);
+                    let wrongAttempts = 0;
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            fetchServerKeyStatus: vi.fn().mockImplementation(async () => ({
+                                ...defaultServerStatus,
+                                escrowPin: pinStatus(wrongAttempts),
+                            })),
+                            executeRecovery,
+                        },
+                    });
+                    await coordinator.initialize();
+                    await expect(
+                        coordinator.recover({ method: 'escrow-pin', pin: '000001' })
+                    ).rejects.toBeInstanceOf(EscrowPinMismatchError);
+                    wrongAttempts = 1;
+                    await coordinator.logout();
+                    await coordinator.initialize();
+                    await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    // The earlier miss belongs to another flow: it is a prior wrong entry now.
+                    expect(pinInputs(executeRecovery).at(-1)).toEqual({
+                        priorWrongAttempts: 1,
+                        ownWrongAttempts: 0,
+                    });
+                });
+
+                it('ends the flow on a sign-in by another method, so old own typos never carry over', async () => {
+                    let wrongAttempts = 0;
+                    const executeRecovery = vi
+                        .fn()
+                        .mockImplementationOnce(async () => {
+                            wrongAttempts++;
+                            throw new EscrowPinMismatchError(9);
+                        })
+                        // Signed in another way (no pinSignIn in the result).
+                        .mockResolvedValueOnce({ ...keptResult, pinSignIn: undefined })
+                        .mockResolvedValueOnce(keptResult);
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            fetchServerKeyStatus: vi.fn().mockImplementation(async () => ({
+                                ...defaultServerStatus,
+                                escrowPin: pinStatus(wrongAttempts),
+                            })),
+                            executeRecovery,
+                        },
+                        config: { signDidAuthVp: vi.fn() },
+                    });
+                    await coordinator.initialize();
+                    await expect(
+                        coordinator.recover({ method: 'escrow-pin', pin: '000001' })
+                    ).rejects.toBeInstanceOf(EscrowPinMismatchError);
+                    await coordinator.recover({ method: 'phrase', phrase: 'word' });
+                    expect(coordinator.getState().status).toBe('ready');
+                    // Back to recovery in the same session (no logout): a new flow.
+                    await coordinator.initialize();
+                    expect(coordinator.getState().status).toBe('needs_recovery');
+                    await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    expect(pinInputs(executeRecovery).at(-1)).toEqual({
+                        priorWrongAttempts: 1,
+                        ownWrongAttempts: 0,
+                    });
+                });
+
+                it('starts a new count when the status shows a new PIN generation (salt)', async () => {
+                    let escrowPin: Record<string, unknown> = { ...pinStatus(0), salt: 'salt-a' };
+                    const executeRecovery = vi
+                        .fn()
+                        .mockImplementationOnce(async () => {
+                            escrowPin = { ...pinStatus(1), salt: 'salt-a' };
+                            throw new EscrowPinMismatchError(9);
+                        })
+                        .mockResolvedValueOnce(keptResult);
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            fetchServerKeyStatus: vi.fn().mockImplementation(async () => ({
+                                ...defaultServerStatus,
+                                escrowPin,
+                            })),
+                            executeRecovery,
+                        },
+                        config: { signDidAuthVp: vi.fn() },
+                    });
+                    await coordinator.initialize();
+                    await expect(
+                        coordinator.recover({ method: 'escrow-pin', pin: '000001' })
+                    ).rejects.toBeInstanceOf(EscrowPinMismatchError);
+                    // Another device set a new PIN, then someone guessed once against it.
+                    escrowPin = { ...pinStatus(1), salt: 'salt-b' };
+                    await coordinator.initialize();
+                    await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    expect(pinInputs(executeRecovery)).toEqual([
+                        { priorWrongAttempts: 0, ownWrongAttempts: 0, pinSalt: 'salt-a' },
+                        { priorWrongAttempts: 1, ownWrongAttempts: 0, pinSalt: 'salt-b' },
+                    ]);
+                });
+
+                it('does not ask for a new PIN for excused own typos when the re-set did not run', async () => {
+                    let escrowPin: Record<string, unknown> = pinStatus(0);
+                    const getEscrowEnrollmentState = vi
+                        .fn()
+                        .mockImplementation(async () => ({ state: 'enrolled', escrowPin }));
+                    const executeRecovery = vi
+                        .fn()
+                        .mockImplementationOnce(async () => {
+                            escrowPin = { ...pinStatus(1), attemptsRemaining: 9 };
+                            throw new EscrowPinMismatchError(9);
+                        })
+                        .mockImplementationOnce(async () => {
+                            escrowPin = { ...pinStatus(1), attemptsRemaining: 8 };
+                            return {
+                                ...keptResult,
+                                pinSignIn: {
+                                    mode: 'kept',
+                                    pinRefreshed: false,
+                                    newPinRequired: false,
+                                    pinRefreshFailed: true,
+                                },
+                            };
+                        });
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            fetchServerKeyStatus: vi.fn().mockImplementation(async () => ({
+                                ...defaultServerStatus,
+                                escrowPin,
+                            })),
+                            executeRecovery,
+                            getEscrowEnrollmentState,
+                            ensureEscrowEnrollment: vi
+                                .fn()
+                                .mockResolvedValue({ enrolled: true, changed: false }),
+                        },
+                        config: { signDidAuthVp: vi.fn() },
+                    });
+                    await coordinator.initialize();
+                    await expect(
+                        coordinator.recover({ method: 'escrow-pin', pin: '000001' })
+                    ).rejects.toBeInstanceOf(EscrowPinMismatchError);
+                    await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    await vi.waitFor(() =>
+                        expect(coordinator.getState()).toMatchObject({
+                            status: 'ready',
+                            escrowPin: { wrongAttempts: 1 },
+                        })
+                    );
+                    expect(
+                        (coordinator.getState() as { escrowPinChangeRequired?: boolean })
+                            .escrowPinChangeRequired
+                    ).toBeUndefined();
+                    // Nor does the settings attention signal count them.
+                    expect(
+                        (coordinator.getState() as { escrowPinAttention?: boolean })
+                            .escrowPinAttention
+                    ).toBeUndefined();
+
+                    // A further wrong entry from anywhere else is not excused.
+                    escrowPin = { ...pinStatus(2), attemptsRemaining: 7 };
+                    await (
+                        coordinator as unknown as { refreshEscrow: (s: unknown) => Promise<void> }
+                    ).refreshEscrow(coordinator.getState());
+                    expect(coordinator.getState()).toMatchObject({
+                        status: 'ready',
+                        escrowPin: { wrongAttempts: 2 },
+                        escrowPinChangeRequired: true,
+                        escrowPinAttention: true,
+                    });
+                    // Dismissing the prompt does not hide the attention signal.
+                    coordinator.dismissEscrowPinChange();
+                    expect(coordinator.getState()).toMatchObject({ escrowPinAttention: true });
+                });
+            });
+
+            it('omits priorWrongAttempts when the server cannot say', async () => {
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                            ...defaultServerStatus,
+                            escrowPin: { state: 'enabled', enabled: true, attemptsRemaining: 8 },
+                        }),
+                        executeRecovery: vi.fn().mockResolvedValue(keptResult),
+                    },
+                });
+                await coordinator.initialize();
+                await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                const state = coordinator.getState();
+                expect(state).toMatchObject({ status: 'ready', pinSignIn: { mode: 'kept' } });
+                expect((state as { pinSignIn?: object }).pinSignIn).not.toHaveProperty(
+                    'priorWrongAttempts'
+                );
+            });
+
+            it('does not set pinSignIn for other recovery methods', async () => {
+                const { coordinator } = setup({
+                    keyDerivation: { hasLocalKey: vi.fn().mockResolvedValue(false) },
+                });
+                await coordinator.initialize();
+                await coordinator.recover({ method: 'phrase', phrase: 'word' });
+                expect(coordinator.getState()).toMatchObject({ status: 'ready' });
+                expect(
+                    (coordinator.getState() as { pinSignIn?: unknown }).pinSignIn
+                ).toBeUndefined();
+            });
+
+            it('allows a PIN sign-in after the recovery-email code and links the new login', async () => {
+                const verifyIdentityRecovery = vi.fn().mockResolvedValue({
+                    recoverySessionToken: 'recovery-session-token',
+                    recoveryMethods: [{ type: 'escrow', createdAt: new Date() }],
+                    primaryDid: 'did:key:z123',
+                    escrowPin: {
+                        state: 'enabled',
+                        enabled: true,
+                        attemptsRemaining: 8,
+                        wrongAttempts: 2,
+                    },
+                });
+                const executeRecovery = vi
+                    .fn()
+                    .mockResolvedValue({ privateKey: 'recovered-pk', did: 'did:key:z123' });
+                let pending = false;
+                const completeIdentityRecovery = vi.fn().mockImplementation(async () => {
+                    pending = false;
+                    return {
+                        ...keptResult,
+                        pinSignIn: { mode: 'relinked', pinRefreshed: false, newPinRequired: false },
+                    };
+                });
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                        verifyIdentityRecovery,
+                        executeRecovery,
+                        hasPendingIdentityRecovery: vi.fn(() => pending),
+                        completeIdentityRecovery,
+                        cancelIdentityRecovery: vi.fn(),
+                    },
+                });
+                coordinator.beginIdentityRecovery();
+                await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+                await coordinator.verifyIdentityRecoveryCode('123456');
+                expect(coordinator.getState()).toMatchObject({
+                    phase: 'choose_method',
+                    escrowPin: { wrongAttempts: 2 },
+                });
+
+                await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                pending = true;
+                expect(executeRecovery).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        token: '',
+                        input: {
+                            method: 'escrow-pin',
+                            pin: '135790',
+                            expectedDid: 'did:key:z123',
+                            recoverySessionToken: 'recovery-session-token',
+                            pinAttempts: { priorWrongAttempts: 2, ownWrongAttempts: 0 },
+                        },
+                    })
+                );
+                expect(coordinator.getState()).toMatchObject({
+                    status: 'identity_recovery',
+                    phase: 'new_login',
+                    recoveredDid: 'did:key:z123',
+                    recoverySessionToken: undefined,
+                });
+
+                coordinator.continueIdentityRecoveryLogin();
+                await coordinator.initialize();
+                expect(completeIdentityRecovery).toHaveBeenCalledTimes(1);
+                expect(coordinator.getState()).toMatchObject({
+                    status: 'identity_recovery_success',
+                    pinSignIn: { mode: 'relinked', pinRefreshed: false, priorWrongAttempts: 2 },
+                });
+                coordinator.finishIdentityRecovery();
+                expect(coordinator.getState()).toMatchObject({
+                    status: 'ready',
+                    pinSignIn: { mode: 'relinked', priorWrongAttempts: 2 },
+                });
+            });
+
+            it('returns to the email step after a failed lost-login PIN attempt (the code is single-use)', async () => {
+                const mismatch = new EscrowPinMismatchError(7);
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                        verifyIdentityRecovery: vi.fn().mockResolvedValue({
+                            recoverySessionToken: 'recovery-session-token',
+                            recoveryMethods: [],
+                            primaryDid: 'did:key:z123',
+                        }),
+                        executeRecovery: vi.fn().mockRejectedValue(mismatch),
+                    },
+                });
+                coordinator.beginIdentityRecovery();
+                await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+                await coordinator.verifyIdentityRecoveryCode('123456');
+                await expect(
+                    coordinator.recover({ method: 'escrow-pin', pin: '000000' })
+                ).rejects.toBe(mismatch);
+                expect(coordinator.getState()).toMatchObject({
+                    status: 'identity_recovery',
+                    phase: 'enter_email',
+                    email: 'recovery@example.com',
+                    error: mismatch.message,
+                });
+                expect(
+                    (coordinator.getState() as { recoverySessionToken?: string })
+                        .recoverySessionToken
+                ).toBeUndefined();
+            });
+
+            it('secures the account through the strategy and refreshes escrow status', async () => {
+                const signDidAuthVp = vi.fn();
+                const revokeOtherDevices = vi
+                    .fn()
+                    .mockResolvedValue({ shareVersion: 5, escrowEnrolled: true, pinKept: true });
+                const getEscrowEnrollmentState = vi.fn().mockResolvedValue({
+                    state: 'enrolled',
+                    escrowPin: { state: 'enabled', enabled: true, attemptsRemaining: 10 },
+                });
+                const fetchServerKeyStatus = vi
+                    .fn()
+                    .mockResolvedValueOnce({ ...defaultServerStatus, escrowPin: undefined })
+                    .mockResolvedValue({
+                        ...defaultServerStatus,
+                        sssActivationState: 'provisional',
+                    });
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        executeRecovery: vi.fn().mockResolvedValue(keptResult),
+                        revokeOtherDevices,
+                        getEscrowEnrollmentState,
+                        fetchServerKeyStatus,
+                    },
+                    config: { signDidAuthVp },
+                });
+                await coordinator.initialize();
+                await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                await vi.waitFor(() => expect(getEscrowEnrollmentState).toHaveBeenCalled());
+                getEscrowEnrollmentState.mockClear();
+
+                await expect(coordinator.secureAccount({ pin: '246802' })).resolves.toEqual({
+                    shareVersion: 5,
+                    escrowEnrolled: true,
+                    pinKept: true,
+                });
+                expect(revokeOtherDevices).toHaveBeenCalledWith({
+                    token: 'mock-token',
+                    providerType: 'firebase',
+                    privateKey: 'recovered-pk',
+                    did: 'did:key:z123',
+                    signDidAuthVp,
+                    pin: '246802',
+                    options: { recoveryEmail: mockUser.email, recoveryLanguage: undefined },
+                });
+                expect(getEscrowEnrollmentState).toHaveBeenCalled();
+                const state = coordinator.getState();
+                expect(state).toMatchObject({
+                    status: 'ready',
+                    sssActivationState: 'provisional',
+                    escrowEnrollment: 'enrolled',
+                });
+                expect((state as { pinSignIn?: unknown }).pinSignIn).toBeUndefined();
+            });
+
+            describe('PIN with recorded wrong entries', () => {
+                const guessedResult = {
+                    ...keptResult,
+                    pinSignIn: { mode: 'kept' as const, pinRefreshed: false, newPinRequired: true },
+                };
+                const pinStatus = (wrongAttempts: number) => ({
+                    state: 'enabled' as const,
+                    enabled: true,
+                    attemptsRemaining: 10 - wrongAttempts,
+                    wrongAttempts,
+                    salt: 'salt',
+                });
+                const memoryStorage = () => {
+                    const items = new Map<string, string>();
+                    return {
+                        items,
+                        getItem: (key: string) => items.get(key) ?? null,
+                        setItem: (key: string, value: string) => void items.set(key, value),
+                        removeItem: (key: string) => void items.delete(key),
+                    };
+                };
+                const setupGuessed = (pinChangeGuardStorage?: ReturnType<typeof memoryStorage>) => {
+                    let wrongAttempts = 1;
+                    const setEscrowPin = vi.fn().mockImplementation(async () => {
+                        wrongAttempts = 0;
+                    });
+                    const getEscrowEnrollmentState = vi.fn(async () => ({
+                        state: 'enrolled' as const,
+                        escrowPin: pinStatus(wrongAttempts),
+                    }));
+                    // Re-enrolling (with or without a PIN) starts a clean count.
+                    const revokeOtherDevices = vi.fn().mockImplementation(async () => {
+                        wrongAttempts = 0;
+                        return { shareVersion: 5, escrowEnrolled: true, pinKept: false };
+                    });
+                    const executeRecovery = vi.fn().mockResolvedValue(guessedResult);
+                    const harness = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            executeRecovery,
+                            setEscrowPin,
+                            getEscrowEnrollmentState,
+                            revokeOtherDevices,
+                        },
+                        config: {
+                            signDidAuthVp: vi.fn(),
+                            ...(pinChangeGuardStorage ? { pinChangeGuardStorage } : {}),
+                        },
+                    });
+                    return {
+                        ...harness,
+                        setEscrowPin,
+                        getEscrowEnrollmentState,
+                        revokeOtherDevices,
+                    };
+                };
+
+                it('asks for a different PIN, rejects the PIN just used, and accepts a new one', async () => {
+                    const { coordinator, setEscrowPin, getEscrowEnrollmentState } = setupGuessed();
+                    await coordinator.initialize();
+                    await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    await vi.waitFor(() => expect(getEscrowEnrollmentState).toHaveBeenCalled());
+                    expect(coordinator.getState()).toMatchObject({
+                        status: 'ready',
+                        pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+                        escrowPinChangeRequired: true,
+                    });
+                    const before = coordinator.getState();
+
+                    await expect(coordinator.setEscrowPin('135790')).rejects.toBeInstanceOf(
+                        SameEscrowPinError
+                    );
+                    expect(setEscrowPin).not.toHaveBeenCalled();
+                    expect(coordinator.getState()).toBe(before);
+
+                    await coordinator.setEscrowPin('246802');
+                    expect(setEscrowPin).toHaveBeenCalledWith(
+                        expect.objectContaining({ pin: '246802' })
+                    );
+                    const after = coordinator.getState();
+                    expect(after).toMatchObject({
+                        status: 'ready',
+                        pinSignIn: { newPinRequired: false, pinRefreshed: true },
+                        escrowPin: { wrongAttempts: 0, attemptsRemaining: 10 },
+                    });
+                    expect(after).not.toHaveProperty('escrowPinChangeRequired');
+                    // Once resolved, the old PIN is no longer remembered.
+                    await coordinator.setEscrowPin('135790');
+                    expect(setEscrowPin).toHaveBeenCalledTimes(2);
+                });
+
+                it('never keeps the PIN just used through "Secure my account"', async () => {
+                    const { coordinator, revokeOtherDevices } = setupGuessed();
+                    await coordinator.initialize();
+                    await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    await expect(
+                        coordinator.secureAccount({ pin: '135790' })
+                    ).rejects.toBeInstanceOf(SameEscrowPinError);
+                    expect(revokeOtherDevices).not.toHaveBeenCalled();
+                    await coordinator.secureAccount({ pin: null });
+                    expect(revokeOtherDevices).toHaveBeenCalledTimes(1);
+                    expect(coordinator.getState()).not.toHaveProperty('escrowPinChangeRequired');
+                });
+
+                it('keeps the reduced budget when dismissed and asks again on the next app start', async () => {
+                    const first = setupGuessed();
+                    await first.coordinator.initialize();
+                    await first.coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    await vi.waitFor(() =>
+                        expect(first.getEscrowEnrollmentState).toHaveBeenCalled()
+                    );
+                    first.coordinator.acknowledgePinSignIn();
+                    const dismissed = first.coordinator.getState();
+                    expect(dismissed).toMatchObject({
+                        status: 'ready',
+                        escrowPin: { wrongAttempts: 1 },
+                    });
+                    expect(dismissed).not.toHaveProperty('escrowPinChangeRequired');
+                    expect((dismissed as { pinSignIn?: unknown }).pinSignIn).toBeUndefined();
+                    expect(first.setEscrowPin).not.toHaveBeenCalled();
+
+                    // Next app start: a signed-in device whose PIN still has a recorded miss.
+                    const restarted = setup({
+                        keyDerivation: {
+                            getEscrowEnrollmentState: vi.fn().mockResolvedValue({
+                                state: 'enrolled',
+                                escrowPin: pinStatus(1),
+                            }),
+                        },
+                        config: { signDidAuthVp: vi.fn() },
+                    });
+                    await restarted.coordinator.initialize();
+                    await vi.waitFor(() =>
+                        expect(restarted.coordinator.getState()).toMatchObject({
+                            status: 'ready',
+                            escrowPinChangeRequired: true,
+                        })
+                    );
+                    restarted.coordinator.dismissEscrowPinChange();
+                    expect(restarted.coordinator.getState()).not.toHaveProperty(
+                        'escrowPinChangeRequired'
+                    );
+                });
+
+                it('still refuses the PIN just used after an app restart, without storing the PIN', async () => {
+                    const storage = memoryStorage();
+                    const first = setupGuessed(storage);
+                    await first.coordinator.initialize();
+                    await first.coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    first.coordinator.acknowledgePinSignIn();
+                    // Only a keyed tag is kept, never the PIN itself.
+                    expect(storage.items.size).toBe(1);
+                    const [[key, tag]] = [...storage.items];
+                    expect(key).toContain('did:key:z123');
+                    expect(tag).toMatch(/^[0-9a-f]{64}$/);
+                    expect(tag).not.toContain('135790');
+
+                    // Next app start on this device: same account key, PIN still guessed at.
+                    const setEscrowPin = vi.fn().mockResolvedValue(undefined);
+                    const revokeOtherDevices = vi.fn();
+                    const restarted = setup({
+                        keyDerivation: {
+                            reconstructKey: vi.fn().mockResolvedValue('recovered-pk'),
+                            getEscrowEnrollmentState: vi.fn().mockResolvedValue({
+                                state: 'enrolled',
+                                escrowPin: pinStatus(1),
+                            }),
+                            setEscrowPin,
+                            revokeOtherDevices,
+                        },
+                        config: { signDidAuthVp: vi.fn(), pinChangeGuardStorage: storage },
+                    });
+                    await restarted.coordinator.initialize();
+                    await vi.waitFor(() =>
+                        expect(restarted.coordinator.getState()).toMatchObject({
+                            status: 'ready',
+                            escrowPinChangeRequired: true,
+                        })
+                    );
+                    expect(restarted.coordinator.getState()).toMatchObject({
+                        privateKey: 'recovered-pk',
+                    });
+                    await expect(
+                        restarted.coordinator.setEscrowPin('135790')
+                    ).rejects.toBeInstanceOf(SameEscrowPinError);
+                    await expect(
+                        restarted.coordinator.secureAccount({ pin: '135790' })
+                    ).rejects.toBeInstanceOf(SameEscrowPinError);
+                    expect(setEscrowPin).not.toHaveBeenCalled();
+                    expect(revokeOtherDevices).not.toHaveBeenCalled();
+
+                    // A different PIN is accepted and the guard is dropped.
+                    await restarted.coordinator.setEscrowPin('246802');
+                    expect(setEscrowPin).toHaveBeenCalledTimes(1);
+                    expect(storage.items.size).toBe(0);
+                });
+
+                it('drops the persisted guard once the PIN has a new, untouched budget', async () => {
+                    const storage = memoryStorage();
+                    const first = setupGuessed(storage);
+                    await first.coordinator.initialize();
+                    await first.coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    expect(storage.items.size).toBe(1);
+
+                    // Another device of the owner set a new PIN meanwhile.
+                    const setEscrowPin = vi.fn().mockResolvedValue(undefined);
+                    const restarted = setup({
+                        keyDerivation: {
+                            reconstructKey: vi.fn().mockResolvedValue('recovered-pk'),
+                            getEscrowEnrollmentState: vi.fn().mockResolvedValue({
+                                state: 'enrolled',
+                                escrowPin: pinStatus(0),
+                            }),
+                            setEscrowPin,
+                        },
+                        config: { signDidAuthVp: vi.fn(), pinChangeGuardStorage: storage },
+                    });
+                    await restarted.coordinator.initialize();
+                    await vi.waitFor(() =>
+                        expect(restarted.coordinator.getState()).toMatchObject({
+                            escrowPin: { attemptsRemaining: 10 },
+                        })
+                    );
+                    expect(storage.items.size).toBe(0);
+                    expect(restarted.coordinator.getState()).not.toHaveProperty(
+                        'escrowPinChangeRequired'
+                    );
+                    await restarted.coordinator.setEscrowPin('135790');
+                    expect(setEscrowPin).toHaveBeenCalledTimes(1);
+                });
+
+                it('does not ask for a new PIN when no wrong entry is recorded', async () => {
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            getEscrowEnrollmentState: vi.fn().mockResolvedValue({
+                                state: 'enrolled',
+                                escrowPin: pinStatus(0),
+                            }),
+                        },
+                        config: { signDidAuthVp: vi.fn() },
+                    });
+                    await coordinator.initialize();
+                    await vi.waitFor(() =>
+                        expect(coordinator.getState()).toMatchObject({
+                            escrowPin: { wrongAttempts: 0 },
+                        })
+                    );
+                    expect(coordinator.getState()).not.toHaveProperty('escrowPinChangeRequired');
+                });
+
+                it('remembers a lost-login PIN only when the linked account needs a new PIN', async () => {
+                    for (const newPinRequired of [true, false]) {
+                        let pending = false;
+                        const setEscrowPin = vi.fn().mockResolvedValue(undefined);
+                        const { coordinator } = setup({
+                            keyDerivation: {
+                                startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                                verifyIdentityRecovery: vi.fn().mockResolvedValue({
+                                    recoverySessionToken: 'recovery-session-token',
+                                    recoveryMethods: [],
+                                    primaryDid: 'did:key:z123',
+                                }),
+                                executeRecovery: vi.fn().mockResolvedValue({
+                                    privateKey: 'recovered-pk',
+                                    did: 'did:key:z123',
+                                }),
+                                hasPendingIdentityRecovery: vi.fn(() => pending),
+                                completeIdentityRecovery: vi.fn(async () => {
+                                    pending = false;
+                                    return {
+                                        ...keptResult,
+                                        pinSignIn: {
+                                            mode: 'relinked' as const,
+                                            pinRefreshed: false,
+                                            newPinRequired,
+                                        },
+                                    };
+                                }),
+                                cancelIdentityRecovery: vi.fn(),
+                                setEscrowPin,
+                            },
+                            config: { signDidAuthVp: vi.fn() },
+                        });
+                        coordinator.beginIdentityRecovery();
+                        await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+                        await coordinator.verifyIdentityRecoveryCode('123456');
+                        await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                        pending = true;
+                        coordinator.continueIdentityRecoveryLogin();
+                        await coordinator.initialize();
+                        coordinator.finishIdentityRecovery();
+                        expect(coordinator.getState()).toMatchObject({
+                            status: 'ready',
+                            pinSignIn: { mode: 'relinked', newPinRequired },
+                        });
+                        const same = coordinator.setEscrowPin('135790');
+                        if (newPinRequired) {
+                            expect(coordinator.getState()).toMatchObject({
+                                escrowPinChangeRequired: true,
+                            });
+                            await expect(same).rejects.toBeInstanceOf(SameEscrowPinError);
+                            expect(setEscrowPin).not.toHaveBeenCalled();
+                        } else {
+                            await same;
+                            expect(setEscrowPin).toHaveBeenCalledTimes(1);
+                        }
+                    }
+                });
+                describe('a PIN sign-in that does not complete leaves no guard behind', () => {
+                    const later = <T>() => {
+                        let resolve!: (value: T) => void;
+                        const promise = new Promise<T>(r => {
+                            resolve = r;
+                        });
+                        return { promise, resolve };
+                    };
+                    /** Next app start on this device, signed in with the account key. */
+                    const restartWith = (storage: ReturnType<typeof memoryStorage>) => {
+                        const setEscrowPin = vi.fn().mockResolvedValue(undefined);
+                        const harness = setup({
+                            keyDerivation: {
+                                reconstructKey: vi.fn().mockResolvedValue('recovered-pk'),
+                                getEscrowEnrollmentState: vi.fn().mockResolvedValue({
+                                    state: 'enrolled',
+                                    escrowPin: pinStatus(1),
+                                }),
+                                setEscrowPin,
+                            },
+                            config: { signDidAuthVp: vi.fn(), pinChangeGuardStorage: storage },
+                        });
+                        return { ...harness, setEscrowPin };
+                    };
+                    const expectPinUsableAfterRestart = async (
+                        storage: ReturnType<typeof memoryStorage>
+                    ) => {
+                        expect(storage.items.size).toBe(0);
+                        const restarted = restartWith(storage);
+                        await restarted.coordinator.initialize();
+                        await vi.waitFor(() =>
+                            expect(restarted.coordinator.getState()).toMatchObject({
+                                status: 'ready',
+                                escrowPin: { wrongAttempts: 1 },
+                            })
+                        );
+                        await restarted.coordinator.setEscrowPin('135790');
+                        expect(restarted.setEscrowPin).toHaveBeenCalledTimes(1);
+                    };
+                    const lostLogin = (
+                        storage: ReturnType<typeof memoryStorage>,
+                        executeRecovery = vi.fn().mockResolvedValue({
+                            privateKey: 'recovered-pk',
+                            did: 'did:key:z123',
+                        })
+                    ) =>
+                        setup({
+                            keyDerivation: {
+                                startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                                verifyIdentityRecovery: vi.fn().mockResolvedValue({
+                                    recoverySessionToken: 'recovery-session-token',
+                                    recoveryMethods: [],
+                                    primaryDid: 'did:key:z123',
+                                }),
+                                executeRecovery,
+                                cancelIdentityRecovery: vi.fn(),
+                            },
+                            config: { signDidAuthVp: vi.fn(), pinChangeGuardStorage: storage },
+                        });
+                    const startLostLogin = async (coordinator: AuthCoordinator) => {
+                        coordinator.beginIdentityRecovery();
+                        await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+                        await coordinator.verifyIdentityRecoveryCode('123456');
+                    };
+
+                    it('signed-in PIN sign-in cancelled (sign-out) while its release returns', async () => {
+                        const storage = memoryStorage();
+                        const release = later<typeof guessedResult>();
+                        const { coordinator } = setup({
+                            keyDerivation: {
+                                hasLocalKey: vi.fn().mockResolvedValue(false),
+                                executeRecovery: vi.fn().mockReturnValue(release.promise),
+                                cancelIdentityRecovery: vi.fn(),
+                            },
+                            config: { signDidAuthVp: vi.fn(), pinChangeGuardStorage: storage },
+                        });
+                        await coordinator.initialize();
+                        const pin = coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                        const signedOut = coordinator.logout();
+                        release.resolve(guessedResult);
+                        await expect(pin).rejects.toThrow('This recovery request was cancelled.');
+                        await signedOut;
+
+                        await expectPinUsableAfterRestart(storage);
+                    });
+
+                    it('lost-login PIN sign-in cancelled while its release is in flight', async () => {
+                        const storage = memoryStorage();
+                        const release = later<{ privateKey: string; did: string }>();
+                        const { coordinator } = lostLogin(
+                            storage,
+                            vi.fn().mockReturnValue(release.promise)
+                        );
+                        await startLostLogin(coordinator);
+                        const pin = coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                        coordinator.cancelIdentityRecovery();
+                        release.resolve({ privateKey: 'recovered-pk', did: 'did:key:z123' });
+                        await expect(pin).rejects.toThrow('This recovery request was cancelled.');
+
+                        await expectPinUsableAfterRestart(storage);
+                    });
+
+                    it.each(['new_login', 'awaiting_rebind'] as const)(
+                        'lost-login PIN sign-in cancelled after its release, at %s',
+                        async phase => {
+                            const storage = memoryStorage();
+                            const { coordinator } = lostLogin(storage);
+                            await startLostLogin(coordinator);
+                            await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                            if (phase === 'awaiting_rebind')
+                                coordinator.continueIdentityRecoveryLogin();
+                            expect(coordinator.getState()).toMatchObject(
+                                phase === 'awaiting_rebind'
+                                    ? { status: 'awaiting_rebind' }
+                                    : { status: 'identity_recovery', phase: 'new_login' }
+                            );
+                            coordinator.cancelIdentityRecovery();
+
+                            await expectPinUsableAfterRestart(storage);
+                        }
+                    );
+
+                    it('lost-login PIN sign-in completed after a restart (new-login redirect) keeps its guard', async () => {
+                        const storage = memoryStorage();
+                        const first = lostLogin(storage);
+                        await startLostLogin(first.coordinator);
+                        await first.coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                        first.coordinator.continueIdentityRecoveryLogin();
+
+                        // The app restarts on the new login's redirect and links it.
+                        const setEscrowPin = vi.fn().mockResolvedValue(undefined);
+                        let pending = true;
+                        const { coordinator } = setup({
+                            keyDerivation: {
+                                hasPendingIdentityRecovery: vi.fn(() => pending),
+                                completeIdentityRecovery: vi.fn(async () => {
+                                    pending = false;
+                                    return guessedResult;
+                                }),
+                                setEscrowPin,
+                            },
+                            config: { signDidAuthVp: vi.fn(), pinChangeGuardStorage: storage },
+                        });
+                        await coordinator.initialize();
+                        coordinator.finishIdentityRecovery();
+                        await expect(coordinator.setEscrowPin('135790')).rejects.toBeInstanceOf(
+                            SameEscrowPinError
+                        );
+                        expect(setEscrowPin).not.toHaveBeenCalled();
+                        // Only the completed guard is kept.
+                        expect([...storage.items.keys()]).toEqual([
+                            'learncard:pin-change-guard:did:key:z123',
+                        ]);
+                    });
+
+                    it("an abandoned sign-in leaves a completed earlier sign-in's guard in place", async () => {
+                        const storage = memoryStorage();
+                        const completed = setupGuessed(storage);
+                        await completed.coordinator.initialize();
+                        await completed.coordinator.recover({
+                            method: 'escrow-pin',
+                            pin: '135790',
+                        });
+                        const guard = [...storage.items];
+                        expect(guard).toHaveLength(1);
+
+                        const { coordinator } = lostLogin(storage);
+                        await startLostLogin(coordinator);
+                        await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                        coordinator.cancelIdentityRecovery();
+
+                        expect([...storage.items]).toEqual(guard);
+                        const restarted = restartWith(storage);
+                        await restarted.coordinator.initialize();
+                        await vi.waitFor(() =>
+                            expect(restarted.coordinator.getState()).toMatchObject({
+                                status: 'ready',
+                                escrowPinChangeRequired: true,
+                            })
+                        );
+                        await expect(
+                            restarted.coordinator.setEscrowPin('135790')
+                        ).rejects.toBeInstanceOf(SameEscrowPinError);
+                    });
+                });
+            });
+
+            describe('one recovery at a time', () => {
+                const deferred = <T>() => {
+                    let resolve!: (value: T) => void;
+                    const promise = new Promise<T>(r => {
+                        resolve = r;
+                    });
+                    return { promise, resolve };
+                };
+
+                it('rejects switching methods while a lost-login PIN sign-in is pending, leaving it intact', async () => {
+                    const pinRelease = deferred<{ privateKey: string; did: string }>();
+                    const prepareIdentityRecovery = vi.fn();
+                    const startEscrowRecovery = vi.fn();
+                    const startIdentityRecovery = vi.fn().mockResolvedValue(undefined);
+                    const verifyIdentityRecovery = vi.fn().mockResolvedValue({
+                        recoverySessionToken: 'recovery-session-token',
+                        recoveryMethods: [{ type: 'phrase', createdAt: new Date() }],
+                        primaryDid: 'did:key:z123',
+                    });
+                    const cancelIdentityRecovery = vi.fn();
+                    const executeRecovery = vi.fn().mockReturnValue(pinRelease.promise);
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            startIdentityRecovery,
+                            verifyIdentityRecovery,
+                            executeRecovery,
+                            prepareIdentityRecovery,
+                            startEscrowRecovery,
+                            cancelIdentityRecovery,
+                        },
+                    });
+                    coordinator.beginIdentityRecovery();
+                    await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+                    await coordinator.verifyIdentityRecoveryCode('123456');
+                    const choosing = coordinator.getState();
+
+                    // Reviewer sequence: submit the PIN, then switch to the phrase and submit.
+                    const pin = coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    await expect(
+                        coordinator.prepareIdentityRecovery({ method: 'phrase', phrase: 'word' })
+                    ).rejects.toBeInstanceOf(RecoveryInProgressError);
+                    await expect(
+                        coordinator.recover({ method: 'escrow-pin', pin: '135790' })
+                    ).rejects.toBeInstanceOf(RecoveryInProgressError);
+                    await expect(
+                        coordinator.recover({ method: 'escrow', holdId: 'hold' })
+                    ).rejects.toBeInstanceOf(RecoveryInProgressError);
+                    await expect(coordinator.startEscrowRecovery()).rejects.toBeInstanceOf(
+                        RecoveryInProgressError
+                    );
+                    await expect(
+                        coordinator.sendIdentityRecoveryCode('recovery@example.com')
+                    ).rejects.toBeInstanceOf(RecoveryInProgressError);
+                    await expect(
+                        coordinator.verifyIdentityRecoveryCode('654321')
+                    ).rejects.toBeInstanceOf(RecoveryInProgressError);
+                    // Nothing touched the pending identity or the single-use session.
+                    expect(prepareIdentityRecovery).not.toHaveBeenCalled();
+                    expect(startEscrowRecovery).not.toHaveBeenCalled();
+                    expect(startIdentityRecovery).toHaveBeenCalledTimes(1);
+                    expect(verifyIdentityRecovery).toHaveBeenCalledTimes(1);
+                    expect(executeRecovery).toHaveBeenCalledTimes(1);
+                    expect(cancelIdentityRecovery).not.toHaveBeenCalled();
+                    expect(coordinator.getState()).toBe(choosing);
+
+                    // The correct PIN completes against the state it started from.
+                    pinRelease.resolve({ privateKey: 'recovered-pk', did: 'did:key:z123' });
+                    await expect(pin).resolves.toMatchObject({
+                        status: 'identity_recovery',
+                        phase: 'new_login',
+                        recoveredDid: 'did:key:z123',
+                    });
+                    expect(cancelIdentityRecovery).not.toHaveBeenCalled();
+                    // The guard is released once the recovery settles.
+                    await expect(
+                        coordinator.prepareIdentityRecovery({ method: 'phrase', phrase: 'word' })
+                    ).rejects.toThrow('Identity recovery is not ready for a recovery method');
+                });
+
+                it('releases the guard after a failed PIN attempt', async () => {
+                    const mismatch = new EscrowPinMismatchError(7);
+                    const prepareIdentityRecovery = vi
+                        .fn()
+                        .mockResolvedValue({ privateKey: 'recovered-pk', did: 'did:key:z123' });
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                            verifyIdentityRecovery: vi.fn().mockResolvedValue({
+                                recoverySessionToken: 'recovery-session-token',
+                                recoveryMethods: [],
+                                primaryDid: 'did:key:z123',
+                            }),
+                            executeRecovery: vi.fn().mockRejectedValue(mismatch),
+                            prepareIdentityRecovery,
+                        },
+                    });
+                    coordinator.beginIdentityRecovery();
+                    await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+                    await coordinator.verifyIdentityRecoveryCode('123456');
+                    await expect(
+                        coordinator.recover({ method: 'escrow-pin', pin: '000000' })
+                    ).rejects.toBe(mismatch);
+                    // A fresh code, then another method, works normally.
+                    await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+                    await coordinator.verifyIdentityRecoveryCode('123456');
+                    await coordinator.prepareIdentityRecovery({ method: 'phrase', phrase: 'w' });
+                    expect(prepareIdentityRecovery).toHaveBeenCalledTimes(1);
+                });
+
+                it('lets a fresh lost-login flow start after cancelling, without racing the abandoned release', async () => {
+                    const pinRelease = deferred<{ privateKey: string; did: string }>();
+                    const startIdentityRecovery = vi.fn().mockResolvedValue(undefined);
+                    const verifyIdentityRecovery = vi.fn().mockResolvedValue({
+                        recoverySessionToken: 'recovery-session-token',
+                        recoveryMethods: [{ type: 'phrase', createdAt: new Date() }],
+                        primaryDid: 'did:key:z123',
+                    });
+                    const cancelIdentityRecovery = vi.fn();
+                    const prepareIdentityRecovery = vi
+                        .fn()
+                        .mockResolvedValue({ privateKey: 'recovered-pk', did: 'did:key:z123' });
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            startIdentityRecovery,
+                            verifyIdentityRecovery,
+                            executeRecovery: vi.fn().mockReturnValue(pinRelease.promise),
+                            prepareIdentityRecovery,
+                            cancelIdentityRecovery,
+                        },
+                    });
+                    coordinator.beginIdentityRecovery();
+                    await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+                    await coordinator.verifyIdentityRecoveryCode('123456');
+                    const pin = coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+
+                    // The user cancels and starts again while the release is still pending.
+                    coordinator.cancelIdentityRecovery();
+                    coordinator.beginIdentityRecovery();
+                    await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+                    await coordinator.verifyIdentityRecoveryCode('123456');
+                    expect(startIdentityRecovery).toHaveBeenCalledTimes(2);
+                    expect(verifyIdentityRecovery).toHaveBeenCalledTimes(2);
+                    // A method waits until the abandoned release has settled and cleaned up.
+                    await expect(
+                        coordinator.prepareIdentityRecovery({ method: 'phrase', phrase: 'word' })
+                    ).rejects.toBeInstanceOf(RecoveryInProgressError);
+                    expect(prepareIdentityRecovery).not.toHaveBeenCalled();
+
+                    pinRelease.resolve({ privateKey: 'recovered-pk', did: 'did:key:z123' });
+                    await expect(pin).rejects.toThrow('This recovery request was cancelled.');
+                    const callsAfterAbandoned = cancelIdentityRecovery.mock.calls.length;
+                    await coordinator.prepareIdentityRecovery({ method: 'phrase', phrase: 'word' });
+                    expect(prepareIdentityRecovery).toHaveBeenCalledTimes(1);
+                    expect(cancelIdentityRecovery).toHaveBeenCalledTimes(callsAfterAbandoned);
+                    expect(coordinator.getState()).toMatchObject({
+                        status: 'identity_recovery',
+                        phase: 'new_login',
+                    });
+                });
+
+                it('rejects another method while a signed-in PIN recovery is pending', async () => {
+                    const pinRelease = deferred<typeof keptResult>();
+                    const executeRecovery = vi.fn().mockReturnValueOnce(pinRelease.promise);
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            executeRecovery,
+                        },
+                    });
+                    await coordinator.initialize();
+                    const needsRecovery = coordinator.getState();
+                    expect(needsRecovery.status).toBe('needs_recovery');
+                    const pin = coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                    await expect(
+                        coordinator.recover({ method: 'phrase', phrase: 'word' })
+                    ).rejects.toBeInstanceOf(RecoveryInProgressError);
+                    expect(executeRecovery).toHaveBeenCalledTimes(1);
+                    expect(coordinator.getState()).toBe(needsRecovery);
+                    pinRelease.resolve(keptResult);
+                    await expect(pin).resolves.toMatchObject({ status: 'ready' });
+                });
+            });
+
+            it('refuses to secure the account outside a signed-in ready state', async () => {
+                const revokeOtherDevices = vi.fn();
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        revokeOtherDevices,
+                    },
+                    config: { signDidAuthVp: vi.fn() },
+                });
+                await coordinator.initialize();
+                await expect(coordinator.secureAccount({ pin: null })).rejects.toThrow(
+                    'Sign in again'
+                );
+                expect(revokeOtherDevices).not.toHaveBeenCalled();
+            });
+        });
+
         it('discovers a pending hold and clears it after cancellation', async () => {
             const hold = {
                 holdId: 'hold',
@@ -1926,12 +3257,38 @@ describe('AuthCoordinator', () => {
         });
 
         describe('unresolved SSS writes during stale-key login', () => {
-            const privateKey = '1234567890abcdef'.repeat(4);
+            const { privateKey, stale, server } = pendingWriteSplits;
             const expectedDid = 'did:key:zPendingOwner';
             const mainId = 'sss-device-share:user-1';
             const pendingId = `sss-pending-share:${mainId}`;
 
-            const preparePendingWrite = async () => {
+            afterEach(() => vi.restoreAllMocks());
+
+            it('uses valid independently generated fixture splits', async () => {
+                const strategy = createSSSStrategy({ serverUrl: 'http://test-server/api' });
+                for (const split of [stale, server]) {
+                    const shares = Object.values(split);
+                    for (let left = 0; left < shares.length; left += 1) {
+                        for (let right = left + 1; right < shares.length; right += 1) {
+                            expect(
+                                await strategy.reconstructKey(shares[left]!, shares[right]!)
+                            ).toBe(privateKey);
+                        }
+                    }
+                }
+            });
+
+            it('the underlying share library rejects the colliding fixture pair', async () => {
+                // Bypass the strategy's typed pre-check to guard its library-format assumption.
+                expect(stale.deviceShare.slice(-2)).toBe(server.authShare.slice(-2));
+                await expect(
+                    reconstructFromShares([stale.deviceShare, server.authShare])
+                ).rejects.toThrow();
+            });
+
+            // Real verified splits of a public test key. Across independent splits,
+            // the stale device and current auth share can reuse an x-coordinate.
+            const preparePendingWrite = async (collidingCoordinates: boolean) => {
                 const shares = new Map<string, string>();
                 const versions = new Map<string, number>();
                 const storage: SSSStorageFunctions = {
@@ -1958,11 +3315,15 @@ describe('AuthCoordinator', () => {
                     },
                     getShareVersion: async id => versions.get(id ?? 'sss-device-share') ?? null,
                 };
-                const stale = await splitAndVerify(privateKey);
-                const otherDevice = await splitAndVerify(privateKey);
-                shares.set(mainId, stale.shares.deviceShare);
+                shares.set(mainId, stale.deviceShare);
                 versions.set(mainId, 1);
-                let currentAuthShare = otherDevice.shares.authShare;
+                const originalAuthShare = collidingCoordinates
+                    ? server.authShare
+                    : server.recoveryShare;
+                expect(stale.deviceShare.slice(-2) === originalAuthShare.slice(-2)).toBe(
+                    collidingCoordinates
+                );
+                let currentAuthShare = originalAuthShare;
                 let version = 1;
                 let delayedAuthShare = '';
                 vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
@@ -1974,9 +3335,7 @@ describe('AuthCoordinator', () => {
                     return new Response(
                         JSON.stringify({
                             authShare:
-                                requestedVersion === 1
-                                    ? otherDevice.shares.authShare
-                                    : currentAuthShare,
+                                requestedVersion === 1 ? originalAuthShare : currentAuthShare,
                             shareVersion: version,
                             keyProvider: 'sss',
                             primaryDid: expectedDid,
@@ -2016,53 +3375,149 @@ describe('AuthCoordinator', () => {
                 };
             };
 
-            it('keeps the pending split through needs_recovery and recovers after a delayed commit', async () => {
-                const { coordinator, strategy, shares, versions, commitLegacyWrite } =
-                    await preparePendingWrite();
-                const pending = JSON.parse(shares.get(pendingId)!).candidates[0].share;
+            it.each([false, true])(
+                'keeps the pending split through needs_recovery and recovers after a delayed commit (colliding coordinates: %s)',
+                async collidingCoordinates => {
+                    const { coordinator, strategy, shares, versions, commitLegacyWrite } =
+                        await preparePendingWrite(collidingCoordinates);
+                    const pending = JSON.parse(shares.get(pendingId)!).candidates[0].share;
 
-                expect(await coordinator.initialize()).toMatchObject({
-                    status: 'needs_recovery',
-                    recoveryReason: 'stale_local_key',
-                });
-                expect(shares.has(mainId)).toBe(false);
-                expect(versions.has(mainId)).toBe(false);
-                expect(shares.has(pendingId)).toBe(true);
-                expect(await strategy.getLocalKey()).toBe(pending);
+                    logoutLogs.warn.mockClear();
+                    expect(await coordinator.initialize()).toMatchObject({
+                        status: 'needs_recovery',
+                        recoveryReason: 'stale_local_key',
+                    });
+                    expect(logoutLogs.warn).toHaveBeenCalledExactlyOnceWith(
+                        collidingCoordinates
+                            ? 'Share coordinate collision - stale local key detected'
+                            : 'DID mismatch - stale local key detected'
+                    );
+                    expect(shares.has(mainId)).toBe(false);
+                    expect(versions.has(mainId)).toBe(false);
+                    expect(shares.has(pendingId)).toBe(true);
+                    expect(await strategy.getLocalKey()).toBe(pending);
 
-                commitLegacyWrite();
-                expect(await coordinator.initialize()).toMatchObject({
-                    status: 'ready',
-                    did: expectedDid,
-                    privateKey,
+                    commitLegacyWrite();
+                    expect(await coordinator.initialize()).toMatchObject({
+                        status: 'ready',
+                        did: expectedDid,
+                        privateKey,
+                    });
+                    expect(shares.get(mainId)).toBe(pending);
+                    expect(versions.get(mainId)).toBe(2);
+                    expect(shares.has(pendingId)).toBe(false);
+                }
+            );
+
+            it.each([false, true])(
+                'reconciles an already committed pending split once (colliding coordinates: %s)',
+                async collidingCoordinates => {
+                    const { coordinator, strategy, shares, versions, commitLegacyWrite } =
+                        await preparePendingWrite(collidingCoordinates);
+                    const pending = JSON.parse(shares.get(pendingId)!).candidates[0].share;
+                    const reconcile = vi.spyOn(strategy, 'reconcileShares');
+                    commitLegacyWrite();
+
+                    expect(await coordinator.initialize()).toMatchObject({
+                        status: 'ready',
+                        did: expectedDid,
+                        privateKey,
+                    });
+                    expect(reconcile).toHaveBeenCalledTimes(1);
+                    expect(shares.get(mainId)).toBe(pending);
+                    expect(versions.get(mainId)).toBe(2);
+                    expect(shares.has(pendingId)).toBe(false);
+                }
+            );
+
+            it.each([false, true])(
+                'forgets retained pending data without touching another account (colliding coordinates: %s)',
+                async collidingCoordinates => {
+                    const { coordinator, strategy, shares, versions } =
+                        await preparePendingWrite(collidingCoordinates);
+                    const otherId = 'sss-device-share:user-2';
+                    const otherPendingId = `sss-pending-share:${otherId}`;
+                    shares.set(otherId, 'other-account-device');
+                    shares.set(otherPendingId, 'other-account-pending');
+                    versions.set(otherId, 7);
+
+                    expect(await coordinator.initialize()).toMatchObject({
+                        status: 'needs_recovery',
+                        recoveryReason: 'stale_local_key',
+                    });
+                    expect(shares.has(pendingId)).toBe(true);
+                    await coordinator.forgetDevice();
+                    expect(shares.has(mainId)).toBe(false);
+                    expect(shares.has(pendingId)).toBe(false);
+                    expect(versions.has(mainId)).toBe(false);
+                    strategy.setActiveUser!('user-2');
+                    expect(await strategy.getLocalKey()).toBe('other-account-device');
+                    expect(await strategy.getLocalShareVersion!()).toBe(7);
+                    expect(shares.get(otherPendingId)).toBe('other-account-pending');
+                }
+            );
+        });
+
+        it.each([
+            [new Error('Unexpected reconstruction failure'), 'error'],
+            [new TypeError('Failed to fetch'), 'idle'],
+        ] as const)(
+            'preserves unrelated reconstruction failure handling: %s',
+            async (error, status) => {
+                const reconcileShares = vi.fn();
+                const { coordinator, keyDerivation } = setup({
+                    keyDerivation: {
+                        reconstructKey: vi.fn().mockRejectedValue(error),
+                        reconcileShares,
+                    },
                 });
-                expect(shares.get(mainId)).toBe(pending);
-                expect(versions.get(mainId)).toBe(2);
-                expect(shares.has(pendingId)).toBe(false);
+                expect(await coordinator.initialize()).toMatchObject({ status });
+                expect(reconcileShares).not.toHaveBeenCalled();
+                expect(keyDerivation.clearLocalKeys).not.toHaveBeenCalled();
+            }
+        );
+
+        it.each(['expected-did', 'verifier', 'reconciliation'] as const)(
+            'does not recover a collision without %s support',
+            async missing => {
+                const reconcileShares = vi.fn();
+                const { coordinator, keyDerivation } = setup({
+                    config: missing === 'verifier' ? { didFromPrivateKey: undefined } : {},
+                    keyDerivation: {
+                        reconstructKey: vi
+                            .fn()
+                            .mockRejectedValue(new DuplicateShareCoordinateError()),
+                        reconcileShares: missing === 'reconciliation' ? undefined : reconcileShares,
+                        ...(missing === 'expected-did'
+                            ? {
+                                  fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                                      ...defaultServerStatus,
+                                      primaryDid: null,
+                                  }),
+                              }
+                            : {}),
+                    },
+                });
+                expect(await coordinator.initialize()).toMatchObject({ status: 'error' });
+                expect(reconcileShares).not.toHaveBeenCalled();
+                expect(keyDerivation.clearLocalKeys).not.toHaveBeenCalled();
+            }
+        );
+
+        it('preserves a reconciliation failure after a coordinate collision', async () => {
+            const reconcileShares = vi.fn().mockRejectedValue(new Error('Reconciliation failed'));
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    reconstructKey: vi.fn().mockRejectedValue(new DuplicateShareCoordinateError()),
+                    reconcileShares,
+                },
             });
-
-            it('forgets retained pending data without touching another account', async () => {
-                const { coordinator, strategy, shares, versions } = await preparePendingWrite();
-                const otherId = 'sss-device-share:user-2';
-                const otherPendingId = `sss-pending-share:${otherId}`;
-                shares.set(otherId, 'other-account-device');
-                shares.set(otherPendingId, 'other-account-pending');
-                versions.set(otherId, 7);
-
-                expect(await coordinator.initialize()).toMatchObject({
-                    status: 'needs_recovery',
-                    recoveryReason: 'stale_local_key',
-                });
-                expect(shares.has(pendingId)).toBe(true);
-                await coordinator.forgetDevice();
-                expect(shares.has(mainId)).toBe(false);
-                expect(shares.has(pendingId)).toBe(false);
-                expect(versions.has(mainId)).toBe(false);
-                strategy.setActiveUser!('user-2');
-                expect(await strategy.getLocalKey()).toBe('other-account-device');
-                expect(await strategy.getLocalShareVersion!()).toBe(7);
-                expect(shares.get(otherPendingId)).toBe('other-account-pending');
+            expect(await coordinator.initialize()).toMatchObject({
+                status: 'error',
+                error: 'Reconciliation failed',
             });
+            expect(reconcileShares).toHaveBeenCalledTimes(1);
+            expect(keyDerivation.clearLocalKeys).not.toHaveBeenCalled();
         });
 
         it('goes to idle (not error) when AuthSessionError is thrown', async () => {
@@ -2323,6 +3778,364 @@ describe('AuthCoordinator', () => {
         });
     });
 
+    // -----------------------------------------------------------------------
+    // migrate() — identity guard
+    // -----------------------------------------------------------------------
+
+    describe('migrate() identity guard', () => {
+        const noRecord: ServerKeyStatus = {
+            exists: false,
+            needsMigration: false,
+            primaryDid: null,
+            recoveryMethods: [],
+            authShare: null,
+            shareVersion: null,
+        };
+
+        const legacyUser: AuthUser = {
+            ...mockUser,
+            createdAt: new Date(Date.now() - 60 * 60 * 1000),
+        };
+
+        const writes = (keyDerivation: KeyDerivationStrategy) => [
+            keyDerivation.storeAuthShare,
+            keyDerivation.storeLocalKey,
+            keyDerivation.markMigrated,
+        ];
+
+        const derivedSetup = (
+            verifyMigrationIdentity?: AuthCoordinatorConfig['verifyMigrationIdentity']
+        ) =>
+            setup({
+                authProvider: { getCurrentUser: vi.fn().mockResolvedValue(legacyUser) },
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(noRecord),
+                },
+                config: { legacyAccountThresholdMs: 5 * 60 * 1000, verifyMigrationIdentity },
+            });
+
+        const cachedSetup = (
+            verifyMigrationIdentity: AuthCoordinatorConfig['verifyMigrationIdentity'],
+            serverStatus: ServerKeyStatus = noRecord
+        ) =>
+            setup({
+                keyDerivation: { fetchServerKeyStatus: vi.fn().mockResolvedValue(serverStatus) },
+                config: {
+                    getCachedPrivateKey: vi.fn().mockResolvedValue('cached-pk'),
+                    didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zCached'),
+                    verifyMigrationIdentity,
+                },
+            });
+
+        it('refuses without writing when the key does not match the DID the server holds', async () => {
+            const verifyMigrationIdentity = vi.fn();
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        ...defaultServerStatus,
+                        needsMigration: true,
+                        primaryDid: 'did:key:zServer',
+                    } satisfies ServerKeyStatus),
+                },
+                config: { verifyMigrationIdentity },
+            });
+
+            await coordinator.initialize();
+            const result = await coordinator.migrate('other-key', 'did:key:zOther');
+
+            expect(result).toMatchObject({ status: 'error', canRetry: false });
+            if (result.status === 'error') {
+                expect(result.error).toContain('MIGRATION_IDENTITY_MISMATCH');
+            }
+            for (const write of writes(keyDerivation)) expect(write).not.toHaveBeenCalled();
+            // The server's DID is authoritative; the app verifier is not consulted.
+            expect(verifyMigrationIdentity).not.toHaveBeenCalled();
+        });
+
+        it('refuses without writing when the verifier reports a mismatch', async () => {
+            const verifyMigrationIdentity = vi.fn().mockResolvedValue('mismatch');
+            const { coordinator, keyDerivation } = derivedSetup(verifyMigrationIdentity);
+
+            await coordinator.initialize();
+            coordinator.setMigrationData({ web3AuthKey: 'derived-key', source: 'derived' });
+            const result = await coordinator.migrate('derived-key', 'did:key:zDerived');
+
+            expect(verifyMigrationIdentity).toHaveBeenCalledWith({
+                privateKey: 'derived-key',
+                did: 'did:key:zDerived',
+                source: 'derived',
+            });
+            expect(result).toMatchObject({ status: 'error', canRetry: false });
+            for (const write of writes(keyDerivation)) expect(write).not.toHaveBeenCalled();
+        });
+
+        it.each(['match', 'unknown'] as const)(
+            'migrates a derived key when the verifier reports %s',
+            async verdict => {
+                const { coordinator, keyDerivation } = derivedSetup(
+                    vi.fn().mockResolvedValue(verdict)
+                );
+
+                await coordinator.initialize();
+                expect(coordinator.getState().status).toBe('needs_migration');
+                coordinator.setMigrationData({ web3AuthKey: 'derived-key', source: 'derived' });
+                const result = await coordinator.migrate('derived-key', 'did:key:zDerived');
+
+                expect(result).toMatchObject({
+                    status: 'ready',
+                    sssActivationState: 'provisional',
+                });
+                expect(keyDerivation.storeAuthShare).toHaveBeenCalled();
+            }
+        );
+
+        it('treats a throwing verifier as unknown', async () => {
+            const { coordinator, keyDerivation } = derivedSetup(
+                vi.fn().mockRejectedValue(new Error('network down'))
+            );
+
+            await coordinator.initialize();
+            coordinator.setMigrationData({ web3AuthKey: 'derived-key', source: 'derived' });
+            const result = await coordinator.migrate('derived-key', 'did:key:zDerived');
+
+            expect(result.status).toBe('ready');
+            expect(keyDerivation.storeAuthShare).toHaveBeenCalled();
+        });
+
+        it('defers a cached key it cannot verify: ready on that key, nothing written', async () => {
+            const { coordinator, keyDerivation } = cachedSetup(
+                vi.fn().mockResolvedValue('unknown')
+            );
+
+            const initial = await coordinator.initialize();
+            expect(initial).toMatchObject({
+                status: 'needs_migration',
+                migrationData: { web3AuthKey: 'cached-pk', source: 'cached' },
+            });
+
+            const result = await coordinator.migrate('cached-pk', 'did:key:zCached');
+
+            expect(result).toMatchObject({
+                status: 'ready',
+                did: 'did:key:zCached',
+                privateKey: 'cached-pk',
+                sssActivationState: null,
+            });
+            for (const write of writes(keyDerivation)) expect(write).not.toHaveBeenCalled();
+        });
+
+        it("drops another account's cached key and waits for a derived one", async () => {
+            const { coordinator, keyDerivation } = cachedSetup(
+                vi.fn().mockResolvedValue('mismatch')
+            );
+
+            await coordinator.initialize();
+            const result = await coordinator.migrate('cached-pk', 'did:key:zCached');
+
+            expect(result.status).toBe('needs_migration');
+            if (result.status === 'needs_migration') {
+                expect(result.migrationData?.web3AuthKey).toBeUndefined();
+                expect(result.migrationData?.source).toBeUndefined();
+            }
+            for (const write of writes(keyDerivation)) expect(write).not.toHaveBeenCalled();
+        });
+
+        it('also drops a cached key that conflicts with the server DID', async () => {
+            const { coordinator, keyDerivation } = cachedSetup(vi.fn(), {
+                ...defaultServerStatus,
+                needsMigration: true,
+                primaryDid: 'did:key:zServer',
+            });
+
+            await coordinator.initialize();
+            const result = await coordinator.migrate('cached-pk', 'did:key:zCached');
+
+            expect(result).toMatchObject({
+                status: 'needs_migration',
+                migrationData: { expectedDid: 'did:key:zServer' },
+            });
+            for (const write of writes(keyDerivation)) expect(write).not.toHaveBeenCalled();
+
+            // The derived key for the signed-in account then migrates normally.
+            coordinator.setMigrationData({ web3AuthKey: 'derived-key', source: 'derived' });
+            const derived = await coordinator.migrate('derived-key', 'did:key:zServer');
+            expect(derived.status).toBe('ready');
+        });
+
+        it('keeps the unchecked behavior when no verifier is configured', async () => {
+            const { coordinator, keyDerivation } = derivedSetup();
+
+            await coordinator.initialize();
+            const result = await coordinator.migrate('derived-key', 'did:key:zDerived');
+
+            expect(result.status).toBe('ready');
+            expect(keyDerivation.storeAuthShare).toHaveBeenCalled();
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // initialize() — provisional migration on a device without its share
+    // -----------------------------------------------------------------------
+
+    describe('initialize() — provisional migration without a local share', () => {
+        const provisionalStatus: ServerKeyStatus = {
+            ...defaultServerStatus,
+            needsMigration: true,
+            primaryDid: 'did:key:zLegacy',
+            sssActivationState: 'provisional',
+        };
+
+        it('re-derives the legacy key instead of asking for recovery, bound to the server DID', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result).toMatchObject({
+                status: 'needs_migration',
+                migrationData: { expectedDid: 'did:key:zLegacy' },
+            });
+        });
+
+        it('still connects normally on the device that holds the share', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(true),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+                config: { didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zLegacy') },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result).toMatchObject({
+                status: 'ready',
+                did: 'did:key:zLegacy',
+                sssActivationState: 'provisional',
+            });
+        });
+
+        it('re-derives a provisional account whose local share is stale', async () => {
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(true),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+                config: { didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zOtherShare') },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(keyDerivation.clearLocalKeys).toHaveBeenCalledWith({ preservePending: true });
+            expect(result).toMatchObject({
+                status: 'needs_migration',
+                migrationData: { expectedDid: 'did:key:zLegacy', provisionalRederive: true },
+            });
+        });
+
+        it('uses the re-derived key without re-splitting shares', async () => {
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+            });
+
+            await coordinator.initialize();
+            coordinator.setMigrationData({ web3AuthKey: 'legacy-key', source: 'derived' });
+            const result = await coordinator.migrate('legacy-key', 'did:key:zLegacy');
+
+            expect(result).toMatchObject({
+                status: 'ready',
+                did: 'did:key:zLegacy',
+                privateKey: 'legacy-key',
+                sssActivationState: 'provisional',
+            });
+            expect(keyDerivation.storeAuthShare).not.toHaveBeenCalled();
+            expect(keyDerivation.storeLocalKey).not.toHaveBeenCalled();
+            expect(keyDerivation.markMigrated).not.toHaveBeenCalled();
+        });
+
+        it('refuses a re-derived key that does not match the server DID', async () => {
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+            });
+
+            await coordinator.initialize();
+            coordinator.setMigrationData({ web3AuthKey: 'wrong-key', source: 'derived' });
+            const result = await coordinator.migrate('wrong-key', 'did:key:zWrong');
+
+            expect(result).toMatchObject({ status: 'error', canRetry: false });
+            expect(keyDerivation.storeAuthShare).not.toHaveBeenCalled();
+        });
+
+        it('falls back to the recovery state it replaced', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+            });
+
+            await coordinator.initialize();
+            const result = coordinator.fallBackToRecovery();
+
+            expect(result).toMatchObject({
+                status: 'needs_recovery',
+                recoveryReason: 'new_device',
+                sssActivationState: 'provisional',
+                expectedDid: 'did:key:zLegacy',
+            });
+            // Single use: a second call leaves the state alone.
+            expect(coordinator.fallBackToRecovery()).toBe(result);
+        });
+
+        it('does not offer a recovery fallback to a non-provisional migration', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        ...defaultServerStatus,
+                        needsMigration: true,
+                    } satisfies ServerKeyStatus),
+                },
+            });
+
+            const initial = await coordinator.initialize();
+            expect(initial.status).toBe('needs_migration');
+            if (initial.status === 'needs_migration') {
+                expect(initial.migrationData?.provisionalRederive).toBeUndefined();
+            }
+            expect(coordinator.fallBackToRecovery().status).toBe('needs_migration');
+        });
+
+        it('does not re-derive an active (non-legacy) account', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        ...defaultServerStatus,
+                        sssActivationState: 'provisional',
+                    } satisfies ServerKeyStatus),
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result).toMatchObject({
+                status: 'needs_recovery',
+                recoveryReason: 'new_device',
+            });
+        });
+    });
+
     describe('activate()', () => {
         it('commits a provisional ready state and marks it active', async () => {
             const activate = vi.fn().mockResolvedValue(undefined);
@@ -2391,7 +4204,10 @@ describe('AuthCoordinator', () => {
             expect(state.status).toBe('needs_migration');
 
             if (state.status === 'needs_migration') {
-                expect(state.migrationData).toEqual({ web3AuthKey: 'extracted-key-abc' });
+                expect(state.migrationData).toEqual({
+                    expectedDid: 'did:key:zOld',
+                    web3AuthKey: 'extracted-key-abc',
+                });
             }
 
             // Verify onStateChange was called with the updated state
@@ -2415,6 +4231,7 @@ describe('AuthCoordinator', () => {
 
             if (state.status === 'needs_migration') {
                 expect(state.migrationData).toEqual({
+                    expectedDid: 'did:key:zOld',
                     web3AuthKey: 'key-1',
                     extraInfo: 'something',
                 });

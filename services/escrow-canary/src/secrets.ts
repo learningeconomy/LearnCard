@@ -5,6 +5,32 @@ import {
 } from '@aws-sdk/client-secrets-manager';
 import { z } from 'zod';
 
+const nonEmpty = z.string().min(1);
+/** Tier 3 only: resume material for one in-flight hold, persisted, never rebuilt from status. */
+export const holdSecretSchema = z
+    .object({
+        runId: nonEmpty,
+        holdId: nonEmpty,
+        resumeToken: nonEmpty,
+        clientEphemeralPrivateKey: nonEmpty,
+        expectations: z
+            .object({
+                tenant: nonEmpty,
+                did: nonEmpty,
+                holdId: nonEmpty,
+                clientEphemeralPublicKey: nonEmpty,
+                blobHash: nonEmpty,
+                authorityGeneration: nonEmpty,
+                holdDigest: nonEmpty,
+                ledgerPublicKey: nonEmpty,
+                keyId: nonEmpty,
+            })
+            .strict(),
+        requestedAt: z.number().int(),
+    })
+    .strict();
+export type HoldSecret = z.infer<typeof holdSecretSchema>;
+
 export const secretSchema = z
     .object({
         accountId: z.string().min(1),
@@ -21,6 +47,9 @@ export const secretSchema = z
         lastSlot: z.number().int().optional(),
         wrongPinWeek: z.number().int().optional(),
         needsPinReset: z.boolean().optional(),
+        // Tier 3 only (runner-written; never edit by hand).
+        hold: holdSecretSchema.optional(),
+        lastReleasedRunId: z.string().min(1).optional(),
     })
     .strict();
 export type AccountSecret = z.infer<typeof secretSchema>;

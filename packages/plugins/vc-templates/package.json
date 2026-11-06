@@ -1,7 +1,7 @@
 {
     "name": "@learncard/vc-templates-plugin",
-    "version": "1.1.41",
-    "description": "",
+    "version": "1.1.43",
+    "description": "Adds templates for building unsigned credentials and presentations.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/vc-templates-plugin.esm.js",

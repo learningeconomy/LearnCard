@@ -29,7 +29,7 @@ class BoostGenerateClaimLinkRequest(BaseModel):
     """
     BoostGenerateClaimLinkRequest
     """ # noqa: E501
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
+    boost_uri: StrictStr = Field(alias="boostUri")
     challenge: Optional[StrictStr] = None
     claim_link_sa: BoostGenerateClaimLinkRequestClaimLinkSA = Field(alias="claimLinkSA")
     options: Optional[BoostGenerateClaimLinkRequestOptions] = None
@@ -62,9 +62,8 @@ class BoostGenerateClaimLinkRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -80,16 +79,6 @@ class BoostGenerateClaimLinkRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
-        # set to None if challenge (nullable) is None
-        # and model_fields_set contains the field
-        if self.challenge is None and "challenge" in self.model_fields_set:
-            _dict['challenge'] = None
-
         return _dict
 
     @classmethod

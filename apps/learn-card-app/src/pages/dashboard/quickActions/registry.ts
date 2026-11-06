@@ -30,7 +30,7 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
     {
         id: 'connect-active',
         slot: 'collect',
-        eligible: state => state.credentialsCount > 0,
+        eligible: state => state.credentialsCount !== null && state.credentialsCount > 0,
         weight: () => 80,
         build: (state, { handlers, icons }) => ({
             Icon: icons.collect,
@@ -38,10 +38,10 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
             caption:
                 state.credentialsCount === 1
                     ? m['dashboard.quickActions.connectActiveCaptionOne']({
-                          count: state.credentialsCount,
+                          count: state.credentialsCount!,
                       })
                     : m['dashboard.quickActions.connectActiveCaptionMany']({
-                          count: state.credentialsCount,
+                          count: state.credentialsCount!,
                       }),
             onClick: handlers.goToWallet,
         }),

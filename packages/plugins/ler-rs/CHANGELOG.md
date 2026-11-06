@@ -1,5 +1,23 @@
 # @learncard/ler-rs-plugin
 
+## 0.1.34
+
+### Patch Changes
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/types@5.24.2
+    - @learncard/core@9.4.43
+    - @learncard/vc-plugin@1.6.9
+
+## 0.1.33
+
+### Patch Changes
+
+- Updated dependencies [[`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0)]:
+    - @learncard/types@5.24.1
+    - @learncard/core@9.4.42
+    - @learncard/vc-plugin@1.6.8
+
 ## 0.1.32
 
 ### Patch Changes

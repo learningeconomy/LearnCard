@@ -1,21 +1,24 @@
-# LinkedClaims Plugin
+# @learncard/linked-claims-plugin
 
 Create, verify, store, and retrieve endorsement credentials using Open Badges v3 EndorsementCredential, linked to each original credential by its unique top-level id.
 
 ## Install
 
-Workspace package. Build with Nx:
+```bash
+bun add @learncard/init @learncard/linked-claims-plugin
+```
 
-```
-bunx nx run linked-claims-plugin:build
-```
+Inside this monorepo, build it with `bunx nx run linked-claims-plugin:build`.
 
 ## Usage
 
 ```ts
+import { initLearnCard } from '@learncard/init';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 
-const lc = await LearnCard.fromSomewhere().then(lc => lc.addPlugin(getLinkedClaimsPlugin(lc)));
+// Needs a wallet with id, store, index, and read planes (a seed wallet has all four)
+const learnCard = await initLearnCard({ seed: 'a'.repeat(64) });
+const lc = await learnCard.addPlugin(getLinkedClaimsPlugin(learnCard));
 
 const endorsement = await lc.invoke.endorseCredential(originalVc, {
     // OBv3 fields

@@ -123,7 +123,14 @@ export const EscrowHoldValidator = z.object({
     notifications: z
         .array(
             z.object({
-                kind: z.enum(['started', 'reminder', 'completed', 'cancelled', 'pin-locked']),
+                kind: z.enum([
+                    'started',
+                    'reminder',
+                    'completed',
+                    'cancelled',
+                    'pin-locked',
+                    'pin-sign-in',
+                ]),
                 sentAt: z.date(),
             })
         )
@@ -282,7 +289,8 @@ export const findEscrowHoldsPendingEnclaveCancellation = async (
             enclaveCancelPendingAt: { $exists: true },
             enclaveCancelConfirmedAt: { $exists: false },
         })
-        .sort({ enclaveCancelAttempts: 1, releaseAfter: 1 })
+        // Mongo sorts are unstable on ties; the unique ID makes bounded batches repeatable.
+        .sort({ enclaveCancelAttempts: 1, releaseAfter: 1, _id: 1 })
         .limit(limit)
         .toArray();
 
@@ -427,10 +435,16 @@ export const completeEscrowHold = async (id: string): Promise<EscrowHold | null>
         { returnDocument: 'after' }
     );
 };
-/** Whether escrow material at this share version has already been released. */
+/**
+ * Whether escrow material at this share version has already been released.
+ * `completedAfter` ignores releases at or before that time: a PIN re-set at the
+ * same version after a PIN sign-in (keep mode) is a fresh PIN, so the release
+ * that preceded it must not retire it at the next rotation.
+ */
 export const hasCompletedEscrowHoldForVersion = async (
     authProvider: AuthProviderMapping,
-    shareVersion: number
+    shareVersion: number,
+    options: { completedAfter?: Date } = {}
 ): Promise<boolean> =>
     (await getEscrowHoldsCollection().countDocuments(
         {
@@ -438,6 +452,7 @@ export const hasCompletedEscrowHoldForVersion = async (
             'authProvider.id': authProvider.id,
             shareVersion,
             status: 'completed',
+            ...(options.completedAfter ? { completedAt: { $gt: options.completedAfter } } : {}),
         },
         { limit: 1 }
     )) > 0;
@@ -499,7 +514,8 @@ export const findEscrowHoldsPendingStartNotification = async (
 ): Promise<EscrowHold[]> =>
     getEscrowHoldsCollection()
         .find({ status: 'pending', startedNotificationPending: true })
-        .sort({ startedNotificationAttemptedAt: 1, requestedAt: 1 })
+        // Keep tied start-notification batches deterministic before the limit.
+        .sort({ startedNotificationAttemptedAt: 1, requestedAt: 1, _id: 1 })
         .limit(limit)
         .toArray();
 
@@ -563,7 +579,8 @@ export const findEscrowHoldsDueForReminder = async (
             releaseAfter: { $lte: new Date(now.getTime() + ESCROW_HOLD_REMINDER_WINDOW_MS) },
             'notifications.kind': { $ne: 'reminder' },
         })
-        .sort({ reminderAttemptedAt: 1, releaseAfter: 1 })
+        // Keep tied reminder batches deterministic before the limit.
+        .sort({ reminderAttemptedAt: 1, releaseAfter: 1, _id: 1 })
         .limit(limit)
         .toArray();
 
