@@ -13,6 +13,8 @@ vi.mock('./status-list.helpers', () => ({
     CREDENTIAL_STATUS_ROOT_QUERY: 'MATCH (credential:Credential {id: $credentialId})',
     getStatusEntriesForCredential: mocks.entries,
     setStatusListEntryBit: mocks.setBit,
+    isNetworkStatusEntry: (entry: BitstringStatusListEntry) =>
+        new URL(entry.statusListCredential).hostname === 'network.example',
 }));
 import {
     mutateCredentialStatus,
@@ -54,7 +56,7 @@ describe('credential lifecycle status mutations', () => {
     ])(
         'updates revocation-only relationship suspension value=$value',
         async ({ value, previous, next }) => {
-            mocks.run.mockResolvedValueOnce({
+            mocks.run.mockResolvedValue({
                 records: [record({ rootId: 'root', owner: 'status-owner', status: previous })],
             });
             await expect(
@@ -99,13 +101,14 @@ describe('credential lifecycle status mutations', () => {
                         }),
                     ],
                 })
+                .mockResolvedValueOnce({ records: [record({ status: null })] })
                 .mockResolvedValueOnce({ records: [record({ owner: 'status-owner' })] });
             mocks.setBit.mockResolvedValue(false);
             await expect(
                 mutateCredentialStatus('version', 'recipient', purpose, true)
             ).rejects.toThrow('Public credential status could not be updated');
-            expect(mocks.run).toHaveBeenCalledTimes(2);
-            expect(mocks.run.mock.calls[1]).toEqual([
+            expect(mocks.run).toHaveBeenCalledTimes(3);
+            expect(mocks.run.mock.calls[2]).toEqual([
                 'MATCH (list:BitstringStatusList {statusListCredential: $url}) RETURN list.ownerProfileId AS owner',
                 { url: entry.statusListCredential },
             ]);
@@ -130,4 +133,23 @@ describe('credential lifecycle status mutations', () => {
         );
         expect(mocks.setBit).toHaveBeenCalledWith(entry, true, 'status-owner', tx);
     });
+    it.each(['revocation', 'suspension'] as const)(
+        'rejects managed external %s before any writes',
+        async purpose => {
+            mocks.run.mockResolvedValue({ records: [record({ rootId: 'root', managed: true })] });
+            mocks.entries.mockResolvedValue([
+                {
+                    ...entry,
+                    statusPurpose: purpose,
+                    statusListCredential: 'https://provider.example/list',
+                },
+            ]);
+            await expect(
+                mutateCredentialStatus('version', 'recipient', purpose, true)
+            ).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+            expect(mocks.run).toHaveBeenCalledTimes(1);
+            expect(mocks.run.mock.calls[0]?.[0]).not.toContain('SET ');
+            expect(mocks.setBit).not.toHaveBeenCalled();
+        }
+    );
 });

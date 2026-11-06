@@ -634,19 +634,72 @@ export const getCredentialStatusRootId = async (credentialId: string): Promise<s
     return String(result.records[0]?.get('id') ?? credentialId);
 };
 
-/** Validate local, issuer-owned, allocated coordinates before binding or repair. */
+/** Own-host URLs must pass local validation, even with a wrong path, port or scheme. */
+export const isNetworkStatusEntry = (
+    entry: BitstringStatusListEntry,
+    domain = getCredentialRefreshRuntimeEnvironment().DOMAIN_NAME || 'localhost%3A3000'
+): boolean => {
+    const base = getStatusListBaseUrl(domain);
+    let url: URL;
+    try {
+        url = new URL(entry.statusListCredential);
+    } catch (cause) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid credential status URL',
+            cause,
+        });
+    }
+    return (
+        entry.statusListCredential.startsWith(`${base}/status-lists/`) ||
+        url.hostname === new URL(base).hostname
+    );
+};
+
+/** Issuer-facing information, separate from the signed refresh receipt. */
+export const getStatusManagement = (
+    entries: BitstringStatusListEntry[],
+    domain: string
+): 'network' | 'external' | 'mixed' | 'none' => {
+    if (!entries.length) return 'none';
+    const local = entries.filter(entry => isNetworkStatusEntry(entry, domain)).length;
+    return local === entries.length ? 'network' : local === 0 ? 'external' : 'mixed';
+};
+
+/** Validate external shapes and local, issuer-owned, allocated coordinates. */
 export const validateStatusEntries = async (
     entries: BitstringStatusListEntry[],
     ownerProfileId: string,
     domain: string
 ): Promise<void> => {
     for (const entry of entries) {
+        if (!BitstringStatusListEntryValidator.safeParse(entry).success) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Invalid credential status entry',
+            });
+        }
+        if (!isNetworkStatusEntry(entry, domain)) {
+            const index = Number(entry.statusListIndex);
+            if (
+                new URL(entry.statusListCredential).protocol !== 'https:' ||
+                !Number.isSafeInteger(index) ||
+                index < 0 ||
+                (typeof entry.statusListIndex === 'string' && !/^\d+$/.test(entry.statusListIndex))
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Invalid external credential status entry',
+                });
+            }
+            continue;
+        }
         const prefix = `${getStatusListBaseUrl(domain)}/status-lists/`;
         const id = entry.statusListCredential.slice(prefix.length);
         if (!entry.statusListCredential.startsWith(prefix)) {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
-                message: 'Managed credentials must use network-hosted status lists',
+                message: 'Status list URL must be canonical and local',
             });
         }
         if (!/^[a-zA-Z0-9-]+$/.test(id)) {
