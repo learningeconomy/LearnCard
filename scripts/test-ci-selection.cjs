@@ -1,5 +1,6 @@
-const { appendFileSync } = require('node:fs');
+const { appendFileSync, readFileSync } = require('node:fs');
 const { spawnSync } = require('node:child_process');
+const { join } = require('node:path');
 const { loadNxGraph } = require('./mock-e2e-ci.cjs');
 
 const brainTasks = [
@@ -42,7 +43,7 @@ const isNonInput = path =>
     /^docs\/.+\.md$/.test(path) ||
     /^\.changeset\/[^/]+\.md$/.test(path);
 
-const decideFromGraph = (paths, { graph, tasks }) => {
+const decideFromGraph = (paths, { graph, tasks, workspaceConfig = {} }) => {
     const owners = Object.entries(graph.nodes)
         .map(([name, node]) => {
             const root = node.data.root;
@@ -87,6 +88,10 @@ const decideFromGraph = (paths, { graph, tasks }) => {
                 };
                 inspect(node.data.namedInputs);
                 inspect(node.data.targets);
+                // Root named inputs/defaults are not expanded into graph nodes.
+                // Include their workspace references conservatively as well.
+                inspect(workspaceConfig.namedInputs);
+                inspect(workspaceConfig.targetDefaults);
             };
             group.projects.forEach(visit);
             const seenTasks = new Set();
@@ -164,7 +169,10 @@ const select = ({ eventName, baseSha, headSha, cwd = process.cwd(), getGraph = l
     )
         return all('configuration-or-unknown-input');
     try {
-        return decideFromGraph(paths, getGraph(cwd, graphArgs));
+        return decideFromGraph(paths, {
+            ...getGraph(cwd, graphArgs),
+            workspaceConfig: JSON.parse(readFileSync(join(cwd, 'nx.json'), 'utf8')),
+        });
     } catch {
         return all('graph-unavailable');
     }

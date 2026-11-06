@@ -97,6 +97,16 @@ test('workspace inputs and their dependency closure count even without a source 
     assert.equal(decideFromGraph(['apps/unrelated/src/a.ts'], g).brain.run, true);
 });
 
+test('root named inputs and target defaults retain explicitly referenced workspace projects', () => {
+    for (const workspaceConfig of [
+        { namedInputs: { shared: ['{workspaceRoot}/packages/input/src/**/*'] } },
+        { targetDefaults: { build: { inputs: ['{workspaceRoot}/packages/input/src/**/*'] } } },
+    ]) {
+        const g = { ...graph(), workspaceConfig };
+        assert.deepEqual(runs(decideFromGraph(['packages/input/src/a.ts'], g)), full);
+    }
+});
+
 test('unknown ownership runs; root projects and incomplete graphs cannot authorize skips', () => {
     assert.deepEqual(runs(decideFromGraph(['packages/missing/a.ts'], graph())), full);
     for (const mutate of [
@@ -155,6 +165,7 @@ const fixture = t => {
         return git('rev-parse', 'HEAD');
     };
     git('init', '-q', '-b', 'main');
+    write('nx.json', '{}\n');
     write('README.md');
     write('packages/shared/src/a.ts');
     write('apps/unrelated/src/a.ts');
