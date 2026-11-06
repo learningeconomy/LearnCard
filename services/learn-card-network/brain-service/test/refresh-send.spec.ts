@@ -395,6 +395,66 @@ describe('Unified send with managed refresh (LC-2198)', () => {
     });
 
     describe('whole-call idempotency (idempotencyKey)', () => {
+        it.each(['prepared', 'delivered', 'stale'] as const)(
+            'retries a %s intent across retained digest key rotation',
+            async state => {
+                try {
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'old-send-test-key');
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v1');
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
+                    const input = {
+                        recipient: HOLDER_PROFILE_ID,
+                        template: inlineTemplate(),
+                        idempotencyKey: `rotation-${state}`,
+                    };
+                    const send = () =>
+                        state === 'delivered'
+                            ? issuer.clients.fullAuth.boost.send({
+                                  ...input,
+                                  type: 'boost',
+                                  refresh: true,
+                              })
+                            : issuer.clients.fullAuth.boost.prepareRefreshableSend(input);
+                    const first = await send();
+                    const original = await getRefreshSendIntent(
+                        ISSUER_PROFILE_ID,
+                        input.idempotencyKey
+                    );
+                    if (state === 'stale') {
+                        await neogma.queryRunner.run(
+                            `MATCH (i:RefreshSendIntent {intentKey: $key})
+                             SET i.state = 'preparing', i.updatedAt = '2000-01-01T00:00:00.000Z'`,
+                            { key: original!.intentKey }
+                        );
+                    }
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'new-send-test-key');
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v2');
+                    vi.stubEnv(
+                        'CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS',
+                        JSON.stringify({ v1: 'old-send-test-key' })
+                    );
+                    expect(await send()).toEqual(first);
+                    const retried = await getRefreshSendIntent(
+                        ISSUER_PROFILE_ID,
+                        input.idempotencyKey
+                    );
+                    expect(retried?.requestDigest).toBe(original?.requestDigest);
+                    if (state === 'stale')
+                        expect(retried?.claimToken).not.toBe(original?.claimToken);
+                    await expect(
+                        issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                            ...input,
+                            recipient: OUTSIDER_PROFILE_ID,
+                        })
+                    ).rejects.toMatchObject({ code: 'CONFLICT' });
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
+                    await expect(send()).rejects.toMatchObject({ code: 'CONFLICT' });
+                } finally {
+                    vi.unstubAllEnvs();
+                }
+            }
+        );
+
         const inlineTemplate = () => ({
             credential: testUnsignedVcV2,
             name: 'Idempotent Refreshable',

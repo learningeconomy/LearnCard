@@ -1,6 +1,7 @@
 import {
     assertInboxRefreshEnabled,
     inboxRefreshRequestDigest,
+    getInboxRefreshRequestDigestCandidates,
     getInboxRefreshReplay,
     getInboxRefreshReceipt,
     resumeInboxRefreshDelivery,
@@ -208,6 +209,7 @@ import {
 import {
     claimRefreshSendIntent,
     computeRefreshSendRequestDigest,
+    getRefreshSendRequestDigestCandidates,
     getRefreshSendIntent,
     markRefreshSendIntentDelivered,
     reconcileBoundRefreshSendIntent,
@@ -488,20 +490,22 @@ const prepareManagedRefreshSend = async (params: {
     let intent: RefreshSendIntent | undefined;
 
     if (params.idempotencyKey) {
+        const request = {
+            recipientProfileId: targetProfile.profileId,
+            holderDid,
+            templateUri,
+            display: normalizedDisplay,
+            contractUri,
+            integrationId: params.integrationId,
+            credentialId: params.credentialId,
+            statusPurposes: params.statusPurposes,
+            statusBinding: params.statusBinding,
+        };
         const claim = await claimRefreshSendIntent({
             issuerProfileId: profile.profileId,
             idempotencyKey: params.idempotencyKey,
-            requestDigest: computeRefreshSendRequestDigest({
-                recipientProfileId: targetProfile.profileId,
-                holderDid,
-                templateUri,
-                display: normalizedDisplay,
-                contractUri,
-                integrationId: params.integrationId,
-                credentialId: params.credentialId,
-                statusPurposes: params.statusPurposes,
-                statusBinding: params.statusBinding,
-            }),
+            requestDigest: computeRefreshSendRequestDigest(request),
+            requestDigestCandidates: getRefreshSendRequestDigestCandidates(request),
         });
 
         intent = claim.intent;
@@ -1168,6 +1172,8 @@ export const boostsRouter = t.router({
                                 issuerProfileId: profile.profileId,
                                 idempotencyKey: input.idempotencyKey,
                                 requestDigest: inboxDigest!,
+                                requestDigestCandidates:
+                                    getInboxRefreshRequestDigestCandidates(input),
                             });
                             if (claim.kind === 'delivered' && claim.intent.result)
                                 return claim.intent.result;
@@ -1175,7 +1181,8 @@ export const boostsRouter = t.router({
                             const replay = await getInboxRefreshReplay(
                                 profile.profileId,
                                 inboxKey,
-                                inboxDigest!
+                                inboxDigest!,
+                                getInboxRefreshRequestDigestCandidates(input)
                             );
                             if (
                                 replay &&
@@ -1831,6 +1838,9 @@ export const boostsRouter = t.router({
                                         refresh: inboxRefreshRequested,
                                         idempotencyKey: inboxKey,
                                         refreshRequestDigest: inboxDigest,
+                                        refreshRequestDigestCandidates: inboxRefreshRequested
+                                            ? getInboxRefreshRequestDigestCandidates(input)
+                                            : undefined,
                                         activityId,
                                         integrationId: input.integrationId,
                                     },

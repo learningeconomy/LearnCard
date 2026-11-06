@@ -32,12 +32,13 @@ export const createPendingInboxRefresh = async (params: {
     aggregate: Record<string, unknown>;
     issueKey: string;
     requestDigest: string;
+    requestDigestCandidates?: string[];
 }): Promise<InboxCredentialType> => {
     const result = await neogma.queryRunner.run(
         `MATCH (issuer:Profile {profileId: $issuerProfileId})
          MERGE (ic:InboxCredential {refreshIssueKey: $issueKey})
          ON CREATE SET ic += $inbox, ic.refreshRequestDigest = $requestDigest
-         WITH issuer, ic WHERE ic.refreshRequestDigest = $requestDigest
+          WITH issuer, ic WHERE ic.refreshRequestDigest IN $requestDigestCandidates
          MERGE (refresh:CredentialRefresh {refreshId: ic.refreshId})
          ON CREATE SET refresh += $aggregate
          MERGE (issuer)-[:ISSUED_REFRESH]->(refresh)
@@ -46,7 +47,11 @@ export const createPendingInboxRefresh = async (params: {
          ON CREATE SET p.id = ic.refreshId, p.refreshId = ic.refreshId, p.version = 1,
                        p.publishedAt = ic.createdAt, p.signingMode = 'signing-authority'
          RETURN ic`,
-        { ...params, issuerProfileId: params.aggregate.issuerProfileId }
+        {
+            ...params,
+            requestDigestCandidates: params.requestDigestCandidates ?? [params.requestDigest],
+            issuerProfileId: params.aggregate.issuerProfileId,
+        }
     );
     const props = result.records[0]?.get('ic')?.properties;
     if (!props)
