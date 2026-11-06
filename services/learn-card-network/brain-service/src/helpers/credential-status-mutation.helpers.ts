@@ -1,13 +1,29 @@
 import { TRPCError } from '@trpc/server';
-import type { BitstringStatusPurpose } from '@learncard/types';
+import type { BitstringStatusListEntry, BitstringStatusPurpose } from '@learncard/types';
 import type { Transaction } from 'neo4j-driver';
 
 import { neogma } from '@instance';
 import {
     CREDENTIAL_STATUS_ROOT_QUERY,
     getStatusEntriesForCredential,
+    isNetworkStatusEntry,
     setStatusListEntryBit,
 } from './status-list.helpers';
+
+const assertNetworkManagedPurpose = (
+    entries: BitstringStatusListEntry[],
+    purpose: BitstringStatusPurpose
+): void => {
+    if (entries.some(entry => entry.statusPurpose === purpose && !isNetworkStatusEntry(entry))) {
+        throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message:
+                purpose === 'revocation'
+                    ? "This credential's public revocation is managed outside LearnCard. Revoke it with your status-list provider."
+                    : "This credential's public suspension is managed outside LearnCard. Update it with your status-list provider.",
+        });
+    }
+};
 
 /** Commit relationship state and signed public bits together, including all managed versions. */
 export const mutateCredentialStatus = async (
@@ -21,10 +37,6 @@ export const mutateCredentialStatus = async (
             `${CREDENTIAL_STATUS_ROOT_QUERY}
          MATCH (sender)-[sent:CREDENTIAL_SENT {to: $profileId}]->(root)
          WHERE sender:Profile OR sender:AppStoreListing
-         SET root._statusMutationLock = $now
-         REMOVE root._statusMutationLock
-         FOREACH (_ IN CASE WHEN refresh IS NULL THEN [] ELSE [1] END |
-             SET refresh._statusBindingLock = true REMOVE refresh._statusBindingLock)
          WITH root, refresh, sent
          OPTIONAL MATCH (issuer:Profile)-[:CREDENTIAL_SENT]->(root)
          RETURN root.id AS rootId, sent.status AS status,
@@ -36,10 +48,27 @@ export const mutateCredentialStatus = async (
         );
         if (result.records.length === 0) return false;
         const row = result.records[0]!;
-        if (purpose === 'suspension' && row.get('status') === 'revoked') return false;
-        if (!value && row.get('status') !== 'suspended') return false;
         const rootId = String(row.get('rootId'));
+        if (row.get('managed')) {
+            assertNetworkManagedPurpose(await getStatusEntriesForCredential(rootId, tx), purpose);
+        }
+        const locked = await tx.run(
+            `MATCH (root:Credential {id: $rootId})
+             SET root._statusMutationLock = true REMOVE root._statusMutationLock
+             WITH root
+             OPTIONAL MATCH (refresh:CredentialRefresh)-[:ROOT]->(root)
+             FOREACH (_ IN CASE WHEN refresh IS NULL THEN [] ELSE [1] END |
+                 SET refresh._statusBindingLock = true REMOVE refresh._statusBindingLock)
+             WITH root
+             MATCH ()-[sent:CREDENTIAL_SENT {to: $profileId}]->(root)
+             RETURN sent.status AS status`,
+            { rootId, profileId }
+        );
         const allEntries = await getStatusEntriesForCredential(rootId, tx);
+        if (row.get('managed')) assertNetworkManagedPurpose(allEntries, purpose);
+        const status = locked.records[0]?.get('status');
+        if (purpose === 'suspension' && status === 'revoked') return false;
+        if (!value && status !== 'suspended') return false;
         const entries = allEntries.filter(entry => entry.statusPurpose === purpose);
         if (allEntries.length > 0 && entries.length === 0) {
             console.warn(
@@ -122,6 +151,7 @@ export const reconcileCredentialStatus = async (
     for (const entry of [...entries].sort((a, b) =>
         a.statusListCredential.localeCompare(b.statusListCredential)
     )) {
+        if (!isNetworkStatusEntry(entry)) continue;
         const value =
             entry.statusPurpose === 'revocation'
                 ? row.get('status') === 'revoked' || row.get('state') === 'revoked'

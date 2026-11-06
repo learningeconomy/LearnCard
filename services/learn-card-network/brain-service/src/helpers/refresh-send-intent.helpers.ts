@@ -1,12 +1,16 @@
 import { createHmac, randomUUID } from 'crypto';
 import { TRPCError } from '@trpc/server';
 import type { ManagedCredentialRefreshReceipt, SendBoostResponse } from '@learncard/types';
+import { getStatusEntriesForCredential, getStatusManagement } from './status-list.helpers';
 import { canonicalizeCredentialJson } from '@learncard/helpers';
 
 import { neogma } from '@instance';
 
 import { getInitialRefreshRoot, getManagedCredentialUri } from './credential-refresh.helpers';
-import { getCredentialRefreshDigestSecret } from './credential-refresh-materiality.helpers';
+import {
+    getCredentialRefreshDigestSecret,
+    getCredentialRefreshDigestCandidateSecrets,
+} from './credential-refresh-materiality.helpers';
 
 /** A preparation not touched for this long is considered abandoned and may be taken over. */
 export const REFRESH_SEND_INTENT_STALE_MS = 5 * 60_000;
@@ -44,21 +48,24 @@ const getIntentKey = (issuerProfileId: string, idempotencyKey: string): string =
     `${issuerProfileId}:${idempotencyKey}`;
 
 /** Versioned, domain-separated public-metadata digest. Legacy unkeyed intents fail closed. */
-export const computeRefreshSendRequestDigest = (request: {
-    statusBinding?: 'server';
-    statusPurposes?: ('revocation' | 'suspension')[];
-    recipientProfileId: string;
-    holderDid: string;
-    credentialId?: string;
-    templateUri?: string;
-    display?: import('@learncard/types').CredentialDisplay;
-    contractUri?: string;
-    integrationId?: string;
-    /** Included so an idempotencyKey can never silently replay across modes. */
-    encryption?: 'network' | 'holder';
-}): string =>
+export const computeRefreshSendRequestDigest = (
+    request: {
+        statusBinding?: 'server';
+        statusPurposes?: ('revocation' | 'suspension')[];
+        recipientProfileId: string;
+        holderDid: string;
+        credentialId?: string;
+        templateUri?: string;
+        display?: import('@learncard/types').CredentialDisplay;
+        contractUri?: string;
+        integrationId?: string;
+        /** Included so an idempotencyKey can never silently replay across modes. */
+        encryption?: 'network' | 'holder';
+    },
+    secret: string = getCredentialRefreshDigestSecret()
+): string =>
     'v1:' +
-    createHmac('sha256', getCredentialRefreshDigestSecret())
+    createHmac('sha256', secret)
         .update('refresh-send-intent:v1\0')
         .update(
             canonicalizeCredentialJson({
@@ -78,6 +85,19 @@ export const computeRefreshSendRequestDigest = (request: {
             })
         )
         .digest('base64url');
+
+/** The v1 prefix identifies the request scheme, not the rotating key version. */
+export const getRefreshSendRequestDigestCandidates = (
+    request: Parameters<typeof computeRefreshSendRequestDigest>[0]
+): string[] =>
+    getCredentialRefreshDigestCandidateSecrets().map(secret =>
+        computeRefreshSendRequestDigest(request, secret)
+    );
+
+export const matchesRefreshSendRequestDigest = (
+    request: Parameters<typeof computeRefreshSendRequestDigest>[0],
+    stored: string
+): boolean => getRefreshSendRequestDigestCandidates(request).includes(stored);
 
 const parseIntent = (props: Record<string, unknown>): RefreshSendIntent => ({
     intentKey: props.intentKey as string,
@@ -134,8 +154,10 @@ export const claimRefreshSendIntent = async (params: {
     issuerProfileId: string;
     idempotencyKey: string;
     requestDigest: string;
+    requestDigestCandidates?: string[];
 }): Promise<ClaimRefreshSendIntentResult> => {
     const { issuerProfileId, idempotencyKey, requestDigest } = params;
+    const requestDigestCandidates = params.requestDigestCandidates ?? [requestDigest];
     const claimToken = randomUUID();
     const now = new Date();
 
@@ -153,7 +175,7 @@ export const claimRefreshSendIntent = async (params: {
              WITH i
              WITH i WHERE i.state = 'preparing'
                       AND i.claimToken <> $claimToken
-                      AND i.requestDigest = $requestDigest
+                       AND i.requestDigest IN $requestDigestCandidates
                       AND i.updatedAt < $staleBefore
              SET i.claimToken = $claimToken, i.updatedAt = $now
          }
@@ -162,6 +184,7 @@ export const claimRefreshSendIntent = async (params: {
             intentKey: getIntentKey(issuerProfileId, idempotencyKey),
             issuerProfileId,
             requestDigest,
+            requestDigestCandidates,
             claimToken,
             now: now.toISOString(),
             staleBefore: new Date(now.getTime() - REFRESH_SEND_INTENT_STALE_MS).toISOString(),
@@ -169,7 +192,7 @@ export const claimRefreshSendIntent = async (params: {
     );
     const intent = parseIntent(result.records[0]!.get('i').properties);
 
-    if (intent.requestDigest !== requestDigest) {
+    if (!requestDigestCandidates.includes(intent.requestDigest)) {
         throw new TRPCError({
             code: 'CONFLICT',
             message: 'This idempotencyKey was already used for a different send request.',
@@ -301,6 +324,10 @@ export const reconcileBoundRefreshSendIntent = async (
         credentialUri: getManagedCredentialUri(root.rootId, domain),
         activityId: intent.pendingActivityId ?? '',
         refresh: intent.pendingReceipt,
+        statusManagement: getStatusManagement(
+            await getStatusEntriesForCredential(root.rootId),
+            domain
+        ),
     };
 
     await markRefreshSendIntentDelivered(intent, result);

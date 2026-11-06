@@ -49,6 +49,7 @@ import {
 } from './credential-refresh.helpers';
 import {
     getCredentialRefreshDigestSecret,
+    getCredentialRefreshDigestCandidateSecrets,
     computeCredentialMaterialDigest,
     computeCredentialStatusDigest,
     matchesCredentialStatusDigest,
@@ -71,8 +72,11 @@ export const assertInboxRefreshEnabled = async (scope?: string): Promise<void> =
     await ensureCredentialRefreshConstraints();
 };
 
-export const inboxRefreshRequestDigest = (request: unknown): string =>
-    createHmac('sha256', getCredentialRefreshDigestSecret())
+export const inboxRefreshRequestDigest = (
+    request: unknown,
+    secret: string = getCredentialRefreshDigestSecret()
+): string =>
+    createHmac('sha256', secret)
         .update('inbox-refresh-issue:v1\0')
         .update(canonicalizeCredentialJson(request))
         .digest('base64url');
@@ -80,14 +84,23 @@ export const inboxRefreshRequestDigest = (request: unknown): string =>
 export const getInboxRefreshIssueKey = (issuerProfileId: string, key: string): string =>
     `${issuerProfileId}:${key}`;
 
+export const getInboxRefreshRequestDigestCandidates = (request: unknown): string[] =>
+    getCredentialRefreshDigestCandidateSecrets().map(secret =>
+        inboxRefreshRequestDigest(request, secret)
+    );
+
+export const matchesInboxRefreshRequestDigest = (request: unknown, stored: string): boolean =>
+    getInboxRefreshRequestDigestCandidates(request).includes(stored);
+
 export const getInboxRefreshReplay = async (
     issuerProfileId: string,
     key: string | undefined,
-    requestDigest: string
+    requestDigest: string,
+    requestDigestCandidates: string[] = [requestDigest]
 ) => {
     if (!key) return null;
     const existing = await getInboxRefreshIssue(getInboxRefreshIssueKey(issuerProfileId, key));
-    if (existing && existing.requestDigest !== requestDigest)
+    if (existing && !requestDigestCandidates.includes(existing.requestDigest))
         throw new TRPCError({
             code: 'CONFLICT',
             message: 'This idempotencyKey was used for a different inbox issuance.',

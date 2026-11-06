@@ -1,6 +1,7 @@
 import {
     assertInboxRefreshEnabled,
     inboxRefreshRequestDigest,
+    getInboxRefreshRequestDigestCandidates,
     getInboxRefreshReplay,
     getInboxRefreshReceipt,
     resumeInboxRefreshDelivery,
@@ -205,6 +206,7 @@ import {
 import {
     claimRefreshSendIntent,
     computeRefreshSendRequestDigest,
+    getRefreshSendRequestDigestCandidates,
     getRefreshSendIntent,
     markRefreshSendIntentDelivered,
     reconcileBoundRefreshSendIntent,
@@ -215,7 +217,8 @@ import {
 import { getCredentialRefreshRuntimeEnvironment } from '@environment';
 import { getCredentialRefresh } from '@accesslayer/credential-refresh';
 import { prepareRefreshStatusEntries } from '@helpers/managed-status.helpers';
-import { getCredentialStatusRootId } from '@helpers/status-list.helpers';
+import { getCredentialStatusRootId, getStatusManagement } from '@helpers/status-list.helpers';
+import { getBitstringStatusListEntries } from '@learncard/helpers';
 import { ensureCredentialRefreshConstraints } from '../models/credential-refresh-constraints';
 import { userHasRequiredScopes } from '@helpers/auth-grant.helpers';
 import { AUTH_GRANT_NO_ACCESS_SCOPE } from 'src/constants/auth-grant';
@@ -423,8 +426,10 @@ const prepareManagedRefreshSend = async (params: {
     const holderDid = getDidWeb(domain, targetProfile.profileId);
     const holderMode = params.encryption === 'holder';
     // Holder mode is new, so every client using it signs the server-bound entries.
-    const preallocateStatus =
-        params.serverSigning || params.statusBinding === 'server' || holderMode;
+    let preallocateStatus =
+        (params.serverSigning && !template?.credential.credentialStatus) ||
+        params.statusBinding === 'server' ||
+        holderMode;
     // Computed once and reused for both the request digest and anchor creation below,
     // so a retried/keyed request can never digest a different display than the one
     // actually stored on the anchor.
@@ -433,21 +438,23 @@ const prepareManagedRefreshSend = async (params: {
     let intent: RefreshSendIntent | undefined;
 
     if (params.idempotencyKey || holderMode) {
+        const request = {
+            recipientProfileId: targetProfile.profileId,
+            holderDid,
+            templateUri,
+            display: normalizedDisplay,
+            contractUri,
+            integrationId: params.integrationId,
+            credentialId: params.credentialId,
+            statusPurposes: params.statusPurposes,
+            encryption: params.encryption,
+            statusBinding: params.statusBinding,
+        };
         const claim = await claimRefreshSendIntent({
             issuerProfileId: profile.profileId,
             idempotencyKey: params.idempotencyKey ?? uuid(),
-            requestDigest: computeRefreshSendRequestDigest({
-                recipientProfileId: targetProfile.profileId,
-                holderDid,
-                templateUri,
-                display: normalizedDisplay,
-                contractUri,
-                integrationId: params.integrationId,
-                credentialId: params.credentialId,
-                statusPurposes: params.statusPurposes,
-                encryption: params.encryption,
-                statusBinding: params.statusBinding,
-            }),
+            requestDigest: computeRefreshSendRequestDigest(request),
+            requestDigestCandidates: getRefreshSendRequestDigestCandidates(request),
         });
 
         intent = claim.intent;
@@ -456,7 +463,13 @@ const prepareManagedRefreshSend = async (params: {
             const refresh = await getCredentialRefresh(intent.refreshId!);
             const prepared = {
                 ...(preallocateStatus && refresh?.statusEntries
-                    ? { statusEntries: JSON.parse(refresh.statusEntries) }
+                    ? {
+                          statusEntries: JSON.parse(refresh.statusEntries),
+                          statusManagement: getStatusManagement(
+                              JSON.parse(refresh.statusEntries),
+                              domain
+                          ),
+                      }
                     : {}),
                 boostUri: intent.boostUri!,
                 credentialId: intent.credentialId!,
@@ -546,6 +559,8 @@ const prepareManagedRefreshSend = async (params: {
 
     // Older clients allocate their own coordinates after preparation. Bind those
     // only at the signed handoff, where ownership and index reuse are validated.
+    const templateCredential = JSON.parse(boost.dataValues.boost) as UnsignedVC;
+    if (params.serverSigning && templateCredential.credentialStatus) preallocateStatus = false;
     const statusEntries = preallocateStatus
         ? await prepareRefreshStatusEntries(
               refreshId,
@@ -568,7 +583,16 @@ const prepareManagedRefreshSend = async (params: {
 
     return {
         boostUri,
-        ...(statusEntries ? { statusEntries } : {}),
+        ...(statusEntries
+            ? { statusEntries, statusManagement: getStatusManagement(statusEntries, domain) }
+            : templateCredential.credentialStatus
+              ? {
+                    statusManagement: getStatusManagement(
+                        getBitstringStatusListEntries(templateCredential),
+                        domain
+                    ),
+                }
+              : {}),
         credentialId,
         refreshId,
         refreshService: managedRefreshServiceFor(refreshId, domain),
@@ -1126,6 +1150,8 @@ export const boostsRouter = t.router({
                                 issuerProfileId: profile.profileId,
                                 idempotencyKey: input.idempotencyKey,
                                 requestDigest: inboxDigest!,
+                                requestDigestCandidates:
+                                    getInboxRefreshRequestDigestCandidates(input),
                             });
                             if (claim.kind === 'delivered' && claim.intent.result)
                                 return claim.intent.result;
@@ -1133,7 +1159,8 @@ export const boostsRouter = t.router({
                             const replay = await getInboxRefreshReplay(
                                 profile.profileId,
                                 inboxKey,
-                                inboxDigest!
+                                inboxDigest!,
+                                getInboxRefreshRequestDigestCandidates(input)
                             );
                             if (
                                 replay &&
@@ -1478,17 +1505,18 @@ export const boostsRouter = t.router({
                                 );
 
                                 if (binding.bound) {
-                                    const { uri, receipt } = await sendRefreshableCredential({
-                                        issuerProfile: profile,
-                                        refreshId,
-                                        credential: signedVc,
-                                        boostUri,
-                                        skipNotification,
-                                        domain,
-                                        activityId: binding.activityId,
-                                        integrationId: input.integrationId,
-                                        contractTerms: contractTerms ?? undefined,
-                                    });
+                                    const { uri, receipt, statusManagement } =
+                                        await sendRefreshableCredential({
+                                            issuerProfile: profile,
+                                            refreshId,
+                                            credential: signedVc,
+                                            boostUri,
+                                            skipNotification,
+                                            domain,
+                                            activityId: binding.activityId,
+                                            integrationId: input.integrationId,
+                                            contractTerms: contractTerms ?? undefined,
+                                        });
 
                                     const response = {
                                         type: 'boost' as const,
@@ -1496,6 +1524,7 @@ export const boostsRouter = t.router({
                                         uri: boostUri,
                                         activityId: binding.activityId ?? '',
                                         refresh: receipt,
+                                        statusManagement,
                                     };
 
                                     if (intent)
@@ -1582,17 +1611,20 @@ export const boostsRouter = t.router({
 
                                 refreshId = allocation.refreshId;
 
-                                const statusEntries = await prepareRefreshStatusEntries(
-                                    refreshId,
-                                    profile.profileId,
-                                    domain,
-                                    input.statusPurposes
-                                );
-                                unsignedVc.credentialStatus =
-                                    statusEntries.length === 1 &&
-                                    !Array.isArray(unsignedVc.credentialStatus)
-                                        ? statusEntries[0]
-                                        : statusEntries;
+                                const statusEntries = unsignedVc.credentialStatus
+                                    ? undefined
+                                    : await prepareRefreshStatusEntries(
+                                          refreshId,
+                                          profile.profileId,
+                                          domain,
+                                          input.statusPurposes
+                                      );
+                                if (statusEntries)
+                                    unsignedVc.credentialStatus =
+                                        statusEntries.length === 1 &&
+                                        !Array.isArray(unsignedVc.credentialStatus)
+                                            ? statusEntries[0]
+                                            : statusEntries;
 
                                 const prepared = injectManagedRefreshService(
                                     unsignedVc,
@@ -1656,17 +1688,18 @@ export const boostsRouter = t.router({
                             }
 
                             try {
-                                const { uri, receipt } = await sendRefreshableCredential({
-                                    issuerProfile: profile,
-                                    refreshId,
-                                    credential: signedVc,
-                                    boostUri,
-                                    skipNotification,
-                                    domain,
-                                    activityId,
-                                    integrationId: input.integrationId,
-                                    contractTerms: contractTerms ?? undefined,
-                                });
+                                const { uri, receipt, statusManagement } =
+                                    await sendRefreshableCredential({
+                                        issuerProfile: profile,
+                                        refreshId,
+                                        credential: signedVc,
+                                        boostUri,
+                                        skipNotification,
+                                        domain,
+                                        activityId,
+                                        integrationId: input.integrationId,
+                                        contractTerms: contractTerms ?? undefined,
+                                    });
 
                                 const response = {
                                     type: 'boost' as const,
@@ -1674,6 +1707,7 @@ export const boostsRouter = t.router({
                                     uri: boostUri,
                                     activityId,
                                     refresh: receipt,
+                                    statusManagement,
                                 };
 
                                 if (intent) await markRefreshSendIntentDelivered(intent, response);
@@ -1804,6 +1838,9 @@ export const boostsRouter = t.router({
                                         refresh: inboxRefreshRequested,
                                         idempotencyKey: inboxKey,
                                         refreshRequestDigest: inboxDigest,
+                                        refreshRequestDigestCandidates: inboxRefreshRequested
+                                            ? getInboxRefreshRequestDigestCandidates(input)
+                                            : undefined,
                                         activityId,
                                         integrationId: input.integrationId,
                                     },

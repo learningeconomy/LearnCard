@@ -14,6 +14,8 @@ vi.mock('@instance', () => ({ neogma: { getTransaction: mocks.transaction } }));
 vi.mock('./status-list.helpers', () => ({
     allocateStatusListEntry: mocks.allocate,
     validateStatusEntries: mocks.validate,
+    isNetworkStatusEntry: (entry: BitstringStatusListEntry) =>
+        new URL(entry.statusListCredential).hostname === 'network.example',
 }));
 vi.mock('@accesslayer/credential-refresh', () => ({ getCredentialRefresh: mocks.getRefresh }));
 vi.mock('./credential-status-mutation.helpers', () => ({

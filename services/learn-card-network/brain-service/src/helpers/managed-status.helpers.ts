@@ -4,7 +4,11 @@ import { BitstringStatusListEntryValidator, type BitstringStatusListEntry } from
 import { getBitstringStatusListEntries } from '@learncard/helpers';
 
 import { neogma } from '@instance';
-import { allocateStatusListEntry, validateStatusEntries } from './status-list.helpers';
+import {
+    allocateStatusListEntry,
+    isNetworkStatusEntry,
+    validateStatusEntries,
+} from './status-list.helpers';
 import { getCredentialRefresh } from '@accesslayer/credential-refresh';
 import { reconcileCredentialStatus } from './credential-status-mutation.helpers';
 
@@ -76,6 +80,7 @@ export const bindRefreshStatusEntries = async (
         for (const entry of [...entries].sort((a, b) =>
             a.statusListCredential.localeCompare(b.statusListCredential)
         )) {
+            if (!isNetworkStatusEntry(entry, domain)) continue;
             const binding = await tx.run(
                 `MATCH (list:BitstringStatusList {statusListCredential: $url})
                  SET list._statusBindingLock = true
