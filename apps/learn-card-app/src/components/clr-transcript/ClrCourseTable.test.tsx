@@ -20,7 +20,7 @@ describe('ClrCourseTable', () => {
         });
         const grade = within(foundationRow).getByText('Advanced');
 
-        expect(grade).toHaveClass('max-w-full', 'truncate');
+        expect(grade).toHaveClass('truncate');
         expect(grade).toHaveAttribute('title', 'Advanced');
     });
 });

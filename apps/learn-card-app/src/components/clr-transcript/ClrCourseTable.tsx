@@ -220,7 +220,7 @@ const ClrCourseTable: React.FC<{
                                                                     </p>
                                                                     <span
                                                                         title={value}
-                                                                        className={`min-w-0 max-w-full truncate text-right text-xs font-bold ${isGrade ? gradeColor(value) : 'text-grayscale-900'}`}
+                                                                        className={`min-w-0 max-w-[60%] shrink-0 truncate text-right text-xs font-bold ${isGrade ? gradeColor(value) : 'text-grayscale-900'}`}
                                                                     >
                                                                         {value}
                                                                     </span>
