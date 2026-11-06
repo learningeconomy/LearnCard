@@ -676,6 +676,7 @@ export type LearnCardNetworkPluginMethods = {
         challenge: string,
         requestId?: string
     ) => Promise<string>;
+    /** Reconcile a prior claim over POST; may finish acceptance/accounting but never signs again. */
     getClaimBoostWithLinkStatus: (
         boostUri: string,
         challenge: string,

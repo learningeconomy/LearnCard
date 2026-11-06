@@ -60,9 +60,7 @@ const graph = async () => {
 };
 
 beforeAll(async () => {
-    await neogma.queryRunner.run(
-        'CREATE CONSTRAINT claim_link_request_id_unique IF NOT EXISTS FOR (r:ClaimLinkRequest) REQUIRE r.id IS UNIQUE'
-    );
+    await neogma.queryRunner.run('DROP CONSTRAINT claim_link_request_id_unique IF EXISTS');
 });
 beforeEach(async () => {
     await neogma.queryRunner.run('MATCH (n) DETACH DELETE n');
@@ -75,7 +73,7 @@ afterAll(async () => {
     await neogma.driver.close();
 });
 
-describe('durable claim requests against Neo4j', () => {
+describe('durable claim requests without the optional uniqueness index', () => {
     it('serializes concurrent reservation across independent database sessions', async () => {
         const reservations = await Promise.all(
             Array.from({ length: 8 }, (_, index) =>

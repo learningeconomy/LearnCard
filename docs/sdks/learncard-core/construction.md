@@ -395,6 +395,8 @@ Expected output: `draft: true`, `live: true`, `recipient: found`. The live templ
 
 For recoverable claims, generate a unique `requestId` before the first attempt and retain it with the same account, network, `boostUri`, and `challenge`. Pass it to `claimBoostWithLink` from the start. After an uncertain response, call `getClaimBoostWithLinkStatus` with those original values:
 
+This status operation uses authenticated `POST /boost/claim/status`, not a read-only GET: it can finish acceptance and usage accounting for an already-stored credential. It never signs another credential. Existing SDK method names are unchanged.
+
 | Status     | Meaning and next action                                                                                                                                     |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `absent`   | No recorded result. Calling `claimBoostWithLink` with the **same request ID** is safe even if an earlier request is still reaching the service.             |
@@ -402,7 +404,7 @@ For recoverable claims, generate a unique `requestId` before the first attempt a
 | `complete` | `credentialUri` identifies the already-accepted credential. Retrieve it instead of claiming again, even if the link has since expired or reached its limit. |
 | `terminal` | `reason` is `expired`, `exhausted`, or `unavailable`. These are confirmed link conditions, not a classification of network exceptions.                      |
 
-Claiming, saving to the personal collection, and refreshing the app are separate steps. A failed save must reuse the returned credential and reconcile an uncertain index write; it must not start another claim. The two-argument claim method remains supported, but it does not identify an operation for this recovery protocol.
+Claiming, saving to the personal collection, and refreshing the app are separate steps. A failed save must reuse the returned credential and reconcile an uncertain index write; it must not start another claim. Calls without `requestId` retain the legacy `NOT_FOUND` / `Challenge not found` link-availability errors used by older clients, including ScoutPass, but do not identify a recoverable operation.
 
 ## Consent
 

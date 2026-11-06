@@ -5,6 +5,7 @@ vi.mock('@cache', () => ({ default: { node: undefined } }));
 import cache from '@cache';
 import {
     getClaimLinkAvailability,
+    getClaimLinkCacheKey,
     getClaimLinkGeneration,
     getClaimLinkOptionsInfoForBoost,
     invalidateClaimLinkForBoost,
@@ -40,6 +41,17 @@ describe('claim-link outcome evidence and retry-safe usage', () => {
         expect(await getClaimLinkAvailability(boostUri, 'last-use')).toBe('exhausted');
     });
 
+    it('does not leave permanent outcome metadata for links without expiry', async () => {
+        await redis.set(`${getClaimLinkCacheKey(boostUri, challenge)}|outcome`, '{}');
+        await setValidClaimLinkForBoost(boostUri, challenge, authority, { totalUses: 2 });
+        expect(await redis.get(`${getClaimLinkCacheKey(boostUri, challenge)}|outcome`)).toBeNull();
+    });
+
+    it('treats malformed live cache data as an uncertain error rather than expiration', async () => {
+        await redis.set(getClaimLinkCacheKey(boostUri, challenge), '{');
+        await expect(getClaimLinkAvailability(boostUri, challenge)).rejects.toThrow();
+    });
+
     it('counts a replayed accepted request once, including a lost usage acknowledgement', async () => {
         await setValidClaimLinkForBoost(boostUri, challenge, authority, { totalUses: 2 });
         const generation = await getClaimLinkGeneration(boostUri, challenge);
@@ -59,6 +71,68 @@ describe('claim-link outcome evidence and retry-safe usage', () => {
         expect(await getClaimLinkAvailability(boostUri, challenge)).toBe('exhausted');
         await useClaimLinkForBoost(boostUri, challenge, 'request-one', generation);
         expect(await getClaimLinkAvailability(boostUri, challenge)).toBe('exhausted');
+    });
+    it('keeps replay evidence for the live generation and removes it on invalidation', async () => {
+        await setValidClaimLinkForBoost(boostUri, challenge, authority, {
+            totalUses: 3,
+            ttlSeconds: 60,
+        });
+        const generation = await getClaimLinkGeneration(boostUri, challenge);
+        await useClaimLinkForBoost(boostUri, challenge, 'persistent-request', generation);
+        const replaySet = `${getClaimLinkCacheKey(boostUri, challenge)}|replay|${generation}`;
+        expect(await redis.sismember(replaySet, 'persistent-request')).toBe(1);
+        expect(await redis.pttl(replaySet)).toBeGreaterThan(0);
+        await invalidateClaimLinkForBoost(boostUri, challenge);
+        expect(await redis.exists(replaySet)).toBe(0);
+    });
+
+    it('fails honestly after bounded sustained CAS contention', async () => {
+        await setValidClaimLinkForBoost(boostUri, challenge, authority, { totalUses: 3 });
+        const generation = await getClaimLinkGeneration(boostUri, challenge);
+        const exhaustedBudget = new Error('Redis probe safety budget exceeded');
+        let attempts = 0;
+        vi.spyOn(redis, 'eval').mockImplementation(async () => {
+            if (++attempts > 100) throw exhaustedBudget;
+            return 0;
+        });
+        const failure = await useClaimLinkForBoost(
+            boostUri,
+            challenge,
+            'contended-request',
+            generation
+        ).catch(error => error);
+        expect(failure).toBeInstanceOf(Error);
+        expect(failure).not.toBe(exhaustedBudget);
+        expect(await getClaimLinkOptionsInfoForBoost(boostUri, challenge)).toMatchObject({
+            totalUses: 3,
+        });
+    });
+
+    it('expires replay evidence with its link but retains it for a live non-expiring generation', async () => {
+        await setValidClaimLinkForBoost(boostUri, challenge, authority, {
+            totalUses: 3,
+            ttlSeconds: 1,
+        });
+        const expiring = await getClaimLinkGeneration(boostUri, challenge);
+        await useClaimLinkForBoost(boostUri, challenge, 'one', expiring);
+        await vi.advanceTimersByTimeAsync(1100);
+        expect(
+            await redis.exists(`${getClaimLinkCacheKey(boostUri, challenge)}|replay|${expiring}`)
+        ).toBe(0);
+        expect(await getClaimLinkAvailability(boostUri, challenge)).toBe('expired');
+
+        await setValidClaimLinkForBoost(boostUri, challenge, authority, { totalUses: 3 });
+        const permanent = await getClaimLinkGeneration(boostUri, challenge);
+        await useClaimLinkForBoost(boostUri, challenge, 'one', permanent);
+        await vi.advanceTimersByTimeAsync(31 * 24 * 60 * 60 * 1000);
+        await useClaimLinkForBoost(boostUri, challenge, 'one', permanent);
+        expect(await getClaimLinkOptionsInfoForBoost(boostUri, challenge)).toMatchObject({
+            totalUses: 2,
+        });
+        await invalidateClaimLinkForBoost(boostUri, challenge);
+        expect(
+            await redis.exists(`${getClaimLinkCacheKey(boostUri, challenge)}|replay|${permanent}`)
+        ).toBe(0);
     });
 
     it('does not consume a replacement link while finalizing an older request', async () => {
@@ -99,5 +173,27 @@ describe('claim-link outcome evidence and retry-safe usage', () => {
         await expect(getClaimLinkAvailability(boostUri, challenge)).rejects.toThrow(
             'connection lost'
         );
+    });
+
+    it('reconciles and invalidates a live link created before generation metadata existed', async () => {
+        await redis.set(
+            getClaimLinkCacheKey(boostUri, challenge),
+            JSON.stringify({ claimLinkSA: authority, options: { totalUses: 3 } })
+        );
+        await useClaimLinkForBoost(boostUri, challenge, 'legacy-operation');
+        await useClaimLinkForBoost(boostUri, challenge, 'legacy-operation');
+        expect(await getClaimLinkOptionsInfoForBoost(boostUri, challenge)).toMatchObject({
+            totalUses: 2,
+        });
+        await invalidateClaimLinkForBoost(boostUri, challenge);
+        expect(
+            await redis.exists(`${getClaimLinkCacheKey(boostUri, challenge)}|replay|legacy`)
+        ).toBe(0);
+        expect(await getClaimLinkAvailability(boostUri, challenge)).toBe('unavailable');
+        await setValidClaimLinkForBoost(boostUri, challenge, authority, { totalUses: 2 });
+        await useClaimLinkForBoost(boostUri, challenge, 'legacy-operation');
+        expect(await getClaimLinkOptionsInfoForBoost(boostUri, challenge)).toMatchObject({
+            totalUses: 2,
+        });
     });
 });

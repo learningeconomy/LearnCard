@@ -4252,8 +4252,10 @@ export const boostsRouter = t.router({
             const availability = await getClaimLinkAvailability(boostUri, challenge);
             if (availability !== 'available') {
                 throw new TRPCError({
-                    code: 'PRECONDITION_FAILED',
-                    message: `Claim link is ${availability}.`,
+                    code: request ? 'PRECONDITION_FAILED' : 'NOT_FOUND',
+                    message: request
+                        ? `Claim link is ${availability}.`
+                        : `Challenge not found for ${boostUri}`,
                 });
             }
             const [claimLinkSA, boost, generatorProfileId, claimLinkGeneration] = await Promise.all(
@@ -4265,7 +4267,12 @@ export const boostsRouter = t.router({
                 ]
             );
             if (!claimLinkSA)
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Claim link is unavailable.' });
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: request
+                        ? 'Claim link is unavailable.'
+                        : `Challenge not found for ${boostUri}`,
+                });
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
             if (!(await isBoostViewableByClaimLink(boost))) {
                 throw new TRPCError({
@@ -4369,15 +4376,24 @@ export const boostsRouter = t.router({
                 }
                 return sentBoostUri;
             } catch (error) {
+                console.error('Claim-link request failed', error);
                 if (claimRequest) {
-                    await releaseClaimLinkRequestOwner(
-                        claimRequest,
-                        !storageStarted || error instanceof ClaimLinkStorageRejectedError
-                    );
+                    try {
+                        await releaseClaimLinkRequestOwner(
+                            claimRequest,
+                            !storageStarted || error instanceof ClaimLinkStorageRejectedError
+                        );
+                    } catch (releaseError) {
+                        // Cleanup failure cannot replace the original issuance/storage outcome.
+                        console.error('Claim-link ownership cleanup failed', releaseError);
+                    }
                 }
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
-                    message: 'Could not complete the claim-link request.',
+                    message: request
+                        ? 'Could not complete the claim-link request.'
+                        : 'Could not issue boost with claim link.',
+                    cause: error,
                 });
             }
         }),
@@ -4385,11 +4401,12 @@ export const boostsRouter = t.router({
         .meta({
             openapi: {
                 protect: true,
-                method: 'GET',
+                method: 'POST',
                 path: '/boost/claim/status',
                 tags: ['Boosts'],
-                summary: 'Get claim-link request status',
-                description: 'Check the result of an authenticated claim-link operation.',
+                summary: 'Reconcile claim-link request status',
+                description:
+                    'Checks an authenticated claim-link operation and may finish acceptance and capacity accounting for its existing credential.',
             },
             requiredScope: 'boosts:write',
         })
@@ -4397,7 +4414,7 @@ export const boostsRouter = t.router({
             z.object({ boostUri: z.string(), challenge: z.string(), requestId: z.string().min(1) })
         )
         .output(ClaimLinkRequestStatusValidator)
-        .query(async ({ ctx, input }) => {
+        .mutation(async ({ ctx, input }) => {
             const previous = await recoverClaimLinkRequest(
                 {
                     profileId: ctx.user.profile.profileId,

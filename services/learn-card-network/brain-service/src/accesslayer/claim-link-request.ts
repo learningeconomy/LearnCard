@@ -51,9 +51,12 @@ export const reserveClaimLinkRequest = async (
     const session = neogma.driver.session();
     try {
         return await session.executeWrite(async tx => {
+            // Without the optional uniqueness index, concurrent MERGE statements can duplicate
+            // even one request ID. Hold this Profile's write lock through receipt reservation.
             const locked = await tx.run(
                 `MATCH (p:Profile {profileId: $profileId})
-                 SET p.claimLinkRequestLock = coalesce(p.claimLinkRequestLock, 0) + 1
+                 SET p.claimLinkRequestLock = true
+                 REMOVE p.claimLinkRequestLock
                  RETURN p.profileId`,
                 { profileId: input.profileId }
             );
@@ -143,8 +146,9 @@ export const recoverClaimLinkRequest = async (
         recoveryOwner = randomUUID();
         const ownership = await neogma.queryRunner.run(
             `MATCH (r:ClaimLinkRequest {id: $id, profileId: $profileId, status: 'pending'})
-             SET r.recoveryLock = coalesce(r.recoveryLock, 0) + 1
-             WITH r WHERE r.handlerActive = false
+             SET r.recoveryLock = true
+             REMOVE r.recoveryLock
+             WITH r WHERE r.handlerActive = false AND r.status = 'pending'
              SET r.handlerActive = true, r.ownerToken = $ownerToken
              RETURN r.ownerToken AS ownerToken`,
             { id, profileId: input.profileId, ownerToken: recoveryOwner }

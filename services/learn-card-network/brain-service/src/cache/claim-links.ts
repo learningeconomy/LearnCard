@@ -121,7 +121,7 @@ export const setValidClaimLinkForBoost = async (
             'EX',
             ttl + OUTCOME_RETENTION_SECONDS
         );
-    else transaction.set(outcomeKey(boostUri, challenge), '{}');
+    else transaction.del(outcomeKey(boostUri, challenge));
     const results = await transaction.exec();
     if (!results || results.some(([error]) => error))
         throw new Error('Claim link could not be stored');
@@ -144,19 +144,32 @@ export const getClaimLinkOptionsInfoForBoost = async (
     challenge: string
 ): Promise<BoostClaimLinkOptionsType | undefined> => (await readLink(boostUri, challenge))?.options;
 
-// Count and replay evidence share one value. CAS also works with the existing in-memory Redis adapter,
-// whose Lua VM has no cjson module; both adapters execute exactly the same atomic update.
+// Replay markers are independent, generation-scoped keys so live link JSON stays bounded.
+// Lua carries consumption and marker creation in one atomic operation. The finite contention
+// bound turns sustained hot-link races into honest retryable failures.
 const CONSUME_LINK = `
 if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
-if ARGV[3] == 'exhausted' then
-    redis.call('SET', KEYS[2], '{"reason":"exhausted"}', 'EX', ARGV[4])
-    redis.call('DEL', KEYS[1])
+if ARGV[3] ~= '' and redis.call('SISMEMBER', KEYS[3], ARGV[3]) == 1 then return 2 end
+local ttl = redis.call('PTTL', KEYS[1])
+if ttl == 0 or ttl == -2 then
+  redis.call('DEL', KEYS[1], KEYS[3])
+  return 1
+end
+if ARGV[3] ~= '' then
+  redis.call('SADD', KEYS[3], ARGV[3])
+  if ttl > 0 then redis.call('PEXPIRE', KEYS[3], ttl) end
+end
+if ARGV[4] == 'exhausted' then
+    redis.call('SET', KEYS[2], '{"reason":"exhausted"}', 'EX', ARGV[5])
+    redis.call('DEL', KEYS[1], KEYS[3])
 else
-    redis.call('SET', KEYS[1], ARGV[2], 'KEEPTTL')
+    if ttl > 0 then redis.call('SET', KEYS[1], ARGV[2], 'PX', ttl)
+    else redis.call('SET', KEYS[1], ARGV[2]) end
 end
 return 1
 `;
 
+const MAX_CONTENTION_ATTEMPTS = 32;
 /** Consume finite capacity once for an accepted request, including interrupted finalization retries. */
 export const useClaimLinkForBoost = async (
     boostUri: string,
@@ -166,47 +179,59 @@ export const useClaimLinkForBoost = async (
 ): Promise<boolean | undefined> => {
     const redis = cache.redis ?? cache.node;
     const key = getClaimLinkCacheKey(boostUri, challenge);
-    while (true) {
+    for (let attempt = 0; attempt < MAX_CONTENTION_ATTEMPTS; attempt++) {
         const value = await redis.get(key);
         if (!value) return true;
         const link = BoostClaimLinkCacheValueValidator.parse(JSON.parse(value));
         if (usageId && link.generation !== expectedGeneration) return true;
-        if (usageId && link.completedRequests?.[usageId]) return true;
         if (!link.options.totalUses) return true;
+        const replayKey = `${key}|replay|${link.generation ?? 'legacy'}`;
         link.options.totalUses -= 1;
-        if (usageId) {
-            link.completedRequests ??= {};
-            link.completedRequests[usageId] = true;
-        }
         const exhausted = link.options.totalUses <= 0;
         const updated = await redis.eval(
             CONSUME_LINK,
-            2,
+            3,
             key,
             outcomeKey(boostUri, challenge),
+            replayKey,
             value,
-            exhausted ? '' : JSON.stringify(link),
+            JSON.stringify(link),
+            usageId ?? '',
             exhausted ? 'exhausted' : '',
             OUTCOME_RETENTION_SECONDS
         );
-        if (updated) return true;
-        // Only a competing atomic update retries; transport failures propagate without replay.
+        if (updated === 1 || updated === 2) return true;
     }
+    throw new Error('Claim-link usage contention; retry reconciliation');
 };
+
+const INVALIDATE_LINK = `
+if (redis.call('GET', KEYS[1]) or '') ~= ARGV[1] then return -1 end
+redis.call('SET', KEYS[2], '{"reason":"unavailable"}', 'EX', ARGV[2])
+local deleted = redis.call('DEL', KEYS[1])
+if ARGV[3] ~= '' then redis.call('DEL', KEYS[3]) end
+return deleted
+`;
 
 export const invalidateClaimLinkForBoost = async (boostUri: string, challenge: string) => {
     const redis = cache.redis ?? cache.node;
-    const results = await redis
-        .multi()
-        .set(
+    const key = getClaimLinkCacheKey(boostUri, challenge);
+    for (let attempt = 0; attempt < MAX_CONTENTION_ATTEMPTS; attempt++) {
+        const snapshot = await redis.get(key);
+        const generation = snapshot
+            ? BoostClaimLinkCacheValueValidator.parse(JSON.parse(snapshot)).generation
+            : undefined;
+        const deleted = await redis.eval(
+            INVALIDATE_LINK,
+            3,
+            key,
             outcomeKey(boostUri, challenge),
-            JSON.stringify({ reason: 'unavailable' }),
-            'EX',
-            OUTCOME_RETENTION_SECONDS
-        )
-        .del(getClaimLinkCacheKey(boostUri, challenge))
-        .exec();
-    if (!results || results.some(([error]) => error))
-        throw new Error('Claim link could not be invalidated');
-    return Number(results[1]?.[1] ?? 0);
+            `${key}|replay|${generation ?? 'legacy'}`,
+            snapshot ?? '',
+            OUTCOME_RETENTION_SECONDS,
+            snapshot ? '1' : ''
+        );
+        if (deleted !== -1) return Number(deleted);
+    }
+    throw new Error('Claim-link invalidation contention; retry');
 };

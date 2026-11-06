@@ -205,6 +205,30 @@ describe('boost payload storage', () => {
         ).rejects.toBe(uncertain);
         expect(mocks.accept).not.toHaveBeenCalled();
     });
+    it('marks the irreversible storage boundary only after pre-storage validation', async () => {
+        const events: string[] = [];
+        mocks.store.mockImplementationOnce(async () => {
+            events.push('store');
+            return { id: 'stored' };
+        });
+        await sendBoost({
+            ...options,
+            atomicClaimLink: true,
+            onStorageStart: () => events.push('storage-start'),
+        });
+        expect(events).toEqual(['storage-start', 'store']);
+
+        const onStorageStart = vi.fn();
+        await expect(
+            sendBoost({
+                ...options,
+                credential: { ...vc, boostId: 'lc:network:network.example/boost:other' },
+                atomicClaimLink: true,
+                onStorageStart,
+            })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect(onStorageStart).not.toHaveBeenCalled();
+    });
 
     it.each(['lc:network:network.example/boost:other', '', null])(
         'rejects a plaintext credential with an explicit conflicting boostId (%s) before storage',

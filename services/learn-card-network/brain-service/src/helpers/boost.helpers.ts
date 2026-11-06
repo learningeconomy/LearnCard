@@ -152,6 +152,7 @@ export const sendBoost = async ({
     integrationId,
     credentialId,
     atomicClaimLink = false,
+    onStorageStart,
 }: {
     from: CredentialIssuer;
     to: ProfileType;
@@ -167,6 +168,7 @@ export const sendBoost = async ({
     listingId?: string;
     credentialId?: string;
     atomicClaimLink?: boolean;
+    onStorageStart?: () => void;
 }): Promise<string> => {
     return trace(
         'boost',
@@ -199,6 +201,7 @@ export const sendBoost = async ({
                 const transaction = session.beginTransaction();
                 let commitStarted = false;
                 try {
+                    onStorageStart?.();
                     const stored = await storeCredential(credential, transaction, credentialId);
                     await createBoostInstanceOfRelationship(stored, boost, transaction);
                     await createSentCredentialRelationship(
@@ -350,7 +353,6 @@ export const issueClaimLinkBoost = async (
         domain,
         true
     );
-    onStorageStart?.();
 
     return sendBoost({
         from,
@@ -362,6 +364,7 @@ export const issueClaimLinkBoost = async (
         autoAcceptCredential: true,
         credentialId,
         atomicClaimLink: true,
+        onStorageStart,
     });
 };
 

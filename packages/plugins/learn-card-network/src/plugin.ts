@@ -2045,7 +2045,7 @@ export async function getLearnCardNetworkPlugin(
             getClaimBoostWithLinkStatus: async (_learnCard, boostUri, challenge, requestId) => {
                 await ensureUser();
 
-                return client.boost.claimBoostWithLinkStatus.query({
+                return client.boost.claimBoostWithLinkStatus.mutate({
                     boostUri,
                     challenge,
                     requestId,
