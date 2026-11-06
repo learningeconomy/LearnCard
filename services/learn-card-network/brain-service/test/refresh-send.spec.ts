@@ -1394,6 +1394,24 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                 ),
             });
         });
+
+        it('rejects reusing a display-only anchor in an ordinary signing-authority send', async () => {
+            const { signed } = await buildHandoff();
+            const created = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                signedCredential: signed,
+                refresh: true,
+            })) as SendResult;
+
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: created.uri,
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
     });
 
     describe('normal sends are unchanged', () => {
