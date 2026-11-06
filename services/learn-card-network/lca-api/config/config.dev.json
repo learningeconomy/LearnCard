@@ -1,6 +1,7 @@
 {
     "APPLE_OAUTH_CLIENT_IDS": "com.learncard.app,app.learncard.www",
     "DOMAIN_NAME": "staging.api.learncard.app",
+    "NETWORK_BRAIN_SERVICE_URL": "https://staging.network.learncard.com/trpc",
     "ESCROW_ENCLAVE_ACTIVE_KEY_ID": "escrow-staging-v1",
     "ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS": "15000",
     "ESCROW_HOLD_DURATION_MS": "600000",

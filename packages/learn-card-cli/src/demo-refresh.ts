@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { createInterface } from 'node:readline/promises';
 import { initLearnCard } from '@learncard/init';
 import { VCValidator, type UnsignedVC } from '@learncard/types';
+import { getManagedRefreshServices } from '@learncard/helpers';
 import { generateRandomSeed } from './random';
 import { out } from './out';
 import { resolveServices } from './project';
@@ -264,7 +265,8 @@ export const runRefreshDemo = async (options: RefreshDemoOptions): Promise<void>
         out.log('Checking for an update and verifying the new credential...');
         // Local HTTP is allowed only for this generated credential on the selected
         // loopback origin. Hosted demos retain the SDK's default transport guards.
-        if (local && new URL(refresh.refreshService.id).origin !== networkUrl.origin) {
+        const managedService = getManagedRefreshServices(refresh)[0];
+        if (local && (!managedService || new URL(managedService.id).origin !== networkUrl.origin)) {
             throw new Error('The refresh service does not match the selected local network.');
         }
         const refreshed = await holder.invoke.refreshCredential(

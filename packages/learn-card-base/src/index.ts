@@ -225,6 +225,7 @@ export * from './helpers/aiPassportAuth';
 export * from './helpers/credentialHelpers';
 export * from './helpers/credentialIngestion';
 export * from './helpers/credentialRefresh';
+export * from './helpers/ingestManagedCredential';
 export * from './helpers/credentials/queries';
 export * from './helpers/credentials/clr';
 export * from './helpers/openid4vcErrors';

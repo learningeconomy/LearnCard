@@ -23,6 +23,33 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('bootstrapLambda', () => {
+    it('loads Infisical-synced campaign settings before application import', async () => {
+        vi.stubEnv('AWS_LAMBDA_FUNCTION_NAME', 'brain-service-dev-campaign-worker');
+        vi.stubEnv('RUNTIME_SECRETS_ID', 'brain-service/dev/runtime-secrets');
+        vi.stubEnv('POSTMARK_BROADCAST_STREAM', '');
+        vi.stubEnv('CAMPAIGN_UNSUBSCRIBE_SECRET', '');
+        const secret = 'synthetic-campaign-signing-secret-32-bytes';
+        send.mockResolvedValue({
+            SecretString: JSON.stringify({
+                POSTMARK_BROADCAST_STREAM: 'announcements',
+                CAMPAIGN_UNSUBSCRIBE_SECRET: secret,
+            }),
+        });
+        const bootstrapLambda = await importBootstrap();
+        const importApp = vi.fn(async () => {
+            expect(process.env.POSTMARK_BROADCAST_STREAM).toBe('announcements');
+            expect(process.env.CAMPAIGN_UNSUBSCRIBE_SECRET).toBe(secret);
+            return { ready: true };
+        });
+        const getApp = bootstrapLambda({
+            base: { POSTMARK_BROADCAST_STREAM: 'broadcast' },
+            importApp,
+        });
+        await Promise.all([getApp(), getApp()]);
+        expect(send).toHaveBeenCalledTimes(1);
+        expect(importApp).toHaveBeenCalledTimes(1);
+    });
+
     it('imports the app only after secrets resolve and shares one bootstrap across calls', async () => {
         const bootstrapLambda = await importBootstrap();
         let release: () => void = () => {};

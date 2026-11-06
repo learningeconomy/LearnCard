@@ -55,6 +55,16 @@ const setup = async (
         route.fulfill({ json: { features: { contractRequests: options.tenant ?? true } } })
     );
     const mock = await installNetwork(page);
+    // Consent reads can share an LCA batch with notifications. Own both so a
+    // timing-dependent mixed batch cannot fall through to an unmatched HAR.
+    mock.on('preferences.getPreferencesForDid', () => ({
+        aiEnabled: true,
+        aiAutoDisabled: false,
+        analyticsEnabled: false,
+        analyticsAutoDisabled: false,
+        bugReportsEnabled: false,
+        isMinor: false,
+    }));
     mock.on(
         'user.getDids',
         () =>
@@ -93,6 +103,15 @@ const setup = async (
     mock.on('utilities.getDid', () => 'did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzjiN7Uh4AHoqH');
     mock.on('profile.getProfile', () => profile(TEST_USER_PROFILE_ID, 'Learner'));
     mock.on('profile.createProfile', () => profile(TEST_USER_PROFILE_ID, 'Learner').did);
+    // Privacy & Data batches this read with the pending invitations query.
+    mock.on(
+        'campaigns.getAnnouncementPreferences',
+        () =>
+            ({
+                announcementEmailOptOut: false,
+                announcementPushOptOut: false,
+            }) satisfies BrainOutputs['campaigns']['getAnnouncementPreferences']
+    );
     let status: 'pending' | 'denied' | 'cancelled' | 'accepted' = options.connected
         ? 'accepted'
         : 'pending';

@@ -61,6 +61,22 @@ export const isVC2Format = (credential: unknown): boolean => {
         : context === 'https://www.w3.org/ns/credentials/v2';
 };
 
+/**
+ * The marker field on the placeholder credential JSON of a "display-only anchor"
+ * Boost (one created by a managed/signed-only send that had no explicit credential).
+ * `'display' in boost` is NOT a safe way to detect this: ordinary Boosts commonly have
+ * their own top-level `display` object too (e.g. the LearnCard app's appearance fields —
+ * backgroundImage, backgroundColor, displayType), so that check produces false
+ * positives on real credentials.
+ */
+export const DISPLAY_ONLY_ANCHOR_MARKER = 'displayOnlyAnchor' as const;
+
+/** Detects a display-only anchor via its dedicated marker (see `DISPLAY_ONLY_ANCHOR_MARKER`). */
+export const isDisplayOnlyAnchorTemplate = (credential: unknown): boolean =>
+    !!credential &&
+    typeof credential === 'object' &&
+    (credential as Record<string, unknown>)[DISPLAY_ONLY_ANCHOR_MARKER] === true;
+
 /** Unwraps a boost credential from a CertifiedBoostCredential, if it is one */
 export const unwrapBoostCredential = (vc?: VC | UnsignedVC) => {
     if (vc?.type?.includes('CertifiedBoostCredential') && vc?.boostCredential) {
@@ -111,3 +127,4 @@ export * from './share-content-canonical';
 export * from './consent-flow-contract-updates';
 
 export * from './credential-materialization';
+export * from './age-policy';

@@ -62,6 +62,10 @@ export const getResolvedTenantConfig = (): TenantConfig => {
     return config;
 };
 
+/** Unresolved tenant policy never authorizes optional telemetry. */
+export const isTenantAnalyticsEnabled = (): boolean =>
+    (_resolvedConfig ?? getTenantBootstrapState().resolvedConfig)?.features.analytics === true;
+
 /**
  * Get headers that identify the current tenant to backend services.
  * Falls back to the global bootstrap state so HMR and duplicate module instances retain the tenant.

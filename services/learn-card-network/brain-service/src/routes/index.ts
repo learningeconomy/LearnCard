@@ -306,7 +306,9 @@ export const PUBLIC_SHARE_LINK_ROUTE_PREFIX = 'publicShareLinks.';
 export const publicShareLinkCacheControlHeaders = (
     paths: readonly string[] | undefined
 ): Record<string, string> =>
-    (paths ?? []).some(path => path.startsWith(PUBLIC_SHARE_LINK_ROUTE_PREFIX))
+    (paths ?? []).some(
+        path => path.startsWith(PUBLIC_SHARE_LINK_ROUTE_PREFIX) || path === 'campaigns.unsubscribe'
+    )
         ? { 'Cache-Control': 'private, no-store' }
         : {};
 
@@ -508,6 +510,17 @@ export const profileRoute = withProfile(didAndChallengeRoute);
 export const didRouteWithoutInputCapture = withDid(openRouteWithoutInputCapture);
 export const didAndChallengeRouteWithoutInputCapture = withChallenge(didRouteWithoutInputCapture);
 export const profileRouteWithoutInputCapture = withProfile(didAndChallengeRouteWithoutInputCapture);
+
+/** Credential payloads need the same privacy/auth chain, not the share-link byte limit. */
+export const credentialProfileRoute = withProfile(
+    withChallenge(
+        withDid(
+            t.procedure
+                .use(t.middleware(sentryNoInputCaptureMiddleware))
+                .use(sentryTransactionNameMiddleware)
+        )
+    )
+);
 
 export const openProfileManagerRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });

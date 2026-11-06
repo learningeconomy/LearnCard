@@ -3,6 +3,7 @@ import { submitInboxBatch, getInboxBatch } from '@helpers/inbox-queue.helpers';
 import {
     assertInboxRefreshEnabled,
     inboxRefreshRequestDigest,
+    getInboxRefreshRequestDigestCandidates,
     getInboxRefreshReplay,
     getInboxRefreshReceipt,
     resumeInboxRefreshDelivery,
@@ -466,7 +467,8 @@ export const inboxRouter = t.router({
                 const replay = await getInboxRefreshReplay(
                     profile.profileId,
                     input.idempotencyKey,
-                    refreshDigest!
+                    refreshDigest!,
+                    getInboxRefreshRequestDigestCandidates(input)
                 );
                 if (replay && (replay.claimUrl || replay.inbox.currentStatus !== 'PENDING')) {
                     await resumeInboxRefreshDelivery(replay.inbox.refreshId!, ctx.domain);
@@ -511,6 +513,9 @@ export const inboxRouter = t.router({
                         refresh: input.refresh,
                         idempotencyKey: input.idempotencyKey,
                         refreshRequestDigest: refreshDigest,
+                        refreshRequestDigestCandidates: input.refresh
+                            ? getInboxRefreshRequestDigestCandidates(input)
+                            : undefined,
                     },
                     ctx
                 );

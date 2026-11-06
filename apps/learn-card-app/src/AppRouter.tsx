@@ -154,10 +154,9 @@ const AppRouter: React.FC = () => {
     const isChapiInteraction = useIsChapiInteraction();
     const networkConsentMutation = useNetworkConsentMutation();
     const analytics = useAnalytics();
-    const { setEnabled: setAnalyticsEnabled } = analytics;
     const { isAiEnabled } = useAiFeatureGate();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
-    usePrivacyGate({ onAnalyticsChange: setAnalyticsEnabled });
+    usePrivacyGate();
 
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();

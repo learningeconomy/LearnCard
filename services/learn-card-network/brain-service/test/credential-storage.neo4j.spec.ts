@@ -43,16 +43,17 @@ describe('credential status storage in Neo4j', () => {
             credentialStatus: entry,
         });
         const jwe = await issuer.learnCard.invoke.createDagJwe(signed, [issuer.learnCard.id.did()]);
-        const stored = await storeCredential({
-            kind: 'issued-credential',
-            credential: jwe,
-            statusEntries: [entry],
-        });
+        const stored = await storeCredential(
+            { kind: 'issued-credential', credential: jwe, statusEntries: [entry] },
+            undefined,
+            'storage-issuer'
+        );
         credentialIds.push(stored.id);
 
         const row = await getCredentialById(stored.id);
         expect(row?.credential).toBe(JSON.stringify(jwe));
         expect(JSON.parse(row?.statusEntries ?? 'null')).toEqual([entry]);
+        expect(row?.statusOwnerProfileId).toBe('storage-issuer');
         expect(await isStatusBitSet(entry)).toBe(false);
         expect(await setCredentialBitstringStatus(stored.id, 'revocation', true)).toBe(true);
         expect(await isStatusBitSet(entry)).toBe(true);
@@ -94,12 +95,18 @@ describe('credential status storage in Neo4j', () => {
             credentialStatus: entry,
         });
         const jwe = await issuer.learnCard.invoke.createDagJwe(signed, [issuer.learnCard.id.did()]);
-        const wire = { ...jwe, kind: 'issued-credential', statusEntries: [entry] };
+        const wire = {
+            ...jwe,
+            kind: 'issued-credential',
+            statusEntries: [entry],
+            statusOwnerProfileId: 'storage-issuer',
+        };
         const stored = await storeCredential(wire);
         credentialIds.push(stored.id);
         const row = await getCredentialById(stored.id);
         expect(row?.credential).toBe(JSON.stringify(wire));
         expect(row?.statusEntries).toBeUndefined();
+        expect(row?.statusOwnerProfileId).toBeUndefined();
         expect(await setCredentialBitstringStatus(stored.id, 'revocation', true)).toBe(false);
         expect(await isStatusBitSet(entry)).toBe(false);
     });
@@ -118,5 +125,25 @@ describe('credential status storage in Neo4j', () => {
         const row = await getCredentialById(stored.id);
         expect(row?.statusEntries).toBeUndefined();
         expect(await setCredentialBitstringStatus(stored.id, 'revocation', true)).toBe(false);
+    });
+
+    it('rejects a trusted descriptor when the supplied owner does not own its list', async () => {
+        const [entry] = await issuer.clients.fullAuth.boost.allocateCredentialStatus({
+            statusPurposes: ['revocation'],
+        });
+        if (!entry) throw new Error('Expected allocated revocation entry');
+        const signed = await issuer.learnCard.invoke.issueCredential({
+            ...(await issuer.learnCard.invoke.getTestVc()),
+            credentialStatus: entry,
+        });
+        const jwe = await issuer.learnCard.invoke.createDagJwe(signed, [issuer.learnCard.id.did()]);
+        await expect(
+            storeCredential(
+                { kind: 'issued-credential', credential: jwe, statusEntries: [entry] },
+                undefined,
+                'another-issuer'
+            )
+        ).rejects.toThrow('Invalid local credential status coordinates');
+        expect(await isStatusBitSet(entry)).toBe(false);
     });
 });
