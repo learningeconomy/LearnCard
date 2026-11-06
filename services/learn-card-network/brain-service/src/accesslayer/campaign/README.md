@@ -181,10 +181,22 @@ await learnCard.invoke.campaignsSetStatus('transcript-pilot-v1', 'live');
 const { dispatchId } = await learnCard.invoke.campaignsDispatch('transcript-pilot-v1');
 ```
 
-`sendTestToMe` always targets the authenticated caller. It ignores audience, status, dates,
-and channels, but requires notification copy. Each explicit test gets a fresh test ID;
-queue retries preserve it. Test sends neither enroll the caller nor increment `notified`.
-`dispatch` requires a live, in-window campaign with the `notify` channel. The queue job
+`sendTestToMe` always targets the authenticated administrator and tests the selected channels.
+It ignores audience, status and dates. `notify` uses the saved notification copy and existing
+notification queue; `inApp` stores a private snapshot on a `CAMPAIGN_TEST` relationship.
+In-app JSON is optional for notification-only campaigns, and notification copy is optional
+for in-app-only campaigns. At least one channel and its corresponding content are required.
+Each explicit test gets a fresh test ID; notification queue retries preserve it.
+
+The existing `getMyCampaigns` endpoint includes pending private snapshots only for their
+requesting administrator, with a `testId`. Reading does not consume a test. After the real
+renderer presents it, `recordEvent` with `{ campaignId, event: 'shown', testId } removes that
+snapshot without writing engagement state. A stale acknowledgement cannot remove a newer
+snapshot. The latest test replaces the pending one for that administrator/campaign; deleting
+the campaign deletes its pending tests. LearnCard App fetches on entry/return outside the
+composer, keeps tests account/network-scoped, and does not send their events to analytics.
+Test sends neither enroll the caller nor increment campaign stats.
+`dispatch`requires a live, in-window campaign with the`notify` channel. The queue job
 contains campaign ID, creation timestamp, dispatch ID and an optional profile-ID cursor.
 The creation timestamp prevents old jobs from applying to a deleted/recreated campaign.
 
@@ -301,6 +313,36 @@ notification integration suite covers concurrent receiver storage and push suppr
 Hosted `lc verify` additionally exercises SDK authorization; it does not provision FCM
 or prove iOS/Android device receipt. Those require separately authorized device QA.
 
+## Reviewed dispatch from the composer
+
+`campaigns.previewDispatch` is an admin-only, read-only query taking `{ campaignId }`.
+The SDK exposes it as `learnCard.invoke.campaignsPreviewDispatch(campaignId)`.
+It returns `audienceCount`, `alreadyNotifiedCount`, `recipientCount`, `notificationRecipientCount`, `emailRecipientCount`, `previewToken`,
+and an optional `blockedReason` (`not_live`, `notify_disabled`, `not_started`, `ended`,
+`no_recipients`). The total counts distinct profiles across the selected delivery channels.
+Inbox counts follow the campaign age policy and exclude push opt-outs and profiles with `notifiedAt`.
+Email counts require adults, announcements enabled, exactly one valid verified primary email,
+and neither `emailClaimedAt` nor `emailedAt`. Neither count guarantees receipt.
+
+After reviewing the count, pass `{ expectedPreviewToken: preview.previewToken }` as
+the second argument to `learnCard.invoke.campaignsDispatch`. The route accepts that
+optional field alongside `campaignId`. Legacy dispatch callers can omit it; the composer
+always supplies it. Under the campaign node lock, the server recomputes a digest over
+the definition, mutation revision, sorted eligible profile IDs and email destinations, rejects stale previews
+with `CONFLICT`, and advances the revision to consume the confirmation once. This catches
+same-count recipient changes as well as ordinary audience edits. No recipients or invalid
+status/schedule/channel is rejected before enqueue. Preview does not mark anyone notified.
+
+The count query collects eligible profile IDs internally to fingerprint the recipient set;
+those IDs are not returned by the API. Confirmed sends support at most 10,000 eligible
+recipients. Cypher limits the collection to 10,001 IDs (one overflow sentinel) before
+transferring them to Node. Larger previews and confirmations return `BAD_REQUEST` and
+require reducing the audience; the server never authorizes a truncated recipient set.
+The confirmation lock is released before queue/network work. Later waves still use current
+eligibility and audience semantics, so the reviewed count is a snapshot rather than a frozen
+send list. Existing queue retries and receiver deduplication remain unchanged. If enqueue
+fails or the HTTP response is lost, review again before retrying; never reuse the old token.
+
 ### Concurrent authoring
 
 Content editors should pass the loaded campaign's `updatedAt` as `expectedUpdatedAt`
@@ -327,6 +369,16 @@ configs supply their corresponding production origins. Queued sends do not use
 request headers to choose an app origin. Custom deployments must configure a map;
 missing, malformed, credential-bearing or non-origin URLs fail preparation before
 the durable email claim. HTTP is allowed only for loopback development origins.
+
+In bundle-enabled Lambda deployments, set `POSTMARK_BROADCAST_STREAM` and
+`CAMPAIGN_UNSUBSCRIBE_SECRET` in **LearnCard Runtime** →
+`/learncard/brain-service/runtime` (`staging` / `prod`), alongside `POSTMARK_API_KEY`.
+Infisical syncs the existing AWS bundle selected by `RUNTIME_SECRETS_ID`; no new
+GitHub per-key mapping is needed. The API, queue worker and unsubscribe handler
+load the bundle before application imports. Recycle/redeploy Brain after sync;
+keep the signing secret stable so previously sent unsubscribe links remain valid.
+Local/Docker uses private `.env` values from the separate LearnCard project.
+See [runtime configuration](../../../../../../environment-variables.md#campaign-email-runtime-settings-brain-service).
 
 Email dispatch requires `POSTMARK_API_KEY`, `DOMAIN_NAME` (the public Brain host),
 `POSTMARK_BROADCAST_STREAM` (default `broadcast`) and `CAMPAIGN_UNSUBSCRIBE_SECRET`
@@ -387,3 +439,5 @@ Before rollout, use mocked adapter/HTTP tests and the campaign Neo4j suite. Sepa
 verify real broadcast receipt and headers, configured public POST ingress, and cold/warm
 `/m/` universal-link handoff on web, iOS and Android in an authorized environment.
 The composer still needs its email controls, counts/wiring and CSV result follow-up.
+
+Audience preview/add responses retain `count` for eligible matches and include `added` (new memberships, zero for preview) and `notFound` (unresolved input DIDs). Age-excluded profiles are not missing. Addition counts are computed under the campaign lock, so retries and aliases cannot inflate them.

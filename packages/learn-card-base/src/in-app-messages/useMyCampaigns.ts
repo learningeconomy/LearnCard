@@ -79,7 +79,8 @@ export const useMyCampaigns = (): CampaignMessageSource => {
                 const current = await getWallet();
                 const campaigns = await current.invoke.getMyCampaigns();
                 if (!isCurrentProfile()) throw new Error('Campaign profile changed');
-                return campaigns;
+                // Private admin snapshots belong exclusively to the composer test-delivery path.
+                return campaigns.filter(item => !item.testId);
             } catch (error) {
                 log.warn('Campaign fetch failed');
                 throw error;
@@ -179,7 +180,12 @@ export const useMyCampaigns = (): CampaignMessageSource => {
 
     const record = useCallback(
         (event: InAppMessagePresentationEvent, deviceMatched: boolean): void => {
-            if (!event.campaignId || event.source === 'override' || active.current !== scope)
+            if (
+                !event.campaignId ||
+                event.source === 'override' ||
+                event.source === 'test' ||
+                active.current !== scope
+            )
                 return;
             const campaignId = event.campaignId;
             const campaign = byId.get(campaignId);

@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import type { Campaign, LCNNotification } from '@learncard/types';
 import { getCampaign } from '@accesslayer/campaign/read';
+import { queueCampaignInAppTest } from '@accesslayer/campaign/test';
 import {
     acknowledgeCampaignNotification,
     getCampaignDeliveryRecipient,
@@ -98,6 +99,7 @@ export const sendCampaignTestToMe = async (
     const campaign = await getCampaign(campaignId);
     if (!caller.profileId)
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Profile required' });
+    const testId = randomUUID();
     const preferences = await getAnnouncementPreferences(caller.profileId);
     // Check before any selected channel sends so a failed test cannot report partial success.
     if (campaign.channels.includes('notify') && preferences.announcementPushOptOut)
@@ -113,10 +115,13 @@ export const sendCampaignTestToMe = async (
                     'A verified primary email and eligible announcement preferences are required',
             });
     }
-    if (campaign.channels.includes('notify') && campaign.notification) {
+    if (campaign.channels.includes('notify')) {
         await enqueueCampaignNotification(
-            await buildCampaignNotification(campaign, caller, randomUUID())
+            await buildCampaignNotification(campaign, caller, testId)
         );
+    }
+    if (campaign.channels.includes('inApp')) {
+        await queueCampaignInAppTest(campaign, caller.profileId, testId);
     }
     return true;
 };

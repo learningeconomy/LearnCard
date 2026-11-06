@@ -131,6 +131,7 @@ describe('classifyMethod', () => {
     it('honours the read allowlist and the write overrides', () => {
         expect(classifyMethod('learnCloudRead').effect).toBe('read');
         expect(classifyMethod('campaignsList').effect).toBe('read');
+        expect(classifyMethod('campaignsPreviewDispatch').effect).toBe('read');
         expect(classifyMethod('getAnnouncementPreferences').effect).toBe('read');
         expect(classifyMethod('updateAnnouncementPreferences').effect).toBe('write');
         expect(classifyMethod('unsubscribeFromAnnouncements').effect).toBe('write');
@@ -863,6 +864,18 @@ describe('registerCallCommand --chain', () => {
 });
 
 describe('call --describe', () => {
+    it('describes dispatch preview as a read without connecting', async () => {
+        await runCall('campaignsPreviewDispatch', { describe: true }, noIo);
+        expect(out.result).toMatchObject({
+            method: 'campaignsPreviewDispatch',
+            effect: 'read',
+            plugin: 'learn-card-network',
+            needs: [],
+        });
+        expect(String(out.result.signature)).toContain('campaignsPreviewDispatch: (');
+        expect(mocks.initLearnCard).not.toHaveBeenCalled();
+    });
+
     it.each(['campaignsSendTestToMe', 'campaignsDispatch'])(
         'describes %s as a write without connecting',
         async method => {

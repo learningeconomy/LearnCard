@@ -73,7 +73,7 @@ export const getLiveCampaignsForProfile = async (
             });
             return [];
         }
-        if (!campaign.channels.includes('inApp') || !campaign.message.enabled) return [];
+        if (!campaign.channels.includes('inApp') || !campaign.message?.enabled) return [];
         const state = Object.fromEntries(
             Object.entries(record.get('state') ?? {}).map(([key, value]) => [
                 key,
