@@ -120,10 +120,22 @@ export type InboxCredentialRefreshReceipt = z.infer<typeof InboxCredentialRefres
 export const CredentialRefreshSigningModeValidator = z.enum(['issuer-signed', 'signing-authority']);
 export type CredentialRefreshSigningMode = z.infer<typeof CredentialRefreshSigningModeValidator>;
 
+export const CredentialRefreshUpdateReasonValidator = z.enum(['corrected', 'updated', 'reissued']);
+export type CredentialRefreshUpdateReason = z.infer<typeof CredentialRefreshUpdateReasonValidator>;
+
 const PublishCredentialRefreshBaseFields = {
     refreshId: z.string().min(1),
     notifyHolder: z.boolean().optional(),
-    updateSummary: z.string().optional(),
+    updateSummary: z
+        .string()
+        .max(280)
+        .optional()
+        .describe(
+            'Public legacy update summary. Do not include private claims; prefer updateReason.'
+        ),
+    updateReason: CredentialRefreshUpdateReasonValidator.optional().describe(
+        'Public reason for this update'
+    ),
     idempotencyKey: z.string().optional(),
 };
 
@@ -249,6 +261,7 @@ export const CredentialRefreshVersionMetadataValidator = z.object({
     etag: z.string().optional(),
     signingMode: CredentialRefreshSigningModeValidator.optional(),
     updateSummary: z.string().optional(),
+    updateReason: CredentialRefreshUpdateReasonValidator.optional(),
 });
 export type CredentialRefreshVersionMetadata = z.infer<
     typeof CredentialRefreshVersionMetadataValidator

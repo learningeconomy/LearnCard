@@ -442,6 +442,41 @@ describe('boost payload storage', () => {
             }
         );
 
+        describe('display-only anchor detection', () => {
+            const anchorBoostWith = (template: Record<string, unknown>) =>
+                ({
+                    dataValues: {
+                        id: BOOST_ID,
+                        boost: JSON.stringify({ ...vc, boostId: undefined, ...template }),
+                    },
+                }) as Parameters<typeof prepareCredentialFromBoost>[0];
+
+            it("does not mistake an ordinary Boost's own display object for a display-only anchor", async () => {
+                const credential = await prepareCredentialFromBoost(
+                    anchorBoostWith({
+                        display: {
+                            backgroundColor: '#fff',
+                            backgroundImage: '',
+                            displayType: 'card',
+                        },
+                    }),
+                    `lc:network:network.example/boost:${BOOST_ID}`,
+                    options.domain
+                );
+                expect(credential.boostId).toBe(`lc:network:network.example/boost:${BOOST_ID}`);
+            });
+
+            it('rejects reusing a boost marked as a display-only anchor without an issuance credential', async () => {
+                await expect(
+                    prepareCredentialFromBoost(
+                        anchorBoostWith({ displayOnlyAnchor: true, display: {} }),
+                        `lc:network:network.example/boost:${BOOST_ID}`,
+                        options.domain
+                    )
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+        });
+
         describe('stampIssuanceDate', () => {
             const NOW = '2026-10-18T05:00:00.000Z';
 

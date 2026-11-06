@@ -56,11 +56,16 @@ export const issueCredential = (initLearnCard: VCDependentLearnCard) => {
             options.verificationMethod = await getDefaultVerificationMethod(learnCard, issuerDid);
         }
 
-        learnCard.debug?.('Signing with these options', {
-            credential: preparedCredential,
-            options,
-            kp,
-        });
+        // Local, explicit opt-in only. Key material must never enter debug transports.
+        if (
+            typeof process !== 'undefined' &&
+            process.env.NODE_ENV === 'development' &&
+            process.env.LEARNCARD_DEBUG_CREDENTIALS === 'true'
+        ) {
+            learnCard.debug?.('Signing credential (local debug)', {
+                credential: preparedCredential,
+            });
+        }
 
         return initLearnCard.invoke.issueCredential(preparedCredential, options, kp);
     };

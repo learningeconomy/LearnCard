@@ -64,6 +64,7 @@ export const CredentialRefresh = ModelFactory<
             },
             idempotencyKey: { type: 'string', required: false },
             updateSummary: { type: 'string', required: false },
+            updateReason: { type: 'string', required: false },
             lastPublishedAt: { type: 'string', required: false },
             notificationWindowKey: { type: 'string', required: false },
             lastNotificationId: { type: 'string', required: false },

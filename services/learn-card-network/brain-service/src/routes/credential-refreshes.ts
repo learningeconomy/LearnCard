@@ -12,7 +12,7 @@ import {
 } from '@learncard/types';
 import type { PublishCredentialRefreshInput } from '@learncard/types';
 
-import { t, profileRoute } from '@routes';
+import { t, credentialProfileRoute } from '@routes';
 import { getCredentialRefreshRuntimeEnvironment } from '@environment';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 import {
@@ -32,7 +32,7 @@ import { neogma } from '@instance';
 import { matchesCredentialStatusDigest } from '@helpers/credential-refresh-materiality.helpers';
 import { bindRefreshStatusEntries } from '@helpers/managed-status.helpers';
 
-const credentialRefreshRoute = profileRoute.use(async ({ ctx, next }) => {
+const credentialRefreshRoute = credentialProfileRoute.use(async ({ ctx, next }) => {
     if (!getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_ENABLED) {
         throw new TRPCError({
             code: 'NOT_FOUND',
@@ -270,6 +270,7 @@ export const credentialRefreshesRouter = t.router({
                     etag: record.etag,
                     signingMode: record.signingMode,
                     updateSummary: record.updateSummary,
+                    updateReason: record.updateReason,
                 })),
                 hasMore,
                 cursor,

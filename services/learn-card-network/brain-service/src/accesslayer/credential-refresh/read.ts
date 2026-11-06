@@ -205,7 +205,8 @@ export const getCredentialRefreshVersionsForHolder = async (
              effectiveAt: version.effectiveAt,
              etag: version.etag,
              signingMode: version.signingMode,
-             updateSummary: version.updateSummary
+                       updateSummary: version.updateSummary,
+                       updateReason: version.updateReason
          } END) WHERE entry IS NOT NULL] AS metadata
          RETURN revoked, metadata`,
         { refreshId, beforeVersion: beforeVersion ?? null, limitPlusOne: int(limit + 1) }
@@ -279,7 +280,8 @@ export const getCredentialRefreshVersions = async (
              effectiveAt: version.effectiveAt,
              etag: version.etag,
              signingMode: version.signingMode,
-             updateSummary: version.updateSummary
+                       updateSummary: version.updateSummary,
+                       updateReason: version.updateReason
          } AS metadata
          ORDER BY version.version DESC
          LIMIT $limitPlusOne`,
