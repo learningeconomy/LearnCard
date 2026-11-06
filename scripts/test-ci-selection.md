@@ -82,24 +82,20 @@ application verification catalog.
 
 ## Integration dependency cache
 
-The two integration groups opt into the setup action's `brain-integration`
-cache profile. Every job still installs the full workspace with the same frozen
-lockfile. The existing SDK preparation job on main also uses this profile to populate a
-cache that new PR and merge-queue refs can restore. It adds no runner. Other setup
-consumers retain the existing cache and fallback behavior.
+The integration groups can opt out of the shared Bun package archive through
+`dependency_cache`. With caching disabled, setup installs into the runner's
+fresh temporary package store and skips both restoring and saving the dependency
+archive. The full `bun install --frozen-lockfile` command and all dependencies
+remain unchanged. Bun's binary cache is independent and remains enabled.
 
-The profile restores only its own Bun package cache under the runner temporary
-directory. Its key includes OS/architecture, Bun version, Node pin, lockfile,
-workspace manifests, Bun configuration and the setup action. It uses exact hits,
-without carrying packages forward from older lockfiles through a broad fallback.
-Every new key starts with an empty package store, so the saved archive contains
-packages downloaded for the current install. Neither installed modules nor test
-results are cached by this change.
+Other setup consumers retain dependency caching by default, including the
+existing reader/writer behavior selected by `save-cache`. No new cache producer
+is needed when integration jobs install directly.
 
-Apply `benchmark-integration-cache` to opt into a cold/warm comparison. A unique
-run-ID cache suffix forces two cold scoped jobs (graph and delivery). Two later
-rounds each run both groups with both the legacy and scoped profiles, for ten
-jobs total and at most four in parallel. Inspect cache misses/hits and archive
-size in setup logs, and compare setup time, total runner time, elapsed span and
-identical test counts. A failed cold run blocks the warm comparison. Manual
-dispatch is available once the workflow reaches the default branch.
+Apply `benchmark-integration-cache` to compare the existing warm dependency
+archive against fresh installs on one commit. Two rounds each run graph and
+delivery in both modes: eight jobs total, at most four in parallel. Verify the
+cached jobs restored the expected archive, uncached jobs skipped restore/save,
+and all modes installed the same package count and passed the same tests. Compare
+workspace setup, total runner time and elapsed span; include observed variance.
+Manual dispatch becomes available once the workflow reaches the default branch.

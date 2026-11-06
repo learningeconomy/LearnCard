@@ -2,15 +2,12 @@ name: 'Setup Bun and Install Dependencies'
 description: 'A composite action to set up the environment for CI/CD jobs.'
 
 inputs:
+    dependency-cache:
+        description: 'Restore/save the Bun package cache; false installs into a fresh runner-local store'
+        default: 'true'
     save-cache:
         description: 'Save the Bun dependency cache after the job; disable for cache consumers.'
         default: 'true'
-    dependency-profile:
-        description: 'workspace (legacy fallback) or brain-integration (clean exact-key cache)'
-        default: 'workspace'
-    cache-suffix:
-        description: 'Optional isolated cache namespace for cold/warm benchmarks'
-        default: ''
 
 runs:
     using: 'composite'
@@ -25,49 +22,36 @@ runs:
           with:
               bun-version: 1.4.4
 
-        - name: Choose dependency cache
-          id: cache
+        - name: Configure dependency cache
           shell: bash
           env:
-              PROFILE: ${{ inputs.dependency-profile }}
-              CACHE_SUFFIX: ${{ inputs.cache-suffix }}
-              FULL_KEY: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-              SERVICE_KEY: ${{ runner.os }}-${{ runner.arch }}-bun-1.4.4-brain-v1-${{ hashFiles('bun.lock', 'bunfig.toml', '.nvmrc', '**/package.json', '.github/actions/setup/action.yml') }}
+              DEPENDENCY_CACHE: ${{ inputs.dependency-cache }}
           run: |
-              [[ "$CACHE_SUFFIX" =~ ^[a-zA-Z0-9-]*$ ]] || { echo 'Invalid cache suffix' >&2; exit 1; }
-              case "$PROFILE" in
-                workspace)
-                  echo "path=$HOME/.bun/install/cache" >> "$GITHUB_OUTPUT"
-                  echo "key=$FULL_KEY$CACHE_SUFFIX" >> "$GITHUB_OUTPUT"
-                  # Preserve the existing full-workspace fallback behavior.
-                  echo "restore-key=${RUNNER_OS}-bun-" >> "$GITHUB_OUTPUT"
+              case "$DEPENDENCY_CACHE" in
+                true) ;;
+                false)
+                  echo "BUN_INSTALL_CACHE_DIR=$RUNNER_TEMP/learncard-bun-cache" >> "$GITHUB_ENV"
                   ;;
-                brain-integration)
-                  cache_dir="$RUNNER_TEMP/learncard-brain-bun-cache"
-                  echo "path=$cache_dir" >> "$GITHUB_OUTPUT"
-                  echo "key=$SERVICE_KEY-${CACHE_SUFFIX:-shared}-end" >> "$GITHUB_OUTPUT"
-                  # Exact hits keep this cache small: no fallback to the full
-                  # workspace or an older dependency graph.
-                  echo 'restore-key=' >> "$GITHUB_OUTPUT"
-                  ;;
-                *) echo 'Unknown dependency profile' >&2; exit 1 ;;
+                *) echo 'dependency-cache must be true or false' >&2; exit 1 ;;
               esac
 
         - name: Restore Bun cache
-          if: ${{ inputs.save-cache != 'true' }}
+          if: ${{ inputs.dependency-cache == 'true' && inputs.save-cache != 'true' }}
           uses: actions/cache/restore@v6
           with:
-              path: ${{ steps.cache.outputs.path }}
-              key: ${{ steps.cache.outputs.key }}
-              restore-keys: ${{ steps.cache.outputs.restore-key }}
+              path: ~/.bun/install/cache
+              key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+              restore-keys: |
+                  ${{ runner.os }}-bun-
 
         - name: Setup Bun cache
-          if: ${{ inputs.save-cache == 'true' }}
+          if: ${{ inputs.dependency-cache == 'true' && inputs.save-cache == 'true' }}
           uses: actions/cache@v6
           with:
-              path: ${{ steps.cache.outputs.path }}
-              key: ${{ steps.cache.outputs.key }}
-              restore-keys: ${{ steps.cache.outputs.restore-key }}
+              path: ~/.bun/install/cache
+              key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+              restore-keys: |
+                  ${{ runner.os }}-bun-
 
         - name: Disable optional MongoDB binary download
           shell: bash
@@ -75,7 +59,4 @@ runs:
 
         - name: Install dependencies
           shell: bash
-          env:
-              PROFILE: ${{ inputs.dependency-profile }}
-              BUN_INSTALL_CACHE_DIR: ${{ steps.cache.outputs.path }}
           run: bun install --frozen-lockfile

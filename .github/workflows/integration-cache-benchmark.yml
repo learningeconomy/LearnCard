@@ -1,7 +1,7 @@
 name: Integration cache benchmark
 
-# A unique namespace forces a cold scoped-cache sample, then two concurrent
-# comparisons exercise the same six commands with full and scoped warm caches.
+# Two same-commit comparisons of the existing warm package archive versus a
+# fresh runner-local install. Both layouts run all six suite commands.
 on:
     pull_request:
         types: [labeled]
@@ -11,55 +11,36 @@ permissions:
     contents: read
 
 jobs:
-    cold:
+    first:
         if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'benchmark-integration-cache'
-        name: Cold scoped (${{ matrix.group }})
+        name: First (${{ matrix.cache && 'cached' || 'uncached' }}, ${{ matrix.group }})
         strategy:
             fail-fast: false
             matrix:
                 group: [graph, delivery]
+                cache: [true, false]
         uses: ./.github/workflows/brain-integration.yml
         with:
             group: ${{ matrix.group }}
             ref: ${{ github.event.pull_request.head.sha || github.sha }}
-            dependency_profile: brain-integration
-            cache_suffix: benchmark-${{ github.run_id }}
+            dependency_cache: ${{ matrix.cache }}
         secrets:
             DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
             DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
-    warm-first:
-        name: Warm first (${{ matrix.profile }}, ${{ matrix.group }})
-        needs: cold
+    repeat:
+        needs: first
+        name: Repeat (${{ matrix.cache && 'cached' || 'uncached' }}, ${{ matrix.group }})
         strategy:
             fail-fast: false
             matrix:
                 group: [graph, delivery]
-                profile: [workspace, brain-integration]
+                cache: [true, false]
         uses: ./.github/workflows/brain-integration.yml
         with:
             group: ${{ matrix.group }}
             ref: ${{ github.event.pull_request.head.sha || github.sha }}
-            dependency_profile: ${{ matrix.profile }}
-            cache_suffix: ${{ matrix.profile == 'brain-integration' && format('benchmark-{0}', github.run_id) || '' }}
-        secrets:
-            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
-            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
-
-    warm-repeat:
-        name: Warm repeat (${{ matrix.profile }}, ${{ matrix.group }})
-        needs: warm-first
-        strategy:
-            fail-fast: false
-            matrix:
-                group: [graph, delivery]
-                profile: [workspace, brain-integration]
-        uses: ./.github/workflows/brain-integration.yml
-        with:
-            group: ${{ matrix.group }}
-            ref: ${{ github.event.pull_request.head.sha || github.sha }}
-            dependency_profile: ${{ matrix.profile }}
-            cache_suffix: ${{ matrix.profile == 'brain-integration' && format('benchmark-{0}', github.run_id) || '' }}
+            dependency_cache: ${{ matrix.cache }}
         secrets:
             DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
             DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}

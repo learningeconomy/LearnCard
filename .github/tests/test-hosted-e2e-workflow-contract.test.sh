@@ -124,7 +124,7 @@ abort 'other setup consumers must retain cache saving by default' unless setup.d
 restore = setup.fetch('runs').fetch('steps').find { |step| step['uses'] == 'actions/cache/restore@v6' }
 save = setup.fetch('runs').fetch('steps').find { |step| step['uses'] == 'actions/cache@v6' }
 abort 'cache reader/writer paths and keys must match' unless restore.fetch('with') == save.fetch('with')
-abort 'cache modes must be mutually exclusive' unless restore.fetch('if') == "${{ inputs.save-cache != 'true' }}" && save.fetch('if') == "${{ inputs.save-cache == 'true' }}"
+abort 'cache modes must be mutually exclusive' unless restore.fetch('if') == "${{ inputs.dependency-cache == 'true' && inputs.save-cache != 'true' }}" && save.fetch('if') == "${{ inputs.dependency-cache == 'true' && inputs.save-cache == 'true' }}"
 abort 'aggregate required-gate name must be stable' unless aggregate.fetch('name') == 'E2E'
 
 expected_browser_specs = 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts'

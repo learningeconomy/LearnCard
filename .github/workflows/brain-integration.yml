@@ -11,14 +11,10 @@ on:
                 description: 'Exact tested revision (or explicitly selected manual branch)'
                 required: true
                 type: string
-            dependency_profile:
-                description: 'Dependency installation/cache profile'
-                type: string
-                default: brain-integration
-            cache_suffix:
-                description: 'Isolated cache namespace for benchmarks'
-                type: string
-                default: ''
+            dependency_cache:
+                description: 'Restore/save the Bun package archive'
+                type: boolean
+                default: false
             run_brain:
                 type: boolean
                 default: true
@@ -69,8 +65,7 @@ jobs:
               id: setup
               uses: ./.github/actions/setup
               with:
-                  dependency-profile: ${{ inputs.dependency_profile }}
-                  cache-suffix: ${{ inputs.cache_suffix }}
+                  dependency-cache: ${{ inputs.dependency_cache }}
 
             - name: Authenticate Docker Hub pulls
               id: docker
