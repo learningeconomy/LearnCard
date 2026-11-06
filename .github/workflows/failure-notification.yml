@@ -46,6 +46,7 @@ on:
             - Tailwind visual regression
             - Test Runner
             - Integration runner benchmark
+            - Integration cache benchmark
             - Update DIDKit WASM
             - Validate Published Package Contracts
             - LearnCard Verification

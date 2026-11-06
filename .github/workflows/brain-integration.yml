@@ -11,6 +11,14 @@ on:
                 description: 'Exact tested revision (or explicitly selected manual branch)'
                 required: true
                 type: string
+            dependency_profile:
+                description: 'Dependency installation/cache profile'
+                type: string
+                default: brain-integration
+            cache_suffix:
+                description: 'Isolated cache namespace for benchmarks'
+                type: string
+                default: ''
             run_brain:
                 type: boolean
                 default: true
@@ -60,6 +68,9 @@ jobs:
             - name: Setup workspace
               id: setup
               uses: ./.github/actions/setup
+              with:
+                  dependency-profile: ${{ inputs.dependency_profile }}
+                  cache-suffix: ${{ inputs.cache_suffix }}
 
             - name: Authenticate Docker Hub pulls
               id: docker

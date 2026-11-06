@@ -79,3 +79,25 @@ critical path because suites execute sequentially. This comparison uses a common
 setup harness for both layouts; it measures grouping, not every historical setup
 difference. Hosted suite results validate CI orchestration, not the full
 application verification catalog.
+
+## Integration dependency cache
+
+The two integration groups opt into the setup action's `brain-integration`
+profile. Bun installs Brain, LCA and the Nx executor plus their transitive
+workspace dependencies (`...` filters); the root toolchain remains included.
+Other setup consumers use the existing full-workspace profile by default.
+
+The profile restores only its own Bun package cache under the runner temporary
+directory. Its key includes OS/architecture, Bun version, Node pin, lockfile,
+workspace manifests, Bun configuration and the setup action. It uses exact hits,
+without falling back to the large full-workspace cache or older dependency graphs.
+Every run still performs a frozen install; neither installed modules nor test
+results are cached by this change.
+
+Apply `benchmark-integration-cache` to opt into a cold/warm comparison. A unique
+run-ID cache suffix forces two cold filtered jobs (graph and delivery). Two later
+rounds each run both groups with both the full and filtered profiles, for ten
+jobs total and at most four in parallel. Inspect cache misses/hits and archive
+size in setup logs, and compare setup time, total runner time, elapsed span and
+identical test counts. A failed cold run blocks the warm comparison. Manual
+dispatch is available once the workflow reaches the default branch.
