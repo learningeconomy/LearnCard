@@ -654,10 +654,16 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 }
 
                 if (currentUser?.privateKey) {
-                    await updateCurrentUser(currentUser.uid, {
-                        name: displayName,
-                        profileImage: photo,
-                    });
+                    // Local cache only: the profile already exists, so a failed write
+                    // must not fail sign-up (a retry would hit "Account already exists").
+                    try {
+                        await updateCurrentUser(currentUser.uid, {
+                            name: displayName,
+                            profileImage: photo,
+                        });
+                    } catch (e) {
+                        log.error('Local user cache update failed:', e);
+                    }
                     currentUserStore.set.currentUser({
                         ...currentUser,
                         name: displayName,
