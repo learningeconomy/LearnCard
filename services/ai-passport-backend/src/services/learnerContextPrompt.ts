@@ -17,18 +17,31 @@ import {
     LearnerCredentialSummaryValidator,
 } from '../ai/generation-schemas';
 
+const learnerContextPromptFields = {
+    personalFields: z.array(z.string().trim().min(1)).max(100).default([]),
+    instructions: z.string().max(8_000).optional(),
+    detailLevel: z.enum(['compact', 'expanded']).default('compact'),
+    includeStructuredContext: z.boolean().default(false),
+    maxCredentials: z.number().int().positive().optional(),
+} as const;
+
+// Untrusted HTTP selection: bound request size. Consent receipts are not limited
+// to this count, so trusted MCP callers use the internal parser below.
 const LearnerContextPromptRequestValidator = z
     .object({
         credentialUris: z.array(z.string().trim().min(1)).max(500).default([]),
-        personalFields: z.array(z.string().trim().min(1)).max(100).default([]),
-        instructions: z.string().max(8_000).optional(),
-        detailLevel: z.enum(['compact', 'expanded']).default('compact'),
-        includeStructuredContext: z.boolean().default(false),
-        maxCredentials: z.number().int().positive().optional(),
+        ...learnerContextPromptFields,
     })
     .strict();
 
-type LearnerContextPromptRequest = z.infer<typeof LearnerContextPromptRequestValidator>;
+const LearnerContextPromptInternalValidator = z
+    .object({
+        credentialUris: z.array(z.string().trim().min(1)).default([]),
+        ...learnerContextPromptFields,
+    })
+    .strict();
+
+type LearnerContextPromptRequest = z.infer<typeof LearnerContextPromptInternalValidator>;
 const CREDENTIAL_SUMMARY_CACHE_VERSION = 'v4-verified-consent';
 const LEARNER_CONTEXT_PROMPT_CACHE_VERSION = 'v3-verified-consent';
 const DIRECT_SYNTHESIS_MAX_CREDENTIALS = 20;
@@ -95,9 +108,12 @@ const runWithConcurrency = async <T>(
 export const parseLearnerContextPromptRequest = (input: unknown): LearnerContextPromptRequest =>
     LearnerContextPromptRequestValidator.parse(input);
 
+const parseLearnerContextPromptInternal = (input: unknown): LearnerContextPromptRequest =>
+    LearnerContextPromptInternalValidator.parse(input);
+
 export const generateLearnerContextPrompt = async (request: LearnerContextPromptRequest) => {
     const startedAt = performance.now();
-    const input = parseLearnerContextPromptRequest(request);
+    const input = parseLearnerContextPromptInternal(request);
     const did = getCurrentAiSubject();
     if (!did)
         throw new LearnerContextPromptError(
