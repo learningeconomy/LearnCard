@@ -705,6 +705,68 @@ describe('transcript requests', () => {
             expect((await caller().getStatus()).latest?.requestId).toBe(requestId);
         });
 
+        it('keeps the owner history out of a stale-uid wallet that owns a different school identity', async () => {
+            const { requestId } = await caller().request({ consent: true });
+            // The owner was rebound/revoked off uid-test; its identity stays pinned to its DID.
+            await mongodb
+                .collection('userkeys')
+                .updateOne(
+                    { primaryDid: did },
+                    { $set: { authProviders: [{ type: 'firebase', id: 'uid-rebound' }] } }
+                );
+            await getClassLinkIdentitiesCollection().updateOne(
+                { identityKey },
+                { $set: { primaryDid: did } }
+            );
+            // A stale uid-test session made wallet B and connected another school identity,
+            // which School Connect stored under B's uid (uid-test).
+            const freshKey = {
+                primaryDid: 'did:key:fresh',
+                linkedDids: [],
+                authProviders: [{ type: 'firebase', id: 'uid-test' }],
+            };
+            await mongodb.collection('userkeys').insertOne({ ...freshKey });
+            await upsertClassLinkIdentity({
+                identityKey: 'classlink:tenant-test:other',
+                firebaseUid: 'uid-test',
+                subject: 'subject-other',
+                tenantId: 'tenant-test',
+                sub: 'other-sub',
+                role: 'student',
+                email: 'other@example.edu',
+                state: 'XX',
+                sealedStateStudentId: sealStateStudentId(
+                    'other-student-id',
+                    'classlink:tenant-test:other',
+                    new Date(),
+                    86400
+                ),
+                lastAuthTime: new Date(),
+                primaryDid: 'did:key:fresh',
+            });
+            const fresh = caller({ did: 'did:key:fresh', isChallengeValid: true });
+            // B resolves its own identity, but never sees or touches the owner's history.
+            expect((await fresh.getStatus()).latest?.requestId).not.toBe(requestId);
+            await expect(fresh.markReceived({ requestId })).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+            await fresh.request({ consent: true });
+            expect(await getTranscriptRequestsCollection().countDocuments({ jti: requestId })).toBe(
+                1
+            );
+            await fresh.request({ consent: true }).catch(() => undefined);
+            const before = await getTranscriptRequestsCollection().countDocuments({
+                primaryDid: did,
+            });
+            await deleteClassLinkDataForAccount(freshKey as never);
+            expect(
+                await getTranscriptRequestsCollection().countDocuments({ primaryDid: did })
+            ).toBe(before);
+            const stored = await getTranscriptRequestsCollection().findOne({ jti: requestId });
+            expect(stored?.receivedAt).toBeUndefined();
+            expect((await caller().getStatus()).latest?.requestId).toBe(requestId);
+        });
+
         it('keeps transcript history after the ClassLink identity is rebound to a new uid', async () => {
             const { requestId } = await caller().request({ consent: true });
             await mongodb

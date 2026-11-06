@@ -112,8 +112,9 @@ export const findClassLinkIdentitiesForAccount = async (
     (await matchClassLinkIdentitiesForAccount(userKey)).identities;
 
 /**
- * The account's Firebase uids that may prove ownership of ClassLink-era records (e.g.
- * transcript requests): every Firebase provider except a uid that another live account owns.
+ * The Firebase uids that may prove ownership of ClassLink-era records (e.g. transcript
+ * requests): the account's Firebase providers and its owned identities' uids, except a uid
+ * that another live account owns.
  * A uid is foreign when
  *
  * - it only belongs to an identity held by another live account, or
@@ -132,9 +133,18 @@ export const getOwningFirebaseUids = async (
     const foreign = new Set(
         heldElsewhere.map(identity => identity.firebaseUid).filter(uid => !owned.has(uid))
     );
-    const candidates = (userKey.authProviders ?? [])
-        .filter(provider => provider.type === 'firebase' && !foreign.has(provider.id))
-        .map(provider => provider.id);
+    // The owned identities' uids are candidates too (after a recovery rebind the identity
+    // keeps the old uid while the account has a new one), but they get exactly the same
+    // foreign check: an identity this account owns can carry a uid whose history belongs
+    // to another live account (e.g. School Connect from a stale-uid wallet stores that uid).
+    const candidates = [
+        ...new Set([
+            ...(userKey.authProviders ?? [])
+                .filter(provider => provider.type === 'firebase')
+                .map(provider => provider.id),
+            ...identities.map(identity => identity.firebaseUid),
+        ]),
+    ].filter(uid => Boolean(uid) && !foreign.has(uid));
     if (candidates.length === 0) return [];
 
     const accountDids = getAccountDids(userKey);
@@ -252,7 +262,8 @@ export interface ClassLinkContext {
     tenant: ClassLinkTenantConfig | undefined;
     /**
      * Firebase uids that prove ownership of the account's ClassLink-era records: the
-     * identity's uid plus the account's own (see `getOwningFirebaseUids`).
+     * account's and its identities' uids, minus any whose history another live account owns
+     * (see `getOwningFirebaseUids`).
      */
     ownerFirebaseUids: string[];
 }
@@ -289,9 +300,9 @@ export const resolveClassLinkContext = async (did: string): Promise<ClassLinkCon
         firebaseUid: identity.firebaseUid,
         identity,
         tenant,
-        ownerFirebaseUids: [
-            ...new Set([identity.firebaseUid, ...(await getOwningFirebaseUids(userKey, matched))]),
-        ],
+        // Never re-add identity.firebaseUid here: getOwningFirebaseUids already considers it
+        // and may have excluded it as another live account's history.
+        ownerFirebaseUids: await getOwningFirebaseUids(userKey, matched),
     };
 };
 
@@ -299,7 +310,10 @@ export const resolveClassLinkContext = async (did: string): Promise<ClassLinkCon
  * Record the account's DID on its ClassLink identities that do not have one yet (fill-only).
  * Called before a recovery rebind or "Secure my account" removes a Firebase login, so a later
  * wallet created with that stale uid is recognised as not owning the identity (see
- * `findClassLinkIdentitiesForAccount`). Best effort: never blocks the key operation.
+ * `findClassLinkIdentitiesForAccount`). This can be the identity's first DID binding, so it
+ * must be durable before the login is removed: a failure throws, and the key operation must
+ * not proceed. The rebind pins before it spends the recovery token, so the same token can be
+ * retried.
  */
 export const pinClassLinkIdentitiesToAccount = async (
     userKey: Pick<MongoUserKeyType, 'authProviders' | 'primaryDid'>
@@ -318,6 +332,11 @@ export const pinClassLinkIdentitiesToAccount = async (
             { $set: { primaryDid: did, updatedAt: new Date() } }
         );
     } catch {
+        // Log no values; the cause may carry identifiers.
         console.error('classlink.identity.pin_failed');
+        throw new TRPCError({
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Your account could not be updated right now. Please try again.',
+        });
     }
 };

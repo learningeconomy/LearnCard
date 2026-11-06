@@ -16,6 +16,8 @@ import {
     type MongoUserKeyType,
 } from '@models';
 import * as delivery from '../src/services/delivery';
+import { Collection } from 'mongodb';
+import { getClassLinkIdentitiesCollection } from '../src/models/ClassLinkIdentity';
 
 import { getClient, getUser } from './helpers/getClient';
 
@@ -347,6 +349,109 @@ describe('P0-3 lost-identity recovery sessions', () => {
         } finally {
             vi.restoreAllMocks();
             await collection.deleteMany({ recoveryEmail });
+            await cache.node.flushall();
+        }
+    });
+
+    /** Recover an account through a phrase and return the rebind token. */
+    const recoverToRebind = async (recoveryEmail: string): Promise<string> => {
+        const code = await startAndReadCode(recoveryEmail);
+        const verified = await getClient().keys.verifyRecoverySession({
+            email: recoveryEmail,
+            code,
+        });
+        const recovered = await getClient().keys.useRecoverySession({
+            recoverySessionToken: verified.recoverySessionToken,
+            type: 'phrase',
+        });
+        return recovered.rebindSessionToken;
+    };
+
+    it.each([
+        ['pins the ClassLink identity to the account DID before removing the old uid', false],
+        ['stops the rebind, keeping the old uid, when the ClassLink pin fails', true],
+    ])('%s', async (_name, pinFails) => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const recoveryEmail = `recovery-pin-${suffix}@example.com`;
+        const oldUid = `old-pin-${suffix}`;
+        const newUid = `new-pin-${suffix}`;
+        const identityKey = `classlink:pin-test:${suffix}`;
+        const { learnCard } = await getUser('e'.repeat(64));
+        const did = learnCard.id.did();
+        const collection = getUserKeysCollection();
+        await collection.insertOne(
+            makeRecoverableUser(`old-pin-${suffix}@example.edu`, recoveryEmail, oldUid, did)
+        );
+        // First ClassLink sign-in created the identity before any DID was recorded.
+        await getClassLinkIdentitiesCollection().insertOne({
+            identityKey,
+            firebaseUid: oldUid,
+            subject: `subject-${suffix}`,
+            tenantId: 'pin-test',
+            sub: 'sub',
+            role: 'student',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        } as never);
+
+        try {
+            const rebindSessionToken = await recoverToRebind(recoveryEmail);
+            if (pinFails) {
+                const original = Collection.prototype.updateMany;
+                vi.spyOn(Collection.prototype, 'updateMany').mockImplementation(function (
+                    this: Collection,
+                    ...args: Parameters<Collection['updateMany']>
+                ) {
+                    if (this.collectionName === 'classlinkidentities')
+                        return Promise.reject(new Error('transient write failure'));
+                    return original.apply(this, args);
+                } as never);
+            }
+            const doRebind = () =>
+                getClient({ did, isChallengeValid: true }).keys.completeRecoveryRebind({
+                    recoverySessionToken: rebindSessionToken,
+                    newAuthToken: makeMockToken(`new-pin-${suffix}@example.com`, newUid),
+                    providerType: 'firebase',
+                    primaryDid: did,
+                    authShare: { encryptedData: 'rotated-auth-share', encryptedDek: '', iv: '' },
+                });
+            const rebind = doRebind();
+            const stored = async () => collection.findOne({ primaryDid: did });
+            const identity = async () =>
+                getClassLinkIdentitiesCollection().findOne({ identityKey });
+
+            if (pinFails) {
+                await expect(rebind).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+                // Nothing was removed: the old login still owns the account.
+                expect((await stored())?.authProviders).toContainEqual({
+                    type: 'firebase',
+                    id: oldUid,
+                });
+                expect((await stored())?.authProviders).not.toContainEqual({
+                    type: 'firebase',
+                    id: newUid,
+                });
+                expect((await identity())?.primaryDid).toBeUndefined();
+                // The token was not spent: once storage recovers, the same token completes it.
+                vi.restoreAllMocks();
+                await expect(doRebind()).resolves.toMatchObject({ success: true });
+                expect((await identity())?.primaryDid).toBe(did);
+                expect((await stored())?.authProviders).not.toContainEqual({
+                    type: 'firebase',
+                    id: oldUid,
+                });
+            } else {
+                await expect(rebind).resolves.toMatchObject({ success: true });
+                expect((await stored())?.authProviders).not.toContainEqual({
+                    type: 'firebase',
+                    id: oldUid,
+                });
+                expect((await identity())?.primaryDid).toBe(did);
+            }
+        } finally {
+            vi.restoreAllMocks();
+            await collection.deleteMany({ recoveryEmail });
+            await getClassLinkIdentitiesCollection().deleteMany({ identityKey });
             await cache.node.flushall();
         }
     });

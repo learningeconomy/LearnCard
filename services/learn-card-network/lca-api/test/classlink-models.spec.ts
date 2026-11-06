@@ -304,7 +304,7 @@ describe('account-keyed ClassLink lookup', () => {
             expect(await getOwningFirebaseUids(freshKey, matched)).toEqual([]);
             // The owner still owns its history through the identity's uid and its DID.
             const owner = await resolveClassLinkContext(did);
-            expect(owner.ownerFirebaseUids).toEqual(['uid-x', 'rebound-uid']);
+            expect([...owner.ownerFirebaseUids].sort()).toEqual(['rebound-uid', 'uid-x']);
         });
     });
 

@@ -78,11 +78,9 @@ export const deleteClassLinkDataForAccount = async (
             await getAuthSubjectsCollection().deleteMany({ identityKey: { $in: identityKeys } })
         ).deletedCount;
 
-    const firebaseUids = [
-        // A uid whose identity another live account owns proves nothing about its history.
-        ...(await getOwningFirebaseUids(account, matched)),
-        ...identities.map(identity => identity.firebaseUid),
-    ];
+    // Includes the identities' uids unless another live account owns their history; never
+    // re-add them here, or a stale-uid wallet could delete the owner's transcript rows.
+    const firebaseUids = await getOwningFirebaseUids(account, matched);
     const dids = [
         ...getAccountDids(account),
         ...identities.map(identity => identity.primaryDid ?? ''),

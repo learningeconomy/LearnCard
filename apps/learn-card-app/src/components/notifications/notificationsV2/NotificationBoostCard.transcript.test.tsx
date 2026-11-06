@@ -38,11 +38,14 @@ const mocks = vi.hoisted(() => ({
     markReceived: vi.fn(),
     invalidateQueries: vi.fn(),
     wallet: undefined as unknown,
+    addVCtoWallet: vi.fn(),
+    indexGet: vi.fn(),
 }));
 
 mocks.wallet = {
     id: { did: () => 'did:user' },
     invoke: { transcriptsMarkReceived: mocks.markReceived },
+    index: { LearnCloud: { get: mocks.indexGet } },
 };
 
 vi.mock('react-router-dom', () => ({ useHistory: () => ({ replace: mocks.replace }) }));
@@ -93,7 +96,7 @@ vi.mock('learn-card-base', () => ({
     useGetCredentialWithEdits: () => ({ credentialWithEdits: undefined }),
     useGetBoost: () => ({ data: undefined }),
     useWallet: () => ({
-        addVCtoWallet: vi.fn(),
+        addVCtoWallet: mocks.addVCtoWallet,
         initWallet: async () => mocks.wallet,
     }),
     contractCategoryNameToCategoryMetadata: () => undefined,
@@ -156,6 +159,8 @@ beforeEach(() => {
     mocks.claimIncomingCredential.mockResolvedValue({ added: true, accepted: true });
     mocks.isMatchingTranscript.mockResolvedValue(true);
     mocks.markReceived.mockResolvedValue({ success: true });
+    mocks.indexGet.mockResolvedValue([]);
+    mocks.addVCtoWallet.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -336,6 +341,37 @@ describe('NotificationBoostCard claim deep link', () => {
         expect(mocks.presentToast).not.toHaveBeenCalled();
         expect(mocks.newModal).not.toHaveBeenCalled();
         vi.unstubAllGlobals();
+    });
+
+    it('restores a missing wallet entry before acknowledging when the claim write resolved false', async () => {
+        mocks.statusQuery = { data: outstanding, isFetched: true, isError: false };
+        mocks.claimIncomingCredential.mockResolvedValue({ added: false, accepted: true });
+        renderCard();
+        await waitFor(() => expect(mocks.markReceived).toHaveBeenCalledTimes(1));
+        expect(mocks.indexGet).toHaveBeenCalledWith({ uri: CRED_URI }, { cache: 'skip-cache' });
+        expect(mocks.addVCtoWallet).toHaveBeenCalledWith({ uri: CRED_URI });
+        expect(mocks.addVCtoWallet.mock.invocationCallOrder[0]).toBeLessThan(
+            mocks.markReceived.mock.invocationCallOrder[0]
+        );
+    });
+
+    it('never acknowledges when the wallet entry cannot be restored', async () => {
+        mocks.statusQuery = { data: outstanding, isFetched: true, isError: false };
+        mocks.claimIncomingCredential.mockResolvedValue({ added: false, accepted: true });
+        mocks.addVCtoWallet.mockResolvedValue(false);
+        renderCard();
+        await waitFor(() => expect(mocks.presentToast).toHaveBeenCalled());
+        expect(mocks.markReceived).not.toHaveBeenCalled();
+        expect(mocks.replace).not.toHaveBeenCalledWith('/school-connect?view=transcript');
+    });
+
+    it('skips the re-add when the wallet already has the entry', async () => {
+        mocks.statusQuery = { data: outstanding, isFetched: true, isError: false };
+        mocks.claimIncomingCredential.mockResolvedValue({ added: false, accepted: true });
+        mocks.indexGet.mockResolvedValue([{ uri: CRED_URI }]);
+        renderCard();
+        await waitFor(() => expect(mocks.markReceived).toHaveBeenCalledTimes(1));
+        expect(mocks.addVCtoWallet).not.toHaveBeenCalled();
     });
 
     it('cold start: falls back to the generic modal if status never settles', async () => {

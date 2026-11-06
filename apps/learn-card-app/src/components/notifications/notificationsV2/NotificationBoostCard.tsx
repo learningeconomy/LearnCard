@@ -52,6 +52,7 @@ import {
     isMatchingTranscript,
 } from '../../../hooks/useTranscriptArrival';
 import { claimTranscriptOnce } from '../../../hooks/transcriptClaim';
+import { ensureTranscriptInWallet } from '../../../hooks/ensureTranscriptInWallet';
 import {
     useTranscriptStatus,
     claimIncomingCredential,
@@ -391,12 +392,17 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 // Shared with useTranscriptArrival so a mounted card polling the same
                 // request can never claim it a second time.
                 const claimedHere = await claimTranscriptOnce(requestId, async () => {
-                    await claimIncomingCredential({
+                    const { added } = await claimIncomingCredential({
                         uri: credentialUri,
                         wallet,
                         addVCtoWallet,
                         queryClient,
                     });
+                    // The network may have accepted it while the wallet write resolved false.
+                    // Restore the entry before anything is acknowledged; a failure throws, so
+                    // the request is not marked received and useTranscriptArrival recovers it.
+                    if (!added)
+                        await ensureTranscriptInWallet(wallet, credentialUri, addVCtoWallet);
                 });
                 claimed = true;
                 setIsClaimed(true);
