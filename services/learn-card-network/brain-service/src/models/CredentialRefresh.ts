@@ -54,6 +54,7 @@ export const CredentialRefresh = ModelFactory<
             materialDigest: { type: 'string', required: false },
             rootMaterialDigest: { type: 'string', required: false },
             credentialStatusDigest: { type: 'string', required: false },
+            statusEntries: { type: 'string', required: false },
             credentialSubjectDigest: { type: 'string', required: false },
             boostId: { type: 'string', required: false },
             signingMode: {
@@ -63,6 +64,7 @@ export const CredentialRefresh = ModelFactory<
             },
             idempotencyKey: { type: 'string', required: false },
             updateSummary: { type: 'string', required: false },
+            updateReason: { type: 'string', required: false },
             lastPublishedAt: { type: 'string', required: false },
             notificationWindowKey: { type: 'string', required: false },
             lastNotificationId: { type: 'string', required: false },

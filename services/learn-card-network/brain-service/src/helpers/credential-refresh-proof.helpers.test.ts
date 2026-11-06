@@ -82,7 +82,7 @@ describe('managed refresh proof verification', () => {
             {
                 code: 'BAD_REQUEST',
                 message: 'Credential proof could not be verified',
-                cause,
+                cause: expect.objectContaining({ message: 'CREDENTIAL_PROOF_INVALID' }),
             }
         );
         expect(verifier.verifyCredential).toHaveBeenCalledTimes(retry ? 2 : 1);

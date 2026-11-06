@@ -588,18 +588,21 @@ describe('Credential Refresh Endpoint', () => {
             const first = await preAuthSourceLimitedApp.inject({
                 method: 'GET',
                 url: '/refresh/rate-limited-source-a',
+                remoteAddress: '192.0.2.234',
             });
             expect(first.statusCode).toBe(401);
 
             const second = await preAuthSourceLimitedApp.inject({
                 method: 'GET',
                 url: '/refresh/rate-limited-source-b',
+                remoteAddress: '192.0.2.234',
             });
             expect(second.statusCode).toBe(401);
 
             const limited = await preAuthSourceLimitedApp.inject({
                 method: 'GET',
                 url: '/refresh/rate-limited-source-c',
+                remoteAddress: '192.0.2.234',
             });
             expect(limited.statusCode).toBe(429);
             expect(limited.json().jwe).toBeUndefined();

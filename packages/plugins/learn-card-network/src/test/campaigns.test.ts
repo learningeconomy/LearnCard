@@ -24,6 +24,9 @@ const mockClient = () => ({
     },
     campaigns: {
         isAdmin: query(),
+        dispatch: mutation(),
+        previewDispatch: query(),
+        sendTestToMe: mutation(),
         create: mutation(),
         update: mutation(),
         get: query(),
@@ -34,7 +37,7 @@ const mockClient = () => ({
         addAudience: mutation(),
         pageAudience: query(),
         getStats: query(),
-        getMyCampaigns: query(),
+        getMyCampaigns: { query: vi.fn<() => Promise<unknown>>().mockResolvedValue([]) },
         recordEvent: mutation(),
         enroll: mutation(),
     },
@@ -43,6 +46,70 @@ const mockClient = () => ({
 beforeEach(() => vi.clearAllMocks());
 
 describe('campaign network plugin methods', () => {
+    it('previews recipients and forwards the reviewed token to dispatch', async () => {
+        const client = mockClient();
+        vi.mocked(getClient).mockResolvedValue(client as never);
+        const { methods } = await getLearnCardNetworkPlugin(wallet, 'https://network.example/trpc');
+        await methods.campaignsPreviewDispatch(wallet, 'pilot-clr');
+        expect(client.campaigns.previewDispatch.query).toHaveBeenCalledWith({
+            campaignId: 'pilot-clr',
+        });
+        await methods.campaignsDispatch(wallet, 'pilot-clr', {
+            expectedPreviewToken: 'a'.repeat(64),
+        });
+        expect(client.campaigns.dispatch.mutate).toHaveBeenCalledWith({
+            campaignId: 'pilot-clr',
+            expectedPreviewToken: 'a'.repeat(64),
+        });
+    });
+
+    it('acknowledges a private test through the existing recordEvent endpoint', async () => {
+        const client = mockClient();
+        vi.mocked(getClient).mockResolvedValue(client as never);
+        const { methods } = await getLearnCardNetworkPlugin(wallet, 'https://network.example/trpc');
+        const testId = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
+        await methods.recordCampaignEvent(wallet, 'pilot-clr', 'shown', testId);
+        expect(client.campaigns.recordEvent.mutate).toHaveBeenCalledWith({
+            campaignId: 'pilot-clr',
+            event: 'shown',
+            testId,
+        });
+    });
+    it('validates campaign messages before returning them to the renderer', async () => {
+        const client = mockClient();
+        vi.mocked(getClient).mockResolvedValue(client as never);
+        const { methods } = await getLearnCardNetworkPlugin(wallet, 'https://network.example/trpc');
+        const item = {
+            campaign: {
+                id: 'pilot-clr',
+                message: { id: 'pilot-clr', title: 'Welcome', presentation: 'modal' },
+                selfEnroll: false,
+            },
+            state: { shownCount: 0 },
+        };
+        client.campaigns.getMyCampaigns.query.mockResolvedValue([item]);
+        await expect(methods.getMyCampaigns(wallet)).resolves.toMatchObject([item]);
+        for (const invalid of [null, {}, 'invalid']) {
+            client.campaigns.getMyCampaigns.query.mockResolvedValue(invalid);
+            await expect(methods.getMyCampaigns(wallet)).rejects.toThrow('expected an array');
+        }
+
+        for (const message of [
+            null,
+            { ...item.campaign.message, presentation: 'unsupported' },
+            {
+                ...item.campaign.message,
+                actions: [{ type: 'navigate', path: 'javascript:alert(1)' }],
+            },
+        ]) {
+            client.campaigns.getMyCampaigns.query.mockResolvedValue([
+                { ...item, campaign: { ...item.campaign, message } },
+                item,
+            ]);
+            await expect(methods.getMyCampaigns(wallet)).resolves.toMatchObject([item]);
+        }
+    });
+
     it('forwards every campaign operation to the correct typed procedure', async () => {
         const client = mockClient();
         vi.mocked(getClient).mockResolvedValue(client as never);
@@ -70,6 +137,8 @@ describe('campaign network plugin methods', () => {
         await methods.campaignsAddAudience(wallet, source);
         await methods.campaignsPageAudience(wallet, { campaignId: campaign.id, limit: 20 });
         await methods.campaignsGetStats(wallet, campaign.id);
+        await methods.campaignsSendTestToMe(wallet, campaign.id);
+        await methods.campaignsDispatch(wallet, campaign.id);
         await methods.getMyCampaigns(wallet);
         await methods.recordCampaignEvent(wallet, campaign.id, 'shown');
         await methods.enrollInCampaign(wallet, campaign.id);
@@ -91,6 +160,10 @@ describe('campaign network plugin methods', () => {
             limit: 20,
         });
         expect(client.campaigns.getStats.query).toHaveBeenCalledWith({ campaignId: campaign.id });
+        expect(client.campaigns.sendTestToMe.mutate).toHaveBeenCalledWith({
+            campaignId: campaign.id,
+        });
+        expect(client.campaigns.dispatch.mutate).toHaveBeenCalledWith({ campaignId: campaign.id });
         expect(client.campaigns.getMyCampaigns.query).toHaveBeenCalledWith();
         expect(client.campaigns.recordEvent.mutate).toHaveBeenCalledWith({
             campaignId: campaign.id,
@@ -113,5 +186,18 @@ describe('campaign network plugin methods', () => {
         await expect(methods.enrollInCampaign(wallet, 'pilot-clr')).rejects.toThrow(
             'Profile is not eligible'
         );
+    });
+});
+
+describe('announcement preferences', () => {
+    it('requires a network profile for private preferences', async () => {
+        const client = mockClient();
+        client.profile.getProfile.query.mockResolvedValue(undefined);
+        vi.mocked(getClient).mockResolvedValue(client as never);
+        const { methods } = await getLearnCardNetworkPlugin(wallet, 'https://network.example/trpc');
+        await expect(methods.getAnnouncementPreferences(wallet)).rejects.toThrow();
+        await expect(
+            methods.updateAnnouncementPreferences(wallet, { announcementPushOptOut: true })
+        ).rejects.toThrow();
     });
 });

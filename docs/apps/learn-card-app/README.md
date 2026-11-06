@@ -32,6 +32,22 @@ See [Tailwind's browser requirements](https://tailwindcss.com/docs/compatibility
 
 ---
 
+## Privacy and optional diagnostics
+
+Open **Privacy & Data** to change **Usage Analytics**. The control stays unavailable while account preferences are loading or when the current profile is age-restricted. Child profiles are restricted regardless of their saved birth date. Other profiles use the existing country-specific age threshold; guardian and school profiles have no exemption.
+
+Preference reads and updates check the authenticated profile's current birth date, country and profile type. The API ignores client-supplied age flags, forces restricted analytics off and repairs incorrectly enabled saved preferences when they are read. Profile edits refresh the app's preference authorization. Becoming eligible after an age restriction does not restore the old opt-in automatically. Birth dates retain the existing strict ISO formats, including compact, week, ordinal and minute-precision dates; eligibility uses the birth date's calendar day.
+
+Age-restricted reads stay off even if saving a correction fails; a later read attempts the repair again. Other preference values remain readable.
+
+PostHog, Userflow, Firebase collection and optional Sentry replay/tracing remain off until both account preferences and tenant analytics policy resolve. Web Firebase is not initialized merely to disable collection. Turning Usage Analytics off stops optional collection immediately, including queued PostHog retries and Sentry replay uploads. An initialized Userflow session must be replaced by a fresh document before another session starts, including after account/profile changes, so messages from the retired session cannot be delivered under a new identity or permission.
+
+Necessary security error reporting remains separate from Usage Analytics. LaunchDarkly still supplies feature flags, but its optional analytics events and diagnostics are disabled.
+
+**Service configuration:** configure `NETWORK_BRAIN_SERVICE_URL` for the matching tenant's Brain service (`/trpc` or `/api`). Lambda reads this non-secret URL from checked-in per-stage service config; local Docker/standalone processes can use an explicit environment override. If that service or the authenticated self-profile is unavailable, analytics stays off but onboarding, theme and other preference operations remain available. Requests to enable analytics receive a retryable `SERVICE_UNAVAILABLE` error until authority recovers; mixed writes are not partially saved. This temporary restriction does not erase saved analytics consent or invent age metadata; first-login initialization waits for age authority to recover. An explicit opt-out is still saved. Authority failures are logged without authorization headers or profile data. The API never falls back to another tenant's network. Server-side age enforcement here covers analytics; AI and bug-reporting age controls remain client-side.
+
+The app shares fresh preference responses between consumers for 30 seconds within the same account/profile session. A replacement account instance requires a fresh read even for the same identifier; focus, reconnect and app-owned profile edits revalidate preferences.
+
 ## User Flows
 
 ### Finding Your Credentials
@@ -129,6 +145,16 @@ flowchart LR
 
 The success message appears only after saving is confirmed. If saving fails, the
 collection stays open with an error and the option to try again.
+An unreadable earlier saved copy does not prevent saving the current collection.
+
+Saved status belongs to the signed collection contents and the account that saved
+them, not to every collection from the same sender. If the sender replaces a link's
+contents, you can save the new selection. The saved list shows only the newest saved
+selection for each link; earlier saved copies are not deleted. Distinct shared links
+remain separate in the list, even when they contain the same presentation.
+
+The sender bubble uses the sender's current profile photo when available, with
+initials as a fallback. Saving a collection does not copy the viewer's or issuer's photo.
 
 Saved collections remain available under **Data & Sharing → Shared with you**, even
 when creating shared links is not enabled for your account. **View saved collections**

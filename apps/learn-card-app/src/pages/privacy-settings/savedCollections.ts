@@ -59,7 +59,9 @@ export const loadSavedCredentialCollections = async (
             return null;
         }
     });
-    const seen = new Set<string>();
+    // A signed presentation may be reused by distinct links. Collapse contextual
+    // saves by link identity; suppress matching legacy copies, not other links.
+    const seen = new Set(hydrated.flatMap(item => (item?.shareKey ? [item.presentationKey] : [])));
     const collections = hydrated
         .filter((item): item is NonNullable<typeof item> => item !== null)
         .sort(
@@ -68,13 +70,9 @@ export const loadSavedCredentialCollections = async (
                 new Date(a.collection.receivedAt).getTime()
         )
         .flatMap(item => {
-            if (
-                seen.has(item.presentationKey) ||
-                (item.shareKey !== undefined && seen.has(item.shareKey))
-            )
-                return [];
-            seen.add(item.presentationKey);
-            if (item.shareKey) seen.add(item.shareKey);
+            const key = item.shareKey ?? item.presentationKey;
+            if (seen.has(key)) return [];
+            seen.add(key);
             return [item.collection];
         });
     if (received.length > 0 && collections.length === 0 && readFailures > 0) {
