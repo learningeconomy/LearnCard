@@ -63,7 +63,6 @@ import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySel
 import LocationIcon from '../../svgs/LocationIcon';
 import UnderageModalContent from '../onboardingNetworkForm/components/UnderageModalContent';
 import GuardianLinkedModal from '../GuardianLinkedModal';
-import type { GuardianApprovalEmailStatus } from '@learncard/types';
 import { Confetti } from '../../../pages/issue/components/Confetti';
 
 import useLogout from '../../../hooks/useLogout';
@@ -294,8 +293,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const [euParentalConsentRequested, setEuParentalConsentRequested] = useState(false);
     const [guardianEmail, setGuardianEmail] = useState('');
     const [guardianEmailTouched, setGuardianEmailTouched] = useState(false);
-    const [guardianEmailStatus, setGuardianEmailStatus] =
-        useState<GuardianApprovalEmailStatus>('unknown');
 
     const [name, setName] = useState(
         () => adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
@@ -602,16 +599,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         await wallet.invoke.sendGuardianApprovalEmail({
                             guardianEmail: guardianEmail.trim(),
                         });
-                        setGuardianEmailStatus('accepted');
                     } catch (err) {
                         log.error('Failed to send guardian approval email:', err);
-                        // The profile exists either way; report what the server recorded.
-                        try {
-                            const recorded = await wallet.invoke.getGuardianApprovalStatus();
-                            setGuardianEmailStatus(recorded.status);
-                        } catch {
-                            setGuardianEmailStatus('unknown');
-                        }
                     }
                 }
 
@@ -1424,9 +1413,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                             </p>
                         ) : (
                             <p role="status" className="text-base text-grayscale-600">
-                                {guardianEmailStatus === 'accepted'
-                                    ? m['onboarding.v2.guardianEmailed']()
-                                    : m['onboarding.v2.guardianEmailNotSent']()}
+                                {m['onboarding.v2.guardianEmailed']()}
                             </p>
                         )}
                     </div>

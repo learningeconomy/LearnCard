@@ -17,7 +17,6 @@ const mocks = vi.hoisted(() => ({
     country: 'US',
     dob: '1990-01-01',
     sendGuardianApprovalEmail: vi.fn(),
-    getGuardianApprovalStatus: vi.fn(),
 }));
 const stableAdapter = vi.hoisted(() => ({
     getCurrentUser: () => ({ displayName: mocks.authName }),
@@ -35,7 +34,6 @@ vi.mock('learn-card-base', () => ({
                 createProfile: mocks.createProfile,
                 resetLCAClient: vi.fn(),
                 sendGuardianApprovalEmail: mocks.sendGuardianApprovalEmail,
-                getGuardianApprovalStatus: mocks.getGuardianApprovalStatus,
             },
         }),
     }),
@@ -250,9 +248,10 @@ describe('Apple profile onboarding', () => {
             await screen.findByText(m['onboarding.v2.almostThere']());
         };
 
-        it('confirms acceptance only when the provider accepted the email', async () => {
+        it('sends the guardian email and shows the guardian emailed message', async () => {
             mocks.sendGuardianApprovalEmail.mockResolvedValue({
                 message: 'ok',
+                approvalUrl: 'https://example.com/approve',
                 status: 'accepted',
             });
 
@@ -262,47 +261,21 @@ describe('Apple profile onboarding', () => {
                 guardianEmail: 'guardian@example.com',
             });
             expect(screen.getByText(m['onboarding.v2.guardianEmailed']())).toBeInTheDocument();
-            expect(
-                screen.queryByRole('button', { name: m['common.tryAgain']() })
-            ).not.toBeInTheDocument();
         });
 
-        it('does not claim the email was sent when it failed, and shows no retry controls', async () => {
+        it('still finishes onboarding with the guardian emailed message when the send fails, leaving status to the dashboard banner', async () => {
             mocks.sendGuardianApprovalEmail.mockRejectedValue(new Error('provider down'));
-            mocks.getGuardianApprovalStatus.mockResolvedValue({
-                pendingApproval: true,
-                status: 'failed',
-                guardianEmail: 'guardian@example.com',
-                attemptsRemaining: 4,
-            });
 
             await completeAsEUTeen();
 
             expect(
-                await screen.findByText(m['onboarding.v2.guardianEmailNotSent']())
+                await screen.findByText(m['onboarding.v2.guardianEmailed']())
             ).toBeInTheDocument();
-            expect(
-                screen.queryByText(m['onboarding.v2.guardianEmailed']())
-            ).not.toBeInTheDocument();
             expect(
                 screen.queryByRole('button', { name: m['common.tryAgain']() })
             ).not.toBeInTheDocument();
             expect(
                 screen.queryByRole('button', { name: m['onboarding.consent.eu.sendRequest']() })
-            ).not.toBeInTheDocument();
-        });
-
-        it('uses the same accurate copy when the outcome is unknown', async () => {
-            mocks.sendGuardianApprovalEmail.mockRejectedValue(new Error('network'));
-            mocks.getGuardianApprovalStatus.mockRejectedValue(new Error('network'));
-
-            await completeAsEUTeen();
-
-            expect(
-                await screen.findByText(m['onboarding.v2.guardianEmailNotSent']())
-            ).toBeInTheDocument();
-            expect(
-                screen.queryByText(m['onboarding.v2.guardianEmailed']())
             ).not.toBeInTheDocument();
         });
 
