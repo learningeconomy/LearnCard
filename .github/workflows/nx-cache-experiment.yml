@@ -1,0 +1,224 @@
+name: Nx cache experiment
+
+# Manual pilot only. Normal Test/E2E and production cache policy are untouched.
+on:
+    pull_request:
+        paths:
+            - '.github/workflows/nx-cache-experiment.yml'
+            - '.github/tests/test-nx-cache-experiment.test.cjs'
+            - 'scripts/nx-cache-experiment/**'
+    workflow_dispatch:
+        inputs:
+            consumer_ref:
+                description: 'PR head ref to replay (defaults to this workflow revision)'
+                type: string
+                default: ''
+            second_pr_ref:
+                description: 'Optional independent refs/pull/NUMBER/head to test reuse'
+                type: string
+                default: ''
+            merge_group_run_id:
+                description: 'Optional successful Test Runner merge_group run to replay'
+                type: string
+                default: ''
+            producer_run_id:
+                description: 'Optional prior successful experiment run supplying main-source task payloads'
+                type: string
+                default: ''
+
+permissions:
+    contents: read
+    actions: read
+
+jobs:
+    contracts:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+            - uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+            - run: node .github/tests/test-nx-cache-experiment.test.cjs
+
+    plan:
+        if: github.event_name == 'workflow_dispatch'
+        runs-on: ubuntu-latest
+        outputs:
+            main: ${{ steps.plan.outputs.main }}
+            matrix: ${{ steps.plan.outputs.matrix }}
+            producer-run: ${{ steps.plan.outputs.producer-run }}
+        steps:
+            - uses: actions/github-script@v8
+              id: plan
+              env:
+                  CONSUMER_REF: ${{ inputs.consumer_ref }}
+                  SECOND_PR_REF: ${{ inputs.second_pr_ref }}
+                  QUEUE_RUN: ${{ inputs.merge_group_run_id }}
+                  PRODUCER_RUN: ${{ inputs.producer_run_id }}
+              with:
+                  script: |
+                      const repo = context.repo;
+                      const resolve = async ref => {
+                        const { data } = await github.rest.repos.getCommit({ ...repo, ref });
+                        if (!/^[a-f0-9]{40}$/.test(data.sha)) throw new Error('Invalid source SHA');
+                        return data.sha;
+                      };
+                      const main = await resolve('main');
+                      const sourceRef = process.env.CONSUMER_REF || context.sha;
+                      const head = await resolve(sourceRef);
+                      const matrix = [];
+                      for (const repeat of [1, 2]) {
+                        for (const mode of ['off', 'cold', 'warm']) matrix.push({ mode, repeat, source: head, sourceRef, sample: 'paired' });
+                      }
+                      for (const probe of ['source', 'config', 'lock']) matrix.push({ mode: `invalidate-${probe}`, repeat: 1, source: head, sourceRef, sample: `invalidation-${probe}` });
+                      if (process.env.SECOND_PR_REF) {
+                        if (!/^refs\/pull\/[0-9]+\/head$/.test(process.env.SECOND_PR_REF)) throw new Error('Expected an independent PR head ref');
+                        const second = await resolve(process.env.SECOND_PR_REF);
+                        if (second === head || process.env.SECOND_PR_REF === sourceRef) throw new Error('Expected a different PR commit');
+                        matrix.push({ mode: 'warm', repeat: 1, source: second, sourceRef: process.env.SECOND_PR_REF, sample: 'second-pr' });
+                      }
+                      if (process.env.QUEUE_RUN) {
+                        if (!/^[0-9]+$/.test(process.env.QUEUE_RUN)) throw new Error('Invalid queue run ID');
+                        const { data: run } = await github.rest.actions.getWorkflowRun({ ...repo, run_id: Number(process.env.QUEUE_RUN) });
+                        if (run.event !== 'merge_group' || run.conclusion !== 'success' || run.path !== '.github/workflows/test.yml' || run.head_repository.full_name !== `${repo.owner}/${repo.repo}`) throw new Error('Expected a successful same-repository Test Runner merge-group run');
+                        matrix.push({ mode: 'warm', repeat: 1, source: run.head_sha, sourceRef: run.head_branch, originRunId: run.id, sample: 'queue-replay' });
+                      }
+                      if (process.env.PRODUCER_RUN) {
+                        if (!/^[0-9]+$/.test(process.env.PRODUCER_RUN)) throw new Error('Invalid producer run ID');
+                        const { data: run } = await github.rest.actions.getWorkflowRun({ ...repo, run_id: Number(process.env.PRODUCER_RUN) });
+                        if (run.conclusion !== 'success' || run.path !== '.github/workflows/nx-cache-experiment.yml' || run.event !== 'workflow_dispatch' || run.head_repository.full_name !== `${repo.owner}/${repo.repo}`) throw new Error('Expected a successful same-repository experiment producer run');
+                      }
+                      core.setOutput('main', main);
+                      core.setOutput('matrix', JSON.stringify({ include: matrix }));
+                      core.setOutput('producer-run', process.env.PRODUCER_RUN || String(context.runId));
+
+    producer:
+        if: inputs.producer_run_id == ''
+        needs: plan
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        defaults:
+            run:
+                working-directory: workspace
+        env:
+            MONGOMS_DISABLE_POSTINSTALL: '1'
+            LC_NX_SOURCE_SHA: ${{ needs.plan.outputs.main }}
+            LC_NX_SOURCE_REF: refs/heads/main
+            LC_NX_PRODUCER_BRANCH: main
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  path: controller
+                  persist-credentials: false
+            - uses: actions/checkout@v7
+              with:
+                  path: workspace
+                  ref: ${{ needs.plan.outputs.main }}
+                  persist-credentials: false
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '24.12.0'
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.4
+            - uses: actions/cache@v6
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('workspace/bun.lock') }}
+                  restore-keys: ${{ runner.os }}-bun-
+            - name: Install dependencies
+              run: bun install --frozen-lockfile
+            - name: Produce native build task payloads from pinned main source
+              run: node ../controller/scripts/nx-cache-experiment/experiment.mjs --workspace . --output "$RUNNER_TEMP/nx-result" --cache "$RUNNER_TEMP/nx-payloads" --mode producer
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: nx-main-task-payloads
+                  path: ${{ runner.temp }}/nx-payloads
+                  retention-days: 7
+            - uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: nx-result-producer
+                  path: ${{ runner.temp }}/nx-result/result.json
+                  retention-days: 7
+
+    sample:
+        name: Nx production-policy / ${{ matrix.sample }} / ${{ matrix.mode }} / ${{ matrix.repeat }}
+        needs: [plan, producer]
+        if: always() && needs.plan.result == 'success' && (needs.producer.result == 'success' || needs.producer.result == 'skipped')
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            max-parallel: 3
+            matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+        defaults:
+            run:
+                working-directory: workspace
+        env:
+            MONGOMS_DISABLE_POSTINSTALL: '1'
+            LC_NX_SOURCE_SHA: ${{ matrix.source }}
+            LC_NX_SOURCE_REF: ${{ matrix.sourceRef }}
+            LC_NX_ORIGIN_RUN_ID: ${{ matrix.originRunId }}
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  path: controller
+                  persist-credentials: false
+            - uses: actions/checkout@v7
+              with:
+                  path: workspace
+                  ref: ${{ matrix.source }}
+                  persist-credentials: false
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '24.12.0'
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.4
+            - uses: actions/cache/restore@v6
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('workspace/bun.lock') }}
+                  restore-keys: ${{ runner.os }}-bun-
+            - name: Install dependencies
+              run: bun install --frozen-lockfile
+            - name: Download main-source payloads (including transfer in job time)
+              if: matrix.mode == 'warm' || startsWith(matrix.mode, 'invalidate-')
+              uses: actions/download-artifact@v4
+              with:
+                  name: nx-main-task-payloads
+                  path: ${{ runner.temp }}/nx-payloads
+                  run-id: ${{ needs.plan.outputs.producer-run }}
+                  github-token: ${{ github.token }}
+            - name: Run ordinary Nx graph with fresh tests
+              run: node ../controller/scripts/nx-cache-experiment/experiment.mjs --workspace . --output "$RUNNER_TEMP/nx-result" --cache "$RUNNER_TEMP/nx-payloads" --mode "${{ matrix.mode }}"
+            - uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: nx-result-${{ matrix.sample }}-${{ matrix.mode }}-${{ matrix.repeat }}
+                  path: ${{ runner.temp }}/nx-result/result.json
+                  retention-days: 7
+
+    summary:
+        needs: [plan, producer, sample]
+        if: always() && needs.plan.result == 'success'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+            - uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+            - uses: actions/download-artifact@v4
+              with:
+                  pattern: nx-result-*
+                  path: ${{ runner.temp }}/nx-results
+            - name: Verify complete samples and equal test coverage
+              env:
+                  MATRIX: ${{ needs.plan.outputs.matrix }}
+                  SAMPLE_RESULT: ${{ needs.sample.result }}
+              run: node scripts/nx-cache-experiment/summarize.mjs "$RUNNER_TEMP/nx-results"
