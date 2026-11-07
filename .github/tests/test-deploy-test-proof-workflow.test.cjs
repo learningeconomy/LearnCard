@@ -25,7 +25,14 @@ test('queue proof binds the actual frozen range and publishes only after success
     assert.match(freeze.run, /--target=test --base="\$base" --head="\$head"/);
     assert.match(freeze.run, /timeout --kill-after=5s 20s bunx/);
     const run = step(queue, 'Run tests');
-    assert.equal(run.run, 'bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"');
+    assert.equal(
+        run.run.trim(),
+        `if [ "$LC_NX_PILOT_ACTIVE" = 'true' ]; then
+  node scripts/nx-artifact-cache/run.mjs consume
+else
+  bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"
+fi`
+    );
     assert.equal(run.env.NX_BASE, '${{ steps.test-range.outputs.base }}');
     assert.equal(run.env.NX_HEAD, '${{ steps.test-range.outputs.head }}');
     const proof = step(queue, 'Record queue test proof');
