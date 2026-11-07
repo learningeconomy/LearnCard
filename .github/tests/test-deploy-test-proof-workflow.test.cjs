@@ -1,6 +1,8 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { readFileSync } = require('node:fs');
+const { readFileSync, mkdtempSync, writeFileSync, rmSync } = require('node:fs');
+const { execFileSync } = require('node:child_process');
+const { tmpdir } = require('node:os');
 const path = require('node:path');
 const yaml = require('js-yaml');
 
@@ -108,5 +110,63 @@ test('proof lookup is read-only, bounded and cannot replace the default tests wi
         assert.ok(deploy.jobs[name].needs.includes('test-affected'));
         assert.match(deploy.jobs[name].if, /needs\.test-affected\.result == 'success'/);
         assert.doesNotMatch(deploy.jobs[name].if, /needs\.test-affected\.result == 'skipped'/);
+    }
+});
+
+test('Deploy excludes only projects returned by a verified proof and retains fresh test gates', t => {
+    assert.equal(
+        determine.outputs.reused_test_projects,
+        "${{ steps.test-proof.outputs.projects || '' }}"
+    );
+    const outputLine = step(determine, 'Check merge-queue test proof')
+        .with.script.split('\n')
+        .find(line => line.includes("core.setOutput('projects'"));
+    assert.ok(outputLine);
+    for (const [result, expected] of [
+        [{ reused: true, projects: ['core'] }, ''],
+        [{ reused: false, projects: ['core'] }, 'core'],
+        [{ reused: false }, ''],
+    ]) {
+        const outputs = {};
+        require('node:vm').runInNewContext(outputLine, {
+            result,
+            core: {
+                setOutput: (key, value) => {
+                    outputs[key] = value;
+                },
+            },
+        });
+        assert.equal(outputs.projects, expected);
+    }
+    const run = step(consumer, 'Run tests');
+    assert.equal(
+        run.env.REUSED_TEST_PROJECTS,
+        '${{ needs.determine-affected.outputs.reused_test_projects }}'
+    );
+    const dir = mkdtempSync(path.join(tmpdir(), 'deploy-test-command-'));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    writeFileSync(path.join(dir, 'bunx'), '#!/bin/sh\nprintf "%s\\n" "$@"\n', { mode: 0o755 });
+    for (const projects of ['', 'core,escrow-enclave-app']) {
+        const args = execFileSync('bash', ['-e', '-c', run.run], {
+            encoding: 'utf8',
+            env: {
+                ...process.env,
+                PATH: `${dir}:${process.env.PATH}`,
+                NX_BASE: 'base',
+                NX_HEAD: 'head',
+                REUSED_TEST_PROJECTS: projects,
+                GITHUB_STEP_SUMMARY: path.join(dir, 'summary'),
+            },
+        })
+            .trim()
+            .split('\n');
+        assert.deepEqual(args, [
+            'nx',
+            'affected',
+            '--target=test',
+            '--base=base',
+            '--head=head',
+            ...(projects ? [`--exclude=${projects}`] : []),
+        ]);
     }
 });

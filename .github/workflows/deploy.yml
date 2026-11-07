@@ -92,6 +92,7 @@ jobs:
             base: ${{ steps.range.outputs.base }}
             head: ${{ steps.range.outputs.head }}
             tests_reused: ${{ steps.test-proof.outputs.reused || 'false' }}
+            reused_test_projects: ${{ steps.test-proof.outputs.projects || '' }}
             # always()-based publishers must not run after range selection fails.
             is_release: ${{ job.status == 'success' && steps.check_release.outputs.is_release || 'false' }}
             is_manual: ${{ steps.check_manual.outputs.is_manual }}
@@ -228,6 +229,7 @@ jobs:
                         // Optional evidence lookup cannot replace the fallback test gate.
                       }
                       core.setOutput('reused', String(result.reused));
+                      core.setOutput('projects', result.reused ? '' : (result.projects || []).join(','));
                       try {
                         await core.summary.addHeading('Deploy test reuse').addCodeBlock(JSON.stringify(result, null, 2)).write();
                       } catch {
@@ -564,8 +566,15 @@ jobs:
               if: needs.determine-affected.outputs.tests_reused != 'true'
               id: tests
               timeout-minutes: 20
-              run: bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"
+              run: |
+                  args=(--target=test --base="$NX_BASE" --head="$NX_HEAD")
+                  if [[ -n "$REUSED_TEST_PROJECTS" ]]; then
+                    echo "Reusing verified queue tests for: $REUSED_TEST_PROJECTS" >> "$GITHUB_STEP_SUMMARY"
+                    args+=(--exclude="$REUSED_TEST_PROJECTS")
+                  fi
+                  bunx nx affected "${args[@]}"
               env:
+                  REUSED_TEST_PROJECTS: ${{ needs.determine-affected.outputs.reused_test_projects }}
                   LC_CI_TEST_RETRY: '1'
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   NX_BASE: ${{ needs.determine-affected.outputs.base }}
