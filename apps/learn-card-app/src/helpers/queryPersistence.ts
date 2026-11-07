@@ -8,6 +8,9 @@ import { createQueryPersister } from './createQueryPersister';
 const log = getLogger('cache');
 const isNative = Capacitor.isNativePlatform();
 const SQLITE_READY_TIMEOUT_MS = 10_000;
+
+// A snapshot saved by another app version is never restored (LC-2350, same pattern as Scouts).
+export const QUERY_CACHE_BUSTER = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '';
 type NativeDatabase = NonNullable<ReturnType<typeof sqliteStore.get.db>>;
 
 /**
@@ -76,5 +79,6 @@ export const { persister, persistNow: persistQueryCacheNow } = createQueryPersis
                 ? withNativeDatabase(db => db.run('DELETE FROM reactQuery WHERE id = ?;', [key]))
                 : localforage.removeItem(key),
     },
-    error => log.error('Error persisting query cache', error)
+    error => log.error('Error persisting query cache', error),
+    QUERY_CACHE_BUSTER
 );

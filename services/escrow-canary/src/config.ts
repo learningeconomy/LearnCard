@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const identifier = z.string().regex(/^[A-Za-z0-9._-]{1,128}$/);
+export const identifier = z.string().regex(/^[A-Za-z0-9._-]{1,128}$/);
 const pcr = z
     .string()
     .regex(/^[a-f0-9]{96}$/)
@@ -9,31 +9,30 @@ const account = z.object({
     id: identifier,
     secretArn: z.string().startsWith('arn:aws:secretsmanager:'),
 });
+/** REST base URL: https only, no credentials, query or fragment; trailing slash removed. */
+export const serverUrlSchema = z
+    .string()
+    .url()
+    .refine(value => {
+        const url = new URL(value);
+        return (
+            url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash
+        );
+    })
+    .transform(value => value.replace(/\/$/, ''));
+export const measurementsSchema = z
+    .array(z.object({ pcr0: pcr, pcr1: pcr, pcr2: pcr }).strict())
+    .min(1)
+    .max(3);
 export const configSchema = z
     .object({
         environment: z.enum(['staging', 'production']),
-        serverUrl: z
-            .string()
-            .url()
-            .refine(value => {
-                const url = new URL(value);
-                return (
-                    url.protocol === 'https:' &&
-                    !url.username &&
-                    !url.password &&
-                    !url.search &&
-                    !url.hash
-                );
-            })
-            .transform(value => value.replace(/\/$/, '')),
+        serverUrl: serverUrlSchema,
         tenantId: identifier,
         firebaseApiKey: z.string().min(1),
         keyId: identifier,
         authorityGeneration: identifier,
-        measurements: z
-            .array(z.object({ pcr0: pcr, pcr1: pcr, pcr2: pcr }).strict())
-            .min(1)
-            .max(3),
+        measurements: measurementsSchema,
         accounts: z.tuple([account, account, account]),
     })
     .refine(

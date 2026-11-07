@@ -1,22 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Lock, Loader2, CheckCircle2 } from 'lucide-react';
 import * as m from '../../../paraglide/messages.js';
 import { RecoveryPinInput } from '../../recovery/RecoveryPinInput';
+import { EscrowPinNotice } from '../../recovery/EscrowPinNotice';
 import { validatePin } from '@learncard/sss-key-manager';
+import {
+    canSkipRequiredPin,
+    saveRequiredPin,
+    REQUIRED_PIN_SAVE_TIMEOUT_MS,
+} from './requiredPinStep';
 
 type RecoveryPinStepProps = {
     onComplete: () => void;
+    /** Continue onboarding without a PIN; offered only after repeated save failures. */
     onSkip: () => void;
     setPin: (pin: string) => Promise<void>;
+    /** Longest a save may take before it counts as a failure (tests override it). */
+    saveTimeoutMs?: number;
 };
 
 type StepState = 'enter' | 'confirm' | 'saving' | 'success';
 
-export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({ onComplete, onSkip, setPin }) => {
+/**
+ * "Create your PIN" at sign-up. The PIN is required, so there is no skip at first, but
+ * it fails open: a save that errors or hangs (see `saveRequiredPin`) shows the error and
+ * lets the user retry, and from the second failed save "Skip for now" appears, so an
+ * outage never blocks account creation. The step is only shown when escrow is confirmed
+ * available (`decideOnboardingPinStep`).
+ */
+export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({
+    onComplete,
+    onSkip,
+    setPin,
+    saveTimeoutMs = REQUIRED_PIN_SAVE_TIMEOUT_MS,
+}) => {
     const [step, setStep] = useState<StepState>('enter');
     const [pin, setPinValue] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
     const [error, setError] = useState('');
+    // Failed saves only; typing mistakes (trivial PIN, mismatch) never unlock the skip.
+    const [saveErrors, setSaveErrors] = useState(0);
+    const canSkip = canSkipRequiredPin(saveErrors);
+    // The PIN boxes unmount while saving and between steps; put focus back on the
+    // first box whenever they return, so keyboard and screen-reader users are not
+    // left on <body> after a failed save.
+    const inputAreaRef = useRef<HTMLDivElement>(null);
+    const mountedRef = useRef(false);
+    useEffect(() => {
+        if (!mountedRef.current) {
+            mountedRef.current = true;
+            return;
+        }
+        if (step === 'enter' || step === 'confirm')
+            inputAreaRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+    }, [step]);
 
     useEffect(() => {
         if (step === 'success') {
@@ -50,10 +87,17 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({ onComplete, on
 
             setStep('saving');
             try {
-                await setPin(value);
+                await saveRequiredPin(setPin, value, saveTimeoutMs);
                 setStep('success');
-            } catch (err) {
-                setError(m['recovery.pin.saveFailed']());
+            } catch {
+                const failures = saveErrors + 1;
+                setSaveErrors(failures);
+                // Once the skip is offered, say so in the (announced) error itself.
+                setError(
+                    canSkipRequiredPin(failures)
+                        ? m['onboarding.v2.pin.saveFailedSkip']()
+                        : m['recovery.pin.saveFailed']()
+                );
                 setStep('confirm');
                 setConfirmPin('');
             }
@@ -68,7 +112,7 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({ onComplete, on
     };
 
     return (
-        <div className="relative z-10 max-w-[600px] mx-auto pt-[calc(var(--ion-safe-area-top,0px)+2.5rem)] px-4 w-full h-full flex flex-col justify-center items-center animate-pop-in pb-[calc(var(--ion-safe-area-bottom,0px)+1.5rem)] font-poppins">
+        <div className="relative z-10 max-w-[600px] mx-auto pt-[calc(var(--ion-safe-area-top,0px)+2.5rem)] px-4 w-full h-full flex flex-col justify-center-safe items-center animate-pop-in pb-[calc(var(--ion-safe-area-bottom,0px)+1.5rem)] font-poppins">
             <div className="w-full max-w-[360px] md:max-w-[440px] bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-white/50 p-8 md:px-12 md:py-10 flex flex-col items-center relative overflow-hidden">
                 <div className="w-16 h-16 mx-auto mb-6 bg-emerald-50 rounded-full flex items-center justify-center shadow-xs border border-emerald-100/50">
                     {step === 'success' ? (
@@ -91,7 +135,10 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({ onComplete, on
                     </p>
                 </div>
 
-                <div className="w-full flex flex-col items-center min-h-[120px] px-2 md:px-4">
+                <div
+                    ref={inputAreaRef}
+                    className="w-full flex flex-col items-center min-h-[120px] px-2 md:px-4"
+                >
                     {step === 'enter' && (
                         <RecoveryPinInput
                             value={pin}
@@ -127,7 +174,8 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({ onComplete, on
                         </div>
                     )}
 
-                    <div className="h-6 mt-4 w-full text-center">
+                    {/* Always mounted so assistive tech announces each new error. */}
+                    <div role="alert" className="min-h-6 mt-4 w-full text-center">
                         {error && (
                             <p className="text-sm text-red-600 animate-fade-in-up">{error}</p>
                         )}
@@ -136,18 +184,12 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({ onComplete, on
 
                 <div className="mt-6 w-full flex flex-col items-center gap-4">
                     {step === 'enter' && (
-                        <>
-                            <p className="text-xs text-grayscale-500 text-center">
+                        <div className="w-full max-w-[300px] mx-auto flex flex-col items-center gap-1.5">
+                            <p className="text-xs text-grayscale-500 leading-relaxed text-center text-balance">
                                 {m['onboarding.v2.pin.hint']()}
                             </p>
-                            <button
-                                type="button"
-                                onClick={onSkip}
-                                className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors font-medium"
-                            >
-                                {m['onboarding.v2.pin.skip']()}
-                            </button>
-                        </>
+                            <EscrowPinNotice />
+                        </div>
                     )}
 
                     {step === 'confirm' && (
@@ -157,6 +199,16 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({ onComplete, on
                             className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors font-medium"
                         >
                             {m['onboarding.v2.pin.startOver']()}
+                        </button>
+                    )}
+
+                    {canSkip && (step === 'enter' || step === 'confirm') && (
+                        <button
+                            type="button"
+                            onClick={onSkip}
+                            className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors font-medium"
+                        >
+                            {m['onboarding.v2.pin.skip']()}
                         </button>
                     )}
                 </div>

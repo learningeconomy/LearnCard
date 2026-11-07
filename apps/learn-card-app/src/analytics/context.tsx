@@ -1,5 +1,14 @@
 import { isSharePrivateSession } from '../components/share-links/sharePrivacy';
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import React, {
+    createContext,
+    useContext,
+    useEffect,
+    useLayoutEffect,
+    useState,
+    useMemo,
+    useCallback,
+    useRef,
+} from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('context');
 
@@ -7,13 +16,15 @@ import type { AnalyticsProvider, AnalyticsProviderName } from './types';
 import type { AnalyticsEventName, EventPayload, FeedbackIdeaPayload } from './events';
 import { NoopProvider } from './providers/noop';
 import { getSharedEventContext, shouldDropEvents } from './sharedContext';
-import { getResolvedTenantConfig } from '../config/tenantConfigState';
+import { getResolvedTenantConfig, isTenantAnalyticsEnabled } from '../config/tenantConfigState';
 import { setAnalyticsProvider as setSendCredentialFlowProvider } from '../helpers/sendCredentialFlow.helpers';
+import { usePrivacyConsent } from 'learn-card-base/hooks/usePrivacyGate';
+import { UserflowConsentLifecycle } from '../constants/userflow';
 
 /**
  * Lazily load and instantiate the analytics provider from the already validated TenantConfig.
  */
-async function loadProvider(): Promise<AnalyticsProvider> {
+async function loadProvider(canCapture: () => boolean): Promise<AnalyticsProvider> {
     if (isSharePrivateSession()) return new NoopProvider();
     let config;
 
@@ -22,6 +33,7 @@ async function loadProvider(): Promise<AnalyticsProvider> {
     } catch {
         return new NoopProvider();
     }
+    if (!config.features.analytics) return new NoopProvider();
     const providerName: AnalyticsProviderName = config.observability.analyticsProvider ?? 'noop';
     const posthogKey = config.observability.posthogKey;
     const posthogHost = config.observability.posthogHost;
@@ -37,10 +49,13 @@ async function loadProvider(): Promise<AnalyticsProvider> {
 
             const { PostHogProvider } = await import('./providers/posthog');
 
-            return new PostHogProvider({
-                apiKey: posthogKey,
-                apiHost: posthogHost,
-            });
+            return new PostHogProvider(
+                {
+                    apiKey: posthogKey,
+                    apiHost: posthogHost,
+                },
+                { canCapture }
+            );
         }
 
         case 'firebase': {
@@ -64,21 +79,23 @@ async function loadProvider(): Promise<AnalyticsProvider> {
  * (see `applyPostHogHygiene`) so `$exception`/`$rageclick`/`$pageleave`
  * are covered too.
  */
-function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
+function withSharedContext(
+    provider: AnalyticsProvider,
+    canCollect: () => boolean = () => true
+): AnalyticsProvider {
     return {
         name: provider.name,
         init: () => (isSharePrivateSession() ? Promise.resolve() : provider.init()),
         identify: (userId, traits) => {
-            // Drop automation/e2e identify calls provider-agnostically —
-            // PostHog also catches $identify in before_send, but other
-            // providers have no SDK-level hook.
-            if (shouldDropEvents()) return Promise.resolve();
+            // Drop automation/e2e and stale identity callbacks synchronously.
+            if (!canCollect() || shouldDropEvents()) return Promise.resolve();
             return provider.identify(userId, traits);
         },
         reset: () => provider.reset(),
-        setEnabled: enabled => provider.setEnabled(enabled && !isSharePrivateSession()),
+        setEnabled: enabled =>
+            provider.setEnabled(enabled && canCollect() && !isSharePrivateSession()),
         track: async (event, properties) => {
-            if (shouldDropEvents()) return;
+            if (!canCollect() || shouldDropEvents()) return;
             await provider.track(event, { ...properties, ...getSharedEventContext() });
         },
         submitFeedbackIdea: async properties => {
@@ -93,7 +110,7 @@ function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
             });
         },
         page: async (name, properties) => {
-            if (shouldDropEvents()) return;
+            if (!canCollect() || shouldDropEvents()) return;
             await provider.page(name, { ...properties, ...getSharedEventContext() });
         },
     };
@@ -130,43 +147,74 @@ interface AnalyticsProviderProps {
  * Wrap your app with this provider to enable analytics throughout.
  */
 export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
+    const consent = usePrivacyConsent();
     const [provider, setProvider] = useState<AnalyticsProvider>(() => new NoopProvider());
+    const permitted =
+        consent.analyticsEnabled && consent.identityKey !== null && isTenantAnalyticsEnabled();
     const [isReady, setIsReady] = useState(false);
+    const providerRef = useRef<AnalyticsProvider | null>(null);
+    const generationRef = useRef(0);
+    const activeIdentityKeyRef = useRef<string | null>(null);
+    activeIdentityKeyRef.current = permitted ? consent.identityKey : null;
 
-    useEffect(() => {
+    useLayoutEffect(() => {
+        const generation = ++generationRef.current;
+        if (!permitted) {
+            const active = providerRef.current;
+            providerRef.current = null;
+            setProvider(new NoopProvider());
+            setIsReady(true);
+            if (active) {
+                void active.setEnabled(false);
+            }
+            setSendCredentialFlowProvider(null);
+            return;
+        }
         let mounted = true;
-
-        loadProvider()
-            .then(async rawProvider => {
-                if (!mounted) return;
-
-                if (!isSharePrivateSession()) await rawProvider.init();
-
-                if (!mounted) return;
-
-                const loadedProvider = withSharedContext(rawProvider);
-
-                setProvider(loadedProvider);
-                setIsReady(true);
-                // LC-1644: wire frontend perf telemetry helper to the same provider
-                setSendCredentialFlowProvider(loadedProvider);
-            })
-            .catch(error => {
-                log.error('[Analytics] Failed to load provider', error);
-
-                if (mounted) {
-                    setIsReady(true);
-                }
-            });
-
+        const activate = async () => {
+            const identityKey = consent.identityKey;
+            const canCapture = () => activeIdentityKeyRef.current === identityKey;
+            const raw = await loadProvider(canCapture);
+            if (generation !== generationRef.current || !mounted) return;
+            await raw.init();
+            if (generation !== generationRef.current || !mounted) {
+                await raw.setEnabled(false);
+                return;
+            }
+            await raw.setEnabled(true);
+            if (generation !== generationRef.current || !mounted) {
+                await raw.setEnabled(false);
+                return;
+            }
+            const loadedProvider = withSharedContext(raw, canCapture);
+            providerRef.current = loadedProvider;
+            setProvider(loadedProvider);
+            setIsReady(true);
+            setSendCredentialFlowProvider(loadedProvider);
+        };
+        setIsReady(false);
+        activate().catch(error => {
+            log.error('[Analytics] Failed to load provider', error);
+            if (generation === generationRef.current && mounted) setIsReady(true);
+        });
         return () => {
             mounted = false;
+            if (generation === generationRef.current && providerRef.current) {
+                const active = providerRef.current;
+                providerRef.current = null;
+                void active.setEnabled(false);
+                setSendCredentialFlowProvider(null);
+            }
         };
-    }, []);
+    }, [permitted, consent.identityKey]);
 
     const value = useMemo(() => ({ provider, isReady }), [provider, isReady]);
-
-    return <AnalyticsContext.Provider value={value}>{children}</AnalyticsContext.Provider>;
+    return (
+        <AnalyticsContext.Provider value={value}>
+            <UserflowConsentLifecycle />
+            {children}
+        </AnalyticsContext.Provider>
+    );
 }
 
 /**
@@ -206,7 +254,14 @@ export function useAnalytics() {
 
     const submitFeedbackIdea = useCallback(
         async (properties: FeedbackIdeaPayload) => {
-            await provider.submitFeedbackIdea(properties);
+            if (provider.name !== 'noop') {
+                await provider.submitFeedbackIdea(properties);
+                return;
+            }
+            // User-submitted ideas use the dedicated anonymous endpoint and do
+            // not initialize PostHog or enable its passive collection queues.
+            const feedbackProvider = await loadProvider(() => false);
+            await feedbackProvider.submitFeedbackIdea(properties);
         },
         [provider]
     );

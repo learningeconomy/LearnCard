@@ -1,8 +1,9 @@
 {
     "compilerOptions": {
-        "lib": ["es2022", "DOM"],
+        "jsx": "react-jsx",
+        "lib": ["es2024", "DOM"],
         "module": "esnext",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "resolveJsonModule": true,
         "removeComments": true,
         "preserveConstEnums": true,
@@ -23,7 +24,6 @@
         "emitDeclarationOnly": true,
         "sourceMap": true,
         "rootDir": ".",
-        "baseUrl": ".",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "allowJs": false,

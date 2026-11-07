@@ -1,7 +1,7 @@
 {
     "name": "@learncard/learn-card-plugin",
-    "version": "1.2.41",
-    "description": "",
+    "version": "1.2.43",
+    "description": "Adds opinionated LearnCard logic, including prettified verification results.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/learn-card-plugin.esm.js",

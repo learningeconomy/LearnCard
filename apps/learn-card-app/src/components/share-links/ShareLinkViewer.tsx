@@ -1,5 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { useIsLoggedIn, useModal, useWallet, ModalTypes, redirectStore } from 'learn-card-base';
+import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
@@ -27,7 +28,7 @@ import {
 import * as m from '../../paraglide/messages.js';
 import {
     createVerificationBudget,
-    parseSavedShareLinkMetadata,
+    findSavedSharePresentation,
     readShareAddress,
     SAVED_SHARE_METADATA_TYPE,
     shareWallet,
@@ -110,7 +111,21 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
     const [submittedPasscode, setSubmittedPasscode] = useState<string>();
     const [passcodeError, setPasscodeError] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const saveButtonRef = useRef<HTMLButtonElement>(null);
+    const destinationButtonRef = useRef<HTMLButtonElement>(null);
+    const restoreSaveFocus = useRef(false);
     const visible = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (saveState !== 'saved' && saveState !== 'error') return;
+        const ownedFocus = restoreSaveFocus.current;
+        restoreSaveFocus.current = false;
+        // Do not take focus back if the user moved to another control while saving.
+        if (ownedFocus && document.activeElement === document.body) {
+            (saveState === 'saved' ? destinationButtonRef.current : saveButtonRef.current)?.focus({
+                preventScroll: true,
+            });
+        }
+    }, [saveState]);
     const acknowledged = useRef(new Set<string>());
     const currentReady = useRef(ready);
     currentReady.current = ready;
@@ -239,6 +254,8 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         setProofs([]);
         setHolder('checking');
         setLink('');
+        setSaveState('idle');
+        restoreSaveFocus.current = false;
         setCopyState('idle');
         setActionError(undefined);
         if (!hash && id) {
@@ -373,6 +390,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         void load();
         return () => {
             cancelled = true;
+            currentReady.current = undefined;
             budget?.cancel();
         };
     }, [id, hash, attempt, submittedPasscode, history, location.pathname]);
@@ -482,30 +500,36 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
 
     const saveToLearnCard = useCallback(async () => {
         if (!ready || !isLoggedIn || saveState === 'saving' || saveState === 'saved') return;
+        restoreSaveFocus.current = document.activeElement === saveButtonRef.current;
         setSaveState('saving');
         try {
             const wallet = shareWallet(await initWallet());
-            const alreadySaved = (await wallet.invoke.getReceivedPresentations()).some(
-                item =>
-                    item.from === item.to &&
-                    parseSavedShareLinkMetadata(item.metadata)?.shareId === ready.payload.shareId
+            const profile = await wallet.invoke.getProfile();
+            if (!profile?.profileId) throw new Error('profile');
+            const alreadySaved = await findSavedSharePresentation(
+                wallet,
+                await wallet.invoke.getReceivedPresentations(),
+                ready.payload,
+                profile.profileId
             );
+            if (currentReady.current !== ready) return;
             if (alreadySaved) {
                 setSaveState('saved');
                 return;
             }
-            const pendingSave = (await wallet.invoke.getIncomingPresentations()).find(
-                item =>
-                    item.from === item.to &&
-                    parseSavedShareLinkMetadata(item.metadata)?.shareId === ready.payload.shareId
+            const pendingSave = await findSavedSharePresentation(
+                wallet,
+                await wallet.invoke.getIncomingPresentations(),
+                ready.payload,
+                profile.profileId
             );
+            if (currentReady.current !== ready) return;
             if (pendingSave) {
-                await wallet.invoke.acceptPresentation(pendingSave.uri);
-                setSaveState('saved');
+                if (!(await wallet.invoke.acceptPresentation(pendingSave.uri)))
+                    throw new Error('accept');
+                if (currentReady.current === ready) setSaveState('saved');
                 return;
             }
-            const profile = await wallet.invoke.getProfile();
-            if (!profile?.profileId) throw new Error('profile');
             const savedMetadata = {
                 type: SAVED_SHARE_METADATA_TYPE,
                 shareId: ready.payload.shareId,
@@ -522,10 +546,10 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                 savedMetadata,
                 true
             );
-            await wallet.invoke.acceptPresentation(uri);
-            setSaveState('saved');
+            if (!(await wallet.invoke.acceptPresentation(uri))) throw new Error('accept');
+            if (currentReady.current === ready) setSaveState('saved');
         } catch {
-            setSaveState('error');
+            if (currentReady.current === ready) setSaveState('error');
         }
     }, [initWallet, isLoggedIn, ready, saveState]);
 
@@ -533,18 +557,17 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         if (!ready || !isLoggedIn || saveState !== 'idle') return;
         let cancelled = false;
         void initWallet()
-            .then(wallet => shareWallet(wallet).invoke.getReceivedPresentations())
-            .then(received => {
-                if (
-                    !cancelled &&
-                    received.some(
-                        item =>
-                            item.from === item.to &&
-                            parseSavedShareLinkMetadata(item.metadata)?.shareId ===
-                                ready.payload.shareId
-                    )
-                )
-                    setSaveState('saved');
+            .then(async rawWallet => {
+                const wallet = shareWallet(rawWallet);
+                const profile = await wallet.invoke.getProfile();
+                if (!profile?.profileId || cancelled) return;
+                const saved = await findSavedSharePresentation(
+                    wallet,
+                    await wallet.invoke.getReceivedPresentations(),
+                    ready.payload,
+                    profile.profileId
+                );
+                if (!cancelled && saved) setSaveState('saved');
             })
             .catch(() => undefined);
         return () => {
@@ -751,27 +774,51 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             {m['shareLinks.saveHint']()}
                                                         </p>
                                                     </div>
-                                                    {isLoggedIn ? (
+                                                    {isLoggedIn && saveState === 'saved' ? (
+                                                        <div
+                                                            role="status"
+                                                            className="flex flex-col gap-4 text-sm text-grayscale-700"
+                                                        >
+                                                            <div className="space-y-1">
+                                                                <p>
+                                                                    {m[
+                                                                        'shareLinks.savedCollectionStatus'
+                                                                    ]()}
+                                                                </p>
+                                                                <p>
+                                                                    {m[
+                                                                        'shareLinks.savedCollectionDestination'
+                                                                    ]()}
+                                                                </p>
+                                                            </div>
+                                                            <button
+                                                                ref={destinationButtonRef}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    history.push(
+                                                                        '/privacy-and-data?view=saved'
+                                                                    )
+                                                                }
+                                                                className="w-full rounded-[20px] bg-grayscale-900 px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                                                            >
+                                                                {m[
+                                                                    'shareLinks.viewSavedCollections'
+                                                                ]()}
+                                                            </button>
+                                                        </div>
+                                                    ) : isLoggedIn ? (
                                                         <button
+                                                            ref={saveButtonRef}
                                                             type="button"
                                                             onClick={() => void saveToLearnCard()}
-                                                            disabled={
-                                                                saveState === 'saving' ||
-                                                                saveState === 'saved'
-                                                            }
+                                                            disabled={saveState === 'saving'}
                                                             className="w-full rounded-[20px] bg-grayscale-900 px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                                                         >
                                                             {saveState === 'saving'
                                                                 ? m[
                                                                       'shareLinks.savingToLearnCard'
                                                                   ]()
-                                                                : saveState === 'saved'
-                                                                  ? m[
-                                                                        'shareLinks.savedToLearnCard'
-                                                                    ]()
-                                                                  : m[
-                                                                        'shareLinks.saveToLearnCard'
-                                                                    ]()}
+                                                                : m['shareLinks.saveToLearnCard']()}
                                                         </button>
                                                     ) : (
                                                         <button
@@ -958,11 +1005,35 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
     );
 };
 
-// A route-param change must discard the previous link's passcode and all other
-// private viewer state before any request for the next link can start.
+// Discard private link state and in-flight save results when the route or
+// active account changes, including organization/profile switches.
 const ShareLinkViewer = () => {
     const { id } = useParams<{ id: string }>();
-    return <ShareLinkViewerContent key={id} id={id} />;
+    const isLoggedIn = useIsLoggedIn();
+    const wallet = walletStore.use.wallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+    // Login state is restored before the wallet. Do not accept a passcode in a
+    // viewer that would be discarded when that wallet supplies its identity.
+    if (isLoggedIn && !wallet) {
+        return (
+            <IonPage className="sentry-block ph-no-capture font-poppins">
+                <IonContent>
+                    <main className="min-h-full bg-grayscale-100 px-5 py-14 text-center">
+                        <section role="status" className="mx-auto max-w-3xl space-y-4">
+                            <h1 className="text-xl font-semibold text-grayscale-900">
+                                {m['shareLinks.opening']()}
+                            </h1>
+                            <p className="text-sm text-grayscale-600">
+                                {m['shareLinks.openingHint']()}
+                            </p>
+                        </section>
+                    </main>
+                </IonContent>
+            </IonPage>
+        );
+    }
+    const account = isLoggedIn ? `${wallet?.id.did() ?? ''}:${switchedDid ?? ''}` : 'anonymous';
+    return <ShareLinkViewerContent key={`${id}:${account}`} id={id} />;
 };
 
 export default ShareLinkViewer;

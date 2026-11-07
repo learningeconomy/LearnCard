@@ -23,7 +23,7 @@ from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoo
 from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
 from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
-from openapi_client.models.inbox_approve_guardian_request_request import InboxApproveGuardianRequestRequest
+from openapi_client.models.contact_methods_verify_contact_method_request import ContactMethodsVerifyContactMethodRequest
 from openapi_client.models.inbox_send_guardian_approval_email200_response import InboxSendGuardianApprovalEmail200Response
 from openapi_client.models.inbox_send_guardian_approval_email_request import InboxSendGuardianApprovalEmailRequest
 from openapi_client.models.profile_create_profile_request import ProfileCreateProfileRequest
@@ -35,7 +35,6 @@ from openapi_client.models.profile_get_available_profiles_request import Profile
 from openapi_client.models.profile_get_managed_service_profiles200_response import ProfileGetManagedServiceProfiles200Response
 from openapi_client.models.profile_list_invites200_response_inner import ProfileListInvites200ResponseInner
 from openapi_client.models.profile_manager_create_managed_profile_request import ProfileManagerCreateManagedProfileRequest
-from openapi_client.models.profile_manager_get_managed_profiles_request import ProfileManagerGetManagedProfilesRequest
 from openapi_client.models.profile_register_signing_authority_request import ProfileRegisterSigningAuthorityRequest
 from openapi_client.models.profile_search_profiles200_response_inner import ProfileSearchProfiles200ResponseInner
 from openapi_client.models.profile_set_primary_signing_authority_request import ProfileSetPrimarySigningAuthorityRequest
@@ -64,7 +63,7 @@ class ProfilesApi:
     @validate_call
     def inbox_approve_guardian_request(
         self,
-        inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest,
+        contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -82,8 +81,8 @@ class ProfilesApi:
 
         Consumes a guardian approval token and marks the requesting user profile as approved.
 
-        :param inbox_approve_guardian_request_request: (required)
-        :type inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest
+        :param contact_methods_verify_contact_method_request: (required)
+        :type contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -107,7 +106,7 @@ class ProfilesApi:
         """ # noqa: E501
 
         _param = self._inbox_approve_guardian_request_serialize(
-            inbox_approve_guardian_request_request=inbox_approve_guardian_request_request,
+            contact_methods_verify_contact_method_request=contact_methods_verify_contact_method_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -135,7 +134,7 @@ class ProfilesApi:
     @validate_call
     def inbox_approve_guardian_request_with_http_info(
         self,
-        inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest,
+        contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -153,8 +152,8 @@ class ProfilesApi:
 
         Consumes a guardian approval token and marks the requesting user profile as approved.
 
-        :param inbox_approve_guardian_request_request: (required)
-        :type inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest
+        :param contact_methods_verify_contact_method_request: (required)
+        :type contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -178,7 +177,7 @@ class ProfilesApi:
         """ # noqa: E501
 
         _param = self._inbox_approve_guardian_request_serialize(
-            inbox_approve_guardian_request_request=inbox_approve_guardian_request_request,
+            contact_methods_verify_contact_method_request=contact_methods_verify_contact_method_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -206,7 +205,7 @@ class ProfilesApi:
     @validate_call
     def inbox_approve_guardian_request_without_preload_content(
         self,
-        inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest,
+        contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -224,8 +223,8 @@ class ProfilesApi:
 
         Consumes a guardian approval token and marks the requesting user profile as approved.
 
-        :param inbox_approve_guardian_request_request: (required)
-        :type inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest
+        :param contact_methods_verify_contact_method_request: (required)
+        :type contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -249,7 +248,7 @@ class ProfilesApi:
         """ # noqa: E501
 
         _param = self._inbox_approve_guardian_request_serialize(
-            inbox_approve_guardian_request_request=inbox_approve_guardian_request_request,
+            contact_methods_verify_contact_method_request=contact_methods_verify_contact_method_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -272,7 +271,7 @@ class ProfilesApi:
 
     def _inbox_approve_guardian_request_serialize(
         self,
-        inbox_approve_guardian_request_request,
+        contact_methods_verify_contact_method_request,
         _request_auth,
         _content_type,
         _headers,
@@ -298,8 +297,8 @@ class ProfilesApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if inbox_approve_guardian_request_request is not None:
-            _body_params = inbox_approve_guardian_request_request
+        if contact_methods_verify_contact_method_request is not None:
+            _body_params = contact_methods_verify_contact_method_request
 
 
         # set the HTTP header `Accept`
@@ -350,7 +349,7 @@ class ProfilesApi:
     @validate_call
     def inbox_approve_guardian_request_by_path(
         self,
-        token: Optional[StrictStr],
+        token: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -422,7 +421,7 @@ class ProfilesApi:
     @validate_call
     def inbox_approve_guardian_request_by_path_with_http_info(
         self,
-        token: Optional[StrictStr],
+        token: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -494,7 +493,7 @@ class ProfilesApi:
     @validate_call
     def inbox_approve_guardian_request_by_path_without_preload_content(
         self,
-        token: Optional[StrictStr],
+        token: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2533,7 +2532,7 @@ class ProfilesApi:
     def profile_connect_with_invite(
         self,
         profile_id: StrictStr,
-        challenge: Optional[StrictStr],
+        challenge: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2607,7 +2606,7 @@ class ProfilesApi:
     def profile_connect_with_invite_with_http_info(
         self,
         profile_id: StrictStr,
-        challenge: Optional[StrictStr],
+        challenge: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2681,7 +2680,7 @@ class ProfilesApi:
     def profile_connect_with_invite_without_preload_content(
         self,
         profile_id: StrictStr,
-        challenge: Optional[StrictStr],
+        challenge: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -6965,7 +6964,7 @@ class ProfilesApi:
     @validate_call
     def profile_manager_get_managed_profiles(
         self,
-        profile_manager_get_managed_profiles_request: Optional[ProfileManagerGetManagedProfilesRequest] = None,
+        profile_get_available_profiles_request: Optional[ProfileGetAvailableProfilesRequest] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -6983,8 +6982,8 @@ class ProfilesApi:
 
         This route gets all of your managed profiles
 
-        :param profile_manager_get_managed_profiles_request:
-        :type profile_manager_get_managed_profiles_request: ProfileManagerGetManagedProfilesRequest
+        :param profile_get_available_profiles_request:
+        :type profile_get_available_profiles_request: ProfileGetAvailableProfilesRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -7008,7 +7007,7 @@ class ProfilesApi:
         """ # noqa: E501
 
         _param = self._profile_manager_get_managed_profiles_serialize(
-            profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request,
+            profile_get_available_profiles_request=profile_get_available_profiles_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -7036,7 +7035,7 @@ class ProfilesApi:
     @validate_call
     def profile_manager_get_managed_profiles_with_http_info(
         self,
-        profile_manager_get_managed_profiles_request: Optional[ProfileManagerGetManagedProfilesRequest] = None,
+        profile_get_available_profiles_request: Optional[ProfileGetAvailableProfilesRequest] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -7054,8 +7053,8 @@ class ProfilesApi:
 
         This route gets all of your managed profiles
 
-        :param profile_manager_get_managed_profiles_request:
-        :type profile_manager_get_managed_profiles_request: ProfileManagerGetManagedProfilesRequest
+        :param profile_get_available_profiles_request:
+        :type profile_get_available_profiles_request: ProfileGetAvailableProfilesRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -7079,7 +7078,7 @@ class ProfilesApi:
         """ # noqa: E501
 
         _param = self._profile_manager_get_managed_profiles_serialize(
-            profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request,
+            profile_get_available_profiles_request=profile_get_available_profiles_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -7107,7 +7106,7 @@ class ProfilesApi:
     @validate_call
     def profile_manager_get_managed_profiles_without_preload_content(
         self,
-        profile_manager_get_managed_profiles_request: Optional[ProfileManagerGetManagedProfilesRequest] = None,
+        profile_get_available_profiles_request: Optional[ProfileGetAvailableProfilesRequest] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -7125,8 +7124,8 @@ class ProfilesApi:
 
         This route gets all of your managed profiles
 
-        :param profile_manager_get_managed_profiles_request:
-        :type profile_manager_get_managed_profiles_request: ProfileManagerGetManagedProfilesRequest
+        :param profile_get_available_profiles_request:
+        :type profile_get_available_profiles_request: ProfileGetAvailableProfilesRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -7150,7 +7149,7 @@ class ProfilesApi:
         """ # noqa: E501
 
         _param = self._profile_manager_get_managed_profiles_serialize(
-            profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request,
+            profile_get_available_profiles_request=profile_get_available_profiles_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -7173,7 +7172,7 @@ class ProfilesApi:
 
     def _profile_manager_get_managed_profiles_serialize(
         self,
-        profile_manager_get_managed_profiles_request,
+        profile_get_available_profiles_request,
         _request_auth,
         _content_type,
         _headers,
@@ -7199,8 +7198,8 @@ class ProfilesApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if profile_manager_get_managed_profiles_request is not None:
-            _body_params = profile_manager_get_managed_profiles_request
+        if profile_get_available_profiles_request is not None:
+            _body_params = profile_get_available_profiles_request
 
 
         # set the HTTP header `Accept`
@@ -8986,7 +8985,7 @@ class ProfilesApi:
     @validate_call
     def profile_search_profiles(
         self,
-        input: Optional[StrictStr],
+        input: StrictStr,
         limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         include_self: Optional[StrictBool] = None,
         include_connection_status: Optional[StrictBool] = None,
@@ -9074,7 +9073,7 @@ class ProfilesApi:
     @validate_call
     def profile_search_profiles_with_http_info(
         self,
-        input: Optional[StrictStr],
+        input: StrictStr,
         limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         include_self: Optional[StrictBool] = None,
         include_connection_status: Optional[StrictBool] = None,
@@ -9162,7 +9161,7 @@ class ProfilesApi:
     @validate_call
     def profile_search_profiles_without_preload_content(
         self,
-        input: Optional[StrictStr],
+        input: StrictStr,
         limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         include_self: Optional[StrictBool] = None,
         include_connection_status: Optional[StrictBool] = None,
@@ -9871,8 +9870,8 @@ class ProfilesApi:
     @validate_call
     def profile_signing_authority(
         self,
-        endpoint: Optional[StrictStr],
-        name: Optional[StrictStr],
+        endpoint: StrictStr,
+        name: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -9947,8 +9946,8 @@ class ProfilesApi:
     @validate_call
     def profile_signing_authority_with_http_info(
         self,
-        endpoint: Optional[StrictStr],
-        name: Optional[StrictStr],
+        endpoint: StrictStr,
+        name: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -10023,8 +10022,8 @@ class ProfilesApi:
     @validate_call
     def profile_signing_authority_without_preload_content(
         self,
-        endpoint: Optional[StrictStr],
-        name: Optional[StrictStr],
+        endpoint: StrictStr,
+        name: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],

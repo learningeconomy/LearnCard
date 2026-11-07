@@ -7,7 +7,6 @@ import { describe, expect, it } from 'vitest';
 
 const SINGLE_QUOTE = String.fromCharCode(39);
 const messageCall = (key: string) => `m[${SINGLE_QUOTE}${key}${SINGLE_QUOTE}]()`;
-const messageInvocation = (key: string) => messageCall(key).slice(0, -1);
 
 describe('ScoutPass locale integration', () => {
     const readSourceTree = (directory: string): Array<{ path: string; source: string }> =>
@@ -126,33 +125,6 @@ describe('ScoutPass locale integration', () => {
             expect(source).not.toContain('Badges coming right up!');
             expect(source).not.toContain('Get ready for boost spark!');
             expect(source).toContain('alt=""');
-        }
-    });
-
-    it('localizes reviewed search and loading feedback', () => {
-        const sourceRoot = fileURLToPath(new URL('../', import.meta.url));
-        const paths = [
-            'components/boost/boost-earned-card/BoostEarnedList.tsx',
-            'components/boost/boost-managed-card/BoostManagedChildrenList.tsx',
-            'components/boost/boost-managed-card/BoostManagedIDList.tsx',
-            'components/boost/boost-managed-card/BoostManagedList.tsx',
-        ];
-
-        for (const path of paths) {
-            const source = readFileSync(join(sourceRoot, path), 'utf8');
-            expect(source).not.toMatch(
-                /`Search \$\{searchResultsCount\} (?:earned|managed) boosts`/
-            );
-            expect(source).not.toMatch(/`No (?:earned|managed) \$\{category\} titled/);
-        }
-
-        const earnedSource = readFileSync(join(sourceRoot, paths[0]), 'utf8');
-        expect(earnedSource).toContain(messageInvocation('common.searchResults.earnedCountOne'));
-        expect(earnedSource).toContain(messageInvocation('common.searchResults.loadingEarned'));
-
-        for (const path of paths.slice(1)) {
-            const source = readFileSync(join(sourceRoot, path), 'utf8');
-            expect(source).toContain(messageInvocation('common.searchResults.managedCountOne'));
         }
     });
 

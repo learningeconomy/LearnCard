@@ -348,7 +348,7 @@ test('all automatic consumers share one range; manual dispatch still bypasses se
     const runTests = tests.steps.find(step => step.name === 'Run tests');
     assert.equal(runTests.env.NX_BASE, '${{ needs.determine-affected.outputs.base }}');
     assert.equal(runTests.env.NX_HEAD, '${{ needs.determine-affected.outputs.head }}');
-    assert.match(runTests.with.command, /--base="\$NX_BASE" --head="\$NX_HEAD"/);
+    assert.match(runTests.run, /--base="\$NX_BASE" --head="\$NX_HEAD"/);
     assert.ok(
         tests.steps.some(step => step.run === 'git hash-object -t tree -w --stdin </dev/null')
     );

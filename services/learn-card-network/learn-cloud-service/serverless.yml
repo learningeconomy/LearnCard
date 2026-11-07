@@ -7,6 +7,7 @@ frameworkVersion: '3'
 useDotenv: true
 
 plugins:
+    - ../../../scripts/serverless-node24-runtime.cjs
     - serverless-esbuild
     - serverless-domain-manager
     - serverless-certificate-creator
@@ -35,7 +36,7 @@ custom:
         # serverless-esbuild default and must be preserved when overriding.
         exclude: ['aws-sdk', '@learncard/didkit-plugin-node']
         sourcemap: external
-        target: 'node16'
+        target: 'node24'
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
 
@@ -106,13 +107,13 @@ layers:
         name: ${self:service}-${opt:stage, 'dev'}-didkit-native
         description: Native DIDKit napi addon and runtime DIDKit dependency
         compatibleRuntimes:
-            - nodejs20.x
+            - nodejs24.x
         compatibleArchitectures:
             - x86_64
 
 provider:
     name: aws
-    runtime: nodejs20.x
+    runtime: nodejs24.x
     # Attach the native DIDKit layer to every function in this service.
     layers:
         - { Ref: DidkitNativeLambdaLayer }

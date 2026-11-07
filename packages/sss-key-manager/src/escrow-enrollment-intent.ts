@@ -1,6 +1,7 @@
 import { ExtendedPoint, getPublicKeyAsync, signAsync } from '@noble/ed25519';
 import { base64ToBuffer, bufferToBase64, bytesToHex, hexToBytes } from './crypto';
 import { parseEscrowEnvelope } from './escrow-crypto';
+import { ESCROW_AUTHORITY_TENANT_PATTERN } from './escrow-authority.types';
 import type { EscrowEnvelope } from './escrow-crypto';
 import type {
     EscrowEnrollmentIntent,
@@ -101,7 +102,7 @@ export const encodeEscrowEnrollmentIntent = (
             FIELDS.every(field => Object.prototype.hasOwnProperty.call(intent, field))
     );
     requireIntent(intent.version === 2 && typeof intent.allowRewrap === 'boolean');
-    requireIntent(matches(intent.tenant, /^[A-Za-z0-9_-]{1,128}$/));
+    requireIntent(matches(intent.tenant, ESCROW_AUTHORITY_TENANT_PATTERN));
     requireIntent(matches(intent.authorityGeneration, /^[A-Za-z0-9_-]{1,128}$/));
     requireIntent(matches(intent.requestId, /^[A-Za-z0-9._-]{1,112}$/));
     didPublicKey(intent.did);

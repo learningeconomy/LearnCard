@@ -2,26 +2,26 @@
 
 ## Properties
 
-| Name                   | Type                                                                                                                        | Description | Notes      |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **context**            | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md)     |             |
-| **id**                 | **str**                                                                                                                     |             | [optional] |
-| **type**               | **List[str]**                                                                                                               |             |
-| **issuer**             | [**BoostGetBoost200ResponseBoostIssuer**](BoostGetBoost200ResponseBoostIssuer.md)                                           |             |
-| **credential_subject** | [**BoostSendRequestTemplateCredentialAnyOfCredentialSubject**](BoostSendRequestTemplateCredentialAnyOfCredentialSubject.md) |             |
-| **refresh_service**    | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)         |             | [optional] |
-| **credential_schema**  | [**BoostSendRequestTemplateCredentialAnyOfCredentialSchema**](BoostSendRequestTemplateCredentialAnyOfCredentialSchema.md)   |             | [optional] |
-| **issuance_date**      | **str**                                                                                                                     |             | [optional] |
-| **expiration_date**    | **str**                                                                                                                     |             | [optional] |
-| **credential_status**  | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)         |             | [optional] |
-| **name**               | **str**                                                                                                                     |             | [optional] |
-| **description**        | **str**                                                                                                                     |             | [optional] |
-| **valid_from**         | **str**                                                                                                                     |             | [optional] |
-| **valid_until**        | **str**                                                                                                                     |             | [optional] |
-| **status**             | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)         |             | [optional] |
-| **terms_of_use**       | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)         |             | [optional] |
-| **evidence**           | [**BoostSendRequestTemplateCredentialAnyOfEvidence**](BoostSendRequestTemplateCredentialAnyOfEvidence.md)                   |             | [optional] |
-| **render_method**      | [**BoostGetBoost200ResponseBoostRenderMethod**](BoostGetBoost200ResponseBoostRenderMethod.md)                               |             | [optional] |
+| Name                   | Type                                                                                                                  | Description | Notes      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **context**            | [**List[BoostSendBoostRequestCredentialAnyOfContextInner]**](BoostSendBoostRequestCredentialAnyOfContextInner.md)     |             |
+| **id**                 | **str**                                                                                                               |             | [optional] |
+| **type**               | **List[str]**                                                                                                         |             |
+| **issuer**             | [**BoostGetBoost200ResponseBoostIssuer**](BoostGetBoost200ResponseBoostIssuer.md)                                     |             |
+| **credential_subject** | [**BoostSendBoostRequestCredentialAnyOfCredentialSubject**](BoostSendBoostRequestCredentialAnyOfCredentialSubject.md) |             |
+| **refresh_service**    | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)       |             | [optional] |
+| **credential_schema**  | [**BoostSendBoostRequestCredentialAnyOfCredentialSchema**](BoostSendBoostRequestCredentialAnyOfCredentialSchema.md)   |             | [optional] |
+| **issuance_date**      | **str**                                                                                                               |             | [optional] |
+| **expiration_date**    | **str**                                                                                                               |             | [optional] |
+| **credential_status**  | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)       |             | [optional] |
+| **name**               | **str**                                                                                                               |             | [optional] |
+| **description**        | **str**                                                                                                               |             | [optional] |
+| **valid_from**         | **str**                                                                                                               |             | [optional] |
+| **valid_until**        | **str**                                                                                                               |             | [optional] |
+| **status**             | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)       |             | [optional] |
+| **terms_of_use**       | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)       |             | [optional] |
+| **evidence**           | [**BoostSendBoostRequestCredentialAnyOfEvidence**](BoostSendBoostRequestCredentialAnyOfEvidence.md)                   |             | [optional] |
+| **render_method**      | [**BoostGetBoost200ResponseBoostRenderMethod**](BoostGetBoost200ResponseBoostRenderMethod.md)                         |             | [optional] |
 
 ## Example
 

@@ -1,5 +1,11 @@
 import { QueryBuilder, BindParam } from 'neogma';
-import { UnsignedVC, VC } from '@learncard/types';
+import {
+    UnsignedVC,
+    VC,
+    CredentialDisplayValidator,
+    type CredentialDisplay,
+} from '@learncard/types';
+import { DISPLAY_ONLY_ANCHOR_MARKER } from '@learncard/helpers';
 import { v4 as uuid } from 'uuid';
 
 import { Boost, BoostInstance, Profile, AppStoreListing } from '@models';
@@ -13,10 +19,11 @@ import { ProfileType } from 'types/profile';
 import { AppStoreListingType } from 'types/app-store-listing';
 
 export const createBoost = async (
-    credential: UnsignedVC | VC,
+    credential: UnsignedVC | VC | null,
     creator: ProfileType,
     metadata: Omit<BoostType, 'id' | 'boost'> = {},
-    domain: string
+    domain: string,
+    publicDisplay?: CredentialDisplay
 ): Promise<BoostInstance> => {
     const id = uuid();
 
@@ -30,10 +37,20 @@ export const createBoost = async (
         new BindParam({
             params: {
                 id,
-                boost: convertCredentialToBoostTemplateJSON(
-                    credential,
-                    getDidWeb(domain, creator.profileId)
-                ),
+                boost: credential
+                    ? convertCredentialToBoostTemplateJSON(
+                          credential,
+                          getDidWeb(domain, creator.profileId)
+                      )
+                    : JSON.stringify({
+                          '@context': ['https://www.w3.org/ns/credentials/v2'],
+                          type: ['VerifiableCredential'],
+                          issuer: getDidWeb(domain, creator.profileId),
+                          credentialSubject: { id: 'did:example:123' },
+                          name: publicDisplay?.name ?? 'Credential',
+                          display: CredentialDisplayValidator.parse(publicDisplay ?? {}),
+                          [DISPLAY_ONLY_ANCHOR_MARKER]: true,
+                      }),
                 status,
                 ...((flattenObject as any)(metadata) as any),
             },
@@ -62,6 +79,44 @@ export const createBoost = async (
     const boost = (await getBoostById(id))!;
 
     return boost;
+};
+
+/**
+ * `name`/`image` come only from the caller's explicit `display`. `category` may
+ * additionally fall back to the inline template's category: consent-flow write
+ * authorization (`resolveContractForSend` and the managed-send contract binding
+ * query) keys off a Boost's `category` and treats an absent category as
+ * unrestricted. Silently dropping the category — rather than the template's actual
+ * value — would let a category the recipient never consented to pass as an
+ * unrestricted write merely because the caller omitted `display`.
+ */
+export const normalizePublicDisplay = (
+    display: CredentialDisplay | undefined,
+    template?: { category?: string | null }
+): CredentialDisplay => {
+    const category = display?.category ?? template?.category?.slice(0, 280);
+    return CredentialDisplayValidator.parse({
+        ...(display ?? {}),
+        ...(category ? { category } : {}),
+    });
+};
+
+/** Display-only anchors never receive credential content or inline template metadata,
+ *  except that `category` may be inherited from the template (see `normalizePublicDisplay`). */
+export const createDisplayOnlyBoost = (
+    display: CredentialDisplay | undefined,
+    creator: ProfileType,
+    domain: string,
+    template?: { category?: string | null }
+): Promise<BoostInstance> => {
+    const publicDisplay = normalizePublicDisplay(display, template);
+    return createBoost(
+        null,
+        creator,
+        { ...publicDisplay, name: publicDisplay.name ?? 'Credential' },
+        domain,
+        publicDisplay
+    );
 };
 
 /**

@@ -153,9 +153,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                         aria-label={m['wallet.search']()}
                                         value={searchString}
                                         onChange={e =>
-                                            credentialSearchStore.set.searchStringWithMatch(
-                                                e.target.value
-                                            )
+                                            credentialSearchStore.set.searchString(e.target.value)
                                         }
                                         placeholder={
                                             activeTab === CredentialListTabEnum.Earned
@@ -170,7 +168,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                             aria-label={m['common.clear']()}
                                             className="absolute right-[10px] top-[12px] z-10 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                             onClick={() =>
-                                                credentialSearchStore.set.searchStringWithMatch('')
+                                                credentialSearchStore.set.searchString('')
                                             }
                                         >
                                             <X className="h-[20px] w-[20px] text-grayscale-900" />

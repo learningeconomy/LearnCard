@@ -238,6 +238,75 @@ describe('notifyEscrowHoldEvent', () => {
         expect(sent).toHaveLength(0);
     });
 
+    it('pin-sign-in emails a secure-account link (no token) and sends its own push copy', async () => {
+        const userKey = baseUserKey();
+        const completedAt = new Date('2026-03-04T05:06:07.000Z');
+        const hold = baseHold({ releasePolicy: 'pin', status: 'completed', completedAt });
+        const rotateCancelToken = vi.fn(async () => 'e'.repeat(64));
+        const { deps, sent, pushCalls, recorded } = makeDeps({ rotateCancelToken });
+
+        await expect(
+            notifyEscrowHoldEvent({ kind: 'pin-sign-in', hold, userKey }, deps)
+        ).resolves.toBe(true);
+
+        expect(rotateCancelToken).not.toHaveBeenCalled();
+        expect(sent).toHaveLength(1);
+        expect(sent[0]!.templateAlias).toBe('escrow-pin-sign-in');
+        expect(sent[0]!.templateModel).toEqual({
+            signedInAt: completedAt.toISOString(),
+            secureUrl: 'https://learncard.app/account/secure',
+        });
+        expect(pushCalls).toEqual([
+            expect.objectContaining({
+                message: {
+                    title: 'New device signed in with your PIN',
+                    body: 'Not you? Open the app to secure your account.',
+                },
+            }),
+        ]);
+        expect(recorded).toEqual([{ holdId: hold._id, kind: 'pin-sign-in' }]);
+    });
+
+    it('pin-sign-in links to the tenant app and sends tenant branding', async () => {
+        const userKey = baseUserKey();
+        const hold = baseHold({ releasePolicy: 'pin', status: 'completed' });
+        const { deps, sent } = makeDeps();
+        const emailBranding = { brandName: 'VetPass', appUrl: 'https://vetpass.app' };
+
+        await notifyEscrowHoldEvent(
+            {
+                kind: 'pin-sign-in',
+                hold,
+                userKey,
+                tenant: { id: 'vetpass', emailBranding, resolvedVia: 'header' },
+            },
+            deps
+        );
+
+        expect(sent[0]!.templateModel.secureUrl).toBe('https://vetpass.app/account/secure');
+        expect(sent[0]!.branding).toEqual(emailBranding);
+    });
+
+    it('pin-sign-in never throws when delivery fails', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const userKey = baseUserKey();
+        const hold = baseHold({ releasePolicy: 'pin', status: 'completed' });
+        const { deps } = makeDeps({
+            send: async () => {
+                throw new Error('postmark down owner@example.com');
+            },
+            sendPush: async () => {
+                throw new Error('fcm down');
+            },
+        });
+
+        await expect(
+            notifyEscrowHoldEvent({ kind: 'pin-sign-in', hold, userKey }, deps)
+        ).resolves.toBe(false);
+        expect(JSON.stringify(errorSpy.mock.calls)).not.toContain('owner@example.com');
+        errorSpy.mockRestore();
+    });
+
     it('sends a push notification to the account DID for every kind', async () => {
         const userKey = baseUserKey({ contactMethod: { type: 'phone', value: '+15555550100' } });
         const hold = baseHold();

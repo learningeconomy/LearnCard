@@ -20,6 +20,7 @@ import {
 } from './credential-refresh-materiality.helpers';
 import { getNotificationMessage } from './notificationMessages';
 import { resolveRecipientLocale } from './getRecipientLocale.helpers';
+import { fetchNotificationWebhook } from './notification-webhook-fetch.helpers';
 
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 6000;
@@ -357,18 +358,25 @@ export async function sendNotification(
             // Set a timeout to abort the fetch request
             const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
 
-            let response: Response;
+            let response: Pick<Response, 'ok' | 'status' | 'text'>;
+            let responseText: string;
             try {
                 directWebhookRequestStarted = true;
-                response = await fetch(notificationsWebhook, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${didJwt}`,
+                response = await fetchNotificationWebhook(
+                    notificationsWebhook,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${didJwt}`,
+                        },
+                        body: JSON.stringify(notification),
+                        signal,
                     },
-                    body: JSON.stringify(notification),
-                    signal,
-                });
+                    runtimeEnvironment.IS_OFFLINE
+                );
+                // Keep the deadline active while reading the acknowledgement body too.
+                responseText = await response.text();
             } finally {
                 clearTimeout(timeoutId);
             }
@@ -386,8 +394,6 @@ export async function sendNotification(
                 throw createWebhookTransportError(response.status);
             }
 
-            const responseText = await response.text();
-
             let responseBody: unknown;
             if (responseText.trim().length > 0) {
                 try {
@@ -398,7 +404,8 @@ export async function sendNotification(
             }
 
             if (
-                notification.data?.metadata?.connectionPrompt &&
+                (notification.data?.metadata?.connectionPrompt ||
+                    notification.type === 'ANNOUNCEMENT') &&
                 extractNotificationWebhookSuccess(responseBody) === null
             ) {
                 throw createUnrecognizedWebhookAcknowledgementError(response.status);

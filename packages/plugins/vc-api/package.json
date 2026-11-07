@@ -1,7 +1,7 @@
 {
     "name": "@learncard/vc-api-plugin",
-    "version": "1.1.41",
-    "description": "",
+    "version": "1.1.43",
+    "description": "Implements LearnCard VC methods against a remote VC-API server.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/vc-api-plugin.esm.js",

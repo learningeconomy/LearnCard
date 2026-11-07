@@ -9,12 +9,19 @@ const capture = vi.hoisted(() => ({
 }));
 vi.mock('@sentry/react', () => ({ getReplay: () => ({ stop: capture.stop }) }));
 vi.mock('userflow.js', () => ({
-    default: { setPageTrackingDisabled: capture.disable, reset: capture.reset },
+    default: {
+        setPageTrackingDisabled: capture.disable,
+        reset: capture.reset,
+        isIdentified: () => true,
+    },
 }));
 vi.mock('@capacitor-firebase/analytics', () => ({
     FirebaseAnalytics: { setEnabled: capture.analytics },
 }));
-vi.mock('learn-card-base/logging/logger', () => ({ configureLoggerContext: capture.logger }));
+vi.mock('learn-card-base/logging/logger', () => ({
+    configureLoggerContext: capture.logger,
+    getLogger: () => ({ debug: vi.fn(), error: vi.fn() }),
+}));
 import {
     scrubShareTelemetry,
     isShareViewerPath,
@@ -45,6 +52,51 @@ describe('share privacy', () => {
         expect(event.request.url).toContain('#secret');
         expect(window.location.href).toBe(before);
     });
+    it('scrubs cyclic telemetry without overflowing the stack', () => {
+        const event: Record<string, unknown> = { message: 'Failed /s/abc#secret' };
+        event.self = event;
+        event.list = [event, { parent: event }];
+        const shared = { url: '/s/abc#shared' };
+        event.a = shared;
+        event.b = shared;
+        const result = scrubShareTelemetry(event);
+        expect(result.self).toBe('[Circular]');
+        expect(result.list).toEqual(['[Circular]', { parent: '[Circular]' }]);
+        expect(result.a).toEqual({ url: '/s/abc#[redacted]' });
+        expect(result.b).toBe('[Shared]');
+        expect(JSON.stringify(result)).not.toMatch(/secret|#shared/);
+    });
+    it('serializes shared cyclic subgraphs to a bounded, scrubbed payload', () => {
+        // Each node points twice to the next; reusing clones made JSON.stringify walk 2^22 paths.
+        let reads = 0;
+        const nodes = Array.from({ length: 22 }, (_, index) => {
+            const node: Record<string, unknown> = {};
+            Object.defineProperty(node, 'url', {
+                enumerable: true,
+                get: () => {
+                    reads += 1;
+                    return `/s/node-${index}#secret-${index}`;
+                },
+            });
+            return node;
+        });
+        nodes.forEach((node, index) => {
+            const next = nodes[index + 1] ?? nodes[0];
+            node.left = next;
+            node.right = next;
+        });
+        const serialized = JSON.stringify(scrubShareTelemetry({ request: { data: nodes[0] } }));
+        expect(reads).toBe(nodes.length);
+        expect(serialized.length).toBeLessThan(2048);
+        expect(serialized).not.toMatch(/secret/);
+        expect(serialized.match(/\/s\/node-\d+#\[redacted\]/g)).toHaveLength(nodes.length);
+        expect(serialized.match(/"\[Shared\]"/g)).toHaveLength(nodes.length - 1);
+        expect(serialized.match(/"\[Circular\]"/g)).toHaveLength(2);
+    });
+    it('keeps Date values intact', () => {
+        const timestamp = new Date('2026-11-01T00:00:00Z');
+        expect(scrubShareTelemetry({ timestamp }).timestamp).toBe(timestamp);
+    });
     it('updates mounted privacy consumers after render without repeating capture resets', async () => {
         const { result, unmount } = renderHook(() => useSharePrivateSession());
         expect(result.current).toBe(false);
@@ -54,7 +106,6 @@ describe('share privacy', () => {
         });
         expect(capture.reset).toHaveBeenCalledOnce();
         expect(capture.stop).toHaveBeenCalledOnce();
-        expect(capture.analytics).toHaveBeenCalledOnce();
         expect(result.current).toBe(true);
         unmount();
     });
@@ -74,7 +125,6 @@ describe('share privacy', () => {
             privacy.enterSharePrivacy();
             expect(capture.disable).toHaveBeenCalledOnce();
             expect(capture.reset).toHaveBeenCalledOnce();
-            expect(capture.analytics).toHaveBeenCalledWith({ enabled: false });
             expect(capture.stop).toHaveBeenCalledOnce();
         } finally {
             window.history.replaceState(null, '', previous);

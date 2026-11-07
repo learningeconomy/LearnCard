@@ -117,6 +117,31 @@ describe('loadSavedCredentialCollections', () => {
         });
     });
 
+    it('retains distinct shared links even when their signed presentations are identical', async () => {
+        const wallet = {
+            invoke: {
+                getReceivedPresentations: vi.fn(async () =>
+                    ['A'.repeat(22), `B${'A'.repeat(21)}`].map((shareId, index) => ({
+                        uri: `lc:network:collection-${index}`,
+                        from: 'recipient',
+                        to: 'recipient',
+                        sent: `2026-09-2${index}T12:00:00.000Z`,
+                        metadata: {
+                            type: 'learncard.share-link.v1',
+                            shareId,
+                            title: `Collection ${index}`,
+                            sharer: { profileId: 'sender', displayName: 'Alex' },
+                        },
+                    }))
+                ),
+            },
+            read: { get: vi.fn(async () => presentation(credential('Badge'))) },
+        } as unknown as ShareWallet;
+        expect((await loadSavedCredentialCollections(wallet)).map(x => x.shareId).sort()).toEqual(
+            ['A'.repeat(22), `B${'A'.repeat(21)}`].sort()
+        );
+    });
+
     it('keeps only the newest save for the same private share', async () => {
         const metadata = {
             type: 'learncard.share-link.v1',
@@ -145,11 +170,23 @@ describe('loadSavedCredentialCollections', () => {
                     },
                 ]),
             },
-            read: { get: vi.fn(async () => presentation(credential('Badge'))) },
+            read: {
+                get: vi.fn(async (uri: string) =>
+                    presentation(
+                        credential(uri.endsWith(':second') ? 'Updated badge' : 'Old badge')
+                    )
+                ),
+            },
         } as unknown as ShareWallet;
 
         await expect(loadSavedCredentialCollections(wallet)).resolves.toMatchObject([
-            { uri: 'lc:network:second', title: 'Career highlights' },
+            {
+                uri: 'lc:network:second',
+                title: 'Career highlights',
+                presentation: {
+                    verifiableCredential: [{ credentialSubject: { name: 'Updated badge' } }],
+                },
+            },
         ]);
     });
 

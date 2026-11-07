@@ -51,7 +51,8 @@ export const useSamplePersonas = () => {
                 consent =>
                     consent?.contract?.uri &&
                     allContractUriSet.has(consent.contract.uri) &&
-                    consent.status !== 'withdrawn'
+                    consent.status !== 'withdrawn' &&
+                    consent.status !== 'consumed'
             ) ?? [],
         [allContractUriSet, consentedContracts]
     );

@@ -564,13 +564,13 @@ operation.
 deletion protection, point-in-time recovery, SCP-guarded lifecycle/restore/import
 actions and a read-only monitor that verifies execution rows. There is **no**
 authority-to-Object-Lock archiver or persistent audit outbox yet. Long-term
-immutable retention of authority rows therefore remains **in scope as a
-pre-50%-rollout gate**, not a launch blocker or delivered control: before stage 4,
-copy exact signed execution bytes to the existing COMPLIANCE Object Lock bucket
-idempotently (synchronous gating optional; durable outbox + reconciliation
-acceptable), and have the monitor check coverage. Earlier rollout requires verified
-CloudTrail write/governance alarms and security acceptance of R-AUTHORITY-ROLLBACK;
-security rejection requires the archiver sooner. Staging may run without it. No cross-service atomicity
+immutable retention of authority rows therefore remains **in scope as post-launch
+hardening**, not a launch or rollout-stage gate (R-AUTHORITY-ROLLBACK accepted for all
+stages, [LAUNCH-DECISIONS.md](LAUNCH-DECISIONS.md) RAR, 2026-10-31): copy exact signed
+execution bytes to the existing COMPLIANCE Object Lock bucket idempotently
+(synchronous gating optional; durable outbox + reconciliation acceptable), and have
+the monitor check coverage. Rollout without it relies on verified CloudTrail
+write/governance alarms and that acceptance. Staging may run without it. No cross-service atomicity
 with S3 or Mongo is claimed. Stored receipts permit metadata reconciliation, never
 replay of a PIN comparison or release. Enclave high-water marks still never reset
 on failure; losing concurrent signers may require exact-history reconciliation.
@@ -637,7 +637,7 @@ change as independently committed; an API `{success:true}` is insufficient.
   The escrow CMK policy is NOT touched (it denies Encrypt).
   The new KMS key policy allows Decrypt only with an attested Recipient matching pinned PCRs.
   Add single-region tables, fixed TLS endpoint, alarms and backup policy. The audit
-  outbox/Object Lock archiver is a pre-50%-rollout gate (see section 5), not in this stack.
+  outbox/Object Lock archiver is post-launch hardening (RAR accepted for all stages), not in this stack.
   Host/API get no table writes, signing grants or cross-account administrator role.
   Update `infra/escrow-enclave/{iam,ledger,kms,storage,monitor}.tf` integration and
   measured endpoint/pin configuration. Preserve existing PCR tuple/KMS denies.
@@ -741,14 +741,28 @@ visible only to the enclave and the user's inbox.
 **Content constraints.** Email text is part of the measured image, so changing it
 needs a new EIF, new PCRs and a measurement rotation. Keep it to three plain-text
 messages (code, started, release warning) with no links or images, in the four app
-languages, using a display name derived from the tenant label (`src/authority/email.rs`'s
-`brand_name`, e.g. `learncard` → `LearnCard`; unknown labels fall back unchanged).
+languages. The display name is the owner-sealed `recoveryBrand` from the decrypted
+blob when present and valid ([SECURITY.md](SECURITY.md) D21), otherwise derived from
+the tenant label (`src/authority/email.rs`'s `brand_name`, e.g. `learncard` →
+`LearnCard`; unknown labels fall back unchanged).
 Only the code message says "Only enter this code if you started this recovery."
 — the other two carry no code, so that line only belongs there. The started and
 release-warning messages instead tell the recipient how to stop an unexpected
 recovery: "If you didn't start this, open the \[app] and cancel the recovery right
 away." A separately signed template file was considered and deferred: its signing
-key could produce misleading or leaking templates.
+key could produce misleading or leaking templates. The sealed brand (D21) is different
+in kind: it is one short, plain-ASCII display name interpolated into compiled
+templates, chosen by the owner for their own blob only, and limited to characters
+that cannot form a link, address, line break, bidi override or code look-alike. It
+cannot change any wording, and a value that fails validation is ignored, not sent.
+
+**Blob plaintext wire format: `recoveryBrand`.** Optional camelCase string field of
+`EscrowBlobPlaintext` (and the release plaintext that flattens it), alongside
+`recoveryEmail`/`recoveryLanguage`. `ESCROW_ENVELOPE_VERSION` stays 1 and it is not
+in the signed intent. Writers (the client's `enrollEscrow`) seal it only when they
+also seal the contact, never on a carry. Readers (enclave `normalize`, TS
+`parseEscrowBlobPlaintext`) keep the canonical form of a valid value and silently
+drop anything else. Validation rules and the shared fixture are in SECURITY.md D21.
 
 **Operations.** SES sending domain with SPF/DKIM/DMARC, production access (out of
 the SES sandbox), bounce and complaint handling, quota monitoring. Cost is

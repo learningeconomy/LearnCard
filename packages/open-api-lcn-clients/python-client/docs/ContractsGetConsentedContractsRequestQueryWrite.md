@@ -2,10 +2,10 @@
 
 ## Properties
 
-| Name            | Type                                                                                                                    | Description | Notes      |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **credentials** | [**ContractsGetConsentedDataForDidRequestQueryCredentials**](ContractsGetConsentedDataForDidRequestQueryCredentials.md) |             | [optional] |
-| **personal**    | **Dict[str, bool]**                                                                                                     |             | [optional] |
+| Name            | Type                                                                                                                              | Description | Notes      |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **credentials** | [**ContractsGetConsentedDataForContractRequestQueryCredentials**](ContractsGetConsentedDataForContractRequestQueryCredentials.md) |             | [optional] |
+| **personal**    | **Dict[str, bool]**                                                                                                               |             | [optional] |
 
 ## Example
 

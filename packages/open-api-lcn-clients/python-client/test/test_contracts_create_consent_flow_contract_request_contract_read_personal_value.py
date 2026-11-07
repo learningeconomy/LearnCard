@@ -36,7 +36,8 @@ class TestContractsCreateConsentFlowContractRequestContractReadPersonalValue(uni
         if include_optional:
             return ContractsCreateConsentFlowContractRequestContractReadPersonalValue(
                 required = True,
-                default_enabled = True
+                default_enabled = True,
+                reason = ''
             )
         else:
             return ContractsCreateConsentFlowContractRequestContractReadPersonalValue(

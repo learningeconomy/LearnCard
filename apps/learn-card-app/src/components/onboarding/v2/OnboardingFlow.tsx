@@ -54,6 +54,7 @@ import { resolvePostOnboardingRedirect } from './postOnboardingRedirect';
 
 import { RecoveryPinStep } from './RecoveryPinStep';
 import { waitForEscrowEnrollment } from './waitForEscrowEnrollment';
+import { decideOnboardingPinStep } from './requiredPinStep';
 import {
     readRecoveryPinPromptFlag,
     writeRecoveryPinPromptFlag,
@@ -613,12 +614,22 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     : selectedPrivacyPreferences.aiEnabled;
                 let preferencesInitialized = false;
 
-                await updatePreferences({
+                const preferencesToSave = {
                     ...selectedPrivacyPreferences,
                     aiEnabled,
                     aiAutoDisabled: selectedPrivacyPreferences.isMinor,
                     analyticsAutoDisabled: false,
-                })
+                };
+                await updatePreferences(preferencesToSave)
+                    .catch(async (error: unknown) => {
+                        const code = (error as { data?: { code?: string } } | null)?.data?.code;
+                        if (code !== 'SERVICE_UNAVAILABLE') throw error;
+                        // Unknown age authority rejects the entire analytics opt-in write.
+                        // Preserve explicit AI/bug-report choices without granting analytics.
+                        const { analyticsEnabled: _analyticsEnabled, ...ordinaryPreferences } =
+                            preferencesToSave;
+                        return updatePreferences(ordinaryPreferences);
+                    })
                     .then(() => {
                         preferencesInitialized = true;
                     })
@@ -656,10 +667,16 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 }
 
                 if (currentUser?.privateKey) {
-                    await updateCurrentUser(currentUser.uid, {
-                        name: displayName,
-                        profileImage: photo,
-                    });
+                    // Local cache only: the profile already exists, so a failed write
+                    // must not fail sign-up (a retry would hit "Account already exists").
+                    try {
+                        await updateCurrentUser(currentUser.uid, {
+                            name: displayName,
+                            profileImage: photo,
+                        });
+                    } catch (e) {
+                        log.error('Local user cache update failed:', e);
+                    }
                     currentUserStore.set.currentUser({
                         ...currentUser,
                         name: displayName,
@@ -696,25 +713,37 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 trackOnboardingStepCompleted('profile', 2);
 
-                const pinAvailable = await waitForEscrowEnrollment(
-                    () => {
+                // The PIN is required at sign-up but fail-open: when escrow is not
+                // confirmed available in time the step is skipped and the user is
+                // asked later (see requiredPinStep.ts).
+                const showPinStep = await decideOnboardingPinStep({
+                    waitForPinAvailable: () =>
+                        waitForEscrowEnrollment(
+                            () => {
+                                const state = coordinatorStateRef.current;
+                                return {
+                                    status: state.status,
+                                    escrowEnrollment:
+                                        state.status === 'ready'
+                                            ? state.escrowEnrollment
+                                            : undefined,
+                                };
+                            },
+                            { escrowEnabled: getSSSConfig().escrowEnclaveMode !== 'off' }
+                        ),
+                    getSnapshot: () => {
                         const state = coordinatorStateRef.current;
-                        return {
-                            status: state.status,
-                            escrowEnrollment:
-                                state.status === 'ready' ? state.escrowEnrollment : undefined,
-                        };
+                        return state.status === 'ready'
+                            ? {
+                                  status: state.status,
+                                  did: state.did,
+                                  escrowPinEnabled: state.escrowPin?.enabled,
+                              }
+                            : { status: state.status };
                     },
-                    { escrowEnabled: getSSSConfig().escrowEnclaveMode !== 'off' }
-                );
-                // Resumed onboarding: the account may already have a PIN, or have
-                // been asked by the provider's one-time prompt on this device.
-                const readyState = coordinatorStateRef.current;
-                const alreadyAsked =
-                    readyState.status === 'ready' &&
-                    (readyState.escrowPin?.enabled === true ||
-                        readRecoveryPinPromptFlag(readyState.did) != null);
-                setStep(pinAvailable && !alreadyAsked ? 'pin' : 'celebrate');
+                    readPromptFlag: readRecoveryPinPromptFlag,
+                });
+                setStep(showPinStep ? 'pin' : 'celebrate');
             }
         } catch (err: unknown) {
             const errorDetails =
@@ -1393,12 +1422,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         trackOnboardingStepCompleted('pin', 3);
                         setStep('celebrate');
                     }}
-                    onSkip={() => {
-                        if (coordinatorState.status === 'ready') {
-                            writeRecoveryPinPromptFlag(coordinatorState.did, 'skipped');
-                        }
-                        setStep('celebrate');
-                    }}
+                    // Offered only after repeated save failures (the PIN is required but
+                    // fails open). No prompt flag is written, so the existing first-time
+                    // PIN prompt asks again on a later start (see requiredPinStep.ts).
+                    onSkip={() => setStep('celebrate')}
                     setPin={setEscrowPin}
                 />
             )}

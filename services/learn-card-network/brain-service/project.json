@@ -80,7 +80,7 @@
         },
         "test": {
             "executor": "nx:run-script",
-            "inputs": ["source", "tests"],
+            "inputs": ["source", "tests", "ciTestConfig"],
             "options": {
                 "script": "test"
             }
@@ -149,6 +149,11 @@
             "options": {
                 "script": "test:boost-recipients"
             }
+        },
+        "build:integration-dependencies": {
+            "executor": "nx:noop",
+            "cache": false,
+            "dependsOn": ["^build"]
         }
     }
 }
