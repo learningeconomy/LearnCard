@@ -114,6 +114,7 @@ jobs:
             service_deployment_matrix: ${{ steps.set-env.outputs.service_deployment_matrix }}
             frontend_deployment_matrix: ${{ steps.set-env.outputs.frontend_deployment_matrix }}
             frontend_matrix_has_legs: ${{ steps.set-env.outputs.frontend_matrix_has_legs }}
+            native_plugin_needed: ${{ steps.native-plugin.outputs.needed }}
         steps:
             # Recovery validation needs only the checkout; ordinary manual runs still skip it.
             - name: Checkout Repo
@@ -355,6 +356,32 @@ jobs:
                     set_frontend_matrix "${FE_LEGS[@]}"
                   fi
 
+            # Only the Lambda deploys (brain, LearnCloud, LCA API) ship the native addon.
+            # Tests don't need it: the services fall back to WASM (PR test.yml runs the
+            # same affected tests without it). Keep this in sync with those jobs' `if`s.
+            - name: Determine whether the native DIDKit plugin is needed
+              id: native-plugin
+              env:
+                  IS_MANUAL: ${{ steps.check_manual.outputs.is_manual }}
+                  IS_RELEASE: ${{ steps.check_release.outputs.is_release }}
+                  AFFECTED: ${{ steps.affected.outputs.affected }}
+                  MANUAL_SERVICES: ${{ github.event.inputs.deploy-brain-service }},${{ github.event.inputs.deploy-learn-cloud }},${{ github.event.inputs.deploy-lca-api }}
+                  RELEASE_SERVICES: ${{ steps.check_versions.outputs.brain_service_changed }},${{ steps.check_versions.outputs.learn_cloud_changed }},${{ steps.check_versions.outputs.lca_api_changed }}
+              run: |
+                  needed=false
+                  if [[ "$IS_MANUAL" == 'true' ]]; then
+                    [[ ",$MANUAL_SERVICES," == *,true,* ]] && needed=true
+                  elif [[ "$IS_RELEASE" == 'true' ]]; then
+                    [[ ",$RELEASE_SERVICES," == *,true,* ]] && needed=true
+                  else
+                    # Substring match, like the deploy jobs' contains().
+                    for project in network-brain-service learn-cloud-service lca-api-service; do
+                      [[ "$AFFECTED" == *"$project"* ]] && needed=true
+                    done
+                  fi
+                  echo "needed=$needed" >> "$GITHUB_OUTPUT"
+                  echo "Native DIDKit plugin needed: $needed"
+
             # AI Passport backend deploys (Fly). Automatic legs stay off until
             # the repo var AIP_DEPLOY_ENABLED is 'true', so merging this workflow doesn't race
             # the AI-Passport repo's own deploy-fly.yml. Flip the var when that repo is frozen.
@@ -431,6 +458,8 @@ jobs:
     # ============================================================================
     build-native-plugin:
         name: Build Native DIDKit Plugin
+        needs: [determine-affected]
+        if: needs.determine-affected.outputs.native_plugin_needed == 'true'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
@@ -493,7 +522,7 @@ jobs:
     # ============================================================================
     test-affected:
         name: Test Affected Projects
-        needs: [determine-affected, build-native-plugin]
+        needs: [determine-affected]
         if: |
             needs.determine-affected.outputs.affected != '' &&
             needs.determine-affected.outputs.is_release != 'true' &&
@@ -515,13 +544,6 @@ jobs:
             - name: Prepare full-tree comparison fallback
               if: needs.determine-affected.outputs.tests_reused != 'true'
               run: git hash-object -t tree -w --stdin </dev/null
-
-            - name: Download native plugin binary
-              if: needs.determine-affected.outputs.tests_reused != 'true'
-              uses: actions/download-artifact@v4
-              with:
-                  name: didkit-native-linux-x64
-                  path: packages/plugins/didkit-plugin-node
 
             - name: Use Composite Setup Action
               if: needs.determine-affected.outputs.tests_reused != 'true'
@@ -583,6 +605,20 @@ jobs:
             matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
         environment: ${{ matrix.brain_env }}
         steps:
+            # Selected deploys fail (not skip) without the native plugin, so frontend,
+            # npm, and docker gates see a failure instead of an OK-looking skip.
+            - name: Require native DIDKit plugin
+              if: needs.build-native-plugin.result != 'success'
+              env:
+                  NATIVE_RESULT: ${{ needs.build-native-plugin.result }}
+              run: |
+                  if [[ "$NATIVE_RESULT" == 'skipped' ]]; then
+                    echo "::error::Native DIDKit build was skipped, but this deploy was selected. native_plugin_needed is out of sync with this job's selection."
+                  else
+                    echo "::error::Native DIDKit build is a prerequisite for this deploy and finished with: $NATIVE_RESULT"
+                  fi
+                  exit 1
+
             - name: Checkout Repo
               uses: actions/checkout@v7
 
@@ -748,6 +784,20 @@ jobs:
             matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
         environment: ${{ matrix.cloud_env }}
         steps:
+            # Selected deploys fail (not skip) without the native plugin, so frontend,
+            # npm, and docker gates see a failure instead of an OK-looking skip.
+            - name: Require native DIDKit plugin
+              if: needs.build-native-plugin.result != 'success'
+              env:
+                  NATIVE_RESULT: ${{ needs.build-native-plugin.result }}
+              run: |
+                  if [[ "$NATIVE_RESULT" == 'skipped' ]]; then
+                    echo "::error::Native DIDKit build was skipped, but this deploy was selected. native_plugin_needed is out of sync with this job's selection."
+                  else
+                    echo "::error::Native DIDKit build is a prerequisite for this deploy and finished with: $NATIVE_RESULT"
+                  fi
+                  exit 1
+
             - name: Checkout Repo
               uses: actions/checkout@v7
 
@@ -864,6 +914,20 @@ jobs:
             matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
         environment: ${{ matrix.lca_api_env }}
         steps:
+            # Selected deploys fail (not skip) without the native plugin, so frontend,
+            # npm, and docker gates see a failure instead of an OK-looking skip.
+            - name: Require native DIDKit plugin
+              if: needs.build-native-plugin.result != 'success'
+              env:
+                  NATIVE_RESULT: ${{ needs.build-native-plugin.result }}
+              run: |
+                  if [[ "$NATIVE_RESULT" == 'skipped' ]]; then
+                    echo "::error::Native DIDKit build was skipped, but this deploy was selected. native_plugin_needed is out of sync with this job's selection."
+                  else
+                    echo "::error::Native DIDKit build is a prerequisite for this deploy and finished with: $NATIVE_RESULT"
+                  fi
+                  exit 1
+
             - name: Checkout Repo
               uses: actions/checkout@v7
 
@@ -1011,10 +1075,13 @@ jobs:
                 deploy-brain-service,
                 deploy-learn-cloud,
                 deploy-lca-api,
+                build-native-plugin,
             ]
         if: |
             always() &&
             !cancelled() &&
+            needs.build-native-plugin.result != 'failure' &&
+            needs.build-native-plugin.result != 'cancelled' &&
             needs.determine-affected.outputs.frontend_matrix_has_legs == 'true' &&
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
@@ -1656,10 +1723,12 @@ jobs:
     # ============================================================================
     push-docker-images:
         name: Push Docker Images
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud]
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, build-native-plugin]
         if: |
             always() &&
             !cancelled() &&
+            needs.build-native-plugin.result != 'failure' &&
+            needs.build-native-plugin.result != 'cancelled' &&
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.push-docker == 'true') ||
                 (needs.determine-affected.outputs.is_release == 'true' && (needs.determine-affected.outputs.brain_service_changed == 'true' || needs.determine-affected.outputs.learn_cloud_changed == 'true'))
@@ -1749,10 +1818,19 @@ jobs:
     # ============================================================================
     publish-npm:
         name: Publish Registry Packages
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+        needs:
+            [
+                determine-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+                build-native-plugin,
+            ]
         if: |
             always() &&
             !cancelled() &&
+            needs.build-native-plugin.result != 'failure' &&
+            needs.build-native-plugin.result != 'cancelled' &&
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-npm == 'true') ||
                 needs.determine-affected.outputs.is_release == 'true'
@@ -2051,16 +2129,6 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v7
-
-            - name: Set up AI Agent Node LTS
-              uses: actions/setup-node@v6
-              with:
-                  node-version-file: services/learn-card-network/ai-agent/.nvmrc
-                  package-manager-cache: false
-
-            - name: Use composite setup action
-              uses: ./.github/actions/setup
-
             - name: Validate deployment configuration
               env:
                   ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
@@ -2093,18 +2161,9 @@ jobs:
                     exit 1
                   fi
 
-            # The native prebuild workflow publishes independently of Deploy.
-            # Trigger installs this external package from npm, not the checkout.
-            - name: Wait for native registry publication
-              timeout-minutes: 46
-              run: node scripts/wait-for-didkit-registry.mjs
-
-            # Publication waiting has its own budget; keep the fresh Linux install
-            # and runtime verification after all native artifacts are available.
-            - name: Verify Trigger native package installation
-              timeout-minutes: 16
-              run: node scripts/wait-for-trigger-native-package.mjs
-
+            # Build, push and scan the image first: none of it changes anything live,
+            # and it no longer waits behind the npm registry gates below (up to
+            # ~17 min on release runs, timed against the native prebuild workflow).
             - name: Configure AWS credentials
               uses: aws-actions/configure-aws-credentials@v5
               with:
@@ -2140,14 +2199,6 @@ jobs:
                     exit 1
                   fi
 
-            - name: Deploy Trigger.dev tasks
-              working-directory: services/learn-card-network/ai-agent
-              env:
-                  AI_AGENT_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
-                  AI_AGENT_TRIGGER_ENVIRONMENT: ${{ env.TARGET_ENVIRONMENT }}
-                  TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
-              run: bunx trigger deploy --env prod --skip-update-check
-
             - name: Login to Amazon ECR
               uses: aws-actions/amazon-ecr-login@v2
 
@@ -2158,6 +2209,10 @@ jobs:
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
+              with:
+                  # The runner is discarded after the job; `buildx rm` spent ~70s
+                  # deleting builder state nobody would reuse.
+                  cleanup: false
 
             - name: Check immutable AI Agent image
               id: image
@@ -2191,8 +2246,9 @@ jobs:
                   push: true
                   platforms: linux/arm64
                   build-args: GIT_SHA=${{ github.sha }}
-                  cache-from: type=gha,scope=ai-agent-image
-                  cache-to: type=gha,mode=max,scope=ai-agent-image
+                  # No GHA layer cache: `COPY . .` invalidates every expensive layer
+                  # on each commit, so the mode=max export (~5 min, >1 GB) never
+                  # hit, and it evicted the repo's other caches (cargo, bun, ...).
                   tags: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}:sha-${{ github.sha }}
 
             - name: Reject vulnerable runtime image
@@ -2228,6 +2284,44 @@ jobs:
                     echo "::error::ARM64 runtime image has $CRITICAL_FINDINGS critical and $HIGH_FINDINGS high findings"
                     exit 1
                   fi
+
+            - name: Set up AI Agent Node LTS
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: services/learn-card-network/ai-agent/.nvmrc
+                  package-manager-cache: false
+
+            - name: Use composite setup action
+              uses: ./.github/actions/setup
+
+            # The native prebuild workflow publishes independently of Deploy.
+            # Trigger installs this external package from npm, not the checkout.
+            - name: Wait for native registry publication
+              timeout-minutes: 46
+              run: node scripts/wait-for-didkit-registry.mjs
+
+            # Publication waiting has its own budget; keep the fresh Linux install
+            # and runtime verification after all native artifacts are available.
+            - name: Verify Trigger native package installation
+              timeout-minutes: 16
+              run: node scripts/wait-for-trigger-native-package.mjs
+
+            # The registry gates above can take up to ~an hour; re-assume the role so
+            # the remaining AWS steps never run on a session issued before them.
+            - name: Refresh AWS credentials
+              uses: aws-actions/configure-aws-credentials@v5
+              with:
+                  role-to-assume: ${{ vars.AI_AGENT_AWS_ROLE_ARN }}
+                  role-session-name: learncard-ai-agent-${{ env.TARGET_ENVIRONMENT }}-${{ github.run_id }}
+                  aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+            - name: Deploy Trigger.dev tasks
+              working-directory: services/learn-card-network/ai-agent
+              env:
+                  AI_AGENT_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
+                  AI_AGENT_TRIGGER_ENVIRONMENT: ${{ env.TARGET_ENVIRONMENT }}
+                  TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+              run: bunx trigger deploy --env prod --skip-update-check
 
             - name: Deploy ECS/Fargate service
               env:

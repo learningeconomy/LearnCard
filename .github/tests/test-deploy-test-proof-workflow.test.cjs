@@ -88,7 +88,13 @@ test('proof lookup is read-only, bounded and cannot replace the default tests wi
         }
     }
     assert.equal(consumer['continue-on-error'], undefined);
-    assert.ok(consumer.needs.includes('build-native-plugin'));
+    // Tests use the WASM fallback; only Lambda deploys consume the native artifact.
+    assert.ok(!consumer.needs.includes('build-native-plugin'));
+    assert.equal(consumer.steps.some(s => s.name === 'Download native plugin binary'), false);
+    for (const name of ['deploy-brain-service', 'deploy-learn-cloud', 'deploy-lca-api']) {
+        assert.ok(deploy.jobs[name].needs.includes('build-native-plugin'));
+        step(deploy.jobs[name], 'Download native plugin binary');
+    }
     assert.equal(
         deploy.jobs['build-native-plugin'].steps.some(s => s.name === 'Build native plugin'),
         true
