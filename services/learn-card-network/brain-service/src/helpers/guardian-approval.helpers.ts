@@ -6,8 +6,152 @@
 import { environment } from '@environment';
 import { v4 as uuid } from 'uuid';
 import cache from '@cache';
+import type { GuardianApprovalRequestStatus } from '@learncard/types';
+import type { ProfileType } from 'types/profile';
 
 const GUARDIAN_APPROVAL_PREFIX = 'guardian_approval:';
+const GUARDIAN_REQUEST_PREFIX = 'guardian_approval_request:';
+const GUARDIAN_SEND_LOCK_PREFIX = 'guardian_approval_send_lock:';
+const GUARDIAN_SEND_COUNT_PREFIX = 'guardian_approval_send_count:';
+
+export const GUARDIAN_SEND_LOCK_TTL_SECONDS = 60;
+export const GUARDIAN_RESEND_COOLDOWN_SECONDS = 60;
+export const GUARDIAN_SEND_WINDOW_SECONDS = 60 * 60;
+export const GUARDIAN_MAX_SENDS_PER_WINDOW = 5;
+export const DEFAULT_GUARDIAN_APPROVAL_TTL_HOURS = 24 * 7;
+
+/**
+ * Latest account-level guardian approval request for a profile. Kept in the cache next to
+ * the approval tokens (not on the Profile node) so the guardian's email never leaks through
+ * profile payloads. `token` is the newest approval token the provider accepted.
+ */
+export type GuardianApprovalRequestRecord = {
+    status: 'sending' | 'accepted' | 'failed';
+    guardianEmail: string;
+    token?: string;
+    updatedAt: string;
+    acceptedAt?: string;
+    expiresAt?: string;
+};
+
+export const normalizeGuardianEmail = (email: string): string => email.trim().toLowerCase();
+
+export const getGuardianApprovalRequest = async (
+    profileId: string
+): Promise<GuardianApprovalRequestRecord | null> => {
+    const data = await cache.get(`${GUARDIAN_REQUEST_PREFIX}${profileId}`);
+    if (!data) return null;
+
+    try {
+        return JSON.parse(data) as GuardianApprovalRequestRecord;
+    } catch {
+        return null;
+    }
+};
+
+export const setGuardianApprovalRequest = async (
+    profileId: string,
+    record: GuardianApprovalRequestRecord
+): Promise<void> => {
+    await cache.set(`${GUARDIAN_REQUEST_PREFIX}${profileId}`, JSON.stringify(record), false);
+};
+
+export const deleteGuardianApprovalRequest = async (profileId: string): Promise<void> => {
+    await cache.delete([`${GUARDIAN_REQUEST_PREFIX}${profileId}`]);
+};
+
+export const invalidateGuardianApprovalToken = async (token: string): Promise<void> => {
+    await cache.delete([`${GUARDIAN_APPROVAL_PREFIX}${token}`]);
+};
+
+/** Returns a lock id when acquired, or null when another send is already in flight. */
+export const acquireGuardianSendLock = async (profileId: string): Promise<string | null> => {
+    const lockId = uuid();
+    const redis = cache.redis ?? cache.node;
+
+    try {
+        const result = await redis.set(
+            `${GUARDIAN_SEND_LOCK_PREFIX}${profileId}`,
+            lockId,
+            'EX',
+            GUARDIAN_SEND_LOCK_TTL_SECONDS,
+            'NX'
+        );
+        return result === 'OK' ? lockId : null;
+    } catch (error) {
+        console.error('Unable to acquire guardian approval send lock', error);
+        return null;
+    }
+};
+
+export const releaseGuardianSendLock = async (profileId: string, lockId: string): Promise<void> => {
+    const redis = cache.redis ?? cache.node;
+
+    try {
+        await redis.eval(
+            "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end return 0",
+            1,
+            `${GUARDIAN_SEND_LOCK_PREFIX}${profileId}`,
+            lockId
+        );
+    } catch (error) {
+        console.error('Unable to release guardian approval send lock', error);
+    }
+};
+
+export const recordGuardianSendAttempt = async (profileId: string): Promise<void> => {
+    await cache.incr(`${GUARDIAN_SEND_COUNT_PREFIX}${profileId}`, GUARDIAN_SEND_WINDOW_SECONDS);
+};
+
+/**
+ * Derives the learner-facing status. Missing history on a pending profile is reported as
+ * `unknown` (legacy accounts, evicted state) and a `sending` record without a live lock is
+ * `unknown` (the send was interrupted), so we never imply an email went out.
+ */
+export const getGuardianApprovalStatus = async (
+    profile: Pick<ProfileType, 'profileId' | 'approved'>
+): Promise<GuardianApprovalRequestStatus> => {
+    const { profileId } = profile;
+    const pendingApproval = profile.approved === false;
+    const now = Date.now();
+
+    const [record, lock, countRaw, windowTtl] = await Promise.all([
+        getGuardianApprovalRequest(profileId),
+        cache.get(`${GUARDIAN_SEND_LOCK_PREFIX}${profileId}`),
+        cache.get(`${GUARDIAN_SEND_COUNT_PREFIX}${profileId}`),
+        cache.ttl(`${GUARDIAN_SEND_COUNT_PREFIX}${profileId}`),
+    ]);
+
+    let status: GuardianApprovalRequestStatus['status'];
+    if (!record) status = pendingApproval ? 'unknown' : 'not_requested';
+    else if (record.status === 'sending' && !lock) status = 'unknown';
+    else status = record.status;
+
+    const attemptsRemaining = Math.max(0, GUARDIAN_MAX_SENDS_PER_WINDOW - Number(countRaw ?? 0));
+
+    let resendAvailableAt: number | undefined;
+    if (attemptsRemaining === 0 && windowTtl && windowTtl > 0) {
+        resendAvailableAt = now + windowTtl * 1000;
+    } else if (record?.status === 'accepted' && record.acceptedAt) {
+        const cooldownEndsAt =
+            Date.parse(record.acceptedAt) + GUARDIAN_RESEND_COOLDOWN_SECONDS * 1000;
+        if (cooldownEndsAt > now) resendAvailableAt = cooldownEndsAt;
+    }
+
+    return {
+        pendingApproval,
+        status,
+        ...(record?.guardianEmail ? { guardianEmail: record.guardianEmail } : {}),
+        ...(record?.updatedAt ? { updatedAt: record.updatedAt } : {}),
+        ...(record?.status === 'accepted' && record.expiresAt
+            ? { linkExpiresAt: record.expiresAt }
+            : {}),
+        ...(resendAvailableAt
+            ? { resendAvailableAt: new Date(resendAvailableAt).toISOString() }
+            : {}),
+        attemptsRemaining,
+    };
+};
 
 export type GuardianApprovalTokenData = {
     token: string;
@@ -89,6 +233,21 @@ export const validateGuardianApprovalTokenDetailed = async (
         await cache.delete([key]);
         return { valid: false, reason: 'invalid' };
     }
+};
+
+/**
+ * An account approval token only counts while it targets the guardian address on the
+ * learner's current request. Tokens without request history (legacy) remain valid.
+ */
+export const isGuardianApprovalTokenCurrent = async (
+    data: GuardianApprovalTokenData
+): Promise<boolean> => {
+    const request = await getGuardianApprovalRequest(data.requesterProfileId);
+    if (!request) return true;
+
+    return (
+        normalizeGuardianEmail(request.guardianEmail) === normalizeGuardianEmail(data.guardianEmail)
+    );
 };
 
 export const markGuardianApprovalTokenAsUsed = async (token: string): Promise<boolean> => {
