@@ -1361,7 +1361,22 @@
                 },
                 "error": {
                     "invalidEmail": "Ingresa un correo válido.",
-                    "sendFailed": "No se pudo enviar la solicitud. Intenta de nuevo."
+                    "sendFailed": "No se pudo enviar la solicitud. Intenta de nuevo.",
+                    "cooldown": "Puedes enviar otra solicitud a las {{time}}.",
+                    "inProgress": "Ya se está enviando una solicitud. Espera un momento."
+                },
+                "status": {
+                    "accepted": "Tu solicitud de aprobación se envió a <0>{{email}}</0>. Si tu tutor no la ve, pídele que revise su carpeta de spam.",
+                    "failed": "No pudimos enviar la solicitud de aprobación a <0>{{email}}</0>. Intenta enviarla de nuevo.",
+                    "sending": "Enviando la solicitud de aprobación…",
+                    "unknown": "Tu cuenta está pendiente de la aprobación de tu tutor. Si tu tutor no ha recibido una solicitud de aprobación, puedes enviar otra a continuación.",
+                    "expired": "El enlace de aprobación enviado a <0>{{email}}</0> ha caducado. Envía uno nuevo."
+                },
+                "resendRequest": "Reenviar solicitud",
+                "banner": {
+                    "title": "Pendiente de aprobación del tutor",
+                    "limited": "Algunas funciones seguirán limitadas hasta que tu padre, madre o tutor apruebe tu cuenta.",
+                    "manage": "Reenviar o cambiar correo"
                 }
             },
             "us": {
