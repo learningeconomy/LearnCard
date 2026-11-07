@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.90.50
+
+### Patch Changes
+
+- [#1988](https://github.com/learningeconomy/LearnCard/pull/1988) [`b40737bd683efb7ce66bb1e205f002b13cda3b4e`](https://github.com/learningeconomy/LearnCard/commit/b40737bd683efb7ce66bb1e205f002b13cda3b4e) Thanks [@gerardopar](https://github.com/gerardopar)! - Fix Web3Auth sign-in on browser localhost by skipping the SDK session write rejected by the session server's CORS policy. Preserve key derivation and session persistence on other web hosts.
+
+- [#1871](https://github.com/learningeconomy/LearnCard/pull/1871) [`a7923d7deaf0baf7205bbae1f6fe132e846fed44`](https://github.com/learningeconomy/LearnCard/commit/a7923d7deaf0baf7205bbae1f6fe132e846fed44) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2294] Search complete credential collections, keep visible totals stable, and recover from incomplete loading without misleading empty states.
+
+    Keep searching other records and metadata pages when one legacy credential cannot load, while preserving an incomplete, retryable result. Scope shared-credential metadata caches to the reader account, and translate collection status and recovery feedback in LearnCard and ScoutPass with accessible dashboard contrast.
+
+    Search older wrapped credentials by displayed and achievement names, keep scrolling after collection totals finish, and refresh only the originating account's affected lists once per bulk save. Localize LearnCard's unavailable category counts with narrow, right-to-left-safe layouts, and preserve live ScoutPass managed-list localization.
+
+    Await optimistic list/count updates after saving without making claim completion or contract sync wait for background paginated rescans.
+
+- [#1957](https://github.com/learningeconomy/LearnCard/pull/1957) [`95f865a4c259b85001687703540fbd3b2247e48a`](https://github.com/learningeconomy/LearnCard/commit/95f865a4c259b85001687703540fbd3b2247e48a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - React Query cache fixes (LC-2349 to LC-2355): managed-boost writes use the same key as the list, LearnCard App drops saved caches from other app versions, ScoutPass waits for SQLite instead of dropping saves, malformed cached lists no longer crash readers, web logout deletes the saved cache before redirect, profile switches reset non-profile-scoped queries, and delete restores stale-time on the profile it pinned.
+
+- [#1948](https://github.com/learningeconomy/LearnCard/pull/1948) [`d06b1422e3c58ca151b89f8bf4e55c0354f01e36`](https://github.com/learningeconomy/LearnCard/commit/d06b1422e3c58ca151b89f8bf4e55c0354f01e36) Thanks [@Custard7](https://github.com/Custard7)! - Fix ScoutPass's SSS key-derivation factory never receiving the resolved tenant. `getResolvedTenantConfig` was called without being imported, and a catch-all swallowed the resulting `ReferenceError`, so the SSS strategy always ran with no `tenantId`. It now sends `X-Tenant-Id: scoutpass` to lca-api, so recovery / OTP emails are ScoutPass-branded even from native builds (whose `localhost` origin otherwise resolves to LearnCard). Escrow stays off. ScoutPass currently ships with `keyDerivation: 'web3auth'`, so this only takes effect once ScoutPass switches to SSS.
+
+- [#1992](https://github.com/learningeconomy/LearnCard/pull/1992) [`18451f510c3d8a91343e6cbc6ffd5d129d771119`](https://github.com/learningeconomy/LearnCard/commit/18451f510c3d8a91343e6cbc6ffd5d129d771119) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2294] Remove routine credential loading text and continuation buttons while preserving automatic pagination and retry.
+
+    Keep screen-reader announcement regions mounted while idle so search and loading failures can be announced without restoring routine visible status text.
+
+    Keep automatic pagination connected when switching between Card and List views so older credentials remain reachable.
+
+- [#1987](https://github.com/learningeconomy/LearnCard/pull/1987) [`278e88258bb918c3e794f9ec3bd148b6e40afeec`](https://github.com/learningeconomy/LearnCard/commit/278e88258bb918c3e794f9ec3bd148b6e40afeec) Thanks [@Custard7](https://github.com/Custard7)! - Fix "no such table: users" when creating an account on web after signing out in the same tab. Logout deletes the browser's SQLite store, but table setup was remembered for the whole page load; it is now re-checked each time the database is opened. Onboarding no longer fails when only the local user cache write fails.
+
+- Updated dependencies [[`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2), [`fea9c25ec76f230944a1713500a280c80e2a9cc0`](https://github.com/learningeconomy/LearnCard/commit/fea9c25ec76f230944a1713500a280c80e2a9cc0), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48), [`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2)]:
+    - @learncard/sss-key-manager@0.3.0
+    - @learncard/helpers@1.8.0
+    - @learncard/lca-api-plugin@2.0.16
+    - @learncard/react@3.0.5
+
 ## 1.90.49
 
 ### Patch Changes
