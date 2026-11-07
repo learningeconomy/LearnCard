@@ -39,11 +39,11 @@
         "@learncard/init": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
         "@learncard/types": "workspace:*",
-        "jszip": "^3.10.1"
+        "jszip": "^3.10.2"
     },
     "devDependencies": {
         "@types/node": "^18.19.68",
-        "esbuild": "^0.27.1",
+        "esbuild": "^0.28.2",
         "shx": "^0.3.4",
         "typescript": "5.6.2",
         "vitest": "4.1.11"
