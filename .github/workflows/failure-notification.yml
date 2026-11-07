@@ -31,6 +31,7 @@ on:
             - Keycloak Drift Check
             - Keycloak Infrastructure
             - Keycloak Apple provider watch
+            - LearnCard MCP
             - Maid-Service
             - Migrate Signing Authority Seeds
             - Mock E2E

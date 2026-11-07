@@ -1,0 +1,59 @@
+{
+    "name": "@learncard/mcp",
+    "version": "0.0.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard",
+        "directory": "packages/learn-card-mcp"
+    },
+    "description": "Shared Model Context Protocol server core for LearnCard services",
+    "type": "module",
+    "main": "dist/mcp.cjs",
+    "module": "dist/mcp.mjs",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "import": "./dist/mcp.mjs",
+            "require": "./dist/mcp.cjs",
+            "default": "./dist/mcp.mjs"
+        }
+    },
+    "sideEffects": false,
+    "scripts": {
+        "build": "rollup -c",
+        "dev": "rollup -c -w",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "keywords": [
+        "learncard",
+        "mcp",
+        "model-context-protocol",
+        "oauth"
+    ],
+    "license": "MIT",
+    "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.20.2",
+        "express": "^4.21.1"
+    },
+    "devDependencies": {
+        "@types/express": "^4.17.21",
+        "@types/node": "^18.19.64",
+        "rollup": "^2.80.0",
+        "rollup-plugin-dts": "^4.2.2",
+        "rollup-plugin-esbuild": "^4.9.1",
+        "typescript": "^5.4.5",
+        "zod": "4.3.6"
+    },
+    "files": [
+        "dist",
+        "src"
+    ],
+    "publishConfig": {
+        "access": "public"
+    }
+}
