@@ -40,9 +40,8 @@ class TestInboxGetMyIssuedCredentials200Response(unittest.TestCase):
                     openapi_client.models.inbox_get_my_issued_credentials_200_response_records_inner.inbox_getMyIssuedCredentials_200_response_records_inner(
                         refresh = openapi_client.models.inbox_issue_200_response_refresh.inbox_issue_200_response_refresh(
                             refresh_id = '0', 
-                            refresh_service = {
-                                'key' : null
-                                }, 
+                            refresh_service = null, 
+                            refresh_service_binding = 'managed-entry', 
                             credential_id = '0', 
                             issuer_did = '0', 
                             credential_status = null, 
@@ -80,9 +79,8 @@ class TestInboxGetMyIssuedCredentials200Response(unittest.TestCase):
                     openapi_client.models.inbox_get_my_issued_credentials_200_response_records_inner.inbox_getMyIssuedCredentials_200_response_records_inner(
                         refresh = openapi_client.models.inbox_issue_200_response_refresh.inbox_issue_200_response_refresh(
                             refresh_id = '0', 
-                            refresh_service = {
-                                'key' : null
-                                }, 
+                            refresh_service = null, 
+                            refresh_service_binding = 'managed-entry', 
                             credential_id = '0', 
                             issuer_did = '0', 
                             credential_status = null, 
