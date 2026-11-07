@@ -895,7 +895,7 @@ export type LearnCardNetworkPluginMethods = {
         guardianEmail: string;
         ttlHours?: number;
         template?: { id?: string; model?: Record<string, unknown> };
-    }) => Promise<{ message: string; status: 'accepted' }>;
+    }) => Promise<{ message: string; approvalUrl: string; status: 'accepted' }>;
     getGuardianApprovalStatus: () => Promise<GuardianApprovalRequestStatus>;
     approveGuardianRequest: (token: string) => Promise<{ message: string }>;
     approveGuardianRequestByPath: (token: string) => Promise<{ message: string }>;
