@@ -55,17 +55,23 @@ MCP_SMOKE_TOKEN=<optional> services/ai-passport-backend/scripts/smoke-mcp.sh
 
 ## Rollout
 
+### Confirmed targets (Taylor)
+
+- Fly app: existing `mcp-learncard`
+- `MCP_SERVER_URL` (resource): `https://mcp.learncard.ai/`
+- `MCP_DOMAIN` (issuer): `https://api.learncloud.ai/`
+
+`MCP_DEPLOY_ENABLED` stays off. It is not a cutover step; cutover is the manual run below.
+
 ### Required to boot and cut over
 
 1. Freeze or retire the current deployer of `mcp-learncard` so two pipelines don't compete.
 2. Create GitHub Environment `ai-passport-mcp-production` with secret `FLY_API_TOKEN` (deploy
-   token scoped to `mcp-learncard`) and vars `MCP_DOMAIN` and `MCP_SERVER_URL`.
+   token scoped to `mcp-learncard`) and vars `MCP_DOMAIN` and `MCP_SERVER_URL` set to the confirmed targets.
 3. Add the `AI_PRIVACY_KEY` Fly secret to `mcp-learncard`; the current server exits on boot
    without it, and the app doesn't have it today.
 4. Resolve the `DOMAIN` and `MCP_SERVER_URL` Fly secrets on `mcp-learncard`: they override the
    deploy's `--env`, so remove them or keep them equal to the Environment vars.
-5. Taylor confirms the production target: app `mcp-learncard`, issuer (live today
-   `https://api.learncloud.ai/`) and resource URL (live today `https://mcp.learncard.ai/`).
 
 Then run Deploy manually: target `production`, only `deploy-ai-passport-mcp` checked, and confirm
 every smoke step passes and an MCP client can sign in and list tools.
@@ -76,9 +82,9 @@ every smoke step passes and an MCP client can sign in and list tools.
   `FLY_API_TOKEN`, `MCP_DOMAIN`, `MCP_SERVER_URL`).
 - The `mcp.learncloud.ai` alias: its Fly cert is "Not verified"; fix DNS or drop it.
 - `MCP_SMOKE_TOKEN` secret to enable the authorized `tools/list` and `get_user_context` checks.
-- Set repo var `MCP_DEPLOY_ENABLED=true` for automatic deploys after the first manual run passes.
-  Without a staging Environment, pushes to main would then select a staging leg that fails on
-  missing config.
+- Later, separately from cutover and only if Taylor decides: set repo var `MCP_DEPLOY_ENABLED=true`
+  for automatic deploys after the first manual run passes. Without a staging Environment, pushes
+  to main would then select a staging leg that fails on missing config.
 - VM size: `fly.mcp.toml` asks for 2 shared CPUs; live machines run 1, so the first deploy resizes them.
 
 ## Rollback
