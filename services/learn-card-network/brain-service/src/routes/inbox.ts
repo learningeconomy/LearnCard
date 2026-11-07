@@ -28,6 +28,7 @@ import {
     VCValidator,
     UnsignedVC,
     JWEValidator,
+    GuardianApprovalRequestStatusValidator,
 } from '@learncard/types';
 import { getInboxCredentialMeta } from '@helpers/credential-meta.helpers';
 import { claimIntoInbox, issueToInbox, resolveInboxCredentialInput } from '@helpers/inbox.helpers';
@@ -43,6 +44,17 @@ import {
     generateGuardianApprovalUrl,
     validateGuardianApprovalTokenDetailed,
     markGuardianApprovalTokenAsUsed,
+    acquireGuardianSendLock,
+    releaseGuardianSendLock,
+    recordGuardianSendAttempt,
+    getGuardianApprovalStatus,
+    getGuardianApprovalRequest,
+    setGuardianApprovalRequest,
+    deleteGuardianApprovalRequest,
+    invalidateGuardianApprovalToken,
+    isGuardianApprovalTokenCurrent,
+    normalizeGuardianEmail,
+    DEFAULT_GUARDIAN_APPROVAL_TTL_HOURS,
 } from '@helpers/guardian-approval.helpers';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import {
@@ -189,58 +201,157 @@ export const inboxRouter = t.router({
             z.object({
                 message: z.string(),
                 approvalUrl: z.string(),
+                status: z.literal('accepted'),
             })
         )
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { guardianEmail, ttlHours, template } = input;
 
+            const lockId = await acquireGuardianSendLock(profile.profileId);
+            if (!lockId) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'A guardian approval email is already being sent.',
+                });
+            }
+
             try {
-                // Generate approval token and URL
-                const token = await generateGuardianApprovalToken(
-                    profile.profileId,
+                const [current, previous] = await Promise.all([
+                    getGuardianApprovalStatus(profile),
+                    getGuardianApprovalRequest(profile.profileId),
+                ]);
+                const sameAddress =
+                    !!previous &&
+                    normalizeGuardianEmail(previous.guardianEmail) ===
+                        normalizeGuardianEmail(guardianEmail);
+
+                if (current.attemptsRemaining === 0 || (sameAddress && current.resendAvailableAt)) {
+                    throw new TRPCError({
+                        code: 'TOO_MANY_REQUESTS',
+                        message: `Guardian approval email recently requested. Try again after ${current.resendAvailableAt}.`,
+                    });
+                }
+
+                await recordGuardianSendAttempt(profile.profileId);
+
+                // A corrected address must never leave the old link able to approve.
+                if (previous?.token && !sameAddress) {
+                    await invalidateGuardianApprovalToken(previous.token);
+                }
+                const retainedToken = sameAddress ? previous?.token : undefined;
+
+                await setGuardianApprovalRequest(profile.profileId, {
+                    status: 'sending',
                     guardianEmail,
-                    ttlHours
-                );
-                const approvalUrl = generateGuardianApprovalUrl(
-                    token,
-                    ctx.tenant?.emailBranding?.appUrl
-                );
-
-                // Send email via delivery service
-                const deliveryService = getDeliveryService({ type: 'email', value: guardianEmail });
-                const injectedTemplateFields = {
-                    requester: {
-                        displayName: profile.displayName,
-                        profileId: profile.profileId,
-                    },
-                    guardian: { email: guardianEmail },
-                };
-
-                await deliveryService.send({
-                    contactMethod: { type: 'email', value: guardianEmail },
-                    templateId: template?.id || 'guardian-approval',
-                    templateModel: {
-                        approvalUrl,
-                        approvalToken: token,
-                        ...injectedTemplateFields,
-                        ...(template?.model || {}),
-                    },
-                    branding: ctx.tenant?.emailBranding,
-                    // Guardian email may not have a profile; fall back to the inviting child's locale.
-                    locale: resolveRecipientLocale(profile),
-                    // messageStream: 'guardian-approval',
+                    token: retainedToken,
+                    updatedAt: new Date().toISOString(),
                 });
 
-                return { message: 'Guardian approval email sent.', approvalUrl };
+                const effectiveTtlHours = ttlHours ?? DEFAULT_GUARDIAN_APPROVAL_TTL_HOURS;
+                let token: string | undefined;
+                let approvalUrl = '';
+
+                try {
+                    token = await generateGuardianApprovalToken(
+                        profile.profileId,
+                        guardianEmail,
+                        effectiveTtlHours
+                    );
+                    approvalUrl = generateGuardianApprovalUrl(
+                        token,
+                        ctx.tenant?.emailBranding?.appUrl
+                    );
+
+                    // Send email via delivery service
+                    const deliveryService = getDeliveryService({
+                        type: 'email',
+                        value: guardianEmail,
+                    });
+                    const injectedTemplateFields = {
+                        requester: {
+                            displayName: profile.displayName,
+                            profileId: profile.profileId,
+                        },
+                        guardian: { email: guardianEmail },
+                    };
+
+                    await deliveryService.send({
+                        contactMethod: { type: 'email', value: guardianEmail },
+                        templateId: template?.id || 'guardian-approval',
+                        templateModel: {
+                            approvalUrl,
+                            approvalToken: token,
+                            ...injectedTemplateFields,
+                            ...(template?.model || {}),
+                        },
+                        branding: ctx.tenant?.emailBranding,
+                        // Guardian email may not have a profile; fall back to the inviting child's locale.
+                        locale: resolveRecipientLocale(profile),
+                        // messageStream: 'guardian-approval',
+                    });
+                } catch (error) {
+                    console.error('Failed to send guardian approval email:', error);
+                    if (token) await invalidateGuardianApprovalToken(token);
+                    await setGuardianApprovalRequest(profile.profileId, {
+                        status: 'failed',
+                        guardianEmail,
+                        token: retainedToken,
+                        updatedAt: new Date().toISOString(),
+                    });
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'Failed to send guardian approval email',
+                    });
+                }
+
+                if (retainedToken) await invalidateGuardianApprovalToken(retainedToken);
+
+                const acceptedAt = new Date();
+                await setGuardianApprovalRequest(profile.profileId, {
+                    status: 'accepted',
+                    guardianEmail,
+                    token,
+                    updatedAt: acceptedAt.toISOString(),
+                    acceptedAt: acceptedAt.toISOString(),
+                    expiresAt: new Date(
+                        acceptedAt.getTime() + effectiveTtlHours * 60 * 60 * 1000
+                    ).toISOString(),
+                });
+
+                return {
+                    message: 'Guardian approval email accepted for delivery.',
+                    approvalUrl,
+                    status: 'accepted' as const,
+                };
             } catch (error) {
                 if (error instanceof TRPCError) throw error;
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Failed to send guardian approval email',
                 });
+            } finally {
+                await releaseGuardianSendLock(profile.profileId, lockId);
             }
         }),
+
+    // Current account-level guardian approval email status for the authenticated learner
+    getGuardianApprovalStatus: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/inbox/guardian-approval-status',
+                tags: ['Universal Inbox', 'Profiles'],
+                summary: 'Get Guardian Approval Email Status',
+                description:
+                    'Returns the latest guardian approval email outcome, the guardian address on file, and when another email may be requested. "accepted" means the email provider accepted the message, not that it was delivered.',
+            },
+            requiredScope: 'profiles:read',
+        })
+        .input(z.void())
+        .output(GuardianApprovalRequestStatusValidator)
+        .query(async ({ ctx }) => getGuardianApprovalStatus(ctx.user.profile)),
 
     // Open route: consume approval token and mark requester as approved
     approveGuardianRequest: openRoute
@@ -272,6 +383,15 @@ export const inboxRouter = t.router({
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: errorMessages[validation.reason],
+                });
+            }
+
+            if (!(await isGuardianApprovalTokenCurrent(validation.data))) {
+                await invalidateGuardianApprovalToken(token);
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message:
+                        'Invalid approval token. The token may not exist or has been corrupted.',
                 });
             }
 
@@ -335,6 +455,7 @@ export const inboxRouter = t.router({
 
             // Mark token as used (idempotent)
             await markGuardianApprovalTokenAsUsed(token);
+            await deleteGuardianApprovalRequest(requester.profileId);
 
             return {
                 message: alreadyApproved
@@ -372,6 +493,15 @@ export const inboxRouter = t.router({
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: errorMessages[validation.reason],
+                });
+            }
+
+            if (!(await isGuardianApprovalTokenCurrent(validation.data))) {
+                await invalidateGuardianApprovalToken(token);
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message:
+                        'Invalid approval token. The token may not exist or has been corrupted.',
                 });
             }
 
@@ -433,6 +563,7 @@ export const inboxRouter = t.router({
             }
 
             await markGuardianApprovalTokenAsUsed(token);
+            await deleteGuardianApprovalRequest(requester.profileId);
 
             return {
                 message: alreadyApproved
