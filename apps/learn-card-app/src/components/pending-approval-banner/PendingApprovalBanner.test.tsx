@@ -34,7 +34,7 @@ beforeEach(() => {
     mocks.status = undefined;
 });
 
-describe('PendingApprovalBanner (LC-2261)', () => {
+describe('PendingApprovalBanner guardian email status and resend', () => {
     it('does not claim an email was sent when the send failed', () => {
         mocks.status = {
             pendingApproval: true,

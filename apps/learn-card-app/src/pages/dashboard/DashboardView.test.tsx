@@ -56,7 +56,7 @@ const buildVm = (
 
 afterEach(cleanup);
 
-describe('DashboardView banner slot (LC-2261)', () => {
+describe('DashboardView guardian approval and recovery banner slot', () => {
     it('shows only the guardian approval banner when both banners apply', () => {
         render(
             <DashboardView

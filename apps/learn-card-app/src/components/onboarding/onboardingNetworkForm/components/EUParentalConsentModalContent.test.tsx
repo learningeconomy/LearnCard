@@ -39,7 +39,7 @@ beforeEach(() => {
     mocks.send.mockResolvedValue({ message: 'ok', status: 'accepted' });
 });
 
-describe('EUParentalConsentModalContent (LC-2261)', () => {
+describe('EUParentalConsentModalContent guardian email status, resend, and correction', () => {
     it('leaves the email empty and shows a failed send with a resend action', () => {
         mocks.status = {
             pendingApproval: true,

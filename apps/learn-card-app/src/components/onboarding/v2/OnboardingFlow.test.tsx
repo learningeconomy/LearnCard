@@ -227,7 +227,7 @@ describe('Apple profile onboarding', () => {
         );
     });
 
-    describe('EU guardian approval email (LC-2261)', () => {
+    describe('EU guardian approval email entry and send outcome', () => {
         const fifteenYearsAgo = (): string => {
             const date = new Date();
             date.setFullYear(date.getFullYear() - 15);
