@@ -9,7 +9,7 @@ import {
     usePathQuery,
     useCountBoosts,
     useGetCredentialList,
-    useGetCredentialCount,
+    useCredentialCollection,
     useIsCurrentUserLCNUser,
     useGetPaginatedManagedBoosts,
     CredentialCategoryEnum,
@@ -158,10 +158,11 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
     const viewMode = passportPageStore.use.credentialViewMode();
     const setViewMode = passportPageStore.set.credentialViewMode;
 
-    const { data: credentialCount, isLoading: countLoading } = useGetCredentialCount(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-        category as any
-    );
+    const categoryCollection = useCredentialCollection(config.boostCategory, { mode: 'complete' });
+    const credentialCount = categoryCollection.isComplete
+        ? categoryCollection.records.length
+        : undefined;
+    const countLoading = !categoryCollection.isComplete && !categoryCollection.isError;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const { data: managedBoostData = 0 } = useCountBoosts(category as any);

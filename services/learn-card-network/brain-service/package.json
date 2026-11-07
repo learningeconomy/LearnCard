@@ -1,11 +1,11 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "4.1.0",
+    "version": "5.0.0",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"
     },
-    "packageManager": "bun@1.4.2",
+    "packageManager": "bun@1.4.4",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
@@ -23,6 +23,7 @@
         "test:boost-recipients": "vitest run --config vitest.boost-recipients-neo4j.config.ts",
         "seed:dev-app": "bun scripts/seed-dev-app.ts",
         "seed:demo-persona": "bun --conditions=development scripts/seed-demo-persona.ts",
+        "migrate:consent-flow-versions": "bun --conditions=development scripts/migrate-consent-flow-versions.ts",
         "skill-frameworks": "bun scripts/skill-frameworks.ts",
         "skill-embeddings:backfill": "bun --conditions=development scripts/skill-embeddings-backfill.ts",
         "backfill:profile-search": "bun scripts/backfill-profile-search.ts",
@@ -33,7 +34,7 @@
         "start-p-4000": "PORT=4000 serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003 --host 127.0.0.1 --config serverless-local.yml",
         "dev": "bun --conditions=development --watch src/docker-entry.ts",
         "start:docker": "bun --conditions=development src/docker-entry.ts",
-        "serverless-deploy": "node ../../../scripts/prepare-didkit-native-layer.cjs && serverless deploy --verbose"
+        "serverless-deploy": "node ../../../scripts/prepare-didkit-native-layer.cjs && node ../../../scripts/verify-node24-didkit-layer.cjs && serverless deploy --verbose"
     },
     "keywords": [],
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
@@ -54,7 +55,7 @@
         "serverless": "3.40.0",
         "serverless-certificate-creator": "1.6.0",
         "serverless-domain-manager": "6.3.1",
-        "serverless-esbuild": "1.55.0",
+        "serverless-esbuild": "1.57.2",
         "serverless-http": "3.2.0",
         "serverless-lift": "1.31.0",
         "serverless-offline": "^14.4.0",

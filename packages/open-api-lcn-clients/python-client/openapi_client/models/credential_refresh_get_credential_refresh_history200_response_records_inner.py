@@ -74,9 +74,8 @@ class CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(BaseMo
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -92,21 +91,6 @@ class CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(BaseMo
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if effective_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.effective_at is None and "effective_at" in self.model_fields_set:
-            _dict['effectiveAt'] = None
-
-        # set to None if etag (nullable) is None
-        # and model_fields_set contains the field
-        if self.etag is None and "etag" in self.model_fields_set:
-            _dict['etag'] = None
-
-        # set to None if update_summary (nullable) is None
-        # and model_fields_set contains the field
-        if self.update_summary is None and "update_summary" in self.model_fields_set:
-            _dict['updateSummary'] = None
 
         return _dict
 

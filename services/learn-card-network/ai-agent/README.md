@@ -276,14 +276,14 @@ temporary database.
 Production retains its environment approval; no separate action dispatch is required.
 See [RUNBOOK.md](./RUNBOOK.md) for CI, release metadata, environment setup, and controlled rollout.
 
-Local and CI AI Agent commands pin **Node.js 24.18.0**. Trigger tasks select the stable
+Local and CI AI Agent commands pin **Node.js 24.22.1**. Trigger tasks select the stable
 **Node.js 24** major (`runtime: 'node-24'`); the hosted platform selects its minor version.
-The ECS HTTP service and repository dependency installation use **Bun 1.4.2**. ECS builds the
+The ECS HTTP service and repository dependency installation use **Bun 1.4.4**. ECS builds the
 service's own Dockerfile and uses Fargate `awsvpc` networking, without an
 `extra_hosts`/`host-gateway` override. Local Compose instead uses
-`Dockerfile.monorepo`: dependencies install on 1.4.2, but its final `source`
-runtime deliberately stays on 1.3.14 for local and hosted E2E did:web host-gateway
-resolution, an exception to the production `1.4.2-alpine` runtime. The local AI
+`Dockerfile.monorepo`: dependencies install on 1.4.4, but its `compatible-runtime`
+stage deliberately stays on 1.3.14 for local and hosted E2E did:web host-gateway
+resolution, an exception to the production `1.4.4-alpine` runtime. The local AI
 Agent startup runs `dev`, not `bun install`.
 Trigger SDK/build/CLI are pinned to 4.5.7, the first release with stable Node 24 support; see the
 [release notes](https://trigger.dev/changelog/v4-5-7) and

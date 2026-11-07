@@ -19,6 +19,11 @@ resource "aws_secretsmanager_secret_version" "placeholder" {
   for_each      = aws_secretsmanager_secret.account
   secret_id     = each.value.id
   secret_string = "{}"
+  # Never AWSCURRENT on re-creation: runners rotate these secrets, Secrets Manager
+  # later purges this unlabelled-by-then version, and a default create would move
+  # AWSCURRENT to "{}" on a live account. The first version of a new secret still
+  # gets AWSCURRENT automatically, so an unprovisioned secret reads as "{}".
+  version_stages = ["PLACEHOLDER"]
   lifecycle {
     ignore_changes = [secret_string, version_stages]
   }

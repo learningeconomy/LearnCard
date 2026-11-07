@@ -21,7 +21,7 @@ import {
 import { formatDid } from 'learn-card-base/helpers/didHelpers';
 
 import {
-    useGetResolvedCredential,
+    useGetClaimCredential,
     useAcceptCredentialMutation,
     useUpdateNotification,
     usePathQuery,
@@ -92,7 +92,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     // unsure what the situation is when there are multiple uris to resolved
     // eg current component is not built to handle displaying multiple resolved vcs as such....
     // so it seeems like some kind of future use case
-    const { data, isLoading } = useGetResolvedCredential(notification?.data?.vcUris?.[0]);
+    const { data, isLoading, isError } = useGetClaimCredential(notification?.data?.vcUris?.[0]);
     const { mutate, isLoading: acceptCredentialLoading } = useAcceptCredentialMutation();
     const { mutate: updateNotification } = useUpdateNotification();
 
@@ -208,7 +208,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     };
 
     useEffect(() => {
-        if (_uri === credentialUri && _claim && !claimModalOpen && !isClaimed) {
+        if (data && !isError && _uri === credentialUri && _claim && !claimModalOpen && !isClaimed) {
             setClaimModalOpen(true);
             const claimModalEl = document.querySelector('.notification-claim-boost-modal-open');
             if (!claimModalEl) {
@@ -247,7 +247,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 );
             }
         }
-    }, []);
+    }, [data, isError, _uri, _claim, credentialUri, claimModalOpen, isClaimed]);
 
     let buttonText: string = '';
 
@@ -265,6 +265,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     };
 
     const handleCardClick = () => {
+        if (!data || isError || isLoading) return;
         handleMarkRead();
         newModal(
             <BoostClaimCard
@@ -363,6 +364,14 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
             ? unwrappedCred.credentialSubject.verifiableCredential[0]?.credentialSubject
                   ?.achievement?.achievementType
             : unwrappedCred?.credentialSubject?.achievement?.achievementType;
+
+    if (isError) {
+        return (
+            <div role="alert" className="p-4 text-sm text-red-700">
+                {m['claim.modal.verificationFailed']()}
+            </div>
+        );
+    }
 
     return (
         <>

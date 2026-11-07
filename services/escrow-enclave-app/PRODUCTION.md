@@ -6,11 +6,11 @@ two-person evidence for every trust change. Commands below are **operator-only**
 no AWS operation is performed by preparing these files. Run from the repository
 root unless stated otherwise; replace every `<PLACEHOLDER>` first.
 
-**Pre-50% gate: the authority Object Lock archiver/outbox is deferred, not a launch
-blocker.** It must be implemented, tested, independently monitored and
-security-approved before stage 4 (50%), or sooner if security rejects
-R-AUTHORITY-ROLLBACK. Earlier stages require explicit acceptance of that residual
-risk and verified CloudTrail data-write/governance alarms; the legacy ledger audit
+**The authority Object Lock archiver/outbox is post-launch hardening, not a launch
+or stage gate.** R-AUTHORITY-ROLLBACK is accepted for all stages
+(LAUNCH-DECISIONS.md RAR, amended 2026-10-31), conditional on authority PITR and
+verified CloudTrail data-write/governance alarms, drilled in production before the
+SSS/escrow switch; the legacy ledger audit
 bucket and authority sweep are not independent archived authority history. Close the live
 authority/email, Roughtime operations, seven-day soak and residual administrator
 risk gates in [SECURITY.md](./SECURITY.md) and [ROLLOUT.md](./ROLLOUT.md).
@@ -43,9 +43,18 @@ inventory; do not copy staging identifiers into production inputs.
   Terraform manages only the selected sending domain, not the parent DMARC policy.
 
 Launch approval must explicitly cover ScoutPass/VetPass mail coming from this
-LearnCard address, including rendered brand names (VetPass currently falls back
-to the tenant label). Domain selection is not approval of cross-brand copy;
-retain product/security sign-off and sample messages before enabling either tenant.
+LearnCard address, including rendered brand names. Domain selection is not approval
+of cross-brand copy; retain product/security sign-off and sample messages before
+enabling either tenant. Once the SSS switch turns its escrow on, VetPass uses this enclave with authority tenant `learncard`
+(`auth.sss.escrowAuthorityTenant`; see [SECURITY.md](SECURITY.md) D20), so the code,
+recovery-started and release-warning emails it sends to VetPass users are branded
+**LearnCard**, not VetPass, until VetPass seals its own brand. The VetPass app tells
+users so on the recovery screens. The brand-aware image (D21) lets the owner's device
+seal the app's display name into the blob; clients do so only once
+`auth.sss.escrowSealEmailBrand` is turned on, after every host runs that image (see
+[ROLLOUT.md](ROLLOUT.md)). Launch approval of cross-brand copy should then include
+sample "VetPass"-branded messages as well as the LearnCard-branded fallback, which
+older blobs keep.
 
 ## Ordered bootstrap and verification
 
@@ -518,7 +527,14 @@ in that file. The production **tenant config** pins live at
 `auth.sss.escrowEnclaveMeasurements`; copy only verified production tuples there
 and select `auth.sss.escrowEnclaveMode=nitro` only after approval. Keep automatic
 rollout at zero. The internal URL (`https://escrow-enclave.production.internal:8443`)
-and bearer token belong in the runtime secrets bundle, not checked-in stage JSON. Explicit environment overrides
+and bearer token belong in the runtime secrets bundle, not checked-in stage JSON. Set them in Infisical
+(project **LearnCard Runtime**, folder `/learncard/lca-api/runtime`, environment `prod`; `staging` for dev),
+never directly on the AWS secret: the auto-sync rewrites the whole bundle from that folder, so a value
+written only in AWS disappears on the next sync ([environment-variables.md](../../environment-variables.md)).
+On 2026-11-04 that dropped both keys from production and every escrow call answered 412 until they were
+restored; lca-api now logs `[escrow] ESCROW_ENCLAVE_MODE=remote but ... missing` once per container and emits
+`LearnCard/Escrow EnclaveFailure` with `Reason=remote_config_missing`, and the deploy smoketest probes
+`/api/keys/escrow/attestation`. Explicit environment overrides
 win over stage config; inspect the effective deployment without printing secrets.
 
 ```sh

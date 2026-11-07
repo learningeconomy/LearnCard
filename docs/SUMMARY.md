@@ -7,12 +7,15 @@
 - [What Do You Want to Build?](introduction/what-do-you-want-to-build.md)
 - [How LearnCard Works](introduction/how-learncard-works.md)
 - [Glossary](introduction/glossary.md)
+- [Use LearnCard from an AI Agent](introduction/for-ai-agents.md)
+    - [Install the LearnCard Skill](how-to-guides/use-learncard-with-coding-agents.md)
 
 ## 🛠️ Build
 
 - [Send & Issue Credentials](how-to-guides/send-credentials.md)
     - [Revoke or Update a Credential](how-to-guides/revoke-or-update-a-credential.md)
     - [Issue & Refresh a Managed Credential](how-to-guides/issue-and-refresh-a-managed-credential.md)
+        - [Send a Private, Refreshable Credential](how-to-guides/send-a-private-refreshable-credential.md)
     - [Who Signs Your Credentials?](how-to-guides/create-signing-authority.md)
     - [Bootstrap an Issuer Organization](how-to-guides/bootstrap-an-issuer-org.md)
     - [Know When a Credential Is Claimed](tutorials/listen-to-webhooks.md)
@@ -50,6 +53,7 @@
     - [Brokered Referrals](how-to-guides/consent-flow/brokered-referrals.md)
     - [Brokered Referral Lifecycle](core-concepts/consent-and-permissions/brokered-referral-lifecycle.md)
     - [Reading & Writing Consented Data](core-concepts/consent-and-permissions/writing-consented-data.md)
+    - [Updating a Contract](core-concepts/consent-and-permissions/updating-a-contract.md)
     - [Issue on Consent](core-concepts/consent-and-permissions/auto-boosts.md)
     - [GameFlow](core-concepts/consent-and-permissions/gameflow-overview.md)
     - [Verifiable Data in ConsentFlow](core-concepts/consent-and-permissions/verifiable-data-in-consentflow.md)
@@ -125,6 +129,7 @@
 ## 📱 Products
 
 - [LearnCard App](apps/learn-card-app/README.md)
+    - [Manage campaigns](apps/learn-card-app/campaigns.md)
     - [Issue credentials from a spreadsheet](apps/learn-card-app/spreadsheet-issuance.md)
     - [Referral Invitations](apps/learn-card-app/consent-flow/referral-invitations.md)
     - [Use LearnCard with Claude or ChatGPT](how-to-guides/connect-systems/connect-ai-agent.md)

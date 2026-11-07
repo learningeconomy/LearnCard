@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class ContactMethodsSendChallengeRequestConfiguration(BaseModel):
     """
     ContactMethodsSendChallengeRequestConfiguration
     """ # noqa: E501
-    publishable_key: Optional[StrictStr] = Field(alias="publishableKey")
+    publishable_key: StrictStr = Field(alias="publishableKey")
     __properties: ClassVar[List[str]] = ["publishableKey"]
 
     model_config = ConfigDict(
@@ -57,9 +57,8 @@ class ContactMethodsSendChallengeRequestConfiguration(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -69,11 +68,6 @@ class ContactMethodsSendChallengeRequestConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if publishable_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.publishable_key is None and "publishable_key" in self.model_fields_set:
-            _dict['publishableKey'] = None
-
         return _dict
 
     @classmethod

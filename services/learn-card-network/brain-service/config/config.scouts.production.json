@@ -1,4 +1,5 @@
 {
+    "CAMPAIGN_APP_ORIGINS": "{\"scoutpass\":\"https://pass.scout.org\"}",
     "CLIENT_APP_DOMAIN_NAME": "pass.scout.org",
     "CREDENTIAL_REFRESH_ENABLED": "false",
     "CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS": "24",

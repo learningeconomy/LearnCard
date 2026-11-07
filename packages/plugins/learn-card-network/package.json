@@ -1,7 +1,7 @@
 {
     "name": "@learncard/network-plugin",
-    "version": "3.2.0",
-    "description": "",
+    "version": "4.0.0",
+    "description": "Connects a LearnCard to LearnCard Network and verifies Boost credentials.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/lcn-plugin.esm.js",

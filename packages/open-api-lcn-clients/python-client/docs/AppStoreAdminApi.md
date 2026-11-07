@@ -2,12 +2,13 @@
 
 All URIs are relative to _/api_
 
-| Method                                                                                                   | HTTP request                                            | Description                    |
-| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------ |
-| [**app_store_admin_get_all_listings**](AppStoreAdminApi.md#app_store_admin_get_all_listings)             | **POST** /app-store/admin/listings                      | Get All Listings (Admin)       |
-| [**app_store_admin_update_listing_status**](AppStoreAdminApi.md#app_store_admin_update_listing_status)   | **POST** /app-store/admin/listing/{listingId}/status    | Update Listing Status (Admin)  |
-| [**app_store_admin_update_promotion_level**](AppStoreAdminApi.md#app_store_admin_update_promotion_level) | **POST** /app-store/admin/listing/{listingId}/promotion | Update Promotion Level (Admin) |
-| [**app_store_is_admin**](AppStoreAdminApi.md#app_store_is_admin)                                         | **GET** /app-store/admin/check                          | Check Admin Status             |
+| Method                                                                                                   | HTTP request                                                | Description                    |
+| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------ |
+| [**app_store_admin_get_all_listings**](AppStoreAdminApi.md#app_store_admin_get_all_listings)             | **POST** /app-store/admin/listings                          | Get All Listings (Admin)       |
+| [**app_store_admin_review_listing_update**](AppStoreAdminApi.md#app_store_admin_review_listing_update)   | **POST** /app-store/admin/listing/{listingId}/update/review | Review Listing Update (Admin)  |
+| [**app_store_admin_update_listing_status**](AppStoreAdminApi.md#app_store_admin_update_listing_status)   | **POST** /app-store/admin/listing/{listingId}/status        | Update Listing Status (Admin)  |
+| [**app_store_admin_update_promotion_level**](AppStoreAdminApi.md#app_store_admin_update_promotion_level) | **POST** /app-store/admin/listing/{listingId}/promotion     | Update Promotion Level (Admin) |
+| [**app_store_is_admin**](AppStoreAdminApi.md#app_store_is_admin)                                         | **GET** /app-store/admin/check                              | Check Admin Status             |
 
 # **app_store_admin_get_all_listings**
 
@@ -68,6 +69,88 @@ with openapi_client.ApiClient(configuration) as api_client:
 ### Return type
 
 [**AppStoreGetListingsForIntegration200Response**](AppStoreGetListingsForIntegration200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **app_store_admin_review_listing_update**
+
+> bool app_store_admin_review_listing_update(listing_id, app_store_admin_review_listing_update_request)
+
+Review Listing Update (Admin)
+
+Approve (apply to the live listing) or reject a submitted update to a LISTED app.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.app_store_admin_review_listing_update_request import AppStoreAdminReviewListingUpdateRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.AppStoreAdminApi(api_client)
+    listing_id = 'listing_id_example' # str |
+    app_store_admin_review_listing_update_request = openapi_client.AppStoreAdminReviewListingUpdateRequest() # AppStoreAdminReviewListingUpdateRequest |
+
+    try:
+        # Review Listing Update (Admin)
+        api_response = api_instance.app_store_admin_review_listing_update(listing_id, app_store_admin_review_listing_update_request)
+        print("The response of AppStoreAdminApi->app_store_admin_review_listing_update:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AppStoreAdminApi->app_store_admin_review_listing_update: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                              | Type                                                                                      | Description | Notes |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------- | ----- |
+| **listing_id**                                    | **str**                                                                                   |             |
+| **app_store_admin_review_listing_update_request** | [**AppStoreAdminReviewListingUpdateRequest**](AppStoreAdminReviewListingUpdateRequest.md) |             |
+
+### Return type
+
+**bool**
 
 ### Authorization
 

@@ -162,6 +162,9 @@ export default defineConfig(({ mode, command }) => {
                     replacement: '@web3auth/openlogin-adapter/dist/openloginAdapter.umd.min.js',
                 },
                 { find: 'apps/scouts', replacement: path.resolve(__dirname) },
+                // vite-tsconfig-paths 4 resolves inherited relative paths from this app's
+                // directory without baseUrl. Keep repository imports rooted at the workspace.
+                { find: 'packages', replacement: path.resolve(__dirname, '../../packages') },
             ],
             dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
         },

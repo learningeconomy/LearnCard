@@ -40,6 +40,7 @@ class TestBoostGetBoostRecipients200ResponseInnerToAnyOf(unittest.TestCase):
                 short_bio = '',
                 image = '',
                 hero_image = '',
+                linked_in_organization_id = '4',
                 type = '',
                 is_service_profile = True,
                 display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_display.boost_getBoostRecipients_200_response_inner_to_anyOf_display(

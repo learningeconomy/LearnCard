@@ -1,5 +1,6 @@
 // Simulated Torus replay/session boundary; no live accounts or key network.
 export const CHAIN_NAMESPACES = { EIP155: 'eip155' };
+export const SDK_MODE = { REACT_NATIVE: 'react-native', WEB: 'web', NODE: 'node' } as const;
 export class EthereumPrivateKeyProvider {}
 export class Web3Auth {
     connected = false;

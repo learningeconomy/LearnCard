@@ -20,12 +20,14 @@ export const useUpdateTerms = (
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            acceptVersion?: number;
+            shareAllCategories?: readonly string[];
             /** Runs after credential preparation, immediately before submitting terms. */
             beforeSubmit?: () => Promise<void>;
         }) => {
             const wallet = await initWallet();
 
-            const { beforeSubmit, ...submission } = _terms;
+            const { beforeSubmit, acceptVersion, shareAllCategories = [], ...submission } = _terms;
             let resolvedContractUri = contractUri;
             // Older callers can still discover the contract through their consent records.
             if (!resolvedContractUri) {
@@ -49,10 +51,19 @@ export const useUpdateTerms = (
                 wallet,
                 audience.recipients,
                 queryClient,
-                submission
+                submission,
+                shareAllCategories
             );
 
             await beforeSubmit?.();
+
+            if (acceptVersion !== undefined) {
+                return wallet.invoke.acceptContractUpdate(termsUri, {
+                    version: acceptVersion,
+                    terms: terms.terms,
+                    audienceVersion: audience.audienceVersion,
+                });
+            }
 
             return wallet.invoke.updateContractTerms(termsUri, {
                 ...terms,

@@ -91,7 +91,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { gate } = useLCNGatedAction();
 
-    const { newModal, newModalWithToken, closeModal, forceCloseModalByToken } = useModal();
+    const { newModal, newModalWithToken, closeModal, forceCloseModalByToken, closeAllModals } =
+        useModal();
     const { handleLogout, isLoggingOut } = useLogout();
 
     const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
@@ -109,6 +110,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         getEscrowEnrollmentState,
         setEscrowPin,
         clearEscrowPin,
+        openSecureAccount,
         runRecoverySetup,
         resetRecoverySetup,
         needsActivation,
@@ -533,6 +535,13 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onEnableEscrowRecovery={enableEscrowRecovery}
                             onSetEscrowPin={setEscrowPin}
                             onClearEscrowPin={clearEscrowPin}
+                            onSignOutOtherDevices={() => {
+                                // The secure flow is a provider-level Overlay that sits below
+                                // the shared modal stack, so close the whole stack (this
+                                // profile sheet included) or it would render underneath.
+                                closeAllModals();
+                                openSecureAccount();
+                            }}
                             existingMethods={existingMethods.map(m => ({
                                 type: m.type,
                                 createdAt:

@@ -436,3 +436,13 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "authority_repeated_pin_clear_threshold" {
+  description = "Number of accounts the AuthorityRepeatedPinClear alarm tolerates. The monitor emits AuthorityRepeatedPinClearAccounts (accounts with >= 2 PIN clears in their 30-day window) after each complete sweep; the alarm fires when its hourly Maximum exceeds this. Default 0 (any account alarms). During a known episode set it to the number of known accounts (e.g. 1) so a new account still notifies, then reset to 0 once the episode ages out of the 30-day window."
+  type        = number
+  default     = 0
+  validation {
+    condition     = var.authority_repeated_pin_clear_threshold >= 0 && floor(var.authority_repeated_pin_clear_threshold) == var.authority_repeated_pin_clear_threshold
+    error_message = "Use a non-negative whole number of accounts (0 = any account alarms)."
+  }
+}

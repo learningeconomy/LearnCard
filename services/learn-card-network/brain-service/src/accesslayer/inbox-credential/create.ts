@@ -16,7 +16,12 @@ export const DEFAULT_INBOX_EXPIRY_DAYS = 30;
 
 export const createInboxCredential = async (input: {
     credential: string;
-    refresh?: { aggregate: Record<string, unknown>; issueKey: string; requestDigest: string };
+    refresh?: {
+        aggregate: Record<string, unknown>;
+        issueKey: string;
+        requestDigest: string;
+        requestDigestCandidates?: string[];
+    };
     /** Only set after the normal delivery helper has durably stored the credential. */
     delivered?: boolean;
     isSigned: boolean;
@@ -93,6 +98,7 @@ export const createInboxCredential = async (input: {
             ),
             issueKey: input.refresh.issueKey,
             requestDigest: input.refresh.requestDigest,
+            requestDigestCandidates: input.refresh.requestDigestCandidates,
         });
         id = created.id;
     } else {

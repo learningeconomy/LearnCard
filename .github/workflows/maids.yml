@@ -14,66 +14,9 @@ env:
     MONGOMS_DISABLE_POSTINSTALL: '1'
 
 jobs:
-    build-native-plugin:
-        name: Build Native DIDKit Plugin
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout Repo
-              uses: actions/checkout@v7
-              with:
-                  submodules: true
-
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: 1.4.2
-
-            - name: Setup Bun cache
-              uses: actions/cache@v6
-              with:
-                  path: ~/.bun/install/cache
-                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-                  restore-keys: |
-                      ${{ runner.os }}-bun-
-
-            - name: Setup Rust
-              uses: dtolnay/rust-toolchain@stable
-              with:
-                  toolchain: stable
-                  targets: x86_64-unknown-linux-gnu
-
-            - name: Cache cargo
-              uses: actions/cache@v6
-              with:
-                  path: |
-                      ~/.cargo/registry/index/
-                      ~/.cargo/registry/cache/
-                      ~/.cargo/git/db/
-                      packages/plugins/didkit-plugin-node/native/target/
-                  key: linux-x64-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-            - name: Install dependencies
-              run: bun install --frozen-lockfile
-
-            - name: Build native plugin
-              working-directory: packages/plugins/didkit-plugin-node
-              env:
-                  BUILD_DIDKIT_NAPI: true
-              run: |
-                  bunx nx build didkit-plugin-node
-                  strip -x *.node
-
-            - name: Upload native binary
-              uses: actions/upload-artifact@v4
-              with:
-                  name: didkit-native-linux-x64
-                  path: packages/plugins/didkit-plugin-node/*.node
-                  if-no-files-found: error
-                  retention-days: 1
-
     maid-service:
         name: Maid-Service
-        needs: [build-native-plugin]
+        # No native DIDKit build: these tests fall back to WASM, like PR test.yml.
         runs-on: ubuntu-latest
         environment: ci-tests
         steps:
@@ -87,16 +30,10 @@ jobs:
               run: |
                   git fetch --no-tags --prune --depth=5 origin main
 
-            - name: Download native plugin binary
-              uses: actions/download-artifact@v4
-              with:
-                  name: didkit-native-linux-x64
-                  path: packages/plugins/didkit-plugin-node
-
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: 1.4.2
+                  bun-version: 1.4.4
 
             - name: Setup Bun cache
               uses: actions/cache@v6
@@ -137,7 +74,7 @@ jobs:
 
             - name: Create Pull Request
               if: ${{ contains(env.DIRTY_TREE, 'true') }}
-              uses: peter-evans/create-pull-request@v5
+              uses: peter-evans/create-pull-request@v7
               with:
                   commit-message: ':green_heart: Housekeeping!'
                   branch: maid-service/housekeeping

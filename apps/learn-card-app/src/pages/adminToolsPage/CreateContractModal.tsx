@@ -253,40 +253,32 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                 writers,
             });
 
-            // Add autoboosts from other issuers
+            // Configure boosts from other issuers through each issuer's delegated wallet.
             const pk =
                 currentUserStore.get.currentUserPK() ||
                 currentUserStore?.get?.currentUser()?.privateKey;
-
-            // Group auto-boost URIs by issuer DID for more efficient processing
             const urisByIssuerDid = autoboostUrisFromOtherUsers.reduce<Record<string, string[]>>(
                 (acc, uri) => {
                     const issuer = autoBoostIssuers[uri];
-                    if (!acc[issuer.did]) {
-                        acc[issuer.did] = [];
-                    }
-                    acc[issuer.did].push(uri);
+                    (acc[issuer.did] ??= []).push(uri);
                     return acc;
                 },
                 {}
             );
-
-            // Process each issuer's URIs in a single batch
-            await Promise.all(
-                Object.entries(urisByIssuerDid).map(async ([did, uris]) => {
-                    const otherUserWallet = await getBespokeLearnCard(pk!, did);
-                    const { signingAuthority: sa } =
-                        await getRegisteredSigningAuthority(otherUserWallet);
-
-                    await otherUserWallet.invoke.addAutoBoostsToContract(
+            for (const [did, uris] of Object.entries(urisByIssuerDid)) {
+                const otherUserWallet = await getBespokeLearnCard(pk!, did);
+                const { signingAuthority: sa } =
+                    await getRegisteredSigningAuthority(otherUserWallet);
+                await otherUserWallet.invoke
+                    .getLCNClient()
+                    .contracts.addAutoBoostsToContract.mutate({
                         contractUri,
-                        uris.map(uri => ({
+                        autoboosts: uris.map(uri => ({
                             boostUri: uri,
                             signingAuthority: { name: sa?.name, endpoint: sa?.endpoint },
-                        }))
-                    );
-                })
-            );
+                        })),
+                    });
+            }
 
             onSuccess?.(contractUri);
 
@@ -360,8 +352,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
 
             setTimeout(() => {
                 const handleRecover = () => {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                    setContract(recoveredState as any);
+                    setContract(recoveredState);
                     setAutoBoostUris(recoveredAutoBoostUris ?? []);
                     clearRecoveredState();
                     closeModal();
@@ -674,9 +665,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                 <h4>Credentials</h4>
                                 <ContractCategoryMultiSelect
                                     values={contract.contract.read.credentials.categories}
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                                    onChange={updateReadCredentials('categories') as any}
-                                    setContract={setContract}
+                                    onChange={updateReadCredentials('categories')}
                                     mode="read"
                                     categoryTitleOverrides={categoryTitleOverrides}
                                 />
@@ -692,8 +681,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
 
                                 <MultiTextInput
                                     values={contract.contract.read.personal}
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                                    onChange={updateRead('personal') as any}
+                                    onChange={updateRead('personal')}
                                     buttonText="New Personal Info"
                                     style="admin-dashboard"
                                 />
@@ -707,9 +695,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                 <h4>Credentials</h4>
                                 <ContractCategoryMultiSelect
                                     values={contract.contract.write.credentials.categories}
-                                    setContract={setContract}
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                                    onChange={updateWriteCredentials('categories') as any}
+                                    onChange={updateWriteCredentials('categories')}
                                     mode="write"
                                     hideVerifiableDataOnWrite
                                     categoryTitleOverrides={categoryTitleOverrides}
@@ -720,7 +706,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                             <h4>Custom Fields</h4>
                             <MultiTextInput
                                 values={contract.contract.write.personal}
-                                onChange={updateWrite('personal') as any}
+                                onChange={updateWrite('personal')}
                                 buttonText="New Personal Info"
                                 style="admin-dashboard"
                             />

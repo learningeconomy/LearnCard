@@ -1,4 +1,4 @@
-import { CredentialRecord } from '@learncard/types';
+import { CredentialRecord, CredentialRefreshReceipt } from '@learncard/types';
 import { CredentialCategory } from './credentials';
 
 /**
@@ -20,6 +20,8 @@ export type CredentialRefreshHistoryEntry = {
  * enforce staleness. The record itself is encrypted by the LearnCloud index plane.
  */
 export type CredentialRefreshMetadata = {
+    /** Independently validated delivery binding, retained across every local refresh. */
+    baseline?: CredentialRefreshReceipt;
     serviceId: string;
     serviceType: string;
     credentialId: string;
@@ -47,6 +49,11 @@ export type CredentialMetadata = {
     sharedUris?: Record<string, string[]>; // Full audience cache keys (legacy owner DID keys are retained for selection lookup)
     contractUri?: string;
     boostUri?: string;
+    /**
+     * LearnNetwork URI of the credential this record is a LearnCloud copy of (LC-2325). Revoke
+     * and suspend live on that credential's graph edge, which the copy's own URI cannot reach.
+     */
+    networkUri?: string;
     refresh?: CredentialRefreshMetadata;
     __v?: number;
 };

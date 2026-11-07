@@ -187,7 +187,9 @@ export const ModalAccessibilityManager: React.FC = () => {
             }
 
             if (!dialog.contains(document.activeElement)) {
-                (getFocusableElements(dialog)[0] ?? dialog).focus();
+                // Tall credential previews can have their first control near the
+                // bottom. Opening the dialog must not scroll it down to that control.
+                (getFocusableElements(dialog)[0] ?? dialog).focus({ preventScroll: true });
             }
         };
 

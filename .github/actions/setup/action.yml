@@ -9,10 +9,15 @@ inputs:
 runs:
     using: 'composite'
     steps:
+        - name: Setup Node
+          uses: actions/setup-node@v6
+          with:
+              node-version-file: .nvmrc
+
         - name: Setup Bun
           uses: oven-sh/setup-bun@v2
           with:
-              bun-version: 1.4.2
+              bun-version: 1.4.4
 
         - name: Restore Bun cache
           if: ${{ inputs.save-cache != 'true' }}

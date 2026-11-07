@@ -1,7 +1,7 @@
 {
     "name": "@learncard/learn-cloud-plugin",
-    "version": "2.3.48",
-    "description": "",
+    "version": "2.3.52",
+    "description": "Stores, indexes, and syncs encrypted credentials in LearnCloud.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/learn-cloud-plugin.esm.js",

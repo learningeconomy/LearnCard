@@ -1,6 +1,8 @@
 import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { bookmarkOutline, chevronForward } from 'ionicons/icons';
+import { useGetProfile } from 'learn-card-base';
+import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 
 import * as m from '../../../../paraglide/messages.js';
 import type { SavedCredentialCollection } from '../../DataSharingCenter.types';
@@ -10,6 +12,18 @@ import './sharedLinks.css';
 
 const SenderAvatar: React.FC<{ collection: SavedCredentialCollection }> = ({ collection }) => {
     const sharer = collection.sharer;
+    const { data: profile } = useGetProfile(sharer?.profileId, Boolean(sharer?.profileId));
+
+    if (profile?.image?.trim())
+        return (
+            <UserProfilePicture
+                user={profile}
+                customContainerClass="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-semibold"
+                customImageClass="h-full w-full object-cover"
+                customSize={96}
+            />
+        );
+
     if (sharer?.displayName)
         return (
             <span

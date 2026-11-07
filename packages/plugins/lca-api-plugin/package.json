@@ -1,7 +1,7 @@
 {
     "name": "@learncard/lca-api-plugin",
-    "version": "2.0.12",
-    "description": "",
+    "version": "2.0.16",
+    "description": "Connects a LearnCard to the LearnCard App (LCA) API.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/lca-api-plugin.esm.js",

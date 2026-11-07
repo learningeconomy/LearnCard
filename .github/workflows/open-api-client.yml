@@ -65,7 +65,7 @@ jobs:
             - name: Setup pinned Bun
               uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
               with:
-                  bun-version: 1.4.2
+                  bun-version: 1.4.4
             - name: Setup pinned Python
               uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
               with:
@@ -79,7 +79,7 @@ jobs:
                   docker run --rm --network none --user "$(id -u):$(id -g)" \
                     -v "$GITHUB_WORKSPACE:/workspace:ro" -v "$RUNNER_TEMP:/artifacts" \
                     -w /workspace/services/learn-card-network/brain-service \
-                    oven/bun@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4 \
+                    oven/bun@sha256:1d22548f177f4ff38e0c15baa3c2c46c6c2060ba2d1bc573bb4720b407548f1d \
                     bun --conditions=development scripts/export-openapi.ts /artifacts/openapi.json
             - name: Exercise public APIs through loopback-only HTTP transport
               env:
@@ -91,7 +91,7 @@ jobs:
                   docker run --rm --network none --user "$(id -u):$(id -g)" \
                     -v "$GITHUB_WORKSPACE:/workspace:ro" -v "$RUNNER_TEMP:/artifacts:ro" \
                     -w /workspace/services/learn-card-network/brain-service \
-                    oven/bun@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4 \
+                    oven/bun@sha256:1d22548f177f4ff38e0c15baa3c2c46c6c2060ba2d1bc573bb4720b407548f1d \
                     bun --conditions=development scripts/verify-python-contracts.ts /artifacts/client-capture.json
             - name: Verify all generated Python syntax and imports
               run: python packages/open-api-lcn-clients/tests/check_integrity.py

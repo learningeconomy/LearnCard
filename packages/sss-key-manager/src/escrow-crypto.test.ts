@@ -7,6 +7,7 @@ import {
     ESCROW_CLIENT_KEY_ID,
     ESCROW_ENVELOPE_VERSION,
     ESCROW_RELEASE_INFO,
+    canonicalEscrowEmailBrand,
     decryptEscrowBlob,
     encryptEscrowBlob,
     generateEscrowKeyPair,
@@ -17,6 +18,7 @@ import {
     sealEscrowRelease,
 } from './escrow-crypto';
 import type { EscrowEnvelope } from './escrow-crypto';
+import brandContract from './__fixtures__/escrow-email-brand-contract-v1.json';
 
 const blob = {
     recoveryShare: `0001${'ab'.repeat(48)}`,
@@ -377,5 +379,78 @@ describe('escrow parsing', () => {
             holdId: 'a'.repeat(128),
         };
         expect(parseEscrowReleasePlaintext(maximum)).toEqual(maximum);
+    });
+});
+
+// D21 cross-language contract: the enclave's `canonical_brand` (crypto.rs)
+// loads the same fixture and must reach the identical result for each case.
+describe('escrow email brand (D21)', () => {
+    const cases = brandContract.cases as { name: string; input: string; expected: string | null }[];
+    const contact = { recoveryEmail: 'owner@example.com', recoveryLanguage: 'en' };
+
+    it.each(cases.map(c => [c.name, c] as const))('canonicalizes %s', (_name, testCase): void => {
+        expect(canonicalEscrowEmailBrand(testCase.input)).toBe(testCase.expected ?? undefined);
+        if (testCase.expected !== null) {
+            expect(canonicalEscrowEmailBrand(testCase.expected)).toBe(testCase.expected);
+        }
+    });
+
+    it.each(cases.map(c => [c.name, c] as const))(
+        'blob and release parsers keep the canonical brand or omit it, never throw: %s',
+        (_name, testCase): void => {
+            const parsed = parseEscrowBlobPlaintext({
+                ...plaintext,
+                ...contact,
+                recoveryBrand: testCase.input,
+            });
+            const released = parseEscrowReleasePlaintext({
+                ...releasePlaintext,
+                ...contact,
+                recoveryBrand: testCase.input,
+            });
+            if (testCase.expected === null) {
+                expect(parsed).not.toHaveProperty('recoveryBrand');
+                expect(released).not.toHaveProperty('recoveryBrand');
+            } else {
+                expect(parsed.recoveryBrand).toBe(testCase.expected);
+                expect(released.recoveryBrand).toBe(testCase.expected);
+            }
+        }
+    );
+
+    it.each([null, 7, ['VetPass'], { name: 'VetPass' }, true])(
+        'drops a mistyped brand %j instead of rejecting the plaintext',
+        (recoveryBrand): void => {
+            expect(parseEscrowBlobPlaintext({ ...plaintext, ...contact, recoveryBrand })).toEqual({
+                ...plaintext,
+                ...contact,
+            });
+        }
+    );
+
+    it('keeps the brand through encryptEscrowBlob/decryptEscrowBlob and sealing (regression guard: the parser used to drop unknown fields)', async (): Promise<void> => {
+        const keys = await generateEscrowKeyPair();
+        const envelope = await encryptEscrowBlob(
+            { ...blob, ...contact, recoveryBrand: '  Vet   Pass ' },
+            keys.publicKey,
+            'enclave-1'
+        );
+        expect(await decryptEscrowBlob(envelope, keys.privateKey)).toEqual({
+            ...plaintext,
+            ...contact,
+            recoveryBrand: 'Vet Pass',
+        });
+        const sealed = await sealEscrowRelease(
+            { ...release, ...contact, recoveryBrand: 'VetPass' },
+            keys.publicKey
+        );
+        expect((await openEscrowRelease(sealed, keys.privateKey)).recoveryBrand).toBe('VetPass');
+    });
+
+    it('keeps a brand with no contact (inert), matching the enclave', (): void => {
+        expect(parseEscrowBlobPlaintext({ ...plaintext, recoveryBrand: 'VetPass' })).toEqual({
+            ...plaintext,
+            recoveryBrand: 'VetPass',
+        });
     });
 });

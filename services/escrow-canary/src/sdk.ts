@@ -40,7 +40,13 @@ export class CanaryStepError extends Error {
     }
 }
 
-export const createSdk = (config: Config, transport: typeof fetch = fetch): Sdk => {
+/** The trust and routing fields the SDK uses; the full canary `Config` satisfies it. */
+export type SdkConfig = Pick<
+    Config,
+    'serverUrl' | 'tenantId' | 'measurements' | 'keyId' | 'authorityGeneration'
+>;
+
+export const createSdk = (config: SdkConfig, transport: typeof fetch = fetch): Sdk => {
     const policy = { mode: 'nitro' as const, pinnedMeasurements: config.measurements };
     const headers = { 'Content-Type': 'application/json', 'X-Tenant-Id': config.tenantId };
     const request = async (path: string, init: RequestInit): Promise<unknown> => {

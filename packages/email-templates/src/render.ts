@@ -1,3 +1,4 @@
+import { Announcement, getAnnouncementSubject } from './templates/announcement';
 /**
  * render.ts — the main rendering entry point.
  *
@@ -53,6 +54,10 @@ import {
     getEscrowHoldCancelledSubject,
     EscrowPinLocked,
     getEscrowPinLockedSubject,
+    EscrowPinSignIn,
+    getEscrowPinSignInSubject,
+    AccountSecured,
+    getAccountSecuredSubject,
 } from './templates';
 
 import type {
@@ -75,7 +80,10 @@ import type {
     EscrowHoldCancelledProps,
     EscrowHoldCancelledReason,
     EscrowPinLockedProps,
+    EscrowPinSignInProps,
+    AccountSecuredProps,
 } from './templates';
+import { localeProp } from './i18n';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -94,7 +102,17 @@ export interface RenderedEmail {
  * This provides full type safety: `renderEmail('inbox-claim', branding, data)` will
  * require `data` to match `InboxClaimData`.
  */
+export interface AnnouncementData {
+    title: string;
+    body: string;
+    heroImageUrl?: string;
+    ctaLabel: string;
+    ctaUrl?: string;
+    unsubscribeUrl: string;
+}
+
 export interface TemplateDataMap {
+    announcement: AnnouncementData;
     // -- Verification code variants ------------------------------------------
 
     /** brain-service: contact-methods.ts, embed flow */
@@ -190,6 +208,12 @@ export interface TemplateDataMap {
 
     /** lca-api: recovery PIN locked after too many failed attempts */
     'escrow-pin-locked': EscrowPinLockedData;
+
+    /** lca-api: a new device signed in with the recovery PIN — links to "Secure my account" */
+    'escrow-pin-sign-in': EscrowPinSignInData;
+
+    /** lca-api: "Secure my account" signed out every other device and login */
+    'account-secured': AccountSecuredData;
 }
 
 export type TemplateId = keyof TemplateDataMap;
@@ -302,6 +326,15 @@ export interface EscrowPinLockedData {
     lockedAt: string;
     releaseAfter?: string;
     cancelUrl?: string;
+}
+
+export interface EscrowPinSignInData {
+    signedInAt: string;
+    secureUrl: string;
+}
+
+export interface AccountSecuredData {
+    securedAt: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -501,6 +534,17 @@ function buildElement(
             };
         }
 
+        case 'announcement': {
+            const d = data as AnnouncementData;
+            return {
+                element: React.createElement(Announcement, {
+                    branding,
+                    ...d,
+                    ...(locale === undefined ? {} : { locale }),
+                }),
+                subject: getAnnouncementSubject(d),
+            };
+        }
         case 'credential-updated': {
             const d = data as CredentialUpdatedData;
             const props: CredentialUpdatedProps = { branding, ...d, locale };
@@ -567,6 +611,35 @@ function buildElement(
             return {
                 element: React.createElement(EscrowPinLocked, props),
                 subject: getEscrowPinLockedSubject(branding, locale),
+            };
+        }
+
+        case 'escrow-pin-sign-in': {
+            const d = data as EscrowPinSignInData;
+            const props: EscrowPinSignInProps = {
+                branding,
+                signedInAt: d.signedInAt,
+                secureUrl: d.secureUrl,
+                ...localeProp(locale),
+            };
+
+            return {
+                element: React.createElement(EscrowPinSignIn, props),
+                subject: getEscrowPinSignInSubject(branding, locale),
+            };
+        }
+
+        case 'account-secured': {
+            const d = data as AccountSecuredData;
+            const props: AccountSecuredProps = {
+                branding,
+                securedAt: d.securedAt,
+                ...localeProp(locale),
+            };
+
+            return {
+                element: React.createElement(AccountSecured, props),
+                subject: getAccountSecuredSubject(branding, locale),
             };
         }
 

@@ -1,5 +1,178 @@
 # @learncard/cli
 
+## 4.0.2
+
+### Patch Changes
+
+- [#1819](https://github.com/learningeconomy/LearnCard/pull/1819) [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2194] Support versioned ConsentFlow updates and user review.
+
+    Keep a connection's URI and history while publishing immutable access updates. New optional read/write choices stay off; required additions pause writes until the user reviews the changes. Add explicit update acceptance, review notifications, deadlines, once-only AutoBoost delivery, and safe retirement. Unsaved request previews no longer require a URI.
+
+    Preserve existing grants in partial scope updates, gate Lambda startup on legacy snapshots, and retain once-only delivery during explicit one-time updates. Localize review and history content, recover from cancelled guardian checks and concurrent updates, and keep handled notifications safe to reopen.
+
+    Retry transient Lambda migration failures without poisoning warm application imports. Record completed migrations for fast cold starts, report malformed request IDs without credential data, and identify retained ambiguous AutoBoost claims for reconciliation. Load runtime secrets before importing the scheduled deadline worker, including secrets-only Lambda deployments. Keep inbox maintenance coverage behavioral rather than pinning Lambda wrapper source text.
+
+    Recover valid, unversioned contracts created after the migration marker through scoped version-1 initialization. Atomically backfill only their existing connections, preserve global migration completion, and keep missing history on already-versioned or malformed contracts fail-closed.
+
+    Settle guardian PIN actions on external dismissal or unmount without cancelling valid submissions. Cover reapproval, signing failures and referral cancellation with the current PIN modal contract. Clear stacked overlays before opening a contract-update review. Cancel delayed modal-removal timers when their provider unmounts while preserving closing animations. Use stable localization keys independent of English labels and stop proposing optional defaults after their window expires.
+
+    Route pending and suspended connections from ordinary consent entry to explicit update review. Recover the same way when the latest-approval error arrives during an open consent dialog, without treating the connection as approved or bypassing guardian checks.
+
+    Reject overlapping top-level and nested SDK scope patches instead of silently dropping changes. Restore strict type-only imports, declare the runnable update snippet's SDK contract, and narrow unsuccessful notification reads in end-to-end consumers without raising the typecheck allowance.
+
+    Include cumulative changes in consent records so users can approve all required additions across multiple unreviewed versions. Clear the pending optional-choice marker only when the holder successfully saves their choices.
+
+    Resolve built-in request categories and personal fields to localized labels and descriptions in English, Spanish, French, and Arabic, including learning history and career/AI categories. Recognize the legitimate French cognates “Image” and “Qualifications” in the existing untranslated-value guard.
+
+    Dismiss Alerts when opening a contract-update review without waiting for read-status writes. Give unread indicators their own layout space so they cannot overlap notification dates.
+
+    Use one shared request form with the original creation controls for creating and editing requests, without per-item purpose fields or added default-enabled checkboxes. Keep the overall update explanation separate. Replace JSON authoring with readable changes and Preview Update / Publish Update actions in the Contracts tab. Show an accessible help icon and meaningful existing-access/defaults disclosures.
+
+    Start new optional review controls from their Opt-in/Opt-out settings without silently granting access. Use the edited request's defaults in previews, refresh saved choices when reopening without overwriting active edits, and reduce the extra spacing below the current version.
+
+    Separate Advanced Options from changes, published feedback, and actions. Add space below the current version while keeping the image's remove control in its original outside corner.
+
+    Show a clear unavailable state for networks that omit contract version metadata, including cached responses. Keep publishing disabled until a versioned response is available, and never assume an unversioned response is version 1.
+
+    Use direct Mongo connections for the local Docker APIs so the single-node replica's localhost address does not prevent them from starting. Gate Mongo-dependent services on a writable primary so they do not exit during replica initialization or election.
+
+    Pre-bundle the remaining workspace crypto and cloud-client dependencies before serving the local app, avoiding dependency-discovery reloads during browser startup.
+
+    Open an on-demand Update contract modal from each configured request in the Contracts tab, rather than the Testing tab. Reveal the update explanation only after edits, separate it from grouped current/next values, and keep user-review previews in the shared modal stack for correct focus and Escape behavior.
+
+    Breaking SDK/API changes: use `updateContract` instead of the removed `addAutoBoostsToContract` and `removeAutoBoostsFromContract` SDK methods. One-time consent status is now `consumed`, not `stale`. The deprecated HTTP AutoBoost routes remain available for one compatibility release and use the versioned update path. Legacy AutoBoost additions also pause writes and synchronization pending explicit holder review; coordinate partner upgrades and support `getConsentStatus` / `reviewUrl` before rollout.
+
+    Reject stale editor drafts with their original expected version, treat equivalent updates as no-ops, require future reconsent deadlines, and restrict legacy AutoBoost publications to contract owners. Paginate tied consent-data timestamps with stable opaque cursors and preserve all unreviewed optional additions across later updates.
+
+    Track each holder's last explicit review, backfill that baseline from transaction history, and timestamp legacy snapshots at the revision actually captured. Require notification and approval when an existing item's reason changes; keep redirect-only changes quiet. Retain ambiguous initial AutoBoost claims and reject mismatched concurrent initial credential deliveries.
+
+    Show material metadata, writer, and automatic-delivery changes alongside scope updates. Refresh holder terms before enabling review edits, populate newly enabled personal fields from the holder profile, and use a structured approval-required reason instead of matching error text.
+
+    Regenerate the Python API client from the current router graph, including all consent lifecycle states, versioned updates, and review metadata. Omit `None` for ordinary non-nullable optional inputs, preserve nullable values, and retain the allocation holder's explicit-null rejection instead of silently treating it as an omission.
+
+    Preserve existing delegated AutoBoost issuers when owners publish unchanged configurations, while keeping new configurations owner-issued and rejecting changes to an existing delegated signer. Defer new cross-account setup until an explicit issuer-authorization flow is available. Use pre-upgrade persisted fixtures for legacy-delegation regressions without reopening writer publication, and fix the signer mock's recursive self-call in consent regressions.
+
+    Keep saves from already handled reviews in ordinary sharing-update history, and preserve the saved one-time setting when update or reconsent inputs omit it.
+
+    Use opaque timestamp-and-ID cursors for holder consent lists, between-profile data, transaction history, and holder exports as well as owner data pages. Preserve legacy timestamp fallbacks and reject malformed or pre-upgrade date-only cursors with `BAD_REQUEST`; restart pagination without a cursor after upgrading.
+
+    Pin owned verification review links to the allocated app origin so real consent review URLs never escape to an unrelated localhost development server.
+
+    Explain approval notifications above Publish Update without changing checked-by-default Opt-out selections. Synchronize the CLI method catalog with the versioned contract SDK, removing obsolete AutoBoost commands and exposing update, history, status, and acceptance methods.
+
+    Use neutral changed-request summaries and Updated badges for existing-scope edits, including reason-only reviews. Reserve new-access headlines and new-item counts for pure scope additions without material request-detail edits, and retain existing optional choices during approval.
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`83dad5258438dd7cbc1fba3035f1b009c703653e`](https://github.com/learningeconomy/LearnCard/commit/83dad5258438dd7cbc1fba3035f1b009c703653e), [`a7923d7deaf0baf7205bbae1f6fe132e846fed44`](https://github.com/learningeconomy/LearnCard/commit/a7923d7deaf0baf7205bbae1f6fe132e846fed44), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+    - @learncard/network-brain-client@2.7.0
+    - @learncard/learn-cloud-plugin@2.3.52
+    - @learncard/holder-continuity@0.2.29
+    - @learncard/core@9.4.44
+    - @learncard/init@2.5.10
+    - @learncard/didkit-plugin@1.10.10
+    - @learncard/lca-api-plugin@2.0.16
+    - @learncard/ler-rs-plugin@0.1.35
+    - @learncard/linked-claims-plugin@0.2.44
+    - @learncard/open-badge-v2-plugin@1.1.45
+    - @learncard/render-method-plugin@13.0.0
+
+## 4.0.1
+
+### Patch Changes
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/types@5.24.2
+    - @learncard/holder-continuity@0.2.28
+    - @learncard/core@9.4.43
+    - @learncard/init@2.5.9
+    - @learncard/network-brain-client@2.6.3
+    - @learncard/didkit-plugin@1.10.9
+    - @learncard/lca-api-plugin@2.0.15
+    - @learncard/learn-cloud-plugin@2.3.51
+    - @learncard/ler-rs-plugin@0.1.34
+    - @learncard/linked-claims-plugin@0.2.43
+    - @learncard/open-badge-v2-plugin@1.1.44
+    - @learncard/render-method-plugin@12.0.2
+
+## 4.0.0
+
+### Major Changes
+
+- [#1908](https://github.com/learningeconomy/LearnCard/pull/1908) [`e580fe754ca4697a52c4642faac056c31b0280b9`](https://github.com/learningeconomy/LearnCard/commit/e580fe754ca4697a52c4642faac056c31b0280b9) Thanks [@Custard7](https://github.com/Custard7)! - Make the CLI safer and more predictable for scripts and AI agents.
+
+    **Upgrading from 3.x.** This release is a major version because scripts that parse CLI output or rely on the old behaviour may break:
+
+    - `verify --json` prints one line, `{ ok, command: "verify", verified, result }`. Read `verified` and `result` instead of the raw result.
+    - `token --json` no longer includes `token`. Read `API_TOKEN` from the `.env` named in `tokenSavedTo`, or pass `--show-secret`.
+    - `open --json --url-fragment` returns the URL without `#seed=`. Pass `--show-secret` for the old URL.
+    - Read-only commands (`whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `revoke`, `token --list`/`--revoke`, `open`) fail with `NO_IDENTITY` in a folder with no identity instead of creating one. Run `init` (or `org apply`) first.
+    - Invalid flag values that used to be accepted are now rejected, as described below.
+    - Node 20 or later is required (`engines.node >= 20`).
+
+    **All changes:**
+
+    - `revoke`, `token --list` and `token --revoke` no longer create a seed, `.env` or profile in an empty folder. All commands that only read or act on an existing identity (`whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `revoke`, `token --list`, `token --revoke`, `open`, `clr validate --dry-run-sign`) now fail in such a folder with `code: "NO_IDENTITY"` and the same hint to run `init`, and no longer write `NETWORK_URL` to `.env`. When `init`, `send`, `org apply` or another setup command creates a new identity, it says so on stderr and adds `identityCreated: { profileId, did, network }` to the `--json` result.
+    - `--profile-id`, `send --guardian-email` and `send --webhook-url` are checked before an identity is created, so a malformed value no longer leaves a broken `.env` behind.
+    - Flags and arguments are checked before anything is written or sent: an invalid recipient, `--network`, `--expires`, `--scope`, `status --limit`/`--event`, `inbox list --status`/`--limit`, or `setup-signing --endpoint`/`--did`.
+    - `--network` accepts `production`, `prod`, `staging`, `local` or a tRPC URL on every command (`--network production` used to fail with "Invalid URL" everywhere except `promote`).
+    - Every command except `repl` accepts `-y`, `--json` and `--network`. Commands that don't use a flag accept and ignore it.
+    - `--json` errors are now `{ ok: false, command, error, code, hint?, detail? }`. `detail` holds the full message when it spans several lines. With `--json`, usage errors (unknown command or option, missing argument, `--json` placed before the command) also print one JSON line with `code: "USAGE"`.
+    - `--json` errors are `code: "USAGE"` when a required value is missing in a non-interactive run or a flag value is invalid. If a command created a new identity before it failed, the error envelope also carries `identityCreated`. `--json` never prompts, so stdout holds only the JSON line even at a terminal without `-y`.
+    - **Breaking for scripts:** `verify --json` now prints one line, `{ ok: true, command: "verify", verified, result }`, instead of the raw result spread over several lines. It still exits 1 when the credential does not verify.
+    - **Breaking for scripts:** `token --json` no longer includes the raw `token` unless you pass `--show-secret`. It adds `tokenSavedTo`, the `.env` path where the token is saved as `API_TOKEN`.
+    - **Breaking for scripts:** `open --json --url-fragment` returns the URL without the `#seed=` fragment, plus `seedInFragment: true`, unless you pass `--show-secret`. `open` only copies the seed to the clipboard when stdout is a terminal; piped or `--json` runs (e.g. `$(cli open | tail -1)`) no longer copy it and no longer wait 60 seconds to clear the clipboard.
+    - Human-mode `webhook` now stops after `--timeout` (default 60 seconds) when stdin is not a terminal, as `--json` already did.
+    - Stricter flag validation rejects values that used to be accepted: `webhook --timeout`, `token --expires` (a positive number of days) and `status --limit` (a whole number from 1 to 100).
+    - The package installs a `learncard` binary as well as the existing `cli`. It now declares `engines.node >= 20` and publishes only `dist`, `examples` and the docs.
+
+### Minor Changes
+
+- [#1911](https://github.com/learningeconomy/LearnCard/pull/1911) [`076f2548d018060a4a744305167e387ed8380ec1`](https://github.com/learningeconomy/LearnCard/commit/076f2548d018060a4a744305167e387ed8380ec1) Thanks [@Custard7](https://github.com/Custard7)! - Help coding agents discover and use the whole LearnCard surface from the CLI.
+
+    - `commands [name...] [--json]` prints a manifest of every command, built from the CLI's own command tree: arguments, options, effect (`read`, `write`, `local` or `varies`), whether it can create an identity or connect, output fields and examples, plus global flags, environment variables, error codes and docs links. Each command's `--help` now ends with examples.
+    - `capabilities [id] [--json]` maps what LearnCard can do to the CLI command, SDK method, Network REST route and docs page for each.
+    - `call <method>` calls any `learnCard.invoke` SDK method as the folder's identity (`--args <json|@file|->`, `--as`, `--list`, `--describe`, `--dry-run`). `--describe` shows a method's TypeScript signature, parameters, the flags a call needs and an example, offline; `--args` also takes a bare non-JSON value such as an `lc:` URI as one string. Methods that can change data need `--write`, and methods that return secrets need `--show-secret`. On-chain methods (`transferTokens`) also need `--chain <name>`, and the wallet's chain is checked before anything is submitted; mainnet is used only when named. It never creates an identity, read calls don't register DIDs with LearnCloud, and results are converted to plain JSON.
+    - `api <METHOD> <path>` calls the LearnCard Network REST API with `LEARNCARD_API_KEY` or the folder's `API_TOKEN` (`--data`, `--query`, `--timeout`, `--dry-run`, `--spec [--fetch]`). Methods other than `GET`/`HEAD` need `--write`, as do the `GET` routes that change state (`/challenges`, `/inbox/guardian-approval/{token}`) however the path is spelled. The token is never printed, and non-2xx responses fail with code `HTTP_<status>`.
+    - `skill install` writes the LearnCard skill for coding agents to `.claude/skills/`, `.cursor/rules/` or `.agents/skills/` (`--target`, `--dir`, `--force`, `--print`). It works offline, never touches the folder's identity, and refuses to write through symlinks (`UNSAFE_PATH`).
+
+    Smaller fixes found by running the CLI as an agent on staging and production:
+
+    - `doctor` checks the production signing service (`api.learncard.app`) when no `LCA_API_URL` is set, instead of reporting hosted signing as unavailable while `setup-signing` used it.
+    - `send --suppress-delivery` no longer says the recipient will get a claim email.
+    - `call` and `api` no longer repeat the result on stderr in `--json` mode.
+    - Using `--network` that differs from the folder's network fails with `NETWORK_MISMATCH` and a hint; an unknown `status` activity ID fails with `NOT_FOUND`. Unknown commands get a "Did you mean …?" `hint`.
+    - `--json`, `-y` and `--network` may come before the command (`learncard --json whoami`).
+    - `identityCreated.did` is now the new profile's DID (the same as the result's `did`); the seed's `did:key` moves to `identityCreated.keyDid`.
+    - `--help` lists `LEARNCARD_AS`, `LEARNCARD_API_KEY` and `CLOUD_URL` with the other environment variables.
+
+### Patch Changes
+
+- Updated dependencies [[`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0)]:
+    - @learncard/types@5.24.1
+    - @learncard/holder-continuity@0.2.27
+    - @learncard/core@9.4.42
+    - @learncard/init@2.5.8
+    - @learncard/network-brain-client@2.6.2
+    - @learncard/didkit-plugin@1.10.8
+    - @learncard/lca-api-plugin@2.0.14
+    - @learncard/learn-cloud-plugin@2.3.50
+    - @learncard/ler-rs-plugin@0.1.33
+    - @learncard/linked-claims-plugin@0.2.42
+    - @learncard/open-badge-v2-plugin@1.1.43
+    - @learncard/render-method-plugin@12.0.1
+
+## 3.6.8
+
+### Patch Changes
+
+- Updated dependencies [[`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990)]:
+    - @learncard/didkit-plugin@1.10.7
+    - @learncard/network-brain-client@2.6.1
+    - @learncard/holder-continuity@0.2.26
+    - @learncard/init@2.5.7
+    - @learncard/lca-api-plugin@2.0.13
+    - @learncard/learn-cloud-plugin@2.3.49
+
 ## 3.6.7
 
 ### Patch Changes

@@ -3,6 +3,6 @@
     "compilerOptions": {
         "noEmit": true
     },
-    "include": ["lambda.ts", "*Lambda.ts"],
+    "include": ["lambda.ts", "*Lambda.ts", "scripts/escrow-lambda-http.ts"],
     "exclude": ["node_modules", "dist", "build", "test", "src/**/*.test.ts"]
 }

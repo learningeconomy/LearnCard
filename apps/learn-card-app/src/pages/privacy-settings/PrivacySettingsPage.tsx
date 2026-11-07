@@ -1,8 +1,10 @@
+import { AnnouncementPreferences } from './AnnouncementPreferences';
 import { useVerifierHistoryEligibility } from '../../helpers/verifier-history/useEligibility';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { IonContent, IonPage, useIonViewWillEnter } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useHistory } from 'react-router-dom';
 import {
     AllowConnectionRequestsEnum,
     ProfileVisibilityEnum,
@@ -19,15 +21,15 @@ import {
     useBrandingConfig,
     useAiFeatureGate,
     ToastTypeEnum,
-    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+    isLearnCardAiPassportContractUri,
     ModalTypes,
     useModal,
+    usePrivacyConsent,
 } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
-import { useAnalytics } from '../../analytics';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
 import DataSharingCenterView from './DataSharingCenterView';
@@ -52,6 +54,7 @@ type PrivacySettingsProfile = {
 
 const PrivacySettingsPage: React.FC = () => {
     const flags = useFlags();
+    const history = useHistory();
     const historyEligible = useVerifierHistoryEligibility();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -59,8 +62,8 @@ const PrivacySettingsPage: React.FC = () => {
     });
     const { currentLCNUser, refetch: refetchUser } = useGetCurrentLCNUser();
     const { data: preferences } = useGetPreferencesForDid();
-    const { mutate: updatePreferences } = useUpdatePreferences();
-    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
+    const { mutate: updatePreferences, isPending: preferencesSaving } = useUpdatePreferences();
+    const { analyticsEnabled, isResolved: privacyResolved } = usePrivacyConsent();
     const { data: consentedContracts, isLoading, refetch } = useConsentedContracts();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
@@ -68,15 +71,28 @@ const PrivacySettingsPage: React.FC = () => {
     const profileType = switchedProfileStore.use.profileType();
     const { isAiEnabled, reason: aiReason } = useAiFeatureGate();
     const { handleAiToggle } = useAiConsentToggle();
-    const [savingField, setSavingField] = useState<string | null>(null);
     const refreshSharedRef = useRef<(() => Promise<void>) | null>(null);
+    const refreshSavedRef = useRef<(() => Promise<void>) | null>(null);
     const hasEnteredRef = useRef(false);
+    const [openSavedOnEntry, setOpenSavedOnEntry] = useState(false);
+    const [savingField, setSavingField] = useState<string | null>(null);
 
     useIonViewWillEnter(() => {
-        if (hasEnteredRef.current) void refreshSharedRef.current?.();
-        else hasEnteredRef.current = true;
+        const requested = new URLSearchParams(history.location.search).get('view') === 'saved';
+        setOpenSavedOnEntry(requested);
+        if (hasEnteredRef.current) {
+            void refreshSharedRef.current?.();
+            void refreshSavedRef.current?.();
+        } else hasEnteredRef.current = true;
     });
 
+    const handleSavedOpened = useCallback(() => {
+        setOpenSavedOnEntry(false);
+        const search = new URLSearchParams(history.location.search);
+        if (search.get('view') !== 'saved') return;
+        search.delete('view');
+        history.replace({ ...history.location, search: search.toString() });
+    }, [history]);
     const handleUpdateShare = useCallback(
         (share: ShareLink) => {
             newModal(
@@ -131,8 +147,9 @@ const PrivacySettingsPage: React.FC = () => {
         country: currentLCNUser?.country,
     });
     const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
+    const shareFeatureEnabled = flags?.shareMultipleEnabled === true;
     const shared = useSharedLinks(
-        flags?.shareMultipleEnabled === true,
+        shareFeatureEnabled,
         !isMinor ||
             (currentLCNUser?.isServiceProfile === true &&
                 currentLCNUser.type !== 'child' &&
@@ -142,12 +159,16 @@ const PrivacySettingsPage: React.FC = () => {
         handleUpdateShare,
         handleCreateShare
     );
-    refreshSharedRef.current = shared?.onRefresh ?? null;
+    refreshSharedRef.current = shared.onRefresh;
+    const savedDestinationReady = !shared.savedCollections.isLoading;
+    refreshSavedRef.current = shared.savedCollections.onRefresh;
 
     const contracts = useMemo(
         () =>
             [...(consentedContracts ?? [])]
-                .filter(contract => contract?.status !== 'withdrawn')
+                .filter(
+                    contract => contract?.status !== 'withdrawn' && contract?.status !== 'consumed'
+                )
                 .sort((a, b) => {
                     const aUpdatedAt = new Date(
                         a.terms?.updatedAt ?? a.contract?.updatedAt ?? 0
@@ -195,14 +216,13 @@ const PrivacySettingsPage: React.FC = () => {
 
     const hasAiConsent = contracts.some(
         consent =>
-            consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
+            isLearnCardAiPassportContractUri(consent?.contract?.uri) &&
             consent?.status !== 'withdrawn'
     );
 
     const locale = useLocale();
 
     const vm = useMemo<DataSharingCenterViewModel>(() => {
-        const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
         const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
 
         return {
@@ -254,11 +274,20 @@ const PrivacySettingsPage: React.FC = () => {
                 brandName,
                 analyticsEnabled,
                 bugReportsEnabled,
-                disabled: isMinor,
+                disabled: isMinor || !privacyResolved || preferencesSaving,
+                saving: preferencesSaving,
                 lockedNote: isMinor ? m['dataShareCenter.diagLockedNote']() : undefined,
                 onToggleAnalytics: enabled => {
-                    updatePreferences({ analyticsEnabled: enabled });
-                    setAnalyticsEnabled(enabled);
+                    if (isMinor || !privacyResolved) return;
+                    updatePreferences(
+                        { analyticsEnabled: enabled },
+                        {
+                            onError: () =>
+                                presentToast(m['settings.privacy.unableToUpdate'](), {
+                                    type: ToastTypeEnum.Error,
+                                }),
+                        }
+                    );
                 },
                 onToggleBugReports: enabled => {
                     updatePreferences({ bugReportsEnabled: enabled });
@@ -273,6 +302,10 @@ const PrivacySettingsPage: React.FC = () => {
         refetch,
         isAiEnabled,
         aiReason,
+        analyticsEnabled,
+        privacyResolved,
+        preferencesSaving,
+        presentToast,
         preferences?.aiEnabled,
         preferences?.analyticsEnabled,
         preferences?.bugReportsEnabled,
@@ -285,7 +318,6 @@ const PrivacySettingsPage: React.FC = () => {
         savingField,
         handleProfileUpdate,
         updatePreferences,
-        setAnalyticsEnabled,
         shared,
         locale,
     ]);
@@ -295,6 +327,17 @@ const PrivacySettingsPage: React.FC = () => {
             <IonContent>
                 <DataSharingCenterView
                     vm={vm}
+                    announcements={
+                        currentLCNUser?.profileId ? (
+                            <AnnouncementPreferences
+                                key={currentLCNUser.profileId}
+                                profileId={currentLCNUser.profileId}
+                            />
+                        ) : undefined
+                    }
+                    openSaved={openSavedOnEntry && savedDestinationReady}
+                    onSavedOpened={handleSavedOpened}
+                    showOwnerLinks={shareFeatureEnabled}
                     verifierHistory={
                         <VerifierHistorySection
                             eligible={historyEligible()}

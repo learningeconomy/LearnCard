@@ -1,4 +1,276 @@
 {
+    "consentUpdate": {
+        "summary": {
+            "requestDetails": "Request details",
+            "before": "Current",
+            "after": "After update",
+            "notRequested": "Not requested"
+        },
+        "details": {
+            "frontDoorCurrent": "Current credential",
+            "frontDoorUpdated": "Updated credential",
+            "frontDoorBoostUri": "Front door credential",
+            "expiresAt": "Access expiration",
+            "writers": "People who can write",
+            "autoboosts": "Automatic credential deliveries",
+            "personCountOne": "{{count}} person",
+            "peopleCount": "{{count}} people",
+            "credentialCountOne": "{{count}} credential",
+            "credentialsCount": "{{count}} credentials",
+            "set": "Set"
+        },
+        "editor": {
+            "accessSettings": "Settings for {{label}}",
+            "title": "Update contract",
+            "close": "Close contract editor",
+            "description": "Edit the current request, review your changes, then publish when you’re ready.",
+            "noContract": "Create or select a consent request before editing it.",
+            "loading": "Loading request…",
+            "loadError": "Couldn’t load the current request. Please try again.",
+            "unsupportedNetwork": "Contract updates aren’t available on this network yet. Connect to the updated service and try again.",
+            "retry": "Try Again",
+            "currentVersion": "Current version: {{version}}",
+            "customField": "Custom field for {{area}}",
+            "addField": "Add field",
+            "removeAccess": "Remove {{label}}",
+            "selectImage": "Choose request image",
+            "removeImage": "Remove request image",
+            "image": "Image",
+            "reason": "Why are you making this update?",
+            "reasonPlaceholder": "Explain what changes for the people using your app",
+            "reasonRequired": "Add a short explanation before previewing or publishing this update (140 characters maximum).",
+            "reasonHint": "People see this explanation when reviewing the update (140 characters maximum).",
+            "summary": "Your changes",
+            "noChanges": "Change a field to prepare an update.",
+            "approvalNeeded": "People must approve this update before the app can write data again.",
+            "optionalNotice": "New optional access stays off until people turn it on.",
+            "quietNotice": "This update does not need another approval.",
+            "updated": "Updated",
+            "notSet": "Not set",
+            "cleared": "Cleared",
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "optionalOn": "Optional · on for new connections",
+            "optionalOff": "Optional · off by default",
+            "retired": "This request has been retired and can’t be updated.",
+            "published": "Update published · version {{version}}",
+            "preview": "Preview Update",
+            "previewing": "Preparing preview…",
+            "consumerNotification": "Everyone connected to this contract will be notified and asked to review the changes.",
+            "publish": "Publish Update",
+            "publishing": "Publishing update…",
+            "reload": "Reload current request",
+            "reloading": "Reloading request…",
+            "conflict": "This request changed elsewhere. Reload the current request before publishing.",
+            "previewError": "Couldn’t prepare the preview. Your changes are still here; please try again.",
+            "publishError": "Couldn’t publish the update. Your changes are still here; please try again.",
+            "publishedReloadError": "The update was published, but the current request couldn’t be reloaded. Reload it before making another update.",
+            "createError": "Couldn’t create the request. Please try again."
+        },
+        "dismissing": "Dismissing…",
+        "dismissError": "Couldn’t dismiss this update. Please try again.",
+        "approvedUpdate": "Approved update",
+        "approvedUpdateDescription": "You approved the updated request from {{appName}}.",
+        "headline": {
+            "paused": "{{name}}'s access is paused",
+            "read": "{{name}} is asking to see your {{label}}",
+            "write": "{{name}} is asking to add {{label}} to your account",
+            "multiple": "{{name}} is asking for more access",
+            "changed": "{{name}} changed its request",
+            "optional": "{{name}} has a new option",
+            "removed": "{{name}} now sees less"
+        },
+        "subhead": {
+            "reconnect": "Approve the update to reconnect.",
+            "newItems": "{{count}} new items",
+            "review": "Review what's different.",
+            "optional": "Turn it on if you want. Nothing changes unless you do.",
+            "removed": "Stopped asking for {{label}}.",
+            "changed": "Its request has changed."
+        },
+        "action": {
+            "reconnect": "Reconnect",
+            "allow": "Allow",
+            "allowAccess": "Allow access",
+            "continue": "Continue",
+            "done": "Done",
+            "saveChoices": "Save choices"
+        },
+        "ui": {
+            "close": "Close",
+            "saving": "Saving…",
+            "stopSharing": "Stop sharing",
+            "askParent": "Ask a parent",
+            "saveError": "Something went wrong. Please try again.",
+            "new": "New",
+            "removed": "Removed",
+            "updated": "Updated",
+            "turnOnOption": "Turn on this option",
+            "required": "Required",
+            "whySeeing": "Why am I seeing this?",
+            "appContext": "{{name}} is an app you connected to {{brand}}. You decide what it can see and what it can add to your account. You can change this any time.",
+            "parentNeeded": "A parent is needed to continue.",
+            "stopSharingWarning": "{{name}} will lose access to everything you’ve shared. You can reconnect later.",
+            "keepSharing": "Keep sharing",
+            "stopSharingWith": "Stop sharing with {{name}}",
+            "respondBy": "Respond by {{date}} to keep sharing",
+            "loadError": "We couldn’t load this update. Please try again.",
+            "tryAgain": "Try again",
+            "noLongerAvailable": "This update is no longer available.",
+            "unchangedRead": "{{name}} already sees {{items}}. That doesn’t change.",
+            "unchangedWrite": "{{name}} can already add {{items}}. That doesn’t change.",
+            "unchangedDefault": "Your existing choices stay the same.",
+            "noExistingAccess": "No access is currently enabled for this app.",
+            "noDefaultAccess": "No default access stays unchanged.",
+            "allAccessChanged": "Your existing access is included in the changes above.",
+            "defaultAccess": "Current request’s default access",
+            "defaultAccessDescription": "This preview shows default choices, not a person’s saved permissions.",
+            "readAccess": "Read access",
+            "writeAccess": "Write access",
+            "saved": "Saved",
+            "changes": "Changes"
+        },
+        "review": "Review this update",
+        "dismiss": "Dismiss",
+        "needsReview": "Needs your review",
+        "newOption": "New option · added within the last 14 days",
+        "appUpdatedTerms": "App update",
+        "appUpdatedTermsDescription": "{{appName}} updated its access request.",
+        "notification": {
+            "relaxedWithItem": "{{appName}} stopped asking for your {{removed}}",
+            "changed": "{{appName}} changed its request",
+            "review": "{{appName}} needs your review",
+            "option": "{{appName}} has a new option"
+        },
+        "scope": {
+            "transcripts": {
+                "label": "Transcripts",
+                "description": "Records of completed courses and learning."
+            },
+            "certificates": {
+                "label": "Certificates",
+                "description": "Credentials recognizing qualifications or completed learning."
+            },
+            "achievements": {
+                "label": "Achievements",
+                "description": "Milestones earned through effort, skill, or perseverance."
+            },
+            "skills": {
+                "label": "Skills",
+                "description": "Abilities developed through training, practice, or experience."
+            },
+            "workHistory": {
+                "label": "Work History",
+                "description": "Professional roles and activities over time."
+            },
+            "learningHistory": {
+                "label": "Learning History",
+                "description": "Structured programs of learning."
+            },
+            "ids": { "label": "IDs", "description": "Credentials used to verify identity." },
+            "socialBadges": {
+                "label": "Social Badges",
+                "description": "Digital labels recognizing participation or group membership."
+            },
+            "memberships": { "label": "Memberships", "description": "Records of memberships." },
+            "accomplishments": {
+                "label": "Accomplishments",
+                "description": "Collections of work that showcase skills and experience."
+            },
+            "experiences": {
+                "label": "Experiences",
+                "description": "Knowledge and skills gained through professional roles and activities."
+            },
+            "accommodations": {
+                "label": "Accommodations",
+                "description": "Adjustments made to support accessibility."
+            },
+            "family": {
+                "label": "Family",
+                "description": "Family profiles connected through shared learning journeys."
+            },
+            "name": { "label": "Name", "description": "Your name." },
+            "email": { "label": "Email", "description": "Your email address." },
+            "profilePhoto": { "label": "Profile photo", "description": "Your profile photo." },
+            "qualifications": {
+                "label": "Qualifications",
+                "description": "Education, training, and professional qualifications."
+            },
+            "goals": {
+                "label": "Goals",
+                "description": "Learning and career goals you want to achieve."
+            },
+            "professionalTitle": {
+                "label": "Professional title",
+                "description": "The title that describes your professional role."
+            },
+            "roleExperience": {
+                "label": "Role experience",
+                "description": "Experience gained in a particular professional role."
+            },
+            "workExperience": {
+                "label": "Work experience",
+                "description": "Your work activities, responsibilities, and experience."
+            },
+            "payRate": {
+                "label": "Pay rate",
+                "description": "Your pay amount and payment period."
+            },
+            "workLifeBalance": {
+                "label": "Work-life balance",
+                "description": "Your preferences for balancing work and personal life."
+            },
+            "jobStability": {
+                "label": "Job stability",
+                "description": "Your preferences for job security and stability."
+            },
+            "selfAssignedSkills": {
+                "label": "Self-assigned skills",
+                "description": "Skills you have added to your own profile."
+            },
+            "aiSummaries": {
+                "label": "AI summaries",
+                "description": "Summaries of your AI-assisted learning sessions."
+            },
+            "aiTopics": {
+                "label": "AI topics",
+                "description": "Topics explored in your AI-assisted learning."
+            },
+            "aiAssessments": {
+                "label": "AI assessments",
+                "description": "Assessments from your AI-assisted learning."
+            },
+            "aiInsights": {
+                "label": "AI insights",
+                "description": "Insights about your learning progress and skills."
+            },
+            "learningPathways": {
+                "label": "Learning pathways",
+                "description": "Plans and steps toward your learning goals."
+            }
+        }
+    },
+    "credentialCollection": {
+        "searchIncomplete": "Search incomplete. Found so far: {{count}}.",
+        "searching": "Searching… Found so far: {{count}}.",
+        "loadError": "Credentials loaded: {{count}}. The collection is incomplete.",
+        "loadErrorEmpty": "Could not load credentials. The collection is incomplete.",
+        "retrying": "Retrying…",
+        "retry": "Retry loading credentials",
+        "loadingEarned": "Loading earned credentials",
+        "initialError": "Credentials could not be loaded. Try again.",
+        "loadingCredentials": "Loading credentials…",
+        "recentIncomplete": "Some recent credentials could not be loaded. These results are incomplete.",
+        "recentError": "Recent credentials could not be loaded.",
+        "loadingRecent": "Loading recent credentials…",
+        "retryRecent": "Retry recent credentials",
+        "totalsAria": "Credential totals",
+        "totals": "Credentials: {{credentials}} · Skills: {{skills}}",
+        "totalsError": "Credential totals could not be loaded.",
+        "countUnavailable": "Count unavailable",
+        "counting": "Counting credentials…",
+        "retryTotals": "Retry credential totals"
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "Earned credits not supplied",
@@ -1529,14 +1801,15 @@
             "whoAreYou": "Who are you? (Optional)",
             "explore": "Explore {{brand}}",
             "pin": {
-                "title": "Add a recovery PIN",
-                "body": "If you ever lose this device, a 6-digit PIN gets you back in within seconds.",
+                "title": "Create your PIN",
+                "body": "You'll use it to sign in on new devices.",
                 "confirmTitle": "Confirm your PIN",
                 "confirmBody": "Enter the same 6 digits again.",
                 "saving": "Saving your PIN…",
                 "success": "You're protected",
                 "skip": "Skip for now",
                 "startOver": "Start over",
+                "saveFailedSkip": "Couldn't save your PIN. Try again, or skip for now and set it up later.",
                 "hint": "You can change or remove it anytime in Settings."
             }
         }
@@ -2288,7 +2561,8 @@
             "successDescription": "Your account is connected to your new login. Set up recovery again to keep it protected.",
             "tooManyAttempts": "Too many incorrect attempts. Try again later.",
             "invalidCode": "That code is incorrect or expired. Request a new code and try again.",
-            "invalidRecoveryMethod": "That recovery method could not verify your account. Try another method."
+            "invalidRecoveryMethod": "That recovery method could not verify your account. Try another method.",
+            "successDescriptionKept": "Your account is connected to your new login. Your other devices and recovery methods still work."
         },
         "pin": {
             "setPin": "Set a recovery PIN",
@@ -2318,7 +2592,7 @@
             "change": "Change",
             "afterRecovery": {
                 "title": "Set a new recovery PIN",
-                "body": "The PIN you just used has been retired — each PIN works once, so your account stays protected. Choose a new one to keep instant recovery ready.",
+                "body": "Your recovery PIN is no longer active. Choose a new one to keep instant recovery ready.",
                 "hint": "Same rules as before: 6 digits, nothing obvious."
             },
             "afterHoldRecovery": {
@@ -2329,7 +2603,14 @@
                 "title": "Set a new recovery PIN",
                 "body": "Your old recovery PIN can no longer be used since your account was recovered. Set a new 6-digit PIN to restore automatic recovery."
             },
-            "useInstead": "Use my recovery PIN instead"
+            "useInstead": "Use my recovery PIN instead",
+            "samePin": "Choose a different PIN from the one you just used.",
+            "newPinRequired": {
+                "title": "Choose a new recovery PIN",
+                "body": "Your recovery PIN was entered incorrectly before, so it has fewer tries left. Choose a different 6-digit PIN to get all your tries back.",
+                "skipNote": "If you skip this, your current PIN keeps working with fewer tries left. You can choose a new one later in Account Recovery."
+            },
+            "escrowNotice": "An encrypted piece of your account key is held by a secure service. Your PIN unlocks it right away, without a 7-day wait. <0>Learn more</0>"
         },
         "confirmCode": {
             "mismatch": "That code isn't right. Try again.",
@@ -2402,9 +2683,90 @@
             "discardEmail": "Discard",
             "discardNote": "The one you saved won't work. You can make a new one anytime."
         },
-        "notFinished": "Not finished"
+        "notFinished": "Not finished",
+        "pinHero": {
+            "title": "Confirm it's you",
+            "description": "Enter your 6-digit PIN to finish signing in.",
+            "otherWays": "Other ways to confirm",
+            "device": "Approve from another device",
+            "deviceDesc": "Scan a code with a device you're signed in on",
+            "showMore": "Show {{count}} more",
+            "showLess": "Show less",
+            "trouble": "Trouble signing in?"
+        },
+        "pinSignIn": {
+            "verifying": "Checking your PIN...",
+            "incorrectOne": "Incorrect PIN. 1 attempt left.",
+            "unavailable": "PIN sign-in isn't available for this account. Use another way to sign in.",
+            "failed": "Something went wrong. Please try again.",
+            "newCodeNeeded": "For your security, each PIN try needs a new email code. Send a new code to try again."
+        },
+        "pinSignInReview": {
+            "title": "You're signed in",
+            "body": "Your other devices stay signed in too.",
+            "secureLink": "Lost a device? Secure your account",
+            "warnTitle": "Someone may have tried your PIN",
+            "warnBodyOne": "It was entered incorrectly 1 time before you signed in. Choose a new PIN to stay protected.",
+            "warnBodyTwo": "It was entered incorrectly 2 times before you signed in. Choose a new PIN to stay protected.",
+            "warnBody": "It was entered incorrectly {{count}} times before you signed in. Choose a new PIN to stay protected.",
+            "warnBodyUnknown": "Your PIN may have been entered incorrectly before you signed in. Choose a new PIN to stay protected.",
+            "choosePin": "Choose a new PIN",
+            "notNow": "Not now"
+        },
+        "secureAccount": {
+            "title": "Secure your account",
+            "intro": "Use this if you think someone else got into your account. It will:",
+            "signOut": "Stop your other devices and other logins from signing in again",
+            "turnOff": "Turn off your old recovery phrase, backup file, passkey and email recovery key",
+            "stayHere": "Keep you signed in on this device",
+            "openDevices": "A device that is open right now may keep working until it signs out. This can't undo anything someone already did with your account.",
+            "afterwards": "Afterwards, you'll add new ways to get back in.",
+            "continue": "Secure my account",
+            "pinTitle": "Keep a recovery PIN",
+            "pinDesc": "Choose a 6-digit PIN. If someone else might know your current PIN, pick a new one. To keep your current PIN, enter it here.",
+            "skipPin": "Continue without a PIN",
+            "skipPinNote": "You can set a new PIN later in Account Recovery.",
+            "working": "Securing your account...",
+            "workingHint": "Keep this page open until it's done.",
+            "doneTitle": "Your account is secured",
+            "doneBody": "Other devices and logins can't sign in again, and your old recovery methods are off.",
+            "pinKept": "Your recovery PIN is on.",
+            "pinNotKept": "Your recovery PIN is off. You can set one again in Account Recovery.",
+            "nextStep": "Add a new way back in so you don't get locked out.",
+            "setUpPasskey": "Set up a passkey",
+            "setUpRecovery": "Add a recovery method",
+            "conflict": "Your account changed while we were securing it. Please try again.",
+            "failed": "We couldn't finish securing your account. Please try again.",
+            "sessionExpired": "Your session expired. Sign in again to secure your account.",
+            "opening": "Opening account security...",
+            "pinDescNewPin": "Choose a new 6-digit PIN, different from your current one."
+        },
+        "signOutOtherDevices": {
+            "section": "Security",
+            "label": "Sign out of other devices",
+            "caption": "Lost a device or see something unfamiliar?",
+            "attention": "Your PIN was entered incorrectly."
+        },
+        "inProgress": "Recovery is already running. Wait for it to finish, then try again.",
+        "emailSender": {
+            "code": "We'll email you a code from {{sender}}, the service that secures your {{brand}} account.",
+            "updates": "Some emails about this request come from {{sender}}, the service that secures your {{brand}} account.",
+            "codeMixed": "Your code may come from {{brand}} or from {{sender}}, the service that secures your {{brand}} account.",
+            "updatesMixed": "Some emails about this request may come from {{brand}} or from {{sender}}, the service that secures your {{brand}} account.",
+            "codeShared": "If you also use {{sender}} with this account, your code may come from {{sender}} instead of {{brand}}.",
+            "updatesShared": "If you also use {{sender}} with this account, some emails about this request may come from {{sender}} instead of {{brand}}."
+        }
     },
     "alerts": {
+        "announcement": "Announcement",
+        "newAlert": "New",
+        "markRead": "Mark as read",
+        "read": "Read",
+        "markingRead": "Marking as read…",
+        "archiving": "Archiving…",
+        "restore": "Restore",
+        "restoring": "Restoring…",
+        "updateFailed": "Couldn’t update this alert. Please try again.",
         "accepted": "Accepted",
         "active": "Active",
         "alreadyConnected": "You are already connected.",
@@ -2513,6 +2875,8 @@
         "generic": "Something went wrong. Please try again.",
         "goHome": "Go Home",
         "network": "Connection issue. Please check your internet and try again.",
+        "updateRequired": "Your account uses a newer way to sign in. Please update to the latest version of the app (closing and reopening it is often enough), then sign in again.",
+        "updateRequiredTitle": "Update required",
         "notFound": "Page not found.",
         "retry": "Try Again",
         "sessionExpired": "Your session has expired. Please sign in again.",
@@ -2710,6 +3074,7 @@
         "modal": {
             "earnedTitle": "You've Earned a Credential!",
             "claimedTitle": "Credential Claimed!",
+            "verificationFailed": "We couldn't verify this",
             "claimedBody": "The credential has been added to your wallet.",
             "loadingCredential": "Loading credential...",
             "loadErrorTitle": "Unable to Load Credential",
@@ -4691,6 +5056,7 @@
         }
     },
     "notifications": {
+        "viewCampaign": "View",
         "contract": "your contract",
         "loadErr": "Unable to load activity",
         "updates": "Updates",
@@ -9810,12 +10176,14 @@
         "unlocking": "Opening…",
         "viewNotificationsTitle": "Notify me when viewed",
         "viewNotificationsHint": "Get a private notification with the view count and time. Off by default.",
-        "saveToLearnCard": "Save to LearnCard",
-        "savingToLearnCard": "Saving…",
-        "savedToLearnCard": "Saved to LearnCard",
-        "saveError": "Could not save these credentials. Please try again.",
+        "saveToLearnCard": "Save collection",
+        "savingToLearnCard": "Saving collection…",
+        "savedCollectionStatus": "Collection saved.",
+        "savedCollectionDestination": "Find it in Data & Sharing under Shared with you.",
+        "viewSavedCollections": "View saved collections",
+        "saveError": "Could not save this collection. Please try again.",
         "signInToSave": "Sign in to save",
-        "saveHint": "Keep this signed collection with your received items.",
+        "saveHint": "Keep someone else's collection for reference. It does not add credentials to your Passport or count as credentials you earned.",
         "viewCredential": "View credential"
     },
     "resumePublishing": {
@@ -9981,5 +10349,16 @@
         "revocationCheck": "Revocation check available",
         "evidenceCount": "Evidence items: {{count}}",
         "evidence": "Supporting evidence"
+    },
+    "announcements": {
+        "title": "Product announcements",
+        "email": "Email",
+        "push": "Push notifications",
+        "loading": "Loading preferences…",
+        "saving": "Saving preferences…",
+        "error": "Something went wrong. Please try again.",
+        "retry": "Try Again",
+        "unsubscribing": "Unsubscribing…",
+        "unsubscribed": "You’re unsubscribed from announcements."
     }
 }

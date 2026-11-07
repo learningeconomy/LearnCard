@@ -2,7 +2,57 @@ name: Global Main Branch Failure Notification
 
 on:
     workflow_run:
-        workflows: ['*'] # Monitor all workflows
+        # Filter the SOURCE run's branch before creating a notification run.
+        branches: [main]
+        # Keep main-capable workflows (including manual/scheduled automation),
+        # excluding PR/merge-queue-only and reusable-only workflows. Reusable
+        # failures propagate to their caller. Never subscribe to this notifier.
+        # test-failure-notification.test.cjs catches additions and renames.
+        workflows:
+            - AI Passport
+            - Auth Integration (Keycloak)
+            - CapGo PR Preview
+            - CapGo SSS Pilot
+            - CapGo Staging Deploy
+            - Chromatic
+            - Claude PR Assistant
+            - CodeQL full comparison
+            - CodeQL
+            - Deploy
+            - DIDKit Plugin Node Prebuilds
+            - Docs Link Integrity
+            - E2E
+            - Escrow Enclave EIF
+            - Escrow Host/Monitor Audit
+            - fastlane-deploy-native-apps
+            - fastlane-upload-to-appetize
+            - Firebase logout storage
+            - gitStream workflow automation
+            - Keycloak Drift Check
+            - Keycloak Infrastructure
+            - Keycloak Apple provider watch
+            - LearnCard MCP
+            - Maid-Service
+            - Migrate Signing Authority Seeds
+            - Mock E2E
+            - Nx main artifact producer
+            - OpenID4VC Interop Tests
+            - PR Review Reminder
+            - Full-Stack PR Preview
+            - Publish verification proof
+            - Publish to App Stores
+            - Prepare shared E2E SDK builds
+            - Smoketest Published NPM Packages
+            - Smoketest
+            - Service Health Check
+            - Tailwind visual regression
+            - Test Runner
+            - Integration build-once benchmark
+            - Integration runner benchmark
+            - Update DIDKit WASM
+            - Validate Published Package Contracts
+            - LearnCard Verification
+            - Validate GitHub workflows
         types:
             - completed # Trigger when they complete
 
