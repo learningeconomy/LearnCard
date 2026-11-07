@@ -1487,6 +1487,27 @@ describe('A6 escrow recovery', () => {
         }
     });
 
+    it('authenticates completion before migration and fails closed before claiming a valid hold', async () => {
+        setDuration(1);
+        await enroll();
+        const started = await start();
+        advanceToRelease(started);
+        const ready = vi.spyOn(models, 'ensureEscrowHoldsIndexes').mockRejectedValue(
+            new Error('Escrow hold index initialization failed', {
+                cause: { code: 11000, codeName: 'DuplicateKey' },
+            })
+        );
+        await expect(
+            getClient().escrow.completeRecovery({ holdId: started.holdId, resumeToken: 'wrong' })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        expect(ready).not.toHaveBeenCalled();
+        await expect(getClient().escrow.completeRecovery(resume(started))).rejects.toMatchObject({
+            code: 'INTERNAL_SERVER_ERROR',
+        });
+        expect(ready).toHaveBeenCalledOnce();
+        expect((await findEscrowHoldById(started.holdId))?.status).toBe('pending');
+    });
+
     it('rejects invalid tokens and removed, unconfirmed, replaced or expired recovery material', async () => {
         setDuration(1);
         await enroll();

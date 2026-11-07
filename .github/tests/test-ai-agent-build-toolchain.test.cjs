@@ -13,7 +13,11 @@ const checkToolchain = source => {
     const stages = source.replace(/\\\r?\n/g, ' ').split(/^FROM /m).slice(1);
     assert.equal(stages.length, 2, 'Keep separate build and runtime stages');
     const [build, runtime] = stages;
-    assert.match(build, /^\S+ AS build\s/i);
+    assert.match(
+        build,
+        /^--platform=\$BUILDPLATFORM \S+ AS build\s/i,
+        'Build the arch-independent bundle natively, not under QEMU'
+    );
     const install = build.indexOf('bun install --frozen-lockfile');
     assert.ok(install >= 0, 'Keep the frozen dependency install');
     const setup = build.slice(0, install);
