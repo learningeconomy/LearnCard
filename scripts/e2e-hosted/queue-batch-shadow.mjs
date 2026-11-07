@@ -23,6 +23,7 @@ export const observeQueueChain = (snapshot, eventHeadSha) => {
     const heads = new Set();
     const pullRequests = new Set();
     const candidates = [];
+    let sawQueuedEntry = false;
     for (let index = 0; index < connection.nodes.length; index++) {
         const entry = connection.nodes[index];
         const number = entry?.pullRequest?.number;
@@ -34,6 +35,13 @@ export const observeQueueChain = (snapshot, eventHeadSha) => {
         if (typeof entry.solo !== 'boolean') return unknown('missing_group_membership');
         if (entry.solo) return unknown('solo_entry');
 
+        // Entries waiting for a build can appear after the cumulative candidate
+        // chain. They are still counted, but cannot identify a tested revision.
+        if (entry.state === 'QUEUED' && entry.headCommit == null && entry.baseCommit == null) {
+            sawQueuedEntry = true;
+            continue;
+        }
+        if (sawQueuedEntry) return unknown('built_after_queued');
         if (!['AWAITING_CHECKS', 'MERGEABLE'].includes(entry.state)) {
             return unknown('unstable_entry');
         }
@@ -58,8 +66,9 @@ export const observeQueueChain = (snapshot, eventHeadSha) => {
         queuePolicy: 'unknown',
         eventSha: current.head,
         eventPosition: current.position,
-        entryCount: candidates.length,
-        eventIsLastListed: current.position === candidates.length,
+        entryCount: connection.nodes.length,
+        builtCandidateCount: candidates.length,
+        eventIsLastListed: current.position === connection.nodes.length,
         previousCandidateSha: candidates[current.position - 2]?.head ?? null,
     };
 };

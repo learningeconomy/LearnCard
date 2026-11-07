@@ -37,6 +37,7 @@ test('observes exact cumulative queue candidate and predecessor without admin-on
         eventSha: sha('1'),
         eventPosition: 1,
         entryCount: 2,
+        builtCandidateCount: 2,
         eventIsLastListed: false,
         previousCandidateSha: null,
     });
@@ -48,6 +49,7 @@ test('observes exact cumulative queue candidate and predecessor without admin-on
         eventSha: sha('2'),
         eventPosition: 2,
         entryCount: 2,
+        builtCandidateCount: 2,
         eventIsLastListed: true,
         previousCandidateSha: sha('1'),
     });
@@ -115,4 +117,51 @@ test('unknown, unbuilt and solo entries do not infer group membership or a tail'
     assert.deepEqual(observeQueueChain(solo, sha('2')), unknown('solo_entry'));
     delete solo.entries.nodes[0].solo;
     assert.deepEqual(observeQueueChain(solo, sha('2')), unknown('missing_group_membership'));
+});
+
+test('observes built candidates when more than five entries include an unbuilt queued suffix', () => {
+    const s = snapshot();
+    for (let position = 3; position <= 9; position++) {
+        s.entries.nodes.push(
+            entry(position, null, null, { state: 'QUEUED', headCommit: null, baseCommit: null })
+        );
+    }
+    assert.deepEqual(observeQueueChain(s, sha('2')), {
+        classification: 'observed_candidate',
+        reason: 'complete_queue_chain',
+        advisoryOnly: true,
+        queuePolicy: 'unknown',
+        eventSha: sha('2'),
+        eventPosition: 2,
+        entryCount: 9,
+        builtCandidateCount: 2,
+        eventIsLastListed: false,
+        previousCandidateSha: sha('1'),
+    });
+    assert.deepEqual(observeQueueChain(s, sha('3')), unknown('event_sha_not_current'));
+});
+
+test('rejects inconsistent queued suffixes instead of inferring a built candidate', () => {
+    const queued = () =>
+        entry(3, null, null, { state: 'QUEUED', headCommit: null, baseCommit: null });
+
+    const builtAfterQueued = snapshot();
+    builtAfterQueued.entries.nodes.push(queued(), entry(4, sha('4'), sha('2')));
+    assert.deepEqual(observeQueueChain(builtAfterQueued, sha('2')), unknown('built_after_queued'));
+
+    const queuedWithHead = snapshot();
+    queuedWithHead.entries.nodes.push(entry(3, sha('3'), sha('2'), { state: 'QUEUED' }));
+    assert.deepEqual(observeQueueChain(queuedWithHead, sha('2')), unknown('unstable_entry'));
+
+    const duplicatePr = snapshot();
+    duplicatePr.entries.nodes.push({ ...queued(), pullRequest: { number: 1 } });
+    assert.deepEqual(observeQueueChain(duplicatePr, sha('2')), unknown('duplicate_pull_request'));
+
+    const badPosition = snapshot();
+    badPosition.entries.nodes.push({ ...queued(), position: 4 });
+    assert.deepEqual(observeQueueChain(badPosition, sha('2')), unknown('invalid_entry_order'));
+
+    const soloSuffix = snapshot();
+    soloSuffix.entries.nodes.push({ ...queued(), solo: true });
+    assert.deepEqual(observeQueueChain(soloSuffix, sha('2')), unknown('solo_entry'));
 });
