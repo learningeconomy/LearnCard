@@ -310,6 +310,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     const [error, setError] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const [guardianEmailFocused, setGuardianEmailFocused] = useState(false);
 
     // Handle Validation
     const [isLengthValid, setIsLengthValid] = useState(false);
@@ -465,6 +466,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const showGuardianEmailError =
         needsEUConsent &&
         guardianEmailTouched &&
+        !guardianEmailFocused &&
         guardianEmail.trim() !== '' &&
         !isValidGuardianEmail(guardianEmail);
 
@@ -954,7 +956,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                     if (!next.trim() || isValidGuardianEmail(next))
                                                         setGuardianEmailTouched(false);
                                                 }}
-                                                onBlur={() => setGuardianEmailTouched(true)}
+                                                onFocus={() => setGuardianEmailFocused(true)}
+                                                onBlur={() => {
+                                                    setGuardianEmailFocused(false);
+                                                    setGuardianEmailTouched(true);
+                                                }}
                                                 aria-invalid={showGuardianEmailError}
                                                 aria-describedby={
                                                     showGuardianEmailError
