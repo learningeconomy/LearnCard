@@ -1,15 +1,11 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync } from 'node:fs';
-import { classifyQueueBatch } from './queue-batch-shadow.mjs';
+import { observeQueueChain } from './queue-batch-shadow.mjs';
 import { observeGitComparison } from './queue-proof-shadow.mjs';
 
 const query = `query QueueBatchShadow($owner: String!, $name: String!, $branch: String!) {
     repository(owner: $owner, name: $name) {
         mergeQueue(branch: $branch) {
-            configuration {
-                maximumEntriesToBuild maximumEntriesToMerge minimumEntriesToMerge
-                minimumEntriesToMergeWaitTime mergingStrategy
-            }
             entries(first: 100) {
                 pageInfo { hasNextPage }
                 nodes { position state solo headCommit { oid } baseCommit { oid } pullRequest { number } }
@@ -53,7 +49,7 @@ const observe = () => {
     const result = JSON.parse(raw);
     if (result.errors?.length || !result.data?.repository?.mergeQueue)
         return unknown('queue_unavailable');
-    const queue = classifyQueueBatch(result.data.repository.mergeQueue, group.head_sha);
+    const queue = observeQueueChain(result.data.repository.mergeQueue, group.head_sha);
     const proofInputs = queue.previousCandidateSha
         ? observeGitComparison({
               cwd: process.env.GITHUB_WORKSPACE || process.cwd(),

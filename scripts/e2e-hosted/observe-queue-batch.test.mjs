@@ -12,13 +12,6 @@ const snapshot = {
     data: {
         repository: {
             mergeQueue: {
-                configuration: {
-                    maximumEntriesToBuild: 5,
-                    maximumEntriesToMerge: 5,
-                    minimumEntriesToMerge: 1,
-                    minimumEntriesToMergeWaitTime: 300,
-                    mergingStrategy: 'ALLGREEN',
-                },
                 entries: {
                     pageInfo: { hasNextPage: false },
                     nodes: [
@@ -56,7 +49,7 @@ const run = ({
             gh,
             fail
                 ? '#!/bin/sh\necho sensitive-example >&2\nexit 1\n'
-                : `#!/bin/sh\nprintf '%s' '${response}'\n`
+                : `#!/bin/sh\ncase "$*" in *configuration*) echo forbidden >&2; exit 1;; esac\nprintf '%s' '${response}'\n`
         );
         chmodSync(gh, 0o755);
         const result = spawnSync(process.execPath, [observer], {
@@ -81,7 +74,8 @@ const run = ({
 test('reports exact current queue candidate without making a gating decision', () => {
     const result = run();
     assert.equal(result.status, 0);
-    assert.match(result.stdout, /"classification":"observed_tail"/);
+    assert.match(result.stdout, /"classification":"observed_candidate"/);
+    assert.match(result.stdout, /"queuePolicy":"unknown"/);
     assert.match(result.summary, /neither is E2E proof or authorizes skipping tests/);
 });
 
