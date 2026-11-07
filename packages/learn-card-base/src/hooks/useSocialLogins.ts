@@ -21,6 +21,7 @@ export enum SocialLoginTypes {
     sms = 'sms',
     passwordless = 'passwordless',
     scoutsSSO = 'scoutsSSO',
+    classlink = 'classlink',
 }
 
 export const useSocialLogins = (_branding: BrandingEnum = BrandingEnum.learncard) => {

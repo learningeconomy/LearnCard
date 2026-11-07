@@ -240,6 +240,7 @@ export * from './helpers/statusBarHelpers';
 export * from './helpers/platformHelpers';
 export * from './helpers/navBarHelpers';
 export * from './helpers/loginHelpers';
+export * from './helpers/syntheticEmail';
 export * from './helpers/colorHelpers';
 export * from './helpers/authHelpers';
 export * from './helpers/fetchHelpers';
@@ -305,6 +306,9 @@ export * from './svgs/walletsIconsFormal/WalletIconsFormal';
 export * from './svgs/displayTypes/displayTypes';
 export * from './react-query/queries/checklist';
 export * from './react-query/queries/user-contact';
+export * from './react-query/queries/transcripts';
+export * from './react-query/queries/classlinkPersonalEmail';
+export * from './react-query/mutations/transcripts';
 export * from './svgs/attachmentTypes/attachmentIcons';
 
 export * from './security/webSecureStorage';
@@ -324,3 +328,4 @@ export * from './logging/logger';
 export * from './logging/diagnosticLogBuffer';
 
 export { isAlreadyConsentedError, isConsentConflict } from './helpers/consentErrors';
+export * from './helpers/claimIncomingCredential';

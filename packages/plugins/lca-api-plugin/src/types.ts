@@ -12,6 +12,15 @@ import {
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 
+export type SchoolConnection = {
+    available: boolean;
+    canConnect: boolean;
+    connected: boolean;
+    isStudent: boolean;
+    schoolName?: string;
+    lastConnectedAt?: string;
+};
+
 export type BoostSkills = {
     category: string;
     skill: string;
@@ -341,6 +350,54 @@ export type LCAPluginMethods = {
     verifyNetworkHandoffToken: (
         token: string
     ) => Promise<{ success: boolean; message?: string; token?: string }>;
+    classlinkGetPersonalEmail: () => Promise<{ email?: string; verified: boolean }>;
+    classlinkStartPersonalEmail: (args: { email: string }) => Promise<{ success: boolean }>;
+    classlinkVerifyPersonalEmail: (args: {
+        email: string;
+        code: string;
+    }) => Promise<{ success: boolean }>;
+    classlinkGetAuthorizeUrl: (args: {
+        redirectUri: string;
+        codeChallenge: string;
+        state: string;
+        nonce: string;
+    }) => Promise<{ url: string }>;
+    classlinkExchangeCode: (args: {
+        code: string;
+        codeVerifier: string;
+        redirectUri: string;
+        nonce: string;
+    }) => Promise<{ token: string }>;
+    classlinkGetConnection: () => Promise<SchoolConnection>;
+    classlinkConnect: (args: {
+        code: string;
+        codeVerifier: string;
+        redirectUri: string;
+        nonce: string;
+    }) => Promise<{ isStudent: boolean; schoolName?: string }>;
+    transcriptsGetStatus: () => Promise<{
+        eligible: boolean;
+        /** DID the issuer signs transcripts with (`vc.issuer`). */
+        issuerDid?: string;
+        /** LearnCard Network profile ID the issuer sends transcripts from. */
+        issuerProfileId?: string;
+        reason?: 'no_state_id' | 'reauth_required' | 'not_enabled';
+        stateDisplayName: string;
+        latest?: {
+            requestId: string;
+            receivedAt?: string;
+            status: 'requested' | 'none_yet' | 'failed';
+            /** ISO 8601 string — tRPC serializes Dates to strings (no superjson transformer). */
+            requestedAt: string;
+        };
+    }>;
+    transcriptsMarkReceived: (args: { requestId: string }) => Promise<{ success: true }>;
+    transcriptsRequest: (args: { consent: true }) => Promise<{
+        requestId: string;
+        status: 'requested' | 'none_yet' | 'failed';
+        /** ISO 8601 string — tRPC serializes Dates to strings (no superjson transformer). */
+        requestedAt: string;
+    }>;
     getProofOfLoginVp: (
         token: string
     ) => Promise<{ success: boolean; error?: string; vp?: string }>;
@@ -398,6 +455,8 @@ export type LCAPluginMethods = {
         providerType: AuthProviderType,
         challenge: string
     ) => Promise<{ success: boolean }>;
+
+    deleteMyClassLinkData: () => Promise<{ deleted: number }>;
 };
 
 /** @group LearnCardNetwork Plugin */

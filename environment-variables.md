@@ -490,8 +490,15 @@ using its GitHub secret fallbacks, so services and stages can migrate independen
 
 | Service    | GitHub environment (`dev` / `production`)                                | Bundle ID (`dev` / `production`)                                                             |
 | ---------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| lca-api    | `lca-api-staging` / `lca-api-production`                                 | `lca-api/dev/runtime-secrets` / `lca-api/production/runtime-secrets`                         |
 | Brain      | `learn-cloud-network-api-staging` / `learn-cloud-network-api-production` | `brain-service/dev/runtime-secrets` / `brain-service/production/runtime-secrets`             |
 | LearnCloud | `learn-cloud-storage-api-staging` / `learn-cloud-storage-api-production` | `learn-cloud-service/dev/runtime-secrets` / `learn-cloud-service/production/runtime-secrets` |
+
+lca-api's bundle holds `GOOGLE_APPLICATION_CREDENTIAL`, `OPENAI_API_KEY`, `SEED`, and escrow secrets when used. It also holds the ClassLink and transcript-issuer settings `CLASSLINK_CLIENT_SECRET`, `CLASSLINK_IDENTITY_KEY`, `CLASSLINK_PII_KEY`, `CLASSLINK_PII_KEY_PREVIOUS`, `CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS`, and `TRANSCRIPT_ISSUERS`: the client ID is not secret, but the tenant map and issuer endpoints name specific districts and partners, so they stay out of the public stage files. See "ClassLink district identity configuration" below for the two ClassLink keys: `CLASSLINK_IDENTITY_KEY` must never change, while `CLASSLINK_PII_KEY` can be rotated with `CLASSLINK_PII_KEY_PREVIOUS`. Do not put these keys in `config/config.<stage>.json`: stage files are public and would publish district and partner details. (At runtime the precedence is real env > runtime secrets bundle > stage file > base, so a stage-file value would not override the bundle anyway.) Only the generic keys `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS` and `CLASSLINK_MAX_AUTH_AGE_SECONDS` belong in `config/config.<stage>.json`.
+
+`TRANSCRIPT_ISSUERS` is a JSON object mapping an issuer key to `{ endpoint, audience, did, profileId? }`, for example `{"example-records":{"endpoint":"https://records.example.org/transcript-requests","audience":"example-records","did":"did:web:records.example.org","profileId":"example-records"}}`. `did` is the DID the partner signs transcripts with (`vc.issuer`). `profileId` is the partner's LearnCard Network profile that sends them; the app only auto-accepts a transcript sent by that profile, and without `profileId` it never auto-accepts (the student accepts it from notifications). The network rewrites every profile's DID to `did:web:<network>:users:<profileId>`, so the sender is matched by profile ID, never by DID. A `CLASSLINK_TENANTS` district selects one with its own `transcriptIssuer` key; districts that don't set one use the `"default"` key. `transcripts.getStatus` exposes the resolved issuer's `did` as `issuerDid` and its `profileId` as `issuerProfileId`, each omitted when not configured. If a district references a `transcriptIssuer` key that isn't in the registry, `getClassLinkConfig` logs a warning and turns transcripts off for that district (sign-in keeps working). `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE` and `TRANSCRIPT_ISSUER_DID` are deprecated: they register the `"default"` entry and are ignored for any key an explicit `TRANSCRIPT_ISSUERS["default"]` also defines. Like `TRANSCRIPT_ISSUERS` entries, the legacy endpoint must be https (http only to `localhost`, `127.0.0.1` or `::1` outside production) and `TRANSCRIPT_ISSUER_DID`, when set, must be a `did:` URI; otherwise the legacy entry is ignored and a warning is logged once, so districts that rely on `"default"` have transcripts turned off.
+
+lca-api signs transcript requests as `did:web:<DOMAIN_NAME>` (the same identity `/.well-known/did.json` publishes when `DOMAIN_NAME` is set), never as the hostname a request arrived on. `DOMAIN_NAME` is already set in each stage's `config/config.<stage>.json`. Offline runs and tests without it sign as `did:web:localhost%3A<PORT>`; any other deployment without `DOMAIN_NAME` refuses transcript requests (`PRECONDITION_FAILED`, logged as `transcripts.request.requester_did_unconfigured`) rather than sign as localhost.
 
 Brain's bundle holds `SEED`, `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`,
 `POSTMARK_API_KEY`, `MESSAGEBIRD_AUTH_TOKEN`, `SENTRY_DSN`, `POSTHOG_API_KEY`,
@@ -661,3 +668,46 @@ Redeploy both services after editing the stage config (rebuilding the frontend a
 will not update Lambda configuration), then enable `share-multiple-enabled` in
 LaunchDarkly. Check create/open/revoke in the target environment, including opening
 a copied link in a signed-out browser. Missing values keep sharing disabled.
+
+# ClassLink district identity configuration
+
+`CLASSLINK_TENANTS` accepts optional `stateStudentIdSource`: `{ "type": "sourcedId" }`
+or `{ "type": "apiField", "field": "student_id" }`. This overrides legacy
+`stateStudentIdField`, which defaults to empty. Values come only from verified token
+claims, never userinfo. In some states the roster sourcedId is the state student ID.
+Optional `stateStudentIdPattern` is a compilable regex of at most 200 characters,
+fully matched after trimming (`^(?:pattern)$`); `"[0-9]{10}"` is an example only.
+Mismatch means missing, with the existing test-stage-only fallback still available.
+
+ClassLink uses two keys, each base64 of exactly 32 random bytes (for example
+`openssl rand -base64 32`), both in the runtime secrets bundle:
+
+- `CLASSLINK_IDENTITY_KEY` derives the opaque identity keys
+  (`classlink:<tenant>:v1:<HMAC>`) and new Firebase UIDs. **Never rotate it**: a
+  different key gives every student a new identity key and Firebase UID, so they
+  would land in a new, empty account. If it is unset, lca-api falls back to
+  `CLASSLINK_PII_KEY` and logs `classlink.identity_key.fallback` once per process, so
+  identities created before the split keep resolving. Before you ever rotate
+  `CLASSLINK_PII_KEY`, set `CLASSLINK_IDENTITY_KEY` to the current
+  `CLASSLINK_PII_KEY` value. The fallback is refused while
+  `CLASSLINK_PII_KEY_PREVIOUS` is set (a rotation is in progress): sign-in fails
+  closed with `PRECONDITION_FAILED` and logs
+  `classlink.identity_key.fallback_during_rotation` until `CLASSLINK_IDENTITY_KEY`
+  is set to the pre-rotation key. Without either key, or with an invalid
+  `CLASSLINK_IDENTITY_KEY` (no fallback then), sign-in fails closed with
+  `PRECONDITION_FAILED`.
+- `CLASSLINK_PII_KEY` encrypts stored state student IDs (AES-256-GCM, payload
+  `v2:<key id>:<data>`; older `v1:` payloads are still read). It can be rotated:
+  move the old value to `CLASSLINK_PII_KEY_PREVIOUS`, set a new
+  `CLASSLINK_PII_KEY`, and remove the previous key after
+  `CLASSLINK_MAX_AUTH_AGE_SECONDS` (IDs expire by then anyway). Without
+  `CLASSLINK_PII_KEY`, sign-in still works but state student IDs are not stored, so
+  transcript requests report `no_state_id` and `classlink.pii.key_missing` is
+  logged.
+
+The roster sourcedId is never sent to transcript issuers or stored in readable form;
+otherwise it is used only as input to the HMAC identity key. The one exception is a
+district that sets `stateStudentIdSource` to `{ "type": "sourcedId" }`: there the
+sourcedId is the state student ID, so it is stored encrypted with
+`CLASSLINK_PII_KEY` under the same short retention and sent only as
+`state_student_id` in the signed transcript request.

@@ -13,6 +13,10 @@
     },
     "features": {
         "analytics": false,
+        "classlinkSso": true,
+        "classlinkTranscriptOptIn": true,
+        "classlinkPersonalEmail": true,
+        "schoolConnect": true,
         "useSeededSkillFrameworks": true,
         "samplePersonas": [
             {

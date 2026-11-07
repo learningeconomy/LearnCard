@@ -14,6 +14,10 @@ const mocks = vi.hoisted(() => ({
     setCurrentUser: vi.fn(),
     track: vi.fn(),
     refetch: vi.fn(),
+    transcriptsGetStatus: vi.fn(),
+    requestTranscript: vi.fn(),
+    isClassLinkStudent: false,
+    transcriptFlag: false,
     updatePreferences: vi.fn(),
 }));
 const stableAdapter = vi.hoisted(() => ({
@@ -31,6 +35,7 @@ vi.mock('learn-card-base', () => ({
             invoke: {
                 createProfile: mocks.createProfile,
                 resetLCAClient: vi.fn(),
+                transcriptsGetStatus: mocks.transcriptsGetStatus,
             },
         }),
     }),
@@ -49,6 +54,28 @@ vi.mock('learn-card-base', () => ({
         <input type="checkbox" {...props} />
     ),
     getSSSConfig: () => ({ escrowEnclaveMode: 'off' }),
+    useRequestTranscript: () => ({ mutateAsync: mocks.requestTranscript, isPending: false }),
+    useFeatureConfig: () => ({ classlinkTranscriptOptIn: mocks.transcriptFlag }),
+    Checkbox: ({
+        checked,
+        onChange,
+        label,
+    }: {
+        checked: boolean;
+        onChange: (value: boolean) => void;
+        label: string;
+    }) => (
+        <input
+            type="checkbox"
+            aria-label={label}
+            checked={checked}
+            onChange={event => onChange(event.target.checked)}
+        />
+    ),
+}));
+vi.mock('../../../auth/classlink/classlinkProfileDefaults', () => ({
+    getClassLinkProfileDefaults: async () => ({}),
+    isClassLinkStudentSession: async () => mocks.isClassLinkStudent,
 }));
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
     default: () => ({ uid: 'user-1', privateKey: 'test-key', name: mocks.localName }),
@@ -119,6 +146,14 @@ beforeEach(() => {
     mocks.authName = '';
     mocks.localName = '';
     mocks.createProfile.mockResolvedValue('did:web:example.com');
+    mocks.isClassLinkStudent = false;
+    mocks.transcriptFlag = false;
+    mocks.transcriptsGetStatus.mockResolvedValue({
+        eligible: true,
+        stateDisplayName: 'Example State',
+        issuerDid: 'did:web:issuer.example.com',
+    });
+    mocks.requestTranscript.mockResolvedValue({ status: 'requested' });
     mocks.updatePreferences.mockReset().mockResolvedValue(true);
 });
 
@@ -266,5 +301,85 @@ describe('Apple profile onboarding', () => {
         expect(createButton()).toBeDisabled();
         fireEvent.change(name, { target: { value: 'New User' } });
         await waitFor(() => expect(createButton()).toBeEnabled());
+    });
+});
+
+describe('ClassLink transcript onboarding step', () => {
+    const createProfile = async (): Promise<void> => {
+        mocks.loginType = 'google';
+        await openProfile();
+        fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Student' } });
+        await waitFor(() => expect(createButton()).toBeEnabled());
+        fireEvent.click(createButton());
+        await waitFor(() => expect(mocks.createProfile).toHaveBeenCalled());
+    };
+    const consentLabel = m['transcriptOptIn.consent']({ state: 'Example State' });
+
+    it('is offered to an eligible ClassLink student when the tenant flag is on', async () => {
+        mocks.transcriptFlag = true;
+        mocks.isClassLinkStudent = true;
+        await createProfile();
+
+        await screen.findByTestId('onboarding-transcript-step');
+        // Same consent control as the wallet card; nothing is sent until it is ticked.
+        expect(screen.getByTestId('onboarding-transcript-get')).toBeDisabled();
+        fireEvent.click(screen.getByLabelText(consentLabel));
+        fireEvent.click(screen.getByTestId('onboarding-transcript-get'));
+
+        await waitFor(() => expect(mocks.requestTranscript).toHaveBeenCalledTimes(1));
+        await screen.findByText(m['onboarding.transcript.onItsWay']());
+    });
+
+    it('surfaces a request failure and lets the student retry or skip', async () => {
+        mocks.transcriptFlag = true;
+        mocks.isClassLinkStudent = true;
+        mocks.requestTranscript.mockRejectedValueOnce(new Error('Records are offline'));
+        await createProfile();
+
+        await screen.findByTestId('onboarding-transcript-step');
+        fireEvent.click(screen.getByLabelText(consentLabel));
+        fireEvent.click(screen.getByTestId('onboarding-transcript-get'));
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Records are offline');
+        expect(screen.getByTestId('onboarding-transcript-step')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('onboarding-transcript-skip'));
+        await waitFor(() =>
+            expect(screen.queryByTestId('onboarding-transcript-step')).not.toBeInTheDocument()
+        );
+        expect(screen.queryByText(m['onboarding.transcript.onItsWay']())).not.toBeInTheDocument();
+    });
+
+    it('is not offered (and status is not fetched) when the tenant flag is off', async () => {
+        mocks.transcriptFlag = false;
+        mocks.isClassLinkStudent = true;
+        await createProfile();
+
+        await screen.findByText(m['onboarding.v2.ready']({ brand: 'LearnCard' }));
+        expect(mocks.transcriptsGetStatus).not.toHaveBeenCalled();
+        expect(screen.queryByTestId('onboarding-transcript-step')).not.toBeInTheDocument();
+    });
+
+    it('is not offered to non-ClassLink sign-ins', async () => {
+        mocks.transcriptFlag = true;
+        mocks.isClassLinkStudent = false;
+        await createProfile();
+
+        await screen.findByText(m['onboarding.v2.ready']({ brand: 'LearnCard' }));
+        expect(mocks.transcriptsGetStatus).not.toHaveBeenCalled();
+    });
+
+    it('is not offered when a request is already on record', async () => {
+        mocks.transcriptFlag = true;
+        mocks.isClassLinkStudent = true;
+        mocks.transcriptsGetStatus.mockResolvedValue({
+            eligible: true,
+            stateDisplayName: 'Example State',
+            latest: { status: 'requested', requestId: 'r', requestedAt: '2026-01-01' },
+        });
+        await createProfile();
+
+        await screen.findByText(m['onboarding.v2.ready']({ brand: 'LearnCard' }));
+        expect(screen.queryByTestId('onboarding-transcript-step')).not.toBeInTheDocument();
     });
 });

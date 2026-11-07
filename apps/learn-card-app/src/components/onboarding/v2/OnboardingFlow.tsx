@@ -28,6 +28,7 @@ import {
     getSSSConfig,
     authStore,
     SocialLoginTypes,
+    useFeatureConfig,
 } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
@@ -78,11 +79,19 @@ import {
 } from '@analytics';
 
 import countries from '../../../constants/countries.json';
+import {
+    getClassLinkProfileDefaults,
+    isClassLinkStudentSession,
+} from '../../../auth/classlink/classlinkProfileDefaults';
+import {
+    TranscriptOnboardingStep,
+    getOnboardingTranscriptEligibility,
+} from './TranscriptOnboardingStep';
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
 const log = getLogger('onboarding-flow-v2');
 
-type Step = 'age-country' | 'profile' | 'pin' | 'celebrate';
+type Step = 'age-country' | 'profile' | 'pin' | 'transcript' | 'celebrate';
 
 type OnboardingFlowProps = {
     onSuccess?: () => void;
@@ -96,6 +105,41 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     // Async handlers must read the live coordinator state, not their render-time snapshot.
     const coordinatorStateRef = useRef(coordinatorState);
     coordinatorStateRef.current = coordinatorState;
+
+    /**
+     * The PIN is required at sign-up but fail-open: when escrow is not confirmed
+     * available in time the step is skipped and the user is asked later (see
+     * requiredPinStep.ts). Reads live coordinator state through the ref.
+     */
+    const decidePinStep = useCallback(
+        (): Promise<boolean> =>
+            decideOnboardingPinStep({
+                waitForPinAvailable: () =>
+                    waitForEscrowEnrollment(
+                        () => {
+                            const state = coordinatorStateRef.current;
+                            return {
+                                status: state.status,
+                                escrowEnrollment:
+                                    state.status === 'ready' ? state.escrowEnrollment : undefined,
+                            };
+                        },
+                        { escrowEnabled: getSSSConfig().escrowEnclaveMode !== 'off' }
+                    ),
+                getSnapshot: () => {
+                    const state = coordinatorStateRef.current;
+                    return state.status === 'ready'
+                        ? {
+                              status: state.status,
+                              did: state.did,
+                              escrowPinEnabled: state.escrowPin?.enabled,
+                          }
+                        : { status: state.status };
+                },
+                readPromptFlag: readRecoveryPinPromptFlag,
+            }),
+        []
+    );
     const { initWallet } = useWallet();
     const { track } = useAnalytics();
     const { mutateAsync: updatePreferences } = useUpdatePreferences();
@@ -107,6 +151,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const countryNames = new Intl.DisplayNames([locale], { type: 'region' });
     const { handleLogout } = useLogout();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
+    const features = useFeatureConfig();
     const { updateCurrentUser } = useSQLiteStorage();
 
     const brandingConfig = useBrandingConfig();
@@ -208,6 +253,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 return { step_id: 'profile', step_index: 2 } as const;
             case 'pin':
                 return { step_id: 'pin', step_index: 3 } as const;
+            case 'transcript':
+                return { step_id: 'transcript', step_index: 3 } as const;
             case 'celebrate':
                 return { step_id: 'celebrate', step_index: 4 } as const;
         }
@@ -303,6 +350,19 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     const [privacyPreferences, setPrivacyPreferences] =
         useState<OnboardingPrivacyPreferences | null>(null);
+    // ClassLink students cannot turn these on; lca-api enforces the same rule.
+    const [isSchoolLocked, setIsSchoolLocked] = useState(false);
+    useEffect(() => {
+        let cancelled = false;
+        void isClassLinkStudentSession().then(locked => {
+            if (!cancelled) setIsSchoolLocked(locked);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [authUser]);
+    const [transcriptRequested, setTranscriptRequested] = useState(false);
+    const [transcriptStateDisplayName, setTranscriptStateDisplayName] = useState('');
     const [role, setRole] = useState<LearnCardRolesEnum>(LearnCardRolesEnum.learner);
 
     const [error, setError] = useState<string | null>(null);
@@ -565,6 +625,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 bio: '',
                 image: photo,
                 notificationsWebhook: getNotificationsEndpoint(),
+                ...(await getClassLinkProfileDefaults()),
                 role,
                 dob,
                 country,
@@ -594,8 +655,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     }
                 }
 
-                const selectedPrivacyPreferences =
+                const chosenPrivacyPreferences =
                     privacyPreferences ?? getDefaultPrivacyPreferences(dob, country);
+                const selectedPrivacyPreferences = isSchoolLocked
+                    ? {
+                          ...chosenPrivacyPreferences,
+                          aiEnabled: false,
+                          analyticsEnabled: false,
+                          bugReportsEnabled: false,
+                          isMinor: true,
+                      }
+                    : chosenPrivacyPreferences;
                 const aiEnabled = selectedPrivacyPreferences.isMinor
                     ? false
                     : selectedPrivacyPreferences.aiEnabled;
@@ -700,37 +770,20 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 trackOnboardingStepCompleted('profile', 2);
 
-                // The PIN is required at sign-up but fail-open: when escrow is not
-                // confirmed available in time the step is skipped and the user is
-                // asked later (see requiredPinStep.ts).
-                const showPinStep = await decideOnboardingPinStep({
-                    waitForPinAvailable: () =>
-                        waitForEscrowEnrollment(
-                            () => {
-                                const state = coordinatorStateRef.current;
-                                return {
-                                    status: state.status,
-                                    escrowEnrollment:
-                                        state.status === 'ready'
-                                            ? state.escrowEnrollment
-                                            : undefined,
-                                };
-                            },
-                            { escrowEnabled: getSSSConfig().escrowEnclaveMode !== 'off' }
-                        ),
-                    getSnapshot: () => {
-                        const state = coordinatorStateRef.current;
-                        return state.status === 'ready'
-                            ? {
-                                  status: state.status,
-                                  did: state.did,
-                                  escrowPinEnabled: state.escrowPin?.enabled,
-                              }
-                            : { status: state.status };
-                    },
-                    readPromptFlag: readRecoveryPinPromptFlag,
-                });
-                setStep(showPinStep ? 'pin' : 'celebrate');
+                // ClassLink students on tenants with the transcript feature are offered
+                // their transcript first; the PIN decision then happens after that step.
+                const transcriptEligibility = await getOnboardingTranscriptEligibility(
+                    wallet,
+                    Boolean(features.classlinkTranscriptOptIn)
+                );
+                if (transcriptEligibility.eligible) {
+                    setTranscriptStateDisplayName(transcriptEligibility.stateDisplayName);
+                    track(AnalyticsEvents.TRANSCRIPT_ONBOARDING_SHOWN, {});
+                    setStep('transcript');
+                } else {
+                    const showPinStep = await decidePinStep();
+                    setStep(showPinStep ? 'pin' : 'celebrate');
+                }
             }
         } catch (err: unknown) {
             const errorDetails =
@@ -1268,9 +1321,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                     })}
                                                     checked={Boolean(
                                                         privacyPreferences?.aiEnabled &&
-                                                        !privacyPreferences?.isMinor
+                                                        !privacyPreferences?.isMinor &&
+                                                        !isSchoolLocked
                                                     )}
-                                                    disabled={privacyPreferences?.isMinor}
+                                                    disabled={
+                                                        isSchoolLocked ||
+                                                        privacyPreferences?.isMinor
+                                                    }
                                                     onChange={() =>
                                                         setPrivacyPreferences(prev =>
                                                             prev
@@ -1283,9 +1340,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                     }
                                                 />
                                             </div>
-                                            {privacyPreferences?.isMinor && (
+                                            {(isSchoolLocked || privacyPreferences?.isMinor) && (
                                                 <p className="text-xs text-amber-700 bg-amber-50/80 backdrop-blur-xs p-2.5 rounded-xl border border-amber-100/50">
-                                                    {m['onboarding.v2.aiMinorNote']()}
+                                                    {isSchoolLocked
+                                                        ? m['onboarding.v2.schoolLockedNote']()
+                                                        : m['onboarding.v2.aiMinorNote']()}
                                                 </p>
                                             )}
                                             <div className="flex items-center justify-between">
@@ -1295,8 +1354,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <Toggle
                                                     aria-label={m['onboarding.v2.analytics']()}
                                                     checked={Boolean(
-                                                        privacyPreferences?.analyticsEnabled
+                                                        privacyPreferences?.analyticsEnabled &&
+                                                        !isSchoolLocked
                                                     )}
+                                                    disabled={isSchoolLocked}
                                                     onChange={() =>
                                                         setPrivacyPreferences(prev =>
                                                             prev
@@ -1317,8 +1378,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <Toggle
                                                     aria-label={m['onboarding.v2.bugReports']()}
                                                     checked={Boolean(
-                                                        privacyPreferences?.bugReportsEnabled
+                                                        privacyPreferences?.bugReportsEnabled &&
+                                                        !isSchoolLocked
                                                     )}
+                                                    disabled={isSchoolLocked}
                                                     onChange={() =>
                                                         setPrivacyPreferences(prev =>
                                                             prev
@@ -1385,6 +1448,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 />
             )}
 
+            {step === 'transcript' && (
+                <TranscriptOnboardingStep
+                    stateDisplayName={transcriptStateDisplayName}
+                    onComplete={async ({ requested }) => {
+                        setTranscriptRequested(requested);
+                        const showPinStep = await decidePinStep();
+                        setStep(showPinStep ? 'pin' : 'celebrate');
+                    }}
+                />
+            )}
+
             {step === 'celebrate' && (
                 <div className="relative z-10 max-w-[600px] mx-auto pt-[calc(var(--ion-safe-area-top,0px)+2.5rem)] px-4 w-full h-full flex flex-col justify-center items-center animate-pop-in pb-[calc(var(--ion-safe-area-bottom,0px)+1.5rem)]">
                     <Confetti />
@@ -1398,7 +1472,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         <p className="text-base text-grayscale-600">
                             {euParentalConsentRequested
                                 ? m['onboarding.v2.guardianEmailed']()
-                                : m['onboarding.v2.ready']({ brand: brandName })}
+                                : transcriptRequested
+                                  ? m['onboarding.transcript.onItsWay']()
+                                  : m['onboarding.v2.ready']({ brand: brandName })}
                         </p>
                     </div>
 

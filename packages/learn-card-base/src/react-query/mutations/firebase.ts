@@ -52,6 +52,18 @@ export const useSendLoginVerificationCode = (opts?: { showAlert?: boolean }) => 
     });
 };
 
+export const useDeleteMyClassLinkData = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation<{ deleted: number }, Error, void>({
+        mutationFn: async () => {
+            const wallet = await initWallet();
+            const result = await wallet?.invoke?.deleteMyClassLinkData();
+            return result ?? { deleted: 0 };
+        },
+    });
+};
+
 export const useVerifyContactMethodWithProofOfLogin = () => {
     const { initWallet } = useWallet();
     const [presentAlert] = useIonAlert();
@@ -239,6 +251,54 @@ export const useVerifyNetworkHandoffToken = () => {
                 });
                 return;
             }
+        },
+    });
+};
+
+export const useClassLinkAuthorizeUrl = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation<
+        { url: string },
+        Error,
+        { redirectUri: string; codeChallenge: string; state: string; nonce: string }
+    >({
+        mutationFn: async args => {
+            // Errors propagate unwrapped so callers keep the tRPC `data.code`.
+            const wallet = await initWallet('aaa');
+            return wallet.invoke.classlinkGetAuthorizeUrl(args);
+        },
+    });
+};
+
+export const useClassLinkConnect = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation<
+        { isStudent: boolean; schoolName?: string },
+        Error,
+        { code: string; codeVerifier: string; redirectUri: string; nonce: string }
+    >({
+        mutationFn: async args => {
+            // Errors propagate unwrapped so callers keep the tRPC `data.code`.
+            const wallet = await initWallet();
+            return wallet.invoke.classlinkConnect(args);
+        },
+    });
+};
+
+export const useClassLinkExchangeCode = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation<
+        { token: string },
+        Error,
+        { code: string; codeVerifier: string; redirectUri: string; nonce: string }
+    >({
+        mutationFn: async args => {
+            // Errors propagate unwrapped so callers keep the tRPC `data.code`.
+            const wallet = await initWallet('aaa');
+            return wallet.invoke.classlinkExchangeCode(args);
         },
     });
 };

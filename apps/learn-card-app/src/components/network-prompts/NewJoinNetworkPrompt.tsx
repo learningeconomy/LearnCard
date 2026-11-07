@@ -35,6 +35,7 @@ import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { m } from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { getClassLinkProfileDefaults } from '../../auth/classlink/classlinkProfileDefaults';
 
 const getStateValidator = () =>
     z.object({
@@ -185,6 +186,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     bio: '',
                     image: photo,
                     notificationsWebhook: getNotificationsEndpoint(),
+                    ...(await getClassLinkProfileDefaults()),
                 });
 
                 if (didWeb) {

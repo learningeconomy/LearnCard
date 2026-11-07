@@ -260,6 +260,12 @@ export const AnalyticsEvents = {
     ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
     ONBOARDING_ABANDONED: 'onboarding_abandoned',
 
+    // Transcript request & arrival (ClassLink students)
+    TRANSCRIPT_ONBOARDING_SHOWN: 'transcript_onboarding_shown',
+    TRANSCRIPT_REQUESTED: 'transcript_requested',
+    TRANSCRIPT_ARRIVED: 'transcript_arrived',
+    TRANSCRIPT_AUTO_ACCEPT_SKIPPED: 'transcript_auto_accept_skipped',
+
     // Credential claim lifecycle: CLAIM_BOOST records success only.
     // `presented` = the claim screen rendered (exposure); `started` =
     // the user actively triggered the claim. Funnel denominators MUST
@@ -486,6 +492,7 @@ export interface AnalyticsEventPayloads {
     };
 
     [AnalyticsEvents.LOGIN]: {
+        /** A `SocialLoginTypes` value (e.g. google, apple, passwordless, sms, classlink). */
         method: string;
     };
 
@@ -978,7 +985,7 @@ export interface AnalyticsEventPayloads {
 
     [AnalyticsEvents.SIGNUP_STARTED]: {
         flow_id: string;
-        /** Auth method that produced the new account (google/apple/passwordless/sms). */
+        /** Auth method that produced the new account (google/apple/passwordless/sms/classlink). */
         method?: string;
         entry_point?: string;
     };
@@ -1017,6 +1024,18 @@ export interface AnalyticsEventPayloads {
         step_id: string;
         step_index: number;
         duration_ms?: number;
+    };
+
+    [AnalyticsEvents.TRANSCRIPT_ONBOARDING_SHOWN]: Record<string, never>;
+
+    [AnalyticsEvents.TRANSCRIPT_REQUESTED]: {
+        source: 'onboarding' | 'wallet' | 'school_connect';
+    };
+
+    [AnalyticsEvents.TRANSCRIPT_ARRIVED]: Record<string, never>;
+
+    [AnalyticsEvents.TRANSCRIPT_AUTO_ACCEPT_SKIPPED]: {
+        reason: 'onboarding_skipped';
     };
 
     [AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED]: {
