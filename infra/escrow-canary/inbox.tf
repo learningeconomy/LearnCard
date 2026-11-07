@@ -50,8 +50,8 @@ resource "aws_s3_bucket_public_access_block" "inbox" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
-# UNVERIFIED in staging: SES writing through a customer-managed key via bucket
-# default encryption. Documented fallback: sse_algorithm = "AES256".
+# Verified 2026-11-06 in both environments: SES writes every object through this
+# customer-managed key (bucket key enabled). The AES256 fallback is not needed.
 resource "aws_s3_bucket_server_side_encryption_configuration" "inbox" {
   count  = var.inbox_enabled ? 1 : 0
   bucket = aws_s3_bucket.inbox[0].id

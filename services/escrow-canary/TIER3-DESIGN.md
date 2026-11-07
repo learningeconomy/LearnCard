@@ -415,19 +415,57 @@ See `README.md` "Tier 3 operator steps" and "Tier 3 staging drills".
 
 ## 11. UNVERIFIED (staging checks before production)
 
+Checked 2026-11-06 (staging drill 6, read-only, against both environments' stored mail,
+receipt rules, ledgers and read-only Terraform plans):
+
 1. SES stored-message header order and `Authentication-Results` format/position,
-   DKIM `header.i`/`header.d` (replace the synthetic fixtures with a redacted capture).
-2. SES setup-notification object name/location.
-3. SES writing through the customer-managed key (fallback `AES256`).
-4. Receiving without SES production access in the monitoring account; staging
-   escrow SES sandbox sending to the inbox domain.
-5. Plus-address exact matching (`+1` vs `+10`).
-6. Rules-per-rule-set quota with 24 rules.
-7. Whether an unconfirmed enclave cancel blocks new starts and for how long
-   (`models/EscrowHold.ts:265-275`); 48 h cooldown is a guess.
-8. Provider read-back of `aws_ses_receipt_rule.after`: apply production, apply
-   staging, plan production → no changes.
-9. Tiers 1/2 on the new bundle in staging before any production apply.
+   DKIM `header.i`/`header.d`. **Partly verified.** Real mail carries one SES
+   `Authentication-Results` (authserv-id `amazonses.com`) above the first
+   `DKIM-Signature`, `header.i` only (never `header.d`), two dkim results in either
+   order; the parser accepted every real code, started and login-code message. The
+   synthetic fixture differs cosmetically (one `DKIM-Signature` instead of two, no
+   `X-SES-DKIM-SIGNATURE`, `smtp.mailfrom` instead of the real
+   `client-ip`/`envelope-from`/`helo` form, no trace headers). **Open:** no real
+   warning email exists yet; check the first one (~2026-11-10 production,
+   ~2026-11-11 staging).
+2. SES setup-notification object name/location. **Verified:** one
+   `inbox/hold-NN/AMAZON_SES_SETUP_NOTIFICATION` per rule prefix, which the runner
+   excludes by exact key.
+3. SES writing through the customer-managed key. **Verified:** every stored object is
+   `aws:kms` with that environment's inbox CMK and a bucket key; the `AES256` fallback
+   is not needed.
+4. Receiving without SES production access in the monitoring account; escrow SES
+   sending to the inbox domain. **Verified by stored mail** in both environments. The
+   escrow accounts' own SES sandbox status was not readable (organization SCP); it does
+   not affect delivery.
+5. Plus-address exact matching (`+1` vs `+10`). **Verified:** one recipient per rule,
+   every stored message under the prefix matching its `To`, and the parser rejects
+   real `+1`/`+2` mail when it expects `+10`/`+11`/`+12`.
+6. Rules-per-rule-set quota. **Verified:** 24 rules in the one active set; the SES
+   limit is 200 per set (not adjustable).
+7. Whether an unconfirmed enclave cancel blocks new starts and for how long.
+   **Answered from code:** yes, for that `primaryDid`, with **no time limit**, until the
+   enclave confirms (`hasUnconfirmedEscrowCancellation` in `models/EscrowHold.ts`;
+   retried hourly by the reminders job, no attempt cap). The enclave adds no post-cancel
+   block (only its 3-sends-per-24-h code throttle). The 48 h cooldown is ample when the
+   cancel is confirmed, and no fixed value covers an unconfirmed one: the next start
+   gets HTTP 412, closes `start_failed` (`Started=0`), and orphan cleanup returns the
+   account about a day later. **Open:** whether the two staging orphan-cleanup cancels
+   (2026-11-04, 2026-11-05) were confirmed; no account has restarted after a cancel yet.
+8. Provider read-back of `aws_ses_receipt_rule.after`. **Closed in substance:**
+   read-only plans of the inbox stack and both canary stacks show no changes; the
+   provider reads `after` back as null, so ordering never diffs. The literal
+   apply → apply → plan sequence was not run.
+9. Tiers 1/2 on the new bundle in staging before any production apply. **Verified**
+   for the deployed bundle (built from `076f2548d018`): staging ~20 h first, tier 1/2
+   100% before the production apply. Later canary commits on `main` are not deployed;
+   the next bundle follows the same order.
+
+Finding from this review: the inbox read cap (`MAX_CANDIDATES`, 10 newest since the run
+started) applies before the sender check, so 10+ foreign messages to one pool address
+can hide the real warning and cause a false Overdue page (never a trust bypass).
+Tracked as a follow-up; options are to count only allowlisted senders toward the cap
+and to emit a non-paging diagnostic for skipped foreign mail.
 
 ## 12. Deferred
 

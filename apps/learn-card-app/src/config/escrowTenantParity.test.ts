@@ -51,7 +51,7 @@ const STAGES: Array<[string | undefined, string | undefined]> = [
  * VetPass stages whose escrow is deliberately still off. The SSS switch PR turns VetPass
  * escrow on with LearnCard production and empties this list; parity then applies everywhere.
  */
-const VETPASS_ESCROW_PENDING_SWITCH = new Set<string | undefined>([undefined, 'sss-pilot']);
+const VETPASS_ESCROW_PENDING_SWITCH = new Set<string | undefined>([]);
 
 describe('VetPass / LearnCard escrow parity', () => {
     it.each(STAGES)('vetpass %s matches learncard %s', (vetpassStage, learncardStage) => {
