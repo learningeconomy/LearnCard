@@ -247,7 +247,10 @@ All URIs are relative to _/api_
 | _ContractsApi_               | [**contracts_write_credential_to_contract_via_signing_authority**](docs/ContractsApi.md#contracts_write_credential_to_contract_via_signing_authority) | **POST** /consent-flow-contract/write/via-signing-authority              | Write credential through signing authority for a DID consented to a contract |
 | _CredentialRefreshApi_       | [**credential_refresh_allocate_credential_refresh**](docs/CredentialRefreshApi.md#credential_refresh_allocate_credential_refresh)                     | **POST** /credential-refresh/allocate                                    | Allocate a managed credential refresh service                                |
 | _CredentialRefreshApi_       | [**credential_refresh_get_credential_refresh_history**](docs/CredentialRefreshApi.md#credential_refresh_get_credential_refresh_history)               | **GET** /credential-refresh/history                                      | Get managed credential refresh history                                       |
+| _CredentialRefreshApi_       | [**credential_refresh_get_encryption_recipients**](docs/CredentialRefreshApi.md#credential_refresh_get_encryption_recipients)                         | **GET** /credential-refresh/encryption-recipients                        | Get the current holder-mode encryption recipients                            |
 | _CredentialRefreshApi_       | [**credential_refresh_publish_credential_refresh**](docs/CredentialRefreshApi.md#credential_refresh_publish_credential_refresh)                       | **POST** /credential-refresh/publish                                     | Publish a managed credential refresh version                                 |
+| _CredentialRefreshApi_       | [**credential_refresh_publish_holder_encrypted_refreshable**](docs/CredentialRefreshApi.md#credential_refresh_publish_holder_encrypted_refreshable)   | **POST** /credential-refresh/publish-holder-encrypted                    | Publish a holder-mode (student-only encrypted) refresh version               |
+| _CredentialRefreshApi_       | [**credential_refresh_send_holder_encrypted_refreshable**](docs/CredentialRefreshApi.md#credential_refresh_send_holder_encrypted_refreshable)         | **POST** /credential-refresh/send-holder-encrypted                       | Send a holder-mode (student-only encrypted) refreshable credential           |
 | _CredentialRefreshApi_       | [**credential_refresh_send_refreshable_credential**](docs/CredentialRefreshApi.md#credential_refresh_send_refreshable_credential)                     | **POST** /credential-refresh/send                                        | Send a refreshable credential                                                |
 | _CredentialSharePreviewsApi_ | [**credential_share_previews_delete**](docs/CredentialSharePreviewsApi.md#credential_share_previews_delete)                                           | **POST** /credential-share-previews/{id}/delete                          | Delete owned credential share preview                                        |
 | _CredentialSharePreviewsApi_ | [**credential_share_previews_get**](docs/CredentialSharePreviewsApi.md#credential_share_previews_get)                                                 | **GET** /credential-share-previews/{id}                                  | Get public credential share preview                                          |
@@ -622,7 +625,8 @@ All URIs are relative to _/api_
 - [BoostSend200ResponseInbox](docs/BoostSend200ResponseInbox.md)
 - [BoostSend200ResponseInboxRefresh](docs/BoostSend200ResponseInboxRefresh.md)
 - [BoostSend200ResponseInboxRefreshRefreshService](docs/BoostSend200ResponseInboxRefreshRefreshService.md)
-- [BoostSend200ResponseInboxRefreshRefreshServiceAuthorization](docs/BoostSend200ResponseInboxRefreshRefreshServiceAuthorization.md)
+- [BoostSend200ResponseInboxRefreshRefreshServiceAnyOf](docs/BoostSend200ResponseInboxRefreshRefreshServiceAnyOf.md)
+- [BoostSend200ResponseInboxRefreshRefreshServiceAnyOfAuthorization](docs/BoostSend200ResponseInboxRefreshRefreshServiceAnyOfAuthorization.md)
 - [BoostSend200ResponseRefresh](docs/BoostSend200ResponseRefresh.md)
 - [BoostSendBoostRequest](docs/BoostSendBoostRequest.md)
 - [BoostSendBoostRequestCredential](docs/BoostSendBoostRequestCredential.md)
@@ -660,6 +664,7 @@ All URIs are relative to _/api_
 - [BoostSendBoostViaSigningAuthorityRequest](docs/BoostSendBoostViaSigningAuthorityRequest.md)
 - [BoostSendBoostViaSigningAuthorityRequestSigningAuthority](docs/BoostSendBoostViaSigningAuthorityRequestSigningAuthority.md)
 - [BoostSendRequest](docs/BoostSendRequest.md)
+- [BoostSendRequestDisplay](docs/BoostSendRequestDisplay.md)
 - [BoostSendRequestOptions](docs/BoostSendRequestOptions.md)
 - [BoostSendRequestOptionsBranding](docs/BoostSendRequestOptionsBranding.md)
 - [BoostSendRequestTemplate](docs/BoostSendRequestTemplate.md)
@@ -850,11 +855,17 @@ All URIs are relative to _/api_
 - [CredentialRefreshAllocateCredentialRefreshRequestHolder](docs/CredentialRefreshAllocateCredentialRefreshRequestHolder.md)
 - [CredentialRefreshGetCredentialRefreshHistory200Response](docs/CredentialRefreshGetCredentialRefreshHistory200Response.md)
 - [CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner](docs/CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner.md)
+- [CredentialRefreshGetEncryptionRecipients200Response](docs/CredentialRefreshGetEncryptionRecipients200Response.md)
 - [CredentialRefreshPublishCredentialRefresh200Response](docs/CredentialRefreshPublishCredentialRefresh200Response.md)
 - [CredentialRefreshPublishCredentialRefreshRequest](docs/CredentialRefreshPublishCredentialRefreshRequest.md)
 - [CredentialRefreshPublishCredentialRefreshRequestOneOf](docs/CredentialRefreshPublishCredentialRefreshRequestOneOf.md)
 - [CredentialRefreshPublishCredentialRefreshRequestOneOf1](docs/CredentialRefreshPublishCredentialRefreshRequestOneOf1.md)
 - [CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority](docs/CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority.md)
+- [CredentialRefreshPublishHolderEncryptedRefreshableRequest](docs/CredentialRefreshPublishHolderEncryptedRefreshableRequest.md)
+- [CredentialRefreshPublishHolderEncryptedRefreshableRequestHandoff](docs/CredentialRefreshPublishHolderEncryptedRefreshableRequestHandoff.md)
+- [CredentialRefreshSendHolderEncryptedRefreshable200Response](docs/CredentialRefreshSendHolderEncryptedRefreshable200Response.md)
+- [CredentialRefreshSendHolderEncryptedRefreshableRequest](docs/CredentialRefreshSendHolderEncryptedRefreshableRequest.md)
+- [CredentialRefreshSendHolderEncryptedRefreshableRequestHandoff](docs/CredentialRefreshSendHolderEncryptedRefreshableRequestHandoff.md)
 - [CredentialRefreshSendRefreshableCredentialRequest](docs/CredentialRefreshSendRefreshableCredentialRequest.md)
 - [CredentialSendCredentialRequest](docs/CredentialSendCredentialRequest.md)
 - [CredentialSendCredentialRequestCredential](docs/CredentialSendCredentialRequestCredential.md)

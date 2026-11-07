@@ -4,14 +4,15 @@ Present when managed refresh was requested: issuance metadata the issuer keeps t
 
 ## Properties
 
-| Name                  | Type                                                                                                            | Description | Notes      |
-| --------------------- | --------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **refresh_id**        | **str**                                                                                                         |             |
-| **refresh_service**   | [**BoostSend200ResponseInboxRefreshRefreshService**](BoostSend200ResponseInboxRefreshRefreshService.md)         |             |
-| **credential_id**     | **str**                                                                                                         |             |
-| **issuer_did**        | **str**                                                                                                         |             |
-| **holder_did**        | **str**                                                                                                         |             |
-| **credential_status** | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md) |             | [optional] |
+| Name                        | Type                                                                                                            | Description | Notes      |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **refresh_id**              | **str**                                                                                                         |             |
+| **refresh_service**         | [**BoostSend200ResponseInboxRefreshRefreshService**](BoostSend200ResponseInboxRefreshRefreshService.md)         |             |
+| **refresh_service_binding** | **str**                                                                                                         |             | [optional] |
+| **credential_id**           | **str**                                                                                                         |             |
+| **issuer_did**              | **str**                                                                                                         |             |
+| **holder_did**              | **str**                                                                                                         |             |
+| **credential_status**       | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md) |             | [optional] |
 
 ## Example
 

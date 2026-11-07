@@ -2,14 +2,15 @@
 
 ## Properties
 
-| Name               | Type                                                              | Description                                       | Notes      |
-| ------------------ | ----------------------------------------------------------------- | ------------------------------------------------- | ---------- |
-| **type**           | **str**                                                           |                                                   |
-| **credential_uri** | **str**                                                           |                                                   |
-| **uri**            | **str**                                                           |                                                   |
-| **activity_id**    | **str**                                                           | Links to the activity lifecycle for this issuance |
-| **inbox**          | [**BoostSend200ResponseInbox**](BoostSend200ResponseInbox.md)     |                                                   | [optional] |
-| **refresh**        | [**BoostSend200ResponseRefresh**](BoostSend200ResponseRefresh.md) |                                                   | [optional] |
+| Name                  | Type                                                              | Description                                       | Notes      |
+| --------------------- | ----------------------------------------------------------------- | ------------------------------------------------- | ---------- |
+| **status_management** | **str**                                                           |                                                   | [optional] |
+| **type**              | **str**                                                           |                                                   |
+| **credential_uri**    | **str**                                                           |                                                   |
+| **uri**               | **str**                                                           |                                                   |
+| **activity_id**       | **str**                                                           | Links to the activity lifecycle for this issuance |
+| **inbox**             | [**BoostSend200ResponseInbox**](BoostSend200ResponseInbox.md)     |                                                   | [optional] |
+| **refresh**           | [**BoostSend200ResponseRefresh**](BoostSend200ResponseRefresh.md) |                                                   | [optional] |
 
 ## Example
 

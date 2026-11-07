@@ -36,9 +36,8 @@ class TestBoostSend200ResponseInboxRefresh(unittest.TestCase):
         if include_optional:
             return BoostSend200ResponseInboxRefresh(
                 refresh_id = '0',
-                refresh_service = {
-                    'key' : null
-                    },
+                refresh_service = None,
+                refresh_service_binding = 'managed-entry',
                 credential_id = '0',
                 issuer_did = '0',
                 credential_status = None,
@@ -47,9 +46,7 @@ class TestBoostSend200ResponseInboxRefresh(unittest.TestCase):
         else:
             return BoostSend200ResponseInboxRefresh(
                 refresh_id = '0',
-                refresh_service = {
-                    'key' : null
-                    },
+                refresh_service = None,
                 credential_id = '0',
                 issuer_did = '0',
         )

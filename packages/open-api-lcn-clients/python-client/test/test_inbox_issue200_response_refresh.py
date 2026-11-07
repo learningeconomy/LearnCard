@@ -36,9 +36,8 @@ class TestInboxIssue200ResponseRefresh(unittest.TestCase):
         if include_optional:
             return InboxIssue200ResponseRefresh(
                 refresh_id = '0',
-                refresh_service = {
-                    'key' : null
-                    },
+                refresh_service = None,
+                refresh_service_binding = 'managed-entry',
                 credential_id = '0',
                 issuer_did = '0',
                 credential_status = None,
@@ -47,9 +46,7 @@ class TestInboxIssue200ResponseRefresh(unittest.TestCase):
         else:
             return InboxIssue200ResponseRefresh(
                 refresh_id = '0',
-                refresh_service = {
-                    'key' : null
-                    },
+                refresh_service = None,
                 credential_id = '0',
                 issuer_did = '0',
         )
