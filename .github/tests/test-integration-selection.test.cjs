@@ -336,7 +336,7 @@ test('job gates reuse an existing runner, fail toward execution and retain all s
         )
     );
     const jobs = workflow.jobs;
-    assert.equal(Object.keys(jobs).length, 10, 'no extra selector or aggregate runner');
+    assert.equal(Object.keys(jobs).length, 7, 'five integration runners consolidated into two');
     const selector = jobs['integration-selection'];
     assert.equal(selector.name, 'Select integration tests');
     assert.equal(
@@ -351,11 +351,7 @@ test('job gates reuse an existing runner, fail toward execution and retain all s
     assert.match(selection.env.BASE_SHA, /merge_group.base_sha/);
     assert.match(selection.env.HEAD_SHA, /merge_group.head_sha/);
     for (const [job, group] of Object.entries({
-        'share-link-security': 'brain',
-        'profile-search': 'brain',
-        'inbox-security': 'brain',
-        'boost-recipients': 'brain',
-        campaigns: 'campaigns',
+        'brain-graph': 'brain',
         'escrow-integration': 'escrow',
     })) {
         assert.equal(jobs[job].needs, 'integration-selection');
@@ -363,7 +359,7 @@ test('job gates reuse an existing runner, fail toward execution and retain all s
             jobs[job].if,
             `\${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.${group} != 'false') }}`
         );
-        for (const step of jobs[job].steps)
+        for (const step of jobs[job].steps ?? [])
             assert.equal(step['continue-on-error'], undefined, 'suite failures stay failures');
     }
     assert.equal(jobs.Test.needs, undefined, 'required unit tests are not delayed or filtered');
@@ -384,7 +380,5 @@ test('job gates reuse an existing runner, fail toward execution and retain all s
             .find(step => step.name === 'Run escrow integration specs')
             .run.includes('test/keys-pin-lease.spec.ts')
     );
-    assert.ok(
-        jobs.campaigns.steps.some(step => step.run?.includes('deduplicates concurrent campaign'))
-    );
+    assert.equal(jobs['brain-delivery'].uses, './.github/workflows/brain-integration.yml');
 });

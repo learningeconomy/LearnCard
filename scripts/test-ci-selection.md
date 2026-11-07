@@ -5,11 +5,11 @@ to select integration jobs before allocating their runners. Recovery-tool regres
 move into the existing required `Test` job and run alongside the integration jobs.
 The total runner count does not increase. AI Agent CI keeps its existing behavior.
 
-| Output      | Jobs                                                                  | Inputs                                                                      |
-| ----------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `brain`     | share-link-security, profile-search, inbox-security, boost-recipients | Brain service, its Nx dependency closure and integration task prerequisites |
-| `campaigns` | campaigns                                                             | Brain inputs plus LCA API, including its notification integration tests     |
-| `escrow`    | Escrow integration (lca-api)                                          | LCA API and dependencies, plus the existing explicit SSS and enclave inputs |
+| Output      | Jobs                                       | Inputs                                                                      |
+| ----------- | ------------------------------------------ | --------------------------------------------------------------------------- |
+| `brain`     | Graph group; inbox suite in delivery group | Brain service, its Nx dependency closure and integration task prerequisites |
+| `campaigns` | Campaign suites in delivery group          | Brain inputs plus LCA API, including its notification integration tests     |
+| `escrow`    | Escrow integration (lca-api)               | LCA API and dependencies, plus the existing explicit SSS and enclave inputs |
 
 PR selection compares the frozen base and head using their merge base. Queue
 selection compares the event's exact base/head, including changes from preceding
@@ -28,7 +28,15 @@ Missing selector outputs or a failed selector job also request execution. Only a
 explicit `false` decision from a successful job skips an integration runner. The
 job summary labels these decisions as “not applicable,” not test passes.
 
-Each selected job retains its suite commands, timeout and isolated environment.
+The graph group runs share-link security, profile search and boost recipients.
+The delivery group runs inbox security, campaign permissions and campaign
+notifications. Delivery retains per-suite selection: an LCA-only change can run
+campaigns without running inbox. Escrow remains a separate runner.
+
+Each group checks out and installs once, then runs separate test processes in
+sequence. Container reuse is disabled, so suites get fresh databases. An ordinary
+test failure still allows later selected suites to run, and fails the group;
+setup failures and cancellation stop execution. Each group has a 20-minute timeout.
 There are no required-check setting changes. On a relevant change, integration
 jobs wait only for checkout and selection, not the recovery regressions. Measure
 that preflight overhead alongside runners avoided when evaluating the rollout.
@@ -36,10 +44,64 @@ that preflight overhead alongside runners avoided when evaluating the rollout.
 ## Validate
 
 ```sh
-node --test .github/tests/test-integration-selection.test.cjs scripts/mock-e2e-ci.test.cjs
+node --test .github/tests/test-integration-groups.test.cjs .github/tests/test-integration-selection.test.cjs scripts/mock-e2e-ci.test.cjs
 ```
 
 Inspect the workflow's `Select integration tests` job for each decision and reason. Shared dependency changes should run affected
 suites; unrelated project changes should skip them. If the graph cannot be built,
 `graph-unavailable` intentionally runs all suites. A skip is never inferred from
 an empty or missing output.
+
+## Benchmark runner consolidation
+
+Apply the `benchmark-integrations` label to a PR to run `Integration runner
+benchmark` on its exact head. Remove and reapply the label for another sample.
+After the workflow is on the default branch, it also supports manual dispatch.
+Wait for ordinary PR CI to finish first to reduce competition from that PR.
+
+The benchmark uses the same reusable workflow and commands as production, in
+four sequential phases: five separate runners, two grouped runners, two grouped
+runners again, then five separate runners. That is 14 runner jobs, with at most
+five running at once. Both layouts run every suite exactly once per phase. The
+order provides two samples per layout and helps expose host/cache variation;
+it is not a long-term performance estimate. Failed phases invalidate the comparison.
+
+Report these metrics from the Actions job/step timestamps:
+
+- Setup: summed checkout, workspace setup and Docker authentication step time.
+- Runner usage: summed job start-to-completion time, including cleanup.
+- Execution span: first job start to last job completion within a phase.
+- Scheduling-inclusive elapsed time: phase eligibility to last job completion.
+
+Report individual phases as well as layout averages, cache observations, the
+tested commit and the run link. Fewer runner-seconds may come with a longer
+critical path because suites execute sequentially. This comparison uses a common
+setup harness for both layouts; it measures grouping, not every historical setup
+difference. Hosted suite results validate CI orchestration, not the full
+application verification catalog.
+
+## Build graph prerequisites once
+
+The graph group runs `network-brain-service:build:integration-dependencies` before
+profile search and boost recipients. This uncached no-op target depends on the
+same `^build` graph as both suites, preserving Nx build ordering and parallelism.
+After it succeeds, both suites use `--excludeTaskDependencies` against outputs
+from that checkout. Tests still execute independently with fresh databases;
+a test failure does not suppress the next suite. A failed or skipped prerequisite
+phase blocks both dependent suites. Share-link security remains independent.
+The workflow contracts require both suites' prerequisites to match the build
+phase, so changes to that contract require updating the orchestration.
+
+Single-suite runners retain their ordinary Nx prerequisites. Delivery is unchanged:
+only campaign permissions requests dependency builds there. No cross-run cache
+policy changes and no additional build artifacts are persisted.
+
+Apply `benchmark-integration-builds` after ordinary CI finishes to compare grouped
+runs with repeated builds against build-once at the exact same PR head. Four
+sequential phases use repeated → once → once → repeated, each with graph and
+delivery (eight jobs total, at most two concurrent). Every phase runs the same
+369 tests. Compare graph build/suite durations as well as setup, total runner
+occupancy and completion span; delivery provides an unchanged control. Include
+the new shared build step in optimized totals. Never infer whole-job savings
+solely from the absent second prerequisite build. The original grouping benchmark
+remains available through `benchmark-integrations`.
