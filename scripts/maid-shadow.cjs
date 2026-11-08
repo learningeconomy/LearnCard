@@ -180,6 +180,7 @@ const main = () => {
         let summary;
         try {
             if (
+                process.env.MAID_FULL_JOB_OUTCOME !== 'success' ||
                 process.env.MAID_FULL_TEST_OUTCOME !== 'success' ||
                 process.env.MAID_FULL_SNAPSHOT_OUTCOME !== 'success' ||
                 process.env.MAID_SHADOW_GENERATOR_OUTCOME !== 'success' ||

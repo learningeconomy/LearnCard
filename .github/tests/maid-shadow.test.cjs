@@ -195,6 +195,7 @@ test('CLI reports inconclusive for failed tests, missing artifacts, and mismatch
     const actual = snapshot(root, sha, 'full');
     const shadow = snapshot(root, sha, 'shadow');
     const successes = {
+        MAID_FULL_JOB_OUTCOME: 'success',
         MAID_FULL_TEST_OUTCOME: 'success',
         MAID_FULL_SNAPSHOT_OUTCOME: 'success',
         MAID_SHADOW_GENERATOR_OUTCOME: 'success',
@@ -232,6 +233,7 @@ test('CLI reports inconclusive for failed tests, missing artifacts, and mismatch
     writeFileSync(actualFile, JSON.stringify(actual));
     writeFileSync(shadowFile, JSON.stringify(shadow));
     run({ MAID_FULL_TEST_OUTCOME: 'failure' });
+    run({ MAID_FULL_JOB_OUTCOME: 'failure' });
     unlinkSync(shadowFile);
     run();
     writeFileSync(shadowFile, JSON.stringify({ ...shadow, sha: 'f'.repeat(40) }));
@@ -258,6 +260,7 @@ test('CLI emits a bounded successful comparison and explains its limits', t => {
                 ...process.env,
                 GITHUB_SHA: sha,
                 GITHUB_STEP_SUMMARY: summary,
+            MAID_FULL_JOB_OUTCOME: 'success',
                 MAID_FULL_TEST_OUTCOME: 'success',
                 MAID_FULL_SNAPSHOT_OUTCOME: 'success',
                 MAID_SHADOW_GENERATOR_OUTCOME: 'success',

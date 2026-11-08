@@ -211,6 +211,7 @@ jobs:
             - name: Summarize comparison
               if: always()
               env:
+                  MAID_FULL_JOB_OUTCOME: ${{ needs.maid-service.result }}
                   MAID_FULL_TEST_OUTCOME: ${{ needs.maid-service.outputs.test-outcome }}
                   MAID_FULL_SNAPSHOT_OUTCOME: ${{ needs.maid-service.outputs.snapshot-outcome }}
                   MAID_SHADOW_GENERATOR_OUTCOME: ${{ needs.barrel-shadow.outputs.generator-outcome }}
