@@ -6,14 +6,20 @@ MCP host cut over independently.
 
 ## When it runs
 
-| Trigger                                                                                                  | Leg                                                    | Gate                               |
-| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------- |
-| Push to `main` where Nx marks `ai-passport-backend` affected (MCP server, `@learncard/mcp`, shared core) | `ai-passport-mcp-staging`                              | repo var `MCP_DEPLOY_ENABLED=true` |
-| Release where `ai-passport-backend`'s version changed                                                    | `ai-passport-mcp-production` (`mcp-learncard`, pinned) | repo var `MCP_DEPLOY_ENABLED=true` |
-| Manual dispatch with `deploy-ai-passport-mcp`, target `staging` or `production`                          | same as above                                          | none (manual)                      |
+| Trigger                                                                         | Leg                                                    | Gate                               |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------- |
+| Every push to `main`                                                            | `ai-passport-mcp-staging`                              | repo var `MCP_DEPLOY_ENABLED=true` |
+| Every release                                                                   | `ai-passport-mcp-production` (`mcp-learncard`, pinned) | repo var `MCP_DEPLOY_ENABLED=true` |
+| Manual dispatch with `deploy-ai-passport-mcp`, target `staging` or `production` | same as above                                          | none (manual)                      |
 
 With `MCP_DEPLOY_ENABLED` unset the job never runs on its own, so merging this doesn't race
 whatever deploys `mcp-learncard` today.
+
+MCP deliberately does not use the general Deploy run's affected/version baseline. Once explicitly
+enabled, **every** main push deploys staging and every release deploys production. This conservative
+catch-up policy trades extra deploys for correctness: successful flag-off runs cannot consume MCP
+changes. No extra baseline state or force input is needed; after a disabled interval, the next
+eligible event deploys the current snapshot (or use the existing manual input after approval).
 
 ## Per-Environment configuration
 
@@ -23,18 +29,34 @@ whatever deploys `mcp-learncard` today.
 | `MCP_DOMAIN`      | var              | Passed as `DOMAIN`: the OAuth issuer (AI Passport API base URL)             |
 | `MCP_SERVER_URL`  | var              | Passed as `MCP_SERVER_URL`: the protected-resource URL clients use          |
 | `FLY_APP_NAME`    | var              | Staging only; production is pinned to `mcp-learncard`                       |
+| `QDRANT_HOST`     | var, required    | Reachable Qdrant hostname only, no scheme/port/credentials; not localhost   |
+| `QDRANT_PORT`     | var, required    | Explicit port 1..65535 (e.g. 6333, or 443 for hosted TLS)                   |
+| `QDRANT_HTTPS`    | var, required    | Explicit `true` for TLS or `false` for private plaintext                    |
 | `MCP_SMOKE_TOKEN` | secret, optional | Bearer token for a synthetic user; enables the authorized smoke checks      |
 
-The job refuses to deploy without these, rejects non-https or localhost URLs, and refuses staging
-legs that point at a production app or the production resource URL. It also checks the Fly app
-holds the secrets `start:mcp` needs to boot (`MONGO_URI SEED JWT_SECRET REDIS_HOST REDIS_PORT
-AI_PRIVACY_KEY`), by name only. Fly secrets override `--env`, so a `DOMAIN` or `MCP_SERVER_URL`
-Fly secret shadows the Environment vars; the job warns, and the smoke step fails if the served
-values differ.
+All non-optional configuration is required. The job rejects non-https/localhost OAuth URLs,
+loopback or malformed Qdrant hosts, invalid Qdrant ports/TLS flags, and staging production targets.
+It passes all Qdrant endpoint vars explicitly to Fly; the image contains no Qdrant service.
+
+Preflight checks **names only**, never secret values, for boot configuration
+`MONGO_URI SEED JWT_SECRET REDIS_HOST REDIS_PORT AI_PRIVACY_KEY`, plus
+`AWS_ROLE_ARN AWS_WEB_IDENTITY_TOKEN_FILE` (Fly secrets or checked-in `[env]` names).
+The latter must point to a real, maintained Fly web-identity token file with AWS trust for this app
+and a role permitted to use the configured Bedrock models/guardrails. A role ARN by itself is not
+credentials. The token-file secret stores the **path**, not a token. Provision/confirm the actual
+file source and IAM OIDC trust separately before cutover; name presence cannot prove file existence,
+STS trust, permissions, expiry, or Qdrant reachability. Do not substitute static keys or a Bedrock
+API key: the deployed generation path uses web identity, and `AWS_BEARER_TOKEN_BEDROCK` is forbidden.
+
+Fly secrets override `--env`. Any `DOMAIN`, `MCP_SERVER_URL`, `QDRANT_HOST`, `QDRANT_PORT`,
+`QDRANT_HTTPS` secret blocks rollout, even if its value might match. Removal requires separate approval.
+For authenticated Qdrant, provision `QDRANT_API_KEY` on Fly as required by that endpoint; never put it
+in the hostname or GitHub vars. Name-only checks cannot determine whether a particular endpoint
+requires authentication; confirm access separately before cutover.
 
 ## Post-deploy proof
 
-Each deploy, in order:
+Each deploy, in order (HTTP checks run against **both** the Fly hostname and client-facing `MCP_SERVER_URL`):
 
 1. Machines on the app all run image label `$GITHUB_SHA` (`flyctl machines list`).
 2. `/.well-known/oauth-protected-resource`: `resource` equals `MCP_SERVER_URL` and the first
@@ -71,9 +93,19 @@ MCP_SMOKE_TOKEN=<optional> services/ai-passport-backend/scripts/smoke-mcp.sh
 3. Add the `AI_PRIVACY_KEY` Fly secret to `mcp-learncard`; the current server exits on boot
    without it, and the app doesn't have it today.
 4. Resolve the `DOMAIN` and `MCP_SERVER_URL` Fly secrets on `mcp-learncard`: they override the
-   deploy's `--env`, so remove them or keep them equal to the Environment vars.
+   deploy's `--env`, so their presence must be removed under separate approval before rollout; matching values are not an exception.
 
-Then run Deploy manually: target `production`, only `deploy-ai-passport-mcp` checked, and confirm
+5. Configure the required `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_HTTPS` Environment vars and
+   confirm the app can reach that service; add Fly `QDRANT_API_KEY` if that service requires it.
+   Remove any shadowing Qdrant endpoint secrets under separate approval.
+6. Provision/confirm Fly web identity: a maintained token file, `AWS_WEB_IDENTITY_TOKEN_FILE`
+   path configured on the app, `AWS_ROLE_ARN`, and matching AWS OIDC trust and Bedrock permissions.
+   Role ARN alone is insufficient; name-only preflight is not an authentication proof.
+
+**All live prerequisite changes, legacy-deployer freeze, and deployment remain held pending Taylor's
+explicit approval. Target confirmation is preparation only, not cutover authorization.**
+
+After that approval, run Deploy manually: target `production`, only `deploy-ai-passport-mcp` checked, and confirm
 every smoke step passes and an MCP client can sign in and list tools.
 
 ### Optional

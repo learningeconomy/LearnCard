@@ -465,8 +465,8 @@ jobs:
             # AI Passport MCP server (Fly). Separate from the API legs so the API can cut over
             # without the MCP host. Automatic legs stay off until the repo var MCP_DEPLOY_ENABLED
             # is 'true', so merging doesn't race whoever deploys mcp-learncard today.
-            # Manual dispatch ignores the var. Push affects ai-passport-backend whenever the
-            # MCP server, @learncard/mcp or shared core changes (Nx dependency graph).
+            # Manual dispatch ignores the var. Enabled automatic runs deploy every snapshot,
+            # independent of the general Deploy baseline (including flag-off successful runs).
             - name: Determine AI Passport MCP Deployments
               id: mcp-env
               env:
@@ -474,17 +474,11 @@ jobs:
                   TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
                   DEPLOY_MCP: ${{ inputs.deploy-ai-passport-mcp }}
                   IS_RELEASE: ${{ steps.check_release.outputs.is_release }}
-                  BACKEND_CHANGED: ${{ steps.check_versions.outputs.aip_backend_changed }}
-                  AFFECTED: ${{ steps.affected.outputs.affected }}
                   MCP_DEPLOY_ENABLED: ${{ vars.MCP_DEPLOY_ENABLED }}
               run: |
                   # Production pins the Fly app; staging reads FLY_APP_NAME from its Environment.
                   MCP_STAGING='{"name":"AI Passport MCP Staging","environment":"ai-passport-mcp-staging","stage":"staging","fly_app":""}'
                   MCP_PRODUCTION='{"name":"AI Passport MCP Production","environment":"ai-passport-mcp-production","stage":"production","fly_app":"mcp-learncard"}'
-
-                  is_affected() {
-                    tr ',' '\n' <<< "$AFFECTED" | grep -qx "$1"
-                  }
 
                   LEGS=()
                   if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
@@ -498,10 +492,10 @@ jobs:
                   elif [[ "$MCP_DEPLOY_ENABLED" != 'true' ]]; then
                     echo "Automatic AI Passport MCP deploys are off (repo var MCP_DEPLOY_ENABLED != 'true')."
                   elif [[ "$IS_RELEASE" == 'true' ]]; then
-                    if [[ "$BACKEND_CHANGED" == 'true' ]]; then
-                      LEGS+=("$MCP_PRODUCTION")
-                    fi
-                  elif is_affected ai-passport-backend; then
+                    LEGS+=("$MCP_PRODUCTION")
+                  else
+                    # Deliberately independent of the shared successful-Deploy baseline:
+                    # flag-off runs must never consume MCP changes.
                     LEGS+=("$MCP_STAGING")
                   fi
 
@@ -2682,8 +2676,8 @@ jobs:
     # ============================================================================
     # AI PASSPORT MCP SERVER DEPLOYMENTS (Fly)
     # Triggers (automatic legs need the repo var MCP_DEPLOY_ENABLED='true'):
-    #   - Push: staging when Nx marks ai-passport-backend affected
-    #   - Release: production (mcp-learncard) when that project's version changed
+    #   - Every push to main: staging, independent of the shared baseline
+    #   - Every release: production (mcp-learncard), independent of the shared baseline
     #   - Manual: deploy-ai-passport-mcp, staging or production
     # Each Environment sets FLY_API_TOKEN (secret), MCP_DOMAIN and MCP_SERVER_URL (vars),
     # optional MCP_SMOKE_TOKEN (secret). Rollout and rollback: services/ai-passport-backend/MCP-DEPLOY.md.
@@ -2729,6 +2723,9 @@ jobs:
                   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
                   MCP_DOMAIN: ${{ vars.MCP_DOMAIN }}
                   MCP_SERVER_URL: ${{ vars.MCP_SERVER_URL }}
+                  QDRANT_HOST: ${{ vars.QDRANT_HOST }}
+                  QDRANT_PORT: ${{ vars.QDRANT_PORT }}
+                  QDRANT_HTTPS: ${{ vars.QDRANT_HTTPS }}
               run: |
                   failed=0
                   fail() { echo "::error::$1"; failed=1; }
@@ -2750,6 +2747,15 @@ jobs:
                       fail "$name must be a public https URL, got '$value'."
                     fi
                   done
+
+                  # Host only (not a URL); never print endpoint credentials or values.
+                  if [[ ! "$QDRANT_HOST" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ || "$QDRANT_HOST" =~ (^|\.)localhost$|^127\.|^0\.0\.0\.0$ ]]; then
+                    fail "QDRANT_HOST must be a non-loopback reachable hostname, without scheme, port or credentials."
+                  fi
+                  if [[ ! "$QDRANT_PORT" =~ ^[0-9]{1,5}$ ]] || (( 10#$QDRANT_PORT < 1 || 10#$QDRANT_PORT > 65535 )); then
+                    fail "QDRANT_PORT must be an explicit port in 1..65535."
+                  fi
+                  [[ "$QDRANT_HTTPS" == true || "$QDRANT_HTTPS" == false ]] || fail "QDRANT_HTTPS must be true or false."
 
                   if [[ "$STAGE" == 'staging' ]]; then
                     case "$APP" in
@@ -2778,14 +2784,16 @@ jobs:
                   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
                   FLY_APP: ${{ steps.fly-target.outputs.app }}
               run: |
+                  # Separate assignment preserves API failure (the later config read must not mask it).
+                  secret_names=$(flyctl secrets list --app "$FLY_APP" --json | jq -r '.[] | (.Name // .name)')
                   present=$(
                     {
-                      flyctl secrets list --app "$FLY_APP" --json | jq -r '.[] | (.Name // .name)'
+                      printf '%s\n' "$secret_names"
                       sed -n '/^\[env\]/,/^\[/s/^ *\([A-Z0-9_]*\) *=.*/\1/p' services/ai-passport-backend/fly.mcp.toml
                     } | sort -u
                   )
                   missing=()
-                  for name in MONGO_URI SEED JWT_SECRET REDIS_HOST REDIS_PORT AI_PRIVACY_KEY; do
+                  for name in MONGO_URI SEED JWT_SECRET REDIS_HOST REDIS_PORT AI_PRIVACY_KEY AWS_ROLE_ARN AWS_WEB_IDENTITY_TOKEN_FILE; do
                     grep -qx "$name" <<< "$present" || missing+=("$name")
                   done
                   if (( ${#missing[@]} )); then
@@ -2793,10 +2801,11 @@ jobs:
                     exit 1
                   fi
                   # Fly secrets win over --env, so a DOMAIN/MCP_SERVER_URL secret would shadow the
-                  # Environment vars. The smoke step fails if what the server advertises differs.
-                  for name in DOMAIN MCP_SERVER_URL; do
+                  # Environment vars. Block before rollout; inspect names only.
+                  for name in DOMAIN MCP_SERVER_URL QDRANT_HOST QDRANT_PORT QDRANT_HTTPS AWS_BEARER_TOKEN_BEDROCK; do
                     if grep -qx "$name" <<< "$present"; then
-                      echo "::warning::Fly app $FLY_APP has a $name secret; it overrides the deploy's --env $name."
+                      echo "::error::Fly app $FLY_APP has forbidden secret name $name; remove it before rollout (separate approval required)."
+                      exit 1
                     fi
                   done
 
@@ -2808,6 +2817,9 @@ jobs:
                   FLY_APP: ${{ steps.fly-target.outputs.app }}
                   MCP_DOMAIN: ${{ vars.MCP_DOMAIN }}
                   MCP_SERVER_URL: ${{ vars.MCP_SERVER_URL }}
+                  QDRANT_HOST: ${{ vars.QDRANT_HOST }}
+                  QDRANT_PORT: ${{ vars.QDRANT_PORT }}
+                  QDRANT_HTTPS: ${{ vars.QDRANT_HTTPS }}
               run: |
                   flyctl deploy . \
                     --remote-only \
@@ -2815,7 +2827,10 @@ jobs:
                     --app "$FLY_APP" \
                     --image-label "$GITHUB_SHA" \
                     --env "DOMAIN=$MCP_DOMAIN" \
-                    --env "MCP_SERVER_URL=$MCP_SERVER_URL"
+                    --env "MCP_SERVER_URL=$MCP_SERVER_URL" \
+                    --env "QDRANT_HOST=$QDRANT_HOST" \
+                    --env "QDRANT_PORT=$QDRANT_PORT" \
+                    --env "QDRANT_HTTPS=$QDRANT_HTTPS"
 
             - name: Verify deployed SHA
               env:
