@@ -65,7 +65,10 @@ jobs:
 
             - name: Run full mocked E2E
               if: ${{ steps.eligibility.outputs.run_e2e == 'true' }}
-              run: bunx nx run learn-card-app:test-mock
+              run: |
+                  bunx nx run-many -t build --projects=helpers,init,credential-library
+                  cd apps/learn-card-app
+                  bunx playwright test --config=playwright.mock.config.ts tests/profile-restoration.mocked.spec.ts --project=firefox --workers=1
 
             - name: Upload Playwright report
               if: ${{ always() && steps.eligibility.outputs.run_e2e == 'true' }}
