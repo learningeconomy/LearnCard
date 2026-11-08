@@ -54,14 +54,21 @@ jobs:
               run: bun install --frozen-lockfile
 
             - name: Run tests
-              uses: nick-fields/retry@v2
-              with:
-                  timeout_minutes: 10
-                  max_attempts: 3
-                  command: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
+              id: tests
+              timeout-minutes: 20
+              run: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
               env:
+                  LC_CI_TEST_RETRY: '1'
+                  LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   SEED: ${{ secrets.SEED }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+
+            - name: Summarize test retries
+              if: always()
+              env:
+                  LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
+                  LC_CI_NX_OUTCOME: ${{ steps.tests.outcome }}
+              run: node scripts/ci-test-retries/summary.cjs
 
             - name: Commit changes
               run: |
