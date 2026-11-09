@@ -52,9 +52,11 @@ vi.mock('learn-card-base/helpers/credentialLifecycleStatus', () => ({
 
 import {
     CREDENTIAL_INDEX_STALE_TIME,
+    useCountBoosts,
     useGetCredentialCount,
     useGetCredentials,
     useGetCredentialsForSkills,
+    useTotalBoostCounts,
 } from './vcQueries';
 
 const CATEGORY = 'Achievement';
@@ -79,12 +81,14 @@ const makeWallet = (did = 'did:example:reader') => {
         issuanceDate: '2026-01-01',
         credentialSubject: { id: 'subject' },
     } as VC);
+    const countBoosts = vi.fn().mockResolvedValue(4);
     host.wallet = {
         id: { did: () => did },
         index: { LearnCloud: { getPage, get, getCount } },
+        invoke: { countBoosts },
         read,
     } as unknown as BespokeLearnCard;
-    return { getPage, get, getCount, read };
+    return { getPage, get, getCount, read, countBoosts };
 };
 
 beforeEach(() => {
@@ -154,6 +158,32 @@ describe('CREDENTIAL_INDEX_STALE_TIME (LC-2383)', () => {
         await waitFor(() => expect(get.mock.calls.length).toBe(firstCalls * 2));
     });
 
+    it('does not apply index staleTime to useCountBoosts (network countBoosts, no invalidation)', async () => {
+        const { countBoosts } = makeWallet();
+        const first = renderHook(() => useCountBoosts(CATEGORY), { wrapper });
+        await waitFor(() => expect(first.result.current.isSuccess).toBe(true));
+        expect(countBoosts).toHaveBeenCalledTimes(1);
+        first.unmount();
+
+        const second = renderHook(() => useCountBoosts(CATEGORY), { wrapper });
+        await waitFor(() => expect(second.result.current.isSuccess).toBe(true));
+        // Default staleTime 0 → remount refetches. Index staleTime would keep this at 1.
+        expect(countBoosts).toHaveBeenCalledTimes(2);
+        expect(second.result.current.data).toBe(4);
+    });
+
+    it('does not apply index staleTime to useTotalBoostCounts', async () => {
+        const { countBoosts } = makeWallet();
+        const first = renderHook(() => useTotalBoostCounts(), { wrapper });
+        await waitFor(() => expect(first.result.current.isSuccess).toBe(true));
+        const firstCalls = countBoosts.mock.calls.length;
+        expect(firstCalls).toBe(7); // one per category in the hook
+        first.unmount();
+
+        const second = renderHook(() => useTotalBoostCounts(), { wrapper });
+        await waitFor(() => expect(second.result.current.isSuccess).toBe(true));
+        expect(countBoosts.mock.calls.length).toBe(firstCalls * 2);
+    });
 });
 
 // Touch keys so a rename would fail the suite loudly.

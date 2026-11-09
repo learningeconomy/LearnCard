@@ -45,10 +45,11 @@ const log = getLogger('vc-queries');
  * Mutations that add/delete credentials invalidate these keys; until then, remounts reuse cache
  * instead of re-walking index.get (~2.3 MB mega-batches on every route).
  *
- * Applied to useQuery-based index walks (skills/credentials/counts/IDs). Not yet on
- * useGetCredentialList (useInfiniteQuery): a fresh non-InfiniteData hydrate can reach
- * hasNextPage before the mount-time drop runs. #2005 adds restore-boundary sanitization;
- * AppRouter prefetch already keeps list observers mounted across shell navigations.
+ * Applied to index readers: useGetCredentialsForSkills, useGetCredentials,
+ * useGetCredentialCount, useGetIDs. Not on useCountBoosts / useTotalBoostCounts (those call
+ * wallet.invoke.countBoosts, not index.get, and have no invalidation). Not yet on
+ * useGetCredentialList (useInfiniteQuery hydrate race; #2005 restore sanitization;
+ * AppRouter prefetch already keeps list observers mounted across shell navigations).
  */
 export const CREDENTIAL_INDEX_STALE_TIME = 5 * 60 * 1000;
 
@@ -386,7 +387,8 @@ export const useCountBoosts = (category?: CredentialCategory, enabled: boolean =
 
             return managedCount;
         },
-        staleTime: CREDENTIAL_INDEX_STALE_TIME,
+        // Not CREDENTIAL_INDEX_STALE_TIME: countBoosts is network, not index.get, and
+        // nothing invalidates these keys on boost create/delete (Critic on #2014).
     });
 };
 
@@ -454,7 +456,7 @@ export const useTotalBoostCounts = () => {
                 totalBoostsCount,
             };
         },
-        staleTime: CREDENTIAL_INDEX_STALE_TIME,
+        // Not CREDENTIAL_INDEX_STALE_TIME: same as useCountBoosts — network counts, no invalidation.
     });
 };
 export type VC_WITH_URI = {
