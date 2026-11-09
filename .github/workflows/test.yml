@@ -91,6 +91,9 @@ jobs:
             - name: Test artifact pilot contracts
               run: node --test scripts/nx-artifact-cache/pilot.test.mjs
 
+            - name: Test queue batch shadow observation
+              run: node --test scripts/e2e-hosted/queue-batch-shadow.test.mjs scripts/e2e-hosted/observe-queue-batch.test.mjs scripts/e2e-hosted/queue-proof-shadow.test.mjs
+
             - name: Test SDK build cache policy when its configuration changes
               run: |
                   if git diff --quiet origin/main...HEAD -- \

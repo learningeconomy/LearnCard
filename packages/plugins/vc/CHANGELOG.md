@@ -1,5 +1,62 @@
 # learn-card-core
 
+## 1.7.0
+
+### Minor Changes
+
+- [#1962](https://github.com/learningeconomy/LearnCard/pull/1962) [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48) Thanks [@Custard7](https://github.com/Custard7)! - Add holder-authorized pre-accept managed delivery receipts and shared binding validation.
+  Allow refresh callers to pin the original public status and refresh service, and reject
+  changed managed versions without a strictly newer signed validFrom. Verify managed
+  deliveries before claim previews, acceptance and local indexing, and retain their
+  validated binding with the local index record.
+
+    Add a strict ciphertext-only holder handoff contract, an explicit-recipient DAG JWE
+    primitive that does not add the caller, and a shared exact recipient-key-set check.
+
+    Enable server-side holder-mode (student-only encrypted) managed sends and publishes.
+    `boost.prepareRefreshableSend({ encryption: 'holder' })` returns the exact
+    key-agreement recipient set (holder + current managers) to encrypt to and pins the
+    refresh aggregate to holder mode. New issuer routes
+    `credentialRefresh.sendHolderEncryptedRefreshable`,
+    `credentialRefresh.publishHolderEncryptedRefreshable` and
+    `credentialRefresh.getEncryptionRecipients` accept and deliver an already-encrypted
+    handoff without ever decrypting it; a manager-set change since prepare fails with
+    `CONFLICT`/`RECIPIENTS_CHANGED` instead of silently narrowing who can decrypt. A
+    holder-mode aggregate rejects inbox recipients, signed-credential-only sends, mixed
+    network/holder sends on the same aggregate, and signing-authority publication.
+
+    SDK support: `send({ refresh: true, encryption: 'holder' })` builds and signs the
+    credential locally exactly as the network-mode path does, then encrypts it to the
+    prepared recipient set with `createDagJweExact`, checks the resulting JWE's recipient
+    set and the signed credential's binding before ever calling the network, and sends
+    only the ciphertext handoff via `credentialRefresh.sendHolderEncryptedRefreshable`. A
+    `RECIPIENTS_CHANGED` conflict is retried once after re-fetching
+    `credentialRefresh.getEncryptionRecipients`. The new `publishHolderEncryptedRefreshable`
+    method does the same for later versions with an explicit `notify` flag. Both reject
+    client-side for inbox recipients, a caller-supplied `signedCredential`, and wallets
+    without local signing or the Encryption plugin; an old server response missing
+    `recipientKeyIds` is rejected rather than silently sent in network mode.
+
+    Recover authenticated absent-status bindings lazily for legacy deliveries, using the
+    stored JSON string `null` to distinguish verified absence from a missing binding.
+    Allow explicit null status repair only when it matches the original status digest.
+    Legacy receipts without a stored refresh descriptor explicitly bind only the unique
+    allocated managed entry; exact receipts continue to bind the entire signed shape.
+    Holder publishing preserves a supplied original refresh descriptor in legacy mode,
+    and fails with repair/reissue guidance when that descriptor is unavailable.
+    Holder sends also preserve template-supplied external status entries instead of
+    forcing new server status allocation.
+
+### Patch Changes
+
+- [#1960](https://github.com/learningeconomy/LearnCard/pull/1960) [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2) Thanks [@Custard7](https://github.com/Custard7)! - Keep managed and signed-only send anchors limited to explicit public display metadata, disable request-input telemetry on credential routes, and remove signing-key debug output. Add bounded public update summaries and enumerated update reasons. Managed send request fingerprints now use a versioned server HMAC over public metadata only. The inline template's name is never copied to the anchor, but its category is copied when `display.category` is omitted, since consent-flow write authorization is keyed on a Boost's category and treats an absent one as unrestricted.
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`fea9c25ec76f230944a1713500a280c80e2a9cc0`](https://github.com/learningeconomy/LearnCard/commit/fea9c25ec76f230944a1713500a280c80e2a9cc0), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+    - @learncard/helpers@1.8.0
+    - @learncard/core@9.4.44
+    - @learncard/didkit-plugin@1.10.10
+
 ## 1.6.9
 
 ### Patch Changes
