@@ -1812,6 +1812,7 @@
             "almostThere": "Almost there!",
             "youreIn": "You're in!",
             "guardianEmailed": "We've emailed your guardian to approve your account. You can start exploring now — some features unlock once they confirm.",
+            "guardianEmailFailed": "We couldn't send the approval request to <0>{{email}}</0>. You can start exploring now and send it again from your dashboard.",
             "ready": "Your {{brand}} is ready.",
             "whoAreYou": "Who are you? (Optional)",
             "explore": "Explore {{brand}}",

@@ -1821,6 +1821,7 @@
             "almostThere": "¡Ya casi!",
             "youreIn": "¡Ya estás dentro!",
             "guardianEmailed": "Enviamos un correo a tu tutor para que apruebe tu cuenta. Ya puedes empezar a explorar — algunas funciones se desbloquean cuando lo confirme.",
+            "guardianEmailFailed": "No pudimos enviar la solicitud de aprobación a <0>{{email}}</0>. Ya puedes empezar a explorar y volver a enviarla desde tu panel.",
             "ready": "Tu {{brand}} está listo.",
             "whoAreYou": "¿Quién eres? (Opcional)",
             "explore": "Explorar {{brand}}",

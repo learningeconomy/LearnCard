@@ -1818,6 +1818,7 @@
             "almostThere": "Vous y êtes presque !",
             "youreIn": "Vous y êtes !",
             "guardianEmailed": "Nous avons envoyé un e-mail à votre tuteur pour approuver votre compte. Vous pouvez commencer à explorer dès maintenant — certaines fonctionnalités se débloquent une fois qu'il confirme.",
+            "guardianEmailFailed": "Nous n'avons pas pu envoyer la demande d'approbation à <0>{{email}}</0>. Vous pouvez commencer à explorer dès maintenant et la renvoyer depuis votre tableau de bord.",
             "ready": "Votre {{brand}} est prêt.",
             "whoAreYou": "Qui êtes-vous ? (Facultatif)",
             "explore": "Explorer {{brand}}",
