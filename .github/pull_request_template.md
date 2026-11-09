@@ -57,9 +57,9 @@ Skip what CI already proves. If there's nothing to QA by hand, say why.
 - [ ] No
 - [ ] Yes
 
-## Testing
+### Testing
 
-## Proof
+### Proof
 
 <!-- proof:start -->
 <!-- proof:end -->
@@ -75,7 +75,7 @@ Media is optional locally; LearnCard Verification CI attaches it when the PR is 
 
 <!-- What kind of tests did you or did you not write and why (unit, functional, integration, e2e)?-->
 
-## Documentation
+### Documentation
 
 <!--
 Quick guide: What docs does your change need?
@@ -85,7 +85,7 @@ Quick guide: What docs does your change need?
 - App UI/UX changes → docs/apps/ (LearnCard App, ScoutPass)
 -->
 
-### Documentation Checklist
+#### Documentation Checklist
 
 <!-- Check all that apply. If none, explain why in the notes below. -->
 
@@ -108,11 +108,11 @@ Quick guide: What docs does your change need?
 
 <!-- Add diagrams inline in docs or in a dedicated section.-->
 
-### Documentation Notes
+#### Documentation Notes
 
 <!-- If no docs needed, briefly explain why (e.g., "Internal refactor, no API changes") -->
 
-## PR Checklist
+### PR Checklist
 
 - [ ] Related to a Jira issue ([create one if not](https://welibrary.atlassian.net/jira/software/projects/WE/boards/2))
 - [ ] My code follows **style guidelines** (eslint / prettier)
@@ -123,7 +123,7 @@ Quick guide: What docs does your change need?
 - [ ] I have completed the **Documentation Checklist** above (or explained why N/A)
 - [ ] I have considered **product analytics** for user-facing features (use `@analytics` in learn-card-app)
 
-### Ready to squash-and-merge?
+#### Ready to squash-and-merge?
 
 - [ ] Code is backwards compatible
 - [ ] There is **not** a "Do Not Merge" label on this PR
