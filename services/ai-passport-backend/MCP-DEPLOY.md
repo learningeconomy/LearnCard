@@ -40,6 +40,8 @@ blocks deploy.
 | `MCP_REDIS_PREFIX`            | var, required    | Exact Redis key prefix used by that peer (passed as `REDIS_PREFIX`; do not rely on the code default)      |
 | `MCP_EXPECTED_PRIVACY_KEY_FP` | var, required    | 64-hex privacy-key fingerprint from `scripts/mcp-alignment-fingerprint.sh --app <peer>`                   |
 | `MCP_EXPECTED_REDIS_STORE_FP` | var, required    | 64-hex Redis store/prefix fingerprint from the same peer run                                              |
+| `MCP_EXPECTED_MONGO_FP`       | var, required    | 64-hex Mongo URI fingerprint from the same peer run (same database as API/worker)                         |
+| `MCP_EXPECTED_QDRANT_FP`      | var, required    | 64-hex Qdrant host/port/TLS fingerprint from the same peer run (same vector store as API/worker)          |
 | `MCP_SMOKE_TOKEN`             | secret, optional | Bearer token for a synthetic user; enables the authorized smoke checks                                    |
 
 All non-optional configuration is required. The job rejects non-https/localhost OAuth URLs,
@@ -57,7 +59,8 @@ STS trust, permissions, expiry, or Qdrant reachability. Do not substitute static
 API key: the deployed generation path uses web identity, and `AWS_BEARER_TOKEN_BEDROCK` is forbidden.
 
 Fly secrets override `--env`. Any `DOMAIN`, `MCP_SERVER_URL`, `QDRANT_HOST`, `QDRANT_PORT`,
-`QDRANT_HTTPS` secret blocks rollout, even if its value might match. Removal requires separate approval.
+`QDRANT_HTTPS`, or `REDIS_PREFIX` secret blocks rollout, even if its value might match. Removal
+requires separate approval.
 For authenticated Qdrant, provision `QDRANT_API_KEY` on Fly as required by that endpoint; never put it
 in the hostname or GitHub vars. Name-only checks cannot determine whether a particular endpoint
 requires authentication; confirm access separately before cutover.
@@ -66,8 +69,9 @@ requires authentication; confirm access separately before cutover.
 
 Each deploy, in order (HTTP checks run against **both** the Fly hostname and client-facing `MCP_SERVER_URL`):
 
-1. Machines on the app all run image label `$GITHUB_SHA` (`flyctl machines list`).
-2. In-process privacy-key and Redis-store fingerprints match `MCP_EXPECTED_*_FP` from the peer API/worker.
+1. Pre-traffic: in-process privacy, Redis, Mongo, and Qdrant fingerprints match `MCP_EXPECTED_*_FP`
+   from the peer API/worker (runs before `fly deploy`; mismatch never receives traffic).
+2. Machines on the app all run image label `$GITHUB_SHA` (`flyctl machines list`).
 3. `/.well-known/oauth-protected-resource`: `resource` equals `MCP_SERVER_URL` and the first
    `authorization_servers` entry equals `MCP_DOMAIN`.
 4. `/.well-known/oauth-authorization-server`: `issuer` equals `MCP_DOMAIN`.
@@ -99,22 +103,34 @@ MCP_SMOKE_TOKEN=<optional> services/ai-passport-backend/scripts/smoke-mcp.sh
 1. Freeze or retire the current deployer of `mcp-learncard` so two pipelines don't compete.
 2. Create GitHub Environment `ai-passport-mcp-production` with secret `FLY_API_TOKEN` (deploy
    token scoped to `mcp-learncard`) and vars `MCP_DOMAIN` and `MCP_SERVER_URL` set to the confirmed targets.
-3. Copy the peer API/worker `AI_PRIVACY_KEY` onto `mcp-learncard` (same value, never a new key).
-   A different valid key passes the name check but breaks subject references, erasure tombstones,
-   active-operation fences, and shared erasure-request decryption. Also copy the same Redis
-   backing store: `REDIS_HOST`, `REDIS_PORT`, and `REDIS_PASSWORD` when the peer uses one.
+3. Copy the peer API/worker `AI_PRIVACY_KEY`, Redis (`REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`),
+   and `MONGO_URI` onto `mcp-learncard` (same values, never new ones). A different privacy key
+   breaks subject references, erasure tombstones, operation fences, and shared erasure decryption.
+   A different Mongo or Qdrant store lets erasure reconciliation fence/acknowledge the wrong
+   vectors while the peer's store retains data.
 4. Set Environment vars `MCP_PEER_API_FLY_APP` (production: `ai-passport`), `MCP_REDIS_PREFIX`
    to the peer's exact prefix, then run
-   `services/ai-passport-backend/scripts/mcp-alignment-fingerprint.sh --app <peer>` and store the
-   printed `privacy=` / `redis=` values as `MCP_EXPECTED_PRIVACY_KEY_FP` and
-   `MCP_EXPECTED_REDIS_STORE_FP`. The script HMACs inside the peer process and never prints secret
-   values. Fly secret digests are **not** used here: they are truncated collide-able change hints,
-   not cross-app authenticators. The deploy job re-runs the same fingerprint on MCP after rollout
-   and fails closed on mismatch.
+   `services/ai-passport-backend/scripts/mcp-alignment-fingerprint.sh --app <peer>` (with the peer's
+   Qdrant host/port/TLS as `--qdrant-*` if those are only on the peer via process env) and store
+   `privacy=` / `redis=` / `mongo=` / `qdrant=` as `MCP_EXPECTED_PRIVACY_KEY_FP`,
+   `MCP_EXPECTED_REDIS_STORE_FP`, `MCP_EXPECTED_MONGO_FP`, and `MCP_EXPECTED_QDRANT_FP`. The script
+   HMACs inside the peer process and never prints secret values. Fly secret digests are **not** used:
+   they are truncated collide-able change hints, not cross-app authenticators.
+   The deploy job re-runs the same fingerprints on MCP **before** `fly deploy` (injecting the
+   about-to-ship `REDIS_PREFIX` and Qdrant `--env` values into the fingerprint process only) and
+   fails closed on mismatch so a bad release never receives traffic. Automatic rollback is not used
+   because the pre-traffic gate is feasible.
+
+    **Stale peer fingerprints:** Environment fingerprint vars do not auto-refresh when the peer's
+    key/Redis/Mongo/Qdrant change. Fresh per-deploy peer attestation would need SSH/exec into the
+    peer API/worker app (wider Fly token than the MCP-scoped deploy token) or another trusted
+    channel. That access is held for Taylor's decision; until then operators must re-run the script
+    on the peer and update the Environment vars whenever the peer store configuration changes.
+
 5. Resolve the `DOMAIN` and `MCP_SERVER_URL` Fly secrets on `mcp-learncard`: they override the
    deploy's `--env`, so their presence must be removed under separate approval before rollout; matching values are not an exception.
-6. Configure the required `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_HTTPS` Environment vars and
-   confirm the app can reach that service; add Fly `QDRANT_API_KEY` if that service requires it.
+6. Set `QDRANT_HOST`/`QDRANT_PORT`/`QDRANT_HTTPS` to the **peer API/worker's** Qdrant endpoint
+   (not merely any reachable instance); add Fly `QDRANT_API_KEY` if that service requires it.
    Remove any shadowing Qdrant endpoint secrets under separate approval.
 7. Provision/confirm Fly web identity: a maintained token file, `AWS_WEB_IDENTITY_TOKEN_FILE`
    path configured on the app, `AWS_ROLE_ARN`, and matching AWS OIDC trust and Bedrock permissions.
