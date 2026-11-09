@@ -126,10 +126,7 @@ vi.mock('../../../hooks/useTranscriptArrival', () => ({
 vi.mock('../../../hooks/useReceivedTranscript', () => ({
     useReceivedTranscript: () => ({ entry: undefined, model: null }),
 }));
-vi.mock('../../clr-transcript/ClrTranscriptDetailModal', () => ({ default: () => null }));
-vi.mock('learn-card-base/helpers/credentials/clr/renderer', () => ({
-    ClrTranscriptSurface: { Full: 'full' },
-}));
+vi.mock('../../boost/boost-earned-card/BoostEarnedCard', () => ({ default: () => null }));
 vi.mock('./countryInference', () => ({ inferCountryCode: () => 'US' }));
 vi.mock('./BirthdayPicker', () => ({
     default: ({ onChange }: { onChange: (value: string) => void }) => (

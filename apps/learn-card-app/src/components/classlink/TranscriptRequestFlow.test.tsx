@@ -10,12 +10,20 @@ type Latest = {
     receivedAt?: string;
 };
 
+type EarnedCardProps = {
+    record: { uri: string; category?: string };
+    credential: unknown;
+    categoryType: string;
+    renderPreviewTrigger?: (openPreview: () => void) => React.ReactNode;
+};
+
 const mocks = vi.hoisted(() => ({
     latest: undefined as Latest | undefined,
     request: vi.fn(),
     isPollingExhausted: false,
     transcript: null as null | { entry: { vc: object; uri: string }; model: object },
-    newModal: vi.fn(),
+    earnedCard: vi.fn(),
+    openPreview: vi.fn(),
     track: vi.fn(),
 }));
 
@@ -31,13 +39,15 @@ vi.mock('learn-card-base', () => ({
         },
     }),
     useRequestTranscript: () => ({ mutateAsync: mocks.request, isPending: false }),
-    useModal: () => ({ newModal: mocks.newModal }),
     getLogger: () => ({ error: vi.fn(), warn: vi.fn() }),
 }));
-vi.mock('learn-card-base/helpers/credentials/clr/renderer', () => ({
-    ClrTranscriptSurface: { Full: 'full' },
+// The Passport's own card opens the viewer; the flow only supplies the trigger.
+vi.mock('../boost/boost-earned-card/BoostEarnedCard', () => ({
+    default: (props: EarnedCardProps) => {
+        mocks.earnedCard(props);
+        return <>{props.renderPreviewTrigger?.(mocks.openPreview)}</>;
+    },
 }));
-vi.mock('../clr-transcript/ClrTranscriptDetailModal', () => ({ default: () => null }));
 vi.mock('@analytics', () => ({
     useAnalytics: () => ({ track: mocks.track }),
     AnalyticsEvents: {
@@ -58,6 +68,10 @@ vi.mock('../../hooks/useReceivedTranscript', () => ({
 import { TranscriptRequestFlow, TRANSCRIPT_FLOW_PATIENCE_MS } from './TranscriptRequestFlow';
 
 const REQUEST = { status: 'requested' as const, requestId: 'req-1', requestedAt: '2026-01-01' };
+const TRANSCRIPT_VC = {
+    type: ['VerifiableCredential', 'ClrCredential'],
+    credentialSubject: { verifiableCredential: [{}, {}] },
+};
 const MODEL = {
     header: { issuerName: { value: 'Example High School' }, awardedDate: { value: '2026-06-01' } },
     summary: { gpa: { value: '3.8' }, courseCount: 24 },
@@ -83,7 +97,8 @@ beforeEach(() => {
     mocks.isPollingExhausted = false;
     mocks.request.mockReset().mockResolvedValue(REQUEST);
     mocks.track.mockReset();
-    mocks.newModal.mockReset();
+    mocks.earnedCard.mockReset();
+    mocks.openPreview.mockReset();
 });
 afterEach(() => {
     cleanup();
@@ -116,15 +131,22 @@ describe('TranscriptRequestFlow', () => {
 
     it('reveals the arrived transcript with a summary and continues', async () => {
         mocks.latest = { ...REQUEST, receivedAt: '2026-01-02' };
-        mocks.transcript = { entry: { vc: {}, uri: 'lc:t' }, model: MODEL };
+        mocks.transcript = { entry: { vc: TRANSCRIPT_VC, uri: 'lc:t' }, model: MODEL };
         const { onDone } = renderFlow();
         await ask();
         expect(screen.getByTestId('transcript-flow-arrived')).toBeTruthy();
         expect(screen.getByText('Example High School')).toBeTruthy();
         expect(screen.getByText('3.8')).toBeTruthy();
         expect(screen.getByText('24')).toBeTruthy();
+        expect(mocks.earnedCard).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                credential: TRANSCRIPT_VC,
+                record: { uri: 'lc:t', category: 'Learning History' },
+                categoryType: 'Learning History',
+            })
+        );
         fireEvent.click(screen.getByTestId('transcript-flow-view'));
-        expect(mocks.newModal).toHaveBeenCalledTimes(1);
+        expect(mocks.openPreview).toHaveBeenCalledTimes(1);
         await act(async () => {
             fireEvent.click(screen.getByTestId('transcript-flow-continue'));
         });

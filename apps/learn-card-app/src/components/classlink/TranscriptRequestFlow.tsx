@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { checkmark, documentTextOutline, hourglassOutline, ribbonOutline } from 'ionicons/icons';
-import { useModal, useRequestTranscript, useTranscriptStatus, getLogger } from 'learn-card-base';
-import { ClrTranscriptSurface } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { useRequestTranscript, useTranscriptStatus, getLogger } from 'learn-card-base';
+import { formatClrGpa } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 import * as m from '../../paraglide/messages.js';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { useTranscriptArrival } from '../../hooks/useTranscriptArrival';
 import { useReceivedTranscript } from '../../hooks/useReceivedTranscript';
-import ClrTranscriptDetailModal from '../clr-transcript/ClrTranscriptDetailModal';
+import BoostEarnedCard from '../boost/boost-earned-card/BoostEarnedCard';
+import { getTranscriptCategory } from './transcriptCategory';
 import {
     TranscriptConsentCheckbox,
     TranscriptErrorBanner,
@@ -39,20 +40,34 @@ const primaryButton =
 const quietButton =
     'w-full min-h-[48px] py-3 px-4 rounded-[20px] text-grayscale-600 font-medium text-sm hover:bg-grayscale-10 hover:text-grayscale-900 transition-colors disabled:opacity-40';
 
-const Hero: React.FC<{ icon: string; tone: 'emerald' | 'amber' | 'grayscale' }> = ({
-    icon,
-    tone,
-}) => {
+const Hero: React.FC<{
+    icon: string;
+    tone: 'emerald' | 'amber' | 'grayscale';
+    /** `working` radiates soft ripples while we wait; `arrived` pops in once. */
+    motion?: 'working' | 'arrived';
+}> = ({ icon, tone, motion }) => {
     const tones = {
         emerald: 'bg-emerald-50 text-emerald-600 ring-emerald-100',
         amber: 'bg-amber-50 text-amber-600 ring-amber-100',
         grayscale: 'bg-grayscale-100 text-grayscale-600 ring-grayscale-200',
     };
+    const ripple =
+        'absolute inset-0 rounded-full bg-emerald-200 opacity-0 motion-safe:animate-transcript-ripple motion-reduce:hidden';
     return (
-        <div
-            className={`mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full ring-8 ${tones[tone]}`}
-        >
-            <IonIcon icon={icon} className="text-4xl" aria-hidden="true" />
+        <div className="relative mx-auto mb-6 h-20 w-20" data-testid="transcript-flow-hero">
+            {motion === 'working' && (
+                <>
+                    <span aria-hidden="true" className={ripple} />
+                    <span aria-hidden="true" className={`${ripple} [animation-delay:1.4s]`} />
+                </>
+            )}
+            <div
+                className={`relative flex h-20 w-20 items-center justify-center rounded-full ring-8 ${tones[tone]} ${
+                    motion === 'arrived' ? 'motion-safe:animate-pop-in' : ''
+                }`}
+            >
+                <IonIcon icon={icon} className="text-4xl" aria-hidden="true" />
+            </div>
         </div>
     );
 };
@@ -68,10 +83,14 @@ const ProgressStep: React.FC<{ label: string; state: StepState; last?: boolean }
         {!last && (
             <span
                 aria-hidden="true"
-                className={`absolute left-[11px] top-7 h-[calc(100%-1.5rem)] w-0.5 rounded-full transition-colors duration-500 ${
+                className={`absolute left-[11px] top-7 h-[calc(100%-1.5rem)] w-0.5 overflow-hidden rounded-full transition-colors duration-500 ${
                     state === 'done' ? 'bg-emerald-200' : 'bg-grayscale-200'
                 }`}
-            />
+            >
+                {state === 'active' && (
+                    <span className="block h-1/2 w-full rounded-full bg-gradient-to-b from-transparent via-emerald-400 to-transparent motion-safe:animate-transcript-flow motion-reduce:hidden" />
+                )}
+            </span>
         )}
         <span
             aria-hidden="true"
@@ -85,7 +104,7 @@ const ProgressStep: React.FC<{ label: string; state: StepState; last?: boolean }
         >
             {state === 'done' && <IonIcon icon={checkmark} className="text-sm" />}
             {state === 'active' && (
-                <span className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse-dot" />
             )}
         </span>
         <span
@@ -119,7 +138,6 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
     onDone,
 }) => {
     const { track } = useAnalytics();
-    const { newModal } = useModal();
     const requestTranscript = useRequestTranscript();
     const status = useTranscriptStatus(true);
     const [consent, setConsent] = useState(false);
@@ -208,18 +226,6 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
         await finish(false);
     };
 
-    const openTranscript = (): void => {
-        if (!model || !entry) return;
-        newModal(
-            <ClrTranscriptDetailModal
-                model={model}
-                boost={entry.vc}
-                boostUri={entry.uri}
-                options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
-            />
-        );
-    };
-
     const heading = (text: string) => (
         <h2
             ref={headingRef}
@@ -231,18 +237,19 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
     );
 
     let content: React.ReactNode;
-    if (step === 'arrived' && model) {
+    if (step === 'arrived' && model && entry) {
+        const transcriptCategory = getTranscriptCategory(entry.vc);
         const gpa = model.summary.gpa?.value;
         const awarded = model.header.awardedDate?.value;
         const classOf = awarded ? new Date(String(awarded)).getFullYear() : undefined;
         content = (
             <div data-testid="transcript-flow-arrived" className="motion-safe:animate-fade-in-up">
-                <Hero icon={ribbonOutline} tone="emerald" />
+                <Hero icon={ribbonOutline} tone="emerald" motion="arrived" />
                 {heading(m['transcriptOptIn.arrivedTitle']())}
                 <p className="text-sm text-grayscale-600 mb-6">
                     {m['transcriptOptIn.flow.arrivedBody']()}
                 </p>
-                <div className="rounded-[20px] border border-grayscale-200 bg-white p-4 mb-6 text-left shadow-sm">
+                <div className="rounded-[20px] border border-grayscale-200 bg-white p-4 mb-6 text-left shadow-sm motion-safe:animate-reveal-card">
                     <div className="flex items-center gap-3 mb-4">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                             <IonIcon icon={documentTextOutline} className="text-xl" />
@@ -255,7 +262,10 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
                     </div>
                     <div className="flex gap-2">
                         {gpa !== undefined && (
-                            <Stat label={m['transcriptOptIn.flow.gpa']()} value={String(gpa)} />
+                            <Stat
+                                label={m['transcriptOptIn.flow.gpa']()}
+                                value={formatClrGpa(gpa)}
+                            />
                         )}
                         {model.summary.courseCount > 0 && (
                             <Stat
@@ -272,14 +282,21 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <button
-                        type="button"
-                        data-testid="transcript-flow-view"
-                        className={primaryButton}
-                        onClick={openTranscript}
-                    >
-                        {m['transcriptOptIn.viewTranscript']()}
-                    </button>
+                    <BoostEarnedCard
+                        record={{ uri: entry.uri, category: transcriptCategory }}
+                        credential={entry.vc}
+                        categoryType={transcriptCategory}
+                        renderPreviewTrigger={openPreview => (
+                            <button
+                                type="button"
+                                data-testid="transcript-flow-view"
+                                className={primaryButton}
+                                onClick={openPreview}
+                            >
+                                {m['transcriptOptIn.viewTranscript']()}
+                            </button>
+                        )}
+                    />
                     <button
                         type="button"
                         data-testid="transcript-flow-continue"
@@ -298,7 +315,7 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
                 data-testid="transcript-flow-on-the-way"
                 className="motion-safe:animate-fade-in-up"
             >
-                <Hero icon={documentTextOutline} tone="emerald" />
+                <Hero icon={documentTextOutline} tone="emerald" motion="working" />
                 {heading(m['transcriptOptIn.flow.onTheWayTitle']())}
                 <p className="text-sm text-grayscale-600 mb-6">
                     {m['transcriptOptIn.flow.usuallyTakes']()}
