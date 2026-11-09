@@ -2,6 +2,7 @@ import { IonIcon } from '@ionic/react';
 import { cloudUploadOutline, ribbonOutline } from 'ionicons/icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { dropMalformedInfiniteCacheEntry } from 'learn-card-base';
 import type { CampaignAudienceSource } from '@learncard/types';
 import type { CampaignApi } from './types';
 import { audienceChunks, parseAudienceCsv, parseAudienceSource } from './model';
@@ -30,8 +31,10 @@ export const CampaignAudience: React.FC<{
     const action = useCampaignAction();
     const queries = useQueryClient();
     const [showMembers, setShowMembers] = useState(false);
+    const membersQueryKey = ['campaign-audience', id] as const;
+    dropMalformedInfiniteCacheEntry(queries, membersQueryKey, 'campaign-audience');
     const members = useInfiniteQuery({
-        queryKey: ['campaign-audience', id],
+        queryKey: membersQueryKey,
         enabled: showMembers,
         initialPageParam: undefined as string | undefined,
         queryFn: ({ pageParam }) =>

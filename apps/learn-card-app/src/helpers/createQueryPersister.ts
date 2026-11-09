@@ -1,6 +1,7 @@
 import { dehydrate } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import type { PersistedClient, Persister } from '@tanstack/react-query-persist-client';
+import { sanitizePersistedQueries } from 'learn-card-base/react-query/infiniteQueryGuard';
 
 interface QueryStorage {
     getItem: (key: string) => Promise<string | null | undefined>;
@@ -62,7 +63,7 @@ export const createQueryPersister = (
         const snapshot = pending;
         clearPending();
         if (!snapshot) return writes;
-        const serialized = JSON.stringify(withoutMissingOwnProfiles(snapshot));
+        const serialized = JSON.stringify(sanitizePersistedQueries(withoutMissingOwnProfiles(snapshot)));
         return enqueue(() => storage.setItem(CACHE_KEY, serialized));
     };
 
@@ -79,7 +80,10 @@ export const createQueryPersister = (
             await writes;
             const serialized = await storage.getItem(CACHE_KEY);
             // Also repair snapshots written by earlier app versions.
-            return serialized ? withoutMissingOwnProfiles(JSON.parse(serialized)) : undefined;
+            // Drop malformed InfiniteData entries before hydrate (LC-2352).
+            return serialized
+                ? sanitizePersistedQueries(withoutMissingOwnProfiles(JSON.parse(serialized)))
+                : undefined;
         },
         removeClient: () => {
             clearPending();

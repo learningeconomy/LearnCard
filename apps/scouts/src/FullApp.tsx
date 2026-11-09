@@ -19,6 +19,7 @@ import {
     lazyWithRetry,
     Toast,
     InAppMessageHost,
+    sanitizePersistedQueries,
 } from 'learn-card-base';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
@@ -43,9 +44,20 @@ const CACHE_BUSTER = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '';
 
 const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
 
-const persister = createAsyncStoragePersister({
+const asyncPersister = createAsyncStoragePersister({
     storage: queryCacheStorage,
 });
+
+// Drop malformed InfiniteData entries on restore before hydrate (LC-2352).
+const persister = {
+    ...asyncPersister,
+    persistClient: async (client: Parameters<typeof asyncPersister.persistClient>[0]) =>
+        asyncPersister.persistClient(sanitizePersistedQueries(client)),
+    restoreClient: async () => {
+        const snapshot = await asyncPersister.restoreClient();
+        return snapshot ? sanitizePersistedQueries(snapshot) : undefined;
+    },
+};
 
 setupIonicReact({ swipeBackEnabled: false });
 
