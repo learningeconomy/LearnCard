@@ -7,7 +7,7 @@ import { environment } from '@environment';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import admin from 'firebase-admin';
-import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import type { TenantBranding } from '@learncard/email-templates';
 
 import { t, openRoute, didRoute, didAndChallengeRoute, type Context } from '@routes';
@@ -24,6 +24,12 @@ import cache from '@cache';
 import { setValidChallengeForDid } from '@cache/challenges';
 import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
 import {
+    isLegacyKeyArchiveEnabled,
+    releaseArchivedKey,
+    markArchivedKeyExhausted,
+    markArchivedKeyReleased,
+} from '@helpers/legacyKeyArchive.helpers';
+import {
     MAX_RECOVERY_OTP_ATTEMPTS,
     claimRecoveryOtpSendWindow,
     consumeRecoverySession,
@@ -35,6 +41,7 @@ import {
 } from '@cache/recoverySessions';
 import {
     findUserKeyByAuthProvider,
+    findUserKeyByDid,
     findUniqueUserKeyByVerifiedRecoveryEmail,
     findAuthShareByVersion,
     upsertUserKeyByAuthProvider,
@@ -1618,6 +1625,66 @@ export const keysRouter = t.router({
             return { success: true };
         }),
 
+    getArchivedKey: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/keys/archived-key',
+                tags: ['Keys'],
+                summary: 'Get archived legacy key for the account upgrade',
+            },
+        })
+        .input(AuthInputValidator)
+        .output(
+            z.object({
+                available: z.boolean(),
+                privateKey: z.string().optional(),
+                did: z.string().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            if (!isLegacyKeyArchiveEnabled()) return { available: false };
+            if (input.providerType !== 'firebase') return { available: false };
+            const { authProvider } = await verifyAndGetContactMethod(input);
+            const allowed = await Promise.all([
+                checkRateLimit(`archived-key:uid:${authProvider.id}`, 20, 3600),
+                checkRateLimit(`archived-key:ip:${ctx.clientIp ?? 'unknown'}`, 200, 3600),
+            ]);
+            if (allowed.some(value => !value)) {
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS',
+                    message: 'Too many attempts. Please try again later.',
+                });
+            }
+            const userKey = await findUserKeyByAuthProvider(authProvider.type, authProvider.id);
+            if (
+                userKey &&
+                userKey.keyProvider != null &&
+                userKey.keyProvider !== 'web3auth' &&
+                userKey.sssActivationState !== 'provisional'
+            ) {
+                return { available: false };
+            }
+            const released = await releaseArchivedKey(authProvider.id, userKey?.primaryDid);
+            if (!released) return { available: false };
+
+            // A removed login must not regain an upgraded identity through the no-record fallback.
+            const identity = await findUserKeyByDid(released.did);
+            if (
+                identity &&
+                ((identity.keyProvider === 'sss' &&
+                    identity.sssActivationState !== 'provisional') ||
+                    !identity.authProviders?.some(
+                        provider =>
+                            provider.type === authProvider.type && provider.id === authProvider.id
+                    ))
+            ) {
+                return { available: false };
+            }
+            await markArchivedKeyReleased(authProvider.id);
+            return { available: true, ...released };
+        }),
+
     activate: didAndChallengeRoute
         .meta({
             openapi: {
@@ -1656,6 +1723,20 @@ export const keysRouter = t.router({
                     code: 'CONFLICT',
                     message: 'The key record changed before activation. Please try again.',
                 });
+            }
+
+            if (isLegacyKeyArchiveEnabled() && authProvider.type === 'firebase') {
+                try {
+                    await markArchivedKeyExhausted(authProvider.id);
+                } catch {
+                    console.warn({
+                        event: 'archived_key_exhaustion_failed',
+                        uidHash: createHash('sha256')
+                            .update(authProvider.id)
+                            .digest('hex')
+                            .slice(0, 16),
+                    });
+                }
             }
 
             return { success: true };
