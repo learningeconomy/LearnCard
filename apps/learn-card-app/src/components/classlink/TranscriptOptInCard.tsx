@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { IonIcon } from '@ionic/react';
 import { checkmarkCircleOutline, timeOutline, documentTextOutline } from 'ionicons/icons';
 import type { VC } from '@learncard/types';
@@ -8,7 +8,9 @@ import {
     useTranscriptStatus,
     useRequestTranscript,
     useFeatureConfig,
-    useGetCredentials,
+    walletStore,
+    switchedProfileStore,
+    getLogger,
     useWallet,
     useModal,
     getIssuerDid,
@@ -17,6 +19,8 @@ import { ClrTranscriptSurface } from 'learn-card-base/helpers/credentials/clr/re
 import type { LCR } from 'learn-card-base/types/credential-records';
 import { useClassLinkAuthorizeUrl } from 'learn-card-base/react-query/mutations/firebase';
 import { useTranscriptArrival } from '../../hooks/useTranscriptArrival';
+import { readTranscriptReceipt, storeTranscriptReceipt } from '../../hooks/transcriptReceipt';
+import { tryFetchResolvedCredential } from 'learn-card-base/react-query/queries/credentialResolution';
 import ClrTranscriptDetailModal from '../clr-transcript/ClrTranscriptDetailModal';
 import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/display';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
@@ -32,6 +36,8 @@ import {
 
 /** After this long without arrival, the card offers manual recovery instead of waiting. */
 export const TRANSCRIPT_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+const log = getLogger('transcript-display');
+export const TRANSCRIPT_RESOLUTION_WAIT_MS = 10_000;
 
 type RequestResult = {
     status: 'requested' | 'none_yet' | 'failed';
@@ -43,6 +49,7 @@ type RequestResult = {
 type TranscriptOptInCardProps = {
     /** Where this card is rendered, for `transcript_requested` analytics only. */
     source: 'wallet' | 'school_connect';
+    variant?: 'card' | 'banner';
 };
 
 const spinner = (
@@ -87,28 +94,69 @@ const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
 }) => {
     const { newModal } = useModal();
     const { initWallet } = useWallet();
-
-    const { data: allCreds } = useGetCredentials(undefined, undefined, true);
-    const transcriptEntry = allCreds?.find(
-        (entry): entry is { vc: VC; uri?: string } =>
-            'vc' in entry &&
-            Boolean(issuerDid) &&
-            getIssuerDid(entry.vc) === issuerDid &&
-            Boolean(entry.vc.type?.includes('ClrCredential'))
-    );
+    const history = useHistory();
+    const queryClient = useQueryClient();
+    const activeWallet = walletStore.use.wallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+    const wallet = switchedDid && activeWallet?.id.did() !== switchedDid ? null : activeWallet;
+    const accountDid = wallet?.id.did();
+    const [timedOut, setTimedOut] = useState(false);
+    const { data: transcriptEntry } = useQuery({
+        queryKey: ['receivedTranscript', accountDid, requestId, issuerDid],
+        enabled: Boolean(wallet && issuerDid),
+        queryFn: async () => {
+            if (!wallet || !accountDid) return null;
+            const matches = (vc: VC | undefined): vc is VC =>
+                Boolean(vc && getIssuerDid(vc) === issuerDid && vc.type?.includes('ClrCredential'));
+            const storedUri = requestId ? readTranscriptReceipt(accountDid, requestId) : null;
+            if (storedUri) {
+                const vc = await tryFetchResolvedCredential(queryClient, wallet, storedUri);
+                if (matches(vc)) return { vc, uri: storedUri };
+            }
+            // The core index is cache-first. Invalidating React Query alone can return
+            // the old list while the core refreshes silently in the background.
+            const records = await wallet.index.LearnCloud.get<LCR>({}, { cache: 'skip-cache' });
+            const entries = await Promise.all(
+                records.map(async record => ({
+                    uri: record.uri,
+                    vc: await tryFetchResolvedCredential(queryClient, wallet, record.uri),
+                }))
+            );
+            const found = entries.find((entry): entry is { uri: string; vc: VC } =>
+                matches(entry.vc)
+            );
+            if (found && requestId) storeTranscriptReceipt(accountDid, requestId, found.uri);
+            return found ?? null;
+        },
+        retry: false,
+    });
     const transcriptVc = transcriptEntry?.vc;
     const transcriptModel = transcriptVc ? normalizeClrTranscriptDisplayModel(transcriptVc) : null;
     const schoolName = transcriptModel?.header.issuerName?.value;
     const gpa = transcriptModel?.summary.gpa?.value;
     const awardedDate = transcriptModel?.header.awardedDate?.value;
     const graduationYear = awardedDate ? new Date(String(awardedDate)).getFullYear() : undefined;
+    const resolved = Boolean(transcriptModel);
+
+    React.useEffect(() => {
+        setTimedOut(false);
+        if (resolved) return;
+        const timer = setTimeout(() => {
+            setTimedOut(true);
+            log.warn('transcript-display.resolution.timeout');
+        }, TRANSCRIPT_RESOLUTION_WAIT_MS);
+        return () => clearTimeout(timer);
+    }, [accountDid, requestId, resolved]);
 
     // `unreadUpdate` lives on the encrypted wallet index record, not the resolved VC.
     const { data: transcriptRecord } = useQuery({
-        queryKey: ['transcriptIndexRecord', transcriptEntry?.uri],
+        queryKey: ['transcriptIndexRecord', accountDid, transcriptEntry?.uri],
         queryFn: async () => {
-            const wallet = await initWallet();
-            const records = await wallet.index.LearnCloud.get<LCR>();
+            const indexWallet = await initWallet();
+            const records = await indexWallet.index.LearnCloud.get<LCR>(
+                { uri: transcriptEntry?.uri },
+                { cache: 'skip-cache' }
+            );
             return records.find(record => record.uri === transcriptEntry?.uri) ?? null;
         },
         enabled: Boolean(transcriptEntry?.uri),
@@ -180,12 +228,26 @@ const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
                         {m['transcriptOptIn.viewTranscript']()}
                     </PrimaryButton>
                 </>
+            ) : timedOut ? (
+                <div className="space-y-3">
+                    <p className="text-sm text-grayscale-600">
+                        {m['transcriptOptIn.inPassport']()}
+                    </p>
+                    <PrimaryButton onClick={() => history.push('/passport')}>
+                        {m['transcriptOptIn.viewInPassport']()}
+                    </PrimaryButton>
+                </div>
             ) : (
                 <p
                     data-testid="transcript-optin-received-pending"
-                    className="text-sm text-grayscale-600 leading-relaxed"
+                    role="status"
+                    className="flex items-center gap-2 text-sm text-grayscale-600 leading-relaxed"
                 >
-                    {m['transcriptOptIn.receivedLoading']()}
+                    <span
+                        aria-hidden="true"
+                        className="w-4 h-4 border-2 border-grayscale-200 border-t-grayscale-600 rounded-full animate-spin"
+                    />
+                    {m['transcriptOptIn.finishingUp']()}
                 </p>
             )}
         </div>
@@ -197,16 +259,16 @@ const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
  * tenant enables `classlinkTranscriptOptIn` and the account is ready; all queries
  * live in the gated inner component so other tenants pay no network cost.
  */
-export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source }) => {
+export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source, variant }) => {
     const features = useFeatureConfig();
     const { state: coordinatorState } = useAppAuth();
 
     if (!features.classlinkTranscriptOptIn || coordinatorState.status !== 'ready') return null;
 
-    return <TranscriptOptInCardContent source={source} />;
+    return <TranscriptOptInCardContent source={source} variant={variant} />;
 };
 
-const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source }) => {
+const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source, variant }) => {
     const history = useHistory();
     const { track } = useAnalytics();
 
@@ -238,6 +300,39 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
     if (trpcCode === 'FORBIDDEN' || trpcCode === 'NOT_FOUND') return null;
 
     if (status.isLoading || (!status.isError && !status.isFetched)) return null;
+
+    if (variant === 'banner') {
+        if (!data?.eligible || latest?.receivedAt || status.isError) return null;
+        const waiting = latest?.status === 'requested';
+        const failed = latest?.status === 'failed' || latest?.status === 'none_yet';
+        return (
+            <section
+                data-testid="transcript-optin-banner"
+                className={`mb-4 flex items-center gap-3 rounded-[20px] px-4 py-3 font-poppins ${waiting || failed ? 'bg-amber-50 text-amber-800' : 'bg-emerald-50 text-emerald-800'}`}
+            >
+                <IonIcon
+                    icon={waiting ? timeOutline : documentTextOutline}
+                    className="shrink-0 text-xl"
+                />
+                <p className="flex-1 text-sm">
+                    {waiting
+                        ? m['transcriptOptIn.preparingTranscript']()
+                        : failed
+                          ? m['transcriptOptIn.bannerFailed']()
+                          : m['transcriptOptIn.bannerTitle']()}
+                </p>
+                {!waiting && (
+                    <button
+                        type="button"
+                        className="shrink-0 rounded-[20px] bg-grayscale-900 px-3 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+                        onClick={() => history.push('/school-connect')}
+                    >
+                        {failed ? m['transcriptOptIn.tryAgain']() : m['transcriptOptIn.getIt']()}
+                    </button>
+                )}
+            </section>
+        );
+    }
 
     const submit = async () => {
         if (!consent || request.isPending) return;

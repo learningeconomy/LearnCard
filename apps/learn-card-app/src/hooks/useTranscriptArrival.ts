@@ -15,6 +15,7 @@ import {
 } from 'learn-card-base';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { storeTranscriptReceipt } from './transcriptReceipt';
 
 import {
     claimTranscriptOnce,
@@ -462,6 +463,7 @@ export const useTranscriptArrival = ({
                             // The write reported nothing added without throwing: confirm
                             // the entry exists (or add it) before acknowledging.
                             if (!added) await ensureInWallet(credInfo.uri);
+                            storeTranscriptReceipt(userDid, requestId, credInfo.uri);
                         });
                     } catch (error) {
                         hasAcceptedRef.current = false;
@@ -527,9 +529,10 @@ export const useTranscriptArrival = ({
                     // its entry must not be raced into a duplicate wallet record.
                     let restoredHere: boolean;
                     try {
-                        restoredHere = await claimTranscriptOnce(requestId, () =>
-                            ensureInWallet(credInfo.uri, { confirmMiss: true })
-                        );
+                        restoredHere = await claimTranscriptOnce(requestId, async () => {
+                            await ensureInWallet(credInfo.uri, { confirmMiss: true });
+                            storeTranscriptReceipt(userDid, requestId, credInfo.uri);
+                        });
                     } catch (error) {
                         hasAcceptedRef.current = false;
                         throw new TranscriptWalletRestoreError(error);

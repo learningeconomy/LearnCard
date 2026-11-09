@@ -1,7 +1,15 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    act,
+    cleanup,
+    fireEvent,
+    render as renderWithContext,
+    screen,
+    waitFor,
+} from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 type Latest = {
     status: 'requested' | 'none_yet' | 'failed';
@@ -26,6 +34,9 @@ const mocks = vi.hoisted(() => ({
     push: vi.fn(),
     issuerDid: 'did:issuer' as string | undefined,
     issuerProfileId: 'issuer-profile' as string | undefined,
+    indexGet: vi.fn(),
+    read: vi.fn(),
+    warn: vi.fn(),
 }));
 
 /**
@@ -48,7 +59,18 @@ const memoryStorage = (() => {
 vi.stubGlobal('localStorage', memoryStorage);
 
 vi.mock('react-router-dom', () => ({ useHistory: () => ({ push: mocks.push }) }));
-vi.mock('@tanstack/react-query', () => ({ useQuery: () => ({ data: undefined }) }));
+const wallet = {
+    id: { did: () => 'did:user' },
+    index: { LearnCloud: { get: mocks.indexGet } },
+    read: { get: mocks.read },
+};
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const render = (ui: React.ReactElement) =>
+    renderWithContext(ui, {
+        wrapper: ({ children }) => (
+            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        ),
+    });
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('learn-card-base', () => ({
     useTranscriptStatus: (enabled: boolean) => {
@@ -74,9 +96,13 @@ vi.mock('learn-card-base', () => ({
             data: mocks.arrived ? [{ vc: { type: ['ClrCredential'] }, uri: 'lc:t' }] : [],
         };
     },
-    useWallet: () => ({ initWallet: vi.fn() }),
+    useWallet: () => ({ initWallet: async () => wallet }),
+    walletStore: { use: { wallet: () => wallet } },
+    switchedProfileStore: { use: { switchedDid: () => undefined } },
+    getLogger: () => ({ warn: mocks.warn }),
     useModal: () => ({ newModal: mocks.newModal }),
-    getIssuerDid: () => 'did:issuer',
+    getIssuerDid: (vc: { issuer: string | { id: string } }) =>
+        typeof vc.issuer === 'string' ? vc.issuer : vc.issuer?.id,
     Checkbox: ({ onChange, label }: { onChange: (value: boolean) => void; label: string }) => (
         <input
             type="checkbox"
@@ -108,6 +134,17 @@ vi.mock('../../providers/AuthCoordinatorProvider', () => ({
 vi.mock('../../auth/classlink/startClassLinkLogin', () => ({ runClassLinkLogin: vi.fn() }));
 
 import { TranscriptOptInCard, TRANSCRIPT_STALE_AFTER_MS } from './TranscriptOptInCard';
+import {
+    getTranscriptReceiptKey,
+    readTranscriptReceipt,
+    storeTranscriptReceipt,
+} from '../../hooks/transcriptReceipt';
+
+afterEach(() => {
+    cleanup();
+    queryClient.clear();
+    vi.useRealTimers();
+});
 
 beforeEach(() => {
     vi.clearAllMocks();
@@ -119,9 +156,104 @@ beforeEach(() => {
     mocks.isPollingExhausted = false;
     mocks.issuerDid = 'did:issuer';
     mocks.issuerProfileId = 'issuer-profile';
+    mocks.indexGet.mockReset().mockResolvedValue([]);
+    mocks.read.mockReset().mockResolvedValue(undefined);
 });
 
 describe('TranscriptOptInCard', () => {
+    const received = () => {
+        mocks.latest = {
+            status: 'requested',
+            requestId: 'r1',
+            requestedAt: new Date().toISOString(),
+            receivedAt: new Date().toISOString(),
+        };
+    };
+
+    it('resolves a stored receipt through the shared query even when the index is stale', async () => {
+        received();
+        const vc = { issuer: 'did:issuer', type: ['VerifiableCredential', 'ClrCredential'] };
+        mocks.read.mockResolvedValue(vc);
+        // Reproduce the core cache-first list, which never contains the new transcript.
+        expect(await wallet.index.LearnCloud.get({})).toEqual([]);
+        storeTranscriptReceipt('did:user', 'r1', 'lc:transcript');
+        const key = getTranscriptReceiptKey('did:user', 'r1');
+        expect(key).toMatch(/^transcript_receipt:[a-f0-9]{64}$/);
+        expect(readTranscriptReceipt('did:other', 'r1')).toBeNull();
+        render(<TranscriptOptInCard source="school_connect" />);
+        await screen.findByRole('button', { name: 'View Transcript' });
+        expect(mocks.read).toHaveBeenCalledWith('lc:transcript');
+        expect(
+            queryClient.getQueryData(['useGetResolvedCredential', 'lc:transcript', 'did:user'])
+        ).toEqual(vc);
+        expect(mocks.indexGet.mock.calls.filter(([query]) => !query.uri)).toHaveLength(1);
+    });
+
+    it.each(['did:issuer', { id: 'did:issuer' }])(
+        'discovers and stores a fresh all-category transcript with issuer %j',
+        async issuer => {
+            received();
+            mocks.indexGet.mockImplementation((_query, options) =>
+                Promise.resolve(
+                    options?.cache === 'skip-cache'
+                        ? [{ uri: 'lc:transcript', category: 'Achievement' }]
+                        : []
+                )
+            );
+            mocks.read.mockResolvedValue({
+                issuer,
+                type: ['VerifiableCredential', 'ClrCredential'],
+            });
+            expect(await wallet.index.LearnCloud.get({})).toEqual([]);
+            render(<TranscriptOptInCard source="school_connect" />);
+            await screen.findByRole('button', { name: 'View Transcript' });
+            expect(mocks.indexGet).toHaveBeenCalledWith({}, { cache: 'skip-cache' });
+            expect(readTranscriptReceipt('did:user', 'r1')).toBe('lc:transcript');
+        }
+    );
+
+    it('offers Passport after ten seconds, including a stalled lookup, with a fixed-code warning', async () => {
+        vi.useFakeTimers();
+        received();
+        mocks.indexGet.mockImplementation(() => new Promise(() => {}));
+        render(<TranscriptOptInCard source="school_connect" />);
+        expect(screen.getByText('Finishing up…')).toBeTruthy();
+        await act(async () => vi.advanceTimersByTimeAsync(9_999));
+        expect(screen.queryByText("It's in your Passport.")).toBeNull();
+        await act(async () => vi.advanceTimersByTimeAsync(1));
+        expect(screen.getByText("It's in your Passport.")).toBeTruthy();
+        expect(screen.queryByText('Finishing up…')).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'View in Passport' }));
+        expect(mocks.push).toHaveBeenCalledWith('/passport');
+        expect(mocks.warn).toHaveBeenCalledExactlyOnceWith('transcript-display.resolution.timeout');
+    });
+
+    it.each(['received', 'ineligible', 'disabled'])('hides the Passport banner when %s', state => {
+        if (state === 'received') received();
+        if (state === 'ineligible') mocks.reason = 'no_state_id';
+        if (state === 'disabled') mocks.flagOn = false;
+        const { container } = render(<TranscriptOptInCard source="wallet" variant="banner" />);
+        expect(container.innerHTML).toBe('');
+    });
+
+    it.each([
+        [undefined, 'Get your official transcript', 'Get it'],
+        ['requested', 'Your school is preparing your transcript.', undefined],
+        ['failed', "We couldn't reach your school records", 'Try Again'],
+        ['none_yet', "We couldn't reach your school records", 'Try Again'],
+    ] as const)('shows a compact %s banner', (status, text, action) => {
+        if (status)
+            mocks.latest = { status, requestId: 'r1', requestedAt: new Date().toISOString() };
+        render(<TranscriptOptInCard source="wallet" variant="banner" />);
+        expect(screen.getByText(text)).toBeTruthy();
+        expect(screen.queryByTestId('transcript-optin-card')).toBeNull();
+        expect(screen.queryByRole('checkbox')).toBeNull();
+        if (action) {
+            fireEvent.click(screen.getByRole('button', { name: action }));
+            expect(mocks.push).toHaveBeenCalledWith('/school-connect');
+        } else expect(screen.queryByRole('button')).toBeNull();
+    });
+
     it('uses the request ID immediately and then the server arrival after a same-session request', async () => {
         const result = {
             status: 'requested' as const,
@@ -286,17 +418,18 @@ describe('TranscriptOptInCard', () => {
             mocks.reason = 'reauth_required';
         });
 
-        it('still shows a received transcript instead of a reconnect prompt', () => {
+        it('still shows a received transcript instead of a reconnect prompt', async () => {
             mocks.latest = {
                 status: 'requested',
                 requestId: 'r1',
                 requestedAt: new Date().toISOString(),
                 receivedAt: new Date().toISOString(),
             };
-            mocks.arrived = true;
+            storeTranscriptReceipt('did:user', 'r1', 'lc:transcript');
+            mocks.read.mockResolvedValue({ issuer: 'did:issuer', type: ['ClrCredential'] });
             render(<TranscriptOptInCard source="wallet" />);
             expect(screen.getByText('Added to your account')).toBeTruthy();
-            expect(screen.getByText('View Transcript')).toBeTruthy();
+            expect(await screen.findByText('View Transcript')).toBeTruthy();
             expect(screen.queryByTestId('transcript-optin-reauth')).toBeNull();
         });
 

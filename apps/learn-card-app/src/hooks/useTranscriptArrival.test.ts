@@ -119,6 +119,7 @@ import type {
     UseTranscriptArrivalParams,
 } from './useTranscriptArrival';
 import { claimTranscriptOnce } from './transcriptClaim';
+import { readTranscriptReceipt } from './transcriptReceipt';
 
 /** The partner's own signing DID, as documented for TRANSCRIPT_ISSUERS[*].did. */
 const ISSUER_DID = 'did:web:records.example.org';
@@ -491,6 +492,9 @@ describe('useTranscriptArrival', () => {
             requestId: 'req-1',
         });
         expect(mocks.invalidateQueries).toHaveBeenCalled();
+        expect(readTranscriptReceipt(USER_DID, 'req-1')).toBe('u1');
+        expect(readTranscriptReceipt('did:other', 'req-1')).toBeNull();
+        expect(readTranscriptReceipt(USER_DID, 'req-other')).toBeNull();
         expect(mocks.track).toHaveBeenCalledWith('transcript_arrived', {});
 
         // A later refetch that still includes the same matching credential (e.g. a
@@ -514,6 +518,7 @@ describe('useTranscriptArrival', () => {
             expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1)
         );
         expect(mocks.addVCtoWallet).toHaveBeenCalledWith({ uri: 'u1' });
+        expect(readTranscriptReceipt(USER_DID, 'req-1')).toBe('u1');
     });
 
     it('claims once across two mounted instances (e.g. WalletPage and SchoolConnect)', async () => {
@@ -756,6 +761,7 @@ describe('useTranscriptArrival', () => {
             );
             expect(mocks.claimIncomingCredential).not.toHaveBeenCalled();
             expect(mocks.addVCtoWallet).not.toHaveBeenCalled();
+            expect(readTranscriptReceipt(USER_DID, 'req-1')).toBe('u1');
             expect(mocks.invalidateQueries).toHaveBeenCalledWith({
                 queryKey: ['transcriptStatus'],
             });
@@ -818,8 +824,10 @@ describe('useTranscriptArrival', () => {
             expect(mocks.wallet.invoke.transcriptsMarkReceived).not.toHaveBeenCalled();
 
             // Still missing on the next check: the entry is restored, then acknowledged.
+            expect(readTranscriptReceipt(USER_DID, 'req-1')).toBeNull();
             await vi.advanceTimersByTimeAsync(5_000);
             expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
+            expect(readTranscriptReceipt(USER_DID, 'req-1')).toBe('u1');
 
             expect(mocks.wallet.index.LearnCloud.get).toHaveBeenCalledWith(
                 { uri: 'u1' },
