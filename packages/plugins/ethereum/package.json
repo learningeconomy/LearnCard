@@ -1,6 +1,6 @@
 {
     "name": "@learncard/ethereum-plugin",
-    "version": "1.1.44",
+    "version": "1.1.45",
     "description": "Adds Ethereum address, balance, and token transfer methods to a LearnCard.",
     "type": "module",
     "main": "./dist/index.cjs",

@@ -15,6 +15,7 @@ export default createVitestConfig(nodePreset, {
             'src/**/*.test.ts',
             'scripts/**/*.test.ts',
             '*Lambda.test.ts',
+            'lambdaApp.test.ts',
             'seedMigrationApp.test.ts',
             'test/keycloak-verify.spec.ts',
             'test/keycloak-verify.integration.spec.ts',

@@ -1,0 +1,45 @@
+name: LearnCard MCP
+
+# Fast, service-free checks for packages/learn-card-mcp (@learncard/mcp). Hosts that mount
+# it run their own suites: ai-passport.yml also triggers on this package's paths.
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+        paths:
+            - 'packages/learn-card-mcp/**'
+            - 'bun.lock'
+            - '.github/workflows/learn-card-mcp.yml'
+    push:
+        branches: [main]
+        paths:
+            - 'packages/learn-card-mcp/**'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: learn-card-mcp-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+    package:
+        name: Build, typecheck and test @learncard/mcp
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: ./.github/actions/setup
+
+            - name: Build
+              run: bunx nx run mcp:build
+
+            - name: Typecheck
+              run: bunx nx run mcp:typecheck
+
+            - name: Test
+              run: bunx nx run mcp:test
+
+            - name: Validate package contract
+              run: node scripts/validate-packages.mjs --only=mcp

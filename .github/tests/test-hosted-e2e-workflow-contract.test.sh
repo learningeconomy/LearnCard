@@ -59,6 +59,13 @@ policy = eligibility_steps.find { |step| step['id'] == 'policy' }
 abort 'policy must receive the event name' unless policy.dig('env', 'EVENT_NAME') == '${{ github.event_name }}'
 abort 'queue change detection must use the merge-group base' unless policy.dig('env', 'BASE_SHA') == '${{ github.event.merge_group.base_sha }}'
 
+observer = eligibility_steps.find { |step| step['run'] == 'node scripts/e2e-hosted/observe-queue-batch.mjs' }
+abort 'queue observation must run only on merge-group events' unless observer && observer.fetch('if') == "${{ github.event_name == 'merge_group' }}"
+abort 'queue observation must be best-effort and bounded' unless observer.fetch('continue-on-error') == true && observer.fetch('timeout-minutes') == 1
+abort 'queue observation may only read repository and pull requests' unless eligibility.fetch('permissions') == { 'contents' => 'read', 'pull-requests' => 'read' }
+abort 'queue observation must run after the E2E policy' unless eligibility_steps.index(observer) > eligibility_steps.index(policy)
+abort 'E2E policy outputs must not depend on the queue observation' unless outputs == { 'run_e2e' => '${{ steps.policy.outputs.run_e2e }}', 'reason' => '${{ steps.policy.outputs.reason }}' }
+
 # Execute the actual inline policy, stubbing only documentation classification.
 # PR and manual decisions must work without touching the repository at all.
 [

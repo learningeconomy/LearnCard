@@ -882,6 +882,23 @@
         "@learncard/didkit-plugin-node": "workspace:*",
       },
     },
+    "packages/learn-card-mcp": {
+      "name": "@learncard/mcp",
+      "version": "0.0.0",
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.20.2",
+        "express": "^4.21.1",
+      },
+      "devDependencies": {
+        "@types/express": "^4.17.21",
+        "@types/node": "^18.19.64",
+        "rollup": "^2.80.0",
+        "rollup-plugin-dts": "^4.2.2",
+        "rollup-plugin-esbuild": "^4.9.1",
+        "typescript": "^5.4.5",
+        "zod": "4.3.6",
+      },
+    },
     "packages/learn-card-network/brain-client": {
       "name": "@learncard/network-brain-client",
       "version": "2.6.3",
@@ -1582,6 +1599,7 @@
         "@launchdarkly/node-server-sdk": "9.14.1",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/init": "workspace:*",
+        "@learncard/mcp": "workspace:*",
         "@learncard/types": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.20.2",
         "@opentelemetry/sdk-trace-base": "2.8.0",
@@ -3665,6 +3683,8 @@
     "@learncard/ler-rs-plugin": ["@learncard/ler-rs-plugin@workspace:packages/plugins/ler-rs"],
 
     "@learncard/linked-claims-plugin": ["@learncard/linked-claims-plugin@workspace:packages/plugins/linked-claims"],
+
+    "@learncard/mcp": ["@learncard/mcp@workspace:packages/learn-card-mcp"],
 
     "@learncard/network-brain-client": ["@learncard/network-brain-client@workspace:packages/learn-card-network/brain-client"],
 
@@ -10862,7 +10882,6 @@
 
     "@learncard/learn-cloud-service/serverless-domain-manager": ["serverless-domain-manager@6.3.1", "", { "dependencies": { "aws-sdk": "^2.1309.0" } }, "sha512-Cn90C/QBGSfcf7oAnDOdh2DuCj7RxmqwPjZFnL/gzOdyDtahBNuaha6wXXiLm85ejzAJQj1gDvAX4N0ye2dxXA=="],
 
-
     "@learncard/learn-cloud-service/serverless-offline": ["serverless-offline@12.0.4", "", { "dependencies": { "@aws-sdk/client-lambda": "^3.241.0", "@hapi/boom": "^10.0.0", "@hapi/h2o2": "^10.0.0", "@hapi/hapi": "^21.1.0", "@serverless/utils": "^6.8.2", "array-unflat-js": "^0.1.3", "boxen": "^7.0.1", "chalk": "^5.2.0", "desm": "^1.3.0", "execa": "^6.1.0", "fs-extra": "^11.1.0", "is-wsl": "^2.2.0", "java-invoke-local": "0.0.6", "jose": "^4.11.2", "js-string-escape": "^1.0.1", "jsonpath-plus": "^7.2.0", "jsonschema": "^1.4.1", "jszip": "^3.10.1", "luxon": "^3.2.0", "node-fetch": "^3.3.0", "node-schedule": "^2.1.0", "object.hasown": "^1.1.2", "p-memoize": "^7.1.1", "p-retry": "^5.1.2", "velocityjs": "^2.0.6", "ws": "^8.11.0" }, "peerDependencies": { "serverless": "^3.2.0" } }, "sha512-G256wDHI12vE0CJ0uTJMBlfnaN7o7td4GgClvQtuedt/n7vKoUfN0och+LybD6YVGsR5h1xpYjPPPLy2QFqWaA=="],
 
     "@learncard/ler-rs-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
@@ -10880,7 +10899,6 @@
     "@learncard/network-brain-service/neogma": ["neogma@1.13.0", "", { "dependencies": { "@types/revalidator": "^0.3.12", "clone": "^2.1.2", "dotenv": "^16.3.1", "neo4j-driver": "^5.16.0", "revalidator": "^0.3.1", "uuid": "^9.0.1" } }, "sha512-VPr5XUiQlsDaBJyCdfAWkEG6mN0Z6F5govb/H7h16FXSARC7pVubzZ8CioTmJ/jXCto5Jz9J1l6cifoZhi9/Aw=="],
 
     "@learncard/network-brain-service/serverless-domain-manager": ["serverless-domain-manager@6.3.1", "", { "dependencies": { "aws-sdk": "^2.1309.0" } }, "sha512-Cn90C/QBGSfcf7oAnDOdh2DuCj7RxmqwPjZFnL/gzOdyDtahBNuaha6wXXiLm85ejzAJQj1gDvAX4N0ye2dxXA=="],
-
 
     "@learncard/network-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
 
@@ -13920,8 +13938,6 @@
 
     "@learncard/learn-cloud-service/mongodb-memory-server/mongodb-memory-server-core": ["mongodb-memory-server-core@10.4.3", "", { "dependencies": { "async-mutex": "^0.5.0", "camelcase": "^6.3.0", "debug": "^4.4.3", "find-cache-dir": "^3.3.2", "follow-redirects": "^1.15.11", "https-proxy-agent": "^7.0.6", "mongodb": "^6.9.0", "new-find-package-json": "^2.0.0", "semver": "^7.7.3", "tar-stream": "^3.1.7", "tslib": "^2.8.1", "yauzl": "^3.2.0" } }, "sha512-IPjlw73IoSYopnqBibQKxmAXMbOEPf5uGAOsBcaUiNH/TOI7V19WO+K7n5KYtnQ9FqzLGLpvwCGuPOTBSg4s5Q=="],
 
-
-
     "@learncard/learn-cloud-service/serverless-offline/chalk": ["chalk@5.6.2", "", {}, "sha512-7NzBL0rN6fMUW+f7A6Io4h40qQlG+xGmtMxfbnH/K7TAtt8JQWVQK+6g0UXKMeVJoyV5EkkNsErQ8pVD3bLHbA=="],
 
     "@learncard/learn-cloud-service/serverless-offline/execa": ["execa@6.1.0", "", { "dependencies": { "cross-spawn": "^7.0.3", "get-stream": "^6.0.1", "human-signals": "^3.0.1", "is-stream": "^3.0.0", "merge-stream": "^2.0.0", "npm-run-path": "^5.1.0", "onetime": "^6.0.0", "signal-exit": "^3.0.7", "strip-final-newline": "^3.0.0" } }, "sha512-QVWlX2e50heYJcCPG0iWtf8r0xjEYfz/OYLGDYH+IyjWezzPNxz63qNFOu0l4YftGWuizFVZHHs8PrLU5p2IDA=="],
@@ -13999,8 +14015,6 @@
     "@learncard/network-brain-service/neogma/clone": ["clone@2.1.2", "", {}, "sha512-3Pe/CF1Nn94hyhIYpjtiLhdCoEoz0DqQ+988E9gmeEdQZlojxnOb74wctFyuwWQHzqyf9X7C7MG8juUpqBJT8w=="],
 
     "@learncard/network-brain-service/neogma/uuid": ["uuid@9.0.1", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA=="],
-
-
 
     "@learncard/openid4vc-playground/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
@@ -16352,34 +16366,6 @@
 
     "@learncard/learn-cloud-service/mongodb-memory-server/mongodb-memory-server-core/tar-stream": ["tar-stream@3.2.1", "", { "dependencies": { "b4a": "^1.6.4", "bare-fs": "^4.5.5", "fast-fifo": "^1.2.0", "streamx": "^2.15.0" } }, "sha512-nqsEO8zLZJvrOMdEwkA0QdCLFbetHMn95Zqu4fKwX+hkaTWJPZZOrxx/PwtxoK0MMGQmBQNRW3CPs8IFYQz4cQ=="],
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     "@learncard/learn-cloud-service/serverless-offline/execa/human-signals": ["human-signals@3.0.1", "", {}, "sha512-rQLskxnM/5OCldHo+wNXbpVgDn5A17CUoKX+7Sokwaknlq7CdSnphy0W39GU8dw59XiCXmFXDg4fRuckQRKewQ=="],
 
     "@learncard/learn-cloud-service/serverless-offline/execa/is-stream": ["is-stream@3.0.0", "", {}, "sha512-LnQR4bZ9IADDRSkvpqMGvt/tEJWclzklNgSw48V5EAaAeDd6qGvN8ei6k5p0tvxSR171VmGyHuTiAOfxAbr8kA=="],
@@ -16403,34 +16389,6 @@
     "@learncard/network-brain-service/@sentry/esbuild-plugin/@sentry/bundler-plugin-core/glob": ["glob@9.3.5", "", { "dependencies": { "fs.realpath": "^1.0.0", "minimatch": "^8.0.2", "minipass": "^4.2.4", "path-scurry": "^1.6.1" } }, "sha512-e1LleDykUz2Iu+MTYdkSsuWX8lvAjAcs0Xef0lNIu0S2wOAzuTxCJtcd9S3cijlwYF18EsU3rzb8jPVobxDh9Q=="],
 
     "@learncard/network-brain-service/@sentry/esbuild-plugin/@sentry/bundler-plugin-core/magic-string": ["magic-string@0.27.0", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.4.13" } }, "sha512-8UnnX2PeRAPZuN12svgR9j7M1uWMovg/CEnIwIG0LFkXSJJe4PdfUGiTGl8V9bsBHFUtfVINcSyYxd7q+kx9fA=="],
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     "@learncard/vc-api-service/serverless-esbuild/esbuild/@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.25.12", "", { "os": "aix", "cpu": "ppc64" }, "sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA=="],
 
