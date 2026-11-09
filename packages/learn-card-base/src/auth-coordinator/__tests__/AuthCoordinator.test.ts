@@ -3853,6 +3853,46 @@ describe('AuthCoordinator', () => {
             expect(verifyMigrationIdentity).not.toHaveBeenCalled();
         });
 
+        it('migrates an archive key with an expected DID without invoking the verifier', async () => {
+            const verifyMigrationIdentity = vi.fn();
+            const { coordinator, keyDerivation } = derivedSetup(verifyMigrationIdentity);
+            await coordinator.initialize();
+            coordinator.setMigrationData({
+                web3AuthKey: 'archive-key',
+                source: 'archive',
+                expectedDid: 'did:key:zArchive',
+            });
+
+            const result = await coordinator.migrate('archive-key', 'did:key:zArchive');
+            expect(result.status).toBe('ready');
+            expect(keyDerivation.storeAuthShare).toHaveBeenCalled();
+            expect(verifyMigrationIdentity).not.toHaveBeenCalled();
+        });
+
+        it('preserves the server DID and refuses a differing archive key without writes', async () => {
+            const verifyMigrationIdentity = vi.fn();
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        ...defaultServerStatus,
+                        needsMigration: true,
+                        primaryDid: 'did:key:zServer',
+                    } satisfies ServerKeyStatus),
+                },
+                config: { verifyMigrationIdentity },
+            });
+            await coordinator.initialize();
+            coordinator.setMigrationData({ web3AuthKey: 'archive-key', source: 'archive' });
+            expect(coordinator.getState().migrationData?.expectedDid).toBe('did:key:zServer');
+
+            const result = await coordinator.migrate('archive-key', 'did:key:zArchive');
+            expect(result).toMatchObject({ status: 'error', canRetry: false });
+            if (result.status === 'error')
+                expect(result.error).toContain('MIGRATION_IDENTITY_MISMATCH');
+            for (const write of writes(keyDerivation)) expect(write).not.toHaveBeenCalled();
+            expect(verifyMigrationIdentity).not.toHaveBeenCalled();
+        });
+
         it('refuses without writing when the verifier reports a mismatch', async () => {
             const verifyMigrationIdentity = vi.fn().mockResolvedValue('mismatch');
             const { coordinator, keyDerivation } = derivedSetup(verifyMigrationIdentity);
