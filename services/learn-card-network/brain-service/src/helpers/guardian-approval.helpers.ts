@@ -19,6 +19,30 @@ export const GUARDIAN_RESEND_COOLDOWN_SECONDS = 60;
 export const GUARDIAN_SEND_WINDOW_SECONDS = 60 * 60;
 export const GUARDIAN_MAX_SENDS_PER_WINDOW = 5;
 export const DEFAULT_GUARDIAN_APPROVAL_TTL_HOURS = 24 * 7;
+/** Extra time a request record (which holds the guardian's email) outlives its link. */
+export const GUARDIAN_REQUEST_RETENTION_BUFFER_SECONDS = 30 * 24 * 60 * 60;
+
+/**
+ * Seconds to keep a request record: the longer of its link lifetime (or the default
+ * link lifetime) and the attempt window, plus a retention buffer. Missing history on a
+ * pending profile reads as `unknown`, so expiry is safe.
+ */
+export const getGuardianRequestRetentionSeconds = (
+    record: Pick<GuardianApprovalRequestRecord, 'expiresAt'>,
+    now: number = Date.now()
+): number => {
+    const linkSeconds = record.expiresAt
+        ? Math.ceil((Date.parse(record.expiresAt) - now) / 1000)
+        : 0;
+
+    return (
+        Math.max(
+            linkSeconds,
+            DEFAULT_GUARDIAN_APPROVAL_TTL_HOURS * 60 * 60,
+            GUARDIAN_SEND_WINDOW_SECONDS
+        ) + GUARDIAN_REQUEST_RETENTION_BUFFER_SECONDS
+    );
+};
 
 /**
  * Latest account-level guardian approval request for a profile. Kept in the cache next to
@@ -53,7 +77,11 @@ export const setGuardianApprovalRequest = async (
     profileId: string,
     record: GuardianApprovalRequestRecord
 ): Promise<void> => {
-    await cache.set(`${GUARDIAN_REQUEST_PREFIX}${profileId}`, JSON.stringify(record), false);
+    await cache.set(
+        `${GUARDIAN_REQUEST_PREFIX}${profileId}`,
+        JSON.stringify(record),
+        getGuardianRequestRetentionSeconds(record)
+    );
 };
 
 export const deleteGuardianApprovalRequest = async (profileId: string): Promise<void> => {
@@ -64,7 +92,10 @@ export const invalidateGuardianApprovalToken = async (token: string): Promise<vo
     await cache.delete([`${GUARDIAN_APPROVAL_PREFIX}${token}`]);
 };
 
-/** Returns a lock id when acquired, or null when another send is already in flight. */
+/**
+ * Returns a lock id when acquired, or null when another send is already in flight.
+ * Cache errors are rethrown so callers never report an outage as a concurrent send.
+ */
 export const acquireGuardianSendLock = async (profileId: string): Promise<string | null> => {
     const lockId = uuid();
     const redis = cache.redis ?? cache.node;
@@ -80,7 +111,7 @@ export const acquireGuardianSendLock = async (profileId: string): Promise<string
         return result === 'OK' ? lockId : null;
     } catch (error) {
         console.error('Unable to acquire guardian approval send lock', error);
-        return null;
+        throw error;
     }
 };
 
@@ -237,7 +268,8 @@ export const validateGuardianApprovalTokenDetailed = async (
 
 /**
  * An account approval token only counts while it targets the guardian address on the
- * learner's current request. Tokens without request history (legacy) remain valid.
+ * learner's current request, and, once a send is accepted, only if it is that send's token.
+ * Tokens without request history (legacy) remain valid.
  */
 export const isGuardianApprovalTokenCurrent = async (
     data: GuardianApprovalTokenData
@@ -245,9 +277,13 @@ export const isGuardianApprovalTokenCurrent = async (
     const request = await getGuardianApprovalRequest(data.requesterProfileId);
     if (!request) return true;
 
-    return (
-        normalizeGuardianEmail(request.guardianEmail) === normalizeGuardianEmail(data.guardianEmail)
-    );
+    if (
+        normalizeGuardianEmail(request.guardianEmail) !== normalizeGuardianEmail(data.guardianEmail)
+    ) {
+        return false;
+    }
+
+    return !(request.status === 'accepted' && request.token && request.token !== data.token);
 };
 
 export const markGuardianApprovalTokenAsUsed = async (token: string): Promise<boolean> => {
