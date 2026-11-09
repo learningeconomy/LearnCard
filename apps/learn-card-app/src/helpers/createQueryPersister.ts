@@ -63,7 +63,9 @@ export const createQueryPersister = (
         const snapshot = pending;
         clearPending();
         if (!snapshot) return writes;
-        const serialized = JSON.stringify(sanitizePersistedQueries(withoutMissingOwnProfiles(snapshot)));
+        const serialized = JSON.stringify(
+            sanitizePersistedQueries(withoutMissingOwnProfiles(snapshot))
+        );
         return enqueue(() => storage.setItem(CACHE_KEY, serialized));
     };
 

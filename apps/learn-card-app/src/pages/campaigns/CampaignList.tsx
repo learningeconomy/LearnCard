@@ -3,7 +3,7 @@ import { IonIcon } from '@ionic/react';
 import { addOutline, refreshOutline, chevronForwardOutline } from 'ionicons/icons';
 import { Link } from 'react-router-dom';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { dropMalformedInfiniteCacheEntry } from 'learn-card-base';
+import { dropMalformedInfiniteCacheEntry } from 'learn-card-base/react-query/infiniteQueryGuard';
 import type { Campaign, CampaignStatus } from '@learncard/types';
 import type { CampaignApi } from './types';
 import { useCampaignStats } from './CampaignStats';

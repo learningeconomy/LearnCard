@@ -1,5 +1,5 @@
 import { useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
-import { dropMalformedInfiniteCacheEntry } from 'learn-card-base';
+import { dropMalformedInfiniteCacheEntry } from 'learn-card-base/react-query/infiniteQueryGuard';
 import { useWallet } from 'learn-card-base';
 import type { CredentialActivityEventType } from '@learncard/types';
 

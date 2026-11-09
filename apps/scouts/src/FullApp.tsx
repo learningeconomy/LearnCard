@@ -19,8 +19,8 @@ import {
     lazyWithRetry,
     Toast,
     InAppMessageHost,
-    sanitizePersistedQueries,
 } from 'learn-card-base';
+import { sanitizePersistedQueries } from 'learn-card-base/react-query/infiniteQueryGuard';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { LocaleProfileSync } from './i18n/useSyncLocaleToProfile';

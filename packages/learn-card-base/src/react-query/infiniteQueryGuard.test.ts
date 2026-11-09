@@ -30,16 +30,19 @@ describe('isInfiniteData', () => {
 describe('shouldDropMalformedInfiniteEntry', () => {
     it.each(malformedEntries)('drops known infinite key with %s', (_, data) => {
         expect(
-            shouldDropMalformedInfiniteEntry(['useGetPaginatedManagedBoosts', '', 'achievement'], data)
+            shouldDropMalformedInfiniteEntry(
+                ['useGetPaginatedManagedBoosts', '', 'achievement'],
+                data
+            )
         ).toBe(true);
     });
 
     it('keeps a valid InfiniteData entry for a known key', () => {
         expect(
-            shouldDropMalformedInfiniteEntry(
-                ['useGetPaginatedManagedBoosts', '', 'achievement'],
-                { pages: [], pageParams: [] }
-            )
+            shouldDropMalformedInfiniteEntry(['useGetPaginatedManagedBoosts', '', 'achievement'], {
+                pages: [],
+                pageParams: [],
+            })
         ).toBe(false);
     });
 

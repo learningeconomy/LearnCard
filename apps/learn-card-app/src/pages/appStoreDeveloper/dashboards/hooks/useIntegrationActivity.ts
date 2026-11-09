@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { dropMalformedInfiniteCacheEntry, useWallet } from 'learn-card-base';
+import { useWallet } from 'learn-card-base';
+import { dropMalformedInfiniteCacheEntry } from 'learn-card-base/react-query/infiniteQueryGuard';
 import * as m from '../../../../paraglide/messages.js';
 
 import type { CredentialTemplate } from '../types';
@@ -230,7 +231,10 @@ export function useIntegrationActivity(
     const boostUris = templates.map(t => t.boostUri).filter(Boolean) as string[];
     const boostUrisKey = boostUris.join(',');
     const queryClient = useQueryClient();
-    const activityQueryKey = ['getMyActivities', { limit, integrationId, listingId, eventType, boostUri }] as const;
+    const activityQueryKey = [
+        'getMyActivities',
+        { limit, integrationId, listingId, eventType, boostUri },
+    ] as const;
     dropMalformedInfiniteCacheEntry(queryClient, activityQueryKey, 'getMyActivities');
 
     const activityQuery = useInfiniteQuery({

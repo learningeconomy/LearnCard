@@ -320,4 +320,3 @@ describe('managed-boosts page recovery (LC-2352)', () => {
         expect(getPaginatedBoosts).toHaveBeenCalledOnce();
     });
 });
-

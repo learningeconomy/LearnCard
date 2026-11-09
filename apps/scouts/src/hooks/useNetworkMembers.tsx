@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { CredentialCategoryEnum, dropMalformedInfiniteCacheEntry, useWallet } from 'learn-card-base';
+import { CredentialCategoryEnum, useWallet } from 'learn-card-base';
+import { dropMalformedInfiniteCacheEntry } from 'learn-card-base/react-query/infiniteQueryGuard';
 
 import { PaginationOptionsType } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
@@ -12,7 +13,12 @@ const useNetworkMembers = (
 ) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
-    const queryKey = ['useNetworkMembers', boostUri, profileSearchString, initialOptions.limit] as const;
+    const queryKey = [
+        'useNetworkMembers',
+        boostUri,
+        profileSearchString,
+        initialOptions.limit,
+    ] as const;
     dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useNetworkMembers');
 
     return useInfiniteQuery({

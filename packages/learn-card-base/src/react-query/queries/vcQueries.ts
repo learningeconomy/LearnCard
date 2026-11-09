@@ -32,10 +32,7 @@ import {
     type HeldCredential,
 } from 'learn-card-base/helpers/credentialLifecycleStatus';
 import { getLogger } from '../../logging/logger';
-import {
-    dropMalformedInfiniteCacheEntry,
-    isInfiniteData,
-} from '../infiniteQueryGuard';
+import { dropMalformedInfiniteCacheEntry, isInfiniteData } from '../infiniteQueryGuard';
 export { isInfiniteData } from '../infiniteQueryGuard';
 import { walletStore } from '../../stores/walletStore';
 import {
