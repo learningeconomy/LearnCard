@@ -12,10 +12,13 @@
  * Equivalence follows platform `new Request(input, init)` rules (init.headers
  * *replaces* Request headers, it does not merge). Semantics include method, URL,
  * headers (so WASM's `Accept: application/json` is keyed, not bypassed), credentials,
- * mode, cache, redirect, and referrer policy. Requests with `integrity` pass through
- * to native fetch untouched. Rebuilt Responses keep `url` (DIDKit parses it).
- * Clear/invalidate bump a generation so stale in-flight work cannot join or
- * repopulate after the body finishes streaming.
+ * mode, cache, redirect, and referrer policy. Non-cacheable traffic (non-GET,
+ * non-did.json, integrity, no-store, etc.) is decided with cheap peeks and the
+ * original input/init are forwarded untouched — never `new Request` first, so
+ * body-bearing POSTs are not consumed. Only GET did.json paths normalize.
+ * Rebuilt Responses keep `url` (DIDKit parses it). Clear/invalidate bump a
+ * generation so stale in-flight work cannot join or repopulate after the body
+ * finishes streaming.
  */
 
 export const DEFAULT_DID_WEB_DOCUMENT_TTL_MS = 10_000;
@@ -100,6 +103,7 @@ const headersToSortedTuples = (headers: Headers): [string, string][] => {
 /**
  * Normalize with the platform Request constructor so `init.headers` *replaces*
  * (does not merge with) headers from an input Request — matching native fetch.
+ * Only call this after the cheap passthrough gate: GET did.json requests have no body.
  */
 const normalizeRequest = (input: RequestInfo | URL, init?: RequestInit): Request =>
     new Request(input, init);
@@ -131,9 +135,40 @@ const semanticsKey = (semantics: RequestSemantics): string =>
 const sharedNetworkRequest = (normalized: Request, signal: AbortSignal): Request =>
     new Request(normalized, { signal });
 
-const requestHasIntegrity = (request: Request, init?: RequestInit): boolean => {
+/** Cheap peeks — never construct Request / never touch body. */
+const peekRequestUrl = (input: RequestInfo | URL): string => {
+    if (typeof input === 'string') return input;
+    if (input instanceof URL) return input.href;
+    return input.url;
+};
+
+const peekMethod = (input: RequestInfo | URL, init?: RequestInit): string => {
+    if (init?.method) return init.method.toUpperCase();
+    if (input instanceof Request) return input.method.toUpperCase();
+    return 'GET';
+};
+
+const peekHasIntegrity = (input: RequestInfo | URL, init?: RequestInit): boolean => {
     if (typeof init?.integrity === 'string' && init.integrity.length > 0) return true;
-    return typeof request.integrity === 'string' && request.integrity.length > 0;
+    if (input instanceof Request && input.integrity.length > 0) return true;
+    return false;
+};
+
+const peekCacheMode = (input: RequestInfo | URL, init?: RequestInit): RequestCache => {
+    if (init?.cache) return init.cache;
+    if (input instanceof Request) return input.cache;
+    return 'default';
+};
+
+/** did.json check without constructing Request or requiring absolute URL parse. */
+const peekIsDidWebDocumentUrl = (url: string): boolean => {
+    try {
+        const pathname = new URL(url).pathname;
+        return pathname === '/did.json' || pathname.endsWith('/did.json');
+    } catch {
+        const path = url.split(/[?#]/, 1)[0] ?? url;
+        return path === 'did.json' || path.endsWith('/did.json');
+    }
 };
 
 /** True for did:web document URLs (`/did.json`), including `.well-known/did.json`. */
@@ -328,6 +363,22 @@ async function cachedFetch(input: RequestInfo | URL, init?: RequestInit): Promis
         return globalThis.fetch(input, init);
     }
 
+    // Cheap passthrough decision — never `new Request` / never touch the body here.
+    // Body-bearing POST/PUT/PATCH Request inputs must reach native fetch unused.
+    if (peekHasIntegrity(input, init)) {
+        return fetchImpl(input, init);
+    }
+    if (peekMethod(input, init) !== 'GET') {
+        return fetchImpl(input, init);
+    }
+    if (!peekIsDidWebDocumentUrl(peekRequestUrl(input))) {
+        return fetchImpl(input, init);
+    }
+    if (shouldBypassRequestCacheMode(peekCacheMode(input, init))) {
+        return fetchImpl(input, init);
+    }
+
+    // Cacheable GET did.json only (no body). Safe to normalize for header-replace rules.
     let normalized: Request;
     try {
         normalized = normalizeRequest(input, init);
@@ -335,20 +386,12 @@ async function cachedFetch(input: RequestInfo | URL, init?: RequestInit): Promis
         return fetchImpl(input, init);
     }
 
-    // Content integrity must stay on the native path (cold + warm). Keying/caching
-    // would skip the check on hits; passthrough is the simpler correct fix.
-    if (requestHasIntegrity(normalized, init)) {
-        return fetchImpl(input, init);
-    }
-
     const semantics = describeSemanticsFromRequest(normalized);
 
+    // Belt-and-suspenders after normalize (relative URL edge cases, etc.).
     if (semantics.method !== 'GET' || !isDidWebDocumentUrl(semantics.url)) {
         return fetchImpl(input, init);
     }
-
-    // Request cache modes that mean "don't use a stored response" skip both success
-    // cache and in-flight join (each caller hits the network with full semantics).
     if (shouldBypassRequestCacheMode(semantics.cache)) {
         return fetchImpl(input, init);
     }

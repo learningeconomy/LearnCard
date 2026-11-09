@@ -504,6 +504,74 @@ describe('didWebDocumentCache', () => {
         expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
+    it('does not consume body-bearing non-did.json Request inputs (POST/PUT/PATCH)', async () => {
+        const received: { method: string; body: string }[] = [];
+        fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+            // Must be able to construct from the original — proves it was not already used.
+            const req =
+                input instanceof Request ? new Request(input, init) : new Request(input, init);
+            received.push({ method: req.method.toUpperCase(), body: await req.text() });
+            return new Response('ok', { status: 200 });
+        });
+
+        for (const method of ['POST', 'PUT', 'PATCH'] as const) {
+            const req = new Request('https://example.com/api', { method, body: `hello-${method}` });
+            await fetch(req);
+        }
+
+        expect(received).toEqual([
+            { method: 'POST', body: 'hello-POST' },
+            { method: 'PUT', body: 'hello-PUT' },
+            { method: 'PATCH', body: 'hello-PATCH' },
+        ]);
+        expect(getDidWebDocumentFetchCacheStats().successEntries).toBe(0);
+    });
+
+    it('forwards Request+init body overrides without consuming the original early', async () => {
+        let receivedBody = '';
+        let receivedMethod = '';
+        fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+            const req =
+                input instanceof Request ? new Request(input, init) : new Request(input, init);
+            receivedMethod = req.method.toUpperCase();
+            receivedBody = await req.text();
+            return new Response('ok', { status: 200 });
+        });
+
+        const original = new Request('https://example.com/api', {
+            method: 'POST',
+            body: 'from-request',
+        });
+        await fetch(original, { method: 'PUT', body: 'from-init' });
+        expect(receivedMethod).toBe('PUT');
+        expect(receivedBody).toBe('from-init');
+    });
+
+    it('does not consume a ReadableStream request body before passthrough', async () => {
+        let receivedBody = '';
+        fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+            const req =
+                input instanceof Request ? new Request(input, init) : new Request(input, init);
+            receivedBody = await req.text();
+            return new Response('ok', { status: 200 });
+        });
+
+        const stream = new ReadableStream<Uint8Array>({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('stream-hello'));
+                controller.close();
+            },
+        });
+        const req = new Request('https://example.com/api', {
+            method: 'POST',
+            body: stream,
+            // Node/undici requires duplex when body is a stream.
+            duplex: 'half',
+        } as RequestInit);
+        await fetch(req);
+        expect(receivedBody).toBe('stream-hello');
+    });
+
     it('throws when install is called without globalThis.fetch', () => {
         resetDidWebDocumentFetchCacheForTests();
         const previous = globalThis.fetch;
