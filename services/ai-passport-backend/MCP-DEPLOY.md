@@ -27,22 +27,17 @@ blocks deploy.
 
 ## Per-Environment configuration
 
-| Name                          | Kind             | Purpose                                                                                                   |
-| ----------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------- |
-| `FLY_API_TOKEN`               | secret           | Deploy token scoped to the target app (`fly tokens create deploy -a <app>`)                               |
-| `MCP_DOMAIN`                  | var              | Passed as `DOMAIN`: the OAuth issuer (AI Passport API base URL)                                           |
-| `MCP_SERVER_URL`              | var              | Passed as `MCP_SERVER_URL`: the protected-resource URL clients use                                        |
-| `FLY_APP_NAME`                | var              | Staging only; production is pinned to `mcp-learncard`                                                     |
-| `QDRANT_HOST`                 | var, required    | Reachable Qdrant hostname only, no scheme/port/credentials; not localhost                                 |
-| `QDRANT_PORT`                 | var, required    | Explicit port 1..65535 (e.g. 6333, or 443 for hosted TLS)                                                 |
-| `QDRANT_HTTPS`                | var, required    | Explicit `true` for TLS or `false` for private plaintext                                                  |
-| `MCP_PEER_API_FLY_APP`        | var, required    | Peer API/worker Fly app that owns the shared `AI_PRIVACY_KEY` and Redis store (production: `ai-passport`) |
-| `MCP_REDIS_PREFIX`            | var, required    | Exact Redis key prefix used by that peer (passed as `REDIS_PREFIX`; do not rely on the code default)      |
-| `MCP_EXPECTED_PRIVACY_KEY_FP` | var, required    | 64-hex privacy-key fingerprint from `scripts/mcp-alignment-fingerprint.sh --app <peer>`                   |
-| `MCP_EXPECTED_REDIS_STORE_FP` | var, required    | 64-hex Redis store/prefix fingerprint from the same peer run                                              |
-| `MCP_EXPECTED_MONGO_FP`       | var, required    | 64-hex Mongo URI fingerprint from the same peer run (same database as API/worker)                         |
-| `MCP_EXPECTED_QDRANT_FP`      | var, required    | 64-hex Qdrant host/port/TLS fingerprint from the same peer run (same vector store as API/worker)          |
-| `MCP_SMOKE_TOKEN`             | secret, optional | Bearer token for a synthetic user; enables the authorized smoke checks                                    |
+| Name               | Kind             | Purpose                                                                                                 |
+| ------------------ | ---------------- | ------------------------------------------------------------------------------------------------------- |
+| `FLY_API_TOKEN`    | secret           | Deploy token scoped to the target app (`fly tokens create deploy -a <app>`)                             |
+| `MCP_DOMAIN`       | var              | Passed as `DOMAIN`: the OAuth issuer (AI Passport API base URL)                                         |
+| `MCP_SERVER_URL`   | var              | Passed as `MCP_SERVER_URL`: the protected-resource URL clients use                                      |
+| `FLY_APP_NAME`     | var              | Staging only; production is pinned to `mcp-learncard`                                                   |
+| `QDRANT_HOST`      | var, required    | Reachable Qdrant hostname only, no scheme/port/credentials; not localhost                               |
+| `QDRANT_PORT`      | var, required    | Explicit port 1..65535 (e.g. 6333, or 443 for hosted TLS)                                               |
+| `QDRANT_HTTPS`     | var, required    | Explicit `true` for TLS or `false` for private plaintext                                                |
+| `MCP_REDIS_PREFIX` | var, required    | Shared Redis key prefix with the API/worker (passed as `REDIS_PREFIX`; do not rely on the code default) |
+| `MCP_SMOKE_TOKEN`  | secret, optional | Bearer token for a synthetic user; enables the authorized smoke checks                                  |
 
 All non-optional configuration is required. The job rejects non-https/localhost OAuth URLs,
 loopback or malformed Qdrant hosts, invalid Qdrant ports/TLS flags, and staging production targets.
@@ -69,14 +64,12 @@ requires authentication; confirm access separately before cutover.
 
 Each deploy, in order (HTTP checks run against **both** the Fly hostname and client-facing `MCP_SERVER_URL`):
 
-1. Pre-traffic: in-process privacy, Redis, Mongo, and Qdrant fingerprints match `MCP_EXPECTED_*_FP`
-   from the peer API/worker (runs before `fly deploy`; mismatch never receives traffic).
-2. Machines on the app all run image label `$GITHUB_SHA` (`flyctl machines list`).
-3. `/.well-known/oauth-protected-resource`: `resource` equals `MCP_SERVER_URL` and the first
+1. Machines on the app all run image label `$GITHUB_SHA` (`flyctl machines list`).
+2. `/.well-known/oauth-protected-resource`: `resource` equals `MCP_SERVER_URL` and the first
    `authorization_servers` entry equals `MCP_DOMAIN`.
-4. `/.well-known/oauth-authorization-server`: `issuer` equals `MCP_DOMAIN`.
-5. Unauthenticated `tools/list` returns 401.
-6. With `MCP_SMOKE_TOKEN`: authorized `tools/list` includes `get_user_context`, and calling it
+3. `/.well-known/oauth-authorization-server`: `issuer` equals `MCP_DOMAIN`.
+4. Unauthenticated `tools/list` returns 401.
+5. With `MCP_SMOKE_TOKEN`: authorized `tools/list` includes `get_user_context`, and calling it
    (read-only) returns a result rather than its backend-failure fallback. Without the token, these
    checks are skipped with a warning.
 
@@ -108,31 +101,22 @@ MCP_SMOKE_TOKEN=<optional> services/ai-passport-backend/scripts/smoke-mcp.sh
    breaks subject references, erasure tombstones, operation fences, and shared erasure decryption.
    A different Mongo or Qdrant store lets erasure reconciliation fence/acknowledge the wrong
    vectors while the peer's store retains data.
-4. Set Environment vars `MCP_PEER_API_FLY_APP` (production: `ai-passport`), `MCP_REDIS_PREFIX`
-   to the peer's exact prefix, then run
-   `services/ai-passport-backend/scripts/mcp-alignment-fingerprint.sh --app <peer>` (with the peer's
-   Qdrant host/port/TLS as `--qdrant-*` if those are only on the peer via process env) and store
-   `privacy=` / `redis=` / `mongo=` / `qdrant=` as `MCP_EXPECTED_PRIVACY_KEY_FP`,
-   `MCP_EXPECTED_REDIS_STORE_FP`, `MCP_EXPECTED_MONGO_FP`, and `MCP_EXPECTED_QDRANT_FP`. The script
-   HMACs inside the peer process and never prints secret values. Fly secret digests are **not** used:
-   they are truncated collide-able change hints, not cross-app authenticators.
-   The deploy job re-runs the same fingerprints on MCP **before** `fly deploy` (injecting the
-   about-to-ship `REDIS_PREFIX` and Qdrant `--env` values into the fingerprint process only) and
-   fails closed on mismatch so a bad release never receives traffic. Automatic rollback is not used
-   because the pre-traffic gate is feasible.
-
-    **Stale peer fingerprints:** Environment fingerprint vars do not auto-refresh when the peer's
-    key/Redis/Mongo/Qdrant change. Fresh per-deploy peer attestation would need SSH/exec into the
-    peer API/worker app (wider Fly token than the MCP-scoped deploy token) or another trusted
-    channel. That access is held for Taylor's decision; until then operators must re-run the script
-    on the peer and update the Environment vars whenever the peer store configuration changes.
-
-5. Resolve the `DOMAIN` and `MCP_SERVER_URL` Fly secrets on `mcp-learncard`: they override the
+4. Set Environment var `MCP_REDIS_PREFIX` to the peer API/worker's exact Redis key prefix (passed
+   as `REDIS_PREFIX` on deploy; do not rely on the code default).
+5. **Manual shared-store confirmation (one-time cutover checklist; not automated):** Confirm,
+   without exposing any secret values, that MCP uses the **same** `AI_PRIVACY_KEY`, Redis
+   host/port/password/prefix, `MONGO_URI`, and Qdrant endpoint as the API/worker. A practical
+   value-free approach: on a trusted operator workstation with access to both apps, derive the
+   same out-of-band fingerprints (or other non-reversible digests) for each setting on the peer
+   and on MCP, then compare only those digests locally—never paste secret values into tickets,
+   chat, CI logs, or GitHub vars. Re-check only when those peer settings change. The deploy
+   workflow does **not** enforce this alignment.
+6. Resolve the `DOMAIN` and `MCP_SERVER_URL` Fly secrets on `mcp-learncard`: they override the
    deploy's `--env`, so their presence must be removed under separate approval before rollout; matching values are not an exception.
-6. Set `QDRANT_HOST`/`QDRANT_PORT`/`QDRANT_HTTPS` to the **peer API/worker's** Qdrant endpoint
+7. Set `QDRANT_HOST`/`QDRANT_PORT`/`QDRANT_HTTPS` to the **peer API/worker's** Qdrant endpoint
    (not merely any reachable instance); add Fly `QDRANT_API_KEY` if that service requires it.
    Remove any shadowing Qdrant endpoint secrets under separate approval.
-7. Provision/confirm Fly web identity: a maintained token file, `AWS_WEB_IDENTITY_TOKEN_FILE`
+8. Provision/confirm Fly web identity: a maintained token file, `AWS_WEB_IDENTITY_TOKEN_FILE`
    path configured on the app, `AWS_ROLE_ARN`, and matching AWS OIDC trust and Bedrock permissions.
    Role ARN alone is insufficient; name-only preflight is not an authentication proof.
 
@@ -175,6 +159,6 @@ services/ai-passport-backend/scripts/rollback-mcp.sh
   still run the rollback script with the OAuth/Qdrant/Redis prefix values that release effectively
   used.
 - Or re-run Deploy manually from the last good commit (preferred when that commit's Environment
-  vars are still correct): that path also re-supplies `--env` and re-checks fingerprints.
+  vars are still correct): that path also re-supplies `--env`.
 - If the URLs were wrong, fix the Environment vars and redeploy; the smoke step reports what the
   server actually served.
