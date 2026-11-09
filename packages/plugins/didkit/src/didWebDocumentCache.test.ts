@@ -115,9 +115,7 @@ describe('didWebDocumentCache', () => {
         await fetch(DOC_URL);
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
-        invalidateDidWebDocument(
-            'did:web:network.learncard.com:users:playwright-test-demo-boi'
-        );
+        invalidateDidWebDocument('did:web:network.learncard.com:users:playwright-test-demo-boi');
         expect(getDidWebDocumentFetchCacheStats().successEntries).toBe(0);
 
         await fetch(DOC_URL);
