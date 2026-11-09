@@ -36,6 +36,7 @@ import { walletStore } from '../../stores/walletStore';
 import {
     fetchResolvedCredential,
     tryFetchResolvedCredential,
+    prefetchResolvedCredentials,
     resolvedCredentialQueryOptions,
     UnresolvableCredentialError,
 } from './credentialResolution';
@@ -116,9 +117,9 @@ export const useResolveManyCredentials = (uris: string[] | undefined, enabled = 
         queryKey: ['useResolveManyCredentials', uris, wallet?.id.did() ?? ''],
         queryFn: async () => {
             if (!wallet || !uris) return [];
-            return Promise.all(
-                uris.map(uri => tryFetchResolvedCredential(queryClient, wallet, uri))
-            );
+            // One (or a few chunked) storage.batchResolve round-trips instead of N storage.resolve
+            // POSTs — see LC-2382. Per-URI failures stay undefined without rejecting the list.
+            return prefetchResolvedCredentials(queryClient, wallet, uris);
         },
         // Recheck partial results on the next mount; keep successful raw documents shared.
         staleTime: query =>
@@ -130,6 +131,8 @@ export const useResolveManyCredentials = (uris: string[] | undefined, enabled = 
 export const useGetResolvedCredentials = (uris?: (string | undefined)[], enabled = true) => {
     const wallet = useCredentialReader();
     const queryClient = useQueryClient();
+    // When learnCloudBatchResolve exists, concurrent queryFns coalesce into storage.batchResolve
+    // (LC-2382). Without it, each URI still uses read.get via the shared RQ cache.
     return useQueries({
         queries:
             enabled && uris
