@@ -260,7 +260,7 @@ test('CLI emits a bounded successful comparison and explains its limits', t => {
                 ...process.env,
                 GITHUB_SHA: sha,
                 GITHUB_STEP_SUMMARY: summary,
-            MAID_FULL_JOB_OUTCOME: 'success',
+                MAID_FULL_JOB_OUTCOME: 'success',
                 MAID_FULL_TEST_OUTCOME: 'success',
                 MAID_FULL_SNAPSHOT_OUTCOME: 'success',
                 MAID_SHADOW_GENERATOR_OUTCOME: 'success',
