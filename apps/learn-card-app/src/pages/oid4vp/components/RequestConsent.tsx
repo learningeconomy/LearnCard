@@ -36,6 +36,8 @@ interface ParsedSdJwtForConsent {
     issuer?: string;
     vct?: string;
     expiresAt?: Date;
+    /** Mandatory metadata is separate from fields the learner can select. */
+    rawPayload?: { status?: unknown };
 }
 
 interface SdJwtAwareInvoke {
