@@ -1036,6 +1036,11 @@ jobs:
                   # unless ESCROW_ENCLAVE_MODE is set; the kill switch halts releases immediately.
                   ESCROW_ENCLAVE_MODE: ${{ vars.ESCROW_ENCLAVE_MODE }}
                   ESCROW_RELEASE_KILL_SWITCH: ${{ vars.ESCROW_RELEASE_KILL_SWITCH }}
+                  # Archived legacy keys for the account upgrade; off unless enabled. Bucket and
+                  # key ARN also scope the IAM grant in serverless.yml (empty = no grant).
+                  LEGACY_KEY_ARCHIVE_ENABLED: ${{ vars.LEGACY_KEY_ARCHIVE_ENABLED }}
+                  LEGACY_KEY_ARCHIVE_BUCKET: ${{ vars.LEGACY_KEY_ARCHIVE_BUCKET }}
+                  LEGACY_KEY_ARCHIVE_KMS_KEY_ARN: ${{ vars.LEGACY_KEY_ARCHIVE_KMS_KEY_ARN }}
                   # Deploy-time only (serverless.yml PrivateLink resources); empty = none created.
                   ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME: ${{ vars.ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME }}
                   ESCROW_ENCLAVE_HOSTNAME: ${{ vars.ESCROW_ENCLAVE_HOSTNAME }}

@@ -25,6 +25,9 @@ export const lcaApiEnvironmentShape = {
     PORT: environmentPort.default(3000),
     SEED: requiredEnvironmentString,
     SA_SEED_KMS_KEY_ARN: optionalEnvironmentString,
+    LEGACY_KEY_ARCHIVE_ENABLED: optionalEnvironmentBoolean.transform(value => value ?? false),
+    LEGACY_KEY_ARCHIVE_BUCKET: optionalEnvironmentString,
+    LEGACY_KEY_ARCHIVE_KMS_KEY_ARN: optionalEnvironmentString,
     SA_SEED_LOCAL_KEK: optionalEnvironmentString,
     // Defaults depend on offline/test mode and are resolved below.
     SA_SEED_ENCRYPT_WRITES: optionalEnvironmentBoolean,
@@ -128,6 +131,41 @@ export const lcaApiEnvironmentSchema = z
         };
     })
     .superRefine((environment, context) => {
+        if (
+            environment.LEGACY_KEY_ARCHIVE_ENABLED &&
+            (environment.IS_OFFLINE || environment.IS_E2E_TEST)
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['LEGACY_KEY_ARCHIVE_ENABLED'],
+                message:
+                    'The legacy key archive requires verified authentication, not offline or E2E mode',
+            });
+        }
+        for (const field of [
+            'LEGACY_KEY_ARCHIVE_BUCKET',
+            'LEGACY_KEY_ARCHIVE_KMS_KEY_ARN',
+        ] as const) {
+            if (environment.LEGACY_KEY_ARCHIVE_ENABLED && !environment[field]) {
+                context.addIssue({
+                    code: 'custom',
+                    path: [field],
+                    message: 'Required when the legacy key archive is enabled',
+                });
+            }
+        }
+        if (
+            environment.LEGACY_KEY_ARCHIVE_KMS_KEY_ARN &&
+            !/^arn:aws[a-z-]*:kms:[a-z0-9-]+:\d{12}:key\/[a-zA-Z0-9-]+$/.test(
+                environment.LEGACY_KEY_ARCHIVE_KMS_KEY_ARN
+            )
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['LEGACY_KEY_ARCHIVE_KMS_KEY_ARN'],
+                message: 'Must be a KMS key ARN (not an alias)',
+            });
+        }
         if (
             environment.KEYCLOAK_ISSUERS?.split(',').some(value => value.trim()) &&
             !environment.KEYCLOAK_AUDIENCES?.split(',').some(value => value.trim())
