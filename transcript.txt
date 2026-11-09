@@ -1,0 +1,29 @@
+The full LearnCard account flow
+A website can ask for credential details through Android.
+LearnCard uses the signed-in account and its credential inventory.
+This recording uses a synthetic course credential.
+
+A website requests two details
+Chrome opens Android's credential picker.
+The request asks for the course name and completion date.
+No separate verifier APK is needed for this browser flow.
+
+The learner reviews in LearnCard
+Android opens the actual LearnCard consent screen.
+It shows the authenticated website origin and requested fields.
+The learner approves before LearnCard returns a signed response.
+
+A separate verifier checks the proof
+The website sends the response to its verifier server.
+Community @openeudi/openid4vp checks signatures, request binding and requested fields.
+The green result appears only after verification passes.
+
+Declining returns no credential
+A separate test unchecked a required field: approval was disabled.
+Cancel returned to Chrome with no credential.
+Warm and cold process tests also passed.
+
+What is still pending?
+Physical Samsung Galaxy Fold testing is pending.
+Production provider registration remains disabled.
+SQLite encryption is explicitly outside this sprint.
