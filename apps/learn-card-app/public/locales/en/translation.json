@@ -10494,8 +10494,8 @@
         "refresh": "Refresh",
         "moreSchools": "More schools are coming soon",
         "privacyStudentTitle": "Set by your school",
-        "privacySharedTitle": "What your school sees",
-        "privacySharedBody": "Only your student ID, and only when you ask for your transcript.",
+        "privacySharedTitle": "What we share with your school",
+        "privacySharedBody": "Only your student ID, and only when you request your transcript. Nothing else from your account.",
         "notAvailableTitle": "Not available yet"
     },
     "announcements": {
