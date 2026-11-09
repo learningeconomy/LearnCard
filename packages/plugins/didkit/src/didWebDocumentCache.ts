@@ -5,14 +5,15 @@
  * dedupe (ssi did-web drops its TimedCache lock before the HTTP GET). Opening one
  * credential can therefore stampede the same issuer document dozens of times.
  *
- * This module wraps `fetch` once so every WASM/JS caller shares:
- * - in-flight promise dedupe keyed by normalized document URL (simple GETs only)
+ * This module wraps `fetch` once so callers with *equivalent* resolver requests share:
+ * - in-flight promise dedupe keyed by normalized request semantics
  * - a short TTL success cache (failures are never stored; Cache-Control honored)
  *
- * Non-equivalent requests (Authorization, credentials, custom headers, non-default
- * mode/cache, etc.) bypass the cache so authenticated and anonymous fetches never
- * share bodies. `clearDidWebDocumentFetchCache` / per-DID invalidate bump a
- * generation so stale in-flight work cannot repopulate or be joined afterward.
+ * Equivalence includes method, URL, headers (so WASM's `Accept: application/json` is
+ * part of the key, not a bypass), credentials, mode, cache, redirect, and referrer
+ * policy. The shared network call preserves those options. Rebuilt Responses keep the
+ * original `url` (DIDKit parses it). Clear/invalidate bump a generation so stale
+ * in-flight work cannot join or repopulate after the body finishes streaming.
  */
 
 export const DEFAULT_DID_WEB_DOCUMENT_TTL_MS = 10_000;
@@ -26,6 +27,19 @@ type StoredDocument = {
     statusText: string;
     headers: [string, string][];
     body: ArrayBuffer | null;
+    /** Original response URL — required by DIDKit's wasm URL parser. */
+    url: string;
+};
+
+type RequestSemantics = {
+    method: string;
+    url: string;
+    headers: [string, string][];
+    credentials: RequestCredentials;
+    mode: RequestMode;
+    cache: RequestCache;
+    redirect: RequestRedirect;
+    referrerPolicy: ReferrerPolicy | '';
 };
 
 type InflightEntry = {
@@ -33,6 +47,7 @@ type InflightEntry = {
     controller: AbortController;
     promise: Promise<StoredDocument>;
     waiters: number;
+    semanticsKey: string;
 };
 
 type FetchLike = typeof globalThis.fetch;
@@ -41,12 +56,12 @@ let installed = false;
 let underlyingFetch: FetchLike | undefined;
 let ttlMs = DEFAULT_DID_WEB_DOCUMENT_TTL_MS;
 let maxEntries = DEFAULT_DID_WEB_DOCUMENT_CACHE_MAX_ENTRIES;
-/** Bumped by clear/invalidate so stale in-flight work cannot join or repopulate. */
+/** Bumped by clear so stale in-flight work cannot join or repopulate. */
 let cacheGeneration = 0;
 
 const successCache = new Map<string, StoredDocument>();
 const inflight = new Map<string, InflightEntry>();
-/** Per-URL generation; cleared URLs bump this so old in-flight writes are ignored. */
+/** Per-URL generation; invalidate bumps this so old in-flight writes are ignored. */
 const urlGeneration = new Map<string, number>();
 
 export type DidWebDocumentCacheStats = {
@@ -83,31 +98,10 @@ const requestMethod = (input: RequestInfo | URL, init?: RequestInit): string => 
     return 'GET';
 };
 
-const requestCacheMode = (
-    input: RequestInfo | URL,
-    init?: RequestInit
-): RequestCache | undefined => {
-    if (init?.cache) return init.cache;
-    if (typeof input !== 'string' && !(input instanceof URL)) return input.cache;
-    return undefined;
-};
+const pick = <T>(initValue: T | undefined, requestValue: T | undefined, fallback: T): T =>
+    initValue !== undefined ? initValue : requestValue !== undefined ? requestValue : fallback;
 
-const requestCredentials = (
-    input: RequestInfo | URL,
-    init?: RequestInit
-): RequestCredentials | undefined => {
-    if (init?.credentials) return init.credentials;
-    if (typeof input !== 'string' && !(input instanceof URL)) return input.credentials;
-    return undefined;
-};
-
-const requestMode = (input: RequestInfo | URL, init?: RequestInit): RequestMode | undefined => {
-    if (init?.mode) return init.mode;
-    if (typeof input !== 'string' && !(input instanceof URL)) return input.mode;
-    return undefined;
-};
-
-const requestHeaders = (input: RequestInfo | URL, init?: RequestInit): Headers => {
+const requestHeadersList = (input: RequestInfo | URL, init?: RequestInit): [string, string][] => {
     const headers = new Headers();
     if (typeof input !== 'string' && !(input instanceof URL) && input.headers) {
         new Headers(input.headers).forEach((value, key) => headers.set(key, value));
@@ -115,7 +109,14 @@ const requestHeaders = (input: RequestInfo | URL, init?: RequestInit): Headers =
     if (init?.headers) {
         new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     }
-    return headers;
+    const tuples: [string, string][] = [];
+    headers.forEach((value, key) => {
+        tuples.push([key.toLowerCase(), value]);
+    });
+    tuples.sort((a, b) =>
+        a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0
+    );
+    return tuples;
 };
 
 const requestSignal = (input: RequestInfo | URL, init?: RequestInit): AbortSignal | undefined => {
@@ -124,49 +125,49 @@ const requestSignal = (input: RequestInfo | URL, init?: RequestInit): AbortSigna
     return undefined;
 };
 
-/**
- * Only plain did:web document GETs are cacheable/deduped. Anything that could change
- * auth, cookies, CORS mode, or cache policy bypasses so distinct request contexts
- * never share a body (e.g. unauthenticated callers must not see Authorization results).
- */
-const isCacheableResolverRequest = (input: RequestInfo | URL, init?: RequestInit): boolean => {
-    if (requestMethod(input, init) !== 'GET') return false;
+const describeSemantics = (input: RequestInfo | URL, init?: RequestInit): RequestSemantics => {
+    const request = typeof input !== 'string' && !(input instanceof URL) ? input : undefined;
+    return {
+        method: requestMethod(input, init),
+        url: toAbsoluteUrl(input),
+        headers: requestHeadersList(input, init),
+        credentials: pick(init?.credentials, request?.credentials, 'same-origin'),
+        mode: pick(init?.mode, request?.mode, 'cors'),
+        cache: pick(init?.cache, request?.cache, 'default'),
+        redirect: pick(init?.redirect, request?.redirect, 'follow'),
+        referrerPolicy: pick(init?.referrerPolicy, request?.referrerPolicy, ''),
+    };
+};
 
-    const cacheMode = requestCacheMode(input, init);
-    if (cacheMode === 'no-store' || cacheMode === 'reload' || cacheMode === 'no-cache') {
-        return false;
+const semanticsKey = (semantics: RequestSemantics): string =>
+    JSON.stringify([
+        semantics.method,
+        semantics.url,
+        semantics.headers,
+        semantics.credentials,
+        semantics.mode,
+        semantics.cache,
+        semantics.redirect,
+        semantics.referrerPolicy,
+    ]);
+
+/** Build a RequestInit that preserves original resolver semantics for the shared fetch. */
+const sharedFetchInit = (semantics: RequestSemantics, signal: AbortSignal): RequestInit => {
+    const init: RequestInit = {
+        method: semantics.method,
+        credentials: semantics.credentials,
+        mode: semantics.mode,
+        cache: semantics.cache,
+        redirect: semantics.redirect,
+        signal,
+    };
+    if (semantics.headers.length > 0) {
+        init.headers = semantics.headers;
     }
-
-    const credentials = requestCredentials(input, init);
-    if (credentials && credentials !== 'omit' && credentials !== 'same-origin') {
-        return false;
+    if (semantics.referrerPolicy) {
+        init.referrerPolicy = semantics.referrerPolicy;
     }
-
-    const mode = requestMode(input, init);
-    if (mode && mode !== 'cors' && mode !== 'same-origin') {
-        return false;
-    }
-
-    if (init?.redirect && init.redirect !== 'follow') return false;
-    if (init?.integrity) return false;
-    if (init?.keepalive) return false;
-    if (init?.referrer && init.referrer !== 'about:client') return false;
-    if (init?.referrerPolicy) return false;
-
-    if (typeof input !== 'string' && !(input instanceof URL)) {
-        if (input.redirect && input.redirect !== 'follow') return false;
-        if (input.integrity) return false;
-        if (input.keepalive) return false;
-    }
-
-    const headers = requestHeaders(input, init);
-    let hasHeaders = false;
-    headers.forEach(() => {
-        hasHeaders = true;
-    });
-    if (hasHeaders) return false;
-
-    return true;
+    return init;
 };
 
 /** True for did:web document URLs (`/did.json`), including `.well-known/did.json`. */
@@ -205,7 +206,15 @@ const getUrlGeneration = (url: string): number => urlGeneration.get(url) ?? 0;
 
 const bumpUrlGeneration = (url: string): void => {
     urlGeneration.set(url, getUrlGeneration(url) + 1);
-    inflight.delete(url);
+    // Drop every in-flight join handle for this document URL (semantics key embeds URL).
+    for (const key of [...inflight.keys()]) {
+        try {
+            const parsed = JSON.parse(key) as unknown[];
+            if (parsed[1] === url) inflight.delete(key);
+        } catch {
+            /* ignore malformed keys */
+        }
+    }
 };
 
 const headersToTuples = (headers: Headers): [string, string][] => {
@@ -234,16 +243,29 @@ const parseCacheControlMaxAgeMs = (headers: Headers): number | undefined => {
 const storedToResponse = (stored: StoredDocument): Response => {
     const body =
         stored.body === null || NULL_BODY_STATUSES.has(stored.status) ? null : stored.body.slice(0);
-    return new Response(body, {
+    const response = new Response(body, {
         status: stored.status,
         statusText: stored.statusText,
         headers: stored.headers,
     });
+    // DIDKit WASM parses response.url; a rebuilt Response defaults to "".
+    try {
+        Object.defineProperty(response, 'url', {
+            value: stored.url,
+            writable: false,
+            enumerable: true,
+            configurable: true,
+        });
+    } catch {
+        /* some runtimes may refuse; clone-based paths still work for inflight */
+    }
+    return response;
 };
 
 const readResponse = async (
     response: Response,
-    effectiveTtlMs: number
+    effectiveTtlMs: number,
+    fallbackUrl: string
 ): Promise<StoredDocument> => {
     const body = NULL_BODY_STATUSES.has(response.status) ? null : await response.arrayBuffer();
     return {
@@ -252,6 +274,7 @@ const readResponse = async (
         statusText: response.statusText,
         headers: headersToTuples(response.headers),
         body,
+        url: response.url || fallbackUrl,
     };
 };
 
@@ -261,10 +284,9 @@ const sweepExpired = (now = Date.now()): void => {
     }
 };
 
-const touchLru = (url: string, stored: StoredDocument): void => {
-    // Re-insert to move to the end (newest) of Map insertion order.
-    successCache.delete(url);
-    successCache.set(url, stored);
+const touchLru = (key: string, stored: StoredDocument): void => {
+    successCache.delete(key);
+    successCache.set(key, stored);
     while (successCache.size > maxEntries) {
         const oldest = successCache.keys().next().value;
         if (oldest === undefined) break;
@@ -272,15 +294,15 @@ const touchLru = (url: string, stored: StoredDocument): void => {
     }
 };
 
-const getFreshSuccess = (url: string, now = Date.now()): StoredDocument | undefined => {
+const getFreshSuccess = (key: string, now = Date.now()): StoredDocument | undefined => {
     sweepExpired(now);
-    const hit = successCache.get(url);
+    const hit = successCache.get(key);
     if (!hit) return undefined;
     if (hit.expiresAt <= now) {
-        successCache.delete(url);
+        successCache.delete(key);
         return undefined;
     }
-    touchLru(url, hit);
+    touchLru(key, hit);
     return hit;
 };
 
@@ -302,17 +324,17 @@ const waitForAbort = (signal: AbortSignal): Promise<never> =>
         signal.addEventListener('abort', () => reject(abortError()), { once: true });
     });
 
-const releaseInflightWaiter = (url: string, entry: InflightEntry): void => {
+const releaseInflightWaiter = (key: string, entry: InflightEntry): void => {
     entry.waiters -= 1;
     if (entry.waiters > 0) return;
-    if (inflight.get(url) === entry) inflight.delete(url);
+    if (inflight.get(key) === entry) inflight.delete(key);
     if (!entry.controller.signal.aborted) {
         entry.controller.abort();
     }
 };
 
 async function joinInflight(
-    url: string,
+    key: string,
     entry: InflightEntry,
     callerSignal: AbortSignal | undefined
 ): Promise<Response> {
@@ -324,9 +346,12 @@ async function joinInflight(
             : await entry.promise;
         return storedToResponse(stored);
     } finally {
-        releaseInflightWaiter(url, entry);
+        releaseInflightWaiter(key, entry);
     }
 }
+
+const shouldBypassRequestCacheMode = (cache: RequestCache): boolean =>
+    cache === 'no-store' || cache === 'reload' || cache === 'no-cache';
 
 async function cachedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     const fetchImpl = underlyingFetch;
@@ -337,49 +362,67 @@ async function cachedFetch(input: RequestInfo | URL, init?: RequestInit): Promis
         return globalThis.fetch(input, init);
     }
 
-    let url: string;
+    let semantics: RequestSemantics;
     try {
-        url = toAbsoluteUrl(input);
+        semantics = describeSemantics(input, init);
     } catch {
         return fetchImpl(input, init);
     }
 
-    if (!isDidWebDocumentUrl(url) || !isCacheableResolverRequest(input, init)) {
+    if (semantics.method !== 'GET' || !isDidWebDocumentUrl(semantics.url)) {
+        return fetchImpl(input, init);
+    }
+
+    // Request cache modes that mean "don't use a stored response" skip both success
+    // cache and in-flight join (each caller hits the network with full semantics).
+    if (shouldBypassRequestCacheMode(semantics.cache)) {
         return fetchImpl(input, init);
     }
 
     const callerSignal = requestSignal(input, init);
     if (callerSignal?.aborted) throw abortError();
 
-    const cached = getFreshSuccess(url);
+    const key = semanticsKey(semantics);
+
+    const cached = getFreshSuccess(key);
     if (cached) return storedToResponse(cached);
 
-    const existing = inflight.get(url);
+    const existing = inflight.get(key);
     if (existing && existing.generation === cacheGeneration) {
-        return joinInflight(url, existing, callerSignal);
+        return joinInflight(key, existing, callerSignal);
     }
 
     const generationAtStart = cacheGeneration;
-    const urlGenerationAtStart = getUrlGeneration(url);
-    // Shared controller: aborted only when every waiter has left (see releaseInflightWaiter).
+    const urlGenerationAtStart = getUrlGeneration(semantics.url);
     const controller = new AbortController();
+    const networkInit = sharedFetchInit(semantics, controller.signal);
 
     const pending = (async (): Promise<StoredDocument> => {
-        const response = await fetchImpl(url, { signal: controller.signal });
+        const response = await fetchImpl(semantics.url, networkInit);
         const responseMaxAgeMs = parseCacheControlMaxAgeMs(response.headers);
-        const canStore =
-            response.ok &&
-            responseMaxAgeMs !== 0 &&
-            generationAtStart === cacheGeneration &&
-            urlGenerationAtStart === getUrlGeneration(url);
 
         const effectiveTtlMs =
             responseMaxAgeMs === undefined ? ttlMs : Math.max(0, Math.min(ttlMs, responseMaxAgeMs));
 
-        const stored = await readResponse(response, effectiveTtlMs || ttlMs);
+        // Await the body first — clear/invalidate during streaming must still be
+        // observed before we decide whether to insert.
+        const stored = await readResponse(response, effectiveTtlMs || ttlMs, semantics.url);
 
-        if (canStore && effectiveTtlMs > 0) {
-            touchLru(url, stored);
+        const stillCurrentGeneration =
+            generationAtStart === cacheGeneration &&
+            urlGenerationAtStart === getUrlGeneration(semantics.url);
+
+        const canStore =
+            response.ok && responseMaxAgeMs !== 0 && effectiveTtlMs > 0 && stillCurrentGeneration;
+
+        if (canStore) {
+            // Recheck generations immediately before insert (body may have taken a while).
+            if (
+                generationAtStart === cacheGeneration &&
+                urlGenerationAtStart === getUrlGeneration(semantics.url)
+            ) {
+                touchLru(key, stored);
+            }
         }
 
         return stored;
@@ -390,11 +433,11 @@ async function cachedFetch(input: RequestInfo | URL, init?: RequestInit): Promis
         controller,
         promise: pending,
         waiters: 0,
+        semanticsKey: key,
     };
-    inflight.set(url, entry);
+    inflight.set(key, entry);
 
-    // Leader is also a waiter for refcounting / shared abort.
-    return joinInflight(url, entry, callerSignal);
+    return joinInflight(key, entry, callerSignal);
 }
 
 export const installDidWebDocumentFetchCache = (
@@ -427,8 +470,6 @@ export const installDidWebDocumentFetchCache = (
 export const clearDidWebDocumentFetchCache = (): void => {
     cacheGeneration += 1;
     successCache.clear();
-    // Drop join handles so new callers start fresh; in-flight promises still settle
-    // but refuse to repopulate because their captured generation is stale.
     inflight.clear();
     urlGeneration.clear();
 };
@@ -448,7 +489,16 @@ export const invalidateDidWebDocument = (didOrUrl: string): void => {
         return;
     }
 
-    successCache.delete(url);
+    // Drop every success entry whose semantics URL matches.
+    for (const key of [...successCache.keys()]) {
+        try {
+            const parsed = JSON.parse(key) as unknown[];
+            if (parsed[1] === url) successCache.delete(key);
+        } catch {
+            /* ignore */
+        }
+    }
+
     bumpUrlGeneration(url);
 };
 
