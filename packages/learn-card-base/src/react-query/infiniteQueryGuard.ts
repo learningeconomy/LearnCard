@@ -12,7 +12,11 @@ export const isInfiniteData = <TData = unknown>(data: unknown): data is Infinite
     Array.isArray((data as Partial<InfiniteData<TData>> | undefined)?.pages) &&
     Array.isArray((data as Partial<InfiniteData<TData>> | undefined)?.pageParams);
 
-/** Query-key roots that use `useInfiniteQuery` and may be restored from the persister. */
+/**
+ * Query-key roots that use `useInfiniteQuery` and may be restored from the persister.
+ * Keep this list complete: restore sanitization only touches these roots (raw credentials and
+ * other docs can carry a top-level `pages` extension and must not be dropped).
+ */
 export const INFINITE_QUERY_KEY_ROOTS: ReadonlySet<string> = new Set([
     'useGetCredentialList',
     'useGetPaginatedManagedBoosts',
@@ -35,24 +39,19 @@ export const INFINITE_QUERY_KEY_ROOTS: ReadonlySet<string> = new Set([
     'useNetworkMembers',
 ]);
 
-/** True when persisted data looks like (possibly broken) InfiniteData. */
-export const looksLikeInfiniteData = (data: unknown): boolean =>
-    Boolean(data) &&
-    typeof data === 'object' &&
-    ('pages' in (data as object) || 'pageParams' in (data as object));
-
 export const isKnownInfiniteQueryKey = (queryKey: QueryKey): boolean => {
     const root = queryKey[0];
     return typeof root === 'string' && INFINITE_QUERY_KEY_ROOTS.has(root);
 };
 
 /**
- * Drop when this entry is known/shaped as infinite-query data but isn't valid InfiniteData.
- * Regular (non-infinite) queries are left alone.
+ * Drop only when this entry is a known infinite-query key and isn't valid InfiniteData.
+ * Unknown keys are left alone even if their payload has `pages` / `pageParams` (e.g. a raw
+ * credential document with a top-level `pages` extension).
  */
 export const shouldDropMalformedInfiniteEntry = (queryKey: QueryKey, data: unknown): boolean => {
     if (data === undefined) return false;
-    if (!isKnownInfiniteQueryKey(queryKey) && !looksLikeInfiniteData(data)) return false;
+    if (!isKnownInfiniteQueryKey(queryKey)) return false;
     return !isInfiniteData(data);
 };
 

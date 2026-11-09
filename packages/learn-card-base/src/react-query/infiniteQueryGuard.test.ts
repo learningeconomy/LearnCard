@@ -3,9 +3,9 @@ import { QueryClient } from '@tanstack/react-query';
 import {
     dropMalformedInfiniteCacheEntry,
     filterMalformedInfiniteQueries,
+    INFINITE_QUERY_KEY_ROOTS,
     isInfiniteData,
     isKnownInfiniteQueryKey,
-    looksLikeInfiniteData,
     sanitizePersistedQueries,
     shouldDropMalformedInfiniteEntry,
 } from './infiniteQueryGuard';
@@ -16,6 +16,29 @@ const malformedEntries: Array<[string, unknown]> = [
     ['a single page', { records: [], hasMore: false }],
     ['pages without pageParams', { pages: [{ records: [], hasMore: false }] }],
 ];
+
+/** Every `useInfiniteQuery` key root in the monorepo; keep in sync when adding a new one. */
+const EXPECTED_INFINITE_QUERY_KEY_ROOTS = [
+    'campaign-audience',
+    'campaign-list',
+    'getMyActivities',
+    'getSkillChildrenInfinite',
+    'paginatedBoostRecipients',
+    'paginatedConnectionRequests',
+    'paginatedConnections',
+    'paginatedPendingConnections',
+    'passportActivities',
+    'useGetCredentialList',
+    'useGetPaginatedBoostChildren',
+    'useGetPaginatedFamilialBoosts',
+    'useGetPaginatedManagedBoosts',
+    'useGetPaginatedManagedBoostsQuery',
+    'useGetUserNotifications',
+    'useNetworkMembers',
+    'useTermsTransactions',
+    'useXApiStatements',
+    'useXApiStatementsForContract',
+] as const;
 
 describe('isInfiniteData', () => {
     it.each(malformedEntries)('rejects %s', (_, data) => {
@@ -52,26 +75,43 @@ describe('shouldDropMalformedInfiniteEntry', () => {
         );
     });
 
-    it('drops an unknown key when data looks like broken InfiniteData', () => {
+    it('does not drop an unknown key even when data has pages/pageParams', () => {
         expect(
             shouldDropMalformedInfiniteEntry(['customInfinite'], {
                 pages: [{ records: [] }],
             })
-        ).toBe(true);
+        ).toBe(false);
+    });
+
+    it('does not drop useGetResolvedCredential when the credential has a pages extension', () => {
+        const credential = {
+            id: 'urn:example:cred',
+            type: ['VerifiableCredential'],
+            // Raw credentials can carry a top-level `pages` extension (false positive before LC-2352 fix).
+            pages: [{ type: 'extensionPage' }],
+            pageParams: { ignored: true },
+        };
+        expect(
+            shouldDropMalformedInfiniteEntry(
+                ['useGetResolvedCredential', 'urn:example:cred', 'did:example:holder'],
+                credential
+            )
+        ).toBe(false);
     });
 });
 
-describe('looksLikeInfiniteData / isKnownInfiniteQueryKey', () => {
-    it('detects pages/pageParams shapes', () => {
-        expect(looksLikeInfiniteData({ pages: [] })).toBe(true);
-        expect(looksLikeInfiniteData({ pageParams: [] })).toBe(true);
-        expect(looksLikeInfiniteData({ records: [] })).toBe(false);
+describe('INFINITE_QUERY_KEY_ROOTS', () => {
+    it('registers every known useInfiniteQuery key root', () => {
+        expect([...INFINITE_QUERY_KEY_ROOTS].sort()).toEqual(
+            [...EXPECTED_INFINITE_QUERY_KEY_ROOTS].sort()
+        );
     });
 
     it('recognizes managed-boosts and credential-list roots', () => {
         expect(isKnownInfiniteQueryKey(['useGetPaginatedManagedBoosts'])).toBe(true);
         expect(isKnownInfiniteQueryKey(['useGetCredentialList'])).toBe(true);
         expect(isKnownInfiniteQueryKey(['getProfile'])).toBe(false);
+        expect(isKnownInfiniteQueryKey(['useGetResolvedCredential'])).toBe(false);
     });
 });
 
@@ -130,6 +170,38 @@ describe('sanitizePersistedQueries (restore boundary)', () => {
             'useGetCredentialList',
             'getProfile',
         ]);
+    });
+
+    it('keeps a persisted useGetResolvedCredential entry that has a pages extension', () => {
+        const credential = {
+            id: 'urn:example:cred',
+            type: ['VerifiableCredential'],
+            pages: [{ type: 'extensionPage' }],
+            pageParams: { ignored: true },
+        };
+        const snapshot = {
+            buster: '1',
+            timestamp: 1,
+            clientState: {
+                queries: [
+                    {
+                        queryKey: ['useGetResolvedCredential', 'urn:example:cred', 'did:example'],
+                        queryHash: 'cred',
+                        state: { data: credential, dataUpdateCount: 1 },
+                    },
+                    {
+                        queryKey: ['useGetPaginatedManagedBoosts', '', 'achievement'],
+                        queryHash: 'boosts',
+                        state: { data: { pages: [{ records: [] }] }, dataUpdateCount: 1 },
+                    },
+                ],
+            },
+        };
+
+        const sanitized = sanitizePersistedQueries(snapshot);
+        expect(sanitized.clientState.queries).toHaveLength(1);
+        expect(sanitized.clientState.queries[0].queryKey[0]).toBe('useGetResolvedCredential');
+        expect(sanitized.clientState.queries[0].state.data).toEqual(credential);
     });
 
     it('filterMalformedInfiniteQueries is the queries-only form', () => {
