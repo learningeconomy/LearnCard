@@ -35,6 +35,7 @@ export default function NativeDigitalCredentialsListener() {
         if (Capacitor.getPlatform() !== 'android' || !hydrated) return;
         let stopped = false;
         let timer: ReturnType<typeof setTimeout> | undefined;
+        let expirationTimer: ReturnType<typeof setTimeout> | undefined;
         let running = false;
         let dirty = false;
         let enabled = false;
@@ -95,6 +96,15 @@ export default function NativeDigitalCredentialsListener() {
                 );
                 appliedRevision = refreshingRevision;
                 retryRequired = result.retryRequired;
+                clearTimeout(expirationTimer);
+                if (!stopped && active && result.nextRefreshAt !== undefined) {
+                    // Timers suspend in the background; foreground refresh checks wall-clock
+                    // expiry again. Never replace the registry while provider consent is open.
+                    expirationTimer = setTimeout(
+                        () => void check(),
+                        Math.min(2_147_483_647, Math.max(1, result.nextRefreshAt - Date.now()))
+                    );
+                }
             } catch {
                 retryRequired = true;
             } finally {
@@ -140,12 +150,16 @@ export default function NativeDigitalCredentialsListener() {
             if (active) {
                 reassertRevision++;
                 schedule();
-            } else clearTimeout(timer);
+            } else {
+                clearTimeout(timer);
+                clearTimeout(expirationTimer);
+            }
         });
         void check();
         return () => {
             stopped = true;
             clearTimeout(timer);
+            clearTimeout(expirationTimer);
             unsubscribe();
             unsubscribeAccount();
             unsubscribeProfile();

@@ -2,7 +2,48 @@
 
 This development slice adds an app-local Capacitor bridge and an Android Credential Manager provider Activity. It carries forward the local response prototype from [PR #1795](https://github.com/learningeconomy/LearnCard/pull/1795).
 
-The production provider is **disabled by default**. The dedicated `com.learncard.app.dctest` development build connects the reusable Android module to LearnCard's account initialization, encrypted LearnCloud credential inventory and existing OpenID4VP consent screen. Separate debug lab applications provide a synthetic issuer and native verifier. The development build uses a local Vite server; it does not prove an offline release bundle.
+The production provider is **disabled by default**. The dedicated `com.learncard.app.dctest` development build connects the reusable Android module to LearnCard's account initialization, encrypted LearnCloud credential inventory and existing OpenID4VP consent screen. Separate debug lab applications provide a synthetic issuer and native verifier. The development build can use Vite or bundled assets; either account-flow mode still requires reachable test APIs and a provisioned synthetic account.
+
+## Reviewer quick start: which apps do I need?
+
+**Yes, the native-app demo needs a separate requesting app.** LearnCard Verifier Lab asks Android for a credential and checks the returned proof. It is not part of the normal LearnCard installation.
+
+| What you want to test                            | Install                                                                            | Backend/account needed?                                                                                         |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Quick synthetic bridge demo                      | **LearnCard Holder Lab** + **LearnCard Verifier Lab**                              | No. Holder Lab creates its own synthetic sample.                                                                |
+| The actual LearnCard account flow shown in #1835 | **LearnCard Native Dev** (`com.learncard.app.dctest`) + **LearnCard Verifier Lab** | Yes. Local test APIs, a disposable account and a provisioned Course Completion sample. Follow the next section. |
+
+### Fastest hands-on demo (no backend)
+
+Use the PR branch, the repo-pinned Bun, JDK 21 and Android SDK 36. Start a Google Play-enabled Android emulator in Android Studio (4 GiB RAM recommended), then run from the repository root:
+
+```bash
+bun install --frozen-lockfile
+bun install --cwd apps/learn-card-app/android/digital-credentials-lab --frozen-lockfile
+cd apps/learn-card-app/android/digital-credentials-lab
+# macOS Android Studio paths; on Linux set these to your installed JDK/SDK.
+JAVA_HOME='/Applications/Android Studio.app/Contents/jbr/Contents/Home' \
+ANDROID_HOME="$HOME/Library/Android/sdk" \
+../gradlew :lab:assembleHolderDebug :lab:assembleVerifierDebug
+adb devices -l
+# Replace this value with the device serial printed above.
+LC_ANDROID_SERIAL=emulator-5554
+adb -s "$LC_ANDROID_SERIAL" install -r lab/build/outputs/apk/holder/debug/lab-holder-debug.apk
+adb -s "$LC_ANDROID_SERIAL" install -r lab/build/outputs/apk/verifier/debug/lab-verifier-debug.apk
+```
+
+1. Open **LearnCard Holder Lab** → **Register Sample**.
+2. Open **LearnCard Verifier Lab** → **Request Course Details**.
+3. Choose **Sample Course Completion** in Android's selector and continue to consent.
+4. Approve the two requested fields. Verifier Lab must show **Verified**; reaching consent alone is not a pass.
+5. Request again and cancel. Expect **Canceled. No credential was received.**
+6. In Holder Lab choose **Clear Samples** when finished.
+
+These APKs build from source; there is no hosted APK download supplied by these instructions. This lab uses a simplified holder and synthetic data: it proves the shared bridge/request/response demo, **not** LearnCard account initialization, cloud inventory or the full account lifecycle. For that, use the real account setup below. The regular LearnCard release has its provider disabled and will not substitute for **LearnCard Native Dev**.
+
+### Already have the full-account test build?
+
+Install `app-debug.apk` built with `-PdigitalCredentialsDev` **and** `lab-verifier-debug.apk` on the same device. You do not need Holder Lab for this mode. Before opening Verifier Lab, confirm LearnCard Native Dev can reach the configured test APIs, sign into a disposable `android-native-*` account, provision the sample and foreground LearnCard to register it. Bundling the web assets removes Vite; it does not remove the API or sample-account prerequisites. Use synthetic credentials only.
 
 ## Try the real account flow
 
@@ -74,7 +115,7 @@ Use **Clear Samples** in the holder to remove its registry record and invalidate
 - The typed bridge exposes `status`, `register`, `clear`, `getPendingRequest`, `complete`, `cancel`. Native handles are one-time and registry-generation-bound. Completion accepts no origin override. Expired requests can still be dismissed through Cancel or Android Back. The provider disables the main app's held native splash in its own Capacitor configuration, so its window can receive Back during account initialization.
 - Only opaque entry IDs, VCT, title and claim paths/display labels cross the metadata boundary. `SdJwtClaim.value` is null. Value-constrained matching is not promised by this presence-based lab profile. Full credentials, private keys, claim values and LearnCloud URIs are rejected by the native projection schema.
 - The native Activity requires Android's calling package. Delegation is restricted to `com.google.android.gms` with the pinned Google release certificate in its installed signing history and no multiple current signers. A system-app flag is not authority to impersonate another requester. Direct callers must match the installed launching package and certificate. Only Google Play services broker visibility is declared; `QUERY_ALL_PACKAGES` is unnecessary. Native-app origins use the caller's signing-certificate hash. Consent leads with the authenticated package (or browser origin); installed-app labels and request branding are not identity evidence.
-- Privileged web origins require a package/certificate allowlist. The supplied allowlist is empty and fails closed; browser interoperability requires a separately reviewed allowlist and tests. No browser package or certificate supplied through JavaScript is trusted.
+- Privileged web origins require a package/certificate allowlist. The packaged allowlist contains only stable Chrome (`com.android.chrome`) with its Google-published release certificate; debug/other-channel/unknown/default-browser identities fail closed. AndroidX verifies the origin against that policy, followed by native HTTPS-origin validation. The device default-browser role alone grants no privilege. The pin comes from [Google’s published privileged-app list](https://www.gstatic.com/gpm-passkeys-privileged-apps/apps.json), checked November 9, 2026. Real Chrome DC API interoperability is still pending. No browser package or certificate supplied through JavaScript is trusted.
 - The lab uses the existing synthetic Course Completion fixture, a publicly known development issuer seed and an independently generated holder key. Its private WebView storage contains only lab material; this is not a production key-storage design. Do not use real credentials or personal data in these apps. Both applications have distinct package IDs and backup is disabled.
 - The lab uses a portable Ed25519 backend with the shared TypeScript SD-JWT/DCQL engine so older emulator WebViews do not need Ed25519 WebCrypto support. Both the lower-level DC API response builder and public convenience method require explicit request-bounded flat disclosure frames before signing.
 
@@ -82,7 +123,7 @@ Use **Clear Samples** in the holder to remove its registry record and invalidate
 
 - Qualify logged-out/recovery flows and all account/profile/key transitions beyond the synthetic personal-account path. The listener fences transitions; that is not a complete LC-2158 lifecycle qualification.
 - Complete LC-2158 account/profile/key invalidation, credential lifecycle/status freshness, privacy, failure and interoperability qualification.
-- LC-2159 broader query profiles and independent verifier interoperability remain separate. The public DC API helper now requires request-bounded flat disclosure frames; hosts remain responsible for credential matching/verification and presenting trusted consent UI.
+- LC-2159 SDK acceptance is implemented through #1835/#1981; broader query profiles are outside that ticket. LC-2158 independent-verifier interoperability remains pending. The public DC API helper now requires request-bounded flat disclosure frames; hosts remain responsible for credential matching/verification and presenting trusted consent UI.
 - Validate browser callers and an independent verifier, then run physical-device tests on the Samsung Galaxy Fold after setup. One emulator does not satisfy the physical-device gate or supported-device matrix.
 - Run the matching SDK/cross-surface `lc verify` journeys on Linux before rollout readiness. Browser journeys cannot prove Android provider behavior; native emulator/device evidence must remain separate.
 
@@ -94,7 +135,7 @@ The registry's `status()` is **local bookkeeping**, not a live GMS registry quer
 
 Registration invalidates local handles before calling GMS and commits new handles only if its generation has not changed. Generation capture and conditional replacement are atomic across plugin threads. An account/profile clear during registration cannot restore the old handles when registration returns. A failed register leaves handles unusable; a failed clear still removes the host's old account mapping. Empty projections retry clearing even if local preferences already look empty. GMS can retain stale display metadata until a later successful mutation; local generation checks and fresh account/body/index/issuer/holder checks must deny presentation in the meantime.
 
-Eligibility remains intentionally narrow: flat holder-bound SD-JWTs only. Claim/issuance/index changes are observed through query invalidation and foreground refresh; deletion is checked against the index each time. Body-only changes can lag the 60-second cache. Credentials with `status` or `credentialStatus` payloads are excluded, because the SDK currently defers Token Status List checking. This does not establish complete revocation/suspension synchronization. Expiration and confirmed invalidity are checked on refresh and again for approval; background expiration eviction and offline status freshness are not promised.
+Eligibility remains intentionally narrow: flat holder-bound SD-JWTs only. Claim/issuance/index changes are observed through query invalidation and foreground refresh; deletion is checked against the index each time. Body-only changes can lag the 60-second cache. Credentials with `status` or `credentialStatus` payloads are excluded, because the SDK currently defers Token Status List checking. This does not establish complete revocation/suspension synchronization. Expiration and confirmed invalidity are checked on refresh and again for approval; while foregrounded with no open provider consent, the listener refreshes at the earliest known expiration, independently of query events. Verified expiration stays in the private mapping and prevents retaining a known-expired entry through a temporary body-read failure or scan-budget fallback. Background timers are canceled; foreground rechecks elapsed deadlines. This is not an OS background service: eviction while killed/backgrounded, index-outage recovery and offline status freshness are not promised.
 
 Privacy boundaries remain generic credential titles, opaque random IDs, VCT and claim names/paths in the OS projection, with no claim values. URI/digest/account-key mappings stay in private app storage. Native diagnostics report only rejection stage and exception class; refresh diagnostics report projection-rejection counts. VCT and claim names can still reveal credential type and require issuer/schema review before rollout. No new analytics payloads are added.
 

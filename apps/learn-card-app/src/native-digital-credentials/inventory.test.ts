@@ -76,6 +76,24 @@ describe('native registry inventory reconciliation', () => {
         }
     );
 
+    it('does not retain a known-expired credential through a temporary read failure', async () => {
+        const { wallet, parsed } = setup();
+        parsed.expiresAt = new Date(2_000);
+        const cache = new Map<string, InventoryCacheEntry>();
+        const initial = await buildAccountInventory(wallet, undefined, 'Credential', {
+            cache,
+            now: () => 1_000,
+        });
+        expect(initial.entries).toHaveLength(1);
+        vi.mocked(wallet.read.get).mockRejectedValueOnce(new Error('offline'));
+        const expired = await buildAccountInventory(wallet, initial, 'Credential', {
+            cache,
+            now: () => 2_000,
+        });
+        expect(expired.entries).toEqual([]);
+        expect(expired.retryRequired).toBe(true);
+    });
+
     it('removes a credential whose holder key no longer matches the account', async () => {
         const { wallet, parsed } = setup();
         const initial = await buildAccountInventory(wallet, undefined, 'Credential');

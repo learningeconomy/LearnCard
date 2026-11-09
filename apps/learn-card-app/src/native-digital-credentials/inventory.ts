@@ -25,6 +25,8 @@ export interface RegisteredCredential {
     id: string;
     uri: string;
     digest: string;
+    /** Verified expiration in private app storage; never sent to Android registry metadata. */
+    expiresAt?: number;
     projection: AndroidCredentialEntry;
 }
 
@@ -169,8 +171,11 @@ export const buildAccountInventory = async (
     options: InventoryRefreshOptions = {}
 ): Promise<InventoryRefresh> => {
     const owner = accountOwner(wallet);
+    const now = options.now ?? Date.now;
     const old = new Map(
-        (previous?.owner === owner ? previous.entries : []).map(entry => [entry.uri, entry])
+        (previous?.owner === owner ? previous.entries : [])
+            .filter(entry => entry.expiresAt === undefined || entry.expiresAt > now())
+            .map(entry => [entry.uri, entry])
     );
     // An index failure aborts the refresh before any replacement/clear.
     const indexed = new Set(
@@ -212,7 +217,6 @@ export const buildAccountInventory = async (
             ? newlyIndexed.slice(nextIndex).concat(newlyIndexed.slice(0, nextIndex))
             : newlyIndexed;
     for (const uri of remaining) uris.push(uri);
-    const now = options.now ?? Date.now;
     const entries: RegisteredCredential[] = [];
     let retryRequired = false;
     let reads = 0;
@@ -224,7 +228,8 @@ export const buildAccountInventory = async (
             if (!credential) throw new InventoryUnavailableError('Credential read unavailable');
             const eligible = await eligibleCredential(wallet, { id: uri, credential });
             let entry: RegisteredCredential | undefined;
-            if (eligible) {
+            const expiresAt = eligible?.parsed.expiresAt?.getTime();
+            if (eligible && (expiresAt === undefined || expiresAt > now())) {
                 const id = old.get(uri)?.id ?? crypto.randomUUID();
                 const projection = {
                     id,
@@ -240,6 +245,7 @@ export const buildAccountInventory = async (
                         id,
                         uri,
                         digest: await credentialDigest(eligible.compact),
+                        ...(expiresAt !== undefined ? { expiresAt } : {}),
                         projection,
                     };
                 } else options.onIssue?.('projection');

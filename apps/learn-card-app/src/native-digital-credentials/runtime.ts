@@ -51,7 +51,7 @@ export const synchronizeNativeInventory = (
     isCurrent: () => boolean,
     title: string,
     reassert = false
-): Promise<{ retryRequired: boolean }> =>
+): Promise<{ retryRequired: boolean; nextRefreshAt?: number }> =>
     serial(async () => {
         const previous = await readNativeInventory();
         if (!isCurrent()) return { retryRequired: false };
@@ -72,7 +72,13 @@ export const synchronizeNativeInventory = (
         });
         if (rejected) log.warn('Native credential projections rejected', { count: rejected });
         const inventory: AccountInventory = { owner: refreshed.owner, entries: refreshed.entries };
-        const result = { retryRequired: refreshed.retryRequired };
+        const nextRefreshAt = Math.min(
+            ...inventory.entries.map(entry => entry.expiresAt ?? Infinity)
+        );
+        const result = {
+            retryRequired: refreshed.retryRequired,
+            ...(Number.isFinite(nextRefreshAt) ? { nextRefreshAt } : {}),
+        };
         if (!isCurrent()) return { retryRequired: false };
         const state = await nativeDigitalCredentials.status();
         const registered = state.registeredEntryIds ?? [];

@@ -22,7 +22,8 @@ for (const role of ['holder', 'verifier']) {
         platform: 'browser',
         target: 'chrome131',
         format: 'iife',
-        conditions: ['browser'],
+        // Resolve workspace source so a clean reviewer checkout needs no SDK dist build.
+        conditions: ['development', 'browser'],
         sourcemap: false,
     });
     await writeFile(

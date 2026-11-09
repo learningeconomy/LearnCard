@@ -85,6 +85,25 @@ describe('native registration replacement', () => {
         expect(native.register).toHaveBeenCalledTimes(2);
     });
 
+    it('returns the credential expiration deadline even when no registration changed', async () => {
+        const { wallet } = setup();
+        const parsed = await wallet.invoke.parseSdJwtVc('jwt~course');
+        vi.mocked(wallet.invoke.parseSdJwtVc).mockResolvedValue({
+            ...parsed,
+            expiresAt: new Date(5_000),
+        });
+        expect(await synchronizeNativeInventory(wallet, () => true, 'Credential')).toEqual({
+            retryRequired: false,
+            nextRefreshAt: 5_000,
+        });
+        expect(await synchronizeNativeInventory(wallet, () => true, 'Credential')).toEqual({
+            retryRequired: false,
+            nextRefreshAt: 5_000,
+        });
+        expect(native.register).toHaveBeenCalledTimes(1);
+        expect(native.stored?.entries[0].expiresAt).toBe(5_000);
+    });
+
     it('removes local account mappings even when platform clear fails and retries empty clears', async () => {
         const { wallet } = setup();
         await synchronizeNativeInventory(wallet, () => true, 'Credential');

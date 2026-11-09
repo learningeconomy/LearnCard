@@ -31,7 +31,10 @@ internal object CallerOrigin {
             claimed.map { it.toCharsString() }.toSet(), launchCertificates.orEmpty().map { it.toCharsString() }.toSet())
         if (caller.isOriginPopulated()) {
             val allowlist = activity.assets.open("digital_credentials_privileged_callers.json").bufferedReader().use { it.readText() }
-            return caller.getOrigin(allowlist) ?: throw SecurityException("Missing browser origin")
+            val origin = caller.getOrigin(allowlist) ?: throw SecurityException("Missing browser origin")
+            return BrowserOrigin.resolve(caller.packageName, claimed.map {
+                MessageDigest.getInstance("SHA-256").digest(it.toByteArray()).joinToString("") { byte -> "%02x".format(byte) }
+            }.toSet(), origin, allowlist)
         }
         return certificateOrigin(claimed.first().toByteArray())
     }

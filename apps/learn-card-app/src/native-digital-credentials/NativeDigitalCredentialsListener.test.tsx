@@ -1,9 +1,11 @@
-import { act, render } from '@testing-library/react';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { act, cleanup, render } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import NativeDigitalCredentialsListener from './NativeDigitalCredentialsListener';
 
 const mocks = vi.hoisted(() => ({
     synchronize: vi.fn(),
+    pending: vi.fn(),
+    remove: vi.fn(),
     foreground: undefined as undefined | ((event: { isActive: boolean }) => void),
     query: undefined as undefined | ((event: unknown) => void),
     initialize: vi.fn(async () => ({})),
@@ -15,7 +17,7 @@ vi.mock('@capacitor/app', () => ({
     App: {
         addListener: async (_name: string, callback: typeof mocks.foreground) => {
             mocks.foreground = callback;
-            return { remove: vi.fn() };
+            return { remove: mocks.remove };
         },
     },
 }));
@@ -53,7 +55,7 @@ vi.mock('../helpers/verifier-history/account', () => ({
 vi.mock('./plugin', () => ({
     nativeDigitalCredentials: {
         status: async () => ({ enabled: true }),
-        getPendingRequest: async () => ({}),
+        getPendingRequest: mocks.pending,
         clear: vi.fn(),
     },
 }));
@@ -67,10 +69,14 @@ vi.mock('../paraglide/messages.js', () => ({
 
 beforeEach(() => {
     vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+    vi.clearAllMocks();
+    mocks.pending.mockResolvedValue({});
     mocks.synchronize.mockReset();
     mocks.synchronize.mockResolvedValue({ retryRequired: false });
 });
 afterEach(() => {
+    cleanup();
     vi.useRealTimers();
 });
 const advance = async (ms = 0) => {
@@ -137,4 +143,61 @@ it('retries failed foreground reassertion instead of trusting local status', asy
     await advance(2_000);
     expect(mocks.synchronize.mock.calls.map(call => call[3])).toEqual([true, true]);
     view.unmount();
+});
+
+const mount = async () => {
+    const view = render(<NativeDigitalCredentialsListener />);
+    await advance();
+    return view;
+};
+
+describe('native foreground expiration lifecycle', () => {
+    it('refreshes at credential expiration without a query or foreground event', async () => {
+        mocks.synchronize.mockResolvedValueOnce({ retryRequired: false, nextRefreshAt: 2_000 });
+        await mount();
+        expect(mocks.synchronize).toHaveBeenCalledTimes(1);
+        await advance(999);
+        expect(mocks.synchronize).toHaveBeenCalledTimes(1);
+        await advance(1);
+        expect(mocks.synchronize).toHaveBeenCalledTimes(2);
+    });
+
+    it('suspends expiration work in the background and refreshes on foreground', async () => {
+        mocks.synchronize.mockResolvedValueOnce({ retryRequired: false, nextRefreshAt: 2_000 });
+        await mount();
+        act(() => mocks.foreground!({ isActive: false }));
+        await advance(2_000);
+        expect(mocks.synchronize).toHaveBeenCalledTimes(1);
+        act(() => mocks.foreground!({ isActive: true }));
+        await advance(350);
+        expect(mocks.synchronize).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not replace registration while provider consent is open', async () => {
+        mocks.synchronize.mockResolvedValueOnce({ retryRequired: false, nextRefreshAt: 2_000 });
+        await mount();
+        mocks.pending.mockResolvedValue({ pending: {}, isProvider: true });
+        await advance(1_000);
+        expect(mocks.synchronize).toHaveBeenCalledTimes(1);
+        expect(mocks.history.replace).toHaveBeenCalled();
+    });
+
+    it('cancels expiration timers and native event subscription on unmount', async () => {
+        mocks.synchronize.mockResolvedValueOnce({ retryRequired: false, nextRefreshAt: 2_000 });
+        const view = await mount();
+        view.unmount();
+        await advance(2_000);
+        expect(mocks.synchronize).toHaveBeenCalledTimes(1);
+        expect(mocks.remove).toHaveBeenCalledOnce();
+    });
+
+    it('bounds a distant expiration so setTimeout cannot wrap into a tight refresh loop', async () => {
+        mocks.synchronize.mockResolvedValueOnce({
+            retryRequired: false,
+            nextRefreshAt: 10_000_000_000,
+        });
+        await mount();
+        await advance(5_000);
+        expect(mocks.synchronize).toHaveBeenCalledTimes(1);
+    });
 });
