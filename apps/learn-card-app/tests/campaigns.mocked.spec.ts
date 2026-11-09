@@ -802,6 +802,8 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
     mock.on('profile.getProfile', () => profile);
     mock.on('profile.getOtherProfile', () => profile);
     mock.on('profile.createProfile', () => profile.did);
+    // A background profile refresh can share the shown/dismissed event batch after reload.
+    mock.on('profile.updateProfile', () => true);
     mock.on('user.getDids', () => [profile.did]);
     mock.on('user.addDid', () => true);
     mock.on('campaigns.getMyCampaigns', () => []);
