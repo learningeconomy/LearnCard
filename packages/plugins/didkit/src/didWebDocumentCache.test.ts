@@ -90,8 +90,9 @@ describe('didWebDocumentCache', () => {
         const gate = new Promise<Response>(resolve => {
             release = resolve;
         });
-        fetchMock.mockImplementationOnce((_input: RequestInfo | URL, init?: RequestInit) => {
-            expect(init?.signal).toBeInstanceOf(AbortSignal);
+        fetchMock.mockImplementationOnce((input: RequestInfo | URL) => {
+            expect(input).toBeInstanceOf(Request);
+            expect((input as Request).signal).toBeInstanceOf(AbortSignal);
             return gate;
         });
 
@@ -190,8 +191,9 @@ describe('didWebDocumentCache', () => {
     });
 
     it('keys Authorization separately so unauthenticated GETs do not reuse authed bodies', async () => {
-        fetchMock.mockImplementation(async (_input: RequestInfo | URL, init?: RequestInit) => {
-            const headers = new Headers(init?.headers);
+        fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+            const req = input instanceof Request ? input : new Request(input, init);
+            const headers = new Headers(req.headers);
             const body = headers.get('authorization') ? AUTH_BODY : DOC_BODY;
             const response = new Response(body, { status: 200 });
             Object.defineProperty(response, 'url', { value: DOC_URL, configurable: true });
@@ -219,15 +221,16 @@ describe('didWebDocumentCache', () => {
     it('preserves credentials and mode on the shared network call', async () => {
         await fetch(DOC_URL, { credentials: 'omit', mode: 'cors' });
         expect(fetchMock).toHaveBeenCalledTimes(1);
-        const init = fetchMock.mock.calls[0]![1] as RequestInit;
-        expect(init.credentials).toBe('omit');
-        expect(init.mode).toBe('cors');
+        const req1 = fetchMock.mock.calls[0]![0] as Request;
+        expect(req1).toBeInstanceOf(Request);
+        expect(req1.credentials).toBe('omit');
+        expect(req1.mode).toBe('cors');
 
         // Different credentials => different key => new fetch.
         await fetch(DOC_URL, { credentials: 'include', mode: 'cors' });
         expect(fetchMock).toHaveBeenCalledTimes(2);
-        const init2 = fetchMock.mock.calls[1]![1] as RequestInit;
-        expect(init2.credentials).toBe('include');
+        const req2 = fetchMock.mock.calls[1]![0] as Request;
+        expect(req2.credentials).toBe('include');
     });
 
     it('preserves response.url on rebuilt/cached responses', async () => {
@@ -409,6 +412,98 @@ describe('didWebDocumentCache', () => {
         expect(await response.text()).toBe('');
     });
 
+    it('replaces Request headers when init.headers is supplied (does not merge Authorization)', async () => {
+        const seen: Headers[] = [];
+        fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+            const req = input instanceof Request ? input : new Request(input);
+            seen.push(new Headers(req.headers));
+            const response = new Response(DOC_BODY, { status: 200 });
+            Object.defineProperty(response, 'url', { value: DOC_URL, configurable: true });
+            return response;
+        });
+
+        // Populate an authenticated cache entry first.
+        await fetch(DOC_URL, { headers: { Authorization: 'Bearer secret' } });
+        expect(seen[0]!.get('authorization')).toBe('Bearer secret');
+        expect(getDidWebDocumentFetchCacheStats().successEntries).toBe(1);
+
+        // Platform rule: init.headers replaces the input Request's headers entirely.
+        const authedRequest = new Request(DOC_URL, {
+            headers: { Authorization: 'Bearer secret' },
+        });
+        await fetch(authedRequest, { headers: { Accept: 'application/json' } });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(seen[1]!.get('authorization')).toBeNull();
+        expect(seen[1]!.get('accept')).toBe('application/json');
+    });
+
+    it('empty init.headers replaces and strips Authorization from the input Request', async () => {
+        const seen: Headers[] = [];
+        fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+            const req = input instanceof Request ? input : new Request(input);
+            seen.push(new Headers(req.headers));
+            const response = new Response(DOC_BODY, { status: 200 });
+            Object.defineProperty(response, 'url', { value: DOC_URL, configurable: true });
+            return response;
+        });
+
+        await fetch(DOC_URL, { headers: { Authorization: 'Bearer secret' } });
+        expect(getDidWebDocumentFetchCacheStats().successEntries).toBe(1);
+
+        const authedRequest = new Request(DOC_URL, {
+            headers: { Authorization: 'Bearer secret' },
+        });
+        await fetch(authedRequest, { headers: {} });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(seen[1]!.get('authorization')).toBeNull();
+    });
+
+    it('passes integrity-bearing requests through to native fetch (cold cache)', async () => {
+        fetchMock.mockImplementation(async (_input: RequestInfo | URL, init?: RequestInit) => {
+            const integrity =
+                init?.integrity || (_input instanceof Request ? _input.integrity : undefined);
+            if (integrity) {
+                throw new TypeError('Failed to fetch (integrity mismatch)');
+            }
+            const response = new Response(DOC_BODY, { status: 200 });
+            Object.defineProperty(response, 'url', { value: DOC_URL, configurable: true });
+            return response;
+        });
+
+        await expect(
+            fetch(DOC_URL, {
+                integrity: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+            })
+        ).rejects.toThrow(/integrity mismatch/);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(getDidWebDocumentFetchCacheStats().successEntries).toBe(0);
+    });
+
+    it('does not serve warm cache hits for integrity-bearing requests', async () => {
+        fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+            const integrity =
+                init?.integrity || (input instanceof Request ? input.integrity : undefined);
+            if (integrity) {
+                throw new TypeError('Failed to fetch (integrity mismatch)');
+            }
+            const response = new Response(DOC_BODY, { status: 200 });
+            Object.defineProperty(response, 'url', { value: DOC_URL, configurable: true });
+            return response;
+        });
+
+        await fetch(DOC_URL);
+        expect(getDidWebDocumentFetchCacheStats().successEntries).toBe(1);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        await expect(
+            fetch(DOC_URL, {
+                integrity: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+            })
+        ).rejects.toThrow(/integrity mismatch/);
+        // Must not be satisfied from the warm cache — underlying fetch runs again.
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
     it('throws when install is called without globalThis.fetch', () => {
         resetDidWebDocumentFetchCacheForTests();
         const previous = globalThis.fetch;
@@ -452,13 +547,12 @@ describe('didWebDocumentCache + DIDKit WASM resolveDid', () => {
 
         fetchCount = 0;
         globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-            const url =
-                typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+            const req = input instanceof Request ? input : new Request(input, init);
+            const url = req.url;
             if (url.includes('/did.json')) {
                 fetchCount += 1;
                 // Real WASM sends Accept: application/json (and usually a User-Agent).
-                const headers = new Headers(init?.headers);
-                expect(headers.get('accept')?.toLowerCase()).toContain('application/json');
+                expect(req.headers.get('accept')?.toLowerCase()).toContain('application/json');
                 await new Promise(r => setTimeout(r, 30));
                 const response = new Response(JSON.stringify(didDocument), {
                     status: 200,

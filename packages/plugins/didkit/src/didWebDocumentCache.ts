@@ -9,11 +9,13 @@
  * - in-flight promise dedupe keyed by normalized request semantics
  * - a short TTL success cache (failures are never stored; Cache-Control honored)
  *
- * Equivalence includes method, URL, headers (so WASM's `Accept: application/json` is
- * part of the key, not a bypass), credentials, mode, cache, redirect, and referrer
- * policy. The shared network call preserves those options. Rebuilt Responses keep the
- * original `url` (DIDKit parses it). Clear/invalidate bump a generation so stale
- * in-flight work cannot join or repopulate after the body finishes streaming.
+ * Equivalence follows platform `new Request(input, init)` rules (init.headers
+ * *replaces* Request headers, it does not merge). Semantics include method, URL,
+ * headers (so WASM's `Accept: application/json` is keyed, not bypassed), credentials,
+ * mode, cache, redirect, and referrer policy. Requests with `integrity` pass through
+ * to native fetch untouched. Rebuilt Responses keep `url` (DIDKit parses it).
+ * Clear/invalidate bump a generation so stale in-flight work cannot join or
+ * repopulate after the body finishes streaming.
  */
 
 export const DEFAULT_DID_WEB_DOCUMENT_TTL_MS = 10_000;
@@ -84,31 +86,7 @@ export type InstallDidWebDocumentFetchCacheOptions = {
 
 const normalizeAbsoluteUrl = (href: string): string => new URL(href).href;
 
-const toAbsoluteUrl = (input: RequestInfo | URL): string => {
-    if (typeof input === 'string') return normalizeAbsoluteUrl(new URL(input).href);
-    if (input instanceof URL) return normalizeAbsoluteUrl(input.href);
-    return normalizeAbsoluteUrl(new URL(input.url).href);
-};
-
-const requestMethod = (input: RequestInfo | URL, init?: RequestInit): string => {
-    if (init?.method) return init.method.toUpperCase();
-    if (typeof input !== 'string' && !(input instanceof URL) && input.method) {
-        return input.method.toUpperCase();
-    }
-    return 'GET';
-};
-
-const pick = <T>(initValue: T | undefined, requestValue: T | undefined, fallback: T): T =>
-    initValue !== undefined ? initValue : requestValue !== undefined ? requestValue : fallback;
-
-const requestHeadersList = (input: RequestInfo | URL, init?: RequestInit): [string, string][] => {
-    const headers = new Headers();
-    if (typeof input !== 'string' && !(input instanceof URL) && input.headers) {
-        new Headers(input.headers).forEach((value, key) => headers.set(key, value));
-    }
-    if (init?.headers) {
-        new Headers(init.headers).forEach((value, key) => headers.set(key, value));
-    }
+const headersToSortedTuples = (headers: Headers): [string, string][] => {
     const tuples: [string, string][] = [];
     headers.forEach((value, key) => {
         tuples.push([key.toLowerCase(), value]);
@@ -119,25 +97,23 @@ const requestHeadersList = (input: RequestInfo | URL, init?: RequestInit): [stri
     return tuples;
 };
 
-const requestSignal = (input: RequestInfo | URL, init?: RequestInit): AbortSignal | undefined => {
-    if (init?.signal) return init.signal;
-    if (typeof input !== 'string' && !(input instanceof URL)) return input.signal;
-    return undefined;
-};
+/**
+ * Normalize with the platform Request constructor so `init.headers` *replaces*
+ * (does not merge with) headers from an input Request — matching native fetch.
+ */
+const normalizeRequest = (input: RequestInfo | URL, init?: RequestInit): Request =>
+    new Request(input, init);
 
-const describeSemantics = (input: RequestInfo | URL, init?: RequestInit): RequestSemantics => {
-    const request = typeof input !== 'string' && !(input instanceof URL) ? input : undefined;
-    return {
-        method: requestMethod(input, init),
-        url: toAbsoluteUrl(input),
-        headers: requestHeadersList(input, init),
-        credentials: pick(init?.credentials, request?.credentials, 'same-origin'),
-        mode: pick(init?.mode, request?.mode, 'cors'),
-        cache: pick(init?.cache, request?.cache, 'default'),
-        redirect: pick(init?.redirect, request?.redirect, 'follow'),
-        referrerPolicy: pick(init?.referrerPolicy, request?.referrerPolicy, ''),
-    };
-};
+const describeSemanticsFromRequest = (request: Request): RequestSemantics => ({
+    method: request.method.toUpperCase(),
+    url: normalizeAbsoluteUrl(request.url),
+    headers: headersToSortedTuples(request.headers),
+    credentials: request.credentials,
+    mode: request.mode,
+    cache: request.cache,
+    redirect: request.redirect,
+    referrerPolicy: request.referrerPolicy,
+});
 
 const semanticsKey = (semantics: RequestSemantics): string =>
     JSON.stringify([
@@ -151,23 +127,13 @@ const semanticsKey = (semantics: RequestSemantics): string =>
         semantics.referrerPolicy,
     ]);
 
-/** Build a RequestInit that preserves original resolver semantics for the shared fetch. */
-const sharedFetchInit = (semantics: RequestSemantics, signal: AbortSignal): RequestInit => {
-    const init: RequestInit = {
-        method: semantics.method,
-        credentials: semantics.credentials,
-        mode: semantics.mode,
-        cache: semantics.cache,
-        redirect: semantics.redirect,
-        signal,
-    };
-    if (semantics.headers.length > 0) {
-        init.headers = semantics.headers;
-    }
-    if (semantics.referrerPolicy) {
-        init.referrerPolicy = semantics.referrerPolicy;
-    }
-    return init;
+/** Shared network call: same semantics as the normalized Request, our AbortSignal. */
+const sharedNetworkRequest = (normalized: Request, signal: AbortSignal): Request =>
+    new Request(normalized, { signal });
+
+const requestHasIntegrity = (request: Request, init?: RequestInit): boolean => {
+    if (typeof init?.integrity === 'string' && init.integrity.length > 0) return true;
+    return typeof request.integrity === 'string' && request.integrity.length > 0;
 };
 
 /** True for did:web document URLs (`/did.json`), including `.well-known/did.json`. */
@@ -362,12 +328,20 @@ async function cachedFetch(input: RequestInfo | URL, init?: RequestInit): Promis
         return globalThis.fetch(input, init);
     }
 
-    let semantics: RequestSemantics;
+    let normalized: Request;
     try {
-        semantics = describeSemantics(input, init);
+        normalized = normalizeRequest(input, init);
     } catch {
         return fetchImpl(input, init);
     }
+
+    // Content integrity must stay on the native path (cold + warm). Keying/caching
+    // would skip the check on hits; passthrough is the simpler correct fix.
+    if (requestHasIntegrity(normalized, init)) {
+        return fetchImpl(input, init);
+    }
+
+    const semantics = describeSemanticsFromRequest(normalized);
 
     if (semantics.method !== 'GET' || !isDidWebDocumentUrl(semantics.url)) {
         return fetchImpl(input, init);
@@ -379,8 +353,8 @@ async function cachedFetch(input: RequestInfo | URL, init?: RequestInit): Promis
         return fetchImpl(input, init);
     }
 
-    const callerSignal = requestSignal(input, init);
-    if (callerSignal?.aborted) throw abortError();
+    const callerSignal = normalized.signal;
+    if (callerSignal.aborted) throw abortError();
 
     const key = semanticsKey(semantics);
 
@@ -395,10 +369,10 @@ async function cachedFetch(input: RequestInfo | URL, init?: RequestInit): Promis
     const generationAtStart = cacheGeneration;
     const urlGenerationAtStart = getUrlGeneration(semantics.url);
     const controller = new AbortController();
-    const networkInit = sharedFetchInit(semantics, controller.signal);
+    const networkRequest = sharedNetworkRequest(normalized, controller.signal);
 
     const pending = (async (): Promise<StoredDocument> => {
-        const response = await fetchImpl(semantics.url, networkInit);
+        const response = await fetchImpl(networkRequest);
         const responseMaxAgeMs = parseCacheControlMaxAgeMs(response.headers);
 
         const effectiveTtlMs =
