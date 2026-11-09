@@ -57,7 +57,8 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
     const isCoolingDown =
         resendAvailableAt > now &&
         (status?.attemptsRemaining === 0 ||
-            normalizeEmail(email) === normalizeEmail(status?.guardianEmail));
+            (email.trim() !== '' &&
+                normalizeEmail(email) === normalizeEmail(status?.guardianEmail)));
 
     // Re-enable the send button as soon as the server-side cooldown ends.
     useEffect(() => {
