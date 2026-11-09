@@ -41,6 +41,17 @@ import {
 } from './credentialResolution';
 const log = getLogger('vc-queries');
 
+/** How long credential-index React Query results stay fresh across route mounts (LC-2383).
+ * Mutations that add/delete credentials invalidate these keys; until then, remounts reuse cache
+ * instead of re-walking index.get (~2.3 MB mega-batches on every route).
+ *
+ * Applied to useQuery-based index walks (skills/credentials/counts/IDs). Not yet on
+ * useGetCredentialList (useInfiniteQuery): a fresh non-InfiniteData hydrate can reach
+ * hasNextPage before the mount-time drop runs. #2005 adds restore-boundary sanitization;
+ * AppRouter prefetch already keeps list observers mounted across shell navigations.
+ */
+export const CREDENTIAL_INDEX_STALE_TIME = 5 * 60 * 1000;
+
 // Global set to track processed credentials across all hook instances
 const globalProcessedCredentials = new Set<string>();
 
@@ -357,6 +368,7 @@ export const useGetCredentialCount = (category?: CredentialCategory, enabled: bo
             }
         },
         enabled: enabled && Boolean(reader),
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };
 
@@ -374,6 +386,7 @@ export const useCountBoosts = (category?: CredentialCategory, enabled: boolean =
 
             return managedCount;
         },
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };
 
@@ -441,6 +454,7 @@ export const useTotalBoostCounts = () => {
                 totalBoostsCount,
             };
         },
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };
 export type VC_WITH_URI = {
@@ -521,6 +535,8 @@ export const useGetCredentials = (
                 return Promise.reject(new Error(error));
             }
         },
+        // LC-2383: full index.get walk — reuse across navigation until invalidated.
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };
 
@@ -691,6 +707,8 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
             }
         },
         enabled,
+        // LC-2383: nine category full-walks — the main cross-route mega-batch source.
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };
 
