@@ -1,0 +1,11 @@
+Here’s LearnCard responding to a credential request from a website in Chrome.
+
+Android finds the course credential already registered by LearnCard. The learner chooses it, and Android opens LearnCard’s consent screen.
+
+This is the full LearnCard app, using its signed-in account and credential inventory. The screen shows which website is asking, and exactly which details it wants: the course name and completion date.
+
+After the learner approves, LearnCard returns a signed response. A separate verifier checks the signatures, the requested details, and that the response belongs to this request. Only then does the website show Verified.
+
+The learner can also cancel, which returns no credential. We tested approval after restarting the LearnCard process, too.
+
+This is an emulator demonstration with synthetic data. Physical Android testing is still pending. Production registration remains disabled, and database encryption is outside this sprint.

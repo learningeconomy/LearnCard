@@ -1,0 +1,13 @@
+This feature lets a LearnCard account respond to credential requests through Android. LearnCard stays a Capacitor hybrid app. Android handles the handoff, while the existing app handles the account and consent. This earlier demonstration uses a synthetic course credential and a separate verifier app.
+
+The native layer registers limited discovery information with Android and opens LearnCard when a credential is selected. The Capacitor bridge passes the trusted requester identity and request into the app. LearnCard then checks the active account and credential before asking for consent.
+
+Here, Verifier Lab asks Android for course details. Android finds the registered LearnCard credential and lets the learner choose it. This request asks for the course name and completion date.
+
+LearnCard opens its consent screen for the actual account. The learner sees who is asking and which details are requested. Clearing a required field disables Share. Before approval, the app checks the account, credential and current inventory again.
+
+After approval, the signed response returns through Android to Verifier Lab. The verifier checks the issuer signature, disclosed fields, request binding and holder proof. The Verified result means those checks passed.
+
+The learner can also decline. This second request is canceled inside LearnCard and returns to the requesting app without a credential.
+
+This is an emulator demonstration with synthetic data. A separate browser walkthrough now shows Chrome and an independent verifier. Physical Android testing and broader lifecycle qualification remain pending. Production registration stays disabled, and database encryption remains outside this sprint.
