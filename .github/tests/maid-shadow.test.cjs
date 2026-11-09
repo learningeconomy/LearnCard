@@ -187,6 +187,35 @@ test('report limits displayed paths and describes one-run parity limits', () => 
     assert.match(output, /not proof that all affected selections are covered/);
 });
 
+test('truncated paths retain valid escaped JSON and do not split Unicode or HTML entities', () => {
+    const paths = [
+        `${'a'.repeat(496)}<${'b'.repeat(100)}`,
+        `${'a'.repeat(496)}>${'b'.repeat(100)}`,
+        `${'a'.repeat(496)}\\${'b'.repeat(100)}`,
+        `${'a'.repeat(496)}\n${'b'.repeat(100)}`,
+        `${'a'.repeat(496)}😀${'b'.repeat(100)}`,
+        '<\\\n😀'.repeat(300),
+    ];
+    for (const name of paths) {
+        const output = render({ tracked: { ...empty, match: [name] }, untracked: empty });
+        const line = output.split('\n').find(value => value.startsWith('  - '));
+        assert.ok(line);
+        const encoded = line.slice(4);
+        assert.ok(encoded.length <= 500, `encoded path length was ${encoded.length}`);
+        assert.match(encoded, /…"$/);
+        const json = encoded
+            .replace(/\\([\\`*_{}\[\]()!|#])/g, '$1')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>');
+        const decoded = JSON.parse(json);
+        assert.match(decoded, /…$/);
+        assert.doesNotMatch(
+            decoded,
+            /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u
+        );
+    }
+});
+
 test('CLI reports inconclusive for failed tests, missing artifacts, and mismatched commits', t => {
     const { root, sha } = fixture(t);
     const actualFile = path.join(root, 'actual.json');
@@ -229,11 +258,21 @@ test('CLI reports inconclusive for failed tests, missing artifacts, and mismatch
         const output = readFileSync(summary, 'utf8');
         assert.match(output, /inconclusive/i);
         assert.match(output, /no equivalence conclusion/i);
+        return output;
     };
     writeFileSync(actualFile, JSON.stringify(actual));
     writeFileSync(shadowFile, JSON.stringify(shadow));
     run({ MAID_FULL_TEST_OUTCOME: 'failure' });
     run({ MAID_FULL_JOB_OUTCOME: 'failure' });
+    const statuses = run({
+        MAID_FULL_DOWNLOAD_OUTCOME: 'failure',
+        MAID_SHADOW_DOWNLOAD_OUTCOME: 'skipped',
+    });
+    assert.match(statuses, /Full download: failure/);
+    assert.match(statuses, /Shadow download: skipped/);
+    const unknown = run({ MAID_FULL_DOWNLOAD_OUTCOME: '<script>\nmalicious' });
+    assert.match(unknown, /Full download: unknown/);
+    assert.doesNotMatch(unknown, /script|malicious/i);
     unlinkSync(shadowFile);
     run();
     writeFileSync(shadowFile, JSON.stringify({ ...shadow, sha: 'f'.repeat(40) }));

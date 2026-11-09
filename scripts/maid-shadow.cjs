@@ -126,6 +126,20 @@ const compare = (actual, shadow) => {
     return result;
 };
 
+// Keep each escaped character intact when limiting a path in the job summary.
+const renderPath = name => {
+    let output = '"';
+    for (const character of name) {
+        const escaped = JSON.stringify(character)
+            .slice(1, -1)
+            .replace(/[<>]/g, c => (c === '<' ? '&lt;' : '&gt;'))
+            .replace(/[\\`*_{}\[\]()!|#]/g, '\\$&');
+        if (output.length + escaped.length + 2 > 500) return `${output}…"`;
+        output += escaped;
+    }
+    return `${output}"`;
+};
+
 const render = comparison => {
     const lines = [
         '## Maid-Service generator shadow comparison',
@@ -152,12 +166,7 @@ const render = comparison => {
         ]) {
             lines.push(`- ${title}: **${data[key].length}**`);
             for (const name of data[key].slice(0, 100)) {
-                lines.push(
-                    `  - ${JSON.stringify(name)
-                        .replace(/[<>]/g, c => (c === '<' ? '&lt;' : '&gt;'))
-                        .replace(/[\\`*_{}\[\]()!|#]/g, '\\$&')
-                        .slice(0, 500)}`
-                );
+                lines.push(`  - ${renderPath(name)}`);
             }
             if (data[key].length > 100) lines.push('  - Additional paths omitted.');
         }
@@ -179,18 +188,24 @@ const main = () => {
     if (command === 'compare' && args.length === 2) {
         let summary;
         try {
-            if (
-                process.env.MAID_FULL_JOB_OUTCOME !== 'success' ||
-                process.env.MAID_FULL_TEST_OUTCOME !== 'success' ||
-                process.env.MAID_FULL_SNAPSHOT_OUTCOME !== 'success' ||
-                process.env.MAID_SHADOW_GENERATOR_OUTCOME !== 'success' ||
-                process.env.MAID_SHADOW_SNAPSHOT_OUTCOME !== 'success' ||
-                process.env.MAID_FULL_DOWNLOAD_OUTCOME !== 'success' ||
-                process.env.MAID_SHADOW_DOWNLOAD_OUTCOME !== 'success'
-            )
-                throw new Error(
-                    'A test, generator, snapshot, or artifact transfer did not succeed'
-                );
+            const outcomes = [
+                ['Full job', process.env.MAID_FULL_JOB_OUTCOME],
+                ['Full test', process.env.MAID_FULL_TEST_OUTCOME],
+                ['Full snapshot', process.env.MAID_FULL_SNAPSHOT_OUTCOME],
+                ['Shadow generator', process.env.MAID_SHADOW_GENERATOR_OUTCOME],
+                ['Shadow snapshot', process.env.MAID_SHADOW_SNAPSHOT_OUTCOME],
+                ['Full download', process.env.MAID_FULL_DOWNLOAD_OUTCOME],
+                ['Shadow download', process.env.MAID_SHADOW_DOWNLOAD_OUTCOME],
+            ];
+            const incomplete = outcomes
+                .filter(([, outcome]) => outcome !== 'success')
+                .map(([label, outcome]) => {
+                    const safeOutcome = ['failure', 'cancelled', 'skipped'].includes(outcome)
+                        ? outcome
+                        : 'unknown';
+                    return `${label}: ${safeOutcome}`;
+                });
+            if (incomplete.length) throw new Error(incomplete.join('; '));
             const actual = JSON.parse(fs.readFileSync(args[0], 'utf8'));
             const shadow = JSON.parse(fs.readFileSync(args[1], 'utf8'));
             if (actual.sha !== process.env.GITHUB_SHA)
