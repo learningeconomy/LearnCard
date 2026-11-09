@@ -19,6 +19,7 @@ import { ClrTranscriptSurface } from 'learn-card-base/helpers/credentials/clr/re
 import type { LCR } from 'learn-card-base/types/credential-records';
 import { useClassLinkAuthorizeUrl } from 'learn-card-base/react-query/mutations/firebase';
 import { useTranscriptArrival } from '../../hooks/useTranscriptArrival';
+import { useReceivedTranscript } from '../../hooks/useReceivedTranscript';
 import { readTranscriptReceipt, storeTranscriptReceipt } from '../../hooks/transcriptReceipt';
 import { tryFetchResolvedCredential } from 'learn-card-base/react-query/queries/credentialResolution';
 import ClrTranscriptDetailModal from '../clr-transcript/ClrTranscriptDetailModal';
@@ -95,43 +96,13 @@ const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
     const { newModal } = useModal();
     const { initWallet } = useWallet();
     const history = useHistory();
-    const queryClient = useQueryClient();
-    const activeWallet = walletStore.use.wallet();
-    const switchedDid = switchedProfileStore.use.switchedDid();
-    const wallet = switchedDid && activeWallet?.id.did() !== switchedDid ? null : activeWallet;
-    const accountDid = wallet?.id.did();
     const [timedOut, setTimedOut] = useState(false);
-    const { data: transcriptEntry } = useQuery({
-        queryKey: ['receivedTranscript', accountDid, requestId, issuerDid],
-        enabled: Boolean(wallet && issuerDid),
-        queryFn: async () => {
-            if (!wallet || !accountDid) return null;
-            const matches = (vc: VC | undefined): vc is VC =>
-                Boolean(vc && getIssuerDid(vc) === issuerDid && vc.type?.includes('ClrCredential'));
-            const storedUri = requestId ? readTranscriptReceipt(accountDid, requestId) : null;
-            if (storedUri) {
-                const vc = await tryFetchResolvedCredential(queryClient, wallet, storedUri);
-                if (matches(vc)) return { vc, uri: storedUri };
-            }
-            // The core index is cache-first. Invalidating React Query alone can return
-            // the old list while the core refreshes silently in the background.
-            const records = await wallet.index.LearnCloud.get<LCR>({}, { cache: 'skip-cache' });
-            const entries = await Promise.all(
-                records.map(async record => ({
-                    uri: record.uri,
-                    vc: await tryFetchResolvedCredential(queryClient, wallet, record.uri),
-                }))
-            );
-            const found = entries.find((entry): entry is { uri: string; vc: VC } =>
-                matches(entry.vc)
-            );
-            if (found && requestId) storeTranscriptReceipt(accountDid, requestId, found.uri);
-            return found ?? null;
-        },
-        retry: false,
-    });
+    const {
+        entry: transcriptEntry,
+        model: transcriptModel,
+        accountDid,
+    } = useReceivedTranscript({ issuerDid, requestId });
     const transcriptVc = transcriptEntry?.vc;
-    const transcriptModel = transcriptVc ? normalizeClrTranscriptDisplayModel(transcriptVc) : null;
     const schoolName = transcriptModel?.header.issuerName?.value;
     const gpa = transcriptModel?.summary.gpa?.value;
     const awardedDate = transcriptModel?.header.awardedDate?.value;

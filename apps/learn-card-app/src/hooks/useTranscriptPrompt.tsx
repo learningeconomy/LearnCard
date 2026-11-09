@@ -9,9 +9,8 @@ import {
     getLogger,
 } from 'learn-card-base';
 import { useAppAuth } from '../providers/AuthCoordinatorProvider';
-import { TranscriptOptInCard } from '../components/classlink/TranscriptOptInCard';
+import { TranscriptRequestFlow } from '../components/classlink/TranscriptRequestFlow';
 import { redirectStore } from 'learn-card-base';
-import * as m from '../paraglide/messages.js';
 
 const log = getLogger('transcript-prompt');
 
@@ -61,20 +60,12 @@ export const useTranscriptPrompt = () => {
                 localStorage.setItem(storageKey, Date.now().toString());
 
                 newModal(
-                    <div className="p-6 bg-grayscale-100 rounded-t-[20px] max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-semibold text-grayscale-900">
-                                {m['transcriptOptIn.promptTitle']()}
-                            </h2>
-                            <button
-                                type="button"
-                                onClick={() => closeModal()}
-                                className="text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                            >
-                                {m['transcriptOptIn.notNow']()}
-                            </button>
-                        </div>
-                        <TranscriptOptInCard source="wallet" />
+                    <div className="p-6 bg-white rounded-t-[20px] max-h-[90vh] overflow-y-auto">
+                        <TranscriptRequestFlow
+                            variant="modal"
+                            stateDisplayName={data.stateDisplayName ?? ''}
+                            onDone={() => closeModal()}
+                        />
                     </div>,
                     { className: 'bg-transparent!' },
                     { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }

@@ -1035,7 +1035,7 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.TRANSCRIPT_ARRIVED]: Record<string, never>;
 
     [AnalyticsEvents.TRANSCRIPT_AUTO_ACCEPT_SKIPPED]: {
-        reason: 'onboarding_skipped';
+        reason: 'onboarding_skipped' | 'modal_skipped';
     };
 
     [AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED]: {

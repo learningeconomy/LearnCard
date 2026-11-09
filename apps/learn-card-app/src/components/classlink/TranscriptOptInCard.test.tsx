@@ -393,7 +393,9 @@ describe('TranscriptOptInCard', () => {
         it('surfaces the server budget error without losing the retry', async () => {
             mocks.latest = noneYet();
             mocks.request.mockRejectedValue(
-                new Error('Please wait before requesting your transcript again.')
+                Object.assign(new Error('Please wait before requesting your transcript again.'), {
+                    data: { code: 'TOO_MANY_REQUESTS' },
+                })
             );
             render(<TranscriptOptInCard source="wallet" />);
             fireEvent.click(screen.getByRole('checkbox'));

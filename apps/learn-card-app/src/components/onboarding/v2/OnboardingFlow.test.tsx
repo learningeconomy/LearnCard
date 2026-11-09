@@ -64,6 +64,7 @@ vi.mock('learn-card-base', () => ({
     ),
     getSSSConfig: () => ({ escrowEnclaveMode: 'off' }),
     useRequestTranscript: () => ({ mutateAsync: mocks.requestTranscript, isPending: false }),
+    useTranscriptStatus: () => ({ data: { eligible: true, stateDisplayName: 'Example' } }),
     useFeatureConfig: () => ({ classlinkTranscriptOptIn: mocks.transcriptFlag }),
     Checkbox: ({
         checked,
@@ -118,6 +119,16 @@ vi.mock('@analytics', () => ({
     createFlowLifecycle: () => ({ terminate: () => true }),
     getOrCreateSignupFlow: () => ({ flowId: 'test-flow', startedAtMs: Date.now(), isNew: false }),
     clearSignupFlow: vi.fn(),
+}));
+vi.mock('../../../hooks/useTranscriptArrival', () => ({
+    useTranscriptArrival: () => ({ isPollingExhausted: false }),
+}));
+vi.mock('../../../hooks/useReceivedTranscript', () => ({
+    useReceivedTranscript: () => ({ entry: undefined, model: null }),
+}));
+vi.mock('../../clr-transcript/ClrTranscriptDetailModal', () => ({ default: () => null }));
+vi.mock('learn-card-base/helpers/credentials/clr/renderer', () => ({
+    ClrTranscriptSurface: { Full: 'full' },
 }));
 vi.mock('./countryInference', () => ({ inferCountryCode: () => 'US' }));
 vi.mock('./BirthdayPicker', () => ({
@@ -389,13 +400,19 @@ describe('ClassLink transcript onboarding step', () => {
         fireEvent.click(screen.getByTestId('onboarding-transcript-get'));
 
         await waitFor(() => expect(mocks.requestTranscript).toHaveBeenCalledTimes(1));
-        await screen.findByText(m['onboarding.transcript.onItsWay']());
+        // The guided flow stays on screen with live progress instead of closing.
+        await screen.findByTestId('transcript-flow-on-the-way');
+        expect(screen.getByTestId('onboarding-transcript-step')).toBeInTheDocument();
     });
 
     it('surfaces a request failure and lets the student retry or skip', async () => {
         mocks.transcriptFlag = true;
         mocks.isClassLinkStudent = true;
-        mocks.requestTranscript.mockRejectedValueOnce(new Error('Records are offline'));
+        mocks.requestTranscript.mockRejectedValueOnce(
+            Object.assign(new Error('Records are offline'), {
+                data: { code: 'SERVICE_UNAVAILABLE' },
+            })
+        );
         await createProfile();
 
         await screen.findByTestId('onboarding-transcript-step');

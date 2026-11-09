@@ -38,8 +38,8 @@ vi.mock('learn-card-base', () => ({
 vi.mock('../providers/AuthCoordinatorProvider', () => ({
     useAppAuth: () => ({ state: { status: mocks.status } }),
 }));
-vi.mock('../components/classlink/TranscriptOptInCard', () => ({
-    TranscriptOptInCard: () => null,
+vi.mock('../components/classlink/TranscriptRequestFlow', () => ({
+    TranscriptRequestFlow: () => null,
 }));
 
 const memoryStorage = (() => {

@@ -56,6 +56,21 @@
         "checkNow": "Check now",
         "requestSent": "Request Sent",
         "untrackableBody": "We'll notify you when it arrives.",
+        "flow": {
+            "requestSent": "Request sent",
+            "preparing": "Your school is preparing your transcript",
+            "adding": "Adding it to your account",
+            "usuallyTakes": "This usually takes less than a minute.",
+            "takingLonger": "We'll let you know as soon as your transcript is here. You can keep going.",
+            "continue": "Continue",
+            "onTheWayTitle": "Your transcript is on its way",
+            "stillWorkingTitle": "Still working on it",
+            "arrivedBody": "It's saved to your account.",
+            "courses": "Courses",
+            "gpa": "GPA",
+            "classOf": "Class of",
+            "noneYetTitle": "Nothing to add yet"
+        },
         "promptTitle": "Get Your Transcript",
         "notNow": "Not now"
     },

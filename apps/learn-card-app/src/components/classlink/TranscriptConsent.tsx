@@ -35,7 +35,7 @@ export const TranscriptConsentCheckbox: React.FC<TranscriptConsentCheckboxProps>
                 checked={checked}
                 onChange={e => onChange(e.target.checked)}
                 disabled={disabled}
-                className="w-5 h-5 rounded border-grayscale-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer disabled:cursor-not-allowed"
+                className="w-5 h-5 rounded border-grayscale-300 accent-emerald-600 focus:ring-emerald-500 cursor-pointer disabled:cursor-not-allowed"
             />
         </div>
         <span className="text-sm text-grayscale-700 leading-relaxed text-left">
@@ -56,5 +56,10 @@ export const TranscriptErrorBanner: React.FC<{ message: string }> = ({ message }
 );
 
 /** User-facing message for a failed transcript request/status call. */
+const isServerError = (error: unknown): error is Error & { data: { code: string } } =>
+    error instanceof Error &&
+    typeof (error as { data?: { code?: unknown } }).data?.code === 'string';
+
+/** Server (tRPC) messages are written for students; anything else gets friendly copy. */
 export const getTranscriptErrorMessage = (error: unknown): string =>
-    error instanceof Error && error.message ? error.message : m['transcriptOptIn.error']();
+    isServerError(error) && error.message ? error.message : m['transcriptOptIn.error']();
