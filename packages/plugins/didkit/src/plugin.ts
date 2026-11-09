@@ -23,6 +23,7 @@ import {
     clearDidWebDocumentFetchCache,
     installDidWebDocumentFetchCache,
     invalidateDidWebDocument,
+    WALLET_DID_WEB_DOCUMENT_TTL_MS,
 } from './didWebDocumentCache';
 
 import { DIDKitPlugin, DidMethod } from './types';
@@ -36,7 +37,8 @@ export const getDidKitPlugin = async (
     allowRemoteContexts = false
 ): Promise<DIDKitPlugin> => {
     // Deduplicate concurrent did:web document GETs (verify/resolve stampede) before WASM boots.
-    installDidWebDocumentFetchCache();
+    // Wallet path: 60s TTL (WALLET_DID_WEB_DOCUMENT_TTL_MS); library default remains 10s.
+    installDidWebDocumentFetchCache({ ttlMs: WALLET_DID_WEB_DOCUMENT_TTL_MS });
     await init(input);
 
     const memoizedDids: Partial<Record<DidMethod, string>> = {};

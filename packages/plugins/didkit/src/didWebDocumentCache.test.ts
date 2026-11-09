@@ -6,12 +6,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
     clearDidWebDocumentFetchCache,
+    DEFAULT_DID_WEB_DOCUMENT_TTL_MS,
     didWebToDocumentUrl,
     getDidWebDocumentFetchCacheStats,
     installDidWebDocumentFetchCache,
     invalidateDidWebDocument,
     isDidWebDocumentUrl,
     resetDidWebDocumentFetchCacheForTests,
+    WALLET_DID_WEB_DOCUMENT_TTL_MS,
 } from './didWebDocumentCache';
 import { getDidKitPlugin } from './plugin';
 
@@ -570,6 +572,34 @@ describe('didWebDocumentCache', () => {
         } as RequestInit);
         await fetch(req);
         expect(receivedBody).toBe('stream-hello');
+    });
+
+    it('honors boot-time ttlMs after an idempotent default install', async () => {
+        vi.useFakeTimers();
+        try {
+            // Simulate getDidKitPlugin default install, then wallet boot override without force.
+            resetDidWebDocumentFetchCacheForTests();
+            globalThis.fetch = fetchMock as unknown as typeof fetch;
+            installDidWebDocumentFetchCache({ force: true });
+            expect(getDidWebDocumentFetchCacheStats().ttlMs).toBe(DEFAULT_DID_WEB_DOCUMENT_TTL_MS);
+
+            installDidWebDocumentFetchCache({ ttlMs: WALLET_DID_WEB_DOCUMENT_TTL_MS });
+            expect(getDidWebDocumentFetchCacheStats().ttlMs).toBe(WALLET_DID_WEB_DOCUMENT_TTL_MS);
+            expect(getDidWebDocumentFetchCacheStats().installed).toBe(true);
+
+            await fetch(DOC_URL);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+
+            await vi.advanceTimersByTimeAsync(30_000);
+            await fetch(DOC_URL);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+
+            await vi.advanceTimersByTimeAsync(30_001);
+            await fetch(DOC_URL);
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('throws when install is called without globalThis.fetch', () => {

@@ -22,6 +22,14 @@
  */
 
 export const DEFAULT_DID_WEB_DOCUMENT_TTL_MS = 10_000;
+/**
+ * Wallet boot TTL for did:web document GETs. Longer than
+ * {@link DEFAULT_DID_WEB_DOCUMENT_TTL_MS} so a credential detail modal that keeps
+ * re-resolving does not refetch every 10s (LC-2384 HAR: 4 identical demo-boi GETs
+ * at ~10s gaps). Change this one constant to tune wallet lifetime; library default
+ * stays at {@link DEFAULT_DID_WEB_DOCUMENT_TTL_MS}.
+ */
+export const WALLET_DID_WEB_DOCUMENT_TTL_MS = 60_000;
 export const DEFAULT_DID_WEB_DOCUMENT_CACHE_MAX_ENTRIES = 64;
 
 const NULL_BODY_STATUSES = new Set([101, 204, 205, 304]);
@@ -466,6 +474,8 @@ export const installDidWebDocumentFetchCache = (
         );
     }
 
+    // Options always apply — including after an idempotent install — so wallet boot
+    // can raise ttlMs without force-rewrapping fetch.
     if (typeof options.ttlMs === 'number' && options.ttlMs > 0) {
         ttlMs = options.ttlMs;
     }
