@@ -11,6 +11,7 @@ The production provider is **disabled by default**. The dedicated `com.learncard
 | What you want to test                            | Install                                                                            | Backend/account needed?                                                                                         |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Quick synthetic bridge demo                      | **LearnCard Holder Lab** + **LearnCard Verifier Lab**                              | No. Holder Lab creates its own synthetic sample.                                                                |
+| Independent browser demo (#2008)                 | **LearnCard Holder Lab** + stable **Chrome 141+**                                  | No account backend. Run the synthetic-only verifier server below; Verifier Lab APK is unnecessary.              |
 | The actual LearnCard account flow shown in #1835 | **LearnCard Native Dev** (`com.learncard.app.dctest`) + **LearnCard Verifier Lab** | Yes. Local test APIs, a disposable account and a provisioned Course Completion sample. Follow the next section. |
 
 ### Fastest hands-on demo (no backend)
@@ -105,6 +106,38 @@ adb -s emulator-5580 install -r lab/build/outputs/apk/verifier/debug/lab-verifie
 5. On approval, the verifier checks the issuer signature, disclosure integrity, requested fields, nonce, certificate-origin audience, holder signature and SD-JWT key binding. It rejects unrequested learner-name/skills disclosure.
 
 Use **Clear Samples** in the holder to remove its registry record and invalidate pending native handles. To check process restoration, background the holder, run `adb shell am kill com.learncard.dclab.holder`, then request again from the verifier. Android `force-stop` can affect component eligibility; record it separately from ordinary process death.
+
+## Independent browser verifier (development only)
+
+This adapter uses the separately maintained community package `@openeudi/openid4vp` **0.18.0** to build the request and verify the presentation. It is not an official EU reference verifier. The server imports only the public synthetic issuer key and Course Completion query, not LearnCard's parser/presenter/verifier. It requires the known lab issuer key, EdDSA signatures, the per-session nonce, HTTPS origin audience, holder binding and DCQL matching. The plaintext `dc_api` response is sent over HTTPS to the verifier server, where verification runs; it is never logged or persisted.
+
+1. Use the #2008 branch. Install/register **Holder Lab** with the quick start above, and use current stable Chrome on the same Google Play-enabled emulator. For this browser demo, **do not install Verifier Lab** unless you also want the native-app demo. If Android offers both an older LearnCard development credential and the lab sample, open **More options** and choose **Sample Course Completion**.
+2. Install the lab's pinned dependencies from the repo root:
+
+    ```bash
+    bun install --cwd apps/learn-card-app/android/digital-credentials-lab --frozen-lockfile
+    ```
+
+3. Serve this loopback-only endpoint through a trusted HTTPS proxy. One development option is an installed `cloudflared` CLI, in a separate terminal:
+
+    ```bash
+    cloudflared tunnel --url http://127.0.0.1:43164 --no-autoupdate
+    ```
+
+    Copy its generated `https://…trycloudflare.com` URL. This creates a temporary **public** URL; use synthetic credentials only. No production services or personal accounts are needed. A locally managed, trusted HTTPS reverse proxy can be used instead; do not bypass browser certificate checks.
+
+4. Start the adapter with that exact HTTPS origin (no trailing slash):
+
+    ```bash
+    LC_VERIFIER_ORIGIN=https://YOUR-PRINTED-HOST.trycloudflare.com \
+    bun run --cwd apps/learn-card-app/android/digital-credentials-lab verifier:browser
+    ```
+
+5. Open that URL in emulator Chrome. Choose **Request Course Details**, continue past Chrome's permission prompt, select **Sample Course Completion** in Android (using **More options** if needed), then **Agree and continue**. Consent must show that exact website origin. Approve: expect **Verified by independent verifier. Course name and Completion date checked.**
+6. Repeat and cancel in LearnCard: expect **Canceled. No credential was received.** Unchecking a required field must disable approval. Repeat after ordinary holder-process death; keep this distinct from force-stop. Expired browser requests are refreshed before the next user-activated request; a long-running expired session fails rather than accepting a stale response.
+7. Use **Clear Samples** when finished, and stop the server and temporary HTTPS proxy with Ctrl+C.
+
+The adapter has single-use, five-minute sessions, a 32-session cap, an HttpOnly/Secure/SameSite cookie, exact-origin checks, bounded JSON input and no raw proof logging. The trusted public issuer key is an explicit **test trust anchor**; it is not a production issuer trust model. This browser/lab exercise does not establish the full LearnCard account lifecycle, an Android sample-verifier test, or physical-device acceptance. The release provider remains disabled. SQLite encryption is outside this sprint.
 
 ## Boundaries
 

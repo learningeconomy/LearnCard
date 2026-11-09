@@ -1,3 +1,3 @@
 import { defineConfig } from 'vitest/config';
 
-export default defineConfig({ test: { include: ['web/**/*.test.ts'], environment: 'node' } });
+export default defineConfig({ test: { include: ['web/**/*.test.ts', 'browser-verifier/**/*.test.ts'], environment: 'node' } });
