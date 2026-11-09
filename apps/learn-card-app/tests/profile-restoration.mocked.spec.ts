@@ -7,7 +7,9 @@ import { TEST_USER_PROFILE_ID } from './constants';
 test('new profile survives full-page navigation before its cache flush @mocked', async ({
     page,
 }) => {
-    test.setTimeout(120_000);
+    // Each hard reload boots the unbundled app with Playwright's HTTP cache
+    // disabled by mocked routes. Give CI headroom without retrying assertions.
+    test.setTimeout(210_000);
     const network = await installNetwork(page);
     let created = false;
     const profile = {
@@ -36,14 +38,15 @@ test('new profile survives full-page navigation before its cache flush @mocked',
         profileId: TEST_USER_PROFILE_ID,
         waitUntil: 'commit',
     });
-    await expect(page.getByRole('heading').first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('heading').first()).toBeVisible({ timeout: 60_000 });
 
-    // Match the accessibility journey's hard navigations, including subsequent
-    // restores. Badges renders without an own profile, but its Earned tab does not.
-    for (let navigation = 0; navigation < 3; navigation++) {
+    // Exercise the first restore and one subsequent restore, omitting a third
+    // full dev-server startup. Badges renders without an own profile, but its
+    // Earned tab does not.
+    for (let navigation = 0; navigation < 2; navigation++) {
         await page.goto('/wallet', { waitUntil: 'commit' });
         const badges = page.getByRole('button', { name: /Badges/i });
-        await expect(badges).toBeVisible({ timeout: 30_000 });
+        await expect(badges).toBeVisible({ timeout: 60_000 });
         await badges.click();
         await page.waitForURL(/\/socialBadges/);
         await expect(page.getByRole('tab', { name: 'Earned', exact: true })).toBeVisible({

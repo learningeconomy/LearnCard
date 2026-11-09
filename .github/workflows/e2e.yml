@@ -44,6 +44,9 @@ jobs:
     eligibility:
         name: Determine E2E eligibility
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            pull-requests: read
         outputs:
             run_e2e: ${{ steps.policy.outputs.run_e2e }}
             reason: ${{ steps.policy.outputs.reason }}
@@ -86,6 +89,14 @@ jobs:
 
                   echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
                   echo "reason=$EVENT_NAME" >> "$GITHUB_OUTPUT"
+
+            - name: Observe queue batching candidates
+              if: ${{ github.event_name == 'merge_group' }}
+              continue-on-error: true
+              timeout-minutes: 1
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: node scripts/e2e-hosted/observe-queue-batch.mjs
 
     playwright_e2e:
         name: Playwright E2E
