@@ -136,6 +136,27 @@ describe('shared consent on the native transport', () => {
         expect(screen.getAllByRole('checkbox')).toHaveLength(1);
         expect(screen.queryByText(/private-reference|987654/)).not.toBeInTheDocument();
     });
+    it.each(['constructor', 'toString', 'hasOwnProperty', '__proto__'])(
+        'approves the selected native credential for a valid query ID %s',
+        async queryId => {
+            const props = nativeProps();
+            const match = props.dcqlSelection!.matches.course;
+            props.dcqlSelection = {
+                ...props.dcqlSelection!,
+                matches: Object.fromEntries([[queryId, match]]),
+            };
+            props.disclosurePolicy = Object.fromEntries([[queryId, ['course_name']]]);
+            render(<RequestConsent {...props} />);
+            const share = await screen.findByRole('button', { name: 'Share details' });
+            await waitFor(() => expect(share).toBeEnabled());
+            expect(screen.getByText('Test course')).toBeVisible();
+            fireEvent.click(share);
+            const picks = vi.mocked(props.onApprove).mock.calls[0]![0];
+            expect(Object.prototype.hasOwnProperty.call(picks.row, queryId)).toBe(true);
+            expect(picks.row[queryId]).toBe(0);
+            expect(picks.disclose[`${queryId}::encrypted-uri`]).toEqual({ course_name: true });
+        }
+    );
 
     it('keeps native identity and metadata available while preserving the bounded approval frame', async () => {
         const props = nativeProps();

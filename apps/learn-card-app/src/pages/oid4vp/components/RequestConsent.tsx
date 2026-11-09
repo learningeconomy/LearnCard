@@ -148,7 +148,10 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
      * out of the map; `Approve` is disabled in that case anyway.
      */
     const [picks, setPicks] = useState<ConsentPicks>(() => {
-        const initial: ConsentPicks = { row: {}, disclose: {} };
+        const initial: ConsentPicks = {
+            row: Object.create(null),
+            disclose: Object.create(null),
+        };
         for (const row of rows) {
             if (row.candidates.length > 0) initial.row[row.id] = 0;
         }
@@ -353,7 +356,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                                 key,
                                 label: humanizeClaimKey(key),
                                 value:
-                                    typeof value === 'object'
+                                    value !== null && typeof value === 'object'
                                         ? (JSON.stringify(value) ?? '')
                                         : String(value ?? ''),
                                 checked: picks.disclose[cacheKey]?.[key] === true,

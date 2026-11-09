@@ -33,11 +33,11 @@ internal object RegistryProjection {
     fun map(entries: JSONArray): List<SdJwtEntry> {
         require(entries.length() in 1..100)
         val ids = mutableSetOf<String>()
+        val icon = Bitmap.createBitmap(40, 40, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.rgb(24, 34, 78)) }
         return (0 until entries.length()).map { index ->
             val entry = entries.getJSONObject(index)
             validate(entry)
             require(ids.add(entry.getString("id")))
-            val icon = Bitmap.createBitmap(40, 40, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.rgb(24, 34, 78)) }
             val fields = entry.getJSONArray("claims")
             SdJwtEntry(
                 verifiableCredentialType = entry.getString("vct"),
