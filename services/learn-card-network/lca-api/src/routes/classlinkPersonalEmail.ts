@@ -1,7 +1,7 @@
 import { createHash, randomInt } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { didAndChallengeRoute } from '@routes';
+import { accountRoute } from '@routes';
 import cache from '@cache';
 import { resolveClassLinkContext } from '@helpers/classlinkContext.helpers';
 import { canDeletePersonalEmailSubject } from '@helpers/classlinkDeletion.helpers';
@@ -143,20 +143,20 @@ const assertEmailAvailable = async (email: string, subject: string): Promise<voi
 };
 
 export const personalEmailProcedures = {
-    getPersonalEmail: didAndChallengeRoute
+    getPersonalEmail: accountRoute
         .output(z.object({ email: z.string().optional(), verified: z.boolean() }))
         .query(async ({ ctx }) => {
-            const { identity } = await resolveClassLinkContext(ctx.user.did);
+            const { identity } = await resolveClassLinkContext(ctx.user.accountDid);
             return {
                 email: identity.personalEmail,
                 verified: Boolean(identity.personalEmail && identity.personalEmailVerifiedAt),
             };
         }),
-    startPersonalEmail: didAndChallengeRoute
+    startPersonalEmail: accountRoute
         .input(z.object({ email: personalEmail }))
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ input: { email }, ctx }) => {
-            const { identity } = await validateEmail(ctx.user.did, email);
+            const { identity } = await validateEmail(ctx.user.accountDid, email);
             await consumeBudget(
                 `classlink:rate:personal-email-send:${sha256Hex(ctx.user.did)}`,
                 PERSONAL_EMAIL_SEND_LIMIT,
@@ -188,11 +188,11 @@ export const personalEmailProcedures = {
             }
             return { success: true };
         }),
-    verifyPersonalEmail: didAndChallengeRoute
+    verifyPersonalEmail: accountRoute
         .input(z.object({ email: personalEmail, code: z.string().regex(/^\d{6}$/) }))
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ input: { email, code }, ctx }) => {
-            const { identity, userKey } = await validateEmail(ctx.user.did, email);
+            const { identity, userKey } = await validateEmail(ctx.user.accountDid, email);
             const result = await getRedis().eval(
                 CHECK_CODE,
                 2,

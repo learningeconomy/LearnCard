@@ -23,7 +23,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { environment } from '@environment';
-import { didAndChallengeRoute, openRoute, t } from '@routes';
+import { accountRoute, openRoute, t } from '@routes';
 import app from '../firebase';
 import { getClassLinkDiscovery } from '@helpers/classlink.helpers';
 import {
@@ -426,13 +426,13 @@ export const classlinkRouter = t.router({
      * subject when safe, transcript requests). Idempotent, and still works after the
      * account's Firebase user or UserKey is gone: it then matches by the caller's DID.
      */
-    deleteMyData: didAndChallengeRoute
+    deleteMyData: accountRoute
         .input(z.object({}).strict().optional())
         .output(z.object({ deleted: z.number().int().nonnegative() }))
         .mutation(async ({ ctx }) => {
-            const userKey = await findUserKeyByDid(ctx.user.did);
+            const userKey = await findUserKeyByDid(ctx.user.accountDid);
             const result = await deleteClassLinkDataForAccount(
-                userKey ?? { authProviders: [], primaryDid: ctx.user.did, linkedDids: [] },
+                userKey ?? { authProviders: [], primaryDid: ctx.user.accountDid, linkedDids: [] },
                 // The lock is lifted only after the account's key is gone (account deletion).
                 { clearPrivacyLock: !userKey }
             );

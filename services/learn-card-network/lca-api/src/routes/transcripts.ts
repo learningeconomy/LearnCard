@@ -3,7 +3,7 @@ import axios from 'axios';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import cache from '@cache';
-import { t, didAndChallengeRoute } from '@routes';
+import { t, accountRoute } from '@routes';
 import { getClassLinkConfig, getTranscriptIssuerConfig } from '@helpers/classlink.config';
 import {
     getAccountDids,
@@ -122,7 +122,7 @@ const eligibility = ({ tenant, identity }: ClassLinkContext) => {
 };
 
 export const transcriptsRouter = t.router({
-    getStatus: didAndChallengeRoute
+    getStatus: accountRoute
         .input(z.object({}).strict().optional())
         .output(
             z.object({
@@ -144,7 +144,7 @@ export const transcriptsRouter = t.router({
         )
         .query(async ({ ctx }) => {
             try {
-                const context = await resolveClassLinkContext(ctx.user.did);
+                const context = await resolveClassLinkContext(ctx.user.accountDid);
                 if (context.identity.isMinorHint) await enforceMinorPreferences(ctx.user.did);
                 const reason = eligibility(context);
                 const issuer = getTranscriptIssuerConfig(context.tenant);
@@ -171,13 +171,13 @@ export const transcriptsRouter = t.router({
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: FAILURE });
             }
         }),
-    markReceived: didAndChallengeRoute
+    markReceived: accountRoute
         .input(z.object({ requestId: z.string().min(1) }).strict())
         .output(z.object({ success: z.literal(true) }))
         .mutation(async ({ ctx, input }) => {
             try {
                 // Ownership is the caller's account (every uid and DID), never the input.
-                const userKey = await findUserKeyByDid(ctx.user.did);
+                const userKey = await findUserKeyByDid(ctx.user.accountDid);
                 const record = userKey
                     ? await markTranscriptRequestReceived(
                           input.requestId,
@@ -201,7 +201,7 @@ export const transcriptsRouter = t.router({
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: FAILURE });
             }
         }),
-    request: didAndChallengeRoute
+    request: accountRoute
         .input(z.object({ consent: z.literal(true) }).strict())
         .output(
             z.object({
@@ -215,7 +215,7 @@ export const transcriptsRouter = t.router({
             let lockKey: string | undefined;
             const lockToken = randomUUID();
             try {
-                const context = await resolveClassLinkContext(ctx.user.did);
+                const context = await resolveClassLinkContext(ctx.user.accountDid);
                 const reason = eligibility(context);
                 const issuer = getTranscriptIssuerConfig(context.tenant);
                 const { identity, firebaseUid, userKey, ownerFirebaseUids } = context;
@@ -240,7 +240,7 @@ export const transcriptsRouter = t.router({
                 // rebound Firebase uid gives a student a fresh allowance against the issuer. A
                 // legacy account with an empty primaryDid falls back to its first DID, never ''
                 // (which every such account would share).
-                const accountDid = getAccountDids(userKey)[0] ?? ctx.user.did;
+                const accountDid = getAccountDids(userKey)[0] ?? ctx.user.accountDid;
                 const accountKey = keyHash(accountDid);
                 const key = `transcripts:lock:${accountKey}`;
                 // Fails closed: a Redis error here aborts before anything reaches the issuer.

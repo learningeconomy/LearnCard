@@ -3,7 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { environment } from '@environment';
-import { didAndChallengeRoute } from '@routes';
+import { accountRoute } from '@routes';
 import app from '../firebase';
 import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.config';
 import { ClassLinkProviderUnavailable, ClassLinkTokenInvalid } from '@helpers/classlink.errors';
@@ -67,12 +67,12 @@ const connectionOutput = z.object({
 
 export const connectProcedures = {
     /** Whether School Connect can be used by this account, and its current connection. */
-    getConnection: didAndChallengeRoute
+    getConnection: accountRoute
         .input(z.object({}).strict().optional())
         .output(connectionOutput)
         .query(async ({ ctx }) => {
             const config = getClassLinkConfig();
-            const userKey = await findUserKeyByDid(ctx.user.did);
+            const userKey = await findUserKeyByDid(ctx.user.accountDid);
             const firebaseUid = getFirebaseUid(userKey);
             const identity = userKey
                 ? ((await findClassLinkIdentitiesForAccount(userKey))[0] ?? null)
@@ -95,7 +95,7 @@ export const connectProcedures = {
      * Connect a ClassLink school account to the signed-in account, or refresh an existing
      * connection. Never changes who is signed in. Students get the minor privacy settings.
      */
-    connect: didAndChallengeRoute
+    connect: accountRoute
         .input(classLinkExchangeInput)
         .output(z.object({ isStudent: z.boolean(), schoolName: z.string().optional() }))
         .mutation(async ({ input, ctx }) => {
@@ -109,7 +109,7 @@ export const connectProcedures = {
                 });
             }
             try {
-                const userKey = await findUserKeyByDid(ctx.user.did);
+                const userKey = await findUserKeyByDid(ctx.user.accountDid);
                 const firebaseUid = getFirebaseUid(userKey);
                 // Identities already linked to this account by uid, Keycloak subject or DID. A
                 // uid/subject match whose recorded DID belongs to another live account is not
@@ -234,7 +234,9 @@ export const connectProcedures = {
                 // Lock every DID of the account, not just the caller's: a stored lock wins before
                 // the "not a student" cache is consulted, so a preferences read racing this
                 // connection cannot re-cache a stale answer that leaves another DID unlocked.
-                const accountDids = [...new Set([ctx.user.did, ...getAccountDids(userKey)])];
+                const accountDids = [
+                    ...new Set([ctx.user.did, ctx.user.accountDid, ...getAccountDids(userKey)]),
+                ];
                 if (isStudent) await Promise.all(accountDids.map(d => enforceMinorPreferences(d)));
                 await Promise.all(accountDids.map(clearNotStudentCache));
                 return {

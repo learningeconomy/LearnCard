@@ -47,7 +47,12 @@ vi.mock('../src/firebase', () => ({ default: { auth: firebase.auth } }));
 vi.mock('@routes', async () => {
     const { initTRPC } = await import('@trpc/server');
     const t = initTRPC.create();
-    return { t, openRoute: t.procedure, didAndChallengeRoute: t.procedure };
+    // Mirrors accountRoute for a did:key caller, whose account DID is its own DID.
+    const accountRoute = t.procedure.use(({ ctx, next }) => {
+        const { user } = ctx as { user?: { did: string } };
+        return next({ ctx: { ...ctx, user: user && { ...user, accountDid: user.did } } });
+    });
+    return { t, openRoute: t.procedure, didAndChallengeRoute: t.procedure, accountRoute };
 });
 vi.mock('../src/helpers/classlink.config', async importOriginal => ({
     ...(await importOriginal<typeof import('../src/helpers/classlink.config')>()),

@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { exportJWK, generateKeyPair, jwtVerify } from 'jose';
+import { decodeJwt, exportJWK, generateKeyPair, jwtVerify } from 'jose';
 import axios from 'axios';
 import mongodb from '@mongo';
 import cache from '@cache';
@@ -22,10 +22,11 @@ import { deleteClassLinkDataForAccount } from '../src/helpers/classlinkDeletion.
 import { getStateStudentId, sealStateStudentId } from '../src/helpers/classlinkPii.helpers';
 import type { ClassLinkConfig, ResolvedTranscriptIssuer } from '../src/types/classlink';
 
-const mocks = vi.hoisted(() => ({ keypair: vi.fn() }));
+const mocks = vi.hoisted(() => ({ keypair: vi.fn(), resolveDid: vi.fn() }));
 vi.mock('axios', () => ({ default: { post: vi.fn() } }));
 vi.mock('@helpers/learnCard.helpers', () => ({
     getLearnCard: async () => ({ id: { keypair: mocks.keypair } }),
+    getEmptyLearnCard: async () => ({ invoke: { resolveDid: mocks.resolveDid } }),
 }));
 vi.mock('../src/helpers/classlink.config', async importOriginal => ({
     ...(await importOriginal<typeof import('../src/helpers/classlink.config')>()),
@@ -49,10 +50,12 @@ const originalEnvironment = {
     IS_OFFLINE: environment.IS_OFFLINE,
 };
 const caller = (
-    user: { did: string; isChallengeValid: boolean } | undefined = { did, isChallengeValid: true }
+    user: { did: string; isChallengeValid: boolean } | undefined = { did, isChallengeValid: true },
+    authorizationHeader?: string
 ) =>
     transcriptsRouter.createCaller({
         user,
+        authorizationHeader,
         domain: 'alias-host.example',
         tenant: { id: 'learncard', emailBranding: {}, resolvedVia: 'default' },
     });
@@ -491,6 +494,34 @@ describe('transcript requests', () => {
         const stored = await getTranscriptRequestsCollection().find({}).toArray();
         expect(stored.every(record => !('primaryDid' in record))).toBe(true);
     });
+    it('serves a profile did:web caller from the account recorded under its did:key', async () => {
+        // The app signs as its network profile did:web; accounts are recorded under the did:key.
+        const keyDid = 'did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK';
+        const webDid = 'did:web:network.example:users:student';
+        await mongodb
+            .collection('userkeys')
+            .updateOne({ primaryDid: did }, { $set: { primaryDid: keyDid } });
+        mocks.resolveDid.mockResolvedValue({
+            verificationMethod: [{ id: `${webDid}#owner`, publicKeyMultibase: keyDid.slice(8) }],
+        });
+        const segment = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
+        const bearer = (kid: string) =>
+            `Bearer ${segment({ alg: 'EdDSA', kid })}.${segment({})}.sig`;
+        const webCaller = (kid: string) =>
+            caller({ did: webDid, isChallengeValid: true }, bearer(kid));
+
+        expect(await webCaller(`${webDid}#owner`).getStatus()).toMatchObject({ eligible: true });
+        const requested = await webCaller(`${webDid}#owner`).request({ consent: true });
+        expect(requested.status).toBe('requested');
+        // The issuer still delivers to the DID the student signed in with.
+        const [, body] = vi.mocked(axios.post).mock.calls[0]!;
+        expect(decodeJwt((body as { assertion: string }).assertion).sub).toBe(webDid);
+        // A key other than the profile's own #owner key never reaches the account.
+        await expect(webCaller(`${webDid}#signing-authority`).getStatus()).rejects.toMatchObject({
+            code: 'NOT_FOUND',
+        });
+    });
+
     it('requires a bound account and ClassLink identity', async () => {
         await expect(
             caller({ did: 'did:key:other', isChallengeValid: true }).getStatus()
