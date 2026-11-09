@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const lookup = vi.hoisted(() => ({ fail: false }));
+const resolver = vi.hoisted(() => ({ resolveDid: vi.fn() }));
+vi.mock('@helpers/learnCard.helpers', () => ({
+    getEmptyLearnCard: async () => ({ invoke: { resolveDid: resolver.resolveDid } }),
+}));
 vi.mock('../src/models/UserKey', async importOriginal => {
     const actual = await importOriginal<typeof import('../src/models/UserKey')>();
     return {
@@ -56,10 +60,15 @@ import { createUserKeysIndexes } from '../src/models/UserKey';
 import { ThemeEnum } from '../src/types/preferences';
 import type { ClassLinkConfig } from '../src/types/classlink';
 
-const student = 'did:key:classlink-student';
+const multibase = 'z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK';
+const student = `did:key:${multibase}`;
 const adult = 'did:key:regular-adult';
 const classLinkAdult = 'did:key:classlink-teacher';
-const caller = (did: string) => preferencesRouter.createCaller({ user: { did } } as never);
+const webDid = 'did:web:network.example:users:person';
+const segment = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
+const authorizationHeader = `Bearer ${segment({ alg: 'EdDSA', kid: `${webDid}#owner` })}.${segment({})}.sig`;
+const caller = (did: string) =>
+    preferencesRouter.createCaller({ user: { did }, authorizationHeader } as never);
 
 const minor = {
     aiEnabled: false,
@@ -94,8 +103,11 @@ const identity = (firebaseUid: string, sub: string, isMinorHint: boolean) => ({
 
 beforeEach(async () => {
     lookup.fail = false;
+    resolver.resolveDid.mockReset().mockResolvedValue({
+        verificationMethod: [{ id: `${webDid}#owner`, publicKeyMultibase: multibase }],
+    });
     vi.mocked(getClassLinkConfig).mockReturnValue(config);
-    await cache.delete([student, adult, classLinkAdult].map(getNotStudentCacheKey));
+    await cache.delete([student, adult, classLinkAdult, webDid].map(getNotStudentCacheKey));
     await mongodb.collection('userkeys').deleteMany({});
     await getClassLinkIdentitiesCollection().deleteMany({});
     await Preferences.deleteMany({});
@@ -110,6 +122,78 @@ beforeEach(async () => {
 });
 
 describe('ClassLink student privacy lock', () => {
+    it.each(['create', 'read'])(
+        'locks a profile DID on %s using its owner account',
+        async action => {
+            if (action === 'create') {
+                await caller(webDid).createPreferences({ theme: ThemeEnum.Colorful });
+            }
+            expect(await caller(webDid).getPreferencesForDid()).toMatchObject({
+                ...minor,
+                locked: true,
+            });
+            await caller(webDid).updatePreferences({ aiEnabled: true, analyticsEnabled: true });
+            expect(await Preferences.findOne({ did: webDid })).toMatchObject(minor);
+            expect(await Preferences.findOne({ did: student })).toBeNull();
+            expect(studentLookups).toHaveBeenCalledWith(student);
+            resolver.resolveDid.mockRejectedValue(new Error('unavailable'));
+            expect(await caller(webDid).getPreferencesForDid()).toMatchObject({
+                ...minor,
+                locked: true,
+            });
+            expect(resolver.resolveDid).toHaveBeenCalledTimes(1);
+        }
+    );
+
+    it('caches a non-student under the account DID and invalidates it through that DID', async () => {
+        await getClassLinkIdentitiesCollection().deleteMany({});
+        await caller(webDid).createPreferences({ theme: ThemeEnum.Colorful });
+        await caller(webDid).updatePreferences({ aiEnabled: true });
+        expect(await caller(webDid).getPreferencesForDid()).toMatchObject({ aiEnabled: true });
+        expect(studentLookups).toHaveBeenCalledTimes(1);
+        expect(await cache.get(getNotStudentCacheKey(student))).toBe('not_student');
+        expect(await cache.get(getNotStudentCacheKey(webDid))).toBeNull();
+        await upsertClassLinkIdentity(identity('uid-student', 'student-1', true));
+        await clearNotStudentCache(student);
+        expect(await caller(webDid).getPreferencesForDid()).toMatchObject({
+            ...minor,
+            locked: true,
+        });
+        expect(studentLookups).toHaveBeenCalledTimes(2);
+    });
+
+    it.each(['resolver', 'mongo'])(
+        'fails safe on %s errors resolving a profile account',
+        async failure => {
+            await Preferences.insertOne({
+                did: webDid,
+                theme: ThemeEnum.Colorful,
+                aiEnabled: true,
+            });
+            if (failure === 'resolver')
+                resolver.resolveDid.mockRejectedValue(new Error('unavailable'));
+            else lookup.fail = true;
+            expect(await caller(webDid).getPreferencesForDid()).toMatchObject({
+                ...minor,
+                locked: true,
+            });
+            await expect(
+                caller(webDid).createPreferences({ theme: ThemeEnum.Formal })
+            ).rejects.toMatchObject({
+                code: 'INTERNAL_SERVER_ERROR',
+            });
+            await expect(
+                caller(webDid).updatePreferences({ aiEnabled: true })
+            ).rejects.toMatchObject({
+                code: 'INTERNAL_SERVER_ERROR',
+            });
+            const saved = await Preferences.findOne({ did: webDid });
+            expect(saved).toMatchObject({ aiEnabled: true });
+            expect(saved?.privacyLock).toBeUndefined();
+            expect(studentLookups).not.toHaveBeenCalled();
+        }
+    );
+
     it('creates locked minor settings for a ClassLink student', async () => {
         await caller(student).createPreferences({ theme: ThemeEnum.Colorful });
 

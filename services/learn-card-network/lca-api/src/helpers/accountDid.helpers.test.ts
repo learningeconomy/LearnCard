@@ -29,6 +29,28 @@ beforeEach(() => {
 });
 
 describe('resolveAccountDid', () => {
+    it('propagates resolution errors only in strict mode, preserving accountRoute defaults', async () => {
+        const error = new Error('resolution unavailable');
+        mocks.resolveDid.mockRejectedValue(error);
+        await expect(
+            resolveAccountDid(webDid, bearer(`${webDid}#owner`), { strict: true })
+        ).rejects.toBe(error);
+        await expect(resolveAccountDid(webDid, bearer(`${webDid}#owner`))).resolves.toBe(webDid);
+    });
+
+    it('does not treat absent owner keys or accounts as strict resolution errors', async () => {
+        await expect(resolveAccountDid(webDid, undefined, { strict: true })).resolves.toBe(webDid);
+        mocks.resolveDid.mockResolvedValue({ verificationMethod: [] });
+        await expect(
+            resolveAccountDid(webDid, bearer(`${webDid}#owner`), { strict: true })
+        ).resolves.toBe(webDid);
+        mocks.resolveDid.mockResolvedValue(document());
+        mocks.findUserKeyByDid.mockResolvedValue(null);
+        await expect(
+            resolveAccountDid(webDid, bearer(`${webDid}#owner`), { strict: true })
+        ).resolves.toBe(webDid);
+    });
+
     it('resolves a profile did:web signed with its #owner key to the account did:key', async () => {
         expect(await resolveAccountDid(webDid, bearer(`${webDid}#owner`))).toBe(keyDid);
     });

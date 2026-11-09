@@ -64,7 +64,7 @@ export const preferencesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const stored = await getPreferencesForDid(ctx.user.did);
-            const lock = await getPrivacyLockState(ctx.user.did, stored);
+            const lock = await getPrivacyLockState(ctx.user.did, stored, ctx.authorizationHeader);
             if (lock === 'unknown') throw studentLookupFailed();
             const success = await createPreferences(ctx.user.did, input.theme);
             // ClassLink student accounts always get locked minor settings, whatever the client sends.
@@ -94,7 +94,7 @@ export const preferencesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const stored = await getPreferencesForDid(ctx.user.did);
-            const lock = await getPrivacyLockState(ctx.user.did, stored);
+            const lock = await getPrivacyLockState(ctx.user.did, stored, ctx.authorizationHeader);
             if (lock === 'unknown') throw studentLookupFailed();
             // Persist the lock first so later calls skip the student lookup entirely.
             if (lock === 'student') await enforceMinorPreferences(ctx.user.did);
@@ -150,7 +150,7 @@ export const preferencesRouter = t.router({
         .output(preferencesOutputSchema)
         .query(async ({ ctx }) => {
             const stored = await getPreferencesForDid(ctx.user.did);
-            const lock = await getPrivacyLockState(ctx.user.did, stored);
+            const lock = await getPrivacyLockState(ctx.user.did, stored, ctx.authorizationHeader);
             // Locks (and repairs) a student account once; later reads find the stored lock.
             if (lock === 'student') await enforceMinorPreferences(ctx.user.did);
             const preferences =

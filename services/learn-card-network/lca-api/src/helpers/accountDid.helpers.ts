@@ -7,6 +7,7 @@ import { findUserKeyByDid } from '../models/UserKey';
 const ED25519_MULTIBASE = /^z6Mk[1-9A-HJ-NP-Za-km-z]{44}$/;
 
 type VerificationMethodLike = { id?: unknown; publicKeyMultibase?: unknown };
+type AccountDidOptions = { strict?: boolean };
 
 const ownerMethodIds = (did: string): string[] => [`${did}#owner`, '#owner'];
 
@@ -31,7 +32,8 @@ const getSigningKid = (authorizationHeader?: string): string | undefined => {
  */
 export const getOwnerKeyDid = async (
     did: string,
-    authorizationHeader?: string
+    authorizationHeader?: string,
+    options: AccountDidOptions = {}
 ): Promise<string | undefined> => {
     if (!did.startsWith('did:web:')) return undefined;
     if (getSigningKid(authorizationHeader) !== `${did}#owner`) return undefined;
@@ -46,7 +48,8 @@ export const getOwnerKeyDid = async (
         const multibase = owner?.publicKeyMultibase;
         if (typeof multibase !== 'string' || !ED25519_MULTIBASE.test(multibase)) return undefined;
         return `did:key:${multibase}`;
-    } catch {
+    } catch (cause) {
+        if (options.strict) throw cause;
         return undefined;
     }
 };
@@ -60,10 +63,11 @@ export const getOwnerKeyDid = async (
  */
 export const resolveAccountDid = async (
     did: string,
-    authorizationHeader?: string
+    authorizationHeader?: string,
+    options: AccountDidOptions = {}
 ): Promise<string> => {
     if (!did.startsWith('did:web:') || (await findUserKeyByDid(did))) return did;
-    const keyDid = await getOwnerKeyDid(did, authorizationHeader);
+    const keyDid = await getOwnerKeyDid(did, authorizationHeader, options);
     if (keyDid && (await findUserKeyByDid(keyDid))) return keyDid;
     return did;
 };

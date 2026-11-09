@@ -1,4 +1,5 @@
 import cache from '@cache';
+import { resolveAccountDid } from '@helpers/accountDid.helpers';
 import { getClassLinkStudentStatus } from '@helpers/classlinkContext.helpers';
 import { isPrivacyLocked, type MongoPreferencesType } from '../../models/Preferences';
 
@@ -7,7 +8,7 @@ import { isPrivacyLocked, type MongoPreferencesType } from '../../models/Prefere
  * - `locked`: the stored record already carries a server-owned lock.
  * - `student`: no lock yet, but the DID belongs to a ClassLink student; the caller must lock it.
  * - `unlocked`: no lock applies (not a ClassLink student, or no account holds the DID yet).
- * - `unknown`: the student lookup failed; callers must fail safe.
+ * - `unknown`: account resolution or the student lookup failed; callers must fail safe.
  */
 export type PrivacyLockState = 'locked' | 'student' | 'unlocked' | 'unknown';
 
@@ -35,7 +36,7 @@ const cacheNotStudent = async (did: string): Promise<void> => {
 };
 
 /**
- * Forget a cached "not a ClassLink student" answer for a DID. Call this when an account gains a
+ * Forget a cached "not a ClassLink student" answer for an account DID. Call this when an account gains a
  * ClassLink identity outside a path that already locks its preferences.
  */
 export const clearNotStudentCache = async (did: string): Promise<void> => {
@@ -49,25 +50,34 @@ export const clearNotStudentCache = async (did: string): Promise<void> => {
 /**
  * Decide whether a DID's preferences are privacy locked. Never writes preferences.
  *
- * A stored lock wins without any lookup. Without one, the ClassLink student lookup decides,
+ * A stored lock wins without any lookup. Otherwise resolve the caller to its account DID
+ * using the verified request's owner key, then look up ClassLink student status,
  * whatever the current ClassLink configuration: a student's identity outlives a missing or
  * invalid config, and a failure never unlocks a student. A "not a student" answer for an
- * existing account is cached briefly so ordinary accounts are not looked up on every call; a DID
+ * existing account is cached briefly under the resolved account DID, not the caller DID; a DID
  * with no account yet is never cached, because a new ClassLink student's wallet has no UserKey
- * until key storage finishes.
+ * until key storage finishes. Resolution errors return unknown; preferences remain keyed
+ * by the caller DID and this helper never changes their storage key.
  */
 export const getPrivacyLockState = async (
     did: string,
-    stored: MongoPreferencesType | null | undefined
+    stored: MongoPreferencesType | null | undefined,
+    authorizationHeader?: string
 ): Promise<PrivacyLockState> => {
     if (isPrivacyLocked(stored)) return 'locked';
-    if (await isCachedNotStudent(did)) return 'unlocked';
+    let accountDid: string;
+    try {
+        accountDid = await resolveAccountDid(did, authorizationHeader, { strict: true });
+    } catch {
+        return 'unknown';
+    }
+    if (await isCachedNotStudent(accountDid)) return 'unlocked';
 
-    const status = await getClassLinkStudentStatus(did);
+    const status = await getClassLinkStudentStatus(accountDid);
     if (status === 'student') return 'student';
     if (status === 'unknown') return 'unknown';
     if (status === 'no_account') return 'unlocked';
 
-    await cacheNotStudent(did);
+    await cacheNotStudent(accountDid);
     return 'unlocked';
 };
