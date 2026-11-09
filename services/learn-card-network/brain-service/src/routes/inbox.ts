@@ -422,7 +422,7 @@ export const inboxRouter = t.router({
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message:
-                        'Invalid approval token. The token may not exist or has been corrupted.',
+                        'This approval link is no longer active. A newer link has been sent to the guardian.',
                 });
             }
 
