@@ -8,14 +8,26 @@ import {
     resolvedCredentialQueryOptions,
     prefetchResolvedCredentials,
     enqueueBatchedCredentialResolve,
+    hasFreshResolvedCredential,
+    isCurrentHostCloudUri,
+    walletHasVcCachePlugin,
     CREDENTIAL_RESOLVE_BATCH_SIZE,
     CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
     processWithConcurrency,
+    RESOLVED_CREDENTIAL_STALE_TIME,
 } from './credentialResolution';
 
 const credential = { type: ['VerifiableCredential'], credentialSubject: { id: 'subject' } } as VC;
+
+/** Current-host lc:cloud URI matching default LEARNCLOUD_URL. */
+const cloudUri = (id: string) => `lc:cloud:cloud.learncard.com/trpc:credential:${id}`;
+
 const makeWallet = (did: string, read = vi.fn().mockResolvedValue(credential)) => ({
-    wallet: { id: { did: () => did }, read: { get: read } } as unknown as BespokeLearnCard,
+    wallet: {
+        id: { did: () => did },
+        read: { get: read },
+        plugins: [],
+    } as unknown as BespokeLearnCard,
     read,
 });
 const clients: QueryClient[] = [];
@@ -157,8 +169,26 @@ it('matches fetchQuery’s no-retry default when the client has no retry setting
     expect(read).toHaveBeenCalledTimes(1);
 });
 
+describe('isCurrentHostCloudUri / walletHasVcCachePlugin', () => {
+    it('accepts current-host lc:cloud URIs and rejects foreign or non-cloud URIs', () => {
+        expect(isCurrentHostCloudUri(cloudUri('abc'))).toBe(true);
+        expect(isCurrentHostCloudUri('lc:cloud:evil.example/trpc:credential:abc')).toBe(false);
+        expect(isCurrentHostCloudUri('https://example.com/cred')).toBe(false);
+        expect(isCurrentHostCloudUri('uri-0')).toBe(false);
+    });
+
+    it('detects a native VC cache plugin via plugins[].cache.getVc', () => {
+        const without = { plugins: [] } as unknown as BespokeLearnCard;
+        const withCache = {
+            plugins: [{ cache: { getVc: vi.fn(), setVc: vi.fn() } }],
+        } as unknown as BespokeLearnCard;
+        expect(walletHasVcCachePlugin(without)).toBe(false);
+        expect(walletHasVcCachePlugin(withCache)).toBe(true);
+    });
+});
+
 describe('prefetchResolvedCredentials (LC-2382)', () => {
-    it('collapses many URIs into chunked learnCloudBatchResolve calls and seeds the shared cache', async () => {
+    it('collapses many current-host URIs into chunked learnCloudBatchResolve calls', async () => {
         const client = makeClient();
         const batch = vi.fn(async (uris: string[]) => uris.map(() => credential));
         const read = vi.fn();
@@ -166,23 +196,119 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
             id: { did: () => 'account-a' },
             read: { get: read },
             invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
         } as unknown as BespokeLearnCard;
 
-        const uris = Array.from({ length: 73 }, (_, i) => `uri-${i}`);
+        const uris = Array.from({ length: 73 }, (_, i) => cloudUri(`id-${i}`));
         const results = await prefetchResolvedCredentials(client, wallet, uris);
 
-        expect(batch).toHaveBeenCalledTimes(2); // 64 + 9 with CREDENTIAL_RESOLVE_BATCH_SIZE
+        expect(batch).toHaveBeenCalledTimes(2);
         expect(batch.mock.calls[0][0]).toHaveLength(CREDENTIAL_RESOLVE_BATCH_SIZE);
         expect(batch.mock.calls[1][0]).toHaveLength(73 - CREDENTIAL_RESOLVE_BATCH_SIZE);
         expect(read).not.toHaveBeenCalled();
         expect(results).toHaveLength(73);
         expect(results.every(vc => vc === credential)).toBe(true);
-        expect(client.getQueryData(resolvedCredentialQueryKey('uri-0', 'account-a'))).toEqual(
-            credential
+    });
+
+    it('routes foreign-host URIs through read.get instead of batchResolve', async () => {
+        const client = makeClient();
+        const batch = vi.fn(async (uris: string[]) => uris.map(() => credential));
+        const foreign = {
+            ...credential,
+            credentialSubject: { id: 'foreign' },
+        } as VC;
+        const read = vi.fn(async (uri: string) =>
+            uri.includes('evil.example') ? foreign : undefined
         );
-        expect(client.getQueryData(resolvedCredentialQueryKey('uri-72', 'account-a'))).toEqual(
-            credential
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+
+        const local = cloudUri('local');
+        const remote = 'lc:cloud:evil.example/trpc:credential:remote';
+        const results = await prefetchResolvedCredentials(client, wallet, [local, remote]);
+
+        expect(batch).toHaveBeenCalledExactlyOnceWith([local]);
+        expect(read).toHaveBeenCalledExactlyOnceWith(remote);
+        expect(results).toEqual([credential, foreign]);
+    });
+
+    it('uses read.get (not batch) when a native VC cache plugin is present', async () => {
+        const client = makeClient();
+        const batch = vi.fn(async (uris: string[]) => uris.map(() => credential));
+        const getVc = vi.fn().mockResolvedValue(undefined);
+        const setVc = vi.fn();
+        const read = vi.fn(async () => credential);
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [{ cache: { getVc, setVc } }],
+            cache: { getVc, setVc },
+        } as unknown as BespokeLearnCard;
+
+        const uris = [cloudUri('a'), cloudUri('b')];
+        const results = await prefetchResolvedCredentials(client, wallet, uris);
+
+        expect(batch).not.toHaveBeenCalled();
+        expect(read).toHaveBeenCalledTimes(2);
+        expect(results).toEqual([credential, credential]);
+    });
+
+    it('does not reuse invalidated or stale query data', async () => {
+        const client = makeClient();
+        const batch = vi.fn(async (uris: string[]) =>
+            uris.map(() => ({ ...credential, name: 'fresh' }) as VC)
         );
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: vi.fn() },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+        const uri = cloudUri('cached');
+        client.setQueryData(resolvedCredentialQueryKey(uri, 'account-a'), {
+            ...credential,
+            name: 'stale',
+        });
+        await client.invalidateQueries({ queryKey: resolvedCredentialQueryKey(uri, 'account-a') });
+
+        expect(hasFreshResolvedCredential(client, 'account-a', uri)).toBe(false);
+
+        const results = await prefetchResolvedCredentials(client, wallet, [uri]);
+        expect(batch).toHaveBeenCalledExactlyOnceWith([uri]);
+        expect(results[0]).toMatchObject({ name: 'fresh' });
+    });
+
+    it('joins in-flight fetches instead of starting a duplicate network read', async () => {
+        const client = makeClient();
+        let resolveRead!: (vc: VC) => void;
+        const read = vi.fn(
+            () =>
+                new Promise<VC>(r => {
+                    resolveRead = r;
+                })
+        );
+        // No batch method — both paths use read.get / fetchQuery so we can observe joining.
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: {},
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+        const uri = cloudUri('inflight');
+
+        const inflight = fetchResolvedCredential(client, wallet, uri);
+        expect(read).toHaveBeenCalledTimes(1);
+
+        const prefetchPromise = prefetchResolvedCredentials(client, wallet, [uri]);
+        resolveRead(credential);
+        await expect(inflight).resolves.toEqual(credential);
+        await expect(prefetchPromise).resolves.toEqual([credential]);
+        expect(read).toHaveBeenCalledTimes(1);
     });
 
     it('isolates null slots without rejecting the rest of the batch', async () => {
@@ -193,55 +319,37 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
             id: { did: () => 'account-a' },
             read: { get: read },
             invoke: { learnCloudBatchResolve: batch },
-        } as unknown as BespokeLearnCard;
-
-        const results = await prefetchResolvedCredentials(client, wallet, ['a', 'b', 'c']);
-        expect(results).toEqual([credential, undefined, credential]);
-        expect(read).toHaveBeenCalledExactlyOnceWith('b');
-        expect(client.getQueryData(resolvedCredentialQueryKey('b', 'account-a'))).toBeUndefined();
-    });
-
-    it('recovers null batch slots via wallet.read.get in prefetch (cross-host / other planes)', async () => {
-        const client = makeClient();
-        const other = { ...credential, credentialSubject: { id: 'other' } } as VC;
-        const batch = vi.fn(async () => [credential, null, null]);
-        const read = vi.fn(async (uri: string) => (uri === 'cross' ? other : undefined));
-        const wallet = {
-            id: { did: () => 'account-a' },
-            read: { get: read },
-            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
         } as unknown as BespokeLearnCard;
 
         const results = await prefetchResolvedCredentials(client, wallet, [
-            'same',
-            'cross',
-            'missing',
+            cloudUri('a'),
+            cloudUri('b'),
+            cloudUri('c'),
         ]);
-        expect(batch).toHaveBeenCalledTimes(1);
-        expect(read.mock.calls.map(c => c[0]).sort()).toEqual(['cross', 'missing']);
-        expect(results).toEqual([credential, other, undefined]);
-        expect(client.getQueryData(resolvedCredentialQueryKey('cross', 'account-a'))).toEqual(
-            other
-        );
+        expect(results).toEqual([credential, undefined, credential]);
+        expect(read).toHaveBeenCalledExactlyOnceWith(cloudUri('b'));
     });
 
-    it('recovers null batch slots via wallet.read.get in the coalescer path', async () => {
-        const other = { ...credential, credentialSubject: { id: 'recovered' } } as VC;
-        const batch = vi.fn(async () => [null, credential]);
-        const read = vi.fn(async (uri: string) => (uri === 'cross' ? other : undefined));
+    it('recovers null batch slots via wallet.read.get', async () => {
+        const client = makeClient();
+        const other = { ...credential, credentialSubject: { id: 'other' } } as VC;
+        const batch = vi.fn(async () => [credential, null, null]);
+        const read = vi.fn(async (uri: string) => (uri === cloudUri('cross') ? other : undefined));
         const wallet = {
             id: { did: () => 'account-a' },
             read: { get: read },
             invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
         } as unknown as BespokeLearnCard;
 
-        const pending = Promise.all([
-            enqueueBatchedCredentialResolve(wallet, 'cross'),
-            enqueueBatchedCredentialResolve(wallet, 'same'),
+        const results = await prefetchResolvedCredentials(client, wallet, [
+            cloudUri('same'),
+            cloudUri('cross'),
+            cloudUri('missing'),
         ]);
-        await vi.waitFor(() => expect(batch).toHaveBeenCalledTimes(1));
-        await expect(pending).resolves.toEqual([other, credential]);
-        expect(read).toHaveBeenCalledExactlyOnceWith('cross');
+        expect(batch).toHaveBeenCalledTimes(1);
+        expect(results).toEqual([credential, other, undefined]);
     });
 
     it('falls back to bounded-concurrency read.get when batchResolve is missing', async () => {
@@ -259,9 +367,10 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
             id: { did: () => 'account-a' },
             read: { get: read },
             invoke: {},
+            plugins: [],
         } as unknown as BespokeLearnCard;
 
-        const uris = Array.from({ length: 20 }, (_, i) => `uri-${i}`);
+        const uris = Array.from({ length: 20 }, (_, i) => cloudUri(`id-${i}`));
         await prefetchResolvedCredentials(client, wallet, uris);
         expect(read).toHaveBeenCalledTimes(20);
         expect(maxInFlight).toBeLessThanOrEqual(CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY);
@@ -278,9 +387,13 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
             id: { did: () => 'account-a' },
             read: { get: read },
             invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
         } as unknown as BespokeLearnCard;
 
-        const results = await prefetchResolvedCredentials(client, wallet, ['a', 'b']);
+        const results = await prefetchResolvedCredentials(client, wallet, [
+            cloudUri('a'),
+            cloudUri('b'),
+        ]);
         expect(batch).toHaveBeenCalledTimes(1);
         expect(read).toHaveBeenCalledTimes(2);
         expect(results).toEqual([credential, credential]);
@@ -293,11 +406,15 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
             id: { did: () => 'account-a' },
             read: { get: vi.fn() },
             invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
         } as unknown as BespokeLearnCard;
-        client.setQueryData(resolvedCredentialQueryKey('cached', 'account-a'), credential);
+        client.setQueryData(
+            resolvedCredentialQueryKey(cloudUri('cached'), 'account-a'),
+            credential
+        );
 
-        await prefetchResolvedCredentials(client, wallet, ['cached', 'fresh']);
-        expect(batch).toHaveBeenCalledExactlyOnceWith(['fresh']);
+        await prefetchResolvedCredentials(client, wallet, [cloudUri('cached'), cloudUri('fresh')]);
+        expect(batch).toHaveBeenCalledExactlyOnceWith([cloudUri('fresh')]);
     });
 
     it('measures critical-path collapse vs serial read.get (instrumented)', async () => {
@@ -306,7 +423,6 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
         const N = 24;
         const delay = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-        // Before: N serial storage.resolve-equivalent reads (one URI each).
         const serialRead = vi.fn(async () => {
             await delay(RTT_MS);
             return credential;
@@ -315,15 +431,15 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
             id: { did: () => 'account-a' },
             read: { get: serialRead },
             invoke: {},
+            plugins: [],
         } as unknown as BespokeLearnCard;
-        const uris = Array.from({ length: N }, (_, i) => `uri-${i}`);
+        const uris = Array.from({ length: N }, (_, i) => cloudUri(`id-${i}`));
         const serialStarted = Date.now();
         for (const uri of uris) {
             await serialWallet.read.get(uri);
         }
         const serialMs = Date.now() - serialStarted;
 
-        // After: one batchResolve round-trip for the same URI set.
         const batch = vi.fn(async (batchUris: string[]) => {
             await delay(RTT_MS);
             return batchUris.map(() => credential);
@@ -332,6 +448,7 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
             id: { did: () => 'account-b' },
             read: { get: vi.fn() },
             invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
         } as unknown as BespokeLearnCard;
         const batchStarted = Date.now();
         await prefetchResolvedCredentials(client, batchWallet, uris);
@@ -340,7 +457,6 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
         expect(serialRead).toHaveBeenCalledTimes(N);
         expect(batch).toHaveBeenCalledTimes(1);
         expect(batch.mock.calls[0][0]).toHaveLength(N);
-        // Serial wall clock ≈ N RTTs; batched ≈ 1 RTT. Allow generous jitter for CI.
         expect(serialMs).toBeGreaterThanOrEqual(N * RTT_MS - 30);
         expect(batchMs).toBeLessThan(serialMs / 3);
         expect(batchMs).toBeLessThan(N * RTT_MS * 0.5);
@@ -348,25 +464,65 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
 });
 
 describe('enqueueBatchedCredentialResolve (LC-2382)', () => {
-    it('coalesces concurrent resolves into one learnCloudBatchResolve call', async () => {
+    it('coalesces concurrent current-host resolves into one learnCloudBatchResolve call', async () => {
         const batch = vi.fn(async (uris: string[]) => uris.map(() => credential));
         const read = vi.fn();
         const wallet = {
             id: { did: () => 'account-a' },
             read: { get: read },
             invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
         } as unknown as BespokeLearnCard;
 
         const pending = Promise.all([
-            enqueueBatchedCredentialResolve(wallet, 'a'),
-            enqueueBatchedCredentialResolve(wallet, 'b'),
-            enqueueBatchedCredentialResolve(wallet, 'a'),
+            enqueueBatchedCredentialResolve(wallet, cloudUri('a')),
+            enqueueBatchedCredentialResolve(wallet, cloudUri('b')),
+            enqueueBatchedCredentialResolve(wallet, cloudUri('a')),
         ]);
         await vi.waitFor(() => expect(batch).toHaveBeenCalledTimes(1));
         const results = await pending;
-        expect(batch.mock.calls[0][0]).toEqual(['a', 'b']);
+        expect(batch.mock.calls[0][0]).toEqual([cloudUri('a'), cloudUri('b')]);
         expect(results).toEqual([credential, credential, credential]);
         expect(read).not.toHaveBeenCalled();
+    });
+
+    it('recovers null batch slots via wallet.read.get in the coalescer path', async () => {
+        const other = { ...credential, credentialSubject: { id: 'recovered' } } as VC;
+        const batch = vi.fn(async () => [null, credential]);
+        const read = vi.fn(async (uri: string) => (uri === cloudUri('cross') ? other : undefined));
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+
+        const pending = Promise.all([
+            enqueueBatchedCredentialResolve(wallet, cloudUri('cross')),
+            enqueueBatchedCredentialResolve(wallet, cloudUri('same')),
+        ]);
+        await vi.waitFor(() => expect(batch).toHaveBeenCalledTimes(1));
+        await expect(pending).resolves.toEqual([other, credential]);
+        expect(read).toHaveBeenCalledExactlyOnceWith(cloudUri('cross'));
+    });
+
+    it('falls back to read.get for the whole set when a native VC cache plugin is present', async () => {
+        const batch = vi.fn();
+        const read = vi.fn(async () => credential);
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [{ cache: { getVc: vi.fn(), setVc: vi.fn() } }],
+        } as unknown as BespokeLearnCard;
+
+        const pending = Promise.all([
+            enqueueBatchedCredentialResolve(wallet, cloudUri('a')),
+            enqueueBatchedCredentialResolve(wallet, cloudUri('b')),
+        ]);
+        await expect(pending).resolves.toEqual([credential, credential]);
+        expect(batch).not.toHaveBeenCalled();
+        expect(read).toHaveBeenCalledTimes(2);
     });
 });
 
@@ -377,5 +533,27 @@ describe('processWithConcurrency', () => {
             seen.push(item);
         });
         expect(seen.sort()).toEqual([1, 2, 3, 4, 5]);
+    });
+});
+
+describe('hasFreshResolvedCredential', () => {
+    it('is false for invalidated entries even when data is present', async () => {
+        const client = makeClient();
+        const uri = cloudUri('x');
+        client.setQueryData(resolvedCredentialQueryKey(uri, 'account-a'), credential);
+        expect(hasFreshResolvedCredential(client, 'account-a', uri)).toBe(true);
+        await client.invalidateQueries({ queryKey: resolvedCredentialQueryKey(uri, 'account-a') });
+        expect(hasFreshResolvedCredential(client, 'account-a', uri)).toBe(false);
+    });
+
+    it('is false when dataUpdatedAt is older than the staleTime window', () => {
+        const client = makeClient();
+        const uri = cloudUri('old');
+        client.setQueryData(resolvedCredentialQueryKey(uri, 'account-a'), credential);
+        const state = client.getQueryState(resolvedCredentialQueryKey(uri, 'account-a'))!;
+        // Force an ancient dataUpdatedAt
+        (state as { dataUpdatedAt: number }).dataUpdatedAt =
+            Date.now() - RESOLVED_CREDENTIAL_STALE_TIME - 1;
+        expect(hasFreshResolvedCredential(client, 'account-a', uri)).toBe(false);
     });
 });

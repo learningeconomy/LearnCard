@@ -162,49 +162,80 @@ export const storageRouter = t.router({
         })
         .input(z.object({ uris: z.string().array() }))
         .output(JWEValidator.or(z.null()).array())
-        .query(async ({ input }) => {
+        .query(async ({ ctx, input }) => {
             const { uris } = input;
 
-            const ids = uris.map(uri => {
-                try {
-                    const { id } = getUriParts(uri);
+            // Normalize the request host the same way constructUri encodes domains into URIs.
+            const requestDomain = (
+                ctx.domain.includes('localhost')
+                    ? ctx.domain.replace(/:/g, '%3A')
+                    : ctx.domain.replace(/:/g, '/')
+            ).replace(/\/$/, '');
 
+            const parsed = uris.map(uri => {
+                try {
+                    const { id, domain, type } = getUriParts(uri);
+                    if (type !== 'credential' && type !== 'presentation') return null;
+                    // Reject cross-host URIs so a matching ID on this host cannot be returned
+                    // under a foreign URI (copied datasets / multi-cloud).
+                    const uriDomain = domain.replace(/\/$/, '');
+                    if (uriDomain !== requestDomain && uriDomain !== `${requestDomain}/trpc`) {
+                        // constructUri embeds `/trpc` into the domain segment for most hosts.
+                        const withTrpc = requestDomain.endsWith('/trpc')
+                            ? requestDomain
+                            : `${requestDomain}/trpc`;
+                        if (uriDomain !== withTrpc) return null;
+                    }
                     return id;
                 } catch (error) {
                     return null;
                 }
             });
 
-            const filteredIds = ids.filter(Boolean) as string[];
-
+            const filteredIds = parsed.filter(Boolean) as string[];
             const cachedValues = await getCachedCredentialsById(filteredIds);
 
-            const withCachedValues = uris.map((uri, index) => {
-                const id = ids[index];
-
+            // Per-URI slot: cached JWE, or `{ missId }` for Redis misses. Never keep the full URI
+            // here — getCredentialsById expects Mongo ObjectIds (LC-2382 / goblincore).
+            type Slot = JWE | { missId: string } | null;
+            const slots: Slot[] = uris.map((_uri, index) => {
+                const id = parsed[index];
                 if (!id) return null;
 
                 const filteredIndex = filteredIds.findIndex(filteredId => filteredId === id);
-
                 if (filteredIndex < 0) return null;
 
-                return cachedValues[filteredIndex] || uri;
+                const cached = cachedValues[filteredIndex];
+                if (cached) return cached;
+
+                return { missId: id };
             });
 
-            const cacheMisses = withCachedValues.filter(
-                value => typeof value === 'string'
-            ) as string[];
+            const missIds = [
+                ...new Set(
+                    slots
+                        .filter(
+                            (slot): slot is { missId: string } =>
+                                typeof slot === 'object' && slot !== null && 'missId' in slot
+                        )
+                        .map(slot => slot.missId)
+                ),
+            ];
 
-            const credentials = await getCredentialsById(cacheMisses);
+            const credentials = missIds.length > 0 ? await getCredentialsById(missIds) : [];
+            const byId = new Map(
+                credentials.map(credential => [credential._id.toString(), credential.jwe] as const)
+            );
 
-            return withCachedValues.map(value => {
-                if (typeof value !== 'string') return value;
+            // Repopulate Redis for cold misses (same as single resolve).
+            await Promise.all([...byId.entries()].map(([id, jwe]) => setCredentialForId(id, jwe)));
 
-                const index = credentials.findIndex(
-                    credential => credential._id.toString() === value
-                );
-
-                return index > -1 ? credentials[index]!.jwe : null;
+            return slots.map(slot => {
+                if (slot === null) return null;
+                if (typeof slot === 'object' && 'missId' in slot) {
+                    return byId.get(slot.missId) ?? null;
+                }
+                return slot;
             });
         }),
 });

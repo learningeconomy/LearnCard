@@ -1,6 +1,7 @@
 import { queryOptions, type QueryClient, type QueryObserverOptions } from '@tanstack/react-query';
 import type { VC } from '@learncard/types';
 import type { BespokeLearnCard } from '../../types/learn-card';
+import { networkStore } from '../../stores/NetworkStore';
 
 export const RESOLVED_CREDENTIAL_STALE_TIME = 1000 * 60 * 60 * 24 * 7;
 
@@ -27,6 +28,58 @@ const getBatchResolve = (wallet: BespokeLearnCard): BatchResolveFn | undefined =
     const invoke = wallet.invoke as { learnCloudBatchResolve?: BatchResolveFn } | undefined;
     const fn = invoke?.learnCloudBatchResolve;
     return typeof fn === 'function' ? fn.bind(invoke) : undefined;
+};
+
+/**
+ * True when a plugin implements the VC cache plane (native SQLite). Empty cache plane stubs on
+ * web do not count — goblincore: batch must not bypass native getVc/setVc.
+ */
+export const walletHasVcCachePlugin = (wallet: BespokeLearnCard): boolean =>
+    Boolean(
+        (wallet.plugins as { cache?: { getVc?: unknown } }[] | undefined)?.some(
+            plugin => typeof plugin?.cache?.getVc === 'function'
+        )
+    );
+
+/** Encode colons in the domain segment so lc:cloud URIs split cleanly into 5 parts. */
+const escapeColonsInDomain = (uri: string): string => {
+    const trpcIdx = uri.indexOf('/trpc:');
+    if (trpcIdx === -1) return uri;
+    const secondColon = uri.indexOf(':', uri.indexOf(':') + 1);
+    if (secondColon === -1) return uri;
+    const header = uri.substring(0, secondColon + 1);
+    const domain = uri.substring(secondColon + 1, trpcIdx);
+    const suffix = uri.substring(trpcIdx);
+    return header + domain.replace(/:/g, '%3A') + suffix;
+};
+
+/**
+ * Only current-host lc:cloud URIs are safe to batchResolve: the server looks up by ID and (after
+ * the companion server fix) rejects foreign hosts. Non-matching URIs go through read.get.
+ */
+export const isCurrentHostCloudUri = (
+    uri: string,
+    cloudUrl: string = networkStore.get.cloudUrl()
+): boolean => {
+    try {
+        const parts = escapeColonsInDomain(uri).split(':');
+        if (parts.length !== 5) return false;
+        const [lc, method, uriHost] = parts as [string, string, string, string, string];
+        if (lc !== 'lc' || method !== 'cloud') return false;
+        const normalizedHost = uriHost.replace(/https?:\/\//g, '').replace(/\/$/, '');
+        const normalizedCloud = cloudUrl
+            .replace(/https?:\/\//g, '')
+            .replace(/:/g, '%3A')
+            .replace(/\/$/, '');
+        return (
+            normalizedHost === normalizedCloud ||
+            normalizedHost === `${normalizedCloud}` ||
+            normalizedHost.replace(/%3A/g, ':') ===
+                cloudUrl.replace(/https?:\/\//g, '').replace(/\/$/, '')
+        );
+    } catch {
+        return false;
+    }
 };
 
 type ResolveWaiter = {
@@ -63,10 +116,21 @@ export const processWithConcurrency = async <T>(
     );
     await Promise.all(runners);
 };
+
+const resolveViaReadGet = async (
+    wallet: BespokeLearnCard,
+    uri: string
+): Promise<VC | undefined> => {
+    try {
+        return (await wallet.read.get(uri)) as VC | undefined;
+    } catch {
+        return undefined;
+    }
+};
+
 /**
- * batchResolve only talks to the current LearnCloud host and maps cross-host URIs, other read
- * planes, and stored-credential envelopes to null. Retry those slots via wallet.read.get (which
- * follows other hosts / planes) before treating them as unresolvable.
+ * batchResolve only talks to the current LearnCloud host and maps some envelopes to null. Retry
+ * those slots via wallet.read.get before treating them as unresolvable.
  */
 const resolveNullSlotsViaRead = async (
     wallet: BespokeLearnCard,
@@ -75,12 +139,8 @@ const resolveNullSlotsViaRead = async (
     const recovered = new Map<string, VC>();
     if (uris.length === 0) return recovered;
     await processWithConcurrency(uris, CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY, async uri => {
-        try {
-            const credential = (await wallet.read.get(uri)) as VC | undefined;
-            if (credential) recovered.set(uri, credential);
-        } catch {
-            // Leave unset; caller marks unresolvable / leaves uncached.
-        }
+        const credential = await resolveViaReadGet(wallet, uri);
+        if (credential) recovered.set(uri, credential);
     });
     return recovered;
 };
@@ -109,7 +169,8 @@ const flushCoalescedResolves = async (
         }
     };
 
-    if (!batchResolve) {
+    // Native SQLite cache plane: use read.get so cache-first / setVc semantics stay intact.
+    if (!batchResolve || walletHasVcCachePlugin(wallet)) {
         await processWithConcurrency(
             uniqueUris,
             CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
@@ -125,13 +186,32 @@ const flushCoalescedResolves = async (
         return;
     }
 
-    for (let offset = 0; offset < uniqueUris.length; offset += CREDENTIAL_RESOLVE_BATCH_SIZE) {
-        const chunk = uniqueUris.slice(offset, offset + CREDENTIAL_RESOLVE_BATCH_SIZE);
+    const batchable = uniqueUris.filter(uri => isCurrentHostCloudUri(uri));
+    const nonBatchable = uniqueUris.filter(uri => !isCurrentHostCloudUri(uri));
+
+    await processWithConcurrency(
+        nonBatchable,
+        CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
+        async uri => {
+            try {
+                const credential = (await wallet.read.get(uri)) as VC | undefined;
+                settleUri(uri, credential);
+            } catch (error) {
+                settleUri(uri, undefined, error);
+            }
+        }
+    );
+
+    for (let offset = 0; offset < batchable.length; offset += CREDENTIAL_RESOLVE_BATCH_SIZE) {
+        const chunk = batchable.slice(offset, offset + CREDENTIAL_RESOLVE_BATCH_SIZE);
         let results: (VC | null | undefined)[] | undefined;
         try {
             results = await batchResolve(chunk);
-        } catch (error) {
-            // Whole-chunk transport failure: fall back per URI so one bad batch does not sink the page.
+        } catch {
+            results = undefined;
+        }
+
+        if (!results || results.length < chunk.length) {
             await processWithConcurrency(
                 chunk,
                 CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
@@ -155,7 +235,6 @@ const flushCoalescedResolves = async (
             else misses.push(uri);
         });
         for (const { uri, credential } of hits) settleUri(uri, credential);
-        // Null batch slots are not final — read.get can still succeed for other hosts/planes.
         const recovered = await resolveNullSlotsViaRead(wallet, misses);
         for (const uri of misses) settleUri(uri, recovered.get(uri));
     }
@@ -163,8 +242,7 @@ const flushCoalescedResolves = async (
 
 /**
  * Coalesce concurrent credential resolves for one wallet into storage.batchResolve (LC-2382).
- * Only used when learnCloudBatchResolve is present; otherwise callers use read.get directly so
- * existing single-URI tests and offline wallets keep their previous timing.
+ * Only used when learnCloudBatchResolve is present and no native VC cache plugin is installed.
  */
 export const enqueueBatchedCredentialResolve = (
     wallet: BespokeLearnCard,
@@ -182,7 +260,15 @@ export const enqueueBatchedCredentialResolve = (
                 const waiters = state!.waiters;
                 state!.waiters = [];
                 state!.timer = null;
-                void flushCoalescedResolves(wallet, waiters);
+                flushCoalescedResolves(wallet, waiters).catch(err => {
+                    for (const waiter of waiters) {
+                        try {
+                            waiter.reject(err);
+                        } catch {
+                            /* already settled */
+                        }
+                    }
+                });
             }, 0);
         }
     });
@@ -199,8 +285,8 @@ export const resolvedCredentialQueryOptions = (
             if (!wallet) throw new Error('Credential reader is not ready');
             if (!uri) throw new Error('Credential URI is missing');
 
-            // Prefer coalesced batchResolve when the LearnCloud method exists (Passport warm path).
-            if (getBatchResolve(wallet)) {
+            // Batch only when LearnCloud batch exists and native VC cache is absent.
+            if (getBatchResolve(wallet) && !walletHasVcCachePlugin(wallet)) {
                 return enqueueBatchedCredentialResolve(wallet, uri);
             }
 
@@ -210,7 +296,6 @@ export const resolvedCredentialQueryOptions = (
         },
         staleTime: RESOLVED_CREDENTIAL_STALE_TIME,
         retry: (failureCount, error) => {
-            // Missing data won't improve during automatic backoff. Explicit later reads can retry.
             if (error instanceof UnresolvableCredentialError) return false;
             if (typeof retryPolicy === 'function') return retryPolicy(failureCount, error);
             return (
@@ -230,7 +315,6 @@ export const fetchResolvedCredential = (
         resolvedCredentialQueryOptions(
             wallet,
             uri,
-            // Imperative fetchQuery defaults to no retries; mounted observers default to three.
             queryClient.getDefaultOptions().queries?.retry ?? false
         )
     );
@@ -252,13 +336,27 @@ const cacheResolvedCredential = (
     queryClient.setQueryData(resolvedCredentialQueryKey(uri, accountDid), credential);
 };
 
+/** True when RQ still has a usable fresh success for this URI (not invalidated / not stale). */
+export const hasFreshResolvedCredential = (
+    queryClient: QueryClient,
+    accountDid: string,
+    uri: string,
+    now: number = Date.now()
+): boolean => {
+    const state = queryClient.getQueryState(resolvedCredentialQueryKey(uri, accountDid));
+    if (!state || state.status !== 'success' || state.data == null) return false;
+    if (state.isInvalidated) return false;
+    if (now - state.dataUpdatedAt >= RESOLVED_CREDENTIAL_STALE_TIME) return false;
+    return true;
+};
+
 /**
  * Resolve many credential URIs in as few round-trips as possible (LC-2382).
  *
- * Prefer LearnCloud `storage.batchResolve` via `learnCloudBatchResolve`. Fall back to
- * bounded-concurrency `read.get` when the batch method is missing, and retry individual null
- * batch slots via `read.get` (cross-host URIs / other planes / envelopes). One failed URI never
- * rejects the whole list — unresolved slots stay uncached so a later reader can retry.
+ * Prefer LearnCloud `storage.batchResolve` for current-host lc:cloud URIs when no native VC
+ * cache plugin is present. Otherwise (and for foreign/non-cloud URIs) use bounded-concurrency
+ * `read.get`. Null batch slots retry via `read.get`. Respects RQ invalidation / staleness and
+ * joins in-flight fetches.
  */
 export const prefetchResolvedCredentials = async (
     queryClient: QueryClient,
@@ -268,20 +366,55 @@ export const prefetchResolvedCredentials = async (
     const accountDid = wallet.id.did();
     const pending: string[] = [];
     const seen = new Set<string>();
+    const retryPolicy = queryClient.getDefaultOptions().queries?.retry ?? false;
 
     for (const uri of uris) {
         if (!uri || seen.has(uri)) continue;
         seen.add(uri);
-        if (queryClient.getQueryData(resolvedCredentialQueryKey(uri, accountDid))) continue;
+        const key = resolvedCredentialQueryKey(uri, accountDid);
+        const state = queryClient.getQueryState(key);
+
+        if (hasFreshResolvedCredential(queryClient, accountDid, uri)) continue;
+
+        if (state?.fetchStatus === 'fetching') {
+            await queryClient
+                .fetchQuery(resolvedCredentialQueryOptions(wallet, uri, retryPolicy))
+                .catch(() => undefined);
+            continue;
+        }
+
         pending.push(uri);
     }
 
     if (pending.length > 0) {
         const batchResolve = getBatchResolve(wallet);
+        const useBatch = Boolean(batchResolve) && !walletHasVcCachePlugin(wallet);
 
-        if (batchResolve) {
-            for (let offset = 0; offset < pending.length; offset += CREDENTIAL_RESOLVE_BATCH_SIZE) {
-                const chunk = pending.slice(offset, offset + CREDENTIAL_RESOLVE_BATCH_SIZE);
+        if (useBatch && batchResolve) {
+            const batchable = pending.filter(uri => isCurrentHostCloudUri(uri));
+            const nonBatchable = pending.filter(uri => !isCurrentHostCloudUri(uri));
+
+            await processWithConcurrency(
+                nonBatchable,
+                CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
+                async uri => {
+                    try {
+                        const credential = (await wallet.read.get(uri)) as VC | undefined;
+                        if (credential) {
+                            cacheResolvedCredential(queryClient, accountDid, uri, credential);
+                        }
+                    } catch {
+                        /* leave uncached */
+                    }
+                }
+            );
+
+            for (
+                let offset = 0;
+                offset < batchable.length;
+                offset += CREDENTIAL_RESOLVE_BATCH_SIZE
+            ) {
+                const chunk = batchable.slice(offset, offset + CREDENTIAL_RESOLVE_BATCH_SIZE);
                 let results: (VC | null | undefined)[] | undefined;
                 try {
                     results = await batchResolve(chunk);
@@ -289,8 +422,7 @@ export const prefetchResolvedCredentials = async (
                     results = undefined;
                 }
 
-                if (!results) {
-                    // Call read.get directly — tryFetch would re-enter batchResolve via queryFn.
+                if (!results || results.length < chunk.length) {
                     await processWithConcurrency(
                         chunk,
                         CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
@@ -306,7 +438,7 @@ export const prefetchResolvedCredentials = async (
                                     );
                                 }
                             } catch {
-                                // Leave uncached; one failed URI must not sink the list.
+                                /* leave uncached */
                             }
                         }
                     );
@@ -322,14 +454,12 @@ export const prefetchResolvedCredentials = async (
                         misses.push(uri);
                     }
                 });
-                // Retry null slots via read.get (cross-host / other planes / envelopes).
                 const recovered = await resolveNullSlotsViaRead(wallet, misses);
                 for (const uri of misses) {
                     const credential = recovered.get(uri);
                     if (credential) {
                         cacheResolvedCredential(queryClient, accountDid, uri, credential);
                     }
-                    // Still-null: leave uncached so remounts with staleTime 0 can retry.
                 }
             }
         } else {
@@ -337,7 +467,15 @@ export const prefetchResolvedCredentials = async (
                 pending,
                 CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
                 async uri => {
-                    await tryFetchResolvedCredential(queryClient, wallet, uri);
+                    // Direct read.get preserves native cache plane; avoid queryFn→batch re-entry.
+                    try {
+                        const credential = (await wallet.read.get(uri)) as VC | undefined;
+                        if (credential) {
+                            cacheResolvedCredential(queryClient, accountDid, uri, credential);
+                        }
+                    } catch {
+                        /* leave uncached */
+                    }
                 }
             );
         }

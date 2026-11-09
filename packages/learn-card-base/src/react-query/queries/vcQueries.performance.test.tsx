@@ -83,6 +83,7 @@ const makeWallet = (did = 'account-a', options?: { useBatch?: boolean }) => {
         id: { did: () => did },
         read: { get: read },
         index: { LearnCloud: { get } },
+        plugins: [],
         // Default off so existing read-count assertions stay meaningful; LC-2382 opts in.
         invoke: options?.useBatch ? { learnCloudBatchResolve } : {},
     } as unknown as BespokeLearnCard;
@@ -467,7 +468,10 @@ it('keeps summary information when optional topic and assessment credentials are
 describe('LC-2382 wallet resolve batching', () => {
     it('batches wallet credential warm via learnCloudBatchResolve instead of N read.get calls', async () => {
         const { read, learnCloudBatchResolve } = makeWallet('account-a', { useBatch: true });
-        const uris = Array.from({ length: 12 }, (_, i) => `uri-${i}`);
+        const uris = Array.from(
+            { length: 12 },
+            (_, i) => `lc:cloud:cloud.learncard.com/trpc:credential:id-${i}`
+        );
         const { result } = renderHook(() => useGetResolvedCredentials(uris), { wrapper });
         await waitFor(() => expect(result.current.every(r => r.isSuccess)).toBe(true));
         expect(learnCloudBatchResolve).toHaveBeenCalledTimes(1);
