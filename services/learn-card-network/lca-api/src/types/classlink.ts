@@ -31,9 +31,8 @@ export type TranscriptIssuer = z.infer<typeof TranscriptIssuerValidator>;
 export type TranscriptIssuers = z.infer<typeof TranscriptIssuersValidator>;
 
 /**
- * A transcript issuer resolved from TRANSCRIPT_ISSUERS (or the legacy TRANSCRIPT_ISSUER_* env
- * vars, which resolve to `key: 'default'`). `did` is only optional for that legacy path; every
- * TRANSCRIPT_ISSUERS entry requires one (see TranscriptIssuerValidator).
+ * A transcript issuer resolved from TRANSCRIPT_ISSUERS.
+ * Every registry entry requires a DID (see TranscriptIssuerValidator).
  */
 export type ResolvedTranscriptIssuer = {
     key: string;

@@ -2,7 +2,6 @@ import { environment } from '@environment';
 import {
     ClassLinkTenantsValidator,
     DEFAULT_CLASSLINK_TENANT,
-    TranscriptIssuerValidator,
     TranscriptIssuersValidator,
     type ClassLinkConfig,
     type ClassLinkTenantConfig,
@@ -41,40 +40,17 @@ const isAllowedTranscriptIssuerEndpoint = (url: string): boolean => {
 };
 
 // Once per container, like services/escrow-enclave/index.ts's remoteConfigMissingReported.
-let explicitDefaultOverridesLegacyWarned = false;
-let invalidLegacyIssuerWarned = false;
 let invalidRegistryWarned = false;
 let invalidTenantsWarned = false;
 const unknownIssuerWarnings = new Set<string>();
 
 /**
- * Every configured transcript issuer, keyed by TRANSCRIPT_ISSUERS key (or `default` for the
- * legacy TRANSCRIPT_ISSUER_* vars). Never throws: any problem with TRANSCRIPT_ISSUERS is logged
+ * Every configured transcript issuer, keyed by TRANSCRIPT_ISSUERS key.
+ * Never throws: any problem with TRANSCRIPT_ISSUERS is logged
  * and the whole value is dropped, so one typo can't take down every district's transcript flow.
  */
 const getTranscriptIssuerRegistry = (): Record<string, ResolvedTranscriptIssuer> => {
     const registry: Record<string, ResolvedTranscriptIssuer> = {};
-    const legacyEndpoint = environment.TRANSCRIPT_ISSUER_ENDPOINT;
-    const legacyAudience = environment.TRANSCRIPT_ISSUER_AUDIENCE;
-    let hasLegacyDefault = false;
-
-    if (legacyEndpoint && legacyAudience) {
-        // Same checks as TRANSCRIPT_ISSUERS entries, except `did` stays optional here.
-        const legacy = TranscriptIssuerValidator.partial({ did: true }).safeParse({
-            endpoint: legacyEndpoint,
-            audience: legacyAudience,
-            ...(environment.TRANSCRIPT_ISSUER_DID
-                ? { did: environment.TRANSCRIPT_ISSUER_DID }
-                : {}),
-        });
-        if (legacy.success && isAllowedTranscriptIssuerEndpoint(legacy.data.endpoint)) {
-            hasLegacyDefault = true;
-            registry.default = { key: 'default', ...legacy.data };
-        } else if (!invalidLegacyIssuerWarned) {
-            invalidLegacyIssuerWarned = true;
-            console.warn('TRANSCRIPT_ISSUER_* is invalid and will be ignored');
-        }
-    }
 
     if (environment.TRANSCRIPT_ISSUERS) {
         try {
@@ -85,16 +61,6 @@ const getTranscriptIssuerRegistry = (): Record<string, ResolvedTranscriptIssuer>
                 if (!isAllowedTranscriptIssuerEndpoint(issuer.endpoint)) {
                     throw new Error('Disallowed transcript issuer endpoint');
                 }
-            }
-            if (
-                hasLegacyDefault &&
-                Object.hasOwn(parsed, 'default') &&
-                !explicitDefaultOverridesLegacyWarned
-            ) {
-                explicitDefaultOverridesLegacyWarned = true;
-                console.warn(
-                    'TRANSCRIPT_ISSUERS defines "default" while legacy TRANSCRIPT_ISSUER_* variables are also set; the explicit entry takes precedence.'
-                );
             }
             for (const [key, issuer] of Object.entries(parsed)) registry[key] = { key, ...issuer };
         } catch {
@@ -164,8 +130,8 @@ export const getClassLinkTenant = (
 
 /**
  * Resolves a district's transcript issuer: `tenant.transcriptIssuer` selects a TRANSCRIPT_ISSUERS
- * key, defaulting to `default` (the legacy TRANSCRIPT_ISSUER_* vars, or an explicit `default`
- * entry in TRANSCRIPT_ISSUERS). Returns null when no matching issuer is configured.
+ * key, defaulting to the `default` entry in TRANSCRIPT_ISSUERS.
+ * Returns null when no matching issuer is configured.
  */
 export const getTranscriptIssuerConfig = (
     tenant?: { transcriptIssuer?: string } | null

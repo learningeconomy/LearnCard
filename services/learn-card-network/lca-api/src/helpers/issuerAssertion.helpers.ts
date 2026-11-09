@@ -55,7 +55,7 @@ export interface SignIssuerAssertionOptions {
      * {@link getTranscriptRequesterDid}; never derive it from a request's hostname.
      */
     issuerDid: string;
-    /** The partner issuer's expected `aud` value (`TRANSCRIPT_ISSUER_AUDIENCE`). */
+    /** The partner issuer's expected `aud` value (the registry entry's `audience`). */
     audience: string;
     /** Override "now" for deterministic tests/replay math. Defaults to `new Date()`. */
     now?: Date;
