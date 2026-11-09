@@ -157,12 +157,13 @@ production host has run the brand-aware image since 2026-11-05 02:36Z (pins
       (https://learncard.com/privacy-policy, in #1875), and the legal approver is
       named: Yas (Legal), 2026-10-26 (LAUNCH-DECISIONS.md P-c).
 - [x] P-d fix merged (#1967, 2026-11-05).
-- [ ] Rollback guard live before the switch (replaces the native force-update):
+- [x] Rollback guard live before the switch (replaces the native force-update):
       lca-api with #1971 (`isWeb3AuthLogin`) and #1972 (startup retry) deployed to
       production, and the app with #1971's client guard released on web and as the
-      native OTA bundle. After that, reverting the switch cannot run Web3Auth
+      native OTA bundle (production deploy `dc6df4b10`, 2026-11-07 02:30Z). After that, reverting the switch cannot run Web3Auth
       against an SSS account; migrated accounts keep their Web3Auth login.
-- [ ] In-app privacy notice shipped (auto-enrolment is silent; P-c).
+- [x] In-app privacy notice shipped (auto-enrolment is silent; P-c): #1991, a note on
+      both PIN setup screens, in production deploy `dc6df4b10` (web and OTA).
 - [x] Capacity measurement on staging (replaces the full load test; LC-2364
       plan in Confluence): run 1 on 2026-11-06, 41/41 enrolments, 0 errors, about
       1.4 s of lca-api time per enrolment. Full-scale load testing is deferred until
