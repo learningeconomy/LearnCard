@@ -12,17 +12,16 @@ import {
     switchedProfileStore,
     getLogger,
     useWallet,
-    useModal,
     getIssuerDid,
 } from 'learn-card-base';
-import { ClrTranscriptSurface } from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { LCR } from 'learn-card-base/types/credential-records';
 import { useClassLinkAuthorizeUrl } from 'learn-card-base/react-query/mutations/firebase';
 import { useTranscriptArrival } from '../../hooks/useTranscriptArrival';
 import { useReceivedTranscript } from '../../hooks/useReceivedTranscript';
 import { readTranscriptReceipt, storeTranscriptReceipt } from '../../hooks/transcriptReceipt';
 import { tryFetchResolvedCredential } from 'learn-card-base/react-query/queries/credentialResolution';
-import ClrTranscriptDetailModal from '../clr-transcript/ClrTranscriptDetailModal';
+import PassportCredentialCard from '../../pages/wallet/activity-feed/PassportCredentialCard';
+import { getTranscriptCategory } from './transcriptCategory';
 import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/display';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import * as m from '../../paraglide/messages.js';
@@ -93,7 +92,6 @@ const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
     requestId,
     receivedAt,
 }) => {
-    const { newModal } = useModal();
     const { initWallet } = useWallet();
     const history = useHistory();
     const [timedOut, setTimedOut] = useState(false);
@@ -102,11 +100,6 @@ const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
         model: transcriptModel,
         accountDid,
     } = useReceivedTranscript({ issuerDid, requestId });
-    const transcriptVc = transcriptEntry?.vc;
-    const schoolName = transcriptModel?.header.issuerName?.value;
-    const gpa = transcriptModel?.summary.gpa?.value;
-    const awardedDate = transcriptModel?.header.awardedDate?.value;
-    const graduationYear = awardedDate ? new Date(String(awardedDate)).getFullYear() : undefined;
     const resolved = Boolean(transcriptModel);
 
     React.useEffect(() => {
@@ -135,38 +128,6 @@ const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
     const unreadUpdate = transcriptRecord?.refresh?.unreadUpdate;
     const updatedAt = transcriptRecord?.refresh?.lastUpdatedAt;
 
-    const openTranscript = (): void => {
-        if (!transcriptModel || !transcriptVc) return;
-        newModal(
-            <ClrTranscriptDetailModal
-                model={transcriptModel}
-                boost={transcriptVc}
-                boostUri={transcriptEntry?.uri}
-                options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
-            />
-        );
-    };
-
-    React.useEffect(() => {
-        if (receivedAt && requestId && transcriptModel) {
-            const key = `transcript_arrival_${requestId}`;
-            if (!localStorage.getItem(key)) {
-                localStorage.setItem(key, 'true');
-                newModal(
-                    <div className="p-8 text-center space-y-5">
-                        <h2 className="text-xl font-semibold text-grayscale-900">
-                            {m['transcriptOptIn.arrivedTitle']()}
-                        </h2>
-                        <PrimaryButton onClick={openTranscript}>
-                            {m['transcriptOptIn.viewTranscript']()}
-                        </PrimaryButton>
-                    </div>
-                );
-            }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [receivedAt, requestId, transcriptModel, newModal]);
-
     return (
         <div className="space-y-4 animate-fade-in-up">
             <div className="flex items-center gap-2 mb-2">
@@ -182,23 +143,15 @@ const ReceivedTranscript: React.FC<ReceivedTranscriptProps> = ({
                     </span>
                 )}
             </div>
-            <h2 className="text-xl font-semibold text-grayscale-900">
-                {schoolName || m['transcriptOptIn.transcript']()}
-            </h2>
-            {transcriptModel ? (
-                <>
-                    <div className="text-sm text-grayscale-600 space-y-1">
-                        {graduationYear && (
-                            <p>{m['transcriptOptIn.gradYear']({ year: graduationYear })}</p>
-                        )}
-                        {gpa !== undefined && (
-                            <p>{m['transcriptOptIn.gpa']({ gpa: String(gpa) })}</p>
-                        )}
-                    </div>
-                    <PrimaryButton onClick={openTranscript}>
-                        {m['transcriptOptIn.viewTranscript']()}
-                    </PrimaryButton>
-                </>
+            {transcriptModel && transcriptEntry ? (
+                <PassportCredentialCard
+                    className="w-fit"
+                    record={{
+                        ...transcriptRecord,
+                        uri: transcriptEntry.uri,
+                        category: getTranscriptCategory(transcriptEntry.vc, transcriptRecord),
+                    }}
+                />
             ) : timedOut ? (
                 <div className="space-y-3">
                     <p className="text-sm text-grayscale-600">
@@ -551,10 +504,16 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
         }
     }
 
+    // The Passport card brings its own chrome; nesting it in this card would double it.
+    const showsPassportCard = Boolean(data && data.reason !== 'not_enabled' && latest?.receivedAt);
     return (
         <section
             data-testid="transcript-optin-card"
-            className="w-full rounded-[20px] bg-white p-6 shadow-sm border border-grayscale-200 font-poppins"
+            className={
+                showsPassportCard
+                    ? 'w-full font-poppins'
+                    : 'w-full rounded-[20px] bg-white p-6 shadow-sm border border-grayscale-200 font-poppins'
+            }
         >
             {content}
         </section>

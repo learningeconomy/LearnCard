@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
     checkAgain: vi.fn(),
     isPollingExhausted: false,
     newModal: vi.fn(),
+    passportCard: vi.fn(),
     arrived: false,
     useTranscriptStatus: vi.fn(),
     useGetCredentials: vi.fn(),
@@ -120,9 +121,11 @@ vi.mock('../../hooks/useTranscriptArrival', () => ({
         return { isPollingExhausted: mocks.isPollingExhausted, checkAgain: mocks.checkAgain };
     },
 }));
-vi.mock('../clr-transcript/ClrTranscriptDetailModal', () => ({ default: () => null }));
-vi.mock('learn-card-base/helpers/credentials/clr/renderer', () => ({
-    ClrTranscriptSurface: { Full: 'full' },
+vi.mock('../../pages/wallet/activity-feed/PassportCredentialCard', () => ({
+    default: (props: { record: { uri: string; category?: string } }) => {
+        mocks.passportCard(props);
+        return <div data-testid="passport-credential-card" />;
+    },
 }));
 vi.mock('learn-card-base/helpers/credentials/clr/display', () => ({
     normalizeClrTranscriptDisplayModel: () => ({ header: {}, summary: {} }),
@@ -157,6 +160,7 @@ beforeEach(() => {
     mocks.issuerDid = 'did:issuer';
     mocks.issuerProfileId = 'issuer-profile';
     mocks.indexGet.mockReset().mockResolvedValue([]);
+    mocks.passportCard.mockReset();
     mocks.read.mockReset().mockResolvedValue(undefined);
 });
 
@@ -181,7 +185,7 @@ describe('TranscriptOptInCard', () => {
         expect(key).toMatch(/^transcript_receipt:[a-f0-9]{64}$/);
         expect(readTranscriptReceipt('did:other', 'r1')).toBeNull();
         render(<TranscriptOptInCard source="school_connect" />);
-        await screen.findByRole('button', { name: 'View Transcript' });
+        await screen.findByTestId('passport-credential-card');
         expect(mocks.read).toHaveBeenCalledWith('lc:transcript');
         expect(
             queryClient.getQueryData(['useGetResolvedCredential', 'lc:transcript', 'did:user'])
@@ -206,7 +210,17 @@ describe('TranscriptOptInCard', () => {
             });
             expect(await wallet.index.LearnCloud.get({})).toEqual([]);
             render(<TranscriptOptInCard source="school_connect" />);
-            await screen.findByRole('button', { name: 'View Transcript' });
+            await screen.findByTestId('passport-credential-card');
+            // Shown as its Passport card, under the category the wallet index stored.
+            await waitFor(() =>
+                expect(mocks.passportCard).toHaveBeenLastCalledWith({
+                    className: 'w-fit',
+                    record: expect.objectContaining({
+                        uri: 'lc:transcript',
+                        category: 'Achievement',
+                    }),
+                })
+            );
             expect(mocks.indexGet).toHaveBeenCalledWith({}, { cache: 'skip-cache' });
             expect(readTranscriptReceipt('did:user', 'r1')).toBe('lc:transcript');
         }
@@ -431,7 +445,7 @@ describe('TranscriptOptInCard', () => {
             mocks.read.mockResolvedValue({ issuer: 'did:issuer', type: ['ClrCredential'] });
             render(<TranscriptOptInCard source="wallet" />);
             expect(screen.getByText('Added to your account')).toBeTruthy();
-            expect(await screen.findByText('View Transcript')).toBeTruthy();
+            expect(await screen.findByTestId('passport-credential-card')).toBeTruthy();
             expect(screen.queryByTestId('transcript-optin-reauth')).toBeNull();
         });
 
