@@ -48,7 +48,10 @@ for (const host of ['', 'localhost', '127.0.0.1', 'https://qdrant.example', 'qdr
         const result = run(steps.find(s => s.id === 'fly-target').run, {
             ENVIRONMENT: 'fixture', STAGE: 'staging', PINNED_APP: '', FLY_APP_NAME: 'fixture',
             FLY_API_TOKEN: 'synthetic', MCP_DOMAIN: 'https://issuer.example', MCP_SERVER_URL: 'https://resource.example',
-            QDRANT_HOST: host, QDRANT_PORT: '6333', QDRANT_HTTPS: 'false', GITHUB_OUTPUT: output,
+            QDRANT_HOST: host, QDRANT_PORT: '6333', QDRANT_HTTPS: 'false',
+            MCP_PEER_API_FLY_APP: 'ai-passport', MCP_REDIS_PREFIX: 'shared',
+            MCP_EXPECTED_PRIVACY_KEY_FP: 'a'.repeat(64), MCP_EXPECTED_REDIS_STORE_FP: 'b'.repeat(64),
+            GITHUB_OUTPUT: output,
         }, dir);
         assert.equal(result.status, host === 'qdrant.internal' ? 0 : 1, result.stdout + result.stderr);
     });
@@ -103,4 +106,82 @@ test('secret-list failure fails closed', t => {
     writeFileSync(path.join(dir, 'flyctl'), '#!/usr/bin/env bash\nexit 23\n', { mode: 0o755 });
     const result = run(steps.find(s => s.name === 'Check required Fly secrets').run, { FLY_APP: 'fixture' }, dir);
     assert.notEqual(result.status, 0);
+});
+
+test('MCP staging allows skipped tests only when affected is empty', () => {
+    const gate = workflow.jobs['deploy-ai-passport-mcp'].if;
+    assert.match(gate, /test-affected\.result == 'skipped'/);
+    assert.match(gate, /affected == ''/);
+    assert.match(gate, /test-affected\.result == 'success'/);
+});
+
+for (const [peer, prefix, privacy, redis, expectOk] of [
+    ['ai-passport', 'default', 'a'.repeat(64), 'b'.repeat(64), true],
+    ['', 'default', 'a'.repeat(64), 'b'.repeat(64), false],
+    ['ai-passport', '', 'a'.repeat(64), 'b'.repeat(64), false],
+    ['ai-passport', 'default', 'nope', 'b'.repeat(64), false],
+    ['ai-passport', 'default', 'a'.repeat(64), 'B'.repeat(64), false],
+]) {
+    test(`alignment config peer=${peer||'missing'} prefix=${prefix||'missing'} fps=${expectOk}`, t => {
+        const { dir, output } = fixture(t);
+        const result = run(steps.find(s => s.id === 'fly-target').run, {
+            ENVIRONMENT: 'fixture', STAGE: 'staging', PINNED_APP: '', FLY_APP_NAME: 'fixture',
+            FLY_API_TOKEN: 'synthetic', MCP_DOMAIN: 'https://issuer.example', MCP_SERVER_URL: 'https://resource.example',
+            QDRANT_HOST: 'qdrant.internal', QDRANT_PORT: '6333', QDRANT_HTTPS: 'false',
+            MCP_PEER_API_FLY_APP: peer, MCP_REDIS_PREFIX: prefix,
+            MCP_EXPECTED_PRIVACY_KEY_FP: privacy, MCP_EXPECTED_REDIS_STORE_FP: redis,
+            GITHUB_OUTPUT: output,
+        }, dir);
+        assert.equal(result.status, expectOk ? 0 : 1, result.stdout + result.stderr);
+    });
+}
+
+test('fingerprint script derives stable HMACs without printing the key', () => {
+    const { createHmac } = require('node:crypto');
+    const key = Buffer.alloc(32, 9);
+    const b64 = key.toString('base64');
+    const privacy = createHmac('sha256', key).update('ai-passport-mcp-alignment:privacy-key:v1').digest('hex');
+    const redis = createHmac('sha256', key)
+        .update('ai-passport-mcp-alignment:redis-store:v1\0')
+        .update(['host', '6379', 'pw', 'shared'].join('\0'))
+        .digest('hex');
+    assert.equal(privacy.length, 64);
+    assert.equal(redis.length, 64);
+    assert.notEqual(privacy, redis);
+    assert.ok(!privacy.includes(b64));
+    assert.ok(!redis.includes('pw'));
+});
+
+test('rollback script refuses missing OAuth or Qdrant env', t => {
+    const { dir } = fixture(t);
+    const result = spawnSync('bash', ['services/ai-passport-backend/scripts/rollback-mcp.sh'], {
+        cwd: root, encoding: 'utf8', env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, FLY_APP: 'x', IMAGE: 'img' },
+    });
+    assert.notEqual(result.status, 0);
+});
+
+test('post-deploy fingerprint step compares expected vars', t => {
+    const { dir } = fixture(t);
+    writeFileSync(path.join(dir, 'mcp-alignment-fingerprint.sh'),
+        '#!/usr/bin/env bash\necho privacy=$FAKE_PRIVACY\necho redis=$FAKE_REDIS\n', { mode: 0o755 });
+    const step = steps.find(s => s.name === 'Verify shared privacy key and Redis store fingerprints');
+    assert.ok(step);
+    const script = step.run.replace(
+        'services/ai-passport-backend/scripts/mcp-alignment-fingerprint.sh',
+        'mcp-alignment-fingerprint.sh'
+    );
+    const ok = run(script, {
+        FLY_APP: 'mcp', MCP_PEER_API_FLY_APP: 'api',
+        MCP_EXPECTED_PRIVACY_KEY_FP: 'a'.repeat(64), MCP_EXPECTED_REDIS_STORE_FP: 'b'.repeat(64),
+        FAKE_PRIVACY: 'a'.repeat(64), FAKE_REDIS: 'b'.repeat(64),
+    }, dir);
+    assert.equal(ok.status, 0, ok.stdout + ok.stderr);
+    const bad = run(script, {
+        FLY_APP: 'mcp', MCP_PEER_API_FLY_APP: 'api',
+        MCP_EXPECTED_PRIVACY_KEY_FP: 'a'.repeat(64), MCP_EXPECTED_REDIS_STORE_FP: 'b'.repeat(64),
+        FAKE_PRIVACY: 'a'.repeat(64), FAKE_REDIS: 'c'.repeat(64),
+    }, dir);
+    assert.equal(bad.status, 1);
+    assert.match(bad.stdout + bad.stderr, /Redis store\/prefix/);
+    assert.doesNotMatch(bad.stdout + bad.stderr, /AI_PRIVACY_KEY=|REDIS_PASSWORD=/);
 });

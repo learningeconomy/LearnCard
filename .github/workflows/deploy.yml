@@ -2679,8 +2679,9 @@ jobs:
     #   - Every push to main: staging, independent of the shared baseline
     #   - Every release: production (mcp-learncard), independent of the shared baseline
     #   - Manual: deploy-ai-passport-mcp, staging or production
-    # Each Environment sets FLY_API_TOKEN (secret), MCP_DOMAIN and MCP_SERVER_URL (vars),
-    # optional MCP_SMOKE_TOKEN (secret). Rollout and rollback: services/ai-passport-backend/MCP-DEPLOY.md.
+    # Each Environment sets FLY_API_TOKEN (secret), MCP_DOMAIN/MCP_SERVER_URL/Qdrant vars,
+    # MCP_PEER_API_FLY_APP, MCP_REDIS_PREFIX, MCP_EXPECTED_*_FP, optional MCP_SMOKE_TOKEN.
+    # Rollout and rollback: services/ai-passport-backend/MCP-DEPLOY.md.
     # ============================================================================
     deploy-ai-passport-mcp:
         name: Deploy AI Passport MCP (${{ matrix.name }})
@@ -2694,7 +2695,11 @@ jobs:
             (
               needs.determine-affected.outputs.is_manual == 'true' ||
               needs.determine-affected.outputs.is_release == 'true' ||
-              needs.test-affected.result == 'success'
+              needs.test-affected.result == 'success' ||
+              (
+                needs.test-affected.result == 'skipped' &&
+                needs.determine-affected.outputs.affected == ''
+              )
             )
         permissions:
             contents: read
@@ -2726,6 +2731,10 @@ jobs:
                   QDRANT_HOST: ${{ vars.QDRANT_HOST }}
                   QDRANT_PORT: ${{ vars.QDRANT_PORT }}
                   QDRANT_HTTPS: ${{ vars.QDRANT_HTTPS }}
+                  MCP_PEER_API_FLY_APP: ${{ vars.MCP_PEER_API_FLY_APP }}
+                  MCP_REDIS_PREFIX: ${{ vars.MCP_REDIS_PREFIX }}
+                  MCP_EXPECTED_PRIVACY_KEY_FP: ${{ vars.MCP_EXPECTED_PRIVACY_KEY_FP }}
+                  MCP_EXPECTED_REDIS_STORE_FP: ${{ vars.MCP_EXPECTED_REDIS_STORE_FP }}
               run: |
                   failed=0
                   fail() { echo "::error::$1"; failed=1; }
@@ -2756,6 +2765,17 @@ jobs:
                     fail "QDRANT_PORT must be an explicit port in 1..65535."
                   fi
                   [[ "$QDRANT_HTTPS" == true || "$QDRANT_HTTPS" == false ]] || fail "QDRANT_HTTPS must be true or false."
+
+                  [[ -n "$MCP_PEER_API_FLY_APP" ]] || fail "MCP_PEER_API_FLY_APP var is missing (peer API/worker Fly app that owns the shared privacy key and Redis store)."
+                  if [[ ! "$MCP_REDIS_PREFIX" =~ ^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$ ]]; then
+                    fail "MCP_REDIS_PREFIX must be an explicit shared Redis key prefix matching the API/worker (not empty, not the accidental default)."
+                  fi
+                  for name in MCP_EXPECTED_PRIVACY_KEY_FP MCP_EXPECTED_REDIS_STORE_FP; do
+                    value="${!name}"
+                    if [[ ! "$value" =~ ^[a-f0-9]{64}$ ]]; then
+                      fail "$name must be the 64-char lowercase hex fingerprint from scripts/mcp-alignment-fingerprint.sh on $MCP_PEER_API_FLY_APP (never a secret value)."
+                    fi
+                  done
 
                   if [[ "$STAGE" == 'staging' ]]; then
                     case "$APP" in
@@ -2820,6 +2840,7 @@ jobs:
                   QDRANT_HOST: ${{ vars.QDRANT_HOST }}
                   QDRANT_PORT: ${{ vars.QDRANT_PORT }}
                   QDRANT_HTTPS: ${{ vars.QDRANT_HTTPS }}
+                  MCP_REDIS_PREFIX: ${{ vars.MCP_REDIS_PREFIX }}
               run: |
                   flyctl deploy . \
                     --remote-only \
@@ -2830,7 +2851,8 @@ jobs:
                     --env "MCP_SERVER_URL=$MCP_SERVER_URL" \
                     --env "QDRANT_HOST=$QDRANT_HOST" \
                     --env "QDRANT_PORT=$QDRANT_PORT" \
-                    --env "QDRANT_HTTPS=$QDRANT_HTTPS"
+                    --env "QDRANT_HTTPS=$QDRANT_HTTPS" \
+                    --env "REDIS_PREFIX=$MCP_REDIS_PREFIX"
 
             - name: Verify deployed SHA
               env:
@@ -2844,6 +2866,29 @@ jobs:
                     echo "::error::Not every machine on $FLY_APP runs image label $GITHUB_SHA."
                     exit 1
                   fi
+
+            # Shared AI_PRIVACY_KEY + Redis store/prefix with the peer API/worker. Fly secret
+            # digests are truncated change-hints (not authenticators), so equality is proved by an
+            # in-process HMAC fingerprint that never prints key or Redis password material.
+            - name: Verify shared privacy key and Redis store fingerprints
+              env:
+                  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+                  FLY_APP: ${{ steps.fly-target.outputs.app }}
+                  MCP_PEER_API_FLY_APP: ${{ vars.MCP_PEER_API_FLY_APP }}
+                  MCP_EXPECTED_PRIVACY_KEY_FP: ${{ vars.MCP_EXPECTED_PRIVACY_KEY_FP }}
+                  MCP_EXPECTED_REDIS_STORE_FP: ${{ vars.MCP_EXPECTED_REDIS_STORE_FP }}
+              run: |
+                  out=$(services/ai-passport-backend/scripts/mcp-alignment-fingerprint.sh --app "$FLY_APP")
+                  privacy=$(awk -F= '/^privacy=/{print $2}' <<< "$out")
+                  redis=$(awk -F= '/^redis=/{print $2}' <<< "$out")
+                  mismatched=()
+                  [[ "$privacy" == "$MCP_EXPECTED_PRIVACY_KEY_FP" ]] || mismatched+=("AI_PRIVACY_KEY")
+                  [[ "$redis" == "$MCP_EXPECTED_REDIS_STORE_FP" ]] || mismatched+=("Redis store/prefix")
+                  if (( ${#mismatched[@]} )); then
+                    echo "::error::MCP app $FLY_APP fingerprints do not match peer API/worker $MCP_PEER_API_FLY_APP for: ${mismatched[*]}. Copy the same AI_PRIVACY_KEY and Redis host/port/password/prefix, then refresh MCP_EXPECTED_*_FP from scripts/mcp-alignment-fingerprint.sh on the peer. Fingerprints only are compared; secret values are never read by this job."
+                    exit 1
+                  fi
+                  echo "ok: privacy and Redis store fingerprints match the peer API/worker expectations."
 
             # Machines scale to zero, so the smoke script's retries also cover the cold start.
             - name: Smoke test MCP (metadata, 401, authorized tools)

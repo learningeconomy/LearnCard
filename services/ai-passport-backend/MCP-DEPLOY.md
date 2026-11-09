@@ -21,18 +21,26 @@ catch-up policy trades extra deploys for correctness: successful flag-off runs c
 changes. No extra baseline state or force input is needed; after a disabled interval, the next
 eligible event deploys the current snapshot (or use the existing manual input after approval).
 
+When Nx reports an empty affected list, `test-affected` is skipped. The MCP staging leg still runs
+in that case (skipped tests are allowed only when affected is empty); a real test failure still
+blocks deploy.
+
 ## Per-Environment configuration
 
-| Name              | Kind             | Purpose                                                                     |
-| ----------------- | ---------------- | --------------------------------------------------------------------------- |
-| `FLY_API_TOKEN`   | secret           | Deploy token scoped to the target app (`fly tokens create deploy -a <app>`) |
-| `MCP_DOMAIN`      | var              | Passed as `DOMAIN`: the OAuth issuer (AI Passport API base URL)             |
-| `MCP_SERVER_URL`  | var              | Passed as `MCP_SERVER_URL`: the protected-resource URL clients use          |
-| `FLY_APP_NAME`    | var              | Staging only; production is pinned to `mcp-learncard`                       |
-| `QDRANT_HOST`     | var, required    | Reachable Qdrant hostname only, no scheme/port/credentials; not localhost   |
-| `QDRANT_PORT`     | var, required    | Explicit port 1..65535 (e.g. 6333, or 443 for hosted TLS)                   |
-| `QDRANT_HTTPS`    | var, required    | Explicit `true` for TLS or `false` for private plaintext                    |
-| `MCP_SMOKE_TOKEN` | secret, optional | Bearer token for a synthetic user; enables the authorized smoke checks      |
+| Name                          | Kind             | Purpose                                                                                                   |
+| ----------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------- |
+| `FLY_API_TOKEN`               | secret           | Deploy token scoped to the target app (`fly tokens create deploy -a <app>`)                               |
+| `MCP_DOMAIN`                  | var              | Passed as `DOMAIN`: the OAuth issuer (AI Passport API base URL)                                           |
+| `MCP_SERVER_URL`              | var              | Passed as `MCP_SERVER_URL`: the protected-resource URL clients use                                        |
+| `FLY_APP_NAME`                | var              | Staging only; production is pinned to `mcp-learncard`                                                     |
+| `QDRANT_HOST`                 | var, required    | Reachable Qdrant hostname only, no scheme/port/credentials; not localhost                                 |
+| `QDRANT_PORT`                 | var, required    | Explicit port 1..65535 (e.g. 6333, or 443 for hosted TLS)                                                 |
+| `QDRANT_HTTPS`                | var, required    | Explicit `true` for TLS or `false` for private plaintext                                                  |
+| `MCP_PEER_API_FLY_APP`        | var, required    | Peer API/worker Fly app that owns the shared `AI_PRIVACY_KEY` and Redis store (production: `ai-passport`) |
+| `MCP_REDIS_PREFIX`            | var, required    | Exact Redis key prefix used by that peer (passed as `REDIS_PREFIX`; do not rely on the code default)      |
+| `MCP_EXPECTED_PRIVACY_KEY_FP` | var, required    | 64-hex privacy-key fingerprint from `scripts/mcp-alignment-fingerprint.sh --app <peer>`                   |
+| `MCP_EXPECTED_REDIS_STORE_FP` | var, required    | 64-hex Redis store/prefix fingerprint from the same peer run                                              |
+| `MCP_SMOKE_TOKEN`             | secret, optional | Bearer token for a synthetic user; enables the authorized smoke checks                                    |
 
 All non-optional configuration is required. The job rejects non-https/localhost OAuth URLs,
 loopback or malformed Qdrant hosts, invalid Qdrant ports/TLS flags, and staging production targets.
@@ -59,11 +67,12 @@ requires authentication; confirm access separately before cutover.
 Each deploy, in order (HTTP checks run against **both** the Fly hostname and client-facing `MCP_SERVER_URL`):
 
 1. Machines on the app all run image label `$GITHUB_SHA` (`flyctl machines list`).
-2. `/.well-known/oauth-protected-resource`: `resource` equals `MCP_SERVER_URL` and the first
+2. In-process privacy-key and Redis-store fingerprints match `MCP_EXPECTED_*_FP` from the peer API/worker.
+3. `/.well-known/oauth-protected-resource`: `resource` equals `MCP_SERVER_URL` and the first
    `authorization_servers` entry equals `MCP_DOMAIN`.
-3. `/.well-known/oauth-authorization-server`: `issuer` equals `MCP_DOMAIN`.
-4. Unauthenticated `tools/list` returns 401.
-5. With `MCP_SMOKE_TOKEN`: authorized `tools/list` includes `get_user_context`, and calling it
+4. `/.well-known/oauth-authorization-server`: `issuer` equals `MCP_DOMAIN`.
+5. Unauthenticated `tools/list` returns 401.
+6. With `MCP_SMOKE_TOKEN`: authorized `tools/list` includes `get_user_context`, and calling it
    (read-only) returns a result rather than its backend-failure fallback. Without the token, these
    checks are skipped with a warning.
 
@@ -90,15 +99,24 @@ MCP_SMOKE_TOKEN=<optional> services/ai-passport-backend/scripts/smoke-mcp.sh
 1. Freeze or retire the current deployer of `mcp-learncard` so two pipelines don't compete.
 2. Create GitHub Environment `ai-passport-mcp-production` with secret `FLY_API_TOKEN` (deploy
    token scoped to `mcp-learncard`) and vars `MCP_DOMAIN` and `MCP_SERVER_URL` set to the confirmed targets.
-3. Add the `AI_PRIVACY_KEY` Fly secret to `mcp-learncard`; the current server exits on boot
-   without it, and the app doesn't have it today.
-4. Resolve the `DOMAIN` and `MCP_SERVER_URL` Fly secrets on `mcp-learncard`: they override the
+3. Copy the peer API/worker `AI_PRIVACY_KEY` onto `mcp-learncard` (same value, never a new key).
+   A different valid key passes the name check but breaks subject references, erasure tombstones,
+   active-operation fences, and shared erasure-request decryption. Also copy the same Redis
+   backing store: `REDIS_HOST`, `REDIS_PORT`, and `REDIS_PASSWORD` when the peer uses one.
+4. Set Environment vars `MCP_PEER_API_FLY_APP` (production: `ai-passport`), `MCP_REDIS_PREFIX`
+   to the peer's exact prefix, then run
+   `services/ai-passport-backend/scripts/mcp-alignment-fingerprint.sh --app <peer>` and store the
+   printed `privacy=` / `redis=` values as `MCP_EXPECTED_PRIVACY_KEY_FP` and
+   `MCP_EXPECTED_REDIS_STORE_FP`. The script HMACs inside the peer process and never prints secret
+   values. Fly secret digests are **not** used here: they are truncated collide-able change hints,
+   not cross-app authenticators. The deploy job re-runs the same fingerprint on MCP after rollout
+   and fails closed on mismatch.
+5. Resolve the `DOMAIN` and `MCP_SERVER_URL` Fly secrets on `mcp-learncard`: they override the
    deploy's `--env`, so their presence must be removed under separate approval before rollout; matching values are not an exception.
-
-5. Configure the required `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_HTTPS` Environment vars and
+6. Configure the required `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_HTTPS` Environment vars and
    confirm the app can reach that service; add Fly `QDRANT_API_KEY` if that service requires it.
    Remove any shadowing Qdrant endpoint secrets under separate approval.
-6. Provision/confirm Fly web identity: a maintained token file, `AWS_WEB_IDENTITY_TOKEN_FILE`
+7. Provision/confirm Fly web identity: a maintained token file, `AWS_WEB_IDENTITY_TOKEN_FILE`
    path configured on the app, `AWS_ROLE_ARN`, and matching AWS OIDC trust and Bedrock permissions.
    Role ARN alone is insufficient; name-only preflight is not an authentication proof.
 
@@ -122,8 +140,25 @@ every smoke step passes and an MCP client can sign in and list tools.
 ## Rollback
 
 - Stop automatic deploys: unset `MCP_DEPLOY_ENABLED` (manual dispatch still works).
-- Roll back the app to the previous image: `fly releases -a mcp-learncard --image` to find it,
-  then `fly deploy -a mcp-learncard --config services/ai-passport-backend/fly.mcp.toml --image <previous image>`.
-- Or re-run Deploy manually from the last good commit.
+- Find the previous image: `fly releases -a mcp-learncard --image`.
+- Re-supply OAuth, Qdrant, and Redis prefix via `--env` (they are not in `fly.mcp.toml`, and cutover
+  removes the old `DOMAIN`/`MCP_SERVER_URL` Fly secrets). Use the helper:
+
+```sh
+FLY_APP=mcp-learncard \
+MCP_DOMAIN=<issuer> MCP_SERVER_URL=<resource> \
+QDRANT_HOST=<host> QDRANT_PORT=<port> QDRANT_HTTPS=<true|false> \
+MCP_REDIS_PREFIX=<shared prefix> \
+IMAGE=<previous image> \
+services/ai-passport-backend/scripts/rollback-mcp.sh
+```
+
+- Pre-cutover releases that relied on Fly secrets for OAuth URLs: after those secrets are removed,
+  the rollback script's `--env` values are what the restored image sees. To recreate the exact
+  pre-cutover secret-based config instead, re-set those secrets under a separate approval, then
+  still run the rollback script with the OAuth/Qdrant/Redis prefix values that release effectively
+  used.
+- Or re-run Deploy manually from the last good commit (preferred when that commit's Environment
+  vars are still correct): that path also re-supplies `--env` and re-checks fingerprints.
 - If the URLs were wrong, fix the Environment vars and redeploy; the smoke step reports what the
   server actually served.
