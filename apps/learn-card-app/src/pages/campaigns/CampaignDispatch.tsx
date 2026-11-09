@@ -12,7 +12,7 @@ const reasons: Record<NonNullable<CampaignDispatchPreview['blockedReason']>, str
     not_live: 'Go live before sending audience notifications.',
     email_confirmation_required:
         'Email delivery requires a separate recipient review that is not available in this composer yet.',
-    notify_disabled: 'Enable email or inbox / push notifications and save before sending.',
+    notify_disabled: 'Enable Email or In-app & push notification and save before sending.',
     not_started: 'This campaign has not started yet. Check its start date.',
     ended: 'This campaign has ended. Update its end date and save to send notifications.',
     no_recipients:
