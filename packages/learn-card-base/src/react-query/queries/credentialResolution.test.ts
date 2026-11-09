@@ -188,15 +188,60 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
     it('isolates null slots without rejecting the rest of the batch', async () => {
         const client = makeClient();
         const batch = vi.fn(async () => [credential, null, credential]);
+        const read = vi.fn().mockResolvedValue(undefined);
         const wallet = {
             id: { did: () => 'account-a' },
-            read: { get: vi.fn() },
+            read: { get: read },
             invoke: { learnCloudBatchResolve: batch },
         } as unknown as BespokeLearnCard;
 
         const results = await prefetchResolvedCredentials(client, wallet, ['a', 'b', 'c']);
         expect(results).toEqual([credential, undefined, credential]);
+        expect(read).toHaveBeenCalledExactlyOnceWith('b');
         expect(client.getQueryData(resolvedCredentialQueryKey('b', 'account-a'))).toBeUndefined();
+    });
+
+    it('recovers null batch slots via wallet.read.get in prefetch (cross-host / other planes)', async () => {
+        const client = makeClient();
+        const other = { ...credential, credentialSubject: { id: 'other' } } as VC;
+        const batch = vi.fn(async () => [credential, null, null]);
+        const read = vi.fn(async (uri: string) => (uri === 'cross' ? other : undefined));
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+        } as unknown as BespokeLearnCard;
+
+        const results = await prefetchResolvedCredentials(client, wallet, [
+            'same',
+            'cross',
+            'missing',
+        ]);
+        expect(batch).toHaveBeenCalledTimes(1);
+        expect(read.mock.calls.map(c => c[0]).sort()).toEqual(['cross', 'missing']);
+        expect(results).toEqual([credential, other, undefined]);
+        expect(client.getQueryData(resolvedCredentialQueryKey('cross', 'account-a'))).toEqual(
+            other
+        );
+    });
+
+    it('recovers null batch slots via wallet.read.get in the coalescer path', async () => {
+        const other = { ...credential, credentialSubject: { id: 'recovered' } } as VC;
+        const batch = vi.fn(async () => [null, credential]);
+        const read = vi.fn(async (uri: string) => (uri === 'cross' ? other : undefined));
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+        } as unknown as BespokeLearnCard;
+
+        const pending = Promise.all([
+            enqueueBatchedCredentialResolve(wallet, 'cross'),
+            enqueueBatchedCredentialResolve(wallet, 'same'),
+        ]);
+        await vi.waitFor(() => expect(batch).toHaveBeenCalledTimes(1));
+        await expect(pending).resolves.toEqual([other, credential]);
+        expect(read).toHaveBeenCalledExactlyOnceWith('cross');
     });
 
     it('falls back to bounded-concurrency read.get when batchResolve is missing', async () => {

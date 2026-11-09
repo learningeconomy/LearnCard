@@ -63,6 +63,27 @@ export const processWithConcurrency = async <T>(
     );
     await Promise.all(runners);
 };
+/**
+ * batchResolve only talks to the current LearnCloud host and maps cross-host URIs, other read
+ * planes, and stored-credential envelopes to null. Retry those slots via wallet.read.get (which
+ * follows other hosts / planes) before treating them as unresolvable.
+ */
+const resolveNullSlotsViaRead = async (
+    wallet: BespokeLearnCard,
+    uris: readonly string[]
+): Promise<Map<string, VC>> => {
+    const recovered = new Map<string, VC>();
+    if (uris.length === 0) return recovered;
+    await processWithConcurrency(uris, CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY, async uri => {
+        try {
+            const credential = (await wallet.read.get(uri)) as VC | undefined;
+            if (credential) recovered.set(uri, credential);
+        } catch {
+            // Leave unset; caller marks unresolvable / leaves uncached.
+        }
+    });
+    return recovered;
+};
 
 const flushCoalescedResolves = async (
     wallet: BespokeLearnCard,
@@ -126,9 +147,17 @@ const flushCoalescedResolves = async (
             continue;
         }
 
+        const hits: { uri: string; credential: VC }[] = [];
+        const misses: string[] = [];
         chunk.forEach((uri, index) => {
-            settleUri(uri, (results?.[index] as VC | null | undefined) ?? undefined);
+            const credential = results?.[index] as VC | null | undefined;
+            if (credential) hits.push({ uri, credential });
+            else misses.push(uri);
         });
+        for (const { uri, credential } of hits) settleUri(uri, credential);
+        // Null batch slots are not final — read.get can still succeed for other hosts/planes.
+        const recovered = await resolveNullSlotsViaRead(wallet, misses);
+        for (const uri of misses) settleUri(uri, recovered.get(uri));
     }
 };
 
@@ -227,8 +256,9 @@ const cacheResolvedCredential = (
  * Resolve many credential URIs in as few round-trips as possible (LC-2382).
  *
  * Prefer LearnCloud `storage.batchResolve` via `learnCloudBatchResolve`. Fall back to
- * bounded-concurrency `read.get` when the batch method is missing. One failed/null URI never
- * rejects the whole list — that slot stays uncached so a later reader can retry.
+ * bounded-concurrency `read.get` when the batch method is missing, and retry individual null
+ * batch slots via `read.get` (cross-host URIs / other planes / envelopes). One failed URI never
+ * rejects the whole list — unresolved slots stay uncached so a later reader can retry.
  */
 export const prefetchResolvedCredentials = async (
     queryClient: QueryClient,
@@ -283,12 +313,24 @@ export const prefetchResolvedCredentials = async (
                     continue;
                 }
 
+                const misses: string[] = [];
                 chunk.forEach((uri, index) => {
                     const credential = results?.[index] as VC | null | undefined;
-                    if (credential)
+                    if (credential) {
                         cacheResolvedCredential(queryClient, accountDid, uri, credential);
-                    // null: leave uncached so remounts with staleTime 0 can retry (useResolveMany).
+                    } else {
+                        misses.push(uri);
+                    }
                 });
+                // Retry null slots via read.get (cross-host / other planes / envelopes).
+                const recovered = await resolveNullSlotsViaRead(wallet, misses);
+                for (const uri of misses) {
+                    const credential = recovered.get(uri);
+                    if (credential) {
+                        cacheResolvedCredential(queryClient, accountDid, uri, credential);
+                    }
+                    // Still-null: leave uncached so remounts with staleTime 0 can retry.
+                }
             }
         } else {
             await processWithConcurrency(
