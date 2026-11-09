@@ -597,6 +597,51 @@ describe('Guardian Approval', () => {
             expect(await isApproved()).toBe(true);
         });
 
+        it('keeps a superseded link dead after a later same-address resend fails', async () => {
+            const endCooldown = async () => {
+                const record = await getGuardianApprovalRequest('guardian-user');
+                await setGuardianApprovalRequest('guardian-user', {
+                    ...record!,
+                    acceptedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+                });
+            };
+
+            await send('guardian@test.com');
+            const firstToken = lastToken();
+            await endCooldown();
+
+            const originalDelete = cache.delete;
+            const deleteSpy = vi
+                .spyOn(cache, 'delete')
+                .mockImplementation(keys =>
+                    keys.includes(`guardian_approval:${firstToken}`)
+                        ? Promise.reject(new Error('redis hiccup'))
+                        : originalDelete(keys)
+                );
+            try {
+                await send('guardian@test.com');
+            } finally {
+                deleteSpy.mockRestore();
+            }
+            const secondToken = lastToken();
+            await endCooldown();
+
+            sendSpy.mockRejectedValueOnce(new Error('provider down'));
+            await expect(send('guardian@test.com')).rejects.toBeDefined();
+            expect(await getGuardianApprovalRequest('guardian-user')).toMatchObject({
+                status: 'failed',
+                token: secondToken,
+            });
+
+            await expect(
+                noAuthClient.inbox.approveGuardianRequest({ token: firstToken })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            expect(await isApproved()).toBe(false);
+
+            await noAuthClient.inbox.approveGuardianRequest({ token: secondToken });
+            expect(await isApproved()).toBe(true);
+        });
+
         it('still returns accepted when recording the accepted status fails', async () => {
             const originalSet = cache.set;
             const setSpy = vi

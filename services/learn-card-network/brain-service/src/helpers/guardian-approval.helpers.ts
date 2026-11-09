@@ -268,8 +268,10 @@ export const validateGuardianApprovalTokenDetailed = async (
 
 /**
  * An account approval token only counts while it targets the guardian address on the
- * learner's current request, and, once a send is accepted, only if it is that send's token.
- * Tokens without request history (legacy) remain valid.
+ * learner's current request, and, when the request records a token (accepted, or retained
+ * through a failed resend), only if it is that token. `sending` records skip the token check
+ * because their accepted write may never land. Tokens without request history (legacy)
+ * remain valid.
  */
 export const isGuardianApprovalTokenCurrent = async (
     data: GuardianApprovalTokenData
@@ -283,7 +285,7 @@ export const isGuardianApprovalTokenCurrent = async (
         return false;
     }
 
-    return !(request.status === 'accepted' && request.token && request.token !== data.token);
+    return !(request.status !== 'sending' && request.token && request.token !== data.token);
 };
 
 export const markGuardianApprovalTokenAsUsed = async (token: string): Promise<boolean> => {
