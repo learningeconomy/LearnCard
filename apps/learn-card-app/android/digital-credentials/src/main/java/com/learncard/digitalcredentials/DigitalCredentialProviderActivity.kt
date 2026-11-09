@@ -27,6 +27,7 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
     private var pending: JSObject? = null
     private var generation = ""
     private var completed = false
+    private var requestLease: RegistryRequestLease? = null
 
     override fun load() {
         // MainActivity deliberately holds its launch splash until account hydration.
@@ -43,12 +44,17 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
         var stage = "enabled"
         try {
             require(resources.getBoolean(R.bool.lc_digital_credentials_enabled))
+            stage = "registry_idle"
+            requestLease = RegistryState.access.beginRequest() ?: error("Registry mutation in progress")
             stage = "platform_request"
             val request = PendingIntentHandler.retrieveProviderGetCredentialRequest(intent) ?: error("Missing request")
             stage = "selected_entry"
             val selected = request.selectedCredentialSet?.credentials?.map { it.credentialId }
                 ?: listOfNotNull(request.selectedEntryId)
-            require(selected.size == 1 && registry.contains(selected.single()))
+            generation = RegistryState.access.withRequest(requestLease!!) {
+                require(selected.size == 1 && registry.contains(selected.single()))
+                registry.generation
+            }
             stage = "credential_options"
             val options = request.credentialOptions.filterIsInstance<GetDigitalCredentialOption>()
             require(options.size == 1)
@@ -57,7 +63,6 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
             val supported = (0 until requests.length()).map { requests.getJSONObject(it) }
                 .filter { it.optString("protocol") == "openid4vp-v1-unsigned" }
             require(supported.size == 1)
-            generation = registry.generation
             stage = "caller_identity"
             pending = JSObject().put("requestId", UUID.randomUUID().toString())
                 .put("selectedEntryId", selected.single()).put("origin", CallerOrigin.resolve(this, request.callingAppInfo))
@@ -75,6 +80,7 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
             val result = Intent()
             PendingIntentHandler.setGetCredentialException(result, GetCredentialUnknownException("Request unavailable"))
             setResult(Activity.RESULT_OK, result)
+            releaseRequest()
             super.onCreate(savedInstanceState)
             finish()
             return
@@ -90,20 +96,26 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
         })
     }
 
-    fun pendingRequest(): JSObject? = if (!completed && registry.generation == generation) pending else null
+    fun pendingRequest(): JSObject? = if (
+        !completed && requestLease?.let { RegistryState.access.isActive(it) } == true &&
+        registry.generation == generation
+    ) pending else null
 
     fun complete(requestId: String, responseJson: String) {
-        require(!completed && pendingRequest()?.getString("requestId") == requestId)
         val response = JSONObject(responseJson)
         require(response.getString("protocol") == "openid4vp-v1-unsigned")
         val data = response.getJSONObject("data")
         require(data.keys().asSequence().toSet() == setOf("vp_token"))
         require(data.getJSONObject("vp_token").length() > 0)
-        completed = true
-        pending = null
         val result = Intent()
         PendingIntentHandler.setGetCredentialResponse(result, GetCredentialResponse(DigitalCredential(response.toString())))
-        setResult(Activity.RESULT_OK, result)
+        RegistryState.access.withRequest(requestLease ?: error("No pending request")) {
+            require(!completed && pendingRequest()?.getString("requestId") == requestId)
+            completed = true
+            pending = null
+            setResult(Activity.RESULT_OK, result)
+        }
+        releaseRequest()
         finish()
     }
 
@@ -116,7 +128,17 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
         val result = Intent()
         PendingIntentHandler.setGetCredentialException(result, GetCredentialCancellationException("Canceled"))
         setResult(Activity.RESULT_OK, result)
+        releaseRequest()
         finish()
     }
 
+    private fun releaseRequest() {
+        requestLease?.let { RegistryState.access.endRequest(it) }
+        requestLease = null
+    }
+
+    override fun onDestroy() {
+        releaseRequest()
+        super.onDestroy()
+    }
 }

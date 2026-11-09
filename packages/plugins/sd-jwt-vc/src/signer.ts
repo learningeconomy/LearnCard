@@ -28,6 +28,19 @@ export const createJoseVerifier = async (
                 'Expected an Ed25519 issuer key'
             );
         }
+        // Browser JOSE imports key_ops as CryptoKey.usages. A public Ed25519
+        // key may only be imported for verification; the portable path must
+        // retain that restriction even when WebCrypto cannot import Ed25519.
+        if (
+            publicJwk.key_ops !== undefined &&
+            (!Array.isArray(publicJwk.key_ops) ||
+                publicJwk.key_ops.length !== 1 ||
+                publicJwk.key_ops[0] !== 'verify')
+        )
+            throw new SdJwtVcError(
+                'verification_method_not_found',
+                'Ed25519 issuer key operations must permit verification only'
+            );
         const publicKey = base64url.decode(publicJwk.x);
         if (publicKey.length !== 32)
             throw new SdJwtVcError('verification_method_not_found', 'Invalid Ed25519 issuer key');

@@ -13,7 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.withLock
 
 /** Android transport only. The host owns credential access, eligibility, consent and signing. */
 @CapacitorPlugin(name = "NativeDigitalCredentials")
@@ -26,13 +25,14 @@ class NativeDigitalCredentialsPlugin : Plugin() {
     }
 
     @PluginMethod fun register(call: PluginCall) {
+        val state = RegistryState(context)
+        val expectedGeneration = state.generation
         scope.launch {
-            RegistryState.mutation.withLock {
+            RegistryState.access.mutate {
                 try {
                     require(context.resources.getBoolean(R.bool.lc_digital_credentials_enabled))
                     val entries = RegistryProjection.map(call.getArray("entries") ?: error("Missing entries"))
-                    val state = RegistryState(context)
-                    registerRegistry(state, entries.map { it.id }.toSet()) {
+                    registerRegistry(state, entries.map { it.id }.toSet(), expectedGeneration) {
                         RegistryManager.create(context).registerCredentials(OpenId4VpRegistry(
                             credentialEntries = entries, id = RegistryState.REGISTRY_ID,
                             supportedProtocols = listOf(OpenId4VpRegistry.PROTOCOL_OPENID4VP_1_0_UNSIGNED),
@@ -46,9 +46,9 @@ class NativeDigitalCredentialsPlugin : Plugin() {
 
     @PluginMethod fun clear(call: PluginCall) {
         // Invalidate before waiting for the asynchronous platform mutation or any other registration.
-        RegistryState(context).replace(emptySet())
+        RegistryState.access.invalidate { RegistryState(context).replace(emptySet()) }
         scope.launch {
-            RegistryState.mutation.withLock {
+            RegistryState.access.mutate {
                 try {
                     RegistryState(context).replace(emptySet())
                     RegistryManager.create(context).clearCredentialRegistry(ClearCredentialRegistryRequest(true))

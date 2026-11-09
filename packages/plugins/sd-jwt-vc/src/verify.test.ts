@@ -97,6 +97,27 @@ const issueTestCredential = async (
 };
 
 describe('verifySdJwtVc', () => {
+    it.each([[], ['sign']].map(keyOps => ({ keyOps })))(
+        'rejects a valid issuer signature when its DID key excludes verification: $keyOps',
+        async ({ keyOps }) => {
+            const { compact, publicJwk } = await issueTestCredential();
+            const learnCard = buildLearnCardMock({ ...publicJwk, key_ops: keyOps });
+            await expect(verifySdJwtVc(learnCard, compact)).rejects.toMatchObject({
+                code: 'verification_method_not_found',
+            });
+        }
+    );
+
+    it('verifies a DID issuer key that explicitly permits verification', async () => {
+        const { compact, publicJwk } = await issueTestCredential();
+        const result = await verifySdJwtVc(
+            buildLearnCardMock({ ...publicJwk, key_ops: ['verify'] }),
+            compact
+        );
+        expect(result.errors).toEqual([]);
+        expect(result.checks).toContain('issuer_signature');
+    });
+
     it('verifies authorized LearnCard Ed25519 multibase keys and rejects a different codec', async () => {
         const { compact, publicJwk } = await issueTestCredential();
         const learnCard = buildLearnCardMock(publicJwk);

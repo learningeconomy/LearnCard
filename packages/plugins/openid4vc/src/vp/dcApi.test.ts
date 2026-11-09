@@ -92,6 +92,54 @@ const setup = async () => {
 };
 
 describe('unsigned DC API response profile', () => {
+    it.each(['constructor', 'toString', 'hasOwnProperty', '__proto__'])(
+        'matches and verifies a response for the valid query ID %s',
+        async id => {
+            const context = await setup();
+            const input = request({
+                dcql_query: {
+                    credentials: [
+                        {
+                            id,
+                            format: 'dc+sd-jwt',
+                            meta: { vct_values: [fixture.vct] },
+                            claims: [{ path: ['course_name'] }, { path: ['completion_date'] }],
+                        },
+                    ],
+                },
+            });
+            const parsed = parseDcApiRequest(input, ORIGIN);
+            const selection = await selectCredentialsForDcql(
+                [context.chosen[0]!.candidate],
+                parsed.query,
+                { sdJwtParser: parseSdJwtVc }
+            );
+            expect(selection.canSatisfy).toBe(true);
+            expect(Object.hasOwn(selection.matches, id)).toBe(true);
+            const response = await context.plugin.methods.createDcApiResponse(
+                context.learnCard,
+                input,
+                ORIGIN,
+                [
+                    {
+                        ...context.chosen[0]!,
+                        credentialQueryId: id,
+                        candidate: selection.matches[id]!.candidates[0]!,
+                    },
+                ]
+            );
+            expect(Object.keys(response.vp_token)).toEqual([id]);
+            const serialized = JSON.parse(JSON.stringify(response));
+            expect(Object.hasOwn(serialized.vp_token, id)).toBe(true);
+            const compact = serialized.vp_token[id][0];
+            const verified = await context.instance.verify(compact, {
+                keyBindingNonce: parsed.nonce,
+            });
+            expect(verified.payload.course_name).toBe(fixture.claims.course_name);
+            expect(verified.payload.learner_name).toBeUndefined();
+        }
+    );
+
     it('matches and presents every claim in the documented Course Completion DCQL request', async () => {
         const context = await setup();
         // LC-1879 Phase 0's documented query includes the array-valued skills claim.
