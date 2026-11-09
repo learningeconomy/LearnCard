@@ -1,43 +1,17 @@
 import { environment } from '@environment';
 import {
-    ClassLinkTenantsValidator,
     DEFAULT_CLASSLINK_TENANT,
-    TranscriptIssuersValidator,
     type ClassLinkConfig,
     type ClassLinkTenantConfig,
     type ResolvedTranscriptIssuer,
 } from 'types/classlink';
+import { parseClassLinkTenants, parseTranscriptIssuers } from './classlinkConfigValidation';
 
 const splitCommaList = (value: string | undefined): string[] =>
     (value ?? '')
         .split(',')
         .map(entry => entry.trim())
         .filter(Boolean);
-
-const LOCAL_HTTP_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
-const stripBrackets = (hostname: string): string => hostname.replace(/^\[|\]$/g, '');
-
-/**
- * https is always allowed. http is only allowed to localhost/127.0.0.1/::1, and only outside
- * production, so a misconfigured endpoint can never receive a signed assertion (it carries a
- * state student ID) over plaintext in production. Unparseable URLs are rejected.
- */
-const isAllowedTranscriptIssuerEndpoint = (url: string): boolean => {
-    let parsed: URL;
-    try {
-        parsed = new URL(url);
-    } catch {
-        return false;
-    }
-    if (parsed.protocol === 'https:') return true;
-    if (parsed.protocol === 'http:') {
-        return (
-            LOCAL_HTTP_HOSTNAMES.has(stripBrackets(parsed.hostname)) &&
-            environment.NODE_ENV !== 'production'
-        );
-    }
-    return false;
-};
 
 // Once per container, like services/escrow-enclave/index.ts's remoteConfigMissingReported.
 let invalidRegistryWarned = false;
@@ -54,14 +28,10 @@ const getTranscriptIssuerRegistry = (): Record<string, ResolvedTranscriptIssuer>
 
     if (environment.TRANSCRIPT_ISSUERS) {
         try {
-            const parsed = TranscriptIssuersValidator.parse(
-                JSON.parse(environment.TRANSCRIPT_ISSUERS)
+            const parsed = parseTranscriptIssuers(
+                environment.TRANSCRIPT_ISSUERS,
+                environment.NODE_ENV
             );
-            for (const issuer of Object.values(parsed)) {
-                if (!isAllowedTranscriptIssuerEndpoint(issuer.endpoint)) {
-                    throw new Error('Disallowed transcript issuer endpoint');
-                }
-            }
             for (const [key, issuer] of Object.entries(parsed)) registry[key] = { key, ...issuer };
         } catch {
             if (!invalidRegistryWarned) {
@@ -82,9 +52,9 @@ export const getClassLinkConfig = (): ClassLinkConfig | null => {
     if (!clientId || !clientSecret) return null;
 
     // CLASSLINK_TENANTS is optional: it only holds per-district overrides.
-    let tenants: ClassLinkConfig['tenants'] = {};
+    let tenants: ClassLinkConfig['tenants'];
     try {
-        if (tenantsJson) tenants = ClassLinkTenantsValidator.parse(JSON.parse(tenantsJson));
+        tenants = parseClassLinkTenants(tenantsJson);
     } catch {
         if (!invalidTenantsWarned) {
             invalidTenantsWarned = true;

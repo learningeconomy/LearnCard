@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes }
 import { TRPCError } from '@trpc/server';
 
 import { environment } from '@environment';
+import { decodeClassLinkKey as decodeKey } from './classlinkKey';
 import type { MongoClassLinkIdentityType } from '../models/ClassLinkIdentity';
 
 /** Legacy payload: `v1:<base64>`, sealed with CLASSLINK_PII_KEY and no key id. */
@@ -11,22 +12,12 @@ const PAYLOAD_VERSION = 'v2';
 const PURPOSE = 'classlink-state-student-id';
 const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
-const KEY_LENGTH = 32;
 const KEY_ID_LENGTH = 8;
 
 export interface SealedStateStudentId {
     stateStudentIdEnc: string;
     stateStudentIdExpiresAt: Date;
 }
-
-/** A base64 value of exactly 32 bytes. Anything else is treated as missing. */
-const decodeKey = (value: string | undefined): Buffer | null => {
-    const encoded = value?.trim();
-    if (!encoded) return null;
-    const key = Buffer.from(encoded, 'base64');
-    if (key.length !== KEY_LENGTH || key.toString('base64') !== encoded) return null;
-    return key;
-};
 
 /**
  * Short, non-secret identifier for an encryption key, stored in each payload so the

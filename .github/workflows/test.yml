@@ -236,6 +236,20 @@ jobs:
             # trusted-email gate, transcript lock/ownership, deletion cascade, ClassLink
             # pinning before a recovery rebind removes a login). Same
             # gap as above: only vitest.integration.config.ts picks these up.
+            - name: Check ClassLink configuration with a public fixture
+              working-directory: services/learn-card-network/lca-api
+              run: bun run config:check
+              env:
+                  NODE_ENV: production
+                  CLASSLINK_CLIENT_ID: test-client
+                  CLASSLINK_CLIENT_SECRET: test-secret
+                  CLASSLINK_REDIRECT_URIS: https://app.example.org/callback
+                  # Public test keys only; never use these in a deployment.
+                  CLASSLINK_PII_KEY: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=
+                  CLASSLINK_IDENTITY_KEY: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=
+                  CLASSLINK_TENANTS: '{"example":{"displayName":"Example School","state":"XX","allowedEmailDomains":[],"transcriptEnabled":true}}'
+                  TRANSCRIPT_ISSUERS: '{"default":{"endpoint":"https://records.example.org/requests","audience":"records","did":"did:web:records.example.org","profileId":"records"}}'
+
             - name: Run ClassLink and transcript integration specs
               working-directory: services/learn-card-network/lca-api
               run: >-
