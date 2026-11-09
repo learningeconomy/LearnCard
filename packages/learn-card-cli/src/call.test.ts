@@ -247,12 +247,15 @@ describe('args parsing', () => {
 });
 
 describe('write gating', () => {
-    it('refuses write methods without --write, before any I/O', async () => {
-        await writeEnv(`SECURE_SEED=${SEED}\n`);
-        const code = await failCode(runCall('sendBoost', { yes: true }, noIo));
-        expect(code).toBe('WRITE_REQUIRES_FLAG');
-        expect(mocks.initLearnCard).not.toHaveBeenCalled();
-    });
+    it.each(['sendBoost', 'getClaimBoostWithLinkStatus'])(
+        'refuses %s without --write, before any wallet I/O',
+        async method => {
+            await writeEnv(`SECURE_SEED=${SEED}\n`);
+            const code = await failCode(runCall(method, { yes: true }, noIo));
+            expect(code).toBe('WRITE_REQUIRES_FLAG');
+            expect(mocks.initLearnCard).not.toHaveBeenCalled();
+        }
+    );
 
     it('-y does not imply --write', () => {
         expect(() => assertCallAllowed('deleteBoost', { write: false })).toThrow(/needs --write/);

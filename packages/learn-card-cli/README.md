@@ -324,6 +324,8 @@ npx @learncard/cli api GET /profile --network staging --json         # any Netwo
 
 `call` and `api` run reads as-is and refuse anything that can change data unless you pass `--write` (`--dry-run` shows what would run). Neither creates an identity, and without `--show-secret` neither prints the seed or an API token (`call --show-secret` can print private keys equivalent to the seed, and API tokens). Guide: https://docs.learncard.com/start-here/for-ai-agents/use-learncard-with-coding-agents
 
+`call getClaimBoostWithLinkStatus` requires `--write`, despite its `get` prefix: reconciling a stored claim can finish acceptance and usage accounting. It never issues another credential. Use `--describe` to inspect its parameters or `--dry-run` to preview the call without connecting.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
