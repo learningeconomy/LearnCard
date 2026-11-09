@@ -8,7 +8,10 @@ import cache from '@cache';
 import {
     getGuardianApprovalRequest,
     setGuardianApprovalRequest,
+    getGuardianRequestRetentionSeconds,
     GUARDIAN_MAX_SENDS_PER_WINDOW,
+    GUARDIAN_REQUEST_RETENTION_BUFFER_SECONDS,
+    DEFAULT_GUARDIAN_APPROVAL_TTL_HOURS,
 } from '@helpers/guardian-approval.helpers';
 
 vi.mock('@services/delivery/delivery.factory', () => ({
@@ -34,6 +37,7 @@ describe('Guardian Approval', () => {
         await userA.clients.fullAuth.profile.createProfile({
             profileId: 'guardian-user',
             displayName: 'Guardian User',
+            approved: false,
         });
     });
 
@@ -199,6 +203,7 @@ describe('Guardian Approval', () => {
 
         // Test 3: Expired token
         sendSpy.mockClear();
+        await userA.clients.fullAuth.profile.updateProfile({ approved: false });
         await userA.clients.fullAuth.inbox.sendGuardianApprovalEmail({
             guardianEmail: 'expired@test.com',
             ttlHours: 0, // Immediately expired
@@ -262,12 +267,12 @@ describe('Guardian Approval', () => {
     });
 
     it('should return "Profile already approved." when approving an already approved profile (POST)', async () => {
-        // Mark already approved
-        await userA.clients.fullAuth.profile.updateProfile({ approved: true });
-
         await userA.clients.fullAuth.inbox.sendGuardianApprovalEmail({
             guardianEmail: 'guardian@test.com',
         });
+
+        // Mark already approved
+        await userA.clients.fullAuth.profile.updateProfile({ approved: true });
 
         const sendArgs = sendSpy.mock.calls[0][0];
         const token = sendArgs.templateModel.approvalToken as string | undefined;
@@ -505,6 +510,145 @@ describe('Guardian Approval', () => {
 
             await noAuthClient.inbox.approveGuardianRequest({ token: firstToken });
             expect(await isApproved()).toBe(true);
+        });
+
+        it('rejects sends from an approved account without sending or using an attempt', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ approved: true });
+
+            await expect(send('guardian@test.com')).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+
+            expect(sendSpy).not.toHaveBeenCalled();
+            expect(await getGuardianApprovalRequest('guardian-user')).toBeNull();
+            expect(await status()).toMatchObject({
+                status: 'not_requested',
+                attemptsRemaining: GUARDIAN_MAX_SENDS_PER_WINDOW,
+            });
+        });
+
+        it('reports a cache failure while locking as a failed send, not a concurrent one', async () => {
+            const redis = cache.redis ?? cache.node;
+            const originalSet = redis.set.bind(redis);
+            const setSpy = vi
+                .spyOn(redis, 'set')
+                .mockImplementation(((key: string, ...args: unknown[]) =>
+                    key.startsWith('guardian_approval_send_lock:')
+                        ? Promise.reject(new Error('redis down'))
+                        : (originalSet as (...a: unknown[]) => unknown)(key, ...args)) as never);
+
+            try {
+                await expect(send('guardian@test.com')).rejects.toMatchObject({
+                    code: 'INTERNAL_SERVER_ERROR',
+                });
+            } finally {
+                setSpy.mockRestore();
+            }
+            expect(sendSpy).not.toHaveBeenCalled();
+        });
+
+        it('never says "Try again after undefined" when the attempt window has no expiry', async () => {
+            await cache.set(
+                'guardian_approval_send_count:guardian-user',
+                String(GUARDIAN_MAX_SENDS_PER_WINDOW),
+                false
+            );
+
+            const error = await send('guardian@test.com').catch((e: unknown) => e);
+
+            expect(error).toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+            expect((error as Error).message).not.toContain('undefined');
+            expect((error as Error).message).toContain('Try again later');
+        });
+
+        it('stays accepted when post-send bookkeeping fails, and binds approval to the newest link', async () => {
+            await send('guardian@test.com');
+            const firstToken = lastToken();
+            const record = await getGuardianApprovalRequest('guardian-user');
+            await setGuardianApprovalRequest('guardian-user', {
+                ...record!,
+                acceptedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+            });
+
+            const originalDelete = cache.delete;
+            const deleteSpy = vi
+                .spyOn(cache, 'delete')
+                .mockImplementation(keys =>
+                    keys.includes(`guardian_approval:${firstToken}`)
+                        ? Promise.reject(new Error('redis hiccup'))
+                        : originalDelete(keys)
+                );
+
+            try {
+                await expect(send('guardian@test.com')).resolves.toMatchObject({
+                    status: 'accepted',
+                });
+            } finally {
+                deleteSpy.mockRestore();
+            }
+
+            expect((await status()).status).toBe('accepted');
+            await expect(
+                noAuthClient.inbox.approveGuardianRequest({ token: firstToken })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            expect(await isApproved()).toBe(false);
+
+            await noAuthClient.inbox.approveGuardianRequest({ token: lastToken() });
+            expect(await isApproved()).toBe(true);
+        });
+
+        it('still returns accepted when recording the accepted status fails', async () => {
+            const originalSet = cache.set;
+            const setSpy = vi
+                .spyOn(cache, 'set')
+                .mockImplementation((key, value, ...rest) =>
+                    String(key).startsWith('guardian_approval_request:') &&
+                    String(value).includes('"status":"accepted"')
+                        ? Promise.reject(new Error('redis hiccup'))
+                        : originalSet(key, value, ...rest)
+                );
+
+            try {
+                await expect(send('guardian@test.com')).resolves.toMatchObject({
+                    status: 'accepted',
+                });
+            } finally {
+                setSpy.mockRestore();
+            }
+
+            expect(sendSpy).toHaveBeenCalledOnce();
+            await noAuthClient.inbox.approveGuardianRequest({ token: lastToken() });
+            expect(await isApproved()).toBe(true);
+        });
+
+        it('expires the request record (and the guardian email in it) after its retention period', async () => {
+            await send('guardian@test.com');
+
+            const ttl = await cache.ttl('guardian_approval_request:guardian-user');
+            const maxTtl =
+                DEFAULT_GUARDIAN_APPROVAL_TTL_HOURS * 60 * 60 +
+                GUARDIAN_REQUEST_RETENTION_BUFFER_SECONDS;
+
+            expect(ttl).toBeGreaterThan(GUARDIAN_REQUEST_RETENTION_BUFFER_SECONDS);
+            expect(ttl).toBeLessThanOrEqual(maxTtl + 1);
+        });
+    });
+
+    describe('guardian approval request retention', () => {
+        it('keeps a long-lived link plus the buffer as the retention period', () => {
+            const now = Date.now();
+            const linkSeconds = 30 * 24 * 60 * 60;
+
+            expect(
+                getGuardianRequestRetentionSeconds(
+                    { expiresAt: new Date(now + linkSeconds * 1000).toISOString() },
+                    now
+                )
+            ).toBe(linkSeconds + GUARDIAN_REQUEST_RETENTION_BUFFER_SECONDS);
+            expect(getGuardianRequestRetentionSeconds({}, now)).toBe(
+                DEFAULT_GUARDIAN_APPROVAL_TTL_HOURS * 60 * 60 +
+                    GUARDIAN_REQUEST_RETENTION_BUFFER_SECONDS
+            );
         });
     });
 });
