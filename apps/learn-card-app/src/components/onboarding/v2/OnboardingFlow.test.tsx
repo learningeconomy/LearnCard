@@ -323,14 +323,18 @@ describe('Apple profile onboarding', () => {
             expect(screen.getByText(m['onboarding.v2.guardianEmailed']())).toBeInTheDocument();
         });
 
-        it('still finishes onboarding with the guardian emailed message when the send fails, leaving status to the dashboard banner', async () => {
+        it('still finishes onboarding when the send fails, says the email was not sent, and leaves resending to the dashboard', async () => {
             mocks.sendGuardianApprovalEmail.mockRejectedValue(new Error('provider down'));
 
             await completeAsEUTeen();
 
+            const status = await screen.findByRole('status');
+            expect(status).toHaveTextContent(
+                m['onboarding.v2.guardianEmailFailed']({ email: 'guardian@example.com' })
+            );
             expect(
-                await screen.findByText(m['onboarding.v2.guardianEmailed']())
-            ).toBeInTheDocument();
+                screen.queryByText(m['onboarding.v2.guardianEmailed']())
+            ).not.toBeInTheDocument();
             expect(
                 screen.queryByRole('button', { name: m['common.tryAgain']() })
             ).not.toBeInTheDocument();
