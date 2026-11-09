@@ -51,12 +51,12 @@ const Harness: React.FC = () => {
                     new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(new Date(iso))
                 }
                 transcriptSlot={
-                    <div
+                    <section
                         data-testid="transcript-slot"
-                        className="rounded-[20px] bg-white p-6 text-sm text-grayscale-600 shadow-sm"
+                        className="rounded-[20px] bg-white p-6 text-sm text-grayscale-600 shadow-sm border border-grayscale-200"
                     >
                         Transcript request
-                    </div>
+                    </section>
                 }
             />
         </div>

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { IonIcon, IonSpinner } from '@ionic/react';
 import {
+    addOutline,
     alertCircleOutline,
     documentTextOutline,
+    lockClosedOutline,
     shareSocialOutline,
     shieldCheckmarkOutline,
     schoolOutline,
@@ -20,6 +22,44 @@ const ErrorBanner: React.FC<{ message: string }> = ({ message }) => (
     >
         <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
         <span className="text-sm text-red-700 leading-relaxed">{message}</span>
+    </div>
+);
+
+const PageHeader: React.FC = () => (
+    <header className="mb-6">
+        <h1 className="text-[28px] font-semibold leading-tight text-grayscale-900">
+            {m['schoolConnect.pageTitle']()}
+        </h1>
+        <p className="mt-1 text-sm text-grayscale-600">{m['schoolConnect.pageSubtitle']()}</p>
+    </header>
+);
+
+const Section: React.FC<{ title: string; className?: string; children: React.ReactNode }> = ({
+    title,
+    className = '',
+    children,
+}) => (
+    <section className={`mb-6 ${className}`}>
+        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-grayscale-500">
+            {title}
+        </h2>
+        {children}
+    </section>
+);
+
+const PrivacyRow: React.FC<{ icon: string; title: string; body: string }> = ({
+    icon,
+    title,
+    body,
+}) => (
+    <div className="flex items-start gap-3 p-4">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-grayscale-100 text-grayscale-600">
+            <IonIcon icon={icon} className="text-lg" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+            <p className="text-sm font-medium text-grayscale-900">{title}</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-grayscale-500">{body}</p>
+        </div>
     </div>
 );
 
@@ -84,78 +124,115 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
 
     if (!connection?.available || !connection?.canConnect) {
         return (
-            <div className="mx-auto w-full max-w-[480px] p-6 text-center">
-                <p className="text-sm text-grayscale-600">{m['schoolConnect.notAvailable']()}</p>
+            <div className="mx-auto w-full max-w-[480px] px-5 py-6">
+                <PageHeader />
+                <div className="rounded-[20px] bg-white border border-grayscale-200 shadow-sm p-8 text-center">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-grayscale-100 text-grayscale-500">
+                        <IonIcon icon={schoolOutline} className="text-2xl" aria-hidden="true" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-grayscale-900 mb-1">
+                        {m['schoolConnect.notAvailableTitle']()}
+                    </h2>
+                    <p className="text-sm text-grayscale-600 leading-relaxed">
+                        {m['schoolConnect.notAvailable']()}
+                    </p>
+                </div>
             </div>
         );
     }
 
     if (connection.connected) {
+        const schoolName = connection.schoolName || m['schoolConnect.yourSchool']();
         return (
-            <div className="mx-auto w-full max-w-[480px] p-6 space-y-5">
-                <div className="text-center mb-6">
-                    <h1 className="text-2xl font-semibold text-grayscale-900 mb-1">
-                        {m['schoolConnect.heroTitle']()}
-                    </h1>
-                    <p className="text-sm text-grayscale-600">{m['schoolConnect.heroSubhead']()}</p>
-                </div>
+            <div className="mx-auto w-full max-w-[480px] px-5 py-6">
+                <PageHeader />
 
-                <div className="rounded-[20px] bg-white p-6 shadow-sm border border-grayscale-200">
-                    <div className="flex items-start gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                            <IonIcon icon={schoolOutline} className="text-2xl" />
-                        </div>
-                        <div className="flex-1">
-                            <h2 className="text-lg font-semibold text-grayscale-900">
-                                {connection.schoolName || m['schoolConnect.yourSchool']()}
-                            </h2>
-                            <div className="flex items-center gap-1.5 mt-1">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                <span className="text-sm font-medium text-grayscale-900">
+                <Section title={m['schoolConnect.sectionSchools']()}>
+                    <div className="rounded-[20px] bg-white border border-grayscale-200 shadow-sm overflow-hidden">
+                        <div className="flex items-center gap-4 p-4">
+                            <div
+                                aria-hidden="true"
+                                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-lg font-semibold text-white shadow-sm"
+                            >
+                                {schoolName.trim().charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <h2 className="line-clamp-2 text-base font-semibold leading-snug text-grayscale-900">
+                                    {schoolName}
+                                </h2>
+                                <p className="mt-1 flex items-center gap-1 text-xs font-medium text-emerald-700">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                                     {m['schoolConnect.connected']()}
-                                </span>
-                            </div>
-                            {connection.lastConnectedAt && (
-                                <p className="mt-1 text-xs text-grayscale-500">
-                                    {m['schoolConnect.lastConnected']({
-                                        date: formatDate(connection.lastConnectedAt),
-                                    })}
                                 </p>
-                            )}
-                            <div className="mt-3">
-                                <button
-                                    type="button"
-                                    onClick={onConnect}
-                                    disabled={connecting}
-                                    className="text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-40"
-                                >
-                                    {connecting ? (
-                                        <span className="flex items-center gap-2">
-                                            <IonSpinner name="crescent" className="h-3 w-3" />
-                                            {m['schoolConnect.connecting']()}
-                                        </span>
-                                    ) : (
-                                        m['schoolConnect.refreshConnection']()
-                                    )}
-                                </button>
+                                {connection.lastConnectedAt && (
+                                    <p className="mt-0.5 text-xs text-grayscale-500">
+                                        {m['schoolConnect.lastConnected']({
+                                            date: formatDate(connection.lastConnectedAt),
+                                        })}
+                                    </p>
+                                )}
                             </div>
+                            <button
+                                type="button"
+                                onClick={onConnect}
+                                disabled={connecting}
+                                aria-label={m['schoolConnect.refreshConnection']()}
+                                className="shrink-0 min-h-[36px] rounded-full bg-grayscale-100 px-3.5 text-xs font-medium text-grayscale-700 transition-colors hover:bg-grayscale-200 disabled:opacity-40"
+                            >
+                                {connecting ? (
+                                    <span className="flex items-center gap-1.5">
+                                        <IonSpinner name="crescent" className="h-3 w-3" />
+                                        {m['schoolConnect.connecting']()}
+                                    </span>
+                                ) : (
+                                    m['schoolConnect.refresh']()
+                                )}
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-4 border-t border-grayscale-100 px-4 py-3">
+                            <div
+                                aria-hidden="true"
+                                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-dashed border-grayscale-300 text-grayscale-400"
+                            >
+                                <IonIcon icon={addOutline} className="text-xl" />
+                            </div>
+                            <p className="text-sm text-grayscale-500">
+                                {m['schoolConnect.moreSchools']()}
+                            </p>
                         </div>
                     </div>
                     {connectError && (
-                        <div className="mt-4">
+                        <div className="mt-3">
                             <ErrorBanner message={connectError} />
                         </div>
                     )}
-                </div>
+                </Section>
 
-                {transcriptSlot}
-
-                {connection.isStudent && (
-                    <div className="flex items-center justify-center gap-2 mt-6 text-grayscale-500">
-                        <IonIcon icon={shieldCheckmarkOutline} className="text-base" />
-                        <p className="text-xs text-center">{m['schoolConnect.studentNote']()}</p>
-                    </div>
+                {transcriptSlot && (
+                    <Section
+                        title={m['schoolConnect.sectionRecords']()}
+                        className="hidden has-[section]:block"
+                    >
+                        {transcriptSlot}
+                    </Section>
                 )}
+
+                <Section title={m['schoolConnect.sectionPrivacy']()}>
+                    <div className="rounded-[20px] bg-white border border-grayscale-200 shadow-sm divide-y divide-grayscale-100">
+                        {connection.isStudent && (
+                            <PrivacyRow
+                                icon={shieldCheckmarkOutline}
+                                title={m['schoolConnect.privacyStudentTitle']()}
+                                body={m['schoolConnect.studentNote']()}
+                            />
+                        )}
+                        <PrivacyRow
+                            icon={lockClosedOutline}
+                            title={m['schoolConnect.privacySharedTitle']()}
+                            body={m['schoolConnect.privacySharedBody']()}
+                        />
+                    </div>
+                </Section>
             </div>
         );
     }

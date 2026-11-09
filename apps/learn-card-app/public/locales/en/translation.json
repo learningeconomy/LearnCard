@@ -10485,7 +10485,18 @@
         "moreComingSoon": "More schools are coming soon.",
         "askToAdd": "Ask us to add your school",
         "mailtoSubject": "Add my school to School Connect",
-        "mailtoBody": "School name:\nDistrict:\nState:\n"
+        "mailtoBody": "School name:\nDistrict:\nState:\n",
+        "pageTitle": "School Connect",
+        "pageSubtitle": "Your school accounts and official records.",
+        "sectionSchools": "Your schools",
+        "sectionRecords": "Records",
+        "sectionPrivacy": "Privacy",
+        "refresh": "Refresh",
+        "moreSchools": "More schools are coming soon",
+        "privacyStudentTitle": "Set by your school",
+        "privacySharedTitle": "What your school sees",
+        "privacySharedBody": "Only your student ID, and only when you ask for your transcript.",
+        "notAvailableTitle": "Not available yet"
     },
     "announcements": {
         "title": "Product announcements",
