@@ -209,7 +209,22 @@ export const inboxRouter = t.router({
             const { profile } = ctx.user;
             const { guardianEmail, ttlHours, template } = input;
 
-            const lockId = await acquireGuardianSendLock(profile.profileId);
+            if (profile.approved !== false) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Profile is not awaiting guardian approval.',
+                });
+            }
+
+            let lockId: string | null;
+            try {
+                lockId = await acquireGuardianSendLock(profile.profileId);
+            } catch {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to send guardian approval email',
+                });
+            }
             if (!lockId) {
                 throw new TRPCError({
                     code: 'CONFLICT',
@@ -230,7 +245,9 @@ export const inboxRouter = t.router({
                 if (current.attemptsRemaining === 0 || (sameAddress && current.resendAvailableAt)) {
                     throw new TRPCError({
                         code: 'TOO_MANY_REQUESTS',
-                        message: `Guardian approval email recently requested. Try again after ${current.resendAvailableAt}.`,
+                        message: current.resendAvailableAt
+                            ? `Guardian approval email recently requested. Try again after ${current.resendAvailableAt}.`
+                            : 'Guardian approval email recently requested. Try again later.',
                     });
                 }
 
@@ -306,19 +323,32 @@ export const inboxRouter = t.router({
                     });
                 }
 
-                if (retainedToken) await invalidateGuardianApprovalToken(retainedToken);
-
                 const acceptedAt = new Date();
-                await setGuardianApprovalRequest(profile.profileId, {
-                    status: 'accepted',
-                    guardianEmail,
-                    token,
-                    updatedAt: acceptedAt.toISOString(),
-                    acceptedAt: acceptedAt.toISOString(),
-                    expiresAt: new Date(
-                        acceptedAt.getTime() + effectiveTtlHours * 60 * 60 * 1000
-                    ).toISOString(),
-                });
+                try {
+                    await setGuardianApprovalRequest(profile.profileId, {
+                        status: 'accepted',
+                        guardianEmail,
+                        token,
+                        updatedAt: acceptedAt.toISOString(),
+                        acceptedAt: acceptedAt.toISOString(),
+                        expiresAt: new Date(
+                            acceptedAt.getTime() + effectiveTtlHours * 60 * 60 * 1000
+                        ).toISOString(),
+                    });
+                } catch (error) {
+                    console.error('Failed to record accepted guardian approval email:', error);
+                }
+
+                if (retainedToken) {
+                    try {
+                        await invalidateGuardianApprovalToken(retainedToken);
+                    } catch (error) {
+                        console.error(
+                            'Failed to invalidate superseded guardian approval link:',
+                            error
+                        );
+                    }
+                }
 
                 return {
                     message: 'Guardian approval email accepted for delivery.',
