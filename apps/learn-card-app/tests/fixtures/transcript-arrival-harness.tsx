@@ -92,17 +92,25 @@ if (scenario === 'arrived-sheet') {
     credentialsByUri.set('lc:credential:transcript', CLR_VC);
 }
 
+/** Visual-only scenarios: the latest request status, or none (not requested yet). */
+const visualLatest = params.get('latest');
+const untrackable = scenario === 'untrackable';
 const transcriptsGetStatus = async () => ({
     eligible: true,
     stateDisplayName: STATE_DISPLAY_NAME,
-    issuerDid: ISSUER_DID,
-    issuerProfileId: ISSUER_PROFILE_ID,
-    latest: {
-        status: 'requested' as const,
-        requestedAt: REQUESTED_AT,
-        requestId: REQUEST_ID,
-        receivedAt,
-    },
+    ...(untrackable ? {} : { issuerDid: ISSUER_DID, issuerProfileId: ISSUER_PROFILE_ID }),
+    latest:
+        visualLatest === 'none'
+            ? undefined
+            : {
+                  status: (visualLatest === 'failed' || visualLatest === 'none_yet'
+                      ? visualLatest
+                      : 'requested') as 'requested' | 'failed' | 'none_yet',
+                  // Recent, so the waiting state is not treated as stale.
+                  requestedAt: visualLatest ? new Date().toISOString() : REQUESTED_AT,
+                  requestId: REQUEST_ID,
+                  receivedAt,
+              },
 });
 
 const getIncomingCredentials = async () => {

@@ -1,7 +1,6 @@
 import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline } from 'ionicons/icons';
-import { Checkbox } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
 
@@ -24,14 +23,25 @@ export const TranscriptConsentCheckbox: React.FC<TranscriptConsentCheckboxProps>
     stateDisplayName,
     disabled,
 }) => (
-    <div data-testid="transcript-optin-consent" className="inline-block text-left">
-        <Checkbox
-            checked={checked}
-            onChange={onChange}
-            disabled={disabled}
-            label={m['transcriptOptIn.consent']({ state: stateDisplayName })}
-        />
-    </div>
+    <label
+        data-testid="transcript-optin-consent"
+        className={`flex items-start gap-3 p-4 rounded-xl border border-solid transition-colors cursor-pointer ${
+            checked ? 'bg-emerald-50 border-emerald-200' : 'bg-grayscale-50 border-grayscale-200'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    >
+        <div className="flex items-center h-5 mt-0.5">
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={e => onChange(e.target.checked)}
+                disabled={disabled}
+                className="w-5 h-5 rounded border-grayscale-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer disabled:cursor-not-allowed"
+            />
+        </div>
+        <span className="text-sm text-grayscale-700 leading-relaxed text-left">
+            {m['transcriptOptIn.consent']({ state: stateDisplayName })}
+        </span>
+    </label>
 );
 
 /** Inline error used by transcript request surfaces. */

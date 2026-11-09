@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline, timeOutline, documentTextOutline } from 'ionicons/icons';
 import type { VC } from '@learncard/types';
 import {
     useTranscriptStatus,
@@ -32,8 +32,6 @@ import {
 
 /** After this long without arrival, the card offers manual recovery instead of waiting. */
 export const TRANSCRIPT_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
-/** After this long, the waiting copy changes to "this can take a while". */
-const TRANSCRIPT_SLOW_AFTER_MS = 15 * 60 * 1000;
 
 type RequestResult = {
     status: 'requested' | 'none_yet' | 'failed';
@@ -56,7 +54,7 @@ const PrimaryButton: React.FC<
 > = ({ busy, busyText, children, ...rest }) => (
     <button
         type="button"
-        className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         {...rest}
     >
         {busy ? (
@@ -279,6 +277,22 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
         void status.refetch();
     };
 
+    const requestHeader = data ? (
+        <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                <IonIcon icon={documentTextOutline} className="text-2xl" />
+            </div>
+            <div className="flex-1">
+                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                    {m['transcriptOptIn.title']({ state: data.stateDisplayName })}
+                </h2>
+                <p className="text-sm text-grayscale-600 leading-relaxed">
+                    {m['transcriptOptIn.body']()}
+                </p>
+            </div>
+        </div>
+    ) : null;
+
     let content: React.ReactNode;
 
     /**
@@ -364,56 +378,95 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
         } else if (latest?.status === 'requested') {
             const elapsed = Date.now() - new Date(latest.requestedAt).getTime();
             const isStale = isPollingExhausted || elapsed > TRANSCRIPT_STALE_AFTER_MS;
-            const isSlow = elapsed > TRANSCRIPT_SLOW_AFTER_MS;
-            content = (
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                        {!isSlow && !isStale && (
-                            <span className="w-5 h-5 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin shrink-0" />
-                        )}
-                        <p className="text-sm text-grayscale-900 font-medium">
-                            {m['transcriptOptIn.requestingFrom']({ state: data.stateDisplayName })}
-                        </p>
-                    </div>
-                    {isStale ? (
-                        <div data-testid="transcript-optin-stale" className="space-y-4">
-                            <p className="text-sm text-grayscale-600 leading-relaxed">
-                                {m['transcriptOptIn.checkManually']()}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <PrimaryButton
-                                    data-testid="transcript-optin-check-again"
-                                    onClick={recheck}
-                                >
-                                    {m['transcriptOptIn.checkAgain']()}
-                                </PrimaryButton>
-                                <button
-                                    type="button"
-                                    data-testid="transcript-optin-open-notifications"
-                                    className="py-3 px-4 rounded-[20px] border border-grayscale-200 text-grayscale-900 font-medium text-sm hover:bg-grayscale-50 transition-colors"
-                                    onClick={() => history.push('/notifications')}
-                                >
-                                    {m['transcriptOptIn.openNotifications']()}
-                                </button>
+            const isUntrackable = !data.issuerDid || !data.issuerProfileId;
+
+            if (isUntrackable) {
+                content = (
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-4">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                                <IonIcon icon={checkmarkCircleOutline} className="text-2xl" />
+                            </div>
+                            <div className="flex-1">
+                                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                                    {m['transcriptOptIn.requestSent']()}
+                                </h2>
+                                <p className="text-sm text-grayscale-600 leading-relaxed">
+                                    {m['transcriptOptIn.untrackableBody']()}
+                                </p>
                             </div>
                         </div>
-                    ) : (
-                        isSlow && (
-                            <p className="text-sm text-grayscale-600">
-                                {m['transcriptOptIn.takingAWhile']()}
-                            </p>
-                        )
-                    )}
-                </div>
-            );
+                        <PrimaryButton onClick={() => history.push('/notifications')}>
+                            {m['transcriptOptIn.openNotifications']()}
+                        </PrimaryButton>
+                    </div>
+                );
+            } else {
+                content = (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full flex items-center gap-1">
+                                <IonIcon icon={timeOutline} className="text-amber-500" />
+                                {m['transcriptOptIn.waiting']()}
+                            </span>
+                        </div>
+                        <h2 className="text-xl font-semibold text-grayscale-900">
+                            {m['transcriptOptIn.preparingTranscript']()}
+                        </h2>
+                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                            {m['transcriptOptIn.willAddWhenArrives']()}
+                        </p>
+
+                        {isStale ? (
+                            <div data-testid="transcript-optin-stale" className="space-y-4 mt-4">
+                                <p className="text-sm text-grayscale-600 leading-relaxed">
+                                    {m['transcriptOptIn.checkManually']()}
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    <PrimaryButton
+                                        data-testid="transcript-optin-check-again"
+                                        onClick={recheck}
+                                    >
+                                        {m['transcriptOptIn.checkAgain']()}
+                                    </PrimaryButton>
+                                    <button
+                                        type="button"
+                                        data-testid="transcript-optin-open-notifications"
+                                        className="w-full py-3 px-4 rounded-[20px] border border-grayscale-200 text-grayscale-900 font-medium text-sm hover:bg-grayscale-50 transition-colors"
+                                        onClick={() => history.push('/notifications')}
+                                    >
+                                        {m['transcriptOptIn.openNotifications']()}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="mt-4">
+                                <div className="w-full h-1 bg-grayscale-200 rounded-full overflow-hidden mb-4">
+                                    <div className="h-full bg-amber-400 w-full animate-pulse" />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={recheck}
+                                    className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                                >
+                                    {m['transcriptOptIn.checkNow']()}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
         } else if (latest?.status === 'none_yet') {
             // `none_yet` never expires server-side, so the student needs an explicit retry
             // (with the same consent as a first request). The server budget throttles it.
             content = (
                 <div data-testid="transcript-optin-none-yet" className="space-y-4">
-                    <p className="text-sm text-grayscale-600 leading-relaxed">
-                        {m['transcriptOptIn.noneYet']()}
-                    </p>
+                    {requestHeader}
+                    <div className="p-3 bg-grayscale-10 border border-grayscale-200 rounded-2xl">
+                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                            {m['transcriptOptIn.noneYet']()}
+                        </p>
+                    </div>
                     {renderNewRequestGate() ?? renderRequestControls(true)}
                 </div>
             );
@@ -422,13 +475,11 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
             // the opt-in so the user can retry), once eligible to request.
             content = renderNewRequestGate() ?? (
                 <div className="space-y-4">
-                    <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
-                        {m['transcriptOptIn.title']({ state: data.stateDisplayName })}
-                    </h2>
-                    <p className="text-sm text-grayscale-600 leading-relaxed">
-                        {m['transcriptOptIn.body']()}
-                    </p>
-                    {renderRequestControls(false)}
+                    {requestHeader}
+                    {latest?.status === 'failed' && (
+                        <ErrorBanner message={m['transcriptOptIn.error']()} />
+                    )}
+                    {renderRequestControls(latest?.status === 'failed')}
                 </div>
             );
         }
@@ -437,7 +488,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
     return (
         <section
             data-testid="transcript-optin-card"
-            className="w-full max-w-md mx-auto mb-5 p-6 bg-white rounded-[20px] font-poppins space-y-5"
+            className="w-full rounded-[20px] bg-white p-6 shadow-sm border border-grayscale-200 font-poppins"
         >
             {content}
         </section>

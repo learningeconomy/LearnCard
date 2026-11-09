@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,6 +24,8 @@ const mocks = vi.hoisted(() => ({
     useGetCredentials: vi.fn(),
     refetchStatus: vi.fn(),
     push: vi.fn(),
+    issuerDid: 'did:issuer' as string | undefined,
+    issuerProfileId: 'issuer-profile' as string | undefined,
 }));
 
 /**
@@ -54,8 +57,8 @@ vi.mock('learn-card-base', () => ({
             data: {
                 eligible: !mocks.reason,
                 reason: mocks.reason,
-                issuerDid: 'did:issuer',
-                issuerProfileId: 'issuer-profile',
+                issuerDid: mocks.issuerDid,
+                issuerProfileId: mocks.issuerProfileId,
                 stateDisplayName: 'Example',
                 latest: mocks.latest,
             },
@@ -114,6 +117,8 @@ beforeEach(() => {
     mocks.arrived = false;
     mocks.flagOn = true;
     mocks.isPollingExhausted = false;
+    mocks.issuerDid = 'did:issuer';
+    mocks.issuerProfileId = 'issuer-profile';
 });
 
 describe('TranscriptOptInCard', () => {
@@ -174,14 +179,27 @@ describe('TranscriptOptInCard', () => {
         expect(screen.queryByTestId('transcript-optin-submit')).toBeNull();
     });
 
-    it('shows a spinner-only waiting state for a fresh request', () => {
+    it('shows a waiting state for a fresh request', () => {
         mocks.latest = {
             status: 'requested',
             requestId: 'r1',
             requestedAt: new Date().toISOString(),
         };
         render(<TranscriptOptInCard source="wallet" />);
-        expect(screen.getByText(/Requesting from Example/)).toBeTruthy();
+        expect(screen.getByText(/Your school is preparing your transcript/)).toBeTruthy();
+        expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
+    });
+
+    it('shows untrackable state when issuerDid or issuerProfileId is missing', () => {
+        mocks.issuerDid = undefined;
+        mocks.latest = {
+            status: 'requested',
+            requestId: 'r1',
+            requestedAt: new Date().toISOString(),
+        };
+        render(<TranscriptOptInCard source="wallet" />);
+        expect(screen.getByText(/Request Sent/)).toBeTruthy();
+        expect(screen.getByText(/We'll notify you when it arrives/)).toBeTruthy();
         expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
     });
 

@@ -43,7 +43,15 @@
         "checkManually": "It may already be waiting in your notifications. Open it there to add it to your account, or check again.",
         "checkAgain": "Check Again",
         "openNotifications": "Open Notifications",
-        "autoAcceptFailed": "We couldn't add your transcript automatically. You can accept it here instead."
+        "autoAcceptFailed": "We couldn't add your transcript automatically. You can accept it here instead.",
+        "preparingTranscript": "Your school is preparing your transcript.",
+        "willAddWhenArrives": "We'll add it here as soon as it arrives.",
+        "waiting": "Waiting",
+        "checkNow": "Check now",
+        "requestSent": "Request Sent",
+        "untrackableBody": "We'll notify you when it arrives.",
+        "promptTitle": "Get Your Transcript",
+        "notNow": "Not now"
     },
     "consentUpdate": {
         "summary": {

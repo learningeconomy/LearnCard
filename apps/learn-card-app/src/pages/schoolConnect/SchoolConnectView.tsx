@@ -5,6 +5,7 @@ import {
     documentTextOutline,
     shareSocialOutline,
     shieldCheckmarkOutline,
+    schoolOutline,
 } from 'ionicons/icons';
 import type { SchoolConnection } from '@learncard/lca-api-plugin';
 
@@ -68,7 +69,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
 
     if (isError) {
         return (
-            <div className="mx-auto w-full max-w-[560px] p-6">
+            <div className="mx-auto w-full max-w-[480px] p-6">
                 <ErrorBanner message={m['schoolConnect.connectFailed']()} />
                 <button
                     type="button"
@@ -83,7 +84,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
 
     if (!connection?.available || !connection?.canConnect) {
         return (
-            <div className="mx-auto w-full max-w-[560px] p-6 text-center">
+            <div className="mx-auto w-full max-w-[480px] p-6 text-center">
                 <p className="text-sm text-grayscale-600">{m['schoolConnect.notAvailable']()}</p>
             </div>
         );
@@ -91,13 +92,29 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
 
     if (connection.connected) {
         return (
-            <div className="mx-auto w-full max-w-[560px] space-y-6 p-6">
-                <div className="rounded-[20px] bg-white p-6 shadow-sm">
-                    <div className="mb-4 flex items-start justify-between gap-4">
-                        <div>
-                            <h2 className="text-xl font-semibold text-grayscale-900">
+            <div className="mx-auto w-full max-w-[480px] p-6 space-y-5">
+                <div className="text-center mb-6">
+                    <h1 className="text-2xl font-semibold text-grayscale-900 mb-1">
+                        {m['schoolConnect.heroTitle']()}
+                    </h1>
+                    <p className="text-sm text-grayscale-600">{m['schoolConnect.heroSubhead']()}</p>
+                </div>
+
+                <div className="rounded-[20px] bg-white p-6 shadow-sm border border-grayscale-200">
+                    <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                            <IonIcon icon={schoolOutline} className="text-2xl" />
+                        </div>
+                        <div className="flex-1">
+                            <h2 className="text-lg font-semibold text-grayscale-900">
                                 {connection.schoolName || m['schoolConnect.yourSchool']()}
                             </h2>
+                            <div className="flex items-center gap-1.5 mt-1">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                <span className="text-sm font-medium text-grayscale-900">
+                                    {m['schoolConnect.connected']()}
+                                </span>
+                            </div>
                             {connection.lastConnectedAt && (
                                 <p className="mt-1 text-xs text-grayscale-500">
                                     {m['schoolConnect.lastConnected']({
@@ -105,26 +122,25 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                                     })}
                                 </p>
                             )}
+                            <div className="mt-3">
+                                <button
+                                    type="button"
+                                    onClick={onConnect}
+                                    disabled={connecting}
+                                    className="text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-40"
+                                >
+                                    {connecting ? (
+                                        <span className="flex items-center gap-2">
+                                            <IonSpinner name="crescent" className="h-3 w-3" />
+                                            {m['schoolConnect.connecting']()}
+                                        </span>
+                                    ) : (
+                                        m['schoolConnect.refreshConnection']()
+                                    )}
+                                </button>
+                            </div>
                         </div>
-                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                            {m['schoolConnect.connected']()}
-                        </span>
                     </div>
-                    <button
-                        type="button"
-                        onClick={onConnect}
-                        disabled={connecting}
-                        className="w-full rounded-[20px] border border-solid border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10 disabled:opacity-40"
-                    >
-                        {connecting ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <IonSpinner name="crescent" className="h-4 w-4" />
-                                {m['schoolConnect.connecting']()}
-                            </span>
-                        ) : (
-                            m['schoolConnect.refreshConnection']()
-                        )}
-                    </button>
                     {connectError && (
                         <div className="mt-4">
                             <ErrorBanner message={connectError} />
@@ -135,9 +151,10 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                 {transcriptSlot}
 
                 {connection.isStudent && (
-                    <p className="text-center text-xs text-grayscale-500">
-                        {m['schoolConnect.studentNote']()}
-                    </p>
+                    <div className="flex items-center justify-center gap-2 mt-6 text-grayscale-500">
+                        <IonIcon icon={shieldCheckmarkOutline} className="text-base" />
+                        <p className="text-xs text-center">{m['schoolConnect.studentNote']()}</p>
+                    </div>
                 )}
             </div>
         );
@@ -145,8 +162,8 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
 
     if (showWarning) {
         return (
-            <div className="mx-auto w-full max-w-[560px] p-6">
-                <div className="rounded-[20px] bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto w-full max-w-[480px] p-6">
+                <div className="rounded-[20px] bg-white p-8 text-center shadow-sm border border-grayscale-200">
                     <h2 className="mb-4 text-xl font-semibold text-grayscale-900">
                         {m['schoolConnect.warningTitle']()}
                     </h2>
@@ -189,7 +206,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
     }
 
     return (
-        <div className="mx-auto w-full max-w-[560px] p-6">
+        <div className="mx-auto w-full max-w-[480px] p-6">
             <div className="mb-8 flex flex-col items-center text-center">
                 <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-[19%] bg-gradient-to-b from-emerald-200 to-emerald-600 p-4 shadow-sm">
                     <div className="aspect-square w-full">
@@ -235,7 +252,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                 </div>
             </div>
 
-            <div className="rounded-[20px] bg-white p-6 shadow-sm">
+            <div className="rounded-[20px] bg-white p-6 shadow-sm border border-grayscale-200">
                 <h2 className="mb-4 text-sm font-medium text-grayscale-900">
                     {m['schoolConnect.chooseProvider']()}
                 </h2>

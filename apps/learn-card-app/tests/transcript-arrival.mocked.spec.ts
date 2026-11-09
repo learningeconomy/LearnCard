@@ -27,10 +27,10 @@ test.describe('Transcript Arrival @mocked', () => {
 
     test('Non-matching credential: stays Requesting and never auto-accepts', async ({ page }) => {
         await page.goto(`${HARNESS}?scenario=non-matching-sender`);
-        await expect(page.getByText('Requesting from Example State school records…')).toBeVisible();
+        await expect(page.getByText('Your school is preparing your transcript')).toBeVisible();
 
         await page.waitForTimeout(1000);
-        await expect(page.getByText('Requesting from Example State school records…')).toBeVisible();
+        await expect(page.getByText('Your school is preparing your transcript')).toBeVisible();
 
         const markReceivedCalls = await page.evaluate(
             () => window.transcriptArrivalHarness.markReceivedCalls
