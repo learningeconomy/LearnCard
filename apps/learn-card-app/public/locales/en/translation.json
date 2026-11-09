@@ -1685,6 +1685,7 @@
             "selectRole": "Select Role",
             "fullName": "Full Name",
             "fullNameOptional": "Full Name (optional)",
+            "classlinkNameHint": "Only people you connect with can see your name.",
             "dateOfBirth": "Date of Birth",
             "age": "Age: {{age}}",
             "countryOfResidence": "Country of Residence",

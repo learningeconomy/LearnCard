@@ -4,6 +4,8 @@ LearnCard supports signing in with your district's ClassLink account. You can us
 
 ## How it works
 
+ClassLink profiles start private with a random public handle; your name is used only as an editable onboarding prefill in app memory, not stored in Firebase or sign-in records.
+
 When you choose to sign in with ClassLink, LearnCard redirects you to your district's ClassLink login page. After you authenticate, ClassLink securely returns you to LearnCard.
 
 ```mermaid

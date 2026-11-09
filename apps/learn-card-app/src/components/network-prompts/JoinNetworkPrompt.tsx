@@ -39,7 +39,11 @@ const StateValidator = z.object({
 });
 
 import { getLogger } from 'learn-card-base';
-import { getClassLinkProfileDefaults } from '../../auth/classlink/classlinkProfileDefaults';
+import {
+    getClassLinkProfileDefaults,
+    isClassLinkLogin,
+} from '../../auth/classlink/classlinkProfileDefaults';
+import { generateRandomSuffix } from '../onboarding/v2/handleGenerator';
 const log = getLogger('join-network-prompt');
 
 export const JoinNetworkPrompt: React.FC<{
@@ -60,7 +64,10 @@ export const JoinNetworkPrompt: React.FC<{
     const brandingConfig = useBrandingConfig();
 
     const [step, setStep] = useState<number>(1);
-    const [profileId, setProfileId] = useState<string | null | undefined>('');
+    const classlink = isClassLinkLogin();
+    const [profileId, setProfileId] = useState<string | null | undefined>(() =>
+        classlink ? `learner-${generateRandomSuffix()}` : ''
+    );
     const [error, setError] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [loading, setLoading] = useState<boolean>(false);
@@ -213,6 +220,7 @@ export const JoinNetworkPrompt: React.FC<{
                                     }`}
                                     onIonInput={e => setProfileId(e.detail.value)}
                                     value={profileId}
+                                    readonly={classlink}
                                     placeholder="User ID"
                                     type="text"
                                 />

@@ -367,7 +367,7 @@ export type LCAPluginMethods = {
         codeVerifier: string;
         redirectUri: string;
         nonce: string;
-    }) => Promise<{ token: string }>;
+    }) => Promise<{ token: string; displayName?: string }>;
     classlinkGetConnection: () => Promise<SchoolConnection>;
     classlinkConnect: (args: {
         code: string;

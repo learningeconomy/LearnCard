@@ -163,7 +163,6 @@ beforeEach(async () => {
         classLink_role: 'student',
         email: 'student@example.edu',
         email_verified: true,
-        name: 'Example Student',
         api_fields: { student_id: 'private-student-id' },
     };
     vi.mocked(getClassLinkConfig).mockImplementation(() => config);
@@ -183,6 +182,31 @@ beforeEach(async () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('ClassLink sign-in broker', () => {
+    it('returns the verified name only in the response, not Firebase or auth subjects', async () => {
+        claims.name = '  Example Learner  ';
+        expect(await caller().exchangeCode(exchange)).toEqual({
+            token: `custom-${uid}`,
+            displayName: 'Example Learner',
+        });
+        expect(firebase.createUser.mock.calls[0][0]).not.toHaveProperty('displayName');
+        const subjects = await getAuthSubjectsCollection().find({}).toArray();
+        expect(subjects.length).toBeGreaterThan(0);
+        for (const subject of subjects) expect(subject).not.toHaveProperty('displayName');
+        firebase.getUser.mockResolvedValue({ uid, email: '' });
+        await caller().exchangeCode(exchange);
+        expect(firebase.updateUser).toHaveBeenCalled();
+        for (const [, update] of firebase.updateUser.mock.calls) {
+            expect(update).not.toHaveProperty('displayName');
+        }
+    });
+
+    it('omits absent names and bounds the transient response name', async () => {
+        expect(await caller().exchangeCode(exchange)).not.toHaveProperty('displayName');
+        claims.name = 'x'.repeat(250);
+        expect((await caller().exchangeCode(exchange)).displayName).toHaveLength(200);
+        claims.name = '   ';
+        expect(await caller().exchangeCode(exchange)).not.toHaveProperty('displayName');
+    });
     it.each([redirectUri, nativeUri])('builds an exact-allowlisted PKCE URL for %s', async uri => {
         const { url } = await caller().getAuthorizeUrl({ ...authorize, redirectUri: uri });
         expect(Object.fromEntries(new URL(url).searchParams)).toEqual({
@@ -217,7 +241,6 @@ describe('ClassLink sign-in broker', () => {
             uid,
             email: claims.email,
             emailVerified: true,
-            displayName: claims.name,
         });
         expect(firebase.createCustomToken).toHaveBeenLastCalledWith(uid, {
             classlink: true,
@@ -354,7 +377,6 @@ describe('ClassLink sign-in broker', () => {
             // reserved .invalid address, never marked verified.
             expect(firebase.createUser).toHaveBeenCalledExactlyOnceWith({
                 uid,
-                displayName: claims.name,
                 email: `${uid}@users.classlink.invalid`,
                 emailVerified: false,
             });

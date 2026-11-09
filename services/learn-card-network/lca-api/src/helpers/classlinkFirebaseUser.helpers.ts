@@ -48,10 +48,9 @@ export const ensureClassLinkFirebaseUser = async (
     uid: string,
     {
         identityKey,
-        displayName,
         trustedEmail,
         isNew,
-    }: { identityKey: string; displayName?: string; trustedEmail?: string; isNew: boolean }
+    }: { identityKey: string; trustedEmail?: string; isNew: boolean }
 ): Promise<void> => {
     const contact = trustedEmail
         ? { email: trustedEmail, emailVerified: true }
@@ -60,7 +59,7 @@ export const ensureClassLinkFirebaseUser = async (
     let user = isNew ? undefined : await getUserOrUndefined(auth, uid);
     if (!user) {
         try {
-            await auth.createUser({ uid, displayName, ...contact });
+            await auth.createUser({ uid, ...contact });
             return;
         } catch (error) {
             // The left-behind user holds both the uid and the (deterministic or school)

@@ -232,7 +232,7 @@ export const classlinkRouter = t.router({
         }),
     exchangeCode: openRoute
         .input(classLinkExchangeInput)
-        .output(z.object({ token: z.string() }))
+        .output(z.object({ token: z.string(), displayName: z.string().max(200).optional() }))
         .mutation(async ({ input, ctx }) => {
             const rateKey = `classlink:rate:exchange:${ctx.clientIp ?? 'unknown'}`;
             if (await isRateLimited(rateKey, CLASSLINK_EXCHANGE_FAILURE_LIMIT)) {
@@ -288,11 +288,13 @@ export const classlinkRouter = t.router({
                         conflict(tenantId, 'email_account');
                     await assertNoOtherClassLinkIdentity(otherEmailUser.uid, identityKey, tenantId);
                 }
-                const displayName = typeof claims.name === 'string' ? claims.name : undefined;
+                const displayName =
+                    typeof claims.name === 'string'
+                        ? claims.name.trim().slice(0, 200) || undefined
+                        : undefined;
                 const attrs = {
                     ...(emailTrusted ? { email } : {}),
                     emailVerified: emailTrusted,
-                    displayName,
                 };
                 const joined = !existing && otherEmailUser ? otherEmailUser.uid : undefined;
                 const uid = existingUid ?? joined ?? ownUid;
@@ -303,7 +305,6 @@ export const classlinkRouter = t.router({
                 if (auth && uid !== joined)
                     await ensureClassLinkFirebaseUser(auth, uid, {
                         identityKey,
-                        displayName,
                         trustedEmail: emailTrusted && !emailHeldElsewhere ? email : undefined,
                         // The deterministic user can outlive its identity row (deleteMyData).
                         isNew: !existing && emailUser?.uid !== ownUid,
@@ -392,6 +393,7 @@ export const classlinkRouter = t.router({
                 }
                 await maybeClearExpiredStateStudentIds();
                 return {
+                    ...(displayName ? { displayName } : {}),
                     token: auth
                         ? await auth.createCustomToken(uid, {
                               classlink: true,

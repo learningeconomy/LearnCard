@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
+import { getClassLinkDisplayName } from '../../auth/classlink/classlinkDisplayName';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -86,7 +87,10 @@ describe('ClassLinkCallback (sign-in)', () => {
             stored = null;
             return attempt;
         });
-        mocks.exchangeCode.mockResolvedValue({ token: 'custom-token' });
+        mocks.exchangeCode.mockResolvedValue({
+            token: 'custom-token',
+            displayName: 'Example Learner',
+        });
         mocks.signIn.mockResolvedValue(undefined);
     });
     afterEach(cleanup);
@@ -94,6 +98,7 @@ describe('ClassLinkCallback (sign-in)', () => {
     it('signs in once and records the ClassLink login method', async () => {
         render(<ClassLinkCallback />);
         await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/wallet'));
+        expect(getClassLinkDisplayName()).toBe('Example Learner');
         expect(mocks.signIn).toHaveBeenCalledWith('custom-token', {
             loginMethod: 'classlink',
             throwOnError: true,
@@ -117,6 +122,7 @@ describe('ClassLinkCallback (sign-in)', () => {
         mocks.signIn.mockRejectedValue(Object.assign(new Error('x'), { code: 'auth/network' }));
         render(<ClassLinkCallback />);
         await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/login'));
+        expect(getClassLinkDisplayName()).toBe('');
         expect(mocks.replace).not.toHaveBeenCalledWith('/wallet');
         expect(mocks.presentToast).toHaveBeenCalledWith(
             m['login.classlink.failed'](),

@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import type { ContactMethodType } from '@learncard/types';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useIonAlert } from '@ionic/react';
 import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
@@ -70,7 +71,7 @@ export const useVerifyContactMethodWithProofOfLogin = () => {
     const { mutateAsync: getProofOfLoginVp } = useGetProofOfLoginVp();
 
     return useMutation<
-        { success: boolean; error?: string; contactMethod?: any },
+        { success: boolean; error?: string; contactMethod?: ContactMethodType },
         Error,
         { token: string }
     >({
@@ -291,7 +292,7 @@ export const useClassLinkExchangeCode = () => {
     const { initWallet } = useWallet();
 
     return useMutation<
-        { token: string },
+        { token: string; displayName?: string },
         Error,
         { code: string; codeVerifier: string; redirectUri: string; nonce: string }
     >({

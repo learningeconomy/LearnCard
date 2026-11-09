@@ -21,6 +21,10 @@ import {
 } from '../../auth/classlink/classlinkCallbackGuard';
 import { CLASSLINK_TIMEOUT_ERROR } from '../../auth/classlink/startClassLinkLogin';
 import ClassLinkConnectCallback from './ClassLinkConnectCallback';
+import {
+    setClassLinkDisplayName,
+    clearClassLinkDisplayName,
+} from '../../auth/classlink/classlinkDisplayName';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 
@@ -71,6 +75,7 @@ const ClassLinkSignInCallback: React.FC = () => {
         if (!release) return;
 
         const processCallback = async () => {
+            clearClassLinkDisplayName();
             if (error) {
                 // Clear the abandoned attempt so it cannot be replayed later.
                 if (state) await consumeClassLinkAttempt(state);
@@ -127,6 +132,7 @@ const ClassLinkSignInCallback: React.FC = () => {
                     }
                     // Throws on failure so the catch below shows the error and returns to
                     // /login, instead of landing on /wallet without a session.
+                    setClassLinkDisplayName(response.displayName);
                     await signInWithCustomFirebaseToken(response.token, {
                         loginMethod: SocialLoginTypes.classlink,
                         throwOnError: true,
@@ -136,6 +142,7 @@ const ClassLinkSignInCallback: React.FC = () => {
                     throw new Error('No token returned');
                 }
             } catch (e) {
+                clearClassLinkDisplayName();
                 log.error('ClassLink exchange failed', e);
 
                 const trpcError = e as { data?: { code?: string }; message?: string };

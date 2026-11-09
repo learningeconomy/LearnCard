@@ -80,6 +80,10 @@ import {
 
 import countries from '../../../constants/countries.json';
 import {
+    getClassLinkDisplayName,
+    clearClassLinkDisplayName,
+} from '../../../auth/classlink/classlinkDisplayName';
+import {
     getClassLinkProfileDefaults,
     isClassLinkStudentSession,
 } from '../../../auth/classlink/classlinkProfileDefaults';
@@ -162,6 +166,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const authToken = getAuthToken();
     const loginType = authStore.use.typeOfLogin();
     const isAppleLogin = loginType === SocialLoginTypes.apple;
+    // All ClassLink sign-ins use anonymous public identifiers, not only students.
+    const isClassLinkLogin = loginType === SocialLoginTypes.classlink;
 
     // Scroll focused input into view when keyboard opens on native
     const containerRef = useRef<HTMLDivElement>(null);
@@ -338,8 +344,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const [euParentalConsentRequested, setEuParentalConsentRequested] = useState(false);
     const [guardianEmail, setGuardianEmail] = useState('');
 
-    const [name, setName] = useState(
-        () => adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
+    const [name, setName] = useState(() =>
+        isClassLinkLogin
+            ? getClassLinkDisplayName()
+            : adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
     );
     const nameEditedRef = useRef(false);
     const [anonymousHandle] = useState(() => `learner-${generateRandomSuffix()}`);
@@ -402,6 +410,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     useEffect(() => {
         if (handleLockedRef.current || isHandleManuallyEdited) return;
+        if (isClassLinkLogin) {
+            setProfileId(prev => (/^learner-[a-z0-9]{4}$/.test(prev) ? prev : anonymousHandle));
+            return;
+        }
 
         const trimmed = name.trim();
         if (!trimmed) {
@@ -417,7 +429,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         }, 400);
 
         return () => window.clearTimeout(timeout);
-    }, [name, isHandleManuallyEdited, isAppleLogin, anonymousHandle]);
+    }, [name, isHandleManuallyEdited, isAppleLogin, isClassLinkLogin, anonymousHandle]);
 
     // Handle collision resolution
     useEffect(() => {
@@ -429,20 +441,24 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             uniqueProfile != null
         ) {
             setProfileId(prev => {
-                const base = prev.replace(/-[a-z0-9]{4}$/, '');
+                const base = isClassLinkLogin ? 'learner' : prev.replace(/-[a-z0-9]{4}$/, '');
                 return `${base.substring(0, 20)}-${generateRandomSuffix()}`;
             });
         }
-    }, [uniqueProfile, uniqueProfileFetching, isHandleManuallyEdited, profileId]);
+    }, [uniqueProfile, uniqueProfileFetching, isHandleManuallyEdited, profileId, isClassLinkLogin]);
 
     // Auth enrichment can finish after this form mounts. Preserve intentional edits.
     useEffect(() => {
         const fbUser = adapter.getCurrentUser();
         if (!nameEditedRef.current) {
-            setName(fbUser?.displayName?.trim() || currentUser?.name || '');
+            setName(
+                isClassLinkLogin
+                    ? getClassLinkDisplayName()
+                    : fbUser?.displayName?.trim() || currentUser?.name || ''
+            );
         }
         if (fbUser?.photoUrl && !photo) setPhoto(fbUser.photoUrl);
-    }, [authUser?.displayName, currentUser?.name, loginType, photo, adapter]);
+    }, [authUser?.displayName, currentUser?.name, loginType, photo, adapter, isClassLinkLogin]);
 
     // Photo Upload
     const onUpload = (data: UploadRes) => {
@@ -646,6 +662,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 }
 
                 onboardingCompletedRef.current = true;
+                clearClassLinkDisplayName();
 
                 if (euParentalConsentRequested && guardianEmail) {
                     try {
@@ -714,7 +731,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         const fbUser = adapter.getCurrentUser();
                         if (fbUser) {
                             await adapter.updateProfile?.({
-                                displayName,
+                                ...(!isClassLinkLogin ? { displayName } : {}),
                                 photoUrl: photo,
                             });
                         }
@@ -1155,6 +1172,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 placeholder={m['onboarding.v2.yourName']()}
                                                 className="w-full py-3 px-4 border border-grayscale-200/60 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent bg-white/50 transition-all"
                                             />
+                                            {isClassLinkLogin && (
+                                                <p className="mt-1.5 text-xs text-grayscale-600">
+                                                    {m['onboarding.profile.classlinkNameHint']()}
+                                                </p>
+                                            )}
                                         </div>
 
                                         <div>
@@ -1191,7 +1213,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                     }
                                                     type="text"
                                                     value={profileId}
+                                                    readOnly={isClassLinkLogin}
                                                     onChange={e => {
+                                                        if (isClassLinkLogin) return;
                                                         setIsHandleManuallyEdited(true);
                                                         setProfileId(e.target.value);
                                                         setProfileIdError('');

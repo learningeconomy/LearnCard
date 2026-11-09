@@ -49,7 +49,7 @@ const readClaims = async (): Promise<Claims | null> => {
 };
 
 /** True when this session was recorded as a ClassLink sign-in (see ClassLinkCallback). */
-const isClassLinkLogin = (): boolean => {
+export const isClassLinkLogin = (): boolean => {
     try {
         return authStore.get.typeOfLogin() === SocialLoginTypes.classlink;
     } catch {

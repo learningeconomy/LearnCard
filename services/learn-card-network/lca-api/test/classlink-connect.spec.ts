@@ -176,7 +176,6 @@ describe('School Connect', () => {
             const newUid = vi.mocked(firebase.createUser).mock.calls[0]?.[0]?.uid as string;
             expect(firebase.createUser).toHaveBeenCalledWith({
                 uid: newUid,
-                displayName: undefined,
                 ...(trusted
                     ? { email: claims.email, emailVerified: true }
                     : { email: `${newUid}@users.classlink.invalid`, emailVerified: false }),

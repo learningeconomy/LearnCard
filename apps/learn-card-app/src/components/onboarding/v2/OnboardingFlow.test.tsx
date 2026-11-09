@@ -3,11 +3,17 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import OnboardingFlow from './OnboardingFlow';
 import * as m from '../../../paraglide/messages.js';
+import {
+    setClassLinkDisplayName,
+    clearClassLinkDisplayName,
+    getClassLinkDisplayName,
+} from '../../../auth/classlink/classlinkDisplayName';
 
 const mocks = vi.hoisted(() => ({
     loginType: 'apple',
     authName: '',
     localName: '',
+    occupiedHandle: '',
     createProfile: vi.fn(),
     updateProfile: vi.fn(),
     updateCurrentUser: vi.fn(),
@@ -28,7 +34,7 @@ vi.mock('learn-card-base', () => ({
     useSignInAdapter: () => stableAdapter,
     authUserStore: { use: { currentUser: () => ({ displayName: mocks.authName }) } },
     authStore: { use: { typeOfLogin: () => mocks.loginType } },
-    SocialLoginTypes: { apple: 'apple' },
+    SocialLoginTypes: { apple: 'apple', classlink: 'classlink' },
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
     useWallet: () => ({
         initWallet: async () => ({
@@ -39,7 +45,10 @@ vi.mock('learn-card-base', () => ({
             },
         }),
     }),
-    useGetProfile: () => ({ data: null, isFetching: false }),
+    useGetProfile: (profileId: string) => ({
+        data: mocks.occupiedHandle && profileId === mocks.occupiedHandle ? {} : null,
+        isFetching: false,
+    }),
     useGetCurrentLCNUser: () => ({ refetch: mocks.refetch }),
     useIsCurrentUserLCNUser: () => ({ refetch: mocks.refetch }),
     getNotificationsEndpoint: () => 'https://example.com/notifications',
@@ -141,10 +150,12 @@ const createButton = (): HTMLElement =>
 afterEach(cleanup);
 beforeEach(() => {
     vi.clearAllMocks();
+    clearClassLinkDisplayName();
     localStorage.clear();
     mocks.loginType = 'apple';
     mocks.authName = '';
     mocks.localName = '';
+    mocks.occupiedHandle = '';
     mocks.createProfile.mockResolvedValue('did:web:example.com');
     mocks.isClassLinkStudent = false;
     mocks.transcriptFlag = false;
@@ -158,6 +169,57 @@ beforeEach(() => {
 });
 
 describe('Apple profile onboarding', () => {
+    it('keeps ClassLink collision replacements anonymous after editing the name', async () => {
+        mocks.loginType = 'classlink';
+        setClassLinkDisplayName('Example Learner');
+        const view = await openProfile();
+        const handle = screen.getByLabelText(m['onboarding.v2.publicHandle']()) as HTMLInputElement;
+        mocks.occupiedHandle = handle.value;
+        view.rerender(<OnboardingFlow />);
+        await waitFor(() => expect(handle.value).not.toBe(mocks.occupiedHandle));
+        const replacement = handle.value;
+        expect(replacement).toMatch(/^learner-[a-z0-9]{4}$/);
+        fireEvent.change(screen.getByLabelText(/Full Name/), { target: { value: 'Other Person' } });
+        await new Promise(resolve => setTimeout(resolve, 450));
+        expect(handle.value).toBe(replacement);
+    });
+    it('keeps ClassLink names editable but never uses them as public identifiers', async () => {
+        mocks.loginType = 'classlink';
+        mocks.authName = 'Legacy Name';
+        setClassLinkDisplayName('Example Learner');
+        await openProfile();
+        const name = screen.getByLabelText(/Full Name/);
+        expect(name).toHaveValue('Example Learner');
+        expect(
+            screen.getByText('Only people you connect with can see your name.')
+        ).toBeInTheDocument();
+        const handle = screen.getByLabelText(m['onboarding.v2.publicHandle']()) as HTMLInputElement;
+        const original = handle.value;
+        expect(original).toMatch(/^learner-[a-z0-9]{4}$/);
+        expect(handle).toHaveAttribute('readonly');
+        fireEvent.change(name, { target: { value: 'Changed Person' } });
+        fireEvent.change(handle, { target: { value: 'changed-person' } });
+        await waitFor(() => expect(createButton()).toBeEnabled());
+        expect(handle.value).toBe(original);
+        fireEvent.click(createButton());
+        await waitFor(() =>
+            expect(mocks.createProfile).toHaveBeenCalledWith(
+                expect.objectContaining({ profileId: original, displayName: 'Changed Person' })
+            )
+        );
+        await waitFor(() => expect(getClassLinkDisplayName()).toBe(''));
+        for (const [profile] of mocks.updateProfile.mock.calls) {
+            expect(profile).not.toHaveProperty('displayName');
+        }
+    });
+
+    it('does not fall back to a persisted name for ClassLink', async () => {
+        mocks.loginType = 'classlink';
+        mocks.authName = 'Legacy Name';
+        mocks.localName = 'Cached Name';
+        await openProfile();
+        expect(screen.getByLabelText(/Full Name/)).toHaveValue('');
+    });
     it('preserves AI and bug-report opt-outs after an unavailable analytics authority', async () => {
         mocks.updatePreferences.mockRejectedValueOnce({ data: { code: 'SERVICE_UNAVAILABLE' } });
         await openProfile();
