@@ -104,10 +104,14 @@ const accountOwner = (
 
 const eligibility = ({ tenant, identity }: ClassLinkContext) => {
     const config = getClassLinkConfig();
+    const issuer = getTranscriptIssuerConfig(tenant);
     if (
         !tenant?.transcriptEnabled ||
         !config ||
-        !getTranscriptIssuerConfig(tenant) ||
+        // The app can only recognise an arriving transcript by the issuer's DID and the
+        // network profile that sends it, so requests need both.
+        !issuer?.did ||
+        !issuer.profileId ||
         tenant.state !== identity.state ||
         !getTranscriptRequesterDid()
     )

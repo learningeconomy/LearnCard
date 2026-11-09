@@ -153,6 +153,7 @@ describe('transcript requests', () => {
             endpoint: 'https://district.example/transcripts',
             audience: 'district-audience',
             did: 'did:web:district.example',
+            profileId: 'district-records',
         };
         expect((await caller().getStatus()).issuerDid).toBe('did:web:district.example');
     });
@@ -160,6 +161,21 @@ describe('transcript requests', () => {
         delete issuerRegistry.default!.did;
         expect((await caller().getStatus()).issuerDid).toBeUndefined();
     });
+    it.each(['did', 'profileId'] as const)(
+        'is not eligible and refuses requests when the issuer %s is missing',
+        async field => {
+            // Without both, the app cannot recognise the arriving transcript.
+            delete issuerRegistry.default![field];
+            expect(await caller().getStatus()).toMatchObject({
+                eligible: false,
+                reason: 'not_enabled',
+            });
+            await expect(caller().request({ consent: true })).rejects.toMatchObject({
+                code: 'PRECONDITION_FAILED',
+            });
+            expect(axios.post).not.toHaveBeenCalled();
+        }
+    );
     it('routes each district to its own transcript issuer endpoint, audience, and DID', async () => {
         const didTwo = 'did:key:caller-two';
         const identityKeyTwo = 'classlink:tenant-two:source-2';
@@ -198,12 +214,14 @@ describe('transcript requests', () => {
             endpoint: 'https://issuer-a.example/transcripts',
             audience: 'audience-a',
             did: 'did:web:issuer-a.example',
+            profileId: 'issuer-a-records',
         };
         issuerRegistry['issuer-b'] = {
             key: 'issuer-b',
             endpoint: 'https://issuer-b.example/transcripts',
             audience: 'audience-b',
             did: 'did:web:issuer-b.example',
+            profileId: 'issuer-b-records',
         };
         const callerTwo = caller({ did: didTwo, isChallengeValid: true });
 
