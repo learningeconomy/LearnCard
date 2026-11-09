@@ -8,6 +8,7 @@ import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
+import { TransP } from '../../../i18n/TransP';
 
 import {
     useModal,
@@ -300,6 +301,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const [euParentalConsentRequested, setEuParentalConsentRequested] = useState(false);
     const [guardianEmail, setGuardianEmail] = useState('');
     const [guardianEmailTouched, setGuardianEmailTouched] = useState(false);
+    const [guardianEmailFailed, setGuardianEmailFailed] = useState(false);
 
     const [name, setName] = useState(
         () => adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
@@ -608,8 +610,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         await wallet.invoke.sendGuardianApprovalEmail({
                             guardianEmail: guardianEmail.trim(),
                         });
+                        setGuardianEmailFailed(false);
                     } catch (err) {
                         log.error('Failed to send guardian approval email:', err);
+                        setGuardianEmailFailed(true);
                     }
                 }
 
@@ -1452,7 +1456,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                             </p>
                         ) : (
                             <p role="status" className="text-base text-grayscale-600">
-                                {m['onboarding.v2.guardianEmailed']()}
+                                {guardianEmailFailed ? (
+                                    <TransP
+                                        m={m['onboarding.v2.guardianEmailFailed']}
+                                        values={{ email: guardianEmail.trim() }}
+                                        components={[
+                                            <span className="font-semibold" key="email" />,
+                                        ]}
+                                    />
+                                ) : (
+                                    m['onboarding.v2.guardianEmailed']()
+                                )}
                             </p>
                         )}
                     </div>
