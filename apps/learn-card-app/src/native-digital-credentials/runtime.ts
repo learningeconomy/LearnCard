@@ -73,6 +73,7 @@ export const synchronizeNativeInventory = (
         if (rejected) log.warn('Native credential projections rejected', { count: rejected });
         const inventory: AccountInventory = { owner: refreshed.owner, entries: refreshed.entries };
         const nextRefreshAt = Math.min(
+            refreshed.nextRefreshAt ?? Infinity,
             ...inventory.entries.map(entry => entry.expiresAt ?? Infinity)
         );
         const result = {

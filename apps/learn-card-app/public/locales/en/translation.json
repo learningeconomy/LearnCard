@@ -10394,6 +10394,7 @@
         "required": "Required",
         "notShared": "Not shared",
         "metadataIncluded": "The issuer and credential type are also included.",
+        "metadataWithStatusIncluded": "The issuer, credential type and status information are also included.",
         "credentialDetails": "Credential details",
         "issuer": "Issuer",
         "credentialType": "Credential type",

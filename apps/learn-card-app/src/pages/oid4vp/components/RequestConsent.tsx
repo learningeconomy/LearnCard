@@ -342,6 +342,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                         issuer: parsed?.issuer,
                         credentialType: parsed?.vct,
                         expires: parsed?.expiresAt?.toLocaleDateString(),
+                        hasStatus: parsed?.rawPayload?.status !== undefined,
                         available: Boolean(candidate),
                         loading: Boolean(
                             sdJwtStatuses[row.id]?.isSdJwt && !sdJwtStatuses[row.id]?.isReady

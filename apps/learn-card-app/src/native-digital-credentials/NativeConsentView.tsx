@@ -20,6 +20,7 @@ export interface NativeConsentCredential {
     issuer?: string;
     credentialType?: string;
     expires?: string;
+    hasStatus?: boolean;
     loading: boolean;
     available: boolean;
     fields: Array<{ key: string; label: string; value: string; checked: boolean }>;
@@ -202,7 +203,9 @@ export const NativeConsentView: React.FC<NativeConsentViewProps> = ({
                             )}
                             <div className="border-t border-grayscale-100 px-4">
                                 <p className="pt-3 text-xs leading-relaxed text-grayscale-600">
-                                    {m['nativeCredentials.metadataIncluded']()}
+                                    {credential.hasStatus
+                                        ? m['nativeCredentials.metadataWithStatusIncluded']()
+                                        : m['nativeCredentials.metadataIncluded']()}
                                 </p>
                                 <details>
                                     <summary className="cursor-pointer py-3 text-xs font-medium text-grayscale-600 focus-visible:outline-emerald-600">

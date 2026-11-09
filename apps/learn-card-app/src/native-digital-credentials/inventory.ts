@@ -1,5 +1,9 @@
-import type { ParsedSdJwtVc, PresentSdJwtVcOptions } from '@learncard/sd-jwt-vc-plugin';
-import type { VerificationCheck } from '@learncard/types';
+import type {
+    ParsedSdJwtVc,
+    PresentSdJwtVcOptions,
+    SdJwtVcVerificationCheck,
+    TokenStatusListResult,
+} from '@learncard/sd-jwt-vc-plugin';
 import type { WalletForCandidates, PooledCandidate } from '../pages/oid4vp/candidatePool';
 import type { AndroidCredentialEntry } from './types';
 import { readCurrentAccountIndex, type NativeAccountIndex } from './accountReads';
@@ -13,7 +17,7 @@ export interface DigitalCredentialWallet extends WalletForCandidates {
     };
     invoke: {
         parseSdJwtVc: (compact: string) => Promise<ParsedSdJwtVc>;
-        verifySdJwtVc: (compact: string) => Promise<VerificationCheck>;
+        verifySdJwtVc: (compact: string) => Promise<SdJwtVcVerificationCheck>;
         presentSdJwtVc: (
             compact: string,
             options: PresentSdJwtVcOptions
@@ -38,6 +42,8 @@ export interface AccountInventory {
 export interface InventoryCacheEntry {
     checkedAt: number;
     expiresAt: number;
+    /** Refresh even a suspended credential that currently has no advertised entry. */
+    statusRefreshAt?: number;
     /** Inconclusive results are retried, never reused as a negative decision. */
     retryRequired?: boolean;
     entry?: RegisteredCredential;
@@ -59,6 +65,7 @@ export interface InventoryRefreshOptions {
 
 export interface InventoryRefresh extends AccountInventory {
     retryRequired: boolean;
+    nextRefreshAt?: number;
 }
 
 export const INVENTORY_READ_CONCURRENCY = 4;
@@ -70,7 +77,7 @@ class InventoryUnavailableError extends Error {}
 // The verifier reports machine-readable prefixes. Unknown errors are treated as
 // inconclusive, never as proof of deletion. Approval always verifies again.
 const confirmedInvalid = (error: string): boolean =>
-    /^(invalid_compact_form|invalid_jwt|invalid_typ|missing_iss|missing_vct|missing_alg|unsupported_alg|unsupported_sd_alg|invalid_disclosure|disclosure_hash_mismatch|signature_invalid|expired|not_yet_valid|vct_mismatch):/.test(
+    /^(invalid_compact_form|invalid_jwt|invalid_typ|missing_iss|missing_vct|missing_alg|unsupported_alg|unsupported_sd_alg|invalid_disclosure|disclosure_hash_mismatch|signature_invalid|expired|not_yet_valid|vct_mismatch|status_revoked|status_suspended|status_unsupported):/.test(
         error
     );
 
@@ -123,7 +130,7 @@ export const credentialDigest = async (value: string): Promise<string> => {
 export const accountOwner = (wallet: DigitalCredentialWallet): string =>
     `ed25519:${wallet.id.keypair('ed25519').x}`;
 
-const metadata = new Set(['iss', 'vct', 'iat', 'exp', 'nbf', 'cnf', '_sd', '_sd_alg']);
+const metadata = new Set(['iss', 'vct', 'iat', 'exp', 'nbf', 'cnf', '_sd', '_sd_alg', 'status']);
 export const isFlatClaim = (key: string, value: unknown): boolean =>
     /^[A-Za-z_][A-Za-z0-9_-]*$/.test(key) &&
     !['__proto__', 'constructor', 'prototype'].includes(key) &&
@@ -133,7 +140,9 @@ export const isFlatClaim = (key: string, value: unknown): boolean =>
 /** First native profile: flat selectively disclosable claims, bound to the active account key. */
 export const eligibleCredential = async (
     wallet: DigitalCredentialWallet,
-    candidate: PooledCandidate
+    candidate: PooledCandidate,
+    onStatusChecked?: (status: TokenStatusListResult) => void,
+    now: () => number = Date.now
 ) => {
     const compact = compactCredential(candidate.credential);
     if (!compact) return undefined;
@@ -151,6 +160,21 @@ export const eligibleCredential = async (
     const fields = parsed.disclosureKeys.filter(key => isFlatClaim(key, parsed.claims[key]));
     if (!fields.length) return undefined;
     const verification = await wallet.invoke.verifySdJwtVc(compact);
+    // A status fetch may outlive the credential's expiration boundary.
+    if (parsed.expiresAt && parsed.expiresAt.getTime() <= now()) return undefined;
+    if (parsed.claims.status !== undefined || parsed.rawPayload.status !== undefined) {
+        const status = verification.statusList;
+        if (
+            !verification.checks.includes('credential_status') ||
+            !status ||
+            !Number.isFinite(status.checkedAt) ||
+            !Number.isFinite(status.validUntil) ||
+            status.validUntil <= now()
+        )
+            throw new InventoryUnavailableError('Credential status unavailable');
+        onStatusChecked?.(status);
+        if (status.value !== 0) return undefined;
+    }
     if (verification.errors.length) {
         if (verification.errors.every(confirmedInvalid)) return undefined;
         throw new InventoryUnavailableError('Credential verification unavailable');
@@ -226,7 +250,15 @@ export const buildAccountInventory = async (
             const credential = await wallet.read.get(uri, { cache: 'skip-cache' });
             // A null read is not authoritative removal while the URI is indexed.
             if (!credential) throw new InventoryUnavailableError('Credential read unavailable');
-            const eligible = await eligibleCredential(wallet, { id: uri, credential });
+            let statusRefreshAt: number | undefined;
+            const eligible = await eligibleCredential(
+                wallet,
+                { id: uri, credential },
+                status => {
+                    statusRefreshAt = status.validUntil;
+                },
+                now
+            );
             let entry: RegisteredCredential | undefined;
             const expiresAt = eligible?.parsed.expiresAt?.getTime();
             if (eligible && (expiresAt === undefined || expiresAt > now())) {
@@ -252,7 +284,11 @@ export const buildAccountInventory = async (
             }
             cache.set(uri, {
                 checkedAt: now(),
-                expiresAt: eligible?.parsed.expiresAt?.getTime() ?? Infinity,
+                expiresAt: Math.min(
+                    eligible?.parsed.expiresAt?.getTime() ?? Infinity,
+                    statusRefreshAt ?? Infinity
+                ),
+                ...(statusRefreshAt !== undefined ? { statusRefreshAt } : {}),
                 ...(entry ? { entry } : {}),
             });
             return entry;
@@ -332,5 +368,15 @@ export const buildAccountInventory = async (
             if (prior && validRegistryProjection(prior.projection)) entries.push(prior);
         }
     }
-    return { owner, entries, retryRequired };
+    const nextRefreshAt = Math.min(
+        ...[...cache.values()]
+            .map(value => value.statusRefreshAt ?? Infinity)
+            .filter(value => value > now())
+    );
+    return {
+        owner,
+        entries,
+        retryRequired,
+        ...(Number.isFinite(nextRefreshAt) ? { nextRefreshAt } : {}),
+    };
 };

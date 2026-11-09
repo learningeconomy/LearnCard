@@ -39,4 +39,6 @@ export {
     type SdJwtVcDependentLearnCard,
     type SdJwtVcPluginDependentMethods,
     type VerifySdJwtVcOptions,
+    type TokenStatusListResult,
+    type SdJwtVcVerificationCheck,
 } from './types';

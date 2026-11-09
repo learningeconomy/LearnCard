@@ -5,26 +5,26 @@ SD-JWT-VC holder + verifier support for LearnCard. Implements:
 - [RFC 9901](https://www.rfc-editor.org/rfc/rfc9901.html) — Selective Disclosure for JWTs (SD-JWT)
 - [draft-ietf-oauth-sd-jwt-vc-16](https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/16/) — SD-JWT-VC profile for Verifiable Credentials
 
-Token Status List (revocation / suspension) is on the roadmap — see Slice 4 in the status table below.
+Revocation and suspension checks support signed JWT Token Status Lists using the credential issuer’s signing key. See the supported profile below.
 
 ## Status
 
-**Holder read-path + wallet display: feature-complete.** The plugin parses, verifies, categorizes, and produces a wallet-ready display view-model for SD-JWT-VCs against any DID-resolvable issuer (`did:key`, `did:web`, `did:jwk`). Presentation (KB-JWT signing) lands in Slice 3; status list lands in Slice 4.
+**Holder read-path + wallet display: feature-complete.** The plugin parses, verifies, categorizes, and produces a wallet-ready display view-model for SD-JWT-VCs against any DID-resolvable issuer (`did:key`, `did:web`, `did:jwk`). Holder presentations include KB-JWT signing; status checks use the bounded JWT profile below.
 
-| Capability                                                                                                                                         | Status      |
-| -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| Parse compact serialization (Issuer JWT + Disclosures + optional KB-JWT)                                                                           | ✅ Slice 1  |
-| Reconstruct fully-disclosed claims                                                                                                                 | ✅ Slice 1  |
-| Verify issuer signature (via DID resolution + assertionMethod check)                                                                               | ✅ Slice 1  |
-| `dc+sd-jwt` and legacy `vc+sd-jwt` format strings (auto-detected from JOSE `typ`)                                                                  | ✅ Slice 1  |
-| JOSE `typ` validation (draft-16 §3.2.1.1)                                                                                                          | ✅ Slice 1  |
-| `vct` → wallet category mapping (`categorizeSdJwt`)                                                                                                | ✅ Slice 2a |
-| Wallet display view-model (`toSdJwtDisplayViewModel`)                                                                                              | ✅ Slice 2a |
-| openid4vc integration (OID4VCI receipt + wallet store delegation)                                                                                  | ✅ Slice 2b |
-| Auto-wiring into `@learncard/init` seed-based initializers                                                                                         | ✅ Slice 2c |
-| `learnCard.invoke.verifyCredential` extension — routes SD-JWT credentials through the SD-JWT verifier, leaves W3C credentials on the existing path | ✅ Slice 2d |
-| Holder presentation + KB-JWT signing                                                                                                               | ⏳ Slice 3  |
-| Token Status List checking (cached + network)                                                                                                      | ⏳ Slice 4  |
+| Capability                                                                                                                                         | Status         |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Parse compact serialization (Issuer JWT + Disclosures + optional KB-JWT)                                                                           | ✅ Slice 1     |
+| Reconstruct fully-disclosed claims                                                                                                                 | ✅ Slice 1     |
+| Verify issuer signature (via DID resolution + assertionMethod check)                                                                               | ✅ Slice 1     |
+| `dc+sd-jwt` and legacy `vc+sd-jwt` format strings (auto-detected from JOSE `typ`)                                                                  | ✅ Slice 1     |
+| JOSE `typ` validation (draft-16 §3.2.1.1)                                                                                                          | ✅ Slice 1     |
+| `vct` → wallet category mapping (`categorizeSdJwt`)                                                                                                | ✅ Slice 2a    |
+| Wallet display view-model (`toSdJwtDisplayViewModel`)                                                                                              | ✅ Slice 2a    |
+| openid4vc integration (OID4VCI receipt + wallet store delegation)                                                                                  | ✅ Slice 2b    |
+| Auto-wiring into `@learncard/init` seed-based initializers                                                                                         | ✅ Slice 2c    |
+| `learnCard.invoke.verifyCredential` extension — routes SD-JWT credentials through the SD-JWT verifier, leaves W3C credentials on the existing path | ✅ Slice 2d    |
+| Holder presentation + KB-JWT signing                                                                                                               | ✅ Slice 3     |
+| Token Status List checking (network; bounded freshness)                                                                                            | ✅ JWT profile |
 
 ## Spec versions
 
@@ -111,3 +111,33 @@ Cross-implementation conformance against RFC 9901 Appendix A vectors and OpenWal
 ## License
 
 MIT © [Learning Economy Foundation](https://www.learningeconomy.io)
+
+## Credential status
+
+`verifySdJwtVc` checks `status.status_list` after credential validation using the
+[Token Status List draft-21](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-status-list-21)
+JWT format. Status tokens must use the same signing key and algorithm as the
+verified credential, `typ: statuslist+jwt`, and the exact referenced URI as `sub`.
+Delegated status issuers, CWT lists and other status mechanisms are unsupported.
+
+A fresh HTTPS request omits cookies and referrer and rejects redirects. The
+initial transport profile accepts public DNS names, not IP literals or local
+hostnames. It bounds the request to five seconds, the token to 256 KiB and the
+decompressed list to 2 MiB. Expiration, issued-at freshness (five minutes maximum),
+optional `nbf`/`ttl`, bit widths and index bounds are checked. No status-token cache
+is shared between verifications. Server hosts handling untrusted issuers should
+apply their outbound-network policy as well; hostname syntax does not validate
+DNS resolution.
+
+Results include `statusList: { value, checkedAt, validUntil }` only after
+successful authentication and decoding; timestamps use milliseconds. The deadline
+is capped at 60 seconds and shortened by the signed expiration, TTL and local
+freshness policy. Status 0 is valid; 1 produces `status_revoked`, 2 produces
+`status_suspended`, and other values produce `status_unsupported`. Transport,
+authentication, malformed-list and stale-list failures produce `status_check_failed`.
+These results do not report a bad credential signature.
+
+`skipStatusCheck: true` is an explicit opt-out: it adds a warning and produces no
+status proof. Android account eligibility does not accept that result. Credentials
+without a status reference retain their existing verification path. W3C Bitstring
+Status Lists are a different format and remain on the existing W3C credential path.
