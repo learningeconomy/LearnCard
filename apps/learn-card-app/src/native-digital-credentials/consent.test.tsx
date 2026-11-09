@@ -115,7 +115,7 @@ describe('shared consent on the native transport', () => {
             invoke: {
                 parseSdJwtVc: async () => ({
                     disclosureKeys: ['course_name'],
-                    claims: { course_name: 'Test course' },
+                    claims: { course_name: 'Test course', learner_name: 'Not requested' },
                     issuer: 'did:key:test-issuer',
                     vct: 'https://example.test/course-completion',
                     rawPayload: {

@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SdJwtVcDependentLearnCard } from '@learncard/sd-jwt-vc-plugin';
-import { deflateSync } from 'node:zlib';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import {
     createEd25519KbSigner,
@@ -12,6 +11,7 @@ import {
 } from '@learncard/sd-jwt-vc-plugin';
 import {
     ISSUER,
+    issuerPublicKey,
     fixture,
     publicJwk,
     encode,
@@ -21,6 +21,8 @@ import { buildAccountInventory, type DigitalCredentialWallet } from './inventory
 import { prepareAccountPresentation } from './presentation';
 
 const URI = 'https://status.example.test/course';
+// ZLIB encodings of bytes 0, 1 and 2; this browser test needs no Node compression API.
+const compressedStatuses = ['eJxjAAAAAQAB', 'eJxjBAAAAgAC', 'eJxjAgAAAwAD'] as const;
 afterEach(() => vi.unstubAllGlobals());
 
 describe('signed status across LearnCard consent', () => {
@@ -29,7 +31,7 @@ describe('signed status across LearnCard consent', () => {
         async mode => {
             // Publicly known synthetic lab issuer; no real account keys or credentials.
             const issuerSeed = new Uint8Array(32).fill(7);
-            const issuerKey = publicJwk(issuerSeed);
+            const issuerKey = { kty: 'OKP', crv: 'Ed25519', x: encode(issuerPublicKey) };
             const signer = await createEd25519KbSigner({
                 privateJwk: { ...issuerKey, d: encode(issuerSeed) },
             });
@@ -64,7 +66,7 @@ describe('signed status across LearnCard consent', () => {
                 { _sd: ['course_name', 'completion_date', 'learner_name'] },
                 { header: { kid } }
             );
-            let value = 0;
+            let value: 0 | 1 | 2 = 0;
             let offline = false;
             const fetcher = vi.fn(async () => {
                 if (offline) throw new Error('Temporary connection failure');
@@ -81,7 +83,7 @@ describe('signed status across LearnCard consent', () => {
                             ttl: 30,
                             status_list: {
                                 bits: 2,
-                                lst: deflateSync(Buffer.from([value])).toString('base64url'),
+                                lst: compressedStatuses[value],
                             },
                         })
                     ).toString('base64url'),
