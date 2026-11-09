@@ -253,6 +253,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         onboardingAbandonedTrackedRef.current = true;
     }, [getStepDuration, getStepMetadata, track]);
 
+    const trackOnboardingAbandonedRef = useRef(trackOnboardingAbandoned);
+    trackOnboardingAbandonedRef.current = trackOnboardingAbandoned;
+
     useEffect(() => {
         if (!onboardingStartedTrackedRef.current) {
             track(AnalyticsEvents.ONBOARDING_STARTED, {
@@ -264,12 +267,15 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         if (!localStorage.getItem(ONBOARDING_STARTED_AT_KEY)) {
             localStorage.setItem(ONBOARDING_STARTED_AT_KEY, String(flowStartedAt.current));
         }
+    }, [track]);
+
+    useEffect(() => {
         redirectStore.set.isOnboardingOpen(true);
         return () => {
-            trackOnboardingAbandoned();
+            trackOnboardingAbandonedRef.current();
             redirectStore.set.isOnboardingOpen(false);
         };
-    }, [track, trackOnboardingAbandoned]);
+    }, []);
 
     const [step, setStep] = useState<Step>('age-country');
     const [isPreparingKey, setIsPreparingKey] = useState(false);

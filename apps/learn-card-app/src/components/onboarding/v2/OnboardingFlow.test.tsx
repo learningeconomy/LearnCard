@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     dob: '1990-01-01',
     sendGuardianApprovalEmail: vi.fn(),
     updatePreferences: vi.fn(),
+    setIsOnboardingOpen: vi.fn(),
 }));
 const stableAdapter = vi.hoisted(() => ({
     getCurrentUser: () => ({ displayName: mocks.authName }),
@@ -60,7 +61,7 @@ vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
 vi.mock('learn-card-base/helpers/authHelpers', () => ({ getAuthToken: () => 'test-token' }));
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({ getSigningLearnCard: vi.fn() }));
 vi.mock('learn-card-base/stores/redirectStore', () => ({
-    default: { set: { isOnboardingOpen: vi.fn() } },
+    default: { set: { isOnboardingOpen: mocks.setIsOnboardingOpen } },
 }));
 vi.mock('learn-card-base/config/TenantConfigProvider', () => ({
     useBrandingConfig: () => ({ name: 'LearnCard' }),
@@ -132,6 +133,25 @@ beforeEach(() => {
     mocks.dob = '1990-01-01';
     mocks.createProfile.mockResolvedValue('did:web:example.com');
     mocks.updatePreferences.mockReset().mockResolvedValue(true);
+});
+
+describe('onboarding open flag', () => {
+    it('stays set when the analytics provider is swapped mid-onboarding, and clears on unmount', () => {
+        const originalTrack = mocks.track;
+        mocks.setIsOnboardingOpen.mockClear();
+        try {
+            const { rerender, unmount } = render(<OnboardingFlow />);
+            mocks.track = vi.fn();
+            rerender(<OnboardingFlow />);
+
+            expect(mocks.setIsOnboardingOpen.mock.calls).toEqual([[true]]);
+
+            unmount();
+            expect(mocks.setIsOnboardingOpen).toHaveBeenLastCalledWith(false);
+        } finally {
+            mocks.track = originalTrack;
+        }
+    });
 });
 
 describe('Apple profile onboarding', () => {
