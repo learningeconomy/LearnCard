@@ -31,9 +31,11 @@ on:
             - Keycloak Drift Check
             - Keycloak Infrastructure
             - Keycloak Apple provider watch
+            - LearnCard MCP
             - Maid-Service
             - Migrate Signing Authority Seeds
             - Mock E2E
+            - Nx main artifact producer
             - OpenID4VC Interop Tests
             - PR Review Reminder
             - Full-Stack PR Preview
@@ -45,6 +47,8 @@ on:
             - Service Health Check
             - Tailwind visual regression
             - Test Runner
+            - Integration build-once benchmark
+            - Integration runner benchmark
             - Update DIDKit WASM
             - Validate Published Package Contracts
             - LearnCard Verification

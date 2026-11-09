@@ -56,7 +56,7 @@ Open a Passport category and choose **Search**. Search checks every eligible rec
 
 Dashboard credential and credential-category totals exclude hidden and internal records. Totals remain unknown while the collection is loading; a failed count offers **Retry credential totals** instead of showing zero or first-credential onboarding. Passport categories remain available when their count cannot be loaded, and the unavailable-count message follows the app language.
 
-**Recently added** fills up to five visible cards, including when the first page contains only internal records. **See all** stays available even if recent cards are empty or fail to load. Category lists and **All credentials** keep loading when you scroll, even if the collection total has already finished counting. In **All credentials**, **Load more credentials** also works with a keyboard. A loading failure preserves the cards already loaded, explains that the collection is incomplete, and offers **Retry loading credentials**.
+**Recently added** fills up to five visible cards, including when the first page contains only internal records. **See all** stays available even if recent cards are empty or fail to load. Category lists and **All credentials** load more automatically when you scroll, without a loaded-count message or continuation button. In **All credentials**, keyboard users can focus the list and scroll with the arrow keys, Page Down, or End. A loading failure preserves the cards already loaded, explains that the collection is incomplete, and offers **Retry loading credentials**.
 
 Titles already saved in the encrypted index are searched locally from metadata. Older records without saved titles may need their credential contents loaded before a search can finish; wrapped credentials can match both their displayed name and their achievement name. Collection totals use metadata rather than credential contents.
 
@@ -157,6 +157,16 @@ flowchart LR
 
 The success message appears only after saving is confirmed. If saving fails, the
 collection stays open with an error and the option to try again.
+An unreadable earlier saved copy does not prevent saving the current collection.
+
+Saved status belongs to the signed collection contents and the account that saved
+them, not to every collection from the same sender. If the sender replaces a link's
+contents, you can save the new selection. The saved list shows only the newest saved
+selection for each link; earlier saved copies are not deleted. Distinct shared links
+remain separate in the list, even when they contain the same presentation.
+
+The sender bubble uses the sender's current profile photo when available, with
+initials as a fallback. Saving a collection does not copy the viewer's or issuer's photo.
 
 Saved collections remain available under **Data & Sharing → Shared with you**, even
 when creating shared links is not enabled for your account. **View saved collections**

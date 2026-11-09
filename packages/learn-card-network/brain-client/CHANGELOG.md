@@ -1,5 +1,18 @@
 # @learncard/network-brain-client
 
+## 2.7.0
+
+### Minor Changes
+
+- [#1839](https://github.com/learningeconomy/LearnCard/pull/1839) [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a) Thanks [@gerardopar](https://github.com/gerardopar)! - Add campaign test-to-me and paced audience notification dispatch, ANNOUNCEMENT metadata, delivery acknowledgement bookkeeping, and retry-safe inbox deduplication.
+
+    Deploy lca-api's enum and campaign deduplication support before enabling brain-service dispatch. Push retains the existing best-effort delivery behavior.
+
+### Patch Changes
+
+- Updated dependencies [[`3505f004376543ff4c723921868e17c400142884`](https://github.com/learningeconomy/LearnCard/commit/3505f004376543ff4c723921868e17c400142884), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/network-brain-service@5.0.0
+
 ## 2.6.3
 
 ### Patch Changes

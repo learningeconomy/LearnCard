@@ -264,18 +264,11 @@
         "searching": "Buscando… Resultados hasta ahora: {{count}}.",
         "loadError": "Credenciales cargadas: {{count}}. La colección está incompleta.",
         "loadErrorEmpty": "No se pudieron cargar las credenciales. La colección está incompleta.",
-        "complete": "Credenciales: {{count}}. Colección completa.",
-        "loaded": "Credenciales cargadas: {{count}}. {{state}}",
-        "loadingMore": "Cargando más…",
-        "moreAvailable": "Hay más credenciales disponibles.",
         "retrying": "Reintentando…",
         "retry": "Reintentar la carga de credenciales",
-        "loading": "Cargando…",
-        "continue": "Seguir cargando",
         "loadingEarned": "Cargando credenciales obtenidas",
         "initialError": "No se pudieron cargar las credenciales. Inténtalo de nuevo.",
         "loadingCredentials": "Cargando credenciales…",
-        "loadMore": "Cargar más credenciales",
         "recentIncomplete": "No se pudieron cargar algunas credenciales recientes. Estos resultados están incompletos.",
         "recentError": "No se pudieron cargar las credenciales recientes.",
         "loadingRecent": "Cargando credenciales recientes…",
@@ -2280,6 +2273,8 @@
     },
     "recovery": {
         "pin": {
+            "setPin": "Configura un PIN de recuperación",
+            "setPinDesc": "Configura un PIN de 6 dígitos para la recuperación instantánea.",
             "throttled": "Demasiados intentos. Por favor, inténtalo de nuevo más tarde.",
             "title": "PIN de recuperación",
             "instantRecoveryOn": "Recuperación instantánea: activada",
@@ -2290,6 +2285,10 @@
                 "body": "Tu PIN de recuperación ya no está activo. Elige uno nuevo para tener lista la recuperación instantánea.",
                 "hint": "Las mismas reglas: 6 dígitos, nada obvio."
             },
+            "afterHoldRecovery": {
+                "title": "Evita la espera la próxima vez",
+                "body": "Ya has vuelto a entrar. Configura un PIN de 6 dígitos para recuperar tu cuenta al instante la próxima vez, sin esperar 7 días."
+            },
             "pinResetRequired": {
                 "title": "Configura un nuevo PIN de recuperación",
                 "body": "Tu PIN de recuperación anterior ya no se puede usar desde que se recuperó tu cuenta. Configura un nuevo PIN de 6 dígitos para restaurar la recuperación automática."
@@ -2299,14 +2298,27 @@
             "locked": "Demasiados intentos. Aún puedes recuperar tu cuenta esperando 7 días.",
             "confirmPin": "Confirma tu PIN",
             "confirmPinDesc": "Introduce tu PIN de nuevo para confirmarlo.",
+            "saving": "Guardando PIN...",
+            "success": "PIN configurado correctamente",
             "trivial": "Elige un PIN más difícil de adivinar.",
             "mismatch": "Los PIN no coinciden.",
+            "saveFailed": "No se pudo guardar el PIN. Inténtalo de nuevo.",
+            "enterPin": "Introduce un PIN de 6 dígitos",
+            "removeConfirm": "¿Seguro que quieres eliminar tu PIN de recuperación? Solo podrás recuperar tu cuenta esperando 7 días.",
+            "removing": "Eliminando...",
+            "remove": "Eliminar PIN",
+            "resetBanner": "Tu PIN de recuperación se restableció — ",
+            "setAgain": "vuelve a configurarlo",
+            "doYouHave": "¿Tienes un PIN de recuperación?",
+            "enterForInstant": "Introduce tu PIN de 6 dígitos para la recuperación instantánea.",
+            "dontHave": "No tengo un PIN",
             "samePin": "Elige un PIN diferente del que acabas de usar.",
             "newPinRequired": {
                 "title": "Elige un nuevo PIN de recuperación",
                 "body": "Tu PIN de recuperación se introdujo incorrectamente antes, así que le quedan menos intentos. Elige un PIN diferente de 6 dígitos para recuperar todos tus intentos.",
                 "skipNote": "Si omites este paso, tu PIN actual seguirá funcionando con menos intentos. Puedes elegir uno nuevo más tarde en Recuperación de cuenta."
-            }
+            },
+            "escrowNotice": "Una parte cifrada de la clave de tu cuenta se guarda en un servicio seguro. Tu PIN la desbloquea de inmediato, sin esperar 7 días. <0>Más información</0>"
         },
         "confirmCode": {
             "mismatch": "Ese código no es correcto. Inténtalo de nuevo.",
@@ -2611,12 +2623,33 @@
             }
         },
         "automatic": {
+            "title": "Recuperación automática",
+            "on": "Activada — tu cuenta se puede restaurar tras un período de espera de 7 días.",
+            "off": "Desactivada",
+            "notOn": "No activada",
+            "turningOn": "Activando...",
+            "turningOff": "Desactivando...",
+            "updating": "Actualizando...",
+            "turnOn": "Activar",
+            "turnOff": "Desactivar",
+            "warning": "Sin la recuperación automática, si pierdes todos tus dispositivos y todos tus métodos de recuperación, perderás tu cuenta.",
+            "precondition": "Primero configura otro método de recuperación.",
             "restoreWait": "Restaurar tras una espera de 7 días"
         },
         "addWayBackIn": "Añade una forma de volver a entrar",
         "addAnotherMethod": "Añadir otro método",
         "fullyProtected": "Tu cuenta está totalmente protegida.",
         "added": "Añadido",
+        "escrowHold": {
+            "title": "¿Fuiste tú?",
+            "body": "Alguien empezó a recuperar tu cuenta {{timeAgo}}.",
+            "finishesIn": "La recuperación finalizará {{when}} a menos que la detengas.",
+            "finishingSoon": "La recuperación puede finalizar en cualquier momento a menos que la detengas.",
+            "stop": "Detener la recuperación",
+            "stopping": "Deteniendo…",
+            "success": "Recuperación detenida. Tu cuenta está a salvo.",
+            "dismiss": "Fui yo"
+        },
         "whichWordIs": "¿Cuál es la palabra n.º {{number}}?",
         "tapTheWord": "Toca la palabra de tu frase de recuperación.",
         "wrongWord": "Esa no es la palabra n.º {{number}}. Revisa tu frase guardada e inténtalo de nuevo.",

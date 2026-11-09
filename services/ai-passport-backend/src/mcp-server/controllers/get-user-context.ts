@@ -5,7 +5,6 @@ import { AiConsentError, loadActiveAiConsentData } from '../../learncard/consent
 import {
     generateLearnerContextPrompt,
     LearnerContextPromptError,
-    parseLearnerContextPromptRequest,
 } from '../../services/learnerContextPrompt';
 
 export async function getLatestUserSummary(did: string) {
@@ -20,13 +19,13 @@ export async function getLatestUserSummary(did: string) {
     const { receipt } = await loadActiveAiConsentData(learnCard, did, 'model-inference');
     // Legacy AIInsight summaries have no current source/consent provenance. Reuse
     // the owner-and-revision-scoped formatter instead, resolving signed evidence.
-    const result = await generateLearnerContextPrompt(
-        parseLearnerContextPromptRequest({
-            credentialUris: receipt.credentialUris,
-            personalFields: receipt.personalFields,
-            detailLevel: 'expanded',
-        })
-    );
+    // Pass the full consent receipt. generateLearnerContextPrompt uses the
+    // internal parser, which does not apply the HTTP selection max of 500.
+    const result = await generateLearnerContextPrompt({
+        credentialUris: receipt.credentialUris,
+        personalFields: receipt.personalFields,
+        detailLevel: 'expanded',
+    });
     if (result.metadata.consentRevision !== receipt.revision) throw new AiConsentError();
     // This tool response goes directly to an external model, not the learner UI.
     const context = await pseudonymizeProviderInput(result.prompt);
