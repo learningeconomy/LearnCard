@@ -104,13 +104,21 @@ const storedToResponse = (stored: StoredDocument): Response =>
         headers: stored.headers,
     });
 
+const headersToTuples = (headers: Headers): [string, string][] => {
+    const tuples: [string, string][] = [];
+    headers.forEach((value, key) => {
+        tuples.push([key, value]);
+    });
+    return tuples;
+};
+
 const readResponse = async (response: Response): Promise<StoredDocument> => {
     const body = await response.arrayBuffer();
     return {
         expiresAt: Date.now() + ttlMs,
         status: response.status,
         statusText: response.statusText,
-        headers: [...response.headers.entries()],
+        headers: headersToTuples(response.headers),
         body,
     };
 };
