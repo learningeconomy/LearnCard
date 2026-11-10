@@ -16,8 +16,8 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
                 onClick={handleClick}
                 className="w-full group relative overflow-hidden rounded-2xl bg-linear-to-br/srgb from-violet-600 via-indigo-600 to-cyan-500 p-[1px] transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/25 hover:scale-[1.02] active:scale-[0.99]"
             >
-                {/* Inner container */}
-                <div className="relative overflow-hidden rounded-[15px] bg-linear-to-br/srgb from-violet-600 via-indigo-600 to-cyan-500 px-5 py-5">
+                {/* The 1px shell plus 11px content inset matches the listing cards' 12px padding. */}
+                <div className="relative overflow-hidden rounded-[15px] bg-linear-to-br/srgb from-violet-600 via-indigo-600 to-cyan-500 p-[11px]">
                     {/* Decorative background elements */}
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-cyan-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />

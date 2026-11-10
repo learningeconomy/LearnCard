@@ -21,7 +21,9 @@ test.describe('Apps browse layout @mocked', () => {
         { name: 'desktop', width: 1280, height: 900 },
         { name: 'mobile', width: 390, height: 844 },
     ]) {
-        test(`keeps search and app cards readable on ${viewport.name}`, async ({ page }) => {
+        test(`keeps search and app cards readable on ${viewport.name}`, async ({
+            page,
+        }, testInfo) => {
             await page.setViewportSize({ width: viewport.width, height: viewport.height });
             const mock = await installNetwork(page);
             mock.on('appStore.browseListedApps', input => {
@@ -85,6 +87,29 @@ test.describe('Apps browse layout @mocked', () => {
             expect(viewport.width - developerBox!.x - developerBox!.width).toBeGreaterThanOrEqual(
                 16
             );
+
+            const listingIcon = await firstCard.locator('img').boundingBox();
+            const developerIcon = await developerCard.locator('.shrink-0').first().boundingBox();
+            expect(listingIcon).not.toBeNull();
+            expect(developerIcon).not.toBeNull();
+            expect(developerIcon!.x - developerBox!.x).toBeCloseTo(listingIcon!.x - firstBox!.x, 0);
+            const listingPadding = await firstCard.evaluate(element => {
+                const style = getComputedStyle(element);
+                return [parseFloat(style.paddingTop), parseFloat(style.paddingBottom)];
+            });
+            const developerPadding = await developerCard.evaluate(element => {
+                const shell = getComputedStyle(element);
+                const content = getComputedStyle(element.firstElementChild!);
+                return [
+                    parseFloat(shell.paddingTop) + parseFloat(content.paddingTop),
+                    parseFloat(shell.paddingBottom) + parseFloat(content.paddingBottom),
+                ];
+            });
+            expect(developerPadding).toEqual(listingPadding);
+            await page.screenshot({
+                path: testInfo.outputPath(`apps-browse-${viewport.name}.png`),
+                fullPage: false,
+            });
 
             await search.fill('Example Learning');
             await expect(page.getByText('Example Learning', { exact: true })).toBeVisible();
