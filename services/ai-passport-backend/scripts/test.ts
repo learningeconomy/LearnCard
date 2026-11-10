@@ -3,6 +3,7 @@ const ALL_TEST_FILES = [
     'src/services/assessmentSummary.test.ts',
     'src/services/assessment.test.ts',
     'scripts/deployment-config.test.ts',
+    'scripts/mcp-docker-image.test.ts',
     'src/admin/embedding-privacy.integration.test.ts',
     'src/ai/nova-http2-timeout.test.ts',
     'src/ai/embedding-recovery.test.ts',
