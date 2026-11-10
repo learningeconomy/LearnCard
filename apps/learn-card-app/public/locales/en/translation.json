@@ -1673,7 +1673,22 @@
                 },
                 "error": {
                     "invalidEmail": "Please enter a valid email.",
-                    "sendFailed": "Failed to send consent request. Please try again."
+                    "sendFailed": "Failed to send consent request. Please try again.",
+                    "cooldown": "You can send another request at {{time}}.",
+                    "inProgress": "A request is already being sent. Please wait a moment."
+                },
+                "status": {
+                    "accepted": "Your approval request was sent to <0>{{email}}</0>. If your guardian doesn't see it, ask them to check their spam folder.",
+                    "failed": "We couldn't send the approval request to <0>{{email}}</0>. Please try sending it again.",
+                    "sending": "Sending the approval request…",
+                    "unknown": "Your account is awaiting guardian approval. If your guardian hasn't received an approval request, you can send another one below.",
+                    "expired": "The approval link sent to <0>{{email}}</0> has expired. Send a new one."
+                },
+                "resendRequest": "Resend Request",
+                "banner": {
+                    "title": "Pending guardian approval",
+                    "limited": "Some features stay limited until your parent or guardian approves your account.",
+                    "manage": "Resend or change email"
                 }
             },
             "us": {
@@ -1896,6 +1911,7 @@
             "almostThere": "Almost there!",
             "youreIn": "You're in!",
             "guardianEmailed": "We've emailed your guardian to approve your account. You can start exploring now — some features unlock once they confirm.",
+            "guardianEmailFailed": "We couldn't send the approval request to <0>{{email}}</0>. You can start exploring now and send it again from your dashboard.",
             "ready": "Your {{brand}} is ready.",
             "whoAreYou": "Who are you? (Optional)",
             "explore": "Explore {{brand}}",

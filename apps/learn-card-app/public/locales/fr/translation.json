@@ -1701,7 +1701,22 @@
                 },
                 "error": {
                     "invalidEmail": "Veuillez saisir un e-mail valide.",
-                    "sendFailed": "Échec de l'envoi de la demande. Veuillez réessayer."
+                    "sendFailed": "Échec de l'envoi de la demande. Veuillez réessayer.",
+                    "cooldown": "Vous pourrez envoyer une autre demande à {{time}}.",
+                    "inProgress": "Une demande est déjà en cours d'envoi. Veuillez patienter un instant."
+                },
+                "status": {
+                    "accepted": "Votre demande d'approbation a été envoyée à <0>{{email}}</0>. Si votre parent ou tuteur ne la voit pas, demandez-lui de vérifier ses courriers indésirables.",
+                    "failed": "Nous n'avons pas pu envoyer la demande d'approbation à <0>{{email}}</0>. Veuillez essayer de l'envoyer à nouveau.",
+                    "sending": "Envoi de la demande d'approbation…",
+                    "unknown": "Votre compte est en attente de l'approbation de votre parent ou tuteur. Si votre parent ou tuteur n'a pas reçu de demande d'approbation, vous pouvez en envoyer une nouvelle ci-dessous.",
+                    "expired": "Le lien d'approbation envoyé à <0>{{email}}</0> a expiré. Envoyez-en un nouveau."
+                },
+                "resendRequest": "Renvoyer la demande",
+                "banner": {
+                    "title": "En attente de l'approbation du tuteur",
+                    "limited": "Certaines fonctionnalités restent limitées jusqu'à ce que votre parent ou tuteur approuve votre compte.",
+                    "manage": "Renvoyer ou modifier l'e-mail"
                 }
             },
             "us": {
@@ -1866,6 +1881,7 @@
             "almostThere": "Vous y êtes presque !",
             "youreIn": "Vous y êtes !",
             "guardianEmailed": "Nous avons envoyé un e-mail à votre tuteur pour approuver votre compte. Vous pouvez commencer à explorer dès maintenant — certaines fonctionnalités se débloquent une fois qu'il confirme.",
+            "guardianEmailFailed": "Nous n'avons pas pu envoyer la demande d'approbation à <0>{{email}}</0>. Vous pouvez commencer à explorer dès maintenant et la renvoyer depuis votre tableau de bord.",
             "ready": "Votre {{brand}} est prêt.",
             "whoAreYou": "Qui êtes-vous ? (Facultatif)",
             "explore": "Explorer {{brand}}",
