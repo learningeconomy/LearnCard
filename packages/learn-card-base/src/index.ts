@@ -274,6 +274,7 @@ export * from './types/sync-my-school';
 export * from './types/careerOneStop';
 
 export * from './react-query/queries/queries';
+export * from './react-query/infiniteQueryGuard';
 export * from './react-query/queries/vcQueries';
 export * from './react-query/queries/useCredentialCollection';
 export * from './helpers/credentialCollection';

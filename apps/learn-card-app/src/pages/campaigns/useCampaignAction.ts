@@ -43,7 +43,7 @@ export const useCampaignAction = () => {
                     code === 'CONFLICT'
                         ? 'Campaign changed since you loaded it. Copy any unsaved edits, then reload the latest version before trying again.'
                         : notificationTestDisabled
-                          ? 'No test was sent. Enable inbox and push announcements in Privacy & Data, or deselect Inbox / push notification and try again.'
+                          ? 'No test was sent. Enable inbox and push announcements in Privacy & Data, or deselect In-app & push notification and try again.'
                           : 'Something went wrong. Check your connection and try again. The last request may have completed; refresh before retrying.'
                 );
         } finally {
