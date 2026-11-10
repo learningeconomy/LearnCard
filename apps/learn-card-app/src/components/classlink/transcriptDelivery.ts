@@ -102,7 +102,7 @@ export const getStaleAt = (
 export const ESTIMATE_GRACE_MS = 60_000;
 
 export const isTimedBarCurrent = (expectedBy: string, now: number): boolean =>
-    now <= Date.parse(expectedBy) + ESTIMATE_GRACE_MS;
+    now < Date.parse(expectedBy) + ESTIMATE_GRACE_MS;
 
 /**
  * The next moment a pending request's waiting UI changes on its own: the estimate, the end of

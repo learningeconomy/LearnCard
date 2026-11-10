@@ -421,6 +421,47 @@ describe('TranscriptOptInCard', () => {
             expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
         });
 
+        it('drops the progress bar exactly when the estimate grace expires', async () => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date('2026-11-10T12:00:00.000Z'));
+            mocks.latest = pending(0, 120_000);
+            render(<TranscriptOptInCard source="wallet" />);
+
+            await act(async () => vi.advanceTimersByTimeAsync(179_999));
+            expect(screen.getByRole('progressbar')).toBeTruthy();
+
+            await act(async () => vi.advanceTimersByTimeAsync(1));
+            expect(screen.queryByRole('progressbar')).toBeNull();
+            expect(screen.getByTestId('transcript-optin-waiting').textContent).toBe('Waiting');
+            expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
+        });
+
+        it.each([false, true])(
+            'offers recovery exactly at the stale deadline (estimate: %s)',
+            async withEstimate => {
+                vi.useFakeTimers();
+                vi.setSystemTime(new Date('2026-11-10T12:00:00.000Z'));
+                mocks.latest = pending(
+                    TRANSCRIPT_STALE_AFTER_MS + 60_000,
+                    -TRANSCRIPT_STALE_AFTER_MS + 1_000
+                );
+                if (!withEstimate) {
+                    mocks.latest.requestedAt = new Date(
+                        Date.now() - TRANSCRIPT_STALE_AFTER_MS + 1_000
+                    ).toISOString();
+                    delete mocks.latest.expectedBy;
+                }
+                render(<TranscriptOptInCard source="wallet" />);
+
+                await act(async () => vi.advanceTimersByTimeAsync(999));
+                expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
+
+                await act(async () => vi.advanceTimersByTimeAsync(1));
+                expect(screen.getByTestId('transcript-optin-stale')).toBeTruthy();
+                expect(screen.getByTestId('transcript-optin-open-notifications')).toBeTruthy();
+            }
+        );
+
         it('updates on its own when an estimate passes after polling has stopped', () => {
             vi.useFakeTimers({ shouldAdvanceTime: true });
             try {

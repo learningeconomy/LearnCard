@@ -88,9 +88,10 @@ describe('formatExpectedDelivery', () => {
 });
 
 describe('isTimedBarCurrent', () => {
-    it('keeps the bar up to a minute past the estimate', () => {
+    it('expires the bar exactly a minute past the estimate', () => {
         expect(isTimedBarCurrent(at(120_000), ms(at(150_000)))).toBe(true);
-        expect(isTimedBarCurrent(at(120_000), ms(at(180_000)))).toBe(true);
+        expect(isTimedBarCurrent(at(120_000), ms(at(179_999)))).toBe(true);
+        expect(isTimedBarCurrent(at(120_000), ms(at(180_000)))).toBe(false);
         expect(isTimedBarCurrent(at(120_000), ms(at(181_000)))).toBe(false);
     });
 });
@@ -117,7 +118,7 @@ describe('getNextDeliveryCheck', () => {
             ms(REQUESTED) + day
         );
         expect(
-            getNextDeliveryCheck(REQUESTED, undefined, day, ms(REQUESTED) + day + 1)
+            getNextDeliveryCheck(REQUESTED, undefined, day, ms(REQUESTED) + day)
         ).toBeUndefined();
     });
 });

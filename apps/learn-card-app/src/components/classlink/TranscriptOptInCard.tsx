@@ -416,7 +416,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
             const estimatePassed = !expectedBy || now >= Date.parse(expectedBy);
             const isStale =
                 (isPollingExhausted && estimatePassed) ||
-                now > getStaleAt(requestedAt, expectedBy, TRANSCRIPT_STALE_AFTER_MS);
+                now >= getStaleAt(requestedAt, expectedBy, TRANSCRIPT_STALE_AFTER_MS);
             const pace = getDeliveryPace(requestedAt, expectedBy);
             // A missed short estimate falls back to the plain waiting state, never a stuck bar.
             const timedExpectedBy =
