@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import React from 'react';
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
 import {
     QueryClient,
     QueryClientProvider,
@@ -19,7 +19,10 @@ const host = vi.hoisted(() => ({
 }));
 vi.mock('learn-card-base', async () => ({
     useWallet: () => ({ initWallet: host.init }),
-    switchedProfileStore: { use: { switchedDid: () => host.switchedDid } },
+    switchedProfileStore: {
+        use: { switchedDid: () => host.switchedDid },
+        get: { switchedDid: () => host.switchedDid },
+    },
     CredentialCategoryEnum: (await import('../../types/boostAndCredentialMetadata'))
         .CredentialCategoryEnum,
     categoryMetadata: (await import('../../types/boostAndCredentialMetadata')).categoryMetadata,
@@ -28,7 +31,10 @@ vi.mock('learn-card-base', async () => ({
 }));
 vi.mock('../../stores/walletStore', () => ({
     walletStore: { use: { wallet: () => host.wallet } },
-    switchedProfileStore: { get: { switchedDid: () => host.switchedDid } },
+    switchedProfileStore: {
+        use: { switchedDid: () => host.switchedDid },
+        get: { switchedDid: () => host.switchedDid },
+    },
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getIssuanceDate: (vc: VC) => vc.issuanceDate,
@@ -51,9 +57,12 @@ vi.mock('learn-card-base/helpers/backfills', () => ({ useBackfillBoostUris: () =
 
 import { insertItem } from '../mutations/mutation.helpers';
 import {
+    getPaginatedManagedBoostsKey,
     isInfiniteData,
     useGetCredentialCount,
     useGetCredentialList,
+    useGetPaginatedManagedBoosts,
+    useGetPaginatedManagedBoostsQuery,
     useGetRecordForUri,
 } from './vcQueries';
 
@@ -224,5 +233,90 @@ describe('insertItem on a list with more pages', () => {
             },
         ]);
         expect(result.current.data?.pageParams).toHaveLength(1);
+    });
+});
+
+const MANAGED_KEY = getPaginatedManagedBoostsKey('achievement', '');
+
+describe('useGetPaginatedManagedBoosts with a malformed cache entry (LC-2352)', () => {
+    const makeBoostWallet = () => {
+        const getPaginatedBoosts = vi.fn().mockResolvedValue({
+            records: [{ uri: 'boost-1' }],
+            hasMore: false,
+        });
+        host.wallet = {
+            id: { did: () => 'did:example:reader' },
+            invoke: { getPaginatedBoosts },
+            index: { LearnCloud: { getPage: vi.fn(), get: vi.fn(), getCount: vi.fn() } },
+        } as unknown as BespokeLearnCard;
+        return { getPaginatedBoosts };
+    };
+
+    it.each(malformedEntries)('refetches instead of crashing on %s', async (_, data) => {
+        const { getPaginatedBoosts } = makeBoostWallet();
+        client.setQueryData(MANAGED_KEY, data);
+
+        const { result } = renderHook(
+            () => useGetPaginatedManagedBoosts('achievement', { limit: 12 }),
+            { wrapper }
+        );
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(getPaginatedBoosts).toHaveBeenCalledOnce();
+        expect(result.current.data?.pages).toHaveLength(1);
+        expect(result.current.data?.pages[0]?.records?.[0]?.uri).toBe('boost-1');
+    });
+});
+
+describe('useGetPaginatedManagedBoostsQuery with a malformed cache entry (LC-2352)', () => {
+    it('refetches instead of crashing on an empty object', async () => {
+        const getPaginatedBoosts = vi.fn().mockResolvedValue({
+            records: [{ uri: 'boost-1' }],
+            hasMore: false,
+        });
+        host.wallet = {
+            id: { did: () => 'did:example:reader' },
+            invoke: { getPaginatedBoosts },
+            index: { LearnCloud: { getPage: vi.fn(), get: vi.fn(), getCount: vi.fn() } },
+        } as unknown as BespokeLearnCard;
+
+        const key = ['useGetPaginatedManagedBoostsQuery', ''] as const;
+        client.setQueryData(key, {});
+
+        const { result } = renderHook(() => useGetPaginatedManagedBoostsQuery(undefined), {
+            wrapper,
+        });
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(getPaginatedBoosts).toHaveBeenCalledOnce();
+        expect(result.current.data?.pages[0]?.records?.[0]?.uri).toBe('boost-1');
+    });
+});
+
+/** Mirrors CredentialPage reading pages[0].records.length after a corrupt restore. */
+const ManagedBoostsCount: React.FC = () => {
+    const { data, isSuccess, isError } = useGetPaginatedManagedBoosts('achievement', { limit: 12 });
+    const count = data?.pages?.[0]?.records?.length ?? 0;
+    if (isError) return <div>error</div>;
+    if (!isSuccess) return <div>loading</div>;
+    return <div>count:{count}</div>;
+};
+
+describe('managed-boosts page recovery (LC-2352)', () => {
+    it('renders after a malformed persisted entry instead of throwing on .length', async () => {
+        const getPaginatedBoosts = vi.fn().mockResolvedValue({
+            records: [{ uri: 'boost-1' }],
+            hasMore: false,
+        });
+        host.wallet = {
+            id: { did: () => 'did:example:reader' },
+            invoke: { getPaginatedBoosts },
+            index: { LearnCloud: { getPage: vi.fn(), get: vi.fn(), getCount: vi.fn() } },
+        } as unknown as BespokeLearnCard;
+        client.setQueryData(MANAGED_KEY, {});
+
+        expect(() => render(<ManagedBoostsCount />, { wrapper })).not.toThrow();
+        await waitFor(() => expect(screen.getByText('count:1')).toBeTruthy());
+        expect(getPaginatedBoosts).toHaveBeenCalledOnce();
     });
 });

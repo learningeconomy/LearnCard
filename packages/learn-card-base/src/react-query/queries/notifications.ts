@@ -1,4 +1,5 @@
-import { useQuery, useInfiniteQuery, InfiniteData } from '@tanstack/react-query';
+import { useQueryClient, useQuery, useInfiniteQuery, InfiniteData } from '@tanstack/react-query';
+import { dropMalformedInfiniteCacheEntry } from '../infiniteQueryGuard';
 import { switchedProfileStore, useWallet } from 'learn-card-base';
 import {
     PaginatedNotificationsType,
@@ -41,7 +42,10 @@ export const useGetUserNotifications = (
     filter?: NotificationQueryFiltersType
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const queryKey = ['useGetUserNotifications', switchedDid ?? '', options, filter] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useGetUserNotifications');
 
     return useInfiniteQuery<
         PageType,
@@ -50,7 +54,7 @@ export const useGetUserNotifications = (
         readonly unknown[],
         string | undefined
     >({
-        queryKey: ['useGetUserNotifications', switchedDid ?? '', options, filter],
+        queryKey,
         initialPageParam: undefined,
         queryFn: async ({ pageParam }) => {
             try {
