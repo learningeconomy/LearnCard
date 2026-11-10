@@ -2819,8 +2819,9 @@ jobs:
                     fi
                   done
 
-            # Build context is the monorepo root; fly.mcp.toml points at Dockerfile.mcp. The image
-            # label is the commit SHA so the smoke step can prove which build is live.
+            # Same invocation as the API Fly leg: the build context is the monorepo root, and
+            # fly.mcp.toml's dockerfile path resolves next to the config (Dockerfile.mcp).
+            # The image label is the commit SHA so the smoke step can prove which build is live.
             - name: Deploy to Fly
               env:
                   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
