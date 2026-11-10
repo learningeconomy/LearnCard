@@ -14,7 +14,10 @@ import { useIsLoggedIn } from '../stores/currentUserStore';
 import { switchedProfileStore, walletStore } from '../stores/walletStore';
 import type { LCR } from '../types/credential-records';
 import { clearCredentialFacts } from './credentialFactsStore';
-import { resolvedCredentialQueryKey } from '../react-query/queries/credentialResolution';
+import {
+    resolvedCredentialQueryKey,
+    tryFetchResolvedCredential,
+} from '../react-query/queries/credentialResolution';
 import {
     getCredentialFactsLoader,
     type CredentialFactsSnapshot,
@@ -66,9 +69,7 @@ export const useCredentialFacts = (required: boolean): CredentialFactsState => {
     const source = useMemo<CredentialFactsSource>(
         () => ({
             isActive: () => activeRef.current !== null && activeRef.current === accountDid,
-            // Account-scoped key (LC-2233). A 2-part prefix never hits RQ data, so a cold
-            // facts backfill re-issued storage.resolve for URIs batchResolve already warmed
-            // (LC-2382 after-HAR: 60 cloud standalone resolves, all previously batched).
+            // Account-scoped key (LC-2233). A 2-part prefix never hits RQ data.
             cached: uri =>
                 accountDid
                     ? queryClient.getQueryData(resolvedCredentialQueryKey(uri, accountDid))
@@ -77,7 +78,11 @@ export const useCredentialFacts = (required: boolean): CredentialFactsState => {
                 const currentWallet = await initRef.current();
                 if (activeRef.current !== accountDid || currentWallet.id.did() !== accountDid)
                     return null;
-                return currentWallet.read.get(uri);
+                // Misses must join the shared RQ/batch coalescer. Raw read.get races the
+                // wallet warmer and re-issues storage.resolve for URIs already in (or about
+                // to enter) batchResolve — retake2 @ 14702d54a: 80/80 cloud standalones
+                // overlapped a prior batchResolve; 0 duplicate SA URIs (not a re-read loop).
+                return tryFetchResolvedCredential(queryClient, currentWallet, uri);
             },
             list: async () => {
                 const currentWallet = await initRef.current();
