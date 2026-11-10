@@ -53,6 +53,17 @@ test.describe('Transcript Arrival @mocked', () => {
         await expect(page.getByText('Your transcript arrived')).toHaveCount(0);
     });
 
+    test('Arrived: the Passport card opens the transcript viewer', async ({ page }) => {
+        await page.goto(`${HARNESS}?scenario=arrived-sheet`);
+        const card = page.getByTestId('transcript-optin-card');
+        await expect(card.getByText('Example High School').first()).toBeVisible();
+        await expect(page.getByText('Published by')).toHaveCount(0);
+
+        await card.getByText('Example High School').first().click();
+        await expect(page.getByText('Published by')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Close', exact: true })).toBeVisible();
+    });
+
     test('Mobile: no horizontal overflow at 375px', async ({ page }) => {
         await page.setViewportSize({ width: 375, height: 812 });
         await page.goto(`${HARNESS}?scenario=arrived-sheet`);
