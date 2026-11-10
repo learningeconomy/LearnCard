@@ -19,9 +19,11 @@ export const ResumeSummaryField: React.FC<ResumeSummaryFieldProps> = ({
         className="w-full max-w-full rounded-xl bg-grayscale-100 px-3 py-3 min-h-[96px] flex flex-col justify-between sm:flex-1"
     >
         {readOnly ? (
-            <p className="w-full max-w-full wrap-break-word text-[13px] text-grayscale-900 leading-relaxed whitespace-pre-wrap">
-                {value}
-            </p>
+            value.trim() ? (
+                <p className="w-full max-w-full wrap-break-word text-[13px] text-grayscale-900 leading-relaxed whitespace-pre-wrap">
+                    {value}
+                </p>
+            ) : null
         ) : (
             <textarea
                 value={value}

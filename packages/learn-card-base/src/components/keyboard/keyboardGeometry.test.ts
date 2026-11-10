@@ -20,6 +20,12 @@ describe('keyboard viewport', () => {
     it('never returns a negative visible height during a keyboard transition', () => {
         expect(getKeyboardViewport(100, 100, 300)).toEqual({ top: 0, bottom: 0 });
     });
+
+    it('ignores zoom shrinkage and panning while retaining native keyboard bounds', () => {
+        const zoomed = { offsetTop: 120, height: 400, scale: 2 };
+        expect(getKeyboardViewport(800, 800, 0, zoomed)).toEqual({ top: 0, bottom: 800 });
+        expect(getKeyboardViewport(800, 800, 300, zoomed)).toEqual({ top: 0, bottom: 500 });
+    });
 });
 
 describe('focused field reveal', () => {

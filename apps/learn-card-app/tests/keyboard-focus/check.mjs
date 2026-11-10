@@ -46,6 +46,7 @@ for (const [engine, name] of [
         assert.ok(composite.bottom <= composite.scrollBottom - 15);
         assert.notEqual(composite.radius, '0px');
         assert.notEqual(composite.ring, 'none');
+        assert.match(composite.ring, /1px/, 'preserve the existing custom 1px amber ring');
         assert.equal(composite.innerRing, 'none');
 
         await page.getByLabel('Summary', { exact: true }).click();
@@ -72,6 +73,30 @@ for (const [engine, name] of [
             await page.locator('aside').evaluate(element => element.getBoundingClientRect().height),
             667
         );
+
+        // Model pinch zoom independently of keyboard shrinkage, including viewport panning.
+        const scrollBeforeZoom = await page.getByTestId('scroller').evaluate(el => el.scrollTop);
+        await page.evaluate(() => {
+            window.__keyboardReviewHeight = 333;
+            Object.defineProperty(window.visualViewport, 'scale', { configurable: true, value: 2 });
+            window.visualViewport.dispatchEvent(new Event('resize'));
+            window.visualViewport.dispatchEvent(new Event('scroll'));
+        });
+        await page.waitForTimeout(100);
+        assert.equal(
+            await page.locator('aside').evaluate(el => el.getBoundingClientRect().height),
+            667
+        );
+        assert.equal(
+            await page.getByTestId('scroller').evaluate(el => el.scrollTop),
+            scrollBeforeZoom
+        );
+        assert.equal(
+            await page.evaluate(() =>
+                document.documentElement.hasAttribute('data-lc-keyboard-open')
+            ),
+            false
+        );
         for (const width of [320, 375, 430, 1280]) {
             await page.setViewportSize({ width, height: 667 });
             await page.goto(`${origin}/tests/keyboard-focus/resume.html`);
@@ -91,6 +116,17 @@ for (const [engine, name] of [
             );
             assert.ok(buttons.every(button => button.left >= -1 && button.right <= width + 1));
             assert.ok(buttons.every(button => button.width >= 43 && button.height >= 43));
+            if (width === 1280) {
+                const padding = await header.locator('ion-toolbar > div.border-b').evaluate(el => {
+                    const style = getComputedStyle(el);
+                    return {
+                        left: style.paddingLeft,
+                        right: style.paddingRight,
+                        top: style.paddingTop,
+                    };
+                });
+                assert.deepEqual(padding, { left: '20px', right: '72px', top: '12px' });
+            }
             await page.getByRole('button', { name: 'Preview', exact: true }).waitFor();
             await page.getByRole('button', { name: 'Save', exact: true }).waitFor();
             await page.getByRole('textbox', { name: 'Brief professional summary...' }).click();

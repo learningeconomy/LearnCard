@@ -46,7 +46,7 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
         <IonHeader className="resume-builder-toolbar ion-no-border shrink-0 font-poppins">
             <IonToolbar className="[--background:white] [--border-width:0px] [--padding-start:0px] [--padding-end:0px]">
                 <div
-                    className={`border-b border-grayscale-200 px-3 py-2 ${isMobile ? 'space-y-2' : 'flex items-center gap-4 px-5 py-3'} ${!isMobile && isDesktopPanelClosed ? 'pr-[72px]' : ''}`}
+                    className={`border-b border-grayscale-200 ${isMobile ? 'space-y-2 px-3 py-2' : `flex items-center gap-4 pl-5 py-3 ${isDesktopPanelClosed ? 'pr-[72px]' : 'pr-5'}`}`}
                 >
                     <div className="flex min-w-0 flex-1 items-center gap-1">
                         {isMobile && (
@@ -68,7 +68,6 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
                                 type="button"
                                 onClick={onDownload}
                                 disabled={busy}
-                                aria-label={m['passport.resumeBuilder.download']()}
                                 aria-busy={loadingAction === 'download'}
                                 className={secondaryClass}
                             >
@@ -88,7 +87,6 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
                                     type="button"
                                     onClick={onShareCurrentResume}
                                     disabled={busy || disableShareCurrentResume}
-                                    aria-label={m['common.share']()}
                                     className={secondaryClass}
                                 >
                                     <ShareIcon className="h-5 w-5" />
@@ -133,7 +131,9 @@ export const ResumeBuilderToolbar: React.FC<ResumeBuilderToolbarProps> = ({
                                 <Checkmark className="h-5 w-5 shrink-0" />
                             )}
                             {loadingAction === 'publish'
-                                ? m['common.saving']()
+                                ? isEditingExistingResume
+                                    ? m['common.saving']()
+                                    : m['common.publishing']()
                                 : isEditingExistingResume
                                   ? m['common.save']()
                                   : m['common.publish']()}

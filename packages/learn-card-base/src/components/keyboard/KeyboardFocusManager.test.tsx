@@ -102,4 +102,62 @@ describe('KeyboardFocusManager', () => {
             document.documentElement.style.getPropertyValue('--lc-keyboard-viewport-height')
         ).toBe('');
     });
+
+    it('leaves pinch zoom and panning alone, and resumes reveal when zoom ends', async () => {
+        const viewport = Object.assign(new EventTarget(), { height: 800, offsetTop: 0, scale: 1 });
+        vi.stubGlobal('visualViewport', viewport);
+        const { first, scroller } = form();
+        first.focus({ preventScroll: true });
+        await settle();
+
+        Object.assign(viewport, { height: 400, offsetTop: 120, scale: 2 });
+        viewport.dispatchEvent(new Event('resize'));
+        await settle();
+        expect(scroller.scrollTop).toBe(0);
+        expect(document.documentElement.hasAttribute('data-lc-keyboard-open')).toBe(false);
+        expect(
+            document.documentElement.style.getPropertyValue('--lc-keyboard-viewport-height')
+        ).toBe('');
+
+        viewport.offsetTop = 180;
+        viewport.dispatchEvent(new Event('scroll'));
+        native.callbacks.get('keyboardDidShow')!({ keyboardHeight: 300 });
+        await settle();
+        expect(scroller.scrollTop).toBe(0);
+        expect(document.documentElement.hasAttribute('data-lc-keyboard-open')).toBe(false);
+
+        Object.assign(viewport, { height: 500, offsetTop: 0, scale: 1 });
+        viewport.dispatchEvent(new Event('resize'));
+        await settle();
+        expect(scroller.scrollTop).toBe(206);
+        expect(document.documentElement.hasAttribute('data-lc-keyboard-open')).toBe(true);
+
+        viewport.scale = 2;
+        viewport.dispatchEvent(new Event('resize'));
+        await settle();
+        expect(document.documentElement.hasAttribute('data-lc-keyboard-open')).toBe(false);
+    });
+
+    it('updates panning bounds without undoing manual scrolling while a field is focused', async () => {
+        const viewport = Object.assign(new EventTarget(), { height: 800, offsetTop: 0, scale: 1 });
+        vi.stubGlobal('visualViewport', viewport);
+        const { first, scroller } = form();
+        first.focus({ preventScroll: true });
+        native.callbacks.get('keyboardDidShow')!({ keyboardHeight: 300 });
+        await settle();
+        expect(scroller.scrollTop).toBe(206);
+
+        scroller.scrollTop = 0;
+        viewport.offsetTop = 30;
+        viewport.dispatchEvent(new Event('scroll'));
+        await settle();
+        expect(scroller.scrollTop).toBe(0);
+        expect(document.documentElement.style.getPropertyValue('--lc-keyboard-viewport-top')).toBe(
+            '30px'
+        );
+
+        viewport.dispatchEvent(new Event('resize'));
+        await settle();
+        expect(scroller.scrollTop).toBe(206);
+    });
 });

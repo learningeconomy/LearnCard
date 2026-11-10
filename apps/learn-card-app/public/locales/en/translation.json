@@ -554,6 +554,7 @@
         "continue": "Continue",
         "loading": "Loading...",
         "add": "Add",
+        "publishing": "Publishing…",
         "saving": "Saving...",
         "searchResults": {
             "noResults": "No results found",

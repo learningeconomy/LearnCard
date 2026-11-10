@@ -31,7 +31,7 @@ createRoot(document.getElementById('root')!).render(
                                 Location
                                 <div
                                     data-testid="composite"
-                                    className="flex items-center rounded-xl border border-grayscale-300 p-3 focus-within:ring-2"
+                                    className="flex items-center rounded-xl border border-grayscale-300 p-3 focus-within:ring-1 focus-within:ring-amber-500"
                                 >
                                     <input
                                         aria-label="Location"

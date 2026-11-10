@@ -23,6 +23,7 @@ const ResumeLayoutReview = () => {
                     <ResumeBuilderToolbar
                         loadingAction={null}
                         isMobile={window.innerWidth < 800}
+                        isDesktopPanelClosed
                         isEditingExistingResume
                         onBack={noop}
                         onPreview={noop}

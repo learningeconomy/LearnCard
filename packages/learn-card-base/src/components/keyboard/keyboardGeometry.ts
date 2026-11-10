@@ -3,15 +3,20 @@ export interface VerticalBounds {
     bottom: number;
 }
 
+export const isViewportZoomed = (viewport?: { scale?: number }): boolean =>
+    (viewport?.scale ?? 1) > 1;
+
 /** Keyboard coordinates are relative to the expanded WebView, not its resized height. */
 export const getKeyboardViewport = (
     layoutHeight: number,
     expandedHeight: number,
     keyboardHeight: number,
-    visualViewport?: { offsetTop: number; height: number }
+    visualViewport?: { offsetTop: number; height: number; scale?: number }
 ): VerticalBounds => {
-    const top = visualViewport?.offsetTop ?? 0;
-    const visualBottom = top + (visualViewport?.height ?? layoutHeight);
+    // Pinch zoom shrinks the visual viewport without opening a keyboard.
+    const viewport = isViewportZoomed(visualViewport) ? undefined : visualViewport;
+    const top = viewport?.offsetTop ?? 0;
+    const visualBottom = top + (viewport?.height ?? layoutHeight);
     const keyboardTop = keyboardHeight > 0 ? expandedHeight - keyboardHeight : layoutHeight;
     return { top, bottom: Math.max(top, Math.min(visualBottom, layoutHeight, keyboardTop)) };
 };

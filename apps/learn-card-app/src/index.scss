@@ -149,16 +149,14 @@ textarea[class*='border-gray']:-webkit-autofill:active {
             0 0 0 4px var(--color-emerald-500);
     }
 
-    :is([data-focus-ring], [class*='focus-within:']):has(
-        > input:focus-visible,
-        > textarea:focus-visible
-    ) {
+    [data-focus-ring]:has(> input:focus-visible, > textarea:focus-visible) {
         box-shadow:
             0 0 0 2px white,
             0 0 0 4px var(--color-emerald-500);
     }
 
-    :is([data-focus-ring], [class*='focus-within:']) > :is(input, textarea):focus-visible {
+    // Existing Tailwind ring surfaces retain their own colour and thickness.
+    :is([data-focus-ring], [class*='focus-within:ring-']) > :is(input, textarea):focus-visible {
         outline: none;
         box-shadow: none;
     }

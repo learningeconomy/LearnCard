@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { Keyboard, type KeyboardInfo } from '@capacitor/keyboard';
 
-import { getFocusScrollDelta, getKeyboardViewport } from './keyboardGeometry';
+import { getFocusScrollDelta, getKeyboardViewport, isViewportZoomed } from './keyboardGeometry';
 import './keyboard-focus.scss';
 
 const getParent = (element: Element): Element | null =>
@@ -39,24 +39,32 @@ export const KeyboardFocusManager = (): null => {
         let keyboardHeight = 0;
         let frame = 0;
         let revealFrame = 0;
+        let revealRequested = false;
         let focusTimer: ReturnType<typeof setTimeout> | undefined;
         let disposed = false;
         const handles: PluginListenerHandle[] = [];
 
         const revealField = (): void => {
+            // Leave zoomed forms and user panning to the browser, even with a native keyboard.
+            if (isViewportZoomed(viewport ?? undefined)) return;
             const field = getActiveField();
             if (!field || field.closest('[inert], [aria-hidden="true"]')) return;
+
+            // Ionic manages its own shadow inputs. Avoid competing with its input shims.
+            for (let ancestor: Element | null = field; ancestor; ancestor = getParent(ancestor)) {
+                if (ancestor.matches('ion-input, ion-textarea')) return;
+            }
+
             const bounds = getKeyboardViewport(
                 window.innerHeight,
                 expandedHeight,
                 keyboardHeight,
                 viewport ?? undefined
             );
-
-            // Ionic manages its own shadow inputs. Avoid competing with its input shims.
-            for (let ancestor: Element | null = field; ancestor; ancestor = getParent(ancestor)) {
-                if (ancestor.matches('ion-input, ion-textarea')) return;
-            }
+            const scope = field.closest('[data-lc-surface], .lc-auth-overlay, .ion-page');
+            const footers = scope?.querySelectorAll<HTMLElement>(
+                '[data-keyboard-footer], ion-footer'
+            );
 
             for (let ancestor = getParent(field); ancestor; ancestor = getParent(ancestor)) {
                 if (!(ancestor instanceof HTMLElement)) continue;
@@ -68,28 +76,34 @@ export const KeyboardFocusManager = (): null => {
                     bottom: Math.min(bounds.bottom, rect.bottom),
                 };
                 // Forms can identify a docked action bar that overlaps their scroll area.
-                const scope = field.closest('[data-lc-surface], .lc-auth-overlay, .ion-page');
-                scope
-                    ?.querySelectorAll<HTMLElement>('[data-keyboard-footer], ion-footer')
-                    .forEach(footer => {
-                        const footerRect = footer.getBoundingClientRect();
-                        const fieldRect = field.getBoundingClientRect();
-                        if (
-                            footerRect.height > 0 &&
-                            footerRect.left < fieldRect.right &&
-                            footerRect.right > fieldRect.left &&
-                            footerRect.bottom >= visible.bottom - 1 &&
-                            footerRect.top > visible.top
-                        ) {
-                            visible.bottom = Math.min(visible.bottom, footerRect.top);
-                        }
-                    });
+                footers?.forEach(footer => {
+                    const footerRect = footer.getBoundingClientRect();
+                    const fieldRect = field.getBoundingClientRect();
+                    if (
+                        footerRect.height > 0 &&
+                        footerRect.left < fieldRect.right &&
+                        footerRect.right > fieldRect.left &&
+                        footerRect.bottom >= visible.bottom - 1 &&
+                        footerRect.top > visible.top
+                    ) {
+                        visible.bottom = Math.min(visible.bottom, footerRect.top);
+                    }
+                });
                 const delta = getFocusScrollDelta(field.getBoundingClientRect(), visible);
                 if (Math.abs(delta) > 1) ancestor.scrollTop += delta;
             }
         };
 
         const update = (): void => {
+            const shouldReveal = revealRequested;
+            revealRequested = false;
+            cancelAnimationFrame(revealFrame);
+            if (isViewportZoomed(viewport ?? undefined)) {
+                root.removeAttribute('data-lc-keyboard-open');
+                root.style.removeProperty('--lc-keyboard-viewport-height');
+                root.style.removeProperty('--lc-keyboard-viewport-top');
+                return;
+            }
             const field = getActiveField();
             if (!field && keyboardHeight === 0) expandedHeight = window.innerHeight;
             // Track expansion on keyboard dismissal even if the input retains focus.
@@ -109,15 +123,18 @@ export const KeyboardFocusManager = (): null => {
                 `${bounds.bottom - bounds.top}px`
             );
             root.style.setProperty('--lc-keyboard-viewport-top', `${bounds.top}px`);
-            cancelAnimationFrame(revealFrame);
             // Surface sizes must settle before measuring their scroll containers.
-            revealFrame = requestAnimationFrame(revealField);
+            if (shouldReveal) revealFrame = requestAnimationFrame(revealField);
         };
 
-        const schedule = (): void => {
+        const queueUpdate = (reveal: boolean): void => {
+            revealRequested ||= reveal;
             cancelAnimationFrame(frame);
             frame = requestAnimationFrame(update);
         };
+        const schedule = (): void => queueUpdate(true);
+        // Panning still updates host bounds, but must not snap the user's scroll back.
+        const onViewportScroll = (): void => queueUpdate(false);
 
         const onFocus = (): void => {
             schedule();
@@ -130,7 +147,7 @@ export const KeyboardFocusManager = (): null => {
         document.addEventListener('focusout', schedule);
         window.addEventListener('resize', schedule);
         viewport?.addEventListener('resize', schedule);
-        viewport?.addEventListener('scroll', schedule);
+        viewport?.addEventListener('scroll', onViewportScroll);
 
         if (Capacitor.isNativePlatform()) {
             const register = (listener: Promise<PluginListenerHandle>): void => {
@@ -164,7 +181,7 @@ export const KeyboardFocusManager = (): null => {
             document.removeEventListener('focusout', schedule);
             window.removeEventListener('resize', schedule);
             viewport?.removeEventListener('resize', schedule);
-            viewport?.removeEventListener('scroll', schedule);
+            viewport?.removeEventListener('scroll', onViewportScroll);
             handles.forEach(handle => void handle.remove());
             root.removeAttribute('data-lc-keyboard-open');
             root.style.removeProperty('--lc-keyboard-viewport-height');
