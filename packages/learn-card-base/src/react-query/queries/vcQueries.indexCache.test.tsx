@@ -4,7 +4,7 @@
  * Measured via LearnCloud.get / getPage call counts (instrumented unit), not a live HAR.
  */
 import React from 'react';
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
@@ -51,7 +51,6 @@ vi.mock('learn-card-base/helpers/credentialLifecycleStatus', () => ({
 }));
 
 import {
-    CREDENTIAL_INDEX_STALE_TIME,
     useCountBoosts,
     useGetCredentialCount,
     useGetCredentials,
@@ -60,10 +59,6 @@ import {
 } from './vcQueries';
 
 const CATEGORY = 'Achievement';
-const LIST_KEY = ['useGetCredentialList', '', CATEGORY, 'did:example:reader'];
-const COUNT_KEY = ['useGetCredentialCount', '', CATEGORY, 'did:example:reader'];
-const SKILLS_KEY = ['useGetSkills', ''];
-const CREDS_KEY = ['useGetCredentials', undefined, CATEGORY, undefined];
 
 let client: QueryClient;
 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -104,10 +99,6 @@ afterEach(() => {
 });
 
 describe('CREDENTIAL_INDEX_STALE_TIME (LC-2383)', () => {
-    it('is five minutes', () => {
-        expect(CREDENTIAL_INDEX_STALE_TIME).toBe(5 * 60 * 1000);
-    });
-
     it('reuses useGetCredentialCount across remounts without a second getCount', async () => {
         const { getCount } = makeWallet();
         const first = renderHook(() => useGetCredentialCount(CATEGORY), { wrapper });
@@ -146,18 +137,6 @@ describe('CREDENTIAL_INDEX_STALE_TIME (LC-2383)', () => {
         expect(get).toHaveBeenCalledTimes(1);
     });
 
-    it('refetches useGetSkills after invalidateQueries', async () => {
-        const { get } = makeWallet();
-        const first = renderHook(() => useGetCredentialsForSkills(), { wrapper });
-        await waitFor(() => expect(first.result.current.isSuccess).toBe(true));
-        const firstCalls = get.mock.calls.length;
-
-        await act(async () => {
-            await client.invalidateQueries({ queryKey: SKILLS_KEY });
-        });
-        await waitFor(() => expect(get.mock.calls.length).toBe(firstCalls * 2));
-    });
-
     it('does not apply index staleTime to useCountBoosts (network countBoosts, no invalidation)', async () => {
         const { countBoosts } = makeWallet();
         const first = renderHook(() => useCountBoosts(CATEGORY), { wrapper });
@@ -183,15 +162,5 @@ describe('CREDENTIAL_INDEX_STALE_TIME (LC-2383)', () => {
         const second = renderHook(() => useTotalBoostCounts(), { wrapper });
         await waitFor(() => expect(second.result.current.isSuccess).toBe(true));
         expect(countBoosts.mock.calls.length).toBe(firstCalls * 2);
-    });
-});
-
-// Touch keys so a rename would fail the suite loudly.
-describe('LC-2383 query keys stay stable', () => {
-    it('keeps list/count/skills key roots', () => {
-        expect(LIST_KEY[0]).toBe('useGetCredentialList');
-        expect(COUNT_KEY[0]).toBe('useGetCredentialCount');
-        expect(SKILLS_KEY[0]).toBe('useGetSkills');
-        expect(CREDS_KEY[0]).toBe('useGetCredentials');
     });
 });

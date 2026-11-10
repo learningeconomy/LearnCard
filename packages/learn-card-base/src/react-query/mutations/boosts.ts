@@ -3,6 +3,7 @@ import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-
 import { isVC2Format } from '@learncard/helpers';
 import { getIDsQueryKey } from '../queries/idCredentials';
 import { getPaginatedManagedBoostsKey } from '../queries/vcQueries';
+import { invalidateCredentialIndexQueries } from '../queries/credentialIndexCache';
 import {
     BoostCategoryOptionsEnum,
     // oxlint-disable-next-line no-unused-vars
@@ -1170,20 +1171,11 @@ export const useDeleteEarnedBoostMutation = () => {
             const { boostUri, category } = res;
             const didWeb = switchedProfileStore.get.switchedDid();
 
-            queryClient.invalidateQueries({
-                queryKey: ['useGetCredentials', didWeb ?? '', category],
-            });
             queryClient.invalidateQueries({ queryKey: ['boosts'] });
             queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialList', didWeb ?? ''],
             });
-            queryClient.invalidateQueries({
-                queryKey: ['useGetCredentialCount', didWeb ?? '', category],
-            });
-            // Invalidate both the current records key and any persisted legacy ID entries.
-            queryClient.invalidateQueries({
-                queryKey: ['useGetIDs', didWeb ?? ''],
-            });
+            void invalidateCredentialIndexQueries(queryClient, didWeb);
         },
         onSettled: (data, error, variables, context) => {
             const didWeb = switchedProfileStore.get.switchedDid();

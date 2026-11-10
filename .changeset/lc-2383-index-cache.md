@@ -2,4 +2,4 @@
 'learn-card-base': patch
 ---
 
-Keep credential-index React Query results fresh across route mounts so index.get walks are not repeated until invalidated (LC-2383).
+Keep credential-index React Query results fresh across route mounts, and invalidate those keys from credential add/delete/revoke writers (LC-2383).

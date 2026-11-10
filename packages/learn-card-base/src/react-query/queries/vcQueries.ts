@@ -41,19 +41,14 @@ import {
     resolvedCredentialQueryOptions,
     UnresolvableCredentialError,
 } from './credentialResolution';
-const log = getLogger('vc-queries');
+import {
+    CREDENTIAL_INDEX_STALE_TIME,
+    invalidateCredentialIndexQueries,
+} from './credentialIndexCache';
 
-/** How long credential-index React Query results stay fresh across route mounts (LC-2383).
- * Mutations that add/delete credentials invalidate these keys; until then, remounts reuse cache
- * instead of re-walking index.get (~2.3 MB mega-batches on every route).
- *
- * Applied to index readers: useGetCredentialsForSkills, useGetCredentials,
- * useGetCredentialCount, useGetIDs. Not on useCountBoosts / useTotalBoostCounts (those call
- * wallet.invoke.countBoosts, not index.get, and have no invalidation). Not yet on
- * useGetCredentialList (useInfiniteQuery hydrate race; #2005 restore sanitization;
- * AppRouter prefetch already keeps list observers mounted across shell navigations).
- */
-export const CREDENTIAL_INDEX_STALE_TIME = 5 * 60 * 1000;
+export { CREDENTIAL_INDEX_STALE_TIME, invalidateCredentialIndexQueries };
+
+const log = getLogger('vc-queries');
 
 // Global set to track processed credentials across all hook instances
 const globalProcessedCredentials = new Set<string>();
@@ -384,7 +379,7 @@ export const useCountBoosts = (category?: CredentialCategory, enabled: boolean =
             return managedCount;
         },
         // Not CREDENTIAL_INDEX_STALE_TIME: countBoosts is network, not index.get, and
-        // nothing invalidates these keys on boost create/delete (Critic on #2014).
+        // nothing invalidates these keys on boost create/delete.
     });
 };
 
@@ -472,7 +467,7 @@ export const useGetCredentials = (
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
-        queryKey: ['useGetCredentials', switchedDid, category, returnUri],
+        queryKey: ['useGetCredentials', switchedDid ?? '', category, returnUri],
         queryFn: async () => {
             try {
                 if (initialCredentials) return initialCredentials;
@@ -776,7 +771,7 @@ export const useGetCredentialsPaginated = (
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
-        queryKey: ['useGetCredentials', switchedDid ?? '', category, returnUri],
+        queryKey: ['useGetCredentialsPaginated', switchedDid ?? '', category, returnUri],
         queryFn: async () => {
             try {
                 if (initialCredentials) return initialCredentials;
@@ -1310,8 +1305,7 @@ export const useSyncRevokedCredentials = (enabled = true) => {
                 }
 
                 // Invalidate relevant queries to refresh the UI
-                queryClient.invalidateQueries({ queryKey: ['useGetIDs'] });
-                queryClient.invalidateQueries({ queryKey: ['useGetCredentials'] });
+                await invalidateCredentialIndexQueries(queryClient, switchedDid);
                 queryClient.invalidateQueries({ queryKey: ['currentUserTroopIds'] });
                 queryClient.invalidateQueries({ queryKey: ['useGetCurrentUserTroopIdsResolved'] });
             } finally {
