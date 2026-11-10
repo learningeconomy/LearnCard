@@ -124,7 +124,10 @@ const PublishSignInGate = lazyWithRetry(
     () => import('./pages/appStoreDeveloper/submit/PublishSignInGate')
 );
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
+const SchoolConnectPage = lazyWithRetry(() => import('./pages/schoolConnect/SchoolConnectPage'));
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
+const ClassLinkCallback = lazyWithRetry(() => import('./pages/auth/ClassLinkCallback'));
+const ClassLinkStart = lazyWithRetry(() => import('./pages/auth/ClassLinkStart'));
 
 // App Store Developer Portal
 const DeveloperPortalRoutes = lazyWithRetry(
@@ -257,6 +260,16 @@ export const Routes: React.FC = () => {
                             component={ViewCredsBundle}
                         />
                         <SentryRoute exact path="/auth/handoff" component={AuthHandoff} />
+                        <SentryRoute
+                            exact
+                            path="/auth/classlink/callback"
+                            component={ClassLinkCallback}
+                        />
+                        <SentryRoute
+                            exact
+                            path="/auth/classlink/start"
+                            component={ClassLinkStart}
+                        />
                         <SentryRoute exact path="/share-boost" component={ViewSharedBoost} />
                         <SentryRoute exact path="/verify/resume" component={VerifySharedResume} />
                         <SentryRoute path="/waitingsofa" children={<LoadingPage2 />} />
@@ -321,6 +334,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/memberships" component={MembershipPage} />
                         <PrivateRoute exact path="/workhistory" component={WorkHistoryPage} />
                         <PrivateRoute exact path="/families" component={FamilyPage} />
+                        <PrivateRoute exact path="/school-connect" component={SchoolConnectPage} />
                         <PrivateRoute exact path="/skills" component={SkillsPage} />
                         <PrivateRoute exact path="/ai/insights" component={AiInsights} />
                         {learnCardAssistantEnabled && (
@@ -493,6 +507,7 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/accommodations': () => AccommodationsPage.preload(),
     '/workhistory': () => WorkHistoryPage.preload(),
     '/families': () => FamilyPage.preload(),
+    '/school-connect': () => SchoolConnectPage.preload(),
     '/ids': () => IdsPage.preload(),
     '/memberships': () => MembershipPage.preload(),
     '/currencies': () => CurrenciesPage.preload(),

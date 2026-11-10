@@ -1004,7 +1004,7 @@ export const getOrFetchIntegrationForListing = async (
 /**
  * Query: Get incoming credentials.
  */
-export const useGetIncomingCredentials = () => {
+export const useGetIncomingCredentials = (enabled: boolean = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
     return useQuery<SentCredentialInfo[]>({
@@ -1014,6 +1014,7 @@ export const useGetIncomingCredentials = () => {
             const data = await wallet.invoke.getIncomingCredentials();
             return Array.isArray(data) ? data : [];
         },
+        enabled,
     });
 };
 
