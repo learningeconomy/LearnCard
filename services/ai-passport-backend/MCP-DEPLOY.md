@@ -4,6 +4,21 @@ The `deploy-ai-passport-mcp` job in `.github/workflows/deploy.yml` ships `start:
 (`Dockerfile.mcp`, `fly.mcp.toml`) to Fly. It is separate from the API legs, so the API and the
 MCP host cut over independently.
 
+CI and the documented local command run `flyctl deploy . --config services/ai-passport-backend/fly.mcp.toml`
+from the monorepo root so the build context stays the repo root. flyctl resolves `[build].dockerfile`
+relative to the toml file, not that working directory, so `fly.mcp.toml` must use
+`dockerfile = "Dockerfile.mcp"` (the same pattern as `fly.toml` / `Dockerfile.api`). A
+repo-root-style path such as `services/ai-passport-backend/Dockerfile.mcp` is joined onto the
+toml directory and the image build cannot find the file.
+
+`Dockerfile.mcp` installs this service's production workspace closure (`bun install --frozen-lockfile
+--filter ai-passport-backend --production`) and the privacy runtime. Privacy OCR installs only the
+Tesseract language packs that match the default `AI_PRIVACY_OCR_LANGUAGES` in `src/constants/env.ts`
+(`eng+spa+fra+deu+por+ita+ara+rus+hin+chi_sim+chi_tra+jpn+kor`), not `tesseract-ocr-all`. An
+unfiltered monorepo install plus every Tesseract language packed the image past Fly's 8 GiB unpack
+limit (Deploy #2485). Adding an OCR language later means updating that default (or the runtime env)
+and the matching `tesseract-ocr-*` package in `privacy/install.sh`.
+
 ## When it runs
 
 | Trigger                                                                         | Leg                                                    | Gate                               |

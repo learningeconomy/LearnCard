@@ -1,4 +1,5 @@
 import type { UnifiedAuthState } from 'learn-card-base';
+import { getContactEmail } from 'learn-card-base/helpers/syntheticEmail';
 
 type AuthStatus = UnifiedAuthState['status'];
 
@@ -68,7 +69,8 @@ export const mergeAuthUserIntoCurrentUser = <
     if (!currentUser || !authUser?.id) return null;
 
     const uid = currentUser.uid || authUser.id;
-    const email = currentUser.email || authUser.email || '';
+    // A synthetic ClassLink placeholder persisted from an older session is not an email.
+    const email = getContactEmail(currentUser.email) || getContactEmail(authUser.email) || '';
     const phoneNumber = currentUser.phoneNumber || authUser.phone || '';
 
     if (

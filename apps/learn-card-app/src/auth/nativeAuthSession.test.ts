@@ -153,6 +153,26 @@ describe('openNativeAuthSession', () => {
             await assertion;
         });
 
+        it('honours timeoutMs on the system-browser fallback', async () => {
+            const promise = openNativeAuthSession(AUTHORIZE_URL, {
+                callbackUrlPrefix: CALLBACK_PREFIX,
+                callbackScheme: 'com.learncard.app',
+                timeoutMs: 10 * 60 * 1000,
+            });
+            let settled = false;
+            const assertion = expect(
+                promise.finally(() => {
+                    settled = true;
+                })
+            ).rejects.toMatchObject({ reason: 'expired' });
+            await vi.advanceTimersByTimeAsync(0);
+            await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+            expect(settled).toBe(false);
+
+            await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+            await assertion;
+        });
+
         it('falls back to the system browser on iOS when the WebAuthSession plugin is unavailable', async () => {
             mocks.platform = 'ios';
             mocks.pluginAvailable = false;
@@ -353,6 +373,24 @@ describe('openNativeAuthSession', () => {
             await vi.advanceTimersByTimeAsync(60 * 1000);
 
             await outcome;
+        });
+
+        it('honours a longer timeoutMs for interactive logins instead of the 60 s default', async () => {
+            mocks.webAuthStart.mockReturnValue(new Promise(() => undefined));
+
+            const pending = openNativeAuthSession(AUTHORIZE_URL, {
+                callbackUrlPrefix: CALLBACK_PREFIX,
+                callbackScheme: 'com.learncard.app',
+                timeoutMs: 10 * 60 * 1000,
+            });
+            const outcome = expect(pending).rejects.toMatchObject({ reason: 'expired' });
+
+            await vi.advanceTimersByTimeAsync(60 * 1000);
+            expect(mocks.webAuthCancel).not.toHaveBeenCalled();
+
+            await vi.advanceTimersByTimeAsync(9 * 60 * 1000);
+            await outcome;
+            expect(mocks.webAuthCancel).toHaveBeenCalledTimes(1);
         });
 
         it('does not fire the watchdog once start() has resolved', async () => {

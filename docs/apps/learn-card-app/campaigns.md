@@ -10,7 +10,7 @@ You can also choose an audience source and enter email addresses or account iden
 
 ## Send audience notifications
 
-1. Enable **Inbox / push notification**, enter the notification title and body, and save.
+1. Enable **In-app & push notification**, enter the notification title and body, and save.
 2. Add the intended audience. **View stored members** confirms who is enrolled.
 3. Choose **Go Live** and ensure the current time is within the campaign's schedule.
 4. Choose **Send Notifications** to open a confirmation modal with the number of eligible recipients.

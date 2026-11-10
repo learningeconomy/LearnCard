@@ -9,6 +9,18 @@ const PROVIDER_SECRETS = [
     'OPENAI_API_KEY',
     'POSTMARK_SERVER_TOKEN',
     'SCOUTS_SSO_CLIENT_SECRET',
+    'CLASSLINK_CLIENT_SECRET',
+    'CLASSLINK_PII_KEY',
+    // Decrypt-only during CLASSLINK_PII_KEY rotation.
+    'CLASSLINK_PII_KEY_PREVIOUS',
+    // Permanent identity HMAC key; never rotated (see environment-variables.md).
+    'CLASSLINK_IDENTITY_KEY',
+    // Kept in the runtime bundle (not the public stage files) so district and partner
+    // details stay out of the repository.
+    'CLASSLINK_CLIENT_ID',
+    'CLASSLINK_TENANTS',
+    // TRANSCRIPT_ISSUER_* are deprecated in favor of TRANSCRIPT_ISSUERS (registers "default").
+    'TRANSCRIPT_ISSUERS',
     'SENTRY_DSN',
     'LEARN_CLOUD_URL',
 ];

@@ -1,4 +1,5 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { dropMalformedInfiniteCacheEntry } from '../react-query/infiniteQueryGuard';
 import { useWallet, useGetDid, useCurrentUser } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
@@ -62,11 +63,14 @@ export type XAPIStatementsResponse = {
 
 export const useXApiStatementsForContract = (contractUri: string) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const { data: currentUserDidKey } = useGetDid('key');
     const currentUser = useCurrentUser();
+    const queryKey = ['useXApiStatementsForContract', currentUserDidKey, contractUri] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useXApiStatementsForContract');
 
     return useInfiniteQuery({
-        queryKey: ['useXApiStatementsForContract', currentUserDidKey, contractUri],
+        queryKey,
         queryFn: async ({ pageParam }): Promise<XAPIStatementsResponse> => {
             const wallet = await initWallet();
             if (!wallet) throw new Error('Wallet is not initialized yet.');
