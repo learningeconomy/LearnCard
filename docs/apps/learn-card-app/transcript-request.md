@@ -97,12 +97,12 @@ An accepted response can say when you expect to deliver the transcript. This is 
 { "status": "accepted", "expectedInSeconds": 120 }
 ```
 
-| Field               | Description                                                                             |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| `expectedInSeconds` | Seconds from now until you expect to deliver. Preferred, because it ignores clock skew. |
-| `expectedBy`        | ISO 8601 time with an offset, for example `2026-11-12T09:00:00-05:00`.                  |
+| Field               | Description                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `expectedInSeconds` | Seconds until you expect to deliver, counted from when LearnCard sent the request (not from your response). Preferred, because it ignores clock skew. |
+| `expectedBy`        | ISO 8601 time with an offset, for example `2026-11-12T09:00:00-05:00`.                                                                                |
 
-If both are present, `expectedInSeconds` wins. An estimate that is malformed, already past, or more than 30 days away is ignored; the request still succeeds. Deliver as soon as you can: arriving early is always fine.
+If both are valid, `expectedInSeconds` wins; a malformed field is ignored without discarding the other. An estimate that is malformed, already past, or more than 30 days away is ignored; the request still succeeds. Deliver as soon as you can: arriving early is always fine.
 
 Respond within 15 seconds. Return `202` as soon as the request is queued and do the work afterwards. If LearnCard gets no response in time (or the connection drops after the request was sent), it cannot tell whether you accepted the request, so it keeps the request pending and keeps waiting for a transcript that echoes that `request_id`. Treat `request_id` as idempotent: process each one at most once.
 

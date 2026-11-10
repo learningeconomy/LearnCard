@@ -328,7 +328,7 @@ export const transcriptsRouter = t.router({
                             body.data.status === 'accepted'
                         ) {
                             status = 'requested';
-                            expectedBy = parseExpectedDelivery(response.data, new Date());
+                            expectedBy = parseExpectedDelivery(response.data, record.requestedAt);
                         }
                         if (response.status === 200 && body.data.status === 'none_yet')
                             status = 'none_yet';
