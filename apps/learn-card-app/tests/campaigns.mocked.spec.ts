@@ -214,6 +214,41 @@ test.describe('campaign composer @mocked', () => {
         });
         await page.getByRole('link', { name: 'Create campaign' }).click();
         await expect(page.getByRole('alert')).toHaveCount(0);
+        await expect(page.getByRole('group', { name: 'Delivery Methods' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Delivery Content' })).toBeVisible();
+        await expect(
+            page.getByText('Add content for each selected delivery method.')
+        ).toBeVisible();
+        await expect(page.getByText('Send to notification inbox and mobile push.')).toBeVisible();
+        const expectContentHeading = async (name: string) => {
+            const heading = page.getByRole('heading', { name, level: 3, exact: true });
+            await expect(heading).toBeVisible();
+            await expect(heading).toHaveCSS('border-top-style', 'solid');
+            await expect(heading).toHaveCSS('border-top-width', '1px');
+            await expect(heading).toHaveCSS('font-size', '14px');
+            await expect(heading).toHaveCSS('color', 'rgb(24, 34, 78)');
+            const selectionIcon = page
+                .getByRole('checkbox', { name, exact: true })
+                .locator('..')
+                .locator('ion-icon');
+            const contentIcon = heading.locator('ion-icon');
+            await expect(contentIcon).toHaveAttribute('aria-hidden', 'true');
+            if (name === 'In-app message') {
+                const headingBounds = await heading.boundingBox();
+                const tabsBounds = await page
+                    .getByRole('tablist', { name: 'Message editing mode' })
+                    .boundingBox();
+                expect(
+                    tabsBounds!.y - (headingBounds!.y + headingBounds!.height)
+                ).toBeGreaterThanOrEqual(16);
+            }
+            expect(
+                await contentIcon.evaluate(node => (node as HTMLElement & { icon: string }).icon)
+            ).toBe(
+                await selectionIcon.evaluate(node => (node as HTMLElement & { icon: string }).icon)
+            );
+        };
+        await expectContentHeading('In-app message');
         const previewPanel = page.getByRole('button', { name: 'Preview message' });
         const nameInput = page.getByLabel('Name', { exact: true });
         const nameBounds = await nameInput.boundingBox();
@@ -228,7 +263,7 @@ test.describe('campaign composer @mocked', () => {
         await page.getByLabel('Frequency', { exact: true }).selectOption('3');
         await page.getByLabel('Days between messages').fill('7');
         await page
-            .getByRole('heading', { name: 'Message', exact: true })
+            .getByRole('heading', { name: 'Delivery Content', exact: true })
             .evaluate(node => node.scrollIntoView({ block: 'start' }));
         await page.screenshot({
             path: 'test-results/campaign-message-fields-desktop.png',
@@ -268,7 +303,8 @@ test.describe('campaign composer @mocked', () => {
             .getByRole('tab', { name: 'JSON', exact: true })
             .press('ArrowLeft');
         await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Local preview only');
-        await page.getByLabel('Inbox / push notification').check();
+        await page.getByLabel('In-app & push notification').check();
+        await expectContentHeading('In-app & push notification');
         await page.getByLabel('Notification title').fill('Synthetic test');
         await page.getByLabel('Notification body').fill('Only a mocked test send');
         await page.getByRole('button', { name: 'Preview message' }).click();
@@ -469,6 +505,7 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Confirm paused' }).click();
         await expect(page.getByText('Campaign is paused.')).toBeVisible();
         await page.getByRole('checkbox', { name: 'Email', exact: true }).check();
+        await expectContentHeading('Email');
         await page.getByLabel('Email subject', { exact: true }).fill('Synthetic email test');
         await page.getByLabel('Email heading', { exact: true }).fill('News for our learners');
         await page
@@ -495,9 +532,7 @@ test.describe('campaign composer @mocked', () => {
         await expect(page.getByLabel('Email subject', { exact: true })).toHaveValue(
             'Synthetic email test'
         );
-        await page
-            .getByRole('heading', { name: 'Email content', exact: true })
-            .scrollIntoViewIfNeeded();
+        await page.getByRole('heading', { name: 'Email', exact: true }).scrollIntoViewIfNeeded();
         await page.screenshot({ path: 'test-results/campaign-email-desktop.png', fullPage: true });
         await page.getByRole('button', { name: 'Send Test to Me' }).click();
         await expect(page.getByRole('group', { name: 'Confirm campaign action' })).toContainText(
@@ -528,9 +563,7 @@ test.describe('campaign composer @mocked', () => {
         await expect(page.getByText(/Delivery started/)).toBeVisible();
         expect(dispatches).toBe(2);
         await page.setViewportSize({ width: 390, height: 844 });
-        await page
-            .getByRole('heading', { name: 'Email content', exact: true })
-            .scrollIntoViewIfNeeded();
+        await page.getByRole('heading', { name: 'Email', exact: true }).scrollIntoViewIfNeeded();
         for (const label of [
             'Email subject',
             'Email heading',
@@ -542,6 +575,9 @@ test.describe('campaign composer @mocked', () => {
             expect(bounds!.x).toBeGreaterThanOrEqual(0);
             expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
         }
+        await expectContentHeading('In-app message');
+        await expectContentHeading('In-app & push notification');
+        await expectContentHeading('Email');
         await page.screenshot({ path: 'test-results/campaign-email-mobile.png', fullPage: true });
         await page.getByRole('checkbox', { name: 'In-app message', exact: true }).uncheck();
         await expect(page.getByLabel('Email button text', { exact: true })).toHaveCount(0);
@@ -581,7 +617,7 @@ test.describe('campaign composer @mocked', () => {
             .scrollIntoViewIfNeeded();
         await page.screenshot({ path: 'test-results/campaign-mobile.png', fullPage: true });
         await page
-            .getByRole('heading', { name: 'Message', exact: true })
+            .getByRole('heading', { name: 'Delivery Content', exact: true })
             .evaluate(node => node.scrollIntoView({ block: 'start' }));
         await page.screenshot({
             path: 'test-results/campaign-message-fields-mobile.png',
