@@ -43,12 +43,20 @@ test.describe('Apps browse layout @mocked', () => {
             );
 
             await waitForAuthenticatedState(page, {
-                path: '/launchpad/browse?tab=All',
+                path: '/launchpad',
+                nextPath: '/launchpad',
+                waitUntil: 'commit',
                 profileId: TEST_USER_PROFILE_ID,
             });
+            await page.getByRole('button', { name: /Browse More/ }).click();
+            await expect(page).toHaveURL(/\/launchpad\/browse\?tab=All$/);
 
             const search = page.locator('input[placeholder="Search apps..."]');
             await expect(search).toBeVisible();
+            // Text inputs avoid WebKit's native search-cancel event path while
+            // retaining search semantics and the mobile keyboard action.
+            await expect(search).toHaveAttribute('type', 'text');
+            await expect(search).toHaveAttribute('role', 'searchbox');
             const icon = search
                 .locator('xpath=ancestor::div[.//*[local-name()="svg"]][1]')
                 .locator('svg');
@@ -106,6 +114,9 @@ test.describe('Apps browse layout @mocked', () => {
                 ];
             });
             expect(developerPadding).toEqual(listingPadding);
+            const activePage = search.locator('xpath=ancestor::*[contains(@class, "ion-page")][1]');
+            await expect(activePage).not.toHaveClass(/ion-page-invisible|ion-page-hidden/);
+            await expect(activePage).toHaveCSS('opacity', '1');
             await page.screenshot({
                 path: testInfo.outputPath(`apps-browse-${viewport.name}.png`),
                 fullPage: false,
@@ -116,6 +127,11 @@ test.describe('Apps browse layout @mocked', () => {
             await expect(page.getByText('Example Tools', { exact: true })).toHaveCount(0);
             const results = page.getByText('1 Search Result', { exact: true }).locator('../..');
             await expect(results).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+            await search.fill('');
+            await expect(search).toHaveValue('');
+            await expect(page.getByText('Suggested Apps', { exact: true })).toBeVisible();
+            await expect(page.getByText('Example Learning', { exact: true })).toBeVisible();
+            await expect(page.getByText('Example Tools', { exact: true })).toBeVisible();
         });
     }
 });

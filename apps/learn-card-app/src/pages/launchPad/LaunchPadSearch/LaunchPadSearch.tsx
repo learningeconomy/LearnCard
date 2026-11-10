@@ -34,7 +34,10 @@ export const LaunchPadSearch: React.FC<LaunchPadSearchProps> = ({
                         <Search className="text-grayscale-900 w-[24px] h-[24px]" />
                     </div>
                     <input
-                        type="search"
+                        type="text"
+                        role="searchbox"
+                        inputMode="search"
+                        enterKeyHint="search"
                         value={searchInput}
                         placeholder={m['launchpad.searchApps']()}
                         aria-label={m['launchpad.searchApps']()}
