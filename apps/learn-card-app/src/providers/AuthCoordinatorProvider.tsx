@@ -27,6 +27,7 @@ import React, {
     useRef,
 } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { clearClassLinkDisplayName } from '../auth/classlink/classlinkDisplayName';
 
 import type { LCNProfile } from '@learncard/types';
 import { getLocale } from '../paraglide/runtime.js';
@@ -2382,6 +2383,7 @@ const AuthCoordinatorSessionProvider: React.FC<AppAuthCoordinatorProviderProps> 
     // Unified logout cleanup — called by the coordinator after its own signOut + clearLocalKeys.
     // Consolidates all app-specific store/DB/storage clearing in one place.
     const handleAppLogout = useCallback(async () => {
+        clearClassLinkDisplayName();
         try {
             await queryClient.clear();
         } catch (e) {

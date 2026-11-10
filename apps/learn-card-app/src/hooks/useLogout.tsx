@@ -40,6 +40,8 @@ const useLogout = () => {
             SocialLoginTypes.sms,
             SocialLoginTypes.passwordless,
             SocialLoginTypes.google,
+            // ClassLink signs in with a Firebase custom token, like passwordless.
+            SocialLoginTypes.classlink,
         ];
 
         const baseRedirectUrl = getLoginRedirectUrl();
