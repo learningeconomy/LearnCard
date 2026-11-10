@@ -114,4 +114,40 @@ describe('useCredentialFacts', () => {
             expect.objectContaining({ uri: 'lc:bob-after-switch', issuer: 'did:issuer:bob' }),
         ]);
     });
+
+    it('reuses account-scoped RQ data instead of re-reading via wallet.read.get (LC-2382)', async () => {
+        const uri = 'lc:cloud:cloud.learncard.com/trpc:credential:cached-doc';
+        const vc = {
+            type: ['VerifiableCredential'],
+            issuer: 'did:issuer:cached',
+            credentialSubject: { id: 'did:example:alice' },
+        };
+        state.wallet = walletFor('did:example:alice', uri, {
+            type: ['VerifiableCredential'],
+            issuer: 'did:issuer:should-not-read',
+        });
+        // Exact key shape from resolvedCredentialQueryKey(uri, accountDid).
+        queryClient.getQueryData.mockImplementation((key: unknown) => {
+            if (
+                Array.isArray(key) &&
+                key[0] === 'useGetResolvedCredential' &&
+                key[1] === uri &&
+                key[2] === 'did:example:alice'
+            ) {
+                return vc;
+            }
+            return undefined;
+        });
+
+        const { result } = renderHook(() => useCredentialFacts(true));
+        await waitFor(() => expect(result.current.complete).toBe(true));
+
+        expect(queryClient.getQueryData).toHaveBeenCalledWith([
+            'useGetResolvedCredential',
+            uri,
+            'did:example:alice',
+        ]);
+        expect(state.wallet.read.get).not.toHaveBeenCalled();
+        expect(result.current.summaries?.[0]?.issuer).toBe('did:issuer:cached');
+    });
 });

@@ -14,6 +14,7 @@ import { useIsLoggedIn } from '../stores/currentUserStore';
 import { switchedProfileStore, walletStore } from '../stores/walletStore';
 import type { LCR } from '../types/credential-records';
 import { clearCredentialFacts } from './credentialFactsStore';
+import { resolvedCredentialQueryKey } from '../react-query/queries/credentialResolution';
 import {
     getCredentialFactsLoader,
     type CredentialFactsSnapshot,
@@ -65,7 +66,13 @@ export const useCredentialFacts = (required: boolean): CredentialFactsState => {
     const source = useMemo<CredentialFactsSource>(
         () => ({
             isActive: () => activeRef.current !== null && activeRef.current === accountDid,
-            cached: uri => queryClient.getQueryData(['useGetResolvedCredential', uri]),
+            // Account-scoped key (LC-2233). A 2-part prefix never hits RQ data, so a cold
+            // facts backfill re-issued storage.resolve for URIs batchResolve already warmed
+            // (LC-2382 after-HAR: 60 cloud standalone resolves, all previously batched).
+            cached: uri =>
+                accountDid
+                    ? queryClient.getQueryData(resolvedCredentialQueryKey(uri, accountDid))
+                    : undefined,
             read: async uri => {
                 const currentWallet = await initRef.current();
                 if (activeRef.current !== accountDid || currentWallet.id.did() !== accountDid)
