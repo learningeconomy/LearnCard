@@ -103,6 +103,8 @@ const walletFor = (
     plugins: [],
 });
 
+const currentWallet = () => state.wallet as ReturnType<typeof walletFor>;
+
 describe('useCredentialFacts', () => {
     beforeEach(async () => {
         state.did = 'did:example:alice';
@@ -196,7 +198,7 @@ describe('useCredentialFacts', () => {
             uri,
             'did:example:alice',
         ]);
-        expect(state.wallet.read.get).not.toHaveBeenCalled();
+        expect(currentWallet().read.get).not.toHaveBeenCalled();
         expect(queryClient.fetchQuery).not.toHaveBeenCalled();
         expect(result.current.summaries?.[0]?.issuer).toBe('did:issuer:cached');
     });
@@ -209,17 +211,22 @@ describe('useCredentialFacts', () => {
             credentialSubject: { id: 'did:example:alice' },
         };
         const batch = vi.fn(async (uris: string[]) => uris.map(() => vc));
-        state.wallet = walletFor('did:example:alice', uri, {
-            type: ['VerifiableCredential'],
-            issuer: 'did:issuer:should-not-read',
-        }, { batch });
+        state.wallet = walletFor(
+            'did:example:alice',
+            uri,
+            {
+                type: ['VerifiableCredential'],
+                issuer: 'did:issuer:should-not-read',
+            },
+            { batch }
+        );
 
         const { result } = renderHook(() => useCredentialFacts(true));
         await waitFor(() => expect(result.current.complete).toBe(true));
 
         expect(queryClient.fetchQuery).toHaveBeenCalled();
         expect(batch).toHaveBeenCalled();
-        expect(state.wallet.read.get).not.toHaveBeenCalled();
+        expect(currentWallet().read.get).not.toHaveBeenCalled();
         expect(result.current.summaries?.[0]?.issuer).toBe('did:issuer:batched');
     });
 });
