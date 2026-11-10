@@ -332,6 +332,11 @@ Resources:
                       Resource:
                           - !GetAtt ApplicationLogGroup.Arn
                           - !Sub '${ApplicationLogGroup.Arn}:*'
+                    - Effect: Allow
+                      Action:
+                          - ecr:StartImageScan
+                          - ecr:DescribeImageScanFindings
+                      Resource: !GetAtt Repository.Arn
 
     TaskExecutionRole:
         Type: AWS::IAM::Role
