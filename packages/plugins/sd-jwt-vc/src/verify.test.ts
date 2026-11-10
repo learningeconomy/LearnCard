@@ -13,8 +13,8 @@ type LearnCardMock = any;
 const ISSUER_DID = 'did:web:issuer.example.com';
 const ISSUER_KID = `${ISSUER_DID}#key-1`;
 
-const makeIssuerSigner = async () => {
-    const keypair = await generateKeyPair('EdDSA');
+const makeIssuerSigner = async (crv = 'Ed25519') => {
+    const keypair = await generateKeyPair('EdDSA', { crv });
     const privateJwk = await exportJWK(keypair.privateKey);
     const publicJwk = await exportJWK(keypair.publicKey);
     const privateKey = await importJWK(privateJwk, 'EdDSA');
@@ -68,9 +68,10 @@ const buildLearnCardMock = (publicJwk: Record<string, unknown>): LearnCardMock =
 };
 
 const issueTestCredential = async (
-    overrides: Record<string, unknown> = {}
+    overrides: Record<string, unknown> = {},
+    crv = 'Ed25519'
 ): Promise<{ compact: string; publicJwk: Record<string, unknown> }> => {
-    const { signer, publicJwk } = await makeIssuerSigner();
+    const { signer, publicJwk } = await makeIssuerSigner(crv);
 
     const instance = new SDJwtVcInstance({
         hasher: sha256Hasher,
@@ -97,6 +98,14 @@ const issueTestCredential = async (
 };
 
 describe('verifySdJwtVc', () => {
+    it('retains verification of an Ed448-signed credential from a resolvable DID issuer', async () => {
+        const { compact, publicJwk } = await issueTestCredential({}, 'Ed448');
+        expect(publicJwk.crv).toBe('Ed448');
+        const result = await verifySdJwtVc(buildLearnCardMock(publicJwk), compact);
+        expect(result.errors).toEqual([]);
+        expect(result.checks).toContain('issuer_signature');
+    });
+
     it.each([[], ['sign']].map(keyOps => ({ keyOps })))(
         'rejects a valid issuer signature when its DID key excludes verification: $keyOps',
         async ({ keyOps }) => {

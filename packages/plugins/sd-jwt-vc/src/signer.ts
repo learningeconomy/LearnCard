@@ -17,7 +17,7 @@ export const createJoseVerifier = async (
 ): Promise<CreateJoseVerifierResult> => {
     // Ed25519 is unavailable in older Android WebViews. Keep signature verification
     // independent of WebCrypto while preserving JOSE algorithm/critical-header checks.
-    if (alg === 'EdDSA') {
+    if (alg === 'EdDSA' && publicJwk.crv === 'Ed25519') {
         if (
             publicJwk.kty !== 'OKP' ||
             publicJwk.crv !== 'Ed25519' ||
@@ -115,6 +115,17 @@ export const createEd25519KbSigner = async (
             `createEd25519KbSigner only supports Ed25519 OKP keys (got kty=${privateJwk.kty}, crv=${privateJwk.crv})`
         );
     }
+    // Retain WebCrypto's private-key usage boundary on the portable signing path.
+    if (
+        privateJwk.key_ops !== undefined &&
+        (!Array.isArray(privateJwk.key_ops) ||
+            privateJwk.key_ops.length !== 1 ||
+            privateJwk.key_ops[0] !== 'sign')
+    )
+        throw new SdJwtVcError(
+            'kb_jwt_invalid',
+            'Ed25519 holder key operations must permit signing only'
+        );
     if (typeof privateJwk.d !== 'string' || privateJwk.d.length === 0) {
         throw new SdJwtVcError(
             'kb_jwt_invalid',
