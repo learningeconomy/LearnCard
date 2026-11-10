@@ -282,3 +282,31 @@ describe('query persistence save barrier', () => {
         client.clear();
     });
 });
+
+describe('createQueryPersister infinite-query sanitize (LC-2352)', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('drops malformed managed-boosts entries on persist and restore', async () => {
+        let stored: string | undefined;
+        const storage = {
+            getItem: async () => stored,
+            setItem: async (_key: string, value: string) => {
+                stored = value;
+            },
+            removeItem: async () => {
+                stored = undefined;
+            },
+        };
+        const { persister } = createQueryPersister(storage, vi.fn());
+        const client = new QueryClient();
+        client.setQueryData(['useGetPaginatedManagedBoosts', '', 'achievement'], {});
+        client.setQueryData(['getProfile', 'did'], { name: 'Ada' });
+        persister.persistClient(snapshot(client));
+        await vi.advanceTimersByTimeAsync(1000);
+
+        const restored = await persister.restoreClient();
+        expect(restored?.clientState.queries.map(q => q.queryKey[0])).toEqual(['getProfile']);
+        client.clear();
+    });
+});

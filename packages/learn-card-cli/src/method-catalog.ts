@@ -201,6 +201,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'getFrameworkSkillTree',
     'getFullSkillTree',
     'getGasPrice',
+    'getGuardianApprovalStatus',
     'getGuardianPendingCredential',
     'getHolderExportMetadata',
     'getInboxCredential',

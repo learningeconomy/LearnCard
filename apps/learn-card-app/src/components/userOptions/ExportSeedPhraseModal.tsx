@@ -4,7 +4,7 @@ import { IonCol, IonRow } from '@ionic/react';
 import WarningIcon from '../svgs/WarningIcon';
 import SeedPhraseModal from './SeedPhraseModal';
 
-import { useCurrentUser, useModal, ModalTypes } from 'learn-card-base';
+import { useCurrentUser, useModal, ModalTypes, getContactEmail } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { useSignInAdapter } from 'learn-card-base';
@@ -21,13 +21,21 @@ const ExportSeedPhraseModal: React.FC = () => {
     const currentFirebaseUser = adapter.getCurrentUser();
     const currentUser = useCurrentUser();
 
+    // Synthetic ClassLink placeholder emails are never shown; accounts with no real
+    // email or phone confirm by typing a fixed word instead of an empty string.
     const [phrase, setPhrase] = useState<string>(
-        currentFirebaseUser?.email ?? currentFirebaseUser?.phone ?? currentUser?.email ?? ''
+        () =>
+            getContactEmail(currentFirebaseUser?.email) ||
+            currentFirebaseUser?.phone ||
+            getContactEmail(currentUser?.email) ||
+            m['profile.export.fallbackPhrase']()
     );
     const [confirmationPhrase, setConfirmationPhrase] = useState<string>();
     const placeholderSource = currentFirebaseUser?.phone
         ? m['profile.export.phonePlaceholder']()
-        : m['profile.export.emailPlaceholder']();
+        : getContactEmail(currentFirebaseUser?.email) || getContactEmail(currentUser?.email)
+          ? m['profile.export.emailPlaceholder']()
+          : phrase;
     const canExportPhrase = phrase === confirmationPhrase;
 
     const handleExportSeed = () => {

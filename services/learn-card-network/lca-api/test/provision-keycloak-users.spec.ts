@@ -9,13 +9,19 @@ const mocks = vi.hoisted(() => ({
     findOne: vi.fn(),
     updateOne: vi.fn(),
     createSubject: vi.fn(),
+    linkSubject: vi.fn(),
     closeCursor: vi.fn(),
+    findClassLinkIdentity: vi.fn(),
 }));
 vi.mock('../src/mongo', () => ({ client: { close: vi.fn() } }));
 vi.mock('../src/models/UserKey', () => ({ getUserKeysCollection: () => mocks }));
 vi.mock('../src/models/AuthSubject', () => ({
     getAuthSubjectsCollection: () => ({ findOne: mocks.findSubject }),
     getOrCreateAuthSubject: mocks.createSubject,
+    getOrCreateAuthSubjectLinkedTo: mocks.linkSubject,
+}));
+vi.mock('../src/models/ClassLinkIdentity', () => ({
+    findClassLinkIdentityByFirebaseUid: mocks.findClassLinkIdentity,
 }));
 vi.mock('../scripts/keycloak-admin', async importOriginal => ({
     ...(await importOriginal<typeof import('../scripts/keycloak-admin')>()),
@@ -29,6 +35,7 @@ afterEach((): void => {
     vi.restoreAllMocks();
     vi.resetAllMocks();
     mocks.countDocuments.mockResolvedValue(0);
+    mocks.findClassLinkIdentity.mockResolvedValue(null);
 });
 
 const setupUser = (
@@ -244,6 +251,125 @@ describe('provisioning social providers', (): void => {
             linked: 0,
         });
         expect(dependencies.admin.request).not.toHaveBeenCalled();
+    });
+});
+
+describe('provisioning classlink users', (): void => {
+    const findFederatedIdentityCall = (
+        admin: Awaited<ReturnType<typeof createKeycloakAdmin>>,
+        userId: string
+    ): [string, RequestInit] => {
+        const call = vi
+            .mocked(admin.request)
+            .mock.calls.find(([url]) => url === `/users/${userId}/federated-identity/lca-api`);
+        if (!call) throw new Error('federated-identity request was not made');
+        return call as [string, RequestInit];
+    };
+
+    it('provisions a classlink user whose email already shares an AuthSubject without using the classlink fallback', async (): Promise<void> => {
+        const dependencies = setupUser(false);
+        vi.mocked(dependencies.admin.findUsers).mockResolvedValueOnce([]);
+        mocks.findSubject.mockResolvedValueOnce({ subject: 'shared-subject-id' });
+        const result = await provisionKeycloakUsers({ apply: true }, dependencies);
+        expect(result).toMatchObject({ mapped: 1, classlinkFallbackUsed: 0 });
+        expect(mocks.findClassLinkIdentity).not.toHaveBeenCalled();
+        expect(mocks.createSubject).not.toHaveBeenCalled();
+        const [, init] = findFederatedIdentityCall(dependencies.admin, 'keycloak-id');
+        expect(JSON.parse(init.body as string)).toMatchObject({ userId: 'shared-subject-id' });
+    });
+
+    it('resolves a classlink-only user via ClassLinkIdentity, then stays idempotent on a second apply', async (): Promise<void> => {
+        const first = setupUser(false);
+        mocks.findSubject.mockResolvedValue(null);
+        vi.mocked(first.admin.findUsers).mockResolvedValueOnce([]);
+        mocks.findClassLinkIdentity.mockResolvedValueOnce({ subject: 'classlink-subject-1' });
+        mocks.linkSubject.mockResolvedValueOnce({ subject: 'classlink-subject-1' });
+        const firstResult = await provisionKeycloakUsers({ apply: true }, first);
+        expect(firstResult).toMatchObject({ mapped: 1, classlinkFallbackUsed: 1 });
+        expect(mocks.createSubject).not.toHaveBeenCalled();
+        // The email subject is linked to the ClassLink subject, so a later email-code
+        // sign-in through the lca-api broker lands on the same Keycloak user.
+        expect(mocks.linkSubject).toHaveBeenCalledExactlyOnceWith(
+            'email:person@example.com',
+            'classlink-subject-1',
+            { email: 'person@example.com', emailVerified: true }
+        );
+        const [, init] = findFederatedIdentityCall(first.admin, 'keycloak-id');
+        expect(JSON.parse(init.body as string)).toMatchObject({ userId: 'classlink-subject-1' });
+
+        // Second run: subject, Keycloak user, link and mapping exist; repeat apply must not write.
+        mocks.updateOne.mockClear();
+        mocks.linkSubject.mockClear();
+        const second = setupUser(true);
+        mocks.findSubject.mockResolvedValue({ subject: 'classlink-subject-1' });
+        vi.mocked(second.admin.links).mockResolvedValue([
+            {
+                identityProvider: 'lca-api',
+                userId: 'classlink-subject-1',
+                userName: 'classlink-subject-1',
+            },
+            { identityProvider: 'google', userId: 'google-sub', userName: 'google-sub' },
+            { identityProvider: 'apple', userId: 'apple-sub', userName: 'apple-sub' },
+        ]);
+        mocks.findClassLinkIdentity.mockResolvedValueOnce({ subject: 'classlink-subject-1' });
+        const secondResult = await provisionKeycloakUsers({ apply: true }, second);
+        expect(secondResult).toMatchObject({ mapped: 0, classlinkFallbackUsed: 0 });
+        expect(second.admin.request).not.toHaveBeenCalled();
+        expect(mocks.updateOne).not.toHaveBeenCalled();
+        expect(mocks.linkSubject).not.toHaveBeenCalled();
+    });
+
+    it('skips a synthetic ClassLink address: no Keycloak user, verified email or email subject', async (): Promise<void> => {
+        const dependencies = setupUser(false);
+        const row = {
+            _id: new ObjectId(),
+            contactMethod: {
+                type: 'email',
+                value: 'classlink_abc@users.classlink.invalid',
+            },
+            authProviders: [{ type: 'firebase', id: 'classlink_abc' }],
+        };
+        mocks.find.mockReturnValue({
+            sort: () => ({
+                async *[Symbol.asyncIterator]() {
+                    yield row;
+                },
+            }),
+        });
+        const summary = await provisionKeycloakUsers({ apply: true }, dependencies);
+        expect(summary).toMatchObject({
+            processed: 1,
+            skipped: 1,
+            syntheticSkipped: 1,
+            refused: 0,
+        });
+        expect(dependencies.admin.findUsers).not.toHaveBeenCalled();
+        expect(dependencies.admin.request).not.toHaveBeenCalled();
+        expect(mocks.findSubject).not.toHaveBeenCalled();
+        expect(mocks.createSubject).not.toHaveBeenCalled();
+        expect(mocks.linkSubject).not.toHaveBeenCalled();
+        expect(mocks.updateOne).not.toHaveBeenCalled();
+        // The global mapping assertion does not count synthetic addresses as missing.
+        const filter = mocks.countDocuments.mock.calls.at(-1)?.[0] as {
+            'contactMethod.value': { $not: RegExp };
+        };
+        expect(filter['contactMethod.value'].$not.test(row.contactMethod.value)).toBe(true);
+        expect(filter['contactMethod.value'].$not.test('person@example.com')).toBe(false);
+        expect(process.stdout.write).toHaveBeenCalledWith(
+            expect.stringContaining('1 ClassLink user(s) without a deliverable email skipped')
+        );
+    });
+
+    it('prints ClassLink coverage only when --report-classlink is requested', async (): Promise<void> => {
+        const dependencies = setupUser(false);
+        mocks.findSubject.mockResolvedValue(null);
+        vi.mocked(dependencies.admin.findUsers).mockResolvedValueOnce([]);
+        mocks.findClassLinkIdentity.mockResolvedValueOnce({ subject: 'classlink-subject-1' });
+        mocks.linkSubject.mockResolvedValueOnce({ subject: 'classlink-subject-1' });
+        await provisionKeycloakUsers({ apply: true, reportClasslink: true }, dependencies);
+        expect(process.stdout.write).toHaveBeenCalledWith(
+            expect.stringContaining('ClassLink coverage: 1 user(s) resolved via ClassLink identity')
+        );
     });
 });
 

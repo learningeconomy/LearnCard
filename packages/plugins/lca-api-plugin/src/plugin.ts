@@ -410,6 +410,61 @@ export const getLCAPlugin = async (
 
                     return result;
                 },
+                classlinkGetAuthorizeUrl: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.getAuthorizeUrl.mutate(args);
+                },
+                classlinkGetPersonalEmail: async _learnCard => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.getPersonalEmail.query();
+                },
+                classlinkStartPersonalEmail: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.startPersonalEmail.mutate(args);
+                },
+                classlinkVerifyPersonalEmail: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.verifyPersonalEmail.mutate(args);
+                },
+                classlinkExchangeCode: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.exchangeCode.mutate(args);
+                },
+                deleteMyClassLinkData: async _learnCard => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.deleteMyData.mutate();
+                },
+                classlinkGetConnection: async _learnCard => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.getConnection.query();
+                },
+                classlinkConnect: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.connect.mutate(args);
+                },
+                transcriptsGetStatus: async _learnCard => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.transcripts.getStatus.query();
+                },
+                transcriptsRequest: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.transcripts.request.mutate(args);
+                },
+                transcriptsMarkReceived: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.transcripts.markReceived.mutate(args);
+                },
                 getProofOfLoginVp: async (_learnCard, token) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
@@ -679,6 +734,43 @@ export const getLCAPlugin = async (
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return { success: false, message: '' };
                 },
+                classlinkGetAuthorizeUrl: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
+                classlinkGetPersonalEmail: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
+                classlinkStartPersonalEmail: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
+                classlinkVerifyPersonalEmail: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
+                classlinkExchangeCode: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
+                classlinkGetConnection: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return {
+                        available: false,
+                        canConnect: false,
+                        connected: false,
+                        isStudent: false,
+                    };
+                },
+                classlinkConnect: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
+                transcriptsGetStatus: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { eligible: false, stateDisplayName: '' };
+                },
+                transcriptsRequest: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
+                transcriptsMarkReceived: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
                 getProofOfLoginVp: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return { success: false, error: 'Offline' };
@@ -724,6 +816,10 @@ export const getLCAPlugin = async (
                 deleteUserKey: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return { success: false };
+                },
+                deleteMyClassLinkData: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { deleted: 0 };
                 },
             },
         };

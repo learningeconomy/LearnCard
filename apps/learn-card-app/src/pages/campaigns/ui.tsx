@@ -51,6 +51,16 @@ export const SectionHeading: React.FC<CampaignSectionProps> = ({ step, title, de
     </div>
 );
 
+export const DeliveryContentHeading: React.FC<{ title: string; icon: string }> = ({
+    title,
+    icon,
+}) => (
+    <h3 className="flex items-center gap-2 border-t border-solid border-grayscale-200 pt-5 text-sm font-semibold text-grayscale-900">
+        <IonIcon icon={icon} className="shrink-0 text-xl" aria-hidden="true" />
+        {title}
+    </h3>
+);
+
 export const Toggle: React.FC<CampaignToggleProps> = ({
     label,
     description,
