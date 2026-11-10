@@ -11,7 +11,7 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
     };
 
     return (
-        <div className="w-full max-w-[600px] mt-4 px-2">
+        <div className="w-full max-w-[600px] mt-4">
             <button
                 onClick={handleClick}
                 className="w-full group relative overflow-hidden rounded-2xl bg-linear-to-br/srgb from-violet-600 via-indigo-600 to-cyan-500 p-[1px] transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/25 hover:scale-[1.02] active:scale-[0.99]"

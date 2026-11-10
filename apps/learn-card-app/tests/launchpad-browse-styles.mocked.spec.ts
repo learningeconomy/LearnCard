@@ -1,0 +1,96 @@
+import { expect, test } from './fixtures/mocked-test';
+import { TEST_USER_PROFILE_ID } from './constants';
+import { installNetwork } from './mocks/network';
+import type { BrainOutputs } from './mocks/trpc';
+import { waitForAuthenticatedState } from './test.helpers';
+
+const listings = ['Example Learning', 'Example Tools'].map((name, index) => ({
+    listing_id: `layout-test-${index}`,
+    display_name: name,
+    tagline: 'An app for learning',
+    full_description: 'A test app for the browse page.',
+    icon_url: '/favicon.ico',
+    app_listing_status: 'LISTED' as const,
+    launch_type: 'EMBEDDED_IFRAME' as const,
+    launch_config_json: JSON.stringify({ url: 'https://example.com' }),
+    promotion_level: 'CURATED_LIST' as const,
+}));
+
+test.describe('Apps browse layout @mocked', () => {
+    for (const viewport of [
+        { name: 'desktop', width: 1280, height: 900 },
+        { name: 'mobile', width: 390, height: 844 },
+    ]) {
+        test(`keeps search and app cards readable on ${viewport.name}`, async ({ page }) => {
+            await page.setViewportSize({ width: viewport.width, height: viewport.height });
+            const mock = await installNetwork(page);
+            mock.on('appStore.browseListedApps', input => {
+                const promotion = (input as { promotionLevel?: string })?.promotionLevel;
+                return {
+                    records: promotion === 'FEATURED_CAROUSEL' ? [] : listings,
+                    hasMore: false,
+                } satisfies BrainOutputs['appStore']['browseListedApps'];
+            });
+            mock.on(
+                'appStore.getInstalledApps',
+                () =>
+                    ({
+                        records: [],
+                        hasMore: false,
+                    }) satisfies BrainOutputs['appStore']['getInstalledApps']
+            );
+
+            await waitForAuthenticatedState(page, {
+                path: '/launchpad/browse?tab=All',
+                profileId: TEST_USER_PROFILE_ID,
+            });
+
+            const search = page.locator('input[placeholder="Search apps..."]');
+            await expect(search).toBeVisible();
+            const icon = search
+                .locator('xpath=ancestor::div[.//*[local-name()="svg"]][1]')
+                .locator('svg');
+            const inputGeometry = await search.evaluate(element => {
+                const rect = element.getBoundingClientRect();
+                const style = getComputedStyle(element);
+                return { left: rect.left, paddingLeft: parseFloat(style.paddingLeft) };
+            });
+            const iconBox = await icon.boundingBox();
+            expect(iconBox).not.toBeNull();
+            expect(inputGeometry.left + inputGeometry.paddingLeft).toBeGreaterThanOrEqual(
+                iconBox!.x + iconBox!.width + 4
+            );
+
+            const list = page.getByText('Suggested Apps', { exact: true }).locator('../..');
+            await expect(list).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+            const firstCard = list.locator(':scope > *').filter({ hasText: 'Example Learning' });
+            const secondCard = list.locator(':scope > *').filter({ hasText: 'Example Tools' });
+            await expect(firstCard).toBeVisible({ timeout: 30_000 });
+            await expect(secondCard).toBeVisible();
+            await expect(firstCard).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+            const [firstBox, secondBox] = await Promise.all([
+                firstCard.boundingBox(),
+                secondCard.boundingBox(),
+            ]);
+            expect(firstBox).not.toBeNull();
+            expect(secondBox).not.toBeNull();
+            expect(secondBox!.y).toBeGreaterThan(firstBox!.y + firstBox!.height);
+
+            const developerCard = page.getByRole('button', { name: /Build Your Own App/ });
+            const developerBox = await developerCard.boundingBox();
+            expect(developerBox).not.toBeNull();
+            expect(developerBox!.x).toBeCloseTo(firstBox!.x, 0);
+            expect(developerBox!.width).toBeCloseTo(firstBox!.width, 0);
+            expect(developerBox!.x).toBeGreaterThanOrEqual(16);
+            expect(viewport.width - developerBox!.x - developerBox!.width).toBeGreaterThanOrEqual(
+                16
+            );
+
+            await search.fill('Example Learning');
+            await expect(page.getByText('Example Learning', { exact: true })).toBeVisible();
+            await expect(page.getByText('Example Tools', { exact: true })).toHaveCount(0);
+            const results = page.getByText('1 Search Result', { exact: true }).locator('../..');
+            await expect(results).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+        });
+    }
+});
