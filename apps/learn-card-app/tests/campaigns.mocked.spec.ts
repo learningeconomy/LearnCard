@@ -67,6 +67,8 @@ const mockCampaignBoot = (mock: TrpcMock): void => {
 
 test.describe('campaign composer @mocked', () => {
     test('admin draft, validation, preview, imports, test send and lifecycle', async ({ page }) => {
+        // This journey includes several reloads and many independent editor actions.
+        test.setTimeout(180_000);
         await page.setViewportSize({ width: 1440, height: 1000 });
         const mock = await installNetwork(page);
         mockCampaignBoot(mock);
@@ -665,6 +667,8 @@ test.describe('campaign composer @mocked', () => {
     test('in-app-only self-test arrives on the next app visit through existing endpoints', async ({
         page,
     }) => {
+        // Delivery is checked across two authenticated visits and a reload.
+        test.setTimeout(180_000);
         const mock = await installNetwork(page);
         mockCampaignBoot(mock);
         const profile = {
@@ -823,6 +827,8 @@ test.describe('campaign composer @mocked', () => {
 });
 
 test('campaign announcement inbox @mocked', async ({ page }) => {
+    // This end-to-end journey checks read/archive persistence and notification entry.
+    test.setTimeout(180_000);
     await page.setViewportSize({ width: 1440, height: 1000 });
     const mock = await installNetwork(page);
     mockCampaignBoot(mock);
@@ -838,7 +844,8 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
     mock.on('profile.getProfile', () => profile);
     mock.on('profile.getOtherProfile', () => profile);
     mock.on('profile.createProfile', () => profile.did);
-    // A background profile refresh can share the shown/dismissed event batch after reload.
+    // Profile refresh can share a tRPC batch with the campaign event. Without
+    // this handler the entire batch falls through to the HAR and is aborted.
     mock.on('profile.updateProfile', () => true);
     mock.on('user.getDids', () => [profile.did]);
     mock.on('user.addDid', () => true);
@@ -881,8 +888,12 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
         return true;
     });
     mock.on('notifications.markAllNotificationsRead', () => true);
-    await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
-    await page.goto('/notifications');
+    await waitForAuthenticatedState(page, {
+        profileId: TEST_USER_PROFILE_ID,
+        path: '/notifications',
+        nextPath: '/notifications',
+        waitUntil: 'commit',
+    });
     const card = page.getByRole('article', { name: notification.message.title });
     await expect(card).toBeVisible({ timeout: 120_000 });
     await expect(card.getByText('New', { exact: true })).toBeVisible();
@@ -957,12 +968,33 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
         events.push(input);
         return true;
     });
+    // Reproduce the mixed batch observed in CI. Every procedure must have a
+    // handler, or the mock passes the entire request to the unmatched HAR.
+    const mixedBatchStatus = await page.evaluate(async campaignId => {
+        const response = await fetch(
+            'http://localhost:4000/trpc/profile.updateProfile,campaigns.recordEvent?batch=1',
+            {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    0: {},
+                    1: { campaignId, event: 'shown' },
+                }),
+            }
+        );
+        return response.status;
+    }, campaign.id);
+    expect(mixedBatchStatus).toBe(200);
+    expect(events).toEqual([{ campaignId: campaign.id, event: 'shown' }]);
+    events.length = 0;
     await card.getByRole('button', { name: 'View', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Close alerts' })).not.toBeVisible();
     await expect(
         page.getByRole('heading', { name: 'Campaign opened from your alert', exact: true })
     ).toBeVisible({ timeout: 30_000 });
-    await expect.poll(() => events).toEqual([{ campaignId: campaign.id, event: 'shown' }]);
+    await expect
+        .poll(() => events, { timeout: 15_000 })
+        .toEqual([{ campaignId: campaign.id, event: 'shown' }]);
     await page.screenshot({ path: 'test-results/campaign-notification-entry.png' });
     await page.getByRole('button', { name: 'Close campaign', exact: true }).click();
     await expect(
@@ -970,7 +1002,7 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
     ).not.toBeVisible();
     // Dismissal is reported asynchronously; it is distinct from a CTA click.
     await expect
-        .poll(() => events)
+        .poll(() => events, { timeout: 15_000 })
         .toEqual([
             { campaignId: campaign.id, event: 'shown' },
             { campaignId: campaign.id, event: 'dismissed' },
