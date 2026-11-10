@@ -7,6 +7,7 @@ import {
     UseQueryResult,
     type QueryClient,
 } from '@tanstack/react-query';
+import { dropMalformedInfiniteCacheEntry } from '../infiniteQueryGuard';
 import {
     BoostAndVCType,
     CredentialCategoryEnum,
@@ -541,8 +542,11 @@ export const useGetPaginatedBoostRecipients = (
     enabled = true
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    const queryKey = ['paginatedBoostRecipients', boostUri, initialOptions] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'paginatedBoostRecipients');
     return useInfiniteQuery({
-        queryKey: ['paginatedBoostRecipients', boostUri, initialOptions],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             if (!boostUri) throw new Error('Boost URI required.');
             const wallet = await initWallet();
@@ -617,9 +621,12 @@ export const useGetPaginatedConnections = (
     initialOptions: PaginationOptionsType = { limit: 10 }
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const queryKey = ['paginatedConnections', switchedDid ?? '', initialOptions] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'paginatedConnections');
     return useInfiniteQuery({
-        queryKey: ['paginatedConnections', switchedDid ?? '', initialOptions],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
             const options = { ...initialOptions, cursor: pageParam as string | undefined };
@@ -672,9 +679,12 @@ export const useGetPaginatedPendingConnections = (
     initialOptions: PaginationOptionsType = { limit: 10 }
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const queryKey = ['paginatedPendingConnections', switchedDid ?? '', initialOptions] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'paginatedPendingConnections');
     return useInfiniteQuery({
-        queryKey: ['paginatedPendingConnections', switchedDid ?? '', initialOptions],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
             const options = { ...initialOptions, cursor: pageParam as string | undefined };
@@ -724,9 +734,12 @@ export const useGetPaginatedConnectionRequests = (
     initialOptions: PaginationOptionsType = { limit: 10 }
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const queryKey = ['paginatedConnectionRequests', switchedDid ?? '', initialOptions] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'paginatedConnectionRequests');
     return useInfiniteQuery({
-        queryKey: ['paginatedConnectionRequests', switchedDid ?? '', initialOptions],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
             const options = { ...initialOptions, cursor: pageParam as string | undefined };
@@ -1280,10 +1293,13 @@ export const useGetSkillChildrenInfinite = (
     options?: { limit?: number; enabled?: boolean }
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const { limit = 50, enabled = true } = options ?? {};
+    const queryKey = ['getSkillChildrenInfinite', frameworkId, skillId, limit] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'getSkillChildrenInfinite');
 
     return useInfiniteQuery({
-        queryKey: ['getSkillChildrenInfinite', frameworkId, skillId, limit],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
             if (skillId) {

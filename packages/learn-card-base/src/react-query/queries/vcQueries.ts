@@ -32,6 +32,8 @@ import {
     type HeldCredential,
 } from 'learn-card-base/helpers/credentialLifecycleStatus';
 import { getLogger } from '../../logging/logger';
+import { dropMalformedInfiniteCacheEntry, isInfiniteData } from '../infiniteQueryGuard';
+export { isInfiniteData } from '../infiniteQueryGuard';
 import { walletStore } from '../../stores/walletStore';
 import {
     fetchResolvedCredential,
@@ -145,14 +147,6 @@ export const useGetResolvedCredentials = (uris?: (string | undefined)[], enabled
     }).map((result, index) => ({ ...result, uri: uris?.[index] }));
 };
 
-/**
- * React Query's infinite observer reads `data.pages` and `data.pageParams` directly, so a truthy
- * entry without them (seen in Scouts' persisted cache, LC-2330) throws on mount.
- */
-export const isInfiniteData = <TData = unknown>(data: unknown): data is InfiniteData<TData> =>
-    Array.isArray((data as Partial<InfiniteData<TData>> | undefined)?.pages) &&
-    Array.isArray((data as Partial<InfiniteData<TData>> | undefined)?.pageParams);
-
 // Returns an array of stored idx credentials
 export const useGetCredentialList = (category?: CredentialCategory, enabled: boolean = true) => {
     const { initWallet } = useWallet();
@@ -161,12 +155,8 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
     const reader = useCredentialReader();
     const queryKey = ['useGetCredentialList', didWeb ?? '', category ?? '', reader?.id.did() ?? ''];
 
-    // Recover malformed persisted entries before the infinite observer reads them.
-    const cached = queryClient.getQueryData(queryKey);
-    if (cached !== undefined && !isInfiniteData(cached)) {
-        log.warn('Dropping malformed useGetCredentialList cache entry', queryKey);
-        queryClient.removeQueries({ queryKey, exact: true });
-    }
+    // Recover malformed persisted entries before the infinite observer reads them (LC-2330/LC-2352).
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useGetCredentialList');
 
     return useInfiniteQuery({
         queryKey,
@@ -252,11 +242,14 @@ export const useGetPaginatedManagedBoosts = (
     enabled: boolean = true
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const didWeb = switchedProfileStore.use.switchedDid();
     const { limit, ...restOptions } = options ?? {};
+    const queryKey = getPaginatedManagedBoostsKey(category, didWeb ?? '');
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useGetPaginatedManagedBoosts');
 
     return useInfiniteQuery({
-        queryKey: getPaginatedManagedBoostsKey(category, didWeb ?? ''),
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
 
@@ -284,9 +277,12 @@ export const useGetPaginatedManagedBoostsQuery = (
     enabled: boolean = true
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    const queryKey = ['useGetPaginatedManagedBoostsQuery', query ?? ''] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useGetPaginatedManagedBoostsQuery');
 
     return useInfiniteQuery({
-        queryKey: ['useGetPaginatedManagedBoostsQuery', query ?? ''],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
 
