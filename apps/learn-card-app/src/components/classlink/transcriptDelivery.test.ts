@@ -3,8 +3,10 @@ import {
     formatExpectedDelivery,
     getDeliveryPace,
     getDeliveryProgress,
+    getNextDeliveryCheck,
     getStaleAt,
     getTimeLeftLabel,
+    isTimedBarCurrent,
 } from './transcriptDelivery';
 
 const REQUESTED = '2026-11-10T12:00:00.000Z';
@@ -82,6 +84,41 @@ describe('formatExpectedDelivery', () => {
         );
         expect(formatExpectedDelivery(at(3 * day), now, 'en')).toMatch(/^in (3|4) days$/);
         expect(formatExpectedDelivery(at(10 * day), now, 'en')).toBe('by November 20');
+    });
+});
+
+describe('isTimedBarCurrent', () => {
+    it('keeps the bar up to a minute past the estimate', () => {
+        expect(isTimedBarCurrent(at(120_000), ms(at(150_000)))).toBe(true);
+        expect(isTimedBarCurrent(at(120_000), ms(at(180_000)))).toBe(true);
+        expect(isTimedBarCurrent(at(120_000), ms(at(181_000)))).toBe(false);
+    });
+});
+
+describe('getNextDeliveryCheck', () => {
+    const day = 24 * 60 * 60_000;
+
+    it('refreshes a relative estimate each minute, then wakes at the estimate and its grace', () => {
+        const expected = at(60 * 60_000);
+        expect(getNextDeliveryCheck(REQUESTED, expected, day, ms(REQUESTED))).toBe(ms(at(60_000)));
+        expect(getNextDeliveryCheck(REQUESTED, expected, day, ms(at(59 * 60_000 + 30_000)))).toBe(
+            ms(expected)
+        );
+        expect(getNextDeliveryCheck(REQUESTED, expected, day, ms(expected))).toBe(
+            ms(expected) + 60_000
+        );
+    });
+
+    it('wakes at the stale time once the estimate has passed, then stops', () => {
+        expect(getNextDeliveryCheck(REQUESTED, at(60_000), day, ms(at(5 * 60_000)))).toBe(
+            ms(at(60_000)) + day
+        );
+        expect(getNextDeliveryCheck(REQUESTED, undefined, day, ms(REQUESTED))).toBe(
+            ms(REQUESTED) + day
+        );
+        expect(
+            getNextDeliveryCheck(REQUESTED, undefined, day, ms(REQUESTED) + day + 1)
+        ).toBeUndefined();
     });
 });
 

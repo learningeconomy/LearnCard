@@ -413,6 +413,42 @@ describe('TranscriptOptInCard', () => {
             expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
         });
 
+        it('drops the progress bar for a short estimate that was missed long ago', () => {
+            mocks.latest = pending(3 * 60 * 60_000, -(3 * 60 * 60_000 - 120_000));
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.queryByRole('progressbar')).toBeNull();
+            expect(screen.getByTestId('transcript-optin-waiting').textContent).toBe('Waiting');
+            expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
+        });
+
+        it('updates on its own when an estimate passes after polling has stopped', () => {
+            vi.useFakeTimers({ shouldAdvanceTime: true });
+            try {
+                mocks.isPollingExhausted = true;
+                mocks.latest = pending(31 * 60_000, 50 * 60_000);
+                render(<TranscriptOptInCard source="wallet" />);
+                expect(screen.getByTestId('transcript-optin-waiting').textContent).toBe(
+                    'Expected in 50 minutes'
+                );
+                expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
+
+                act(() => {
+                    vi.advanceTimersByTime(30 * 60_000);
+                });
+                expect(screen.getByTestId('transcript-optin-waiting').textContent).toBe(
+                    'Expected in 20 minutes'
+                );
+
+                act(() => {
+                    vi.advanceTimersByTime(20 * 60_000 + 1_000);
+                });
+                expect(screen.getByTestId('transcript-optin-stale')).toBeTruthy();
+                expect(screen.getByTestId('transcript-optin-open-notifications')).toBeTruthy();
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
         it('offers recovery a day after a missed estimate', () => {
             mocks.latest = pending(
                 3 * TRANSCRIPT_STALE_AFTER_MS,

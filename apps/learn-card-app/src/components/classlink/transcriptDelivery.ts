@@ -97,3 +97,30 @@ export const getStaleAt = (
     const byEstimate = expectedBy ? Date.parse(expectedBy) + staleAfterMs : 0;
     return Math.max(byRequest, Number.isFinite(byEstimate) ? byEstimate : 0);
 };
+
+/** How long past a timed estimate its progress bar stays up before the plain waiting state. */
+export const ESTIMATE_GRACE_MS = 60_000;
+
+export const isTimedBarCurrent = (expectedBy: string, now: number): boolean =>
+    now <= Date.parse(expectedBy) + ESTIMATE_GRACE_MS;
+
+/**
+ * The next moment a pending request's waiting UI changes on its own: the estimate, the end of
+ * its grace, or the stale time. While a relative estimate ("in 30 minutes") is on screen it is
+ * also refreshed at least once a minute. Undefined when nothing is left to wait for.
+ */
+export const getNextDeliveryCheck = (
+    requestedAt: string,
+    expectedBy: string | undefined,
+    staleAfterMs: number,
+    now: number
+): number | undefined => {
+    const estimate = expectedBy ? Date.parse(expectedBy) : Number.NaN;
+    const deadlines = [getStaleAt(requestedAt, expectedBy, staleAfterMs)];
+    if (Number.isFinite(estimate)) {
+        deadlines.push(estimate, estimate + ESTIMATE_GRACE_MS);
+        if (now < estimate) deadlines.push(now + MINUTE);
+    }
+    const upcoming = deadlines.filter(at => Number.isFinite(at) && at > now);
+    return upcoming.length > 0 ? Math.min(...upcoming) : undefined;
+};

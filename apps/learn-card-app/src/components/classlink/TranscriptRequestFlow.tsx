@@ -19,7 +19,7 @@ import { useReceivedTranscript } from '../../hooks/useReceivedTranscript';
 import BoostEarnedCard from '../boost/boost-earned-card/BoostEarnedCard';
 import { getTranscriptCategory } from './transcriptCategory';
 import { TranscriptDeliveryProgress } from './TranscriptDeliveryProgress';
-import { formatExpectedDelivery, getDeliveryPace } from './transcriptDelivery';
+import { ESTIMATE_GRACE_MS, formatExpectedDelivery, getDeliveryPace } from './transcriptDelivery';
 import {
     TranscriptConsentCheckbox,
     TranscriptErrorBanner,
@@ -31,7 +31,7 @@ const log = getLogger('transcript-request-flow');
 /** After this long without arrival, the flow lets the student move on. */
 export const TRANSCRIPT_FLOW_PATIENCE_MS = 90_000;
 /** Extra time past a timed estimate before the flow lets the student move on. */
-export const TRANSCRIPT_FLOW_ESTIMATE_GRACE_MS = 60_000;
+export const TRANSCRIPT_FLOW_ESTIMATE_GRACE_MS = ESTIMATE_GRACE_MS;
 
 type RequestOutcome = {
     status: 'requested' | 'none_yet' | 'failed';

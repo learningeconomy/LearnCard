@@ -27,7 +27,13 @@ import { useAnalytics, AnalyticsEvents } from '@analytics';
 import * as m from '../../paraglide/messages.js';
 import { getLocale } from '../../paraglide/runtime.js';
 import { TranscriptDeliveryProgress } from './TranscriptDeliveryProgress';
-import { formatExpectedDelivery, getDeliveryPace, getStaleAt } from './transcriptDelivery';
+import {
+    formatExpectedDelivery,
+    getDeliveryPace,
+    getStaleAt,
+    isTimedBarCurrent,
+} from './transcriptDelivery';
+import { useDeliveryClock } from './useDeliveryClock';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import { Capacitor } from '@capacitor/core';
 import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
@@ -222,6 +228,10 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
         requestedAt: latest?.requestedAt,
         receivedAt: latest?.receivedAt,
     });
+    useDeliveryClock(
+        latest?.status === 'requested' && !latest.receivedAt ? latest : undefined,
+        TRANSCRIPT_STALE_AFTER_MS
+    );
 
     // A FORBIDDEN/NOT_FOUND response means the signed-in user isn't a ClassLink
     // user at all, so the card must hide silently rather than show an error.
@@ -408,7 +418,11 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                 (isPollingExhausted && estimatePassed) ||
                 now > getStaleAt(requestedAt, expectedBy, TRANSCRIPT_STALE_AFTER_MS);
             const pace = getDeliveryPace(requestedAt, expectedBy);
-            const showTimedProgress = pace === 'timed' && !isStale && Boolean(expectedBy);
+            // A missed short estimate falls back to the plain waiting state, never a stuck bar.
+            const timedExpectedBy =
+                pace === 'timed' && !isStale && expectedBy && isTimedBarCurrent(expectedBy, now)
+                    ? expectedBy
+                    : undefined;
             const isUntrackable = !data.issuerDid || !data.issuerProfileId;
 
             if (isUntrackable) {
@@ -479,11 +493,11 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                             </div>
                         ) : (
                             <div className="mt-4">
-                                {showTimedProgress && expectedBy ? (
+                                {timedExpectedBy ? (
                                     <div className="mb-4">
                                         <TranscriptDeliveryProgress
                                             requestedAt={requestedAt}
-                                            expectedBy={expectedBy}
+                                            expectedBy={timedExpectedBy}
                                             received={false}
                                             stage={m['transcriptOptIn.flow.preparing']()}
                                         />
