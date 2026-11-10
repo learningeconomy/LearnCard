@@ -65,7 +65,8 @@
         "uuid": "^14.0.0",
         "zod": "4.6.6",
         "zustand": "^3.7.2",
-        "@digitalcredentials/issuer-registry-client": "^4.1.0"
+        "@digitalcredentials/issuer-registry-client": "^4.1.0",
+        "@learncard/didkit-plugin": "workspace:*"
     },
     "peerDependencies": {
         "@tanstack/react-query": "^5.0.0"
