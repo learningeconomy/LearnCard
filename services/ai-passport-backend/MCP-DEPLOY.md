@@ -19,7 +19,6 @@ unfiltered monorepo install plus every Tesseract language packed the image past 
 limit (Deploy #2485). Adding an OCR language later means updating that default (or the runtime env)
 and the matching `tesseract-ocr-*` package in `privacy/install.sh`.
 
-
 ## When it runs
 
 | Trigger                                                                         | Leg                                                    | Gate                               |
