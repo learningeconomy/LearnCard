@@ -275,6 +275,16 @@ export default defineConfig(async ({ mode, command }) => {
                 '@learncard/openid4vc-plugin > dcql',
                 '@learncard/vc-plugin > multiformats/bases/base58',
                 '@learncard/vc-plugin > multiformats/bases/base64',
+                // Found only after first paint (lazy routes, locale imports); a cold dev
+                // server otherwise re-optimizes and reloads mid-navigation.
+                '@headlessui/react',
+                '@emoji-mart/react',
+                'recharts',
+                '@digitalcredentials/jsonld',
+                '@capacitor-community/in-app-review',
+                'moment/locale/ar',
+                'moment/locale/es',
+                'moment/locale/fr',
             ],
             // Exclude workspace packages from pre-bundling so Vite serves their TypeScript sources.
             exclude: workspacePackages,
