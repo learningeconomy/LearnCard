@@ -19,6 +19,7 @@ type FederationMetadata = {
     };
 };
 type EntityConfiguration = { metadata: FederationMetadata };
+type EntityStatement = EntityConfiguration & { sub?: string };
 type LegacyDocument = {
     registry: Record<string, { name: string; url: string; location?: string } | null>;
 };
@@ -106,7 +107,7 @@ const lookupIssuers = async (
                     if (!endpoint) throw new Error('Missing issuer lookup endpoint');
                     const url = new URL(endpoint);
                     url.searchParams.set('sub', did);
-                    const issuer = await readDocument<EntityConfiguration>(
+                    const issuer = await readDocument<EntityStatement>(
                         client,
                         url.href,
                         'jwt',
@@ -114,6 +115,8 @@ const lookupIssuers = async (
                         proxyBaseUrl
                     );
                     if (!issuer) return {};
+                    // A statement about another subject is a bad response, never a match.
+                    if (issuer.sub !== did) throw new Error('Issuer statement subject mismatch');
                     return { match: { issuer: issuer.metadata, registry: anchor!.metadata } };
                 }
                 // Runtime registry lists may introduce types this client cannot check yet.

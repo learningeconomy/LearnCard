@@ -8,11 +8,16 @@ Example: `https://staging.learncard.ai/api/registry-proxy/staging.opensalt.net/i
 
 The handler is `registryProxy.ts` in this directory. It is dependency-free so the same file runs in three places:
 
-- **Netlify edge (Deno):** `apps/learn-card-app/netlify/edge-functions/registry-proxy.ts` and `apps/scouts/netlify/edge-functions/registry-proxy.ts` re-export it. Each entry has `path: '/api/registry-proxy/*'` and `cache: 'manual'`.
+- **Netlify edge (Deno):** `apps/learn-card-app/netlify/edge-functions/registry-proxy.ts` and `apps/scouts/netlify/edge-functions/registry-proxy.ts` re-export `./shared/registryProxy.ts`, a build-time copy of this file. Each entry has `path: '/api/registry-proxy/*'` and `cache: 'manual'`.
 - **Local Vite dev and preview servers:** `registryProxyDevServer.ts`, registered in both apps' Vite configs.
 - **Browser:** the client uses the same allowlist to decide which URLs to proxy.
 
-`deploy.yml` deploys from a clean staging directory, so it copies this file to the same repo-relative path under the stage root. That lets the edge entries' relative imports resolve when Netlify bundles them. Deploy previews built by Netlify's git integration have the full repo, so no copy is needed there.
+Netlify's edge bundler cannot import files outside the app's edge-functions directory, so this file is copied into `netlify/edge-functions/shared/registryProxy.ts` in each app before bundling. This file stays the only source; the copies are gitignored and never edited.
+
+- **`deploy.yml`** deploys from a clean staging directory with `--no-build`, so it copies this file to `$STAGE_DIR/netlify/edge-functions/shared/registryProxy.ts`.
+- **Netlify-built deploys** (such as deploy previews from the git integration): each app's `netlify.toml` build command copies the file before `nx build`.
+- **Local Vite dev and preview** import this file directly and need no copy.
+- **Unit tests:** `vitest.config.ts` aliases `./shared/registryProxy.ts` to this file so the edge entries can be tested without the copy.
 
 ## Allowlist
 
@@ -49,8 +54,15 @@ To add a registry, extend `ALLOWED_HOSTS` / `ALLOWED_PATHS` in `registryProxy.ts
 | `200`                            | `Cache-Control: public, max-age=60`; `Netlify-CDN-Cache-Control: public, s-maxage=300, stale-while-revalidate=600` |
 | `404` (issuer not in registry)   | `Cache-Control: no-store`                                                                                          |
 | Errors (`403`/`405`/`502`/`504`) | `Cache-Control: no-store`                                                                                          |
+| All responses                    | `Netlify-Vary: query=sub\|iss\|entity_type`                                                                        |
 
-With these headers, removing an issuer from the registry can take up to about 15 minutes to show up at the CDN (5 minutes fresh plus 10 minutes stale-while-revalidate). The client also keeps documents for 60 seconds and conclusive lookups for an hour, which is the same as before this proxy. Negative `404` lookups are not cached, so a newly registered issuer appears on the next lookup. The query string is part of the cache key, so each `sub` is cached separately.
+With these headers, removing an issuer from the registry can take up to about 15 minutes to show up at the CDN (5 minutes fresh plus 10 minutes stale-while-revalidate). The client also keeps documents for 60 seconds and conclusive lookups for an hour, which is the same as before this proxy. Negative `404` lookups are not cached, so a newly registered issuer appears on the next lookup.
+
+**Cache key.** Without [`Netlify-Vary: query=...`](https://docs.netlify.com/build/caching/caching-overview/#vary-by-query-parameter), Netlify's CDN cache key ignored the query string: on staging, a cached `fetch?sub=A` was served for `fetch?sub=B`. The proxy therefore sends `Netlify-Vary` listing every allowlisted parameter (`sub`, `iss`, `entity_type`), derived from `ALLOWED_PATHS` so it stays in sync. Each combination of their values gets its own cache object; parameter order does not matter, names are case-sensitive. Netlify uses the first `Netlify-Vary` it sees for a URL, so the header is sent on every response, including errors. Requests with no allowlisted parameter (the trust anchor, a bare listing) share one cache object per path, which is correct because the upstream response is the same. Other parameters are not part of the key: the function rejects them with an uncached `403`, but the CDN may answer such a request from the cached response for the same allowlisted values, which is the same public document.
+
+As a second check, the client accepts an issuer statement from `fetch?sub=` only if its decoded `sub` equals the requested DID. A statement about another subject, or without `sub`, marks the registry unchecked, so the issuer resolves to `unknown` with `incomplete: true`, never `trusted`.
+
+CDN caches are per edge node. Separate connections can land on different nodes, so repeated `curl` calls may each report `fwd=miss; stored` until every node is warm. To check for a hit, send several requests over one connection (for example, one `curl` invocation with the URL repeated). Netlify's durable shared cache does not apply to edge functions.
 
 All responses carry `Access-Control-Allow-Origin: *`, allow the `sentry-trace` / `baggage` request headers, and expose `X-Registry-Proxy: 1`. The client uses that header to tell real proxy responses apart from SPA fallbacks.
 
@@ -84,25 +96,27 @@ References: [edge function usage](https://docs.netlify.com/build/edge-functions/
 ## Deployment QA
 
 1. Deploy LCA and ScoutPass frontends to staging.
-2. Fetch `https://staging.learncard.ai/api/registry-proxy/staging.opensalt.net/issuer-registry/.well-known/openid-federation` twice. Verify:
+2. Fetch `https://staging.learncard.ai/api/registry-proxy/staging.opensalt.net/issuer-registry/.well-known/openid-federation` twice in one `curl` invocation. Verify:
     - status `200` and `application/entity-statement+jwt`
     - CORS headers
     - a `Cache-Status` hit on the second request
-3. Verify the rejections:
+3. In one `curl` invocation, fetch `.../issuer-registry/fetch?sub=<registered DID>`, then `?sub=<unregistered DID>`, then the registered DID again. The unregistered DID must return an uncached `404` (not a hit with the registered issuer's statement), and the last request should be a hit.
+4. Verify the rejections:
     - `.../api/registry-proxy/example.com/issuer-registry/fetch?sub=x` returns `403`
     - a `POST` returns `405`
-4. Open a credential issued by a DID in the OpenSALT test registry (see `.../issuer-registry/subordinate_listing`) on staging web, iOS, and Android. Check that it shows as trusted. On native, check that requests go to the tenant's staging domain.
-5. Block `/api/registry-proxy/*` and verify the issuer still resolves through the direct fallback, or shows as unknown if OpenSALT is also blocked. It must never show as trusted in that case.
-6. Repeat on production after staging validation. Existing native installs need the new CapGo bundle.
+5. Open a credential issued by a DID in the OpenSALT test registry (see `.../issuer-registry/subordinate_listing`) on staging web, iOS, and Android. Check that it shows as trusted. On native, check that requests go to the tenant's staging domain.
+6. Block `/api/registry-proxy/*` and verify the issuer still resolves through the direct fallback, or shows as unknown if OpenSALT is also blocked. It must never show as trusted in that case.
+7. Repeat on production after staging validation. Existing native installs need the new CapGo bundle.
 
 Local unit tests (`registryProxy.test.ts`, `issuerRegistry.test.ts`) cover:
 
 - the allowlist and its rejections
 - methods
 - timeout
-- CORS and cache headers
+- CORS and cache headers, including `Netlify-Vary` on every response
 - content-type, size, and body validation
 - uncached errors
 - base-URL selection
 - proxy routing, `404` handling, and direct fallback
 - the never-trusted-on-failure guarantee
+- rejecting issuer statements whose `sub` is missing or is a different DID

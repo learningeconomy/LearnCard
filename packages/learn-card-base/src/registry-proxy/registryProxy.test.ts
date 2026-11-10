@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import handler, {
     REGISTRY_PROXY_MAX_BYTES,
+    REGISTRY_PROXY_NETLIFY_VARY,
     getAllowedRegistryUrl,
     getRegistryProxyBaseUrl,
     toRegistryProxyUrl,
@@ -16,6 +17,7 @@ const jwtResponse = (body = JWS, headers: Record<string, string> = {}) =>
     new Response(body, {
         headers: { 'Content-Type': 'application/entity-statement+jwt', ...headers },
     });
+const NETLIFY_VARY = 'query=sub|iss|entity_type';
 
 afterEach(() => {
     vi.unstubAllGlobals();
@@ -113,6 +115,7 @@ describe('registry proxy edge handler', () => {
         expect(response.headers.get('Netlify-CDN-Cache-Control')).toBe(
             'public, s-maxage=300, stale-while-revalidate=600'
         );
+        expect(response.headers.get('Netlify-Vary')).toBe(NETLIFY_VARY);
         expect(response.headers.get('Set-Cookie')).toBeNull();
         expect(fetchMock).toHaveBeenCalledWith(ANCHOR, {
             headers: {
@@ -167,7 +170,26 @@ describe('registry proxy edge handler', () => {
         expect(response.headers.get('Access-Control-Allow-Headers')).toContain('baggage');
         expect(response.headers.get('Cache-Control')).toBe('no-store');
         expect(response.headers.has('Netlify-CDN-Cache-Control')).toBe(false);
+        expect(response.headers.get('Netlify-Vary')).toBe(NETLIFY_VARY);
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        'staging.opensalt.net/issuer-registry/.well-known/openid-federation',
+        'staging.opensalt.net/issuer-registry/fetch?sub=did%3Aweb%3Aa',
+        'staging.opensalt.net/issuer-registry/fetch?sub=did%3Aweb%3Aa&iss=https%3A%2F%2Fx',
+        'opensalt.net/issuer-registry/list?entity_type=openid_credential_issuer',
+        'opensalt.net/issuer-registry/subordinate_listing?entity_type=openid_credential_issuer',
+    ])('varies the CDN cache key on every query parameter of %s', async target => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jwtResponse()));
+        const response = await proxied(target);
+        expect(response.headers.get('Netlify-CDN-Cache-Control')).toContain('s-maxage=300');
+        const vary = response.headers.get('Netlify-Vary') ?? '';
+        expect(vary).toBe(REGISTRY_PROXY_NETLIFY_VARY);
+        const varied = new Set(vary.replace(/^query=/, '').split('|'));
+        for (const name of new URL(`https://x/${target}`).searchParams.keys()) {
+            expect(varied.has(name)).toBe(true);
+        }
     });
 
     it('rejects path traversal out of the allowlisted prefix', async () => {
@@ -197,6 +219,7 @@ describe('registry proxy edge handler', () => {
         expect(response.headers.get('X-Registry-Proxy')).toBe('1');
         expect(response.headers.get('Cache-Control')).toBe('no-store');
         expect(response.headers.has('Netlify-CDN-Cache-Control')).toBe(false);
+        expect(response.headers.get('Netlify-Vary')).toBe(NETLIFY_VARY);
     });
 
     it.each([
@@ -231,6 +254,7 @@ describe('registry proxy edge handler', () => {
         expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
         expect(response.headers.get('Cache-Control')).toBe('no-store');
         expect(response.headers.has('Netlify-CDN-Cache-Control')).toBe(false);
+        expect(response.headers.get('Netlify-Vary')).toBe(NETLIFY_VARY);
     });
 
     it('returns an uncached 502 when the upstream request throws', async () => {

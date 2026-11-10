@@ -5,8 +5,8 @@ const list = 'https://registries.learncard.com/known-did-registries.json';
 const legacy = 'https://example.com/registry';
 const anchor = 'https://example.com/anchor';
 const endpoint = 'https://example.com/issuer';
-const jwt = (metadata: object) =>
-    `e30.${Buffer.from(JSON.stringify({ metadata })).toString('base64url')}.x`;
+const jwt = (metadata: object, claims: object = {}) =>
+    `e30.${Buffer.from(JSON.stringify({ ...claims, metadata })).toString('base64url')}.x`;
 let client: QueryClient;
 let failure: boolean;
 let fetchMock: Mock<(url: string) => Promise<Response>>;
@@ -35,7 +35,9 @@ beforeEach(() => {
             );
         if (url.startsWith(endpoint))
             return new URL(url).searchParams.get('sub') === 'did:b'
-                ? new Response(jwt({ federation_entity: { organization_name: 'B' } }))
+                ? new Response(
+                      jwt({ federation_entity: { organization_name: 'B' } }, { sub: 'did:b' })
+                  )
                 : new Response('', { status: 404 });
         return Response.json({ registry: { 'did:c': { name: 'C' } } });
     });
@@ -125,7 +127,14 @@ describe('OpenSALT registry proxy', () => {
     const osFetch = 'https://staging.opensalt.net/issuer-registry/fetch';
     const proxyPrefix = `${base}/api/registry-proxy/staging.opensalt.net`;
     const proxyHeaders = { 'X-Registry-Proxy': '1' };
-    type Mode = 'ok' | 'proxy-502' | 'spa-fallback' | 'proxy-network' | 'all-down';
+    type Mode =
+        | 'ok'
+        | 'proxy-502'
+        | 'spa-fallback'
+        | 'proxy-network'
+        | 'all-down'
+        | 'cdn-collision'
+        | 'no-subject';
     let mode: Mode;
     let osFetchMock: Mock<(url: string, init?: RequestInit) => Promise<Response>>;
     const upstream = (url: string) => {
@@ -133,7 +142,9 @@ describe('OpenSALT registry proxy', () => {
             return new Response(jwt({ federation_entity: { federation_fetch_endpoint: osFetch } }));
         if (url.startsWith(osFetch))
             return new URL(url).searchParams.get('sub') === 'did:os'
-                ? new Response(jwt({ federation_entity: { organization_name: 'OS' } }))
+                ? new Response(
+                      jwt({ federation_entity: { organization_name: 'OS' } }, { sub: 'did:os' })
+                  )
                 : new Response('', { status: 404 });
         return null;
     };
@@ -155,6 +166,16 @@ describe('OpenSALT registry proxy', () => {
                 if (mode === 'spa-fallback')
                     return new Response('<!doctype html>', {
                         headers: { 'Content-Type': 'text/html' },
+                    });
+                // A CDN cache key that ignores the query serves did:os's statement for any sub.
+                if (mode === 'cdn-collision' && url.includes('/issuer-registry/fetch'))
+                    return new Response(
+                        jwt({ federation_entity: { organization_name: 'OS' } }, { sub: 'did:os' }),
+                        { headers: proxyHeaders }
+                    );
+                if (mode === 'no-subject' && url.includes('/issuer-registry/fetch'))
+                    return new Response(jwt({ federation_entity: { organization_name: 'OS' } }), {
+                        headers: proxyHeaders,
                     });
                 const target = `https://${url.slice(`${base}/api/registry-proxy/`.length)}`;
                 const response = upstream(target)!;
@@ -208,6 +229,22 @@ describe('OpenSALT registry proxy', () => {
             expect(directOpenSaltCalls().length).toBeGreaterThan(0);
         }
     );
+
+    it('never trusts a statement issued about a different DID (CDN cache-key collision)', async () => {
+        mode = 'cdn-collision';
+        expect(await osLookup('did:unregistered')).toEqual({
+            source: 'unknown',
+            incomplete: true,
+            results: {},
+        });
+        expect(directOpenSaltCalls()).toHaveLength(0);
+        expect((await osLookup('did:os')).source).toBe('trusted');
+    });
+
+    it('never trusts a statement without a subject', async () => {
+        mode = 'no-subject';
+        expect(await osLookup('did:os')).toMatchObject({ source: 'unknown', incomplete: true });
+    });
 
     it('reports unknown and incomplete, never trusted, when proxy and direct both fail', async () => {
         mode = 'all-down';
