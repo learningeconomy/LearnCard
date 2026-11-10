@@ -9,7 +9,7 @@ const listings = ['Example Learning', 'Example Tools'].map((name, index) => ({
     display_name: name,
     tagline: 'An app for learning',
     full_description: 'A test app for the browse page.',
-    icon_url: '/favicon.ico',
+    icon_url: '/assets/icon/circle-orange-book.svg',
     app_listing_status: 'LISTED' as const,
     launch_type: 'EMBEDDED_IFRAME' as const,
     launch_config_json: JSON.stringify({ url: 'https://example.com' }),
@@ -29,7 +29,7 @@ test.describe('Apps browse layout @mocked', () => {
             mock.on('appStore.browseListedApps', input => {
                 const promotion = (input as { promotionLevel?: string })?.promotionLevel;
                 return {
-                    records: promotion === 'FEATURED_CAROUSEL' ? [] : listings,
+                    records: promotion ? [] : listings,
                     hasMore: false,
                 } satisfies BrainOutputs['appStore']['browseListedApps'];
             });
@@ -71,7 +71,8 @@ test.describe('Apps browse layout @mocked', () => {
                 iconBox!.x + iconBox!.width + 4
             );
 
-            const list = page.getByText('Suggested Apps', { exact: true }).locator('../..');
+            const list = page.getByText('All Apps', { exact: true }).locator('../..');
+            await expect(list.locator('ion-skeleton-text')).toHaveCount(0, { timeout: 30_000 });
             await expect(list).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
             const firstCard = list.locator(':scope > *').filter({ hasText: 'Example Learning' });
             const secondCard = list.locator(':scope > *').filter({ hasText: 'Example Tools' });
@@ -117,6 +118,9 @@ test.describe('Apps browse layout @mocked', () => {
             const activePage = search.locator('xpath=ancestor::*[contains(@class, "ion-page")][1]');
             await expect(activePage).not.toHaveClass(/ion-page-invisible|ion-page-hidden/);
             await expect(activePage).toHaveCSS('opacity', '1');
+            await expect(developerCard).toBeInViewport({ ratio: 1 });
+            await firstCard.locator('img').evaluate(image => (image as HTMLImageElement).decode());
+            await secondCard.locator('img').evaluate(image => (image as HTMLImageElement).decode());
             await page.screenshot({
                 path: testInfo.outputPath(`apps-browse-${viewport.name}.png`),
                 fullPage: false,
@@ -129,7 +133,7 @@ test.describe('Apps browse layout @mocked', () => {
             await expect(results).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
             await search.fill('');
             await expect(search).toHaveValue('');
-            await expect(page.getByText('Suggested Apps', { exact: true })).toBeVisible();
+            await expect(page.getByText('All Apps', { exact: true })).toBeVisible();
             await expect(page.getByText('Example Learning', { exact: true })).toBeVisible();
             await expect(page.getByText('Example Tools', { exact: true })).toBeVisible();
         });
