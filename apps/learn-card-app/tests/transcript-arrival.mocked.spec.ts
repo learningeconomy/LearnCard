@@ -15,8 +15,7 @@ test.describe('Transcript Arrival @mocked', () => {
         // the transient "Requesting…" state (covered by the Non-matching case below
         // and by useTranscriptArrival's own unit tests) may not be reliably observable here.
         await expect(page.getByText('Added to your account')).toBeVisible();
-        await expect(page.getByText('Example High School')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'View Transcript' }).first()).toBeVisible();
+        await expect(page.getByText('Example High School').first()).toBeVisible();
         await expect(page.getByRole('button', { name: /Accept/ })).toHaveCount(0);
 
         const markReceivedCalls = await page.evaluate(
@@ -43,15 +42,15 @@ test.describe('Transcript Arrival @mocked', () => {
         await expect(page.getByRole('button', { name: 'Open Notifications' })).toBeVisible();
     });
 
-    test('Arrival sheet: shown once per request, not on reload', async ({ page }) => {
+    test('Arrived: shows the record in place, with no pop-up sheet', async ({ page }) => {
         await page.goto(`${HARNESS}?scenario=arrived-sheet`);
-        await expect(page.getByText('Your transcript arrived')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'View Transcript' }).first()).toBeVisible();
+        await expect(page.getByText('Added to your account')).toBeVisible();
+        await expect(page.getByText('Example High School').first()).toBeVisible();
+        await expect(page.getByText('Your transcript arrived')).toHaveCount(0);
 
         await page.reload();
-        await expect(page.getByText('Your transcript arrived')).toHaveCount(0);
-        // The card itself still shows the arrived state after reload.
         await expect(page.getByText('Added to your account')).toBeVisible();
+        await expect(page.getByText('Your transcript arrived')).toHaveCount(0);
     });
 
     test('Mobile: no horizontal overflow at 375px', async ({ page }) => {
