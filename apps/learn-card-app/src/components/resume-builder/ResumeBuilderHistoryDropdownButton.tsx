@@ -15,7 +15,14 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
     disabled?: boolean;
     onSelectResume: (resume: ExistingResume) => Promise<void> | void;
     onCreateNewResume: () => Promise<void> | void;
-}> = ({ activeResumeRecordId, disabled = false, onSelectResume, onCreateNewResume }) => {
+    compact?: boolean;
+}> = ({
+    activeResumeRecordId,
+    disabled = false,
+    onSelectResume,
+    onCreateNewResume,
+    compact = false,
+}) => {
     const { data: resumes = [], isLoading } = useExistingResumes();
 
     const [isOpen, setIsOpen] = useState(false);
@@ -45,22 +52,29 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
             <button
                 type="button"
                 disabled={disabled}
+                aria-label={m['passport.resumeBuilder.history.title']()}
                 onClick={event => {
                     setPopoverEvent(event.nativeEvent);
                     setIsOpen(true);
                 }}
-                className={`inline-flex items-center gap-2 py-1 px-4 rounded-full border border-indigo-500 border-solid  disabled:opacity-60 disabled:cursor-not-allowed ${
-                    isOpen ? 'bg-indigo-50' : 'bg-white'
-                }`}
+                className={`relative inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[20px] text-grayscale-700 disabled:opacity-40 disabled:cursor-not-allowed ${compact ? 'p-2 hover:bg-grayscale-100' : 'px-3 py-2 border border-grayscale-300'} ${isOpen ? 'bg-grayscale-100' : 'bg-white'}`}
             >
                 <img
                     src={ResumeHistoryIcon}
                     alt={m['passport.resumeBuilder.history.iconAlt']()}
                     className="w-6 h-6"
                 />
-                <span className="text-[18px] font-semibold text-grayscale-800">
-                    {sortedResumes.length}
-                </span>
+                {(!compact || sortedResumes.length > 0) && (
+                    <span
+                        className={
+                            compact
+                                ? 'absolute right-0 top-0 rounded-full bg-grayscale-100 px-1 text-[10px] font-semibold text-grayscale-700'
+                                : 'text-sm font-semibold text-grayscale-800'
+                        }
+                    >
+                        {sortedResumes.length}
+                    </span>
+                )}
             </button>
 
             <IonPopover
