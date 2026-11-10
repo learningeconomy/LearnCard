@@ -10,6 +10,8 @@ import {
 import { getLatestUserSummary, getAnswerAboutUser, saveSessionSummary } from './controllers';
 import { runMcpOwnerOperation } from './ownerOperation';
 import { logSafeEvent } from '../logging';
+import { AiConsentError } from '../learncard/consent';
+import { classifyToolFailure, unwrapToolFailure, type McpToolName } from './tool-failure';
 
 const requireDid = (context: McpToolContext): string => {
     const did = getAuthenticatedDid(context);
@@ -23,10 +25,21 @@ const requireDid = (context: McpToolContext): string => {
     return did;
 };
 
-const reportToolFailure = (tool: string) => {
-    Sentry.captureMessage('backend_operation_failed', { level: 'error', tags: { tool } });
-    logSafeEvent('error', 'request_failed');
+const CONSENT_REQUIRED_MESSAGE = 'Active LearnCard AI consent is required';
+
+export const reportToolFailure = (tool: McpToolName, error: unknown): void => {
+    const tags = { tool, ...classifyToolFailure(error) };
+    Sentry.captureMessage('backend_operation_failed', { level: 'error', tags });
+    logSafeEvent('error', 'request_failed', {
+        mcpTool: tool,
+        mcpErrorName: tags.error_name,
+        mcpErrorCode: tags.error_code,
+        mcpStage: tags.stage,
+    });
 };
+
+const isConsentFailure = (error: unknown): boolean =>
+    unwrapToolFailure(error) instanceof AiConsentError;
 
 export const getUserContextTool = defineMcpTool({
     name: 'get_user_context',
@@ -48,9 +61,13 @@ export const getUserContextTool = defineMcpTool({
                 getLatestUserSummary(did)
             );
             return jsonToolResponse({ general_summary });
-        } catch {
-            reportToolFailure('get_user_context');
-            return jsonToolResponse({ general_summary: 'Unable to retrieve user context' });
+        } catch (error) {
+            reportToolFailure('get_user_context', error);
+            return jsonToolResponse({
+                general_summary: isConsentFailure(error)
+                    ? CONSENT_REQUIRED_MESSAGE
+                    : 'Unable to retrieve user context',
+            });
         }
     },
 });
@@ -73,8 +90,11 @@ export const getAnswerAboutUserTool = defineMcpTool({
         try {
             const answer = await runMcpOwnerOperation(did, () => getAnswerAboutUser(did, question));
             return jsonToolResponse({ answer });
-        } catch {
-            reportToolFailure('get_answer_about_user');
+        } catch (error) {
+            reportToolFailure('get_answer_about_user', error);
+            if (isConsentFailure(error)) {
+                throw new McpToolError('forbidden', CONSENT_REQUIRED_MESSAGE);
+            }
             throw new McpToolError('internal_error', 'Unable to answer learning question');
         }
     },
@@ -115,9 +135,14 @@ export const saveSessionSummaryTool = defineMcpTool({
                 // External models must not receive the underlying credential/storage IDs.
                 learnCardLink: 'https://learncard.app/ai/sessions',
             });
-        } catch {
-            reportToolFailure('save_session_summary');
-            return jsonToolResponse({ success: false, message: 'Unable to save session summary' });
+        } catch (error) {
+            reportToolFailure('save_session_summary', error);
+            return jsonToolResponse({
+                success: false,
+                message: isConsentFailure(error)
+                    ? CONSENT_REQUIRED_MESSAGE
+                    : 'Unable to save session summary',
+            });
         }
     },
 });

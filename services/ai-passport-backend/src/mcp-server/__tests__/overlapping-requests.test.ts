@@ -314,7 +314,10 @@ test('preserves the intended AIP error message without exposing its cause', asyn
         expect(capture.mock.calls).toEqual([
             [
                 'backend_operation_failed',
-                { level: 'error', tags: { tool: 'get_answer_about_user' } },
+                {
+                    level: 'error',
+                    tags: { tool: 'get_answer_about_user', error_name: 'Error' },
+                },
             ],
         ]);
         expect(JSON.stringify(capture.mock.calls)).not.toContain(privateDetail);

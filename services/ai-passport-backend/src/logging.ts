@@ -278,6 +278,10 @@ export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
     count?: number;
     durationMs?: number;
     httpStatus?: number;
+    mcpTool?: 'get_user_context' | 'get_answer_about_user' | 'save_session_summary';
+    mcpErrorName?: string;
+    mcpErrorCode?: string;
+    mcpStage?: 'consent' | 'learnercontext' | 'pseudonymize' | 'llm';
     success?: boolean;
     provider?: 'openai' | 'anthropic' | 'google' | 'bedrock';
     failureCode?: (typeof SAFE_FAILURE_CODES)[number];
@@ -352,6 +356,31 @@ export const logSafeEvent = (
     for (const field of ['count', 'durationMs', 'httpStatus'] as const) {
         const value = metrics[field];
         if (typeof value === 'number' && Number.isFinite(value) && value >= 0) event[field] = value;
+    }
+    if (code === 'request_failed') {
+        if (
+            metrics.mcpTool === 'get_user_context' ||
+            metrics.mcpTool === 'get_answer_about_user' ||
+            metrics.mcpTool === 'save_session_summary'
+        )
+            event.mcpTool = metrics.mcpTool;
+        if (
+            typeof metrics.mcpErrorName === 'string' &&
+            /^[A-Za-z0-9_.-]{1,64}$/.test(metrics.mcpErrorName)
+        )
+            event.mcpErrorName = metrics.mcpErrorName;
+        if (
+            typeof metrics.mcpErrorCode === 'string' &&
+            /^[A-Za-z0-9_.-]{1,64}$/.test(metrics.mcpErrorCode)
+        )
+            event.mcpErrorCode = metrics.mcpErrorCode;
+        if (
+            metrics.mcpStage === 'consent' ||
+            metrics.mcpStage === 'learnercontext' ||
+            metrics.mcpStage === 'pseudonymize' ||
+            metrics.mcpStage === 'llm'
+        )
+            event.mcpStage = metrics.mcpStage;
     }
     if (code === 'file_processing_completed' || code === 'file_processing_failed') {
         if (!Number.isInteger(event.count) || (event.count ?? 0) > 10_000) delete event.count;
