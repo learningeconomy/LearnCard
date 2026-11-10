@@ -888,8 +888,12 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
         return true;
     });
     mock.on('notifications.markAllNotificationsRead', () => true);
-    await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
-    await page.goto('/notifications');
+    await waitForAuthenticatedState(page, {
+        profileId: TEST_USER_PROFILE_ID,
+        path: '/notifications',
+        nextPath: '/notifications',
+        waitUntil: 'commit',
+    });
     const card = page.getByRole('article', { name: notification.message.title });
     await expect(card).toBeVisible({ timeout: 120_000 });
     await expect(card.getByText('New', { exact: true })).toBeVisible();
