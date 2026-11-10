@@ -49,6 +49,9 @@ export const getDidKitPlugin = async (
             'Provides an interface to DIDKit, which allows for the generation of key material, as well as signing and verifying credentials and presentations',
         context: {
             resolveStaticDocument: async (_learnCard, url) => {
+                // The WASM loader only accepts string URLs; anything else traps (LC-2380)
+                if (typeof url !== 'string') return undefined;
+
                 try {
                     return JSON.parse((await contextLoader(url)) ?? '') || undefined;
                 } catch (error) {
@@ -135,6 +138,8 @@ export const getDidKitPlugin = async (
             },
 
             contextLoader: async (_learnCard, url) => {
+                if (typeof url !== 'string') return undefined;
+
                 try {
                     return JSON.parse((await contextLoader(url)) ?? '') || undefined;
                 } catch (error) {

@@ -73,6 +73,9 @@ jobs:
             - name: Test shared native registry readiness gate
               run: node --test scripts/wait-for-didkit-registry.test.mjs
 
+            - name: Test AI Agent ECR vulnerability gate
+              run: node --test scripts/reject-vulnerable-ecr-image.test.mjs
+
             # The escrow Rust crates share one pinned toolchain; installing it here
             # stops nx's parallel `cargo test` runs racing to install it.
             - name: Install pinned Rust toolchain

@@ -2322,34 +2322,9 @@ jobs:
                   ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
               run: |
                   set -euo pipefail
-
-                  REPOSITORY_NAME="${ECR_REPOSITORY_URL#*/}"
-                  ARM64_DIGEST="$(docker buildx imagetools inspect \
-                    "$ECR_REPOSITORY_URL:sha-${{ github.sha }}" \
-                    --raw | jq -r \
-                    '.manifests[] | select(.platform.os == "linux" and .platform.architecture == "arm64") | .digest')"
-
-                  test -n "$ARM64_DIGEST" || {
-                    echo "::error::Could not resolve the pushed ARM64 image digest"
-                    exit 1
-                  }
-
-                  aws ecr wait image-scan-complete \
-                    --repository-name "$REPOSITORY_NAME" \
-                    --image-id "imageDigest=$ARM64_DIGEST"
-
-                  FINDINGS="$(aws ecr describe-image-scan-findings \
-                    --repository-name "$REPOSITORY_NAME" \
-                    --image-id "imageDigest=$ARM64_DIGEST" \
-                    --query imageScanFindings.findingSeverityCounts \
-                    --output json)"
-                  CRITICAL_FINDINGS="$(jq -r '.CRITICAL // 0' <<< "$FINDINGS")"
-                  HIGH_FINDINGS="$(jq -r '.HIGH // 0' <<< "$FINDINGS")"
-
-                  if (( CRITICAL_FINDINGS > 0 || HIGH_FINDINGS > 0 )); then
-                    echo "::error::ARM64 runtime image has $CRITICAL_FINDINGS critical and $HIGH_FINDINGS high findings"
-                    exit 1
-                  fi
+                  scripts/reject-vulnerable-ecr-image.sh \
+                    --repository-url "$ECR_REPOSITORY_URL" \
+                    --image-tag "sha-${{ github.sha }}"
 
             - name: Set up AI Agent Node LTS
               uses: actions/setup-node@v6
