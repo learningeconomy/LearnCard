@@ -22,6 +22,8 @@ export const sanitizeDiagnosticToken = (value: unknown): string | undefined => {
     return SAFE_TOKEN.test(cleaned) ? cleaned : undefined;
 };
 
+const STAGE_KEY = Symbol.for('mcp.toolFailureStage');
+
 export class StagedToolError extends Error {
     constructor(
         readonly stage: McpFailureStage,
@@ -32,6 +34,33 @@ export class StagedToolError extends Error {
     }
 }
 
+const readAttachedStage = (error: unknown): McpFailureStage | undefined => {
+    if (!error || typeof error !== 'object' || !(STAGE_KEY in error)) return undefined;
+    const stage = (error as Record<typeof STAGE_KEY, unknown>)[STAGE_KEY];
+    return (MCP_FAILURE_STAGES as readonly string[]).includes(stage as string)
+        ? (stage as McpFailureStage)
+        : undefined;
+};
+
+export const attachToolStage = (error: unknown, stage: McpFailureStage): unknown => {
+    if (error instanceof StagedToolError) return error;
+    const existing = readAttachedStage(error);
+    if (existing) return error;
+    if (error && typeof error === 'object') {
+        try {
+            Object.defineProperty(error, STAGE_KEY, {
+                value: stage,
+                enumerable: false,
+                configurable: true,
+            });
+            return error;
+        } catch {
+            // Non-extensible errors still need a wrapper so the stage is not lost.
+        }
+    }
+    return new StagedToolError(stage, error);
+};
+
 export const withToolStage = async <T>(
     stage: McpFailureStage,
     operation: () => Promise<T>
@@ -39,8 +68,7 @@ export const withToolStage = async <T>(
     try {
         return await operation();
     } catch (error) {
-        if (error instanceof StagedToolError) throw error;
-        throw new StagedToolError(stage, error);
+        throw attachToolStage(error, stage);
     }
 };
 
@@ -105,7 +133,8 @@ const classifyErrorCode = (error: object): string | undefined => {
 };
 
 export const classifyToolFailure = (error: unknown): ToolFailureTags => {
-    const { inner, stage } = unwrapStaged(error);
+    const { inner, stage: wrappedStage } = unwrapStaged(error);
+    const stage = readAttachedStage(inner) ?? readAttachedStage(error) ?? wrappedStage;
     const tags: ToolFailureTags = {};
     if (stage) tags.stage = stage;
     if (inner && typeof inner === 'object') {
