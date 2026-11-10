@@ -189,7 +189,8 @@ const flushCoalescedResolves = async (
     const batchable = uniqueUris.filter(uri => isCurrentHostCloudUri(uri));
     const nonBatchable = uniqueUris.filter(uri => !isCurrentHostCloudUri(uri));
 
-    await processWithConcurrency(
+    // Foreign / lc:network reads must not block the same-host batch (goblincore r4520242049).
+    const nonBatchableWork = processWithConcurrency(
         nonBatchable,
         CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
         async uri => {
@@ -202,42 +203,46 @@ const flushCoalescedResolves = async (
         }
     );
 
-    for (let offset = 0; offset < batchable.length; offset += CREDENTIAL_RESOLVE_BATCH_SIZE) {
-        const chunk = batchable.slice(offset, offset + CREDENTIAL_RESOLVE_BATCH_SIZE);
-        let results: (VC | null | undefined)[] | undefined;
-        try {
-            results = await batchResolve(chunk);
-        } catch {
-            results = undefined;
-        }
+    const batchableWork = (async () => {
+        for (let offset = 0; offset < batchable.length; offset += CREDENTIAL_RESOLVE_BATCH_SIZE) {
+            const chunk = batchable.slice(offset, offset + CREDENTIAL_RESOLVE_BATCH_SIZE);
+            let results: (VC | null | undefined)[] | undefined;
+            try {
+                results = await batchResolve(chunk);
+            } catch {
+                results = undefined;
+            }
 
-        if (!results || results.length < chunk.length) {
-            await processWithConcurrency(
-                chunk,
-                CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
-                async uri => {
-                    try {
-                        const credential = (await wallet.read.get(uri)) as VC | undefined;
-                        settleUri(uri, credential);
-                    } catch (readError) {
-                        settleUri(uri, undefined, readError);
+            if (!results || results.length < chunk.length) {
+                await processWithConcurrency(
+                    chunk,
+                    CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
+                    async uri => {
+                        try {
+                            const credential = (await wallet.read.get(uri)) as VC | undefined;
+                            settleUri(uri, credential);
+                        } catch (readError) {
+                            settleUri(uri, undefined, readError);
+                        }
                     }
-                }
-            );
-            continue;
-        }
+                );
+                continue;
+            }
 
-        const hits: { uri: string; credential: VC }[] = [];
-        const misses: string[] = [];
-        chunk.forEach((uri, index) => {
-            const credential = results?.[index] as VC | null | undefined;
-            if (credential) hits.push({ uri, credential });
-            else misses.push(uri);
-        });
-        for (const { uri, credential } of hits) settleUri(uri, credential);
-        const recovered = await resolveNullSlotsViaRead(wallet, misses);
-        for (const uri of misses) settleUri(uri, recovered.get(uri));
-    }
+            const hits: { uri: string; credential: VC }[] = [];
+            const misses: string[] = [];
+            chunk.forEach((uri, index) => {
+                const credential = results?.[index] as VC | null | undefined;
+                if (credential) hits.push({ uri, credential });
+                else misses.push(uri);
+            });
+            for (const { uri, credential } of hits) settleUri(uri, credential);
+            const recovered = await resolveNullSlotsViaRead(wallet, misses);
+            for (const uri of misses) settleUri(uri, recovered.get(uri));
+        }
+    })();
+
+    await Promise.all([nonBatchableWork, batchableWork]);
 };
 
 /**
@@ -327,15 +332,6 @@ export const tryFetchResolvedCredential = (
 ): Promise<VC | undefined> =>
     fetchResolvedCredential(queryClient, wallet, uri).catch(() => undefined);
 
-const cacheResolvedCredential = (
-    queryClient: QueryClient,
-    accountDid: string,
-    uri: string,
-    credential: VC
-) => {
-    queryClient.setQueryData(resolvedCredentialQueryKey(uri, accountDid), credential);
-};
-
 /** True when RQ still has a usable fresh success for this URI (not invalidated / not stale). */
 export const hasFreshResolvedCredential = (
     queryClient: QueryClient,
@@ -355,8 +351,9 @@ export const hasFreshResolvedCredential = (
  *
  * Prefer LearnCloud `storage.batchResolve` for current-host lc:cloud URIs when no native VC
  * cache plugin is present. Otherwise (and for foreign/non-cloud URIs) use bounded-concurrency
- * `read.get`. Null batch slots retry via `read.get`. Respects RQ invalidation / staleness and
- * joins in-flight fetches.
+ * `read.get`. Null batch slots retry via `read.get`. Goes through `fetchQuery` so per-URI
+ * in-flight work is shared with individual readers in both directions, and failed refreshes
+ * of invalidated entries return unresolved rather than the stale cached value.
  */
 export const prefetchResolvedCredentials = async (
     queryClient: QueryClient,
@@ -387,102 +384,35 @@ export const prefetchResolvedCredentials = async (
     }
 
     if (pending.length > 0) {
-        const batchResolve = getBatchResolve(wallet);
-        const useBatch = Boolean(batchResolve) && !walletHasVcCachePlugin(wallet);
+        // Register each URI with React Query so later readers join this work (and so this
+        // prefetch joins any reader that started first). A direct batch + setQueryData used
+        // to race: a later fetchQuery could finish first, then the prefetch overwrote it
+        // (goblincore r4520242045). queryFn still coalesces into storage.batchResolve.
+        const fetchOne = (uri: string) =>
+            queryClient
+                .fetchQuery(resolvedCredentialQueryOptions(wallet, uri, retryPolicy))
+                .catch(() => undefined);
 
-        if (useBatch && batchResolve) {
-            const batchable = pending.filter(uri => isCurrentHostCloudUri(uri));
-            const nonBatchable = pending.filter(uri => !isCurrentHostCloudUri(uri));
-
-            await processWithConcurrency(
-                nonBatchable,
-                CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
-                async uri => {
-                    try {
-                        const credential = (await wallet.read.get(uri)) as VC | undefined;
-                        if (credential) {
-                            cacheResolvedCredential(queryClient, accountDid, uri, credential);
-                        }
-                    } catch {
-                        /* leave uncached */
-                    }
-                }
-            );
-
-            for (
-                let offset = 0;
-                offset < batchable.length;
-                offset += CREDENTIAL_RESOLVE_BATCH_SIZE
-            ) {
-                const chunk = batchable.slice(offset, offset + CREDENTIAL_RESOLVE_BATCH_SIZE);
-                let results: (VC | null | undefined)[] | undefined;
-                try {
-                    results = await batchResolve(chunk);
-                } catch {
-                    results = undefined;
-                }
-
-                if (!results || results.length < chunk.length) {
-                    await processWithConcurrency(
-                        chunk,
-                        CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
-                        async uri => {
-                            try {
-                                const credential = (await wallet.read.get(uri)) as VC | undefined;
-                                if (credential) {
-                                    cacheResolvedCredential(
-                                        queryClient,
-                                        accountDid,
-                                        uri,
-                                        credential
-                                    );
-                                }
-                            } catch {
-                                /* leave uncached */
-                            }
-                        }
-                    );
-                    continue;
-                }
-
-                const misses: string[] = [];
-                chunk.forEach((uri, index) => {
-                    const credential = results?.[index] as VC | null | undefined;
-                    if (credential) {
-                        cacheResolvedCredential(queryClient, accountDid, uri, credential);
-                    } else {
-                        misses.push(uri);
-                    }
-                });
-                const recovered = await resolveNullSlotsViaRead(wallet, misses);
-                for (const uri of misses) {
-                    const credential = recovered.get(uri);
-                    if (credential) {
-                        cacheResolvedCredential(queryClient, accountDid, uri, credential);
-                    }
-                }
-            }
+        const useBatch = Boolean(getBatchResolve(wallet)) && !walletHasVcCachePlugin(wallet);
+        if (useBatch) {
+            // Start every fetchQuery in the same tick so the coalescer can flush one batch.
+            await Promise.all(pending.map(fetchOne));
         } else {
             await processWithConcurrency(
                 pending,
                 CREDENTIAL_RESOLVE_FALLBACK_CONCURRENCY,
                 async uri => {
-                    // Direct read.get preserves native cache plane; avoid queryFn→batch re-entry.
-                    try {
-                        const credential = (await wallet.read.get(uri)) as VC | undefined;
-                        if (credential) {
-                            cacheResolvedCredential(queryClient, accountDid, uri, credential);
-                        }
-                    } catch {
-                        /* leave uncached */
-                    }
+                    await fetchOne(uri);
                 }
             );
         }
     }
 
+    // After a failed refresh, leave invalidated / stale data unreturned so list readers
+    // (useResolveManyCredentials) do not treat a complete stale list as fresh for 7 days
+    // (goblincore r4520242042).
     return uris.map(uri =>
-        uri
+        uri && hasFreshResolvedCredential(queryClient, accountDid, uri)
             ? (queryClient.getQueryData(resolvedCredentialQueryKey(uri, accountDid)) as
                   VC | undefined)
             : undefined

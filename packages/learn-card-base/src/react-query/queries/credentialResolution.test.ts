@@ -461,6 +461,117 @@ describe('prefetchResolvedCredentials (LC-2382)', () => {
         expect(batchMs).toBeLessThan(serialMs / 3);
         expect(batchMs).toBeLessThan(N * RTT_MS * 0.5);
     });
+
+    it('returns an unresolved slot when an invalidated refresh fails (goblincore r4520242042)', async () => {
+        const client = makeClient();
+        const batch = vi.fn(async () => [null]);
+        const read = vi.fn().mockResolvedValue(undefined);
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+        const uri = cloudUri('stale-after-fail');
+        const stale = { ...credential, name: 'stale' } as VC;
+        client.setQueryData(resolvedCredentialQueryKey(uri, 'account-a'), stale);
+        await client.invalidateQueries({ queryKey: resolvedCredentialQueryKey(uri, 'account-a') });
+
+        const results = await prefetchResolvedCredentials(client, wallet, [uri]);
+        expect(batch).toHaveBeenCalledTimes(1);
+        expect(read).toHaveBeenCalledWith(uri);
+        expect(results).toEqual([undefined]);
+        expect(hasFreshResolvedCredential(client, 'account-a', uri)).toBe(false);
+        expect(client.getQueryData(resolvedCredentialQueryKey(uri, 'account-a'))).toEqual(stale);
+    });
+
+    it('shares in-flight batch work from prefetch to a later reader (goblincore r4520242045)', async () => {
+        const client = makeClient();
+        let release!: (vcs: VC[]) => void;
+        const batch = vi.fn(
+            () =>
+                new Promise<VC[]>(resolve => {
+                    release = resolve;
+                })
+        );
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: vi.fn() },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+        const uri = cloudUri('shared-prefetch');
+
+        const prefetchPromise = prefetchResolvedCredentials(client, wallet, [uri]);
+        await vi.waitFor(() => expect(batch).toHaveBeenCalledTimes(1));
+
+        const reader = fetchResolvedCredential(client, wallet, uri);
+        await Promise.resolve();
+        expect(batch).toHaveBeenCalledTimes(1);
+
+        release([credential]);
+        await expect(prefetchPromise).resolves.toEqual([credential]);
+        await expect(reader).resolves.toEqual(credential);
+    });
+
+    it('shares in-flight batch work from a reader to a later prefetch (goblincore r4520242045)', async () => {
+        const client = makeClient();
+        let release!: (vcs: VC[]) => void;
+        const batch = vi.fn(
+            () =>
+                new Promise<VC[]>(resolve => {
+                    release = resolve;
+                })
+        );
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: vi.fn() },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+        const uri = cloudUri('shared-reader');
+
+        const reader = fetchResolvedCredential(client, wallet, uri);
+        await vi.waitFor(() => expect(batch).toHaveBeenCalledTimes(1));
+
+        const prefetchPromise = prefetchResolvedCredentials(client, wallet, [uri]);
+        await Promise.resolve();
+        expect(batch).toHaveBeenCalledTimes(1);
+
+        release([credential]);
+        await expect(reader).resolves.toEqual(credential);
+        await expect(prefetchPromise).resolves.toEqual([credential]);
+    });
+
+    it('starts the same-host batch without waiting for a stuck foreign read (goblincore r4520242049)', async () => {
+        const client = makeClient();
+        const batch = vi.fn(async (uris: string[]) => uris.map(() => credential));
+        const read = vi.fn((uri: string) =>
+            uri.includes('evil.example')
+                ? new Promise<VC>(() => {
+                      /* never settles */
+                  })
+                : Promise.resolve(credential)
+        );
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+        const local = cloudUri('local-unblocked');
+        const remote = 'lc:cloud:evil.example/trpc:credential:stuck';
+
+        const prefetchPromise = prefetchResolvedCredentials(client, wallet, [local, remote]);
+        await vi.waitFor(() => expect(batch).toHaveBeenCalledExactlyOnceWith([local]));
+        await vi.waitFor(() =>
+            expect(client.getQueryData(resolvedCredentialQueryKey(local, 'account-a'))).toEqual(
+                credential
+            )
+        );
+        expect(read).toHaveBeenCalledWith(remote);
+        void prefetchPromise;
+    });
 });
 
 describe('enqueueBatchedCredentialResolve (LC-2382)', () => {
@@ -523,6 +634,35 @@ describe('enqueueBatchedCredentialResolve (LC-2382)', () => {
         await expect(pending).resolves.toEqual([credential, credential]);
         expect(batch).not.toHaveBeenCalled();
         expect(read).toHaveBeenCalledTimes(2);
+    });
+
+    it('starts the same-host batch without waiting for a stuck foreign read (goblincore r4520242049)', async () => {
+        const batch = vi.fn(async (uris: string[]) => uris.map(() => credential));
+        const read = vi.fn((uri: string) =>
+            uri.includes('evil.example')
+                ? new Promise<VC>(() => {
+                      /* never settles */
+                  })
+                : Promise.resolve(credential)
+        );
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+
+        const local = enqueueBatchedCredentialResolve(wallet, cloudUri('local-flush'));
+        const remote = enqueueBatchedCredentialResolve(
+            wallet,
+            'lc:cloud:evil.example/trpc:credential:stuck-flush'
+        );
+        await vi.waitFor(() =>
+            expect(batch).toHaveBeenCalledExactlyOnceWith([cloudUri('local-flush')])
+        );
+        await expect(local).resolves.toEqual(credential);
+        expect(read).toHaveBeenCalledWith('lc:cloud:evil.example/trpc:credential:stuck-flush');
+        void remote;
     });
 });
 

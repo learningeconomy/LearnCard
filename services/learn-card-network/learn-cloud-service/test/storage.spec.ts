@@ -301,6 +301,32 @@ describe('Storage', () => {
             expect(await userA.learnCard.invoke.decryptDagJwe(resolved[2]!)).toEqual(vp);
         });
 
+        it('should not let one malformed ID poison other cold-miss slots (goblincore r4520242054)', async () => {
+            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
+            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
+            const unsignedVp = await userA.learnCard.invoke.newPresentation(vc);
+            const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
+
+            const vcUri = await userA.clients.fullAuth.storage.store({ item: vc });
+            const vpUri = await userA.clients.fullAuth.storage.store({ item: vp });
+            const hostParts = vcUri.split(':').slice(0, -1);
+            // Syntactically valid same-host credential URI whose id is not a Mongo ObjectId.
+            const malformedUri = [...hostParts, 'not-a-valid-object-id'].join(':');
+
+            await cache.node.flushall();
+
+            const resolved = await userA.clients.fullAuth.storage.batchResolve({
+                uris: [vcUri, malformedUri, vpUri],
+            });
+
+            expect(resolved).toHaveLength(3);
+            expect(resolved[0]).not.toBeNull();
+            expect(resolved[1]).toBeNull();
+            expect(resolved[2]).not.toBeNull();
+            expect(await userA.learnCard.invoke.decryptDagJwe(resolved[0]!)).toEqual(vc);
+            expect(await userA.learnCard.invoke.decryptDagJwe(resolved[2]!)).toEqual(vp);
+        });
+
         it('should return null for URIs whose host does not match this server', async () => {
             const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
             const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
