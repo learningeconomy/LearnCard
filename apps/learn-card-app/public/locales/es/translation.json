@@ -1,4 +1,50 @@
 {
+    "classlinkPersonalEmail": {
+        "title": "Añade un correo personal",
+        "body": "Para conservar tu cuenta cuando dejes la escuela.",
+        "email": "Correo personal",
+        "code": "Código de 6 dígitos",
+        "send": "Enviar código",
+        "sending": "Enviando…",
+        "verify": "Verificar",
+        "verifying": "Verificando…",
+        "skip": "Omitir por ahora",
+        "success": "Correo personal añadido.",
+        "schoolError": "Usa un correo personal, no el de tu escuela",
+        "conflictError": "Este correo ya está asociado a otra cuenta.",
+        "codeError": "El código no es válido o ha caducado. Inténtalo de nuevo.",
+        "limitError": "Has solicitado demasiados códigos. Inténtalo más tarde.",
+        "error": "Algo salió mal. Inténtalo de nuevo."
+    },
+    "transcriptOptIn": {
+        "title": "Obtén tu expediente académico de {{state}}",
+        "body": "Le pediremos a los registros escolares que envíen tu expediente académico aquí.",
+        "consent": "Acepto compartir mi identificación de estudiante con los registros escolares de {{state}}, y agregar mi expediente académico a mi cuenta cuando llegue.",
+        "submit": "Obtener Mi Expediente",
+        "requesting": "Solicitando…",
+        "requested": "Tu expediente académico está en camino. Te avisaremos cuando llegue.",
+        "noneYet": "Todavía no hay un expediente académico para ti. Vuelve a consultar más tarde.",
+        "reauthRequired": "Vuelve a conectar tu cuenta escolar para continuar",
+        "reauthButton": "Volver a conectar",
+        "reauthing": "Conectando…",
+        "noStateId": "No pudimos encontrar tu registro de estudiante. Pide a tu escuela que revise tu cuenta de ClassLink.",
+        "error": "No pudimos comunicarnos con los registros de tu escuela en este momento. Inténtalo de nuevo más tarde.",
+        "tryAgain": "Intentar de Nuevo",
+        "requestingFrom": "Solicitando a los registros escolares de {{state}}…",
+        "takingAWhile": "Esto puede tardar un poco. Te avisaremos cuando esté aquí.",
+        "addedToAccount": "Agregado a tu cuenta",
+        "updated": "Actualizado el {{date}}",
+        "viewTranscript": "Ver Expediente",
+        "arrivedTitle": "Tu expediente académico llegó",
+        "transcript": "Expediente Académico",
+        "gradYear": "Generación {{year}}",
+        "gpa": "Promedio: {{gpa}}",
+        "receivedLoading": "Recibimos tu expediente académico. Aparecerá aquí en un momento.",
+        "checkManually": "Es posible que ya esté esperando en tus notificaciones. Ábrelo allí para agregarlo a tu cuenta, o vuelve a comprobar.",
+        "checkAgain": "Comprobar de Nuevo",
+        "openNotifications": "Abrir Notificaciones",
+        "autoAcceptFailed": "No pudimos agregar tu expediente académico automáticamente. Puedes aceptarlo aquí."
+    },
     "consentUpdate": {
         "summary": {
             "requestDetails": "Detalles de la solicitud",
@@ -1410,6 +1456,13 @@
         "korean": "한국어"
     },
     "login": {
+        "classlink": {
+            "cancelled": "El inicio de sesión con ClassLink fue cancelado.",
+            "expired": "Ese enlace de inicio de sesión expiró. Por favor, inténtalo de nuevo.",
+            "failed": "No pudimos iniciar sesión con ClassLink. Por favor, inténtalo de nuevo.",
+            "timedOut": "El inicio de sesión con ClassLink tardó demasiado. Por favor, inténtalo de nuevo.",
+            "unavailable": "El inicio de sesión escolar no está disponible temporalmente. Por favor, inténtalo de nuevo en unos minutos."
+        },
         "welcome": {
             "heading": "Bienvenido a {{brand}}",
             "subtitle": "Inicia sesión para acceder a tus credenciales, logros y más.",
@@ -1648,7 +1701,22 @@
                 },
                 "error": {
                     "invalidEmail": "Ingresa un correo válido.",
-                    "sendFailed": "No se pudo enviar la solicitud. Intenta de nuevo."
+                    "sendFailed": "No se pudo enviar la solicitud. Intenta de nuevo.",
+                    "cooldown": "Puedes enviar otra solicitud a las {{time}}.",
+                    "inProgress": "Ya se está enviando una solicitud. Espera un momento."
+                },
+                "status": {
+                    "accepted": "Tu solicitud de aprobación se envió a <0>{{email}}</0>. Si tu tutor no la ve, pídele que revise su carpeta de spam.",
+                    "failed": "No pudimos enviar la solicitud de aprobación a <0>{{email}}</0>. Intenta enviarla de nuevo.",
+                    "sending": "Enviando la solicitud de aprobación…",
+                    "unknown": "Tu cuenta está pendiente de la aprobación de tu tutor. Si tu tutor no ha recibido una solicitud de aprobación, puedes enviar otra a continuación.",
+                    "expired": "El enlace de aprobación enviado a <0>{{email}}</0> ha caducado. Envía uno nuevo."
+                },
+                "resendRequest": "Reenviar solicitud",
+                "banner": {
+                    "title": "Pendiente de aprobación del tutor",
+                    "limited": "Algunas funciones seguirán limitadas hasta que tu padre, madre o tutor apruebe tu cuenta.",
+                    "manage": "Reenviar o cambiar correo"
                 }
             },
             "us": {
@@ -1806,12 +1874,14 @@
             "privacyDesc": "Cámbialo cuando quieras en Ajustes.",
             "brandAi": "IA de {{brand}}",
             "aiMinorNote": "Las funciones de IA están desactivadas para menores.",
+            "schoolLockedNote": "Tu escuela desactiva las funciones de IA, las analíticas y los informes de errores en las cuentas de estudiantes.",
             "analytics": "Analíticas",
             "bugReports": "Informes de errores",
             "createMy": "Crear mi {{brand}}",
             "almostThere": "¡Ya casi!",
             "youreIn": "¡Ya estás dentro!",
             "guardianEmailed": "Enviamos un correo a tu tutor para que apruebe tu cuenta. Ya puedes empezar a explorar — algunas funciones se desbloquean cuando lo confirme.",
+            "guardianEmailFailed": "No pudimos enviar la solicitud de aprobación a <0>{{email}}</0>. Ya puedes empezar a explorar y volver a enviarla desde tu panel.",
             "ready": "Tu {{brand}} está listo.",
             "whoAreYou": "¿Quién eres? (Opcional)",
             "explore": "Explorar {{brand}}",
@@ -1827,6 +1897,13 @@
                 "saveFailedSkip": "No se pudo guardar tu PIN. Inténtalo de nuevo u omítelo por ahora y configúralo más tarde.",
                 "hint": "Puedes cambiarlo o eliminarlo en cualquier momento en Configuración."
             }
+        },
+        "transcript": {
+            "title": "Tu expediente académico oficial, en tu bolsillo.",
+            "desc": "Recibe tus registros escolares directamente en tu cuenta.",
+            "get": "Obtener Mi Expediente",
+            "notNow": "Ahora No",
+            "onItsWay": "Tu expediente académico está en camino."
         }
     },
     "profile": {
@@ -1863,7 +1940,8 @@
             "loading": "Cargando...",
             "deleting": "Eliminando cuenta...",
             "recentLoginRequired": "¡Se requiere un inicio de sesión reciente!",
-            "reauthenticateHere": "Volver a autenticarse aquí"
+            "reauthenticateHere": "Volver a autenticarse aquí",
+            "fallbackPhrase": "ELIMINAR"
         },
         "export": {
             "title": "Exportar frase inicial",
@@ -1876,7 +1954,8 @@
             "button": "Exportar frase inicial",
             "revealPrompt": "Entiendo - Revela Mi Semilla",
             "confirm": "Confirmar",
-            "cancel": "Cancelar"
+            "cancel": "Cancelar",
+            "fallbackPhrase": "EXPORTAR"
         },
         "email": {
             "header": "Direcciones de correo electrónico",
@@ -8963,7 +9042,8 @@
         "manyResults": "{{count}} resultados para \"{{query}}\"",
         "shortcuts": {
             "skillInsights": "Perspectivas de habilidades",
-            "boostAFriend": "Impulsa a un amigo"
+            "boostAFriend": "Impulsa a un amigo",
+            "schoolConnect": "Conexión Escolar"
         }
     },
     "addToPassport": {
@@ -10358,6 +10438,34 @@
         "revocationCheck": "Comprobación de revocación disponible",
         "evidenceCount": "Elementos de evidencia: {{count}}",
         "evidence": "Evidencia de apoyo"
+    },
+    "schoolConnect": {
+        "signInFirst": "Inicia sesión y vuelve a conectar tu escuela.",
+        "connectFailed": "No pudimos conectar tu cuenta escolar. Por favor, inténtalo de nuevo.",
+        "connectedToast": "Tu cuenta escolar está conectada.",
+        "tryAgain": "Intentar de nuevo",
+        "notAvailable": "La Conexión Escolar aún no está disponible para tu cuenta.",
+        "yourSchool": "Tu escuela",
+        "lastConnected": "Última conexión {{date}}",
+        "connected": "Conectado",
+        "refreshConnection": "Actualizar conexión",
+        "connecting": "Conectando...",
+        "studentNote": "Las funciones de IA, análisis y reportes de errores están desactivados, como lo requiere tu escuela.",
+        "warningTitle": "Antes de conectar",
+        "warningBody": "Si eres estudiante, tu escuela no permite funciones de IA, análisis ni reportes de errores para cuentas de estudiantes, así que los desactivaremos.",
+        "connectWithClassLink": "Conectar con ClassLink",
+        "notNow": "Ahora no",
+        "heroTitle": "Tus registros escolares, en tus manos",
+        "heroSubhead": "Conecta tu cuenta escolar para acceder a tus registros oficiales.",
+        "benefit1": "Solicita tu expediente académico oficial",
+        "benefit2": "Compártelo con universidades y empleadores",
+        "benefit3": "Tú decides quién lo ve",
+        "chooseProvider": "Elige cómo se conecta tu escuela",
+        "dontSeeSchool": "¿No ves tu escuela?",
+        "moreComingSoon": "Pronto habrá más escuelas.",
+        "askToAdd": "Pídenos que agreguemos tu escuela",
+        "mailtoSubject": "Agregar mi escuela a Conexión Escolar",
+        "mailtoBody": "Nombre de la escuela:\nDistrito:\nEstado:\n"
     },
     "announcements": {
         "title": "Anuncios del producto",

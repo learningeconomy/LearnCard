@@ -108,6 +108,65 @@ describe('native registration replacement', () => {
         expect(native.ids).toHaveLength(1);
     });
 
+    it.each([false, true])(
+        'serializes overlapping refreshes and applies the newest inventory (first rejects: %s)',
+        async firstRejects => {
+            const { wallet } = setup();
+            const events: string[] = [];
+            let records = [{ uri: 'encrypted-course' }];
+            vi.mocked(wallet.index.LearnCloud.get).mockImplementation(async () => {
+                events.push('read-index');
+                return records;
+            });
+            let entered!: () => void;
+            let release!: () => void;
+            const started = new Promise<void>(resolve => {
+                entered = resolve;
+            });
+            const blocked = new Promise<void>(resolve => {
+                release = resolve;
+            });
+            let registrations = 0;
+            native.register.mockImplementation(
+                async ({ entries }: { entries: Array<{ id: string }> }) => {
+                    const ordinal = ++registrations;
+                    events.push(`register-${ordinal}-start`);
+                    if (ordinal === 1) {
+                        entered();
+                        await blocked;
+                        if (firstRejects) {
+                            events.push('register-1-rejected');
+                            throw new Error('registration invalidated');
+                        }
+                    }
+                    native.ids = entries.map(entry => entry.id);
+                    events.push(`register-${ordinal}-end`);
+                }
+            );
+            const first = synchronizeNativeInventory(wallet, () => true, 'Credential').then(
+                () => 'completed',
+                () => 'rejected'
+            );
+            await started;
+            records = [{ uri: 'replacement-course' }];
+            const second = synchronizeNativeInventory(wallet, () => true, 'Credential');
+            release();
+            expect(await first).toBe(firstRejects ? 'rejected' : 'completed');
+            await second;
+            expect(events).toEqual([
+                'read-index',
+                'register-1-start',
+                firstRejects ? 'register-1-rejected' : 'register-1-end',
+                'read-index',
+                'register-2-start',
+                'register-2-end',
+            ]);
+            expect(native.register).toHaveBeenCalledTimes(2);
+            expect(native.stored?.entries[0]?.uri).toBe('replacement-course');
+            expect(native.ids).toEqual(native.stored?.entries.map(entry => entry.id));
+        }
+    );
+
     it('reasserts unchanged metadata after an OS reset even if local status still lists it', async () => {
         const { wallet } = setup();
         await synchronizeNativeInventory(wallet, () => true, 'Credential');

@@ -23,6 +23,8 @@ let refreshCache:
       }
     | undefined;
 let queue: Promise<unknown> = Promise.resolve();
+// Await native completion before sending another registration: native captures its
+// generation on receipt, so overlapping refreshes must not queue stale replacements.
 const serial = <T>(operation: () => Promise<T>): Promise<T> => {
     const result = queue.then(operation, operation);
     queue = result.catch(() => undefined);

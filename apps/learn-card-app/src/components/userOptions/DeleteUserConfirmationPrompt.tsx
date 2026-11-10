@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSignInAdapter } from 'learn-card-base';
-import { getLogger } from 'learn-card-base';
+import { getLogger, useDeleteMyClassLinkData, getContactEmail } from 'learn-card-base';
 const log = getLogger('delete-user-confirmation-prompt');
 
 import useFirebase from '../../hooks/useFirebase';
@@ -29,14 +29,21 @@ const DeleteUserConfirmationPrompt: React.FC<{
     const adapter = useSignInAdapter();
     const { removeAllVCsFromWallet, initWallet } = useWallet();
     const { deleteFirebaseUser } = useFirebase();
+    const { mutateAsync: deleteMyClassLinkData } = useDeleteMyClassLinkData();
     const currentUser = useCurrentUser();
     const { newModal } = useModal();
     const authToken = getAuthToken();
     const currentFirebaseUser = adapter.getCurrentUser();
     const brandingConfig = useBrandingConfig();
 
+    // Synthetic ClassLink placeholder emails are never shown; accounts with no real
+    // email or phone confirm by typing a fixed word instead of an empty string.
     const [phrase, setPhrase] = useState<string>(
-        currentFirebaseUser?.email ?? currentFirebaseUser?.phone ?? currentUser?.email ?? ''
+        () =>
+            getContactEmail(currentFirebaseUser?.email) ||
+            currentFirebaseUser?.phone ||
+            getContactEmail(currentUser?.email) ||
+            m['profile.delete.fallbackPhrase']()
     );
 
     const [confirmationPhrase, setConfirmationPhrase] = useState<string>();
@@ -89,6 +96,13 @@ const DeleteUserConfirmationPrompt: React.FC<{
                 const userDeleted = await deleteFirebaseUser();
 
                 if (userDeleted.success) {
+                    // Only after Firebase deletion succeeds: on auth/requires-recent-login the
+                    // account must keep its ClassLink link. Uses DID auth (the wallet still
+                    // works) and is idempotent; lca-api also cascades it server-side, so a
+                    // failure is logged and deletion still completes.
+                    await deleteMyClassLinkData().catch(error =>
+                        log.error('classlink.cleanup.failed', error)
+                    );
                     await removeAllVCsFromWallet();
                     await handleLCNetworkProfileDelete();
                     newModal(<DeleteAccountModal />, { sectionClassName: 'max-w-[350px]!' });
