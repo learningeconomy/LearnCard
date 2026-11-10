@@ -10,6 +10,7 @@ import {
     didWebToDocumentUrl,
     getDidWebDocumentFetchCacheStats,
     installDidWebDocumentFetchCache,
+    installWalletDidWebDocumentFetchCache,
     invalidateDidWebDocument,
     isDidWebDocumentUrl,
     resetDidWebDocumentFetchCacheForTests,
@@ -574,34 +575,6 @@ describe('didWebDocumentCache', () => {
         expect(receivedBody).toBe('stream-hello');
     });
 
-    it('honors boot-time ttlMs after an idempotent default install', async () => {
-        vi.useFakeTimers();
-        try {
-            // Simulate getDidKitPlugin default install, then wallet boot override without force.
-            resetDidWebDocumentFetchCacheForTests();
-            globalThis.fetch = fetchMock as unknown as typeof fetch;
-            installDidWebDocumentFetchCache({ force: true });
-            expect(getDidWebDocumentFetchCacheStats().ttlMs).toBe(DEFAULT_DID_WEB_DOCUMENT_TTL_MS);
-
-            installDidWebDocumentFetchCache({ ttlMs: WALLET_DID_WEB_DOCUMENT_TTL_MS });
-            expect(getDidWebDocumentFetchCacheStats().ttlMs).toBe(WALLET_DID_WEB_DOCUMENT_TTL_MS);
-            expect(getDidWebDocumentFetchCacheStats().installed).toBe(true);
-
-            await fetch(DOC_URL);
-            expect(fetchMock).toHaveBeenCalledTimes(1);
-
-            await vi.advanceTimersByTimeAsync(30_000);
-            await fetch(DOC_URL);
-            expect(fetchMock).toHaveBeenCalledTimes(1);
-
-            await vi.advanceTimersByTimeAsync(30_001);
-            await fetch(DOC_URL);
-            expect(fetchMock).toHaveBeenCalledTimes(2);
-        } finally {
-            vi.useRealTimers();
-        }
-    });
-
     it('throws when install is called without globalThis.fetch', () => {
         resetDidWebDocumentFetchCacheForTests();
         const previous = globalThis.fetch;
@@ -615,6 +588,83 @@ describe('didWebDocumentCache', () => {
             globalThis.fetch = previous;
         }
     });
+});
+
+describe('didWebDocumentCache + getDidKitPlugin TTL policy', () => {
+    const originalFetch = globalThis.fetch;
+    let fetchMock: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+        resetDidWebDocumentFetchCacheForTests();
+        fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url =
+                typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+            const response = new Response(DOC_BODY, {
+                status: 200,
+                headers: { 'content-type': 'application/json' },
+            });
+            try {
+                Object.defineProperty(response, 'url', { value: url, configurable: true });
+            } catch {
+                /* ignore */
+            }
+            return response;
+        });
+        globalThis.fetch = fetchMock as unknown as typeof fetch;
+    });
+
+    afterEach(() => {
+        resetDidWebDocumentFetchCacheForTests();
+        globalThis.fetch = originalFetch;
+        vi.useRealTimers();
+    });
+
+    it('keeps the generic 10s TTL when getDidKitPlugin installs', async () => {
+        const wasmBytes = readFileSync(wasmPath);
+        await getDidKitPlugin(wasmBytes);
+        expect(getDidWebDocumentFetchCacheStats().ttlMs).toBe(DEFAULT_DID_WEB_DOCUMENT_TTL_MS);
+        expect(getDidWebDocumentFetchCacheStats().installed).toBe(true);
+    }, 60_000);
+
+    it('does not raise a preinstalled shorter TTL when getDidKitPlugin inits', async () => {
+        vi.useFakeTimers();
+        installDidWebDocumentFetchCache({ ttlMs: 1_000, force: true });
+        expect(getDidWebDocumentFetchCacheStats().ttlMs).toBe(1_000);
+
+        const wasmBytes = readFileSync(wasmPath);
+        // Advance fake timers during WASM init so wall-clock waits do not hang.
+        const pluginPromise = getDidKitPlugin(wasmBytes);
+        await vi.runAllTimersAsync();
+        await pluginPromise;
+
+        expect(getDidWebDocumentFetchCacheStats().ttlMs).toBe(1_000);
+
+        await fetch(DOC_URL);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        await vi.advanceTimersByTimeAsync(2_000);
+        await fetch(DOC_URL);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    }, 60_000);
+
+    it('app wallet opt-in gets 60s TTL with no second GET at 30s', async () => {
+        vi.useFakeTimers();
+        // Order matches learn-card-base wallet boot: wallet opt-in, then getDidKitPlugin.
+        installWalletDidWebDocumentFetchCache();
+        const wasmBytes = readFileSync(wasmPath);
+        const pluginPromise = getDidKitPlugin(wasmBytes);
+        await vi.runAllTimersAsync();
+        await pluginPromise;
+
+        expect(getDidWebDocumentFetchCacheStats().ttlMs).toBe(WALLET_DID_WEB_DOCUMENT_TTL_MS);
+
+        await fetch(DOC_URL);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        await vi.advanceTimersByTimeAsync(30_000);
+        await fetch(DOC_URL);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    }, 60_000);
 });
 
 describe('didWebDocumentCache + DIDKit WASM resolveDid', () => {

@@ -6,6 +6,7 @@ export {
     didWebToDocumentUrl,
     getDidWebDocumentFetchCacheStats,
     installDidWebDocumentFetchCache,
+    installWalletDidWebDocumentFetchCache,
     invalidateDidWebDocument,
     isDidWebDocumentUrl,
     DEFAULT_DID_WEB_DOCUMENT_TTL_MS,

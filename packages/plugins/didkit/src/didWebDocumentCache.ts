@@ -23,11 +23,12 @@
 
 export const DEFAULT_DID_WEB_DOCUMENT_TTL_MS = 10_000;
 /**
- * Wallet boot TTL for did:web document GETs. Longer than
+ * LearnCard App wallet-boot TTL for did:web document GETs. Longer than
  * {@link DEFAULT_DID_WEB_DOCUMENT_TTL_MS} so a credential detail modal that keeps
- * re-resolving does not refetch every 10s (LC-2384 HAR: 4 identical demo-boi GETs
- * at ~10s gaps). Change this one constant to tune wallet lifetime; library default
- * stays at {@link DEFAULT_DID_WEB_DOCUMENT_TTL_MS}.
+ * re-resolving does not refetch every 10s (LC-2384: 4 identical demo-boi GETs at
+ * ~10s gaps). Apply only via {@link installWalletDidWebDocumentFetchCache} at app
+ * boot — never from {@link getDidKitPlugin}. Change this one constant to tune
+ * wallet lifetime; the public SDK factory keeps {@link DEFAULT_DID_WEB_DOCUMENT_TTL_MS}.
  */
 export const WALLET_DID_WEB_DOCUMENT_TTL_MS = 60_000;
 export const DEFAULT_DID_WEB_DOCUMENT_CACHE_MAX_ENTRIES = 64;
@@ -465,6 +466,16 @@ async function cachedFetch(input: RequestInfo | URL, init?: RequestInit): Promis
     return joinInflight(key, entry, callerSignal);
 }
 
+/**
+ * Install (or no-op if already installed) the process-wide did:web document fetch cache.
+ *
+ * TTL / maxEntries semantics:
+ * - Omitting `ttlMs` / `maxEntries` never clobbers a value already configured (so a
+ *   generic {@link getDidKitPlugin} install cannot raise a shorter preinstalled TTL).
+ * - Passing `ttlMs` / `maxEntries` is an intentional opt-in and updates the module
+ *   globals even when the wrapper is already installed (no `force` required).
+ * - First install with no options uses {@link DEFAULT_DID_WEB_DOCUMENT_TTL_MS}.
+ */
 export const installDidWebDocumentFetchCache = (
     options: InstallDidWebDocumentFetchCacheOptions = {}
 ): void => {
@@ -474,8 +485,6 @@ export const installDidWebDocumentFetchCache = (
         );
     }
 
-    // Options always apply — including after an idempotent install — so wallet boot
-    // can raise ttlMs without force-rewrapping fetch.
     if (typeof options.ttlMs === 'number' && options.ttlMs > 0) {
         ttlMs = options.ttlMs;
     }
@@ -492,6 +501,16 @@ export const installDidWebDocumentFetchCache = (
     underlyingFetch = globalThis.fetch.bind(globalThis);
     globalThis.fetch = cachedFetch as FetchLike;
     installed = true;
+};
+
+/**
+ * LearnCard App / wallet boot opt-in: set did:web document TTL to
+ * {@link WALLET_DID_WEB_DOCUMENT_TTL_MS} (60s). Call before `initLearnCard` so the
+ * subsequent generic getDidKitPlugin install cannot clobber it. Not for generic
+ * SDK consumers (emptyLearnCard, scripts, etc.).
+ */
+export const installWalletDidWebDocumentFetchCache = (): void => {
+    installDidWebDocumentFetchCache({ ttlMs: WALLET_DID_WEB_DOCUMENT_TTL_MS });
 };
 
 export const clearDidWebDocumentFetchCache = (): void => {
