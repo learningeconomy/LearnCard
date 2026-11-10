@@ -24,6 +24,7 @@ vi.mock('learn-card-base', () => ({
     walletStore: { set: { setIsSyncing: mocks.syncing } },
     WalletSyncState: { Syncing: 'syncing', Completed: 'completed', NotSyncing: 'not-syncing' },
     connectionPromptKeys: { all: ['connection-prompts'] },
+    invalidateCredentialIndexQueries: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: () => ({ invalidateQueries: mocks.invalidate }),

@@ -3,6 +3,7 @@ import type { CredentialRecord, VC } from '@learncard/types';
 import { CredentialCategoryEnum, switchedProfileStore, useWallet } from 'learn-card-base';
 import { getIssuanceDate } from 'learn-card-base/helpers/credentialHelpers';
 import type { VC_WITH_URI } from './vcQueries';
+import { CREDENTIAL_INDEX_STALE_TIME } from './credentialIndexCache';
 import { fetchResolvedCredential } from './credentialResolution';
 
 // Use a distinct key so persisted flat VC+uri objects cannot enter the new record shape.
@@ -56,5 +57,7 @@ export const useGetIDs = (): UseQueryResult<VC_WITH_URI[]> => {
                     return bDate.localeCompare(aDate);
                 });
         },
+        // LC-2383: four category index.get walks — reuse across navigation until invalidated.
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };

@@ -712,3 +712,39 @@ it('refreshes persisted bulk writes when contract sync fails and the reader init
     expect(calls.get('count')).toBe(1);
     subscriptions.forEach(unsubscribe => unsubscribe());
 });
+
+it('invalidates credential-index observers so skills refetch after addVCtoWallet', async () => {
+    const queryFn = vi.fn().mockResolvedValue([]);
+    const observer = new QueryObserver(mocks.queryClient!, {
+        queryKey: ['useGetSkills', ''],
+        queryFn,
+        staleTime: 5 * 60 * 1000,
+    });
+    const unsubscribe = observer.subscribe(() => undefined);
+    try {
+        await vi.waitFor(() => expect(queryFn).toHaveBeenCalledTimes(1));
+        await useWallet().addVCtoWallet({ uri: 'existing-uri', skipSync: true });
+        await vi.waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+    } finally {
+        unsubscribe();
+        observer.destroy();
+    }
+});
+
+it('invalidates primary-profile useGetCredentials after addVCtoWallet', async () => {
+    const queryFn = vi.fn().mockResolvedValue([]);
+    const observer = new QueryObserver(mocks.queryClient!, {
+        queryKey: ['useGetCredentials', '', 'Achievement', undefined],
+        queryFn,
+        staleTime: 5 * 60 * 1000,
+    });
+    const unsubscribe = observer.subscribe(() => undefined);
+    try {
+        await vi.waitFor(() => expect(queryFn).toHaveBeenCalledTimes(1));
+        await useWallet().addVCtoWallet({ uri: 'existing-uri', skipSync: true });
+        await vi.waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+    } finally {
+        unsubscribe();
+        observer.destroy();
+    }
+});

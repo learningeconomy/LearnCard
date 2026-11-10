@@ -29,6 +29,7 @@ import {
     getConsentFlowRecordMarker,
     setConsentFlowRecordMarker,
 } from './consentFlowRecordMarkers';
+import { invalidateCredentialIndexQueries } from '../queries/credentialIndexCache';
 
 const log = getLogger('sync-consent-flow');
 
@@ -319,6 +320,7 @@ const rollBackIndexedRecord = async (
     await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] }),
         queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),
+        invalidateCredentialIndexQueries(queryClient),
     ]);
 };
 

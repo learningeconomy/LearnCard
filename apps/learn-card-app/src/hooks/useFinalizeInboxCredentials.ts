@@ -8,6 +8,7 @@ import {
     WalletSyncState,
     useIsCurrentUserLCNUser,
     connectionPromptKeys,
+    invalidateCredentialIndexQueries,
 } from 'learn-card-base';
 import type { LCNProfile } from '@learncard/types';
 import { useVerifySuccessTick } from '../stores/autoVerifyStore';
@@ -116,6 +117,7 @@ export const useFinalizeInboxCredentials = () => {
                     await Promise.all([
                         queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] }),
                         queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),
+                        invalidateCredentialIndexQueries(queryClient),
                     ]);
                 };
 

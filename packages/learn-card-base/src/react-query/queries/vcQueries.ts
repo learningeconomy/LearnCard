@@ -41,6 +41,13 @@ import {
     resolvedCredentialQueryOptions,
     UnresolvableCredentialError,
 } from './credentialResolution';
+import {
+    CREDENTIAL_INDEX_STALE_TIME,
+    invalidateCredentialIndexQueries,
+} from './credentialIndexCache';
+
+export { CREDENTIAL_INDEX_STALE_TIME, invalidateCredentialIndexQueries };
+
 const log = getLogger('vc-queries');
 
 // Global set to track processed credentials across all hook instances
@@ -353,6 +360,7 @@ export const useGetCredentialCount = (category?: CredentialCategory, enabled: bo
             }
         },
         enabled: enabled && Boolean(reader),
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };
 
@@ -370,6 +378,8 @@ export const useCountBoosts = (category?: CredentialCategory, enabled: boolean =
 
             return managedCount;
         },
+        // Not CREDENTIAL_INDEX_STALE_TIME: countBoosts is network, not index.get, and
+        // nothing invalidates these keys on boost create/delete.
     });
 };
 
@@ -437,6 +447,7 @@ export const useTotalBoostCounts = () => {
                 totalBoostsCount,
             };
         },
+        // Not CREDENTIAL_INDEX_STALE_TIME: same as useCountBoosts — network counts, no invalidation.
     });
 };
 export type VC_WITH_URI = {
@@ -456,7 +467,7 @@ export const useGetCredentials = (
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
-        queryKey: ['useGetCredentials', switchedDid, category, returnUri],
+        queryKey: ['useGetCredentials', switchedDid ?? '', category, returnUri],
         queryFn: async () => {
             try {
                 if (initialCredentials) return initialCredentials;
@@ -517,6 +528,8 @@ export const useGetCredentials = (
                 return Promise.reject(new Error(error));
             }
         },
+        // LC-2383: full index.get walk — reuse across navigation until invalidated.
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };
 
@@ -687,6 +700,8 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
             }
         },
         enabled,
+        // LC-2383: nine category full-walks — the main cross-route mega-batch source.
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
     });
 };
 
@@ -756,7 +771,7 @@ export const useGetCredentialsPaginated = (
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
-        queryKey: ['useGetCredentials', switchedDid ?? '', category, returnUri],
+        queryKey: ['useGetCredentialsPaginated', switchedDid ?? '', category, returnUri],
         queryFn: async () => {
             try {
                 if (initialCredentials) return initialCredentials;
@@ -1290,8 +1305,7 @@ export const useSyncRevokedCredentials = (enabled = true) => {
                 }
 
                 // Invalidate relevant queries to refresh the UI
-                queryClient.invalidateQueries({ queryKey: ['useGetIDs'] });
-                queryClient.invalidateQueries({ queryKey: ['useGetCredentials'] });
+                await invalidateCredentialIndexQueries(queryClient, switchedDid);
                 queryClient.invalidateQueries({ queryKey: ['currentUserTroopIds'] });
                 queryClient.invalidateQueries({ queryKey: ['useGetCurrentUserTroopIdsResolved'] });
             } finally {

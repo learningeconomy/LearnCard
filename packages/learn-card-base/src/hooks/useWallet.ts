@@ -37,6 +37,7 @@ import {
     getCredentialFactsEpoch,
 } from '../in-app-messages/credentialFactsStore';
 import { emitInAppMessageEvent } from '../in-app-messages/inAppMessageEvents';
+import { invalidateCredentialIndexQueries } from '../react-query/queries/credentialIndexCache';
 const log = getLogger('use-wallet');
 
 let generating = false; // Mutex flag to allow first init call to acquire a lock
@@ -236,6 +237,8 @@ export const useWallet = () => {
             queryKey: [...listPrefix, '', readerDid],
             exact: true,
         });
+        // Do not await: index-query refetches should not hold up claim completion.
+        void invalidateCredentialIndexQueries(queryClient, didWeb, { includeCount: false });
     };
 
     const getWallet = async (
