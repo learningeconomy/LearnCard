@@ -40,6 +40,7 @@ import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGloba
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
 import ModalAccessibilityManager from 'learn-card-base/components/modals/ModalAccessibilityManager';
+import { KeyboardFocusManager } from 'learn-card-base/components/keyboard/KeyboardFocusManager';
 import { getConnectionPromptCopy } from './helpers/connectionPromptCopy';
 
 // Install `window.__pathwaysDev` at the app-root level rather than
@@ -218,6 +219,7 @@ const FullApp: React.FC = () => {
                                     <IonApp>
                                         <div id="modal-mid-root"></div>
                                         <ModalAccessibilityManager />
+                                        <KeyboardFocusManager />
                                         <Toast />
                                         <SdkActivityIndicator />
                                         <NetworkListener />
