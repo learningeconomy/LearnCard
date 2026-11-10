@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import NativeDigitalCredentialsListener from './NativeDigitalCredentialsListener';
 
 const mocks = vi.hoisted(() => ({
+    platform: 'android',
+    available: true,
+    revision: 0,
+    status: vi.fn(),
     synchronize: vi.fn(),
     pending: vi.fn(),
     remove: vi.fn(),
@@ -12,7 +16,12 @@ const mocks = vi.hoisted(() => ({
     account: () => true,
     history: { location: { pathname: '/wallet' }, replace: vi.fn() },
 }));
-vi.mock('@capacitor/core', () => ({ Capacitor: { getPlatform: () => 'android' } }));
+vi.mock('@capacitor/core', () => ({
+    Capacitor: {
+        getPlatform: () => mocks.platform,
+        isPluginAvailable: () => mocks.available,
+    },
+}));
 vi.mock('@capacitor/app', () => ({
     App: {
         addListener: async (_name: string, callback: typeof mocks.foreground) => {
@@ -50,11 +59,11 @@ vi.mock('../providers/AuthCoordinatorProvider', () => ({ useAppAuth: () => auth 
 vi.mock('../helpers/verifier-history/account', () => ({
     captureHistoryAccount: () => mocks.account,
     isHistoryAccountEligible: () => true,
-    useHistoryAccountRevision: () => 0,
+    useHistoryAccountRevision: () => mocks.revision,
 }));
 vi.mock('./plugin', () => ({
     nativeDigitalCredentials: {
-        status: async () => ({ enabled: true }),
+        status: mocks.status,
         getPendingRequest: mocks.pending,
         clear: vi.fn(),
     },
@@ -71,6 +80,13 @@ beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(1_000);
     vi.clearAllMocks();
+    mocks.platform = 'android';
+    mocks.available = true;
+    mocks.revision = 0;
+    mocks.foreground = undefined;
+    mocks.query = undefined;
+    mocks.status.mockReset();
+    mocks.status.mockResolvedValue({ enabled: true });
     mocks.pending.mockResolvedValue({});
     mocks.synchronize.mockReset();
     mocks.synchronize.mockResolvedValue({ retryRequired: false });
@@ -84,6 +100,51 @@ const advance = async (ms = 0) => {
         await vi.advanceTimersByTimeAsync(ms);
     });
 };
+
+it.each(['android', 'ios', 'web'])(
+    'does not call an unavailable native plugin or install refresh listeners on %s',
+    async platform => {
+        mocks.platform = platform;
+        mocks.available = false;
+        mocks.status.mockRejectedValue(
+            Object.assign(new Error('NativeDigitalCredentials is not implemented'), {
+                code: 'UNIMPLEMENTED',
+            })
+        );
+        const view = render(<NativeDigitalCredentialsListener />);
+        await advance(60_000);
+        mocks.revision++;
+        view.rerender(<NativeDigitalCredentialsListener />);
+        await advance(60_000);
+        expect(mocks.status).not.toHaveBeenCalled();
+        expect(mocks.pending).not.toHaveBeenCalled();
+        expect(mocks.initialize).not.toHaveBeenCalled();
+        expect(mocks.synchronize).not.toHaveBeenCalled();
+        expect(mocks.foreground).toBeUndefined();
+        expect(mocks.query).toBeUndefined();
+    }
+);
+
+it('keeps a present but disabled provider inactive without retry backoff', async () => {
+    mocks.status.mockResolvedValue({ enabled: false });
+    render(<NativeDigitalCredentialsListener />);
+    await advance(60_000);
+    expect(mocks.status).toHaveBeenCalledTimes(1);
+    expect(mocks.pending).not.toHaveBeenCalled();
+    expect(mocks.initialize).not.toHaveBeenCalled();
+    expect(mocks.synchronize).not.toHaveBeenCalled();
+});
+
+it('still retries a transient status failure when the plugin is available', async () => {
+    mocks.status.mockRejectedValueOnce(new Error('Native service temporarily unavailable'));
+    render(<NativeDigitalCredentialsListener />);
+    await advance();
+    expect(mocks.status).toHaveBeenCalledTimes(1);
+    expect(mocks.synchronize).not.toHaveBeenCalled();
+    await advance(2_000);
+    expect(mocks.status).toHaveBeenCalledTimes(2);
+    expect(mocks.synchronize).toHaveBeenCalledTimes(1);
+});
 
 it('retries inconclusive inventory with capped backoff, pauses in background, and resets on foreground', async () => {
     mocks.synchronize.mockResolvedValue({ retryRequired: true });
