@@ -10312,6 +10312,7 @@
         "viewCredential": "View credential"
     },
     "resumePublishing": {
+        "aboutPublishing": "About publishing",
         "linkReady": "Your private link is ready.",
         "opening": "Opening your private link...",
         "linkUnavailable": "This link is unavailable. Publish the resume again after checking its settings.",

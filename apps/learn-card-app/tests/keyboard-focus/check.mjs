@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { chromium, webkit } from '@playwright/test';
 
 const origin = process.env.KEYBOARD_REVIEW_URL ?? 'http://127.0.0.1:3038';
@@ -70,9 +72,62 @@ for (const [engine, name] of [
             await page.locator('aside').evaluate(element => element.getBoundingClientRect().height),
             667
         );
+        for (const width of [320, 375, 430, 1280]) {
+            await page.setViewportSize({ width, height: 667 });
+            await page.goto(`${origin}/tests/keyboard-focus/resume.html`);
+            await page.getByRole('heading', { name: 'Your Resume' }).waitFor();
+            const header = page.locator('ion-header');
+            const before = await header.boundingBox();
+            const buttons = await header.locator('button').evaluateAll(elements =>
+                elements.map(element => {
+                    const rect = element.getBoundingClientRect();
+                    return {
+                        left: rect.left,
+                        right: rect.right,
+                        width: rect.width,
+                        height: rect.height,
+                    };
+                })
+            );
+            assert.ok(buttons.every(button => button.left >= -1 && button.right <= width + 1));
+            assert.ok(buttons.every(button => button.width >= 43 && button.height >= 43));
+            await page.getByRole('button', { name: 'Preview', exact: true }).waitFor();
+            await page.getByRole('button', { name: 'Save', exact: true }).waitFor();
+            await page.getByRole('textbox', { name: 'Brief professional summary...' }).click();
+            await page.evaluate(() => {
+                window.__keyboardReviewHeight = 367;
+                Object.defineProperty(window.visualViewport, 'height', {
+                    configurable: true,
+                    get: () => window.__keyboardReviewHeight,
+                });
+                window.visualViewport.dispatchEvent(new Event('resize'));
+            });
+            await page.waitForTimeout(600);
+            const after = await header.boundingBox();
+            assert.ok(Math.abs(after.y - before.y) < 1, 'header stays at the top while editing');
+            const summary = await page
+                .getByRole('textbox', { name: 'Brief professional summary...' })
+                .evaluate(element => ({
+                    bottom: element.getBoundingClientRect().bottom,
+                    shadow: getComputedStyle(element).boxShadow,
+                    wrapperShadow: getComputedStyle(element.parentElement).boxShadow,
+                    wrapperRadius: getComputedStyle(element.parentElement).borderRadius,
+                }));
+            assert.ok(summary.bottom <= 352, 'summary stays above the keyboard');
+            assert.equal(summary.shadow, 'none');
+            assert.notEqual(summary.wrapperShadow, 'none');
+            assert.notEqual(summary.wrapperRadius, '0px');
+            if (width === 375)
+                await page.screenshot({
+                    path: join(
+                        process.env.KEYBOARD_REVIEW_OUTPUT ?? tmpdir(),
+                        `${name.toLowerCase()}-resume-after.png`
+                    ),
+                });
+        }
         assert.deepEqual(errors, []);
         console.log(
-            `${name}: field reveal, focus change, rounded composite ring, dismissal passed`
+            `${name}: field reveal, focus change, rounded rings, dismissal, and resume header at 320/375/430/1280px passed`
         );
     } finally {
         await browser.close();

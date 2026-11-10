@@ -10276,6 +10276,7 @@
         "viewCredential": "Voir le justificatif"
     },
     "resumePublishing": {
+        "aboutPublishing": "À propos de la publication",
         "linkReady": "Votre lien privé est prêt.",
         "opening": "Ouverture de votre lien privé...",
         "linkUnavailable": "Ce lien est indisponible. Vérifiez ses paramètres, puis republiez le CV.",
