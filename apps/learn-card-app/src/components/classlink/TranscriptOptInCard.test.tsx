@@ -16,6 +16,7 @@ type Latest = {
     requestId: string;
     requestedAt: string;
     receivedAt?: string;
+    expectedBy?: string;
 };
 
 const mocks = vi.hoisted(() => ({
@@ -375,6 +376,51 @@ describe('TranscriptOptInCard', () => {
         };
         render(<TranscriptOptInCard source="wallet" />);
         expect(screen.getByTestId('transcript-optin-stale')).toBeTruthy();
+    });
+
+    describe('with a delivery estimate from the school', () => {
+        const pending = (requestedAgoMs: number, expectedInMs: number): Latest => {
+            const now = Date.now();
+            return {
+                status: 'requested',
+                requestId: 'r1',
+                requestedAt: new Date(now - requestedAgoMs).toISOString(),
+                expectedBy: new Date(now + expectedInMs).toISOString(),
+            };
+        };
+
+        it('shows a progress bar for a request expected within a couple of minutes', () => {
+            mocks.latest = pending(10_000, 110_000);
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.getByRole('progressbar').getAttribute('aria-valuetext')).toBe(
+                'About 2 minutes left'
+            );
+        });
+
+        it('says when to expect a longer delivery', () => {
+            mocks.latest = pending(60_000, 3 * 60 * 60_000);
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.getByTestId('transcript-optin-waiting').textContent).toBe(
+                'Expected in 3 hours'
+            );
+            expect(screen.queryByRole('progressbar')).toBeNull();
+        });
+
+        it('waits for the estimate before offering recovery, even after polling stops', () => {
+            mocks.isPollingExhausted = true;
+            mocks.latest = pending(60 * 60_000, 2 * 24 * 60 * 60_000);
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
+        });
+
+        it('offers recovery a day after a missed estimate', () => {
+            mocks.latest = pending(
+                3 * TRANSCRIPT_STALE_AFTER_MS,
+                -TRANSCRIPT_STALE_AFTER_MS - 1000
+            );
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.getByTestId('transcript-optin-stale')).toBeTruthy();
+        });
     });
 
     describe('after a none_yet response', () => {

@@ -71,6 +71,18 @@
             "classOf": "Class of",
             "noneYetTitle": "Nothing to add yet"
         },
+        "delivery": {
+            "timeLeftLabel": "Time left",
+            "secondsLeft": "About {{seconds}} seconds left",
+            "oneMinuteLeft": "About a minute left",
+            "minutesLeft": "About {{minutes}} minutes left",
+            "almostThere": "Almost there",
+            "requestedTitle": "Transcript requested",
+            "expectedWhen": "Your school expects to send it {{when}}.",
+            "notifyYou": "We'll let you know as soon as it's here.",
+            "byDate": "by {{date}}",
+            "expectedLabel": "Expected {{when}}"
+        },
         "promptTitle": "Get Your Transcript",
         "notNow": "Not now"
     },
