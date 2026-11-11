@@ -50,33 +50,50 @@ const DIRECT_SYNTHESIS_MAX_CHARS = 32_000;
 const BATCH_SUMMARY_MAX_SIZE = 20;
 const BATCH_SUMMARY_MAX_CHARS = 8_000;
 
+export const LEARNER_CONTEXT_DEPENDENCIES = [
+    'wallet',
+    'consent',
+    'verify',
+    'credential_store',
+] as const;
+export type LearnerContextDependency = (typeof LEARNER_CONTEXT_DEPENDENCIES)[number];
+
 export class LearnerContextPromptError extends Error {
+    readonly dependency?: LearnerContextDependency;
+
     constructor(
         readonly status: 401 | 403 | 503,
         readonly code: string,
         message: string,
-        options?: { cause?: unknown }
+        options?: { cause?: unknown; dependency?: LearnerContextDependency }
     ) {
-        super(message, options);
+        super(message, options?.cause !== undefined ? { cause: options.cause } : undefined);
         this.name = 'LearnerContextPromptError';
+        this.dependency = options?.dependency;
     }
 }
 
-export const rethrowLearnerContextDependency = (error: unknown): never => {
+export const rethrowLearnerContextDependency = (
+    error: unknown,
+    dependency: LearnerContextDependency
+): never => {
     if (error instanceof AiConsentError || error instanceof LearnerContextPromptError) throw error;
     throw new LearnerContextPromptError(
         503,
         'learner_context_unavailable',
         'Learner context service is unavailable',
-        { cause: error }
+        { cause: error, dependency }
     );
 };
 
-const dependency = async <T>(operation: () => Promise<T>): Promise<T> => {
+const dependency = async <T>(
+    name: LearnerContextDependency,
+    operation: () => Promise<T>
+): Promise<T> => {
     try {
         return await operation();
     } catch (error) {
-        rethrowLearnerContextDependency(error);
+        rethrowLearnerContextDependency(error, name);
     }
 };
 
@@ -127,9 +144,9 @@ export const generateLearnerContextPrompt = async (request: LearnerContextPrompt
             'authentication_required',
             'Authentication required'
         );
-    const learnCard = await dependency(() => getLearnCard());
+    const learnCard = await dependency('wallet', () => getLearnCard());
     const loadConsent = () =>
-        dependency(() => loadActiveAiConsentData(learnCard, did, 'model-inference'));
+        dependency('consent', () => loadActiveAiConsentData(learnCard, did, 'model-inference'));
     const { records, receipt } = await loadConsent();
     const credentialUris = [...new Set(input.credentialUris)];
     const personalFields = [...new Set(input.personalFields)].sort();
@@ -160,7 +177,8 @@ export const generateLearnerContextPrompt = async (request: LearnerContextPrompt
     // Validate every selected source, even if the caller explicitly limits synthesis.
     const credentials = await runWithConcurrency(
         credentialUris.map(
-            uri => () => dependency(() => resolveVerifiedCredentialProjection(did, uri, receipt))
+            uri => () =>
+                dependency('verify', () => resolveVerifiedCredentialProjection(did, uri, receipt))
         )
     );
     await assertFresh();
@@ -239,7 +257,7 @@ export const generateLearnerContextPrompt = async (request: LearnerContextPrompt
                   stats: { ...stats },
               }
             : undefined;
-    const cached = await dependency(() =>
+    const cached = await dependency('credential_store', () =>
         db.getLearnerContextPromptByHash(did, receipt.revision, promptCacheHash)
     );
     if (
@@ -284,7 +302,7 @@ export const generateLearnerContextPrompt = async (request: LearnerContextPrompt
                       version: CREDENTIAL_SUMMARY_CACHE_VERSION,
                       projection,
                   });
-                  const cachedSummary = await dependency(() =>
+                  const cachedSummary = await dependency('credential_store', () =>
                       db.getCredentialSummaryByHash(did, receipt.revision, summaryHash)
                   );
                   if (
@@ -314,7 +332,7 @@ export const generateLearnerContextPrompt = async (request: LearnerContextPrompt
                   actualCompactionTokens += tokens;
                   theoreticalCompactionTokens += tokens;
                   await assertFresh();
-                  await dependency(() =>
+                  await dependency('credential_store', () =>
                       db.upsertCredentialSummaryByHash({
                           did,
                           consentRevision: receipt.revision,
@@ -415,7 +433,7 @@ Compact output: 120-220 words. Expanded output: 260-420 words. Follow the reques
         },
     };
     await assertFresh();
-    await dependency(() =>
+    await dependency('credential_store', () =>
         db.upsertLearnerContextPromptByHash({
             did,
             consentRevision: receipt.revision,

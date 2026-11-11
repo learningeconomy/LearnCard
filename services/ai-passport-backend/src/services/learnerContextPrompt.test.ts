@@ -11,6 +11,7 @@ process.env.REDIS_PORT ||= '6379';
 process.env.AI_PRIVACY_KEY ||= Buffer.alloc(32, 9).toString('base64');
 
 const OWNER = 'did:example:learner';
+const PRIVATE_MESSAGE = 'did:example:private-store SYNTHETIC_STACK';
 const URI = 'lc:network:credential-1';
 const receipt: ActiveAiConsentReceipt = {
     contractUri: 'lc:network:ai-contract',
@@ -53,6 +54,8 @@ const providerInputs: string[] = [];
 const answerInputs: string[] = [];
 let searchResults: TopicSearchResult[] = [];
 let duringSearch: (() => void) | undefined;
+let learnCardFailure: unknown;
+let promptCacheFailure: unknown;
 const searchCredentialsByTopic = mock(async () => {
     duringSearch?.();
     return searchResults;
@@ -91,7 +94,12 @@ mock.module('../learncard/consent', () => ({
         };
     },
 }));
-mock.module('../learncard', () => ({ getLearnCard: async () => ({}) }));
+mock.module('../learncard', () => ({
+    getLearnCard: async () => {
+        if (learnCardFailure) throw learnCardFailure;
+        return {};
+    },
+}));
 mock.module('../credentials/service', () => ({
     resolveVerifiedCredentialProjection: async (_did: string, uri: string) => {
         const projection = projections.get(uri);
@@ -110,6 +118,7 @@ mock.module('../ai/pseudonymization', () => ({
 mock.module('../db', () => ({
     db: {
         getLearnerContextPromptByHash: async (did: string, revision: string, hash: string) => {
+            if (promptCacheFailure) throw promptCacheFailure;
             const result = promptCache.get(`${did}:${revision}:${hash}`) ?? null;
             duringCacheRead?.();
             return result;
@@ -163,6 +172,8 @@ beforeEach(() => {
     duringInference = undefined;
     duringCacheRead = undefined;
     duringPseudonymization = undefined;
+    learnCardFailure = undefined;
+    promptCacheFailure = undefined;
 });
 
 describe('selection-only learner context', () => {
@@ -260,7 +271,49 @@ describe('selection-only learner context', () => {
         await expect(format()).rejects.toMatchObject({
             status: 503,
             message: 'Learner context service is unavailable',
+            dependency: 'verify',
+            cause: {
+                name: 'CredentialVerificationUnavailableError',
+                verificationSubreason: 'read_empty',
+            },
         });
+        expect(providerInputs).toEqual([]);
+    });
+
+    it('labels a shared wallet init failure without exposing its message', async () => {
+        learnCardFailure = Object.assign(new Error(PRIVATE_MESSAGE), {
+            name: 'MongoServerError',
+            code: 50,
+        });
+        await expect(format()).rejects.toMatchObject({
+            code: 'learner_context_unavailable',
+            dependency: 'wallet',
+            cause: { name: 'MongoServerError', code: 50 },
+        });
+        const failure = await format().catch(error => error);
+        expect(failure.message).toBe('Learner context service is unavailable');
+        expect(
+            JSON.stringify({ name: failure.cause?.name, code: failure.cause?.code })
+        ).not.toContain(PRIVATE_MESSAGE);
+        expect(providerInputs).toEqual([]);
+    });
+
+    it('labels a shared credential-store failure without exposing its message', async () => {
+        promptCacheFailure = Object.assign(new Error(PRIVATE_MESSAGE), {
+            name: 'MongoNetworkError',
+            cause: Object.assign(new Error(PRIVATE_MESSAGE), {
+                name: 'MongoServerError',
+                code: 89,
+            }),
+        });
+        await expect(format()).rejects.toMatchObject({
+            code: 'learner_context_unavailable',
+            dependency: 'credential_store',
+            cause: { name: 'MongoNetworkError' },
+        });
+        const failure = await format().catch(error => error);
+        expect(failure.cause.cause.name).toBe('MongoServerError');
+        expect(failure.message).toBe('Learner context service is unavailable');
         expect(providerInputs).toEqual([]);
     });
 
@@ -469,6 +522,7 @@ describe('MCP answer/context consistency', () => {
             runWithAiPrivacyContext(OWNER, () => getLatestUserSummary(OWNER))
         ).rejects.toMatchObject({
             code: 'learner_context_unavailable',
+            dependency: 'verify',
             cause: {
                 name: 'CredentialVerificationUnavailableError',
                 verificationSubreason: 'read_empty',

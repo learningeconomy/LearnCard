@@ -41,7 +41,7 @@ const loadSharedContextUris = async (
         logSkippedCredentialCounts(skipped);
         return loaded;
     } catch (error) {
-        rethrowLearnerContextDependency(error);
+        rethrowLearnerContextDependency(error, 'verify');
     }
 };
 

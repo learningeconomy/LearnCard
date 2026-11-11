@@ -1,8 +1,10 @@
 import * as Sentry from '@sentry/node';
 import {
+    MCP_CAUSE_DEPENDENCIES,
     MCP_FAILURE_STAGES,
     MCP_TOOLS,
     sanitizeDiagnosticToken,
+    type McpCauseDependency,
     type McpFailureStage,
     type McpToolName,
 } from './tool-failure';
@@ -12,6 +14,9 @@ const isMcpTool = (value: unknown): value is McpToolName =>
 
 const isMcpStage = (value: unknown): value is McpFailureStage =>
     typeof value === 'string' && (MCP_FAILURE_STAGES as readonly string[]).includes(value);
+
+const isMcpCauseDependency = (value: unknown): value is McpCauseDependency =>
+    typeof value === 'string' && (MCP_CAUSE_DEPENDENCIES as readonly string[]).includes(value);
 
 export const pickAllowlistedMcpFailureTags = (
     tags: Record<string, unknown> | undefined
@@ -27,6 +32,8 @@ export const pickAllowlistedMcpFailureTags = (
     if (causeName) allowlisted.cause_name = causeName;
     const causeCode = sanitizeDiagnosticToken(tags.cause_code);
     if (causeCode) allowlisted.cause_code = causeCode;
+    if (isMcpCauseDependency(tags.cause_dependency))
+        allowlisted.cause_dependency = tags.cause_dependency;
     if (isMcpStage(tags.stage)) allowlisted.stage = tags.stage;
     return Object.keys(allowlisted).length > 0 ? allowlisted : undefined;
 };

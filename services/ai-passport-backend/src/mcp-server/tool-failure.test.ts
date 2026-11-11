@@ -80,6 +80,7 @@ test('keeps allowlisted cause name and code from a wrapped dependency error', ()
     });
     const wrapped = namedError('LearnerContextPromptError', {
         code: 'learner_context_unavailable',
+        dependency: 'verify',
         cause,
     });
     expect(classifyToolFailure(wrapped)).toEqual({
@@ -87,6 +88,7 @@ test('keeps allowlisted cause name and code from a wrapped dependency error', ()
         error_code: 'learner_context_unavailable',
         cause_name: 'CredentialVerificationUnavailableError',
         cause_code: 'read_empty',
+        cause_dependency: 'verify',
     });
     expect(
         classifyToolFailure(namedError('AbortError', { cause: namedError('AbortError') }))
@@ -98,6 +100,7 @@ test('keeps allowlisted cause name and code from a wrapped dependency error', ()
     });
     const mongo = namedError('LearnerContextPromptError', {
         code: 'learner_context_unavailable',
+        dependency: 'credential_store',
         cause: namedError('MongoServerError', { code: 50 }),
     });
     expect(classifyToolFailure(mongo)).toEqual({
@@ -105,13 +108,33 @@ test('keeps allowlisted cause name and code from a wrapped dependency error', ()
         error_code: 'learner_context_unavailable',
         cause_name: 'MongoServerError',
         cause_code: '50',
+        cause_dependency: 'credential_store',
+    });
+    const chain = namedError('LearnerContextPromptError', {
+        code: 'learner_context_unavailable',
+        dependency: 'wallet',
+        cause: namedError('Error', {
+            message: PRIVATE,
+            cause: namedError('MongoNetworkError', {
+                cause: namedError('MongoServerError', { code: 89 }),
+            }),
+        }),
+    });
+    expect(classifyToolFailure(chain)).toEqual({
+        error_name: 'LearnerContextPromptError',
+        error_code: 'learner_context_unavailable',
+        cause_name: 'MongoServerError',
+        cause_code: '89',
+        cause_dependency: 'wallet',
     });
     const leaked = namedError('LearnerContextPromptError', {
         code: 'learner_context_unavailable',
+        dependency: `did:${PRIVATE}`,
         cause: namedError(`leak ${PRIVATE}`, { message: PRIVATE }),
     });
     expect(JSON.stringify(classifyToolFailure(leaked))).not.toContain('did:example');
     expect(JSON.stringify(classifyToolFailure(leaked))).not.toContain(PRIVATE);
+    expect(classifyToolFailure(leaked).cause_dependency).toBeUndefined();
 });
 
 test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', () => {
@@ -121,9 +144,11 @@ test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', 
         error_code: 'AccessDenied',
         cause_name: 'CredentialVerificationUnavailableError',
         cause_code: 'read_empty',
+        cause_dependency: 'credential_store',
         stage: 'llm',
         user: PRIVATE,
         message: PRIVATE,
+        leaked_dependency: 'did:example:nope',
     });
     expect(tags).toEqual({
         tool: 'get_user_context',
@@ -131,6 +156,7 @@ test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', 
         error_code: 'AccessDenied',
         cause_name: 'CredentialVerificationUnavailableError',
         cause_code: 'read_empty',
+        cause_dependency: 'credential_store',
         stage: 'llm',
     });
 
@@ -149,6 +175,7 @@ test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', 
                 error_code: 'guardian_required',
                 cause_name: 'MongoServerError',
                 cause_code: '50',
+                cause_dependency: 'wallet',
                 stage: 'consent',
                 leaked: PRIVATE,
             },
@@ -168,6 +195,7 @@ test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', 
             error_code: 'guardian_required',
             cause_name: 'MongoServerError',
             cause_code: '50',
+            cause_dependency: 'wallet',
             stage: 'consent',
         },
     });

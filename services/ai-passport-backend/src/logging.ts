@@ -283,6 +283,7 @@ export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
     mcpErrorCode?: string;
     mcpCauseName?: string;
     mcpCauseCode?: string;
+    mcpCauseDependency?: 'wallet' | 'consent' | 'verify' | 'credential_store';
     mcpStage?: 'consent' | 'learnercontext' | 'pseudonymize' | 'llm';
     success?: boolean;
     provider?: 'openai' | 'anthropic' | 'google' | 'bedrock';
@@ -386,6 +387,13 @@ export const logSafeEvent = (
             /^[A-Za-z0-9_.-]{1,64}$/.test(metrics.mcpCauseCode)
         )
             event.mcpCauseCode = metrics.mcpCauseCode;
+        if (
+            metrics.mcpCauseDependency === 'wallet' ||
+            metrics.mcpCauseDependency === 'consent' ||
+            metrics.mcpCauseDependency === 'verify' ||
+            metrics.mcpCauseDependency === 'credential_store'
+        )
+            event.mcpCauseDependency = metrics.mcpCauseDependency;
         if (
             metrics.mcpStage === 'consent' ||
             metrics.mcpStage === 'learnercontext' ||

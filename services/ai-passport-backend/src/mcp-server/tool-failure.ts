@@ -73,11 +73,15 @@ export const withToolStage = async <T>(
     }
 };
 
+export const MCP_CAUSE_DEPENDENCIES = ['wallet', 'consent', 'verify', 'credential_store'] as const;
+export type McpCauseDependency = (typeof MCP_CAUSE_DEPENDENCIES)[number];
+
 export type ToolFailureTags = {
     error_name?: string;
     error_code?: string;
     cause_name?: string;
     cause_code?: string;
+    cause_dependency?: McpCauseDependency;
     stage?: McpFailureStage;
 };
 
@@ -145,10 +149,52 @@ const classifyErrorCode = (error: object): string | undefined => {
             .join(',');
         return sanitizeDiagnosticToken(path);
     }
-    const ownCode = readOwnToken(error, 'code') ?? readOwnToken(error, 'Code');
+    const ownCode =
+        readOwnToken(error, 'code') ??
+        readOwnToken(error, 'Code') ??
+        readOwnToken(error, 'statusCode');
     if (ownCode) return ownCode;
     const batchCode = credentialFailureCodeOf(error);
     return batchCode && batchCode !== 'unknown' ? sanitizeDiagnosticToken(batchCode) : undefined;
+};
+
+const MAX_CAUSE_DEPTH = 5;
+
+const collectCauseChain = (error: object): object[] => {
+    const chain: object[] = [error];
+    let current: unknown = error;
+    for (let depth = 0; depth < MAX_CAUSE_DEPTH; depth += 1) {
+        if (!current || typeof current !== 'object' || !('cause' in current)) break;
+        const next = (current as { cause?: unknown }).cause;
+        if (!next || typeof next !== 'object' || chain.includes(next)) break;
+        chain.push(next);
+        current = next;
+    }
+    return chain;
+};
+
+const pickInnermostCauseTags = (
+    error: object
+): Pick<ToolFailureTags, 'cause_name' | 'cause_code'> => {
+    const picked: Pick<ToolFailureTags, 'cause_name' | 'cause_code'> = {};
+    for (const frame of collectCauseChain(error).slice(1)) {
+        const name = classifyErrorName(frame);
+        const code = classifyErrorCode(frame);
+        const usefulName = name && name !== 'Error' ? name : undefined;
+        if (!usefulName && !code) continue;
+        if (usefulName) picked.cause_name = usefulName;
+        else delete picked.cause_name;
+        if (code) picked.cause_code = code;
+        else delete picked.cause_code;
+    }
+    return picked;
+};
+
+const readCauseDependency = (error: object): McpCauseDependency | undefined => {
+    const value = readOwnString(error, 'dependency');
+    return value && (MCP_CAUSE_DEPENDENCIES as readonly string[]).includes(value)
+        ? (value as McpCauseDependency)
+        : undefined;
 };
 
 export const classifyToolFailure = (error: unknown): ToolFailureTags => {
@@ -161,13 +207,9 @@ export const classifyToolFailure = (error: unknown): ToolFailureTags => {
         if (name) tags.error_name = name;
         const code = classifyErrorCode(inner);
         if (code) tags.error_code = code;
-        const cause = 'cause' in inner ? (inner as { cause?: unknown }).cause : undefined;
-        if (cause && typeof cause === 'object') {
-            const causeName = classifyErrorName(cause);
-            if (causeName) tags.cause_name = causeName;
-            const causeCode = classifyErrorCode(cause);
-            if (causeCode) tags.cause_code = causeCode;
-        }
+        const dependency = readCauseDependency(inner);
+        if (dependency) tags.cause_dependency = dependency;
+        Object.assign(tags, pickInnermostCauseTags(inner));
     }
     return tags;
 };
