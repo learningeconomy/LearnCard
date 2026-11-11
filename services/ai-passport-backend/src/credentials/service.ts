@@ -70,6 +70,8 @@ import {
     CredentialVerificationUnavailableError,
     type CredentialConsentReceipt,
 } from './verification';
+import { classifyLearnCardFailure } from '../learncard/errors';
+import { attachVerifyFailureDiagnostics, copyVerifyFailureDiagnostics } from './verify-diagnostics';
 import {
     projectCredential,
     getCredentialProjection,
@@ -347,15 +349,26 @@ const resolveCredential = async (
         )) as VC;
     } catch (error) {
         /* A failed read is this credential's failure, unless the caller aborted. */
-        throw error instanceof Error && error.name === 'AbortError'
-            ? error
-            : markCredentialItemFailure(error);
+        if (error instanceof Error && error.name === 'AbortError') throw error;
+        const marked = markCredentialItemFailure(error);
+        if (marked && typeof marked === 'object') {
+            attachVerifyFailureDiagnostics(marked, {
+                kind:
+                    classifyLearnCardFailure(error) === 'learncard_unauthorized'
+                        ? 'read_unauthorized'
+                        : 'read_failed',
+            });
+        }
+        throw marked;
     }
     // SDK reads may hide validation/decryption/network failures as no result.
     // Missing data cannot establish invalidity or justify deleting retained records.
     if (!credential) {
         if (insightEligibility) throw new ExcludedInsightInput('unreadable_input');
-        throw new CredentialVerificationUnavailableError('read_empty');
+        throw attachVerifyFailureDiagnostics(
+            new CredentialVerificationUnavailableError('read_empty'),
+            { kind: 'read_empty' }
+        );
     }
     if (insightEligibility && hasKnownUnsupportedInsightSuite(credential))
         throw new ExcludedInsightInput('unsupported_cryptosuite');
@@ -401,7 +414,15 @@ const resolveCredential = async (
             db.removeThreadCredentialsByUris(did, [ref.uri]),
         ]);
         await db.storeCredentialVerification(did, verification);
-        throw markCredentialItemFailure(new InvalidCredentialError(), 'credential_invalid');
+        throw copyVerifyFailureDiagnostics(
+            verification,
+            markCredentialItemFailure(
+                attachVerifyFailureDiagnostics(new InvalidCredentialError(), {
+                    kind: 'verify_errors',
+                }),
+                'credential_invalid'
+            )
+        );
     }
     let projection: ModelSafeCredentialProjection;
     try {
@@ -413,7 +434,9 @@ const resolveCredential = async (
         // not fail the page or the batch around it.
         if (insightEligibility) throw new ExcludedInsightInput('malformed_input');
         throw markCredentialItemFailure(
-            new CredentialProjectionError(),
+            attachVerifyFailureDiagnostics(new CredentialProjectionError(), {
+                kind: 'projection_failed',
+            }),
             'credential_projection_failed'
         );
     }

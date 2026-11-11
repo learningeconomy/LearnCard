@@ -29,7 +29,25 @@ const CONSENT_REQUIRED_MESSAGE = 'Active LearnCard AI consent is required';
 
 export const reportToolFailure = (tool: McpToolName, error: unknown): void => {
     const tags = { tool, ...classifyToolFailure(error) };
-    Sentry.captureMessage('backend_operation_failed', { level: 'error', tags });
+    Sentry.captureMessage('backend_operation_failed', {
+        level: 'error',
+        tags: {
+            tool: tags.tool,
+            error_name: tags.error_name,
+            error_code: tags.error_code,
+            cause_name: tags.cause_name,
+            cause_code: tags.cause_code,
+            cause_dependency: tags.cause_dependency,
+            stage: tags.stage,
+            verify_failure_kind: tags.verify_failure_kind,
+        },
+        extra: {
+            mcpVerifyErrors: tags.verify_errors,
+            mcpVerifyWarnings: tags.verify_warnings,
+            mcpVerifyChecks: tags.verify_checks,
+            mcpSkipCounts: tags.skip_counts,
+        },
+    });
     logSafeEvent('error', 'request_failed', {
         mcpTool: tool,
         mcpErrorName: tags.error_name,
@@ -38,6 +56,11 @@ export const reportToolFailure = (tool: McpToolName, error: unknown): void => {
         mcpCauseCode: tags.cause_code,
         mcpCauseDependency: tags.cause_dependency,
         mcpStage: tags.stage,
+        mcpVerifyFailureKind: tags.verify_failure_kind,
+        mcpVerifyErrors: tags.verify_errors,
+        mcpVerifyWarnings: tags.verify_warnings,
+        mcpVerifyChecks: tags.verify_checks,
+        mcpSkipCounts: tags.skip_counts,
     });
 };
 

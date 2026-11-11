@@ -50,6 +50,7 @@ const ALL_TEST_FILES = [
     'src/learncard/external-artifact-deletion.test.ts',
     'src/mcp-server/__tests__/instrument-startup.test.ts',
     'src/mcp-server/tool-failure.test.ts',
+    'src/credentials/verify-diagnostics.test.ts',
     'src/mcp-server/__tests__/overlapping-requests.test.ts',
     'src/mcp-server/__tests__/oauth.test.ts',
     'src/mcp-server/__tests__/oauth-controllers.test.ts',

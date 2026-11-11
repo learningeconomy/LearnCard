@@ -221,6 +221,11 @@ export const logCredentialBatch = (
     });
 };
 
+const emptyBatchSkipCounts = new WeakMap<object, Record<string, number>>();
+
+export const emptyBatchSkipCountsOf = (error: unknown): Record<string, number> | undefined =>
+    isObject(error) ? emptyBatchSkipCounts.get(error) : undefined;
+
 type BatchOptions = {
     concurrency?: number;
     /* Resolve empty, not reject, when every failure is permanent. */
@@ -287,8 +292,12 @@ export const settleCredentialBatch = async <Item>(
         loaded.length === 0 &&
         failures[0] &&
         !(options.allowEmpty && failures.every(({ error }) => isPermanentCredentialFailure(error)))
-    )
+    ) {
+        const counts: Record<string, number> = {};
+        for (const item of skipped) counts[item.code] = (counts[item.code] ?? 0) + 1;
+        if (isObject(failures[0].error)) emptyBatchSkipCounts.set(failures[0].error, counts);
         throw failures[0].error;
+    }
     return { loaded, skipped };
 };
 

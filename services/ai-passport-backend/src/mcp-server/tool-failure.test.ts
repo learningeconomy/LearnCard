@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 import { ZodError } from 'zod';
 import { pickAllowlistedMcpFailureTags, scrubMcpSentryEvent } from './instrument';
+import { attachVerifyFailureDiagnostics } from '../credentials/verify-diagnostics';
 import { classifyToolFailure, sanitizeDiagnosticToken, withToolStage } from './tool-failure';
 
 const PRIVATE = 'did:example:private-subject SYNTHETIC_STACK';
@@ -135,6 +136,94 @@ test('keeps allowlisted cause name and code from a wrapped dependency error', ()
     expect(JSON.stringify(classifyToolFailure(leaked))).not.toContain('did:example');
     expect(JSON.stringify(classifyToolFailure(leaked))).not.toContain(PRIVATE);
     expect(classifyToolFailure(leaked).cause_dependency).toBeUndefined();
+    expect(classifyToolFailure(leaked)).toMatchObject({
+        cause_name: 'Error',
+        cause_code: 'unknown',
+    });
+});
+
+test('a plain Error cause still gets a cause name and code', () => {
+    const wrapped = namedError('LearnerContextPromptError', {
+        code: 'learner_context_unavailable',
+        dependency: 'verify',
+        cause: namedError('Error', { message: PRIVATE }),
+    });
+    expect(classifyToolFailure(wrapped)).toEqual({
+        error_name: 'LearnerContextPromptError',
+        error_code: 'learner_context_unavailable',
+        cause_name: 'Error',
+        cause_code: 'unknown',
+        cause_dependency: 'verify',
+    });
+    expect(JSON.stringify(classifyToolFailure(wrapped))).not.toContain(PRIVATE);
+});
+
+test('the all-skipped path carries a cause code and skip counts', () => {
+    const first = namedError('Error', { message: PRIVATE });
+    const wrapper = namedError('CredentialBatchEmptyError', {
+        code: 'all_skipped',
+        cause: first,
+    });
+    attachVerifyFailureDiagnostics(wrapper, {
+        kind: 'all_skipped',
+        skipCounts: { unknown: 2 },
+    });
+    const wrapped = namedError('LearnerContextPromptError', {
+        code: 'learner_context_unavailable',
+        dependency: 'verify',
+        cause: wrapper,
+    });
+    expect(classifyToolFailure(wrapped)).toEqual({
+        error_name: 'LearnerContextPromptError',
+        error_code: 'learner_context_unavailable',
+        cause_name: 'CredentialBatchEmptyError',
+        cause_code: 'all_skipped',
+        cause_dependency: 'verify',
+        verify_failure_kind: 'all_skipped',
+        skip_counts: { unknown: 2 },
+    });
+    expect(JSON.stringify(classifyToolFailure(wrapped))).not.toContain(PRIVATE);
+});
+
+test('the verify-failure path produces a cause code plus sanitized errors', () => {
+    const cause = attachVerifyFailureDiagnostics(
+        namedError('InvalidCredentialError', { message: PRIVATE, code: 'credential_invalid' }),
+        {
+            kind: 'verify_errors',
+            checks: ['proof', 'not-safe'],
+            errors: [
+                'signature error: Verification equation was not satisfied',
+                'issuer did:example:secret mailed user@example.com see https://status.example/1',
+                'id 550e8400-e29b-41d4-a716-446655440000',
+            ],
+            warnings: ['https://example.com/status'],
+        }
+    );
+    const wrapped = namedError('LearnerContextPromptError', {
+        code: 'learner_context_unavailable',
+        dependency: 'verify',
+        cause,
+    });
+    const tags = classifyToolFailure(wrapped);
+    expect(tags).toEqual({
+        error_name: 'LearnerContextPromptError',
+        error_code: 'learner_context_unavailable',
+        cause_name: 'InvalidCredentialError',
+        cause_code: 'credential_invalid',
+        cause_dependency: 'verify',
+        verify_failure_kind: 'verify_errors',
+        verify_checks: ['proof'],
+        verify_errors: [
+            'signature error: Verification equation was not satisfied',
+            'issuer [did] mailed [email] see [url]',
+            'id [uuid]',
+        ],
+        verify_warnings: ['[url]'],
+    });
+    expect(JSON.stringify(tags)).not.toContain('did:example');
+    expect(JSON.stringify(tags)).not.toContain(PRIVATE);
+    expect(JSON.stringify(tags)).not.toContain('user@example.com');
+    expect(JSON.stringify(tags)).not.toContain('https://');
 });
 
 test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', () => {
@@ -201,4 +290,38 @@ test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', 
     });
     expect(JSON.stringify(event)).not.toContain(PRIVATE);
     expect(JSON.stringify(event)).not.toContain('did:example');
+
+    const scrubbed = scrubMcpSentryEvent(
+        {
+            event_id: 'b'.repeat(32),
+            message: PRIVATE,
+            extra: {
+                did: PRIVATE,
+                mcpVerifyErrors: [
+                    'signature error: Verification equation was not satisfied',
+                    'issuer did:example:secret',
+                ],
+                mcpVerifyChecks: ['proof', 'nope'],
+            },
+            tags: {
+                tool: 'get_user_context',
+                verify_failure_kind: 'verify_errors',
+                leaked: PRIVATE,
+            },
+        } as never,
+        { attachments: [] }
+    );
+    expect(scrubbed.tags).toEqual({
+        tool: 'get_user_context',
+        verify_failure_kind: 'verify_errors',
+    });
+    expect(scrubbed.extra).toEqual({
+        mcpVerifyErrors: [
+            'signature error: Verification equation was not satisfied',
+            'issuer [did]',
+        ],
+        mcpVerifyChecks: ['proof'],
+    });
+    expect(JSON.stringify(scrubbed)).not.toContain(PRIVATE);
+    expect(JSON.stringify(scrubbed)).not.toContain('did:example');
 });

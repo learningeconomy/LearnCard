@@ -1,7 +1,13 @@
 import { getCurrentAiSubject } from '../../ai/privacy';
 import { CREDENTIAL_PRELOAD_CONCURRENCY } from '../../constants/env';
 import { pseudonymizeProviderInput } from '../../ai/pseudonymization';
-import { settleCredentialBatch, type CredentialBatchResult } from '../../credentials/batch';
+import {
+    emptyBatchSkipCountsOf,
+    isCredentialItemFailure,
+    settleCredentialBatch,
+    type CredentialBatchResult,
+} from '../../credentials/batch';
+import { attachVerifyFailureDiagnostics } from '../../credentials/verify-diagnostics';
 import { resolveVerifiedCredentialProjection } from '../../credentials/service';
 import { getLearnCard } from '../../learncard';
 import { AiConsentError, loadActiveAiConsentData } from '../../learncard/consent';
@@ -43,6 +49,16 @@ const loadSharedContextUris = async (
         logSkippedCredentialCounts(skipped);
         return loaded;
     } catch (error) {
+        if (isCredentialItemFailure(error)) {
+            const wrapper = new Error('All credentials were skipped', { cause: error });
+            wrapper.name = 'CredentialBatchEmptyError';
+            Object.assign(wrapper, { code: 'all_skipped' });
+            attachVerifyFailureDiagnostics(wrapper, {
+                kind: 'all_skipped',
+                skipCounts: emptyBatchSkipCountsOf(error),
+            });
+            return rethrowLearnerContextDependency(wrapper, 'verify');
+        }
         return rethrowLearnerContextDependency(error, 'verify');
     }
 };

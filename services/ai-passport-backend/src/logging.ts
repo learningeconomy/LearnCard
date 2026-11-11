@@ -25,6 +25,13 @@ import {
     type LearnCardErrorClass,
     type LearnCardTrpcCode,
 } from './learncard/errors';
+import {
+    sanitizeSkipCounts,
+    sanitizeVerifyChecks,
+    sanitizeVerifyDiagnosticList,
+    VERIFY_FAILURE_KINDS,
+    type VerifyFailureKind,
+} from './credentials/verify-diagnostics';
 
 type ConsoleLevel = 'debug' | 'error' | 'info' | 'log' | 'warn';
 type ConsoleWriter = (...data: unknown[]) => void;
@@ -285,6 +292,11 @@ export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
     mcpCauseCode?: string;
     mcpCauseDependency?: 'wallet' | 'consent' | 'verify' | 'credential_store';
     mcpStage?: 'consent' | 'learnercontext' | 'pseudonymize' | 'llm';
+    mcpVerifyFailureKind?: VerifyFailureKind;
+    mcpVerifyErrors?: string[];
+    mcpVerifyWarnings?: string[];
+    mcpVerifyChecks?: string[];
+    mcpSkipCounts?: Record<string, number>;
     success?: boolean;
     provider?: 'openai' | 'anthropic' | 'google' | 'bedrock';
     failureCode?: (typeof SAFE_FAILURE_CODES)[number];
@@ -401,6 +413,19 @@ export const logSafeEvent = (
             metrics.mcpStage === 'llm'
         )
             event.mcpStage = metrics.mcpStage;
+        if (
+            typeof metrics.mcpVerifyFailureKind === 'string' &&
+            (VERIFY_FAILURE_KINDS as readonly string[]).includes(metrics.mcpVerifyFailureKind)
+        )
+            event.mcpVerifyFailureKind = metrics.mcpVerifyFailureKind;
+        const verifyErrors = sanitizeVerifyDiagnosticList(metrics.mcpVerifyErrors);
+        if (verifyErrors.length) event.mcpVerifyErrors = verifyErrors;
+        const verifyWarnings = sanitizeVerifyDiagnosticList(metrics.mcpVerifyWarnings);
+        if (verifyWarnings.length) event.mcpVerifyWarnings = verifyWarnings;
+        const verifyChecks = sanitizeVerifyChecks(metrics.mcpVerifyChecks);
+        if (verifyChecks.length) event.mcpVerifyChecks = verifyChecks;
+        const skipCounts = sanitizeSkipCounts(metrics.mcpSkipCounts);
+        if (skipCounts) event.mcpSkipCounts = skipCounts;
     }
     if (code === 'file_processing_completed' || code === 'file_processing_failed') {
         if (!Number.isInteger(event.count) || (event.count ?? 0) > 10_000) delete event.count;

@@ -1,5 +1,6 @@
 import { withAiInsightStage } from '../diagnostics/ai-insight';
 import type { VerificationOrigin, VerificationSubreason, VerifierErrorKind } from '../logging';
+import { attachVerifyFailureDiagnostics } from './verify-diagnostics';
 import { createHash } from 'crypto';
 import { LearnCardTimeoutError } from '../learncard/errors';
 import { VCValidator, VerificationCheckValidator } from '@learncard/types';
@@ -276,10 +277,16 @@ const verifyCredential = async ({
 
     const result = parsedResult.data;
     if (result.errors.length > 0 && !hasOnlyConfirmedInvalidErrors(result.errors)) {
-        throw new CredentialVerificationUnavailableError(
+        const unrecognized = new CredentialVerificationUnavailableError(
             'unrecognized_verifier_error',
             classifyVerifierErrors(result.errors)
         );
+        throw attachVerifyFailureDiagnostics(unrecognized, {
+            kind: 'verify_errors',
+            checks: result.checks,
+            errors: result.errors,
+            warnings: result.warnings,
+        });
     }
     if (result.errors.length === 0 && !result.checks.includes('proof')) {
         throw new CredentialVerificationUnavailableError('proof_not_confirmed');
@@ -298,7 +305,7 @@ const verifyCredential = async ({
         errors.push('credential_subject_mismatch');
     }
 
-    return {
+    const completed = {
         ...metadata,
         status: errors.length > 0 ? 'invalid' : 'valid',
         verifiedPayload: verificationPayload.verifiedPayload,
@@ -306,6 +313,15 @@ const verifyCredential = async ({
         errors: [...new Set(errors)].toSorted(),
         warnings,
     };
+    if (completed.status === 'invalid') {
+        attachVerifyFailureDiagnostics(completed, {
+            kind: 'verify_errors',
+            checks: result.checks,
+            errors: result.errors,
+            warnings: result.warnings,
+        });
+    }
+    return completed;
 };
 
 export const verifyCredentialForIngestion = (

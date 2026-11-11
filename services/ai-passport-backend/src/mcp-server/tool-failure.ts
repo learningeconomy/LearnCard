@@ -1,5 +1,9 @@
 import { ZodError } from 'zod';
 import { credentialFailureCodeOf } from '../credentials/batch';
+import {
+    readVerifyFailureDiagnostics,
+    type VerifyFailureKind,
+} from '../credentials/verify-diagnostics';
 
 export const MCP_TOOLS = [
     'get_user_context',
@@ -83,6 +87,11 @@ export type ToolFailureTags = {
     cause_code?: string;
     cause_dependency?: McpCauseDependency;
     stage?: McpFailureStage;
+    verify_failure_kind?: VerifyFailureKind;
+    verify_errors?: string[];
+    verify_warnings?: string[];
+    verify_checks?: string[];
+    skip_counts?: Record<string, number>;
 };
 
 const unwrapStaged = (error: unknown): { inner: unknown; stage?: McpFailureStage } => {
@@ -177,15 +186,18 @@ const pickInnermostCauseTags = (
     error: object
 ): Pick<ToolFailureTags, 'cause_name' | 'cause_code'> => {
     const picked: Pick<ToolFailureTags, 'cause_name' | 'cause_code'> = {};
-    for (const frame of collectCauseChain(error).slice(1)) {
+    const chain = collectCauseChain(error);
+    for (const frame of chain.slice(1)) {
         const name = classifyErrorName(frame);
         const code = classifyErrorCode(frame);
         const usefulName = name && name !== 'Error' ? name : undefined;
-        if (!usefulName && !code) continue;
+        const usefulCode = code && code !== 'unknown' ? code : undefined;
         if (usefulName) picked.cause_name = usefulName;
-        else delete picked.cause_name;
-        if (code) picked.cause_code = code;
-        else delete picked.cause_code;
+        if (usefulCode) picked.cause_code = usefulCode;
+    }
+    if (chain.length > 1) {
+        if (!picked.cause_name) picked.cause_name = 'Error';
+        if (!picked.cause_code) picked.cause_code = 'unknown';
     }
     return picked;
 };
@@ -210,6 +222,14 @@ export const classifyToolFailure = (error: unknown): ToolFailureTags => {
         const dependency = readCauseDependency(inner);
         if (dependency) tags.cause_dependency = dependency;
         Object.assign(tags, pickInnermostCauseTags(inner));
+        const diagnostics = readVerifyFailureDiagnostics(inner);
+        if (diagnostics) {
+            tags.verify_failure_kind = diagnostics.kind;
+            if (diagnostics.errors?.length) tags.verify_errors = diagnostics.errors;
+            if (diagnostics.warnings?.length) tags.verify_warnings = diagnostics.warnings;
+            if (diagnostics.checks?.length) tags.verify_checks = diagnostics.checks;
+            if (diagnostics.skipCounts) tags.skip_counts = diagnostics.skipCounts;
+        }
     }
     return tags;
 };

@@ -508,3 +508,53 @@ describe('credential batch events', () => {
         ]);
     });
 });
+
+test('request_failed keeps sanitized MCP verify diagnostics and drops raw verifier text', () => {
+    const output: unknown[] = [];
+    const originalError = console.error;
+    console.error = ((...data: unknown[]) => output.push(...data)) as typeof console.error;
+    try {
+        logSafeEvent('error', 'request_failed', {
+            mcpTool: 'get_user_context',
+            mcpErrorName: 'LearnerContextPromptError',
+            mcpErrorCode: 'learner_context_unavailable',
+            mcpCauseName: 'CredentialBatchEmptyError',
+            mcpCauseCode: 'all_skipped',
+            mcpCauseDependency: 'verify',
+            mcpStage: 'learnercontext',
+            mcpVerifyFailureKind: 'all_skipped',
+            mcpVerifyErrors: [
+                'signature error: Verification equation was not satisfied',
+                'issuer did:example:secret',
+            ],
+            mcpVerifyWarnings: ['https://example.com/status'],
+            mcpVerifyChecks: ['proof', 'not-a-check'],
+            mcpSkipCounts: { unknown: 2, 'did:example:nope': 9 },
+            ...({ message: 'did:example:private-subject SYNTHETIC_STACK' } as object),
+        });
+    } finally {
+        console.error = originalError;
+    }
+    expect(output).toEqual([
+        {
+            event: 'request_failed',
+            mcpTool: 'get_user_context',
+            mcpErrorName: 'LearnerContextPromptError',
+            mcpErrorCode: 'learner_context_unavailable',
+            mcpCauseName: 'CredentialBatchEmptyError',
+            mcpCauseCode: 'all_skipped',
+            mcpCauseDependency: 'verify',
+            mcpStage: 'learnercontext',
+            mcpVerifyFailureKind: 'all_skipped',
+            mcpVerifyErrors: [
+                'signature error: Verification equation was not satisfied',
+                'issuer [did]',
+            ],
+            mcpVerifyWarnings: ['[url]'],
+            mcpVerifyChecks: ['proof'],
+            mcpSkipCounts: { unknown: 2 },
+        },
+    ]);
+    expect(JSON.stringify(output)).not.toContain('did:example');
+    expect(JSON.stringify(output)).not.toContain('https://');
+});

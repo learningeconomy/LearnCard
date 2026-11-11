@@ -8,6 +8,12 @@ import {
     type McpFailureStage,
     type McpToolName,
 } from './tool-failure';
+import {
+    sanitizeSkipCounts,
+    sanitizeVerifyChecks,
+    sanitizeVerifyDiagnosticList,
+    VERIFY_FAILURE_KINDS,
+} from '../credentials/verify-diagnostics';
 
 const isMcpTool = (value: unknown): value is McpToolName =>
     typeof value === 'string' && (MCP_TOOLS as readonly string[]).includes(value);
@@ -35,7 +41,27 @@ export const pickAllowlistedMcpFailureTags = (
     if (isMcpCauseDependency(tags.cause_dependency))
         allowlisted.cause_dependency = tags.cause_dependency;
     if (isMcpStage(tags.stage)) allowlisted.stage = tags.stage;
+    if (
+        typeof tags.verify_failure_kind === 'string' &&
+        (VERIFY_FAILURE_KINDS as readonly string[]).includes(tags.verify_failure_kind)
+    )
+        allowlisted.verify_failure_kind = tags.verify_failure_kind;
     return Object.keys(allowlisted).length > 0 ? allowlisted : undefined;
+};
+
+const pickSanitizedVerifyExtra = (extra: unknown): Record<string, unknown> | undefined => {
+    if (!extra || typeof extra !== 'object' || Array.isArray(extra)) return undefined;
+    const record = extra as Record<string, unknown>;
+    const picked: Record<string, unknown> = {};
+    const errors = sanitizeVerifyDiagnosticList(record.mcpVerifyErrors);
+    if (errors.length) picked.mcpVerifyErrors = errors;
+    const warnings = sanitizeVerifyDiagnosticList(record.mcpVerifyWarnings);
+    if (warnings.length) picked.mcpVerifyWarnings = warnings;
+    const checks = sanitizeVerifyChecks(record.mcpVerifyChecks);
+    if (checks.length) picked.mcpVerifyChecks = checks;
+    const skipCounts = sanitizeSkipCounts(record.mcpSkipCounts);
+    if (skipCounts) picked.mcpSkipCounts = skipCounts;
+    return Object.keys(picked).length > 0 ? picked : undefined;
 };
 
 export const scrubMcpSentryEvent = (
@@ -46,6 +72,7 @@ export const scrubMcpSentryEvent = (
     // messages/stacks, request data, users, extras and attachments stay local.
     hint.attachments = [];
     const tags = pickAllowlistedMcpFailureTags(event.tags as Record<string, unknown> | undefined);
+    const extra = pickSanitizedVerifyExtra(event.extra);
     return {
         type: undefined,
         ...(typeof event.event_id === 'string' && /^[a-f0-9]{32}$/.test(event.event_id)
@@ -55,6 +82,7 @@ export const scrubMcpSentryEvent = (
         platform: 'node',
         message: 'backend_operation_failed',
         ...(tags ? { tags } : {}),
+        ...(extra ? { extra } : {}),
     };
 };
 

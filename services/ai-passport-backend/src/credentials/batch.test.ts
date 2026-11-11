@@ -8,6 +8,7 @@ import {
     VERIFIED_CREDENTIAL_TTL_MS,
     isKnownBadCredential,
     KNOWN_BAD_CREDENTIAL_TTL_MS,
+    emptyBatchSkipCountsOf,
     markCredentialItemFailure,
     recordCredentialOutcome,
     settleCredentialBatch,
@@ -47,6 +48,21 @@ test('returns loaded items in order and skipped positions with codes', async () 
             { index: 1, code: 'credential_verification_unavailable' },
             { index: 2, code: 'unknown' },
         ],
+    });
+});
+
+test('an all-skipped batch remembers skip counts on the thrown error', async () => {
+    quiet();
+    const first = new CredentialVerificationUnavailableError('read_empty');
+    await expect(
+        settleCredentialBatch('context', [
+            async () => Promise.reject(first),
+            async () => Promise.reject(markCredentialItemFailure(new Error('private'))),
+        ])
+    ).rejects.toBe(first);
+    expect(emptyBatchSkipCountsOf(first)).toEqual({
+        credential_verification_unavailable: 1,
+        unknown: 1,
     });
 });
 
