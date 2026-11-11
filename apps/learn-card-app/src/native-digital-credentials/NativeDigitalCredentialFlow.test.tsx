@@ -109,7 +109,9 @@ it('waits for sign-in and completes the original request only after consent', as
     mocks.wallet = {};
     mocks.revision++;
     view.rerender(<NativeDigitalCredentialFlow />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Approve request' }));
+    const approve = await screen.findByRole('button', { name: 'Approve request' });
+    expect(mocks.clearRedirect).not.toHaveBeenCalled();
+    fireEvent.click(approve);
     await waitFor(() =>
         expect(mocks.complete).toHaveBeenCalledWith({
             requestId: request.requestId,

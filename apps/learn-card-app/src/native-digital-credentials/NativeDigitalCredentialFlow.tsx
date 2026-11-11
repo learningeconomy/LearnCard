@@ -58,7 +58,6 @@ export default function NativeDigitalCredentialFlow() {
                 redirectStore.set.requestRedirect(request.requestId, '/native-digital-credentials');
                 return;
             }
-            redirectStore.set.clearRequestRedirect(request.requestId);
             if (!isHistoryAccountEligible()) throw new Error('Account unavailable');
             const wallet = (await initWallet()) as unknown as DigitalCredentialWallet;
             const inventory = await readNativeInventory();
