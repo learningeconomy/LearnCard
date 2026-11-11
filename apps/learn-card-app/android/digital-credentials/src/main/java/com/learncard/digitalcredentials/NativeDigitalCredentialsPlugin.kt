@@ -62,8 +62,29 @@ class NativeDigitalCredentialsPlugin : Plugin() {
         activity.runOnUiThread {
             val result = JSObject()
             result.put("isProvider", activity is DigitalCredentialProviderActivity)
+            result.put("authCallbackRouting", true)
             (activity as? DigitalCredentialProviderActivity)?.pendingRequest()?.let { result.put("pending", it) }
             call.resolve(result)
+        }
+    }
+
+    @PluginMethod fun beginAuthCallback(call: PluginCall) {
+        activity.runOnUiThread {
+            try {
+                val provider = activity as? DigitalCredentialProviderActivity ?: error("Not provider")
+                require(provider.pendingRequest()?.getString("requestId") == call.getString("requestId"))
+                val token = ProviderAuthCallbacks.begin(provider,
+                    call.getString("callbackUrlPrefix") ?: error("Missing callback"),
+                    call.getLong("timeoutMs") ?: 300_000L)
+                call.resolve(JSObject().put("token", token) as JSObject)
+            } catch (_: Exception) { call.reject("Could not start sign-in", "auth_unavailable") }
+        }
+    }
+
+    @PluginMethod fun endAuthCallback(call: PluginCall) {
+        activity.runOnUiThread {
+            call.getString("token")?.let { ProviderAuthCallbacks.end(it) }
+            call.resolve()
         }
     }
 

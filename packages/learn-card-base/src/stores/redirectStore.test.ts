@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { redirectStore, LCN_REDIRECT_TTL_MS } from './redirectStore';
 
@@ -33,6 +34,30 @@ describe('pending claim redirect lifetime', () => {
         redirectStore.set.lcnRedirect('/request?vc_request_url=old');
         vi.advanceTimersByTime(LCN_REDIRECT_TTL_MS);
         redirectStore.set.lcnRedirect('/request?vc_request_url=new');
+        expect(redirectStore.get.lcnRedirect()).toBe('/request?vc_request_url=new');
+    });
+});
+
+describe('Android request-owned sign-in destination', () => {
+    afterEach(() => redirectStore.set.lcnRedirect(null));
+    it('never persists an activity-local destination and ignores legacy persisted copies', () => {
+        redirectStore.set.lcnRedirect(null);
+        redirectStore.set.requestRedirect('request-a', '/native-digital-credentials');
+        expect(redirectStore.get.lcnRedirect()).toBe('/native-digital-credentials');
+        const persisted = JSON.parse(localStorage.getItem('redirectStore')!);
+        expect(persisted.state.requestRedirect).toBeUndefined();
+        expect(persisted.state.lcnRedirect).toBeNull();
+        redirectStore.set.clearRequestRedirect('request-a');
+        redirectStore.set.lcnRedirect('/native-digital-credentials');
+        expect(redirectStore.get.lcnRedirect()).toBeNull();
+    });
+    it('clears only the matching request and preserves a newer destination', () => {
+        redirectStore.set.requestRedirect('request-a', '/native-digital-credentials');
+        redirectStore.set.requestRedirect('request-b', '/native-digital-credentials');
+        redirectStore.set.clearRequestRedirect('request-a');
+        expect(redirectStore.get.lcnRedirect()).toBe('/native-digital-credentials');
+        redirectStore.set.lcnRedirect('/request?vc_request_url=new');
+        redirectStore.set.clearRequestRedirect('request-b');
         expect(redirectStore.get.lcnRedirect()).toBe('/request?vc_request_url=new');
     });
 });

@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     complete: vi.fn(),
     cancel: vi.fn(),
     redirect: vi.fn(),
+    clearRedirect: vi.fn(),
     replace: vi.fn(),
 }));
 vi.mock('@ionic/react', () => ({
@@ -25,7 +26,9 @@ vi.mock('react-router-dom', () => ({ useHistory: () => ({ replace: mocks.replace
 vi.mock('learn-card-base', () => ({
     useIsLoggedIn: () => mocks.loggedIn,
     useWallet: () => ({ initWallet: mocks.initialize }),
-    redirectStore: { set: { lcnRedirect: mocks.redirect } },
+    redirectStore: {
+        set: { requestRedirect: mocks.redirect, clearRequestRedirect: mocks.clearRedirect },
+    },
 }));
 vi.mock('learn-card-base/stores/walletStore', () => ({
     walletStore: { use: { wallet: () => mocks.wallet } },
@@ -92,7 +95,12 @@ afterEach(cleanup);
 
 it('waits for sign-in and completes the original request only after consent', async () => {
     const view = render(<NativeDigitalCredentialFlow />);
-    await waitFor(() => expect(mocks.redirect).toHaveBeenCalledWith('/native-digital-credentials'));
+    await waitFor(() =>
+        expect(mocks.redirect).toHaveBeenCalledWith(
+            request.requestId,
+            '/native-digital-credentials'
+        )
+    );
     expect(screen.getByText('Sign in first')).toBeInTheDocument();
     expect(mocks.initialize).not.toHaveBeenCalled();
     expect(mocks.prepare).not.toHaveBeenCalled();

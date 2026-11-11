@@ -85,6 +85,7 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
             finish()
             return
         }
+        ProviderAuthCallbacks.attach(this)
         registerPlugin(NativeDigitalCredentialsPlugin::class.java)
         super.onCreate(savedInstanceState)
         // Own Android's back dispatcher before the host's JS router can navigate
@@ -138,6 +139,7 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
     }
 
     override fun onDestroy() {
+        ProviderAuthCallbacks.endOwner(this)
         releaseRequest()
         super.onDestroy()
     }

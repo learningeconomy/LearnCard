@@ -301,6 +301,19 @@ describe('sign-in for an already selected Android credential', () => {
         expect(mocks.synchronize).not.toHaveBeenCalled();
     });
 
+    it('does not clear a selected request when a cached social profile restores its first signing key', async () => {
+        mocks.pending.mockResolvedValue({ pending: { requestId: 'request' }, isProvider: true });
+        render(<NativeDigitalCredentialsListener />);
+        await advance();
+        act(() =>
+            mocks.accountChange?.(
+                { currentUser: { uid: '', privateKey: 'test-key' }, currentUserPK: null },
+                { currentUser: { uid: 'cached-social-uid' }, currentUserPK: null }
+            )
+        );
+        expect(mocks.clear).not.toHaveBeenCalled();
+    });
+
     it('still invalidates an explicit logout during an open request immediately', async () => {
         mocks.pending.mockResolvedValue({ pending: { requestId: 'request' }, isProvider: true });
         render(<NativeDigitalCredentialsListener />);

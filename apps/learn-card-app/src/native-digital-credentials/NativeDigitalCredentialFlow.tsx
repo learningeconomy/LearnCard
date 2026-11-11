@@ -55,9 +55,10 @@ export default function NativeDigitalCredentialFlow() {
             setIsProvider(Boolean(context.isProvider));
             if (!request) throw new Error('Request unavailable');
             if (!accountReady) {
-                redirectStore.set.lcnRedirect('/native-digital-credentials');
+                redirectStore.set.requestRedirect(request.requestId, '/native-digital-credentials');
                 return;
             }
+            redirectStore.set.clearRequestRedirect(request.requestId);
             if (!isHistoryAccountEligible()) throw new Error('Account unavailable');
             const wallet = (await initWallet()) as unknown as DigitalCredentialWallet;
             const inventory = await readNativeInventory();
@@ -82,6 +83,7 @@ export default function NativeDigitalCredentialFlow() {
     const cancel = async () => {
         if (sending || canceling) return;
         setCanceling(true);
+        if (pending) redirectStore.set.clearRequestRedirect(pending.requestId);
         try {
             if (pending || isProvider)
                 await nativeDigitalCredentials.cancel({ requestId: pending?.requestId });
@@ -100,6 +102,7 @@ export default function NativeDigitalCredentialFlow() {
             const active = (await nativeDigitalCredentials.getPendingRequest()).pending;
             if (!accountCurrent() || active?.requestId !== pending.requestId)
                 throw new Error('Request expired');
+            redirectStore.set.clearRequestRedirect(pending.requestId);
             await nativeDigitalCredentials.complete({ requestId: pending.requestId, responseJson });
         } catch {
             setPrepared(undefined);

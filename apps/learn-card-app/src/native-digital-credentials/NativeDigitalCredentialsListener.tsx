@@ -80,7 +80,7 @@ export default function NativeDigitalCredentialsListener() {
                 const { pending, isProvider } = await nativeDigitalCredentials.getPendingRequest();
                 // The platform already selected this entry. Preserve its request and private
                 // mapping while the provider asks for sign-in; approval still checks the
-                // original owner and fresh inventory. Explicit logout/account changes use
+                // original owner and fresh inventory. Logout/established-account changes use
                 // the immediate invalidation subscriptions above, including during login.
                 if (
                     !isHistoryAccountEligible() ||
