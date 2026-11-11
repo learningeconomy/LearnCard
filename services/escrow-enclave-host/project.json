@@ -1,0 +1,46 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "escrow-enclave-host",
+    "root": "services/escrow-enclave-host",
+    "sourceRoot": "services/escrow-enclave-host/src",
+    "projectType": "application",
+    "namedInputs": {
+        "source": [
+            "{projectRoot}/src/**/*",
+            "{projectRoot}/tests/**/*",
+            "{projectRoot}/Cargo.toml",
+            "{projectRoot}/Cargo.lock",
+            "{projectRoot}/rust-toolchain.toml",
+            "{projectRoot}/project.json"
+        ]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-commands",
+            "inputs": ["source"],
+            "outputs": ["{projectRoot}/target/release/escrow-enclave-host"],
+            "options": { "cwd": "services/escrow-enclave-host", "command": "cargo build --release" }
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "inputs": ["source"],
+            "outputs": [],
+            "options": { "cwd": "services/escrow-enclave-host", "command": "cargo test" }
+        },
+        "lint": {
+            "executor": "nx:run-commands",
+            "inputs": ["source"],
+            "outputs": [],
+            "options": {
+                "cwd": "services/escrow-enclave-host",
+                "command": "cargo clippy -- -D warnings"
+            }
+        },
+        "fmt-check": {
+            "executor": "nx:run-commands",
+            "inputs": ["source"],
+            "outputs": [],
+            "options": { "cwd": "services/escrow-enclave-host", "command": "cargo fmt --check" }
+        }
+    }
+}

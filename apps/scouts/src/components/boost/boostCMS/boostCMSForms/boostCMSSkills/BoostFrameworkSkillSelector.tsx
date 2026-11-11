@@ -60,7 +60,7 @@ export const BoostFrameworkSkillSelector: React.FC<{
                 }}
             />,
             {
-                sectionClassName: '!bg-transparent !shadow-none !overflow-visible',
+                sectionClassName: 'bg-transparent! shadow-none! overflow-visible!',
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );

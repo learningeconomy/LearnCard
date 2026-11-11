@@ -2,7 +2,13 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import Fastify, { type FastifyInstance } from 'fastify';
 import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
 import { randomUUID } from 'node:crypto';
-import type { InboxBatchReceipt, IssueInboxCredentialBatch, VC, VP } from '@learncard/types';
+import type {
+    InboxBatchReceipt,
+    IssueInboxCredentialBatch,
+    UnsignedVC,
+    VC,
+    VP,
+} from '@learncard/types';
 import { appRouter, createContext } from '../src/app';
 import { getClient, getUser } from './helpers/getClient';
 import { testUnsignedBoost } from './helpers/send';
@@ -29,6 +35,7 @@ import {
 } from '@helpers/inbox-queue.helpers';
 import { fingerprint } from '@helpers/inbox-batch.helpers';
 import * as jobStore from '@accesslayer/inbox-batch/store';
+import { createInboxBatchSchemaInitializer } from '@accesslayer/inbox-batch/schema';
 import * as issuance from '@helpers/inbox.helpers';
 import { SQSClient, SendMessageCommand, SendMessageBatchCommand } from '@aws-sdk/client-sqs';
 
@@ -167,6 +174,36 @@ describe('Universal Inbox batch issuance', () => {
             'MATCH (i:InboxBatchItem {batchId: $batchId}) SET i.leaseUntil = 0',
             { batchId }
         );
+
+    it('initializes an empty batch schema concurrently in independent cold API and worker instances', async () => {
+        // Testcontainers owns this database. Recreate the cold condition rather than
+        // exercising the process-local cache against already-created schema.
+        for (let round = 0; round < 3; round++) {
+            const constraints = await neogma.queryRunner.run(
+                'SHOW CONSTRAINTS YIELD name WHERE name STARTS WITH "inboxbatch" RETURN name'
+            );
+            for (const record of constraints.records)
+                await neogma.queryRunner.run(`DROP CONSTRAINT ${record.get('name')}`);
+            const indexes = await neogma.queryRunner.run(
+                'SHOW INDEXES YIELD name WHERE name STARTS WITH "inbox_batch_" RETURN name'
+            );
+            for (const record of indexes.records)
+                await neogma.queryRunner.run(`DROP INDEX ${record.get('name')}`);
+
+            const processes = Array.from({ length: 4 }, () =>
+                createInboxBatchSchemaInitializer(neogma.driver)
+            );
+            await Promise.all(processes.map(ensure => ensure()));
+            const ready = await neogma.queryRunner.run(
+                'SHOW CONSTRAINTS YIELD name WHERE name STARTS WITH "inboxbatch" RETURN count(*) AS total'
+            );
+            expect(ready.records[0].get('total').toNumber()).toBe(4);
+            const readyIndexes = await neogma.queryRunner.run(
+                'SHOW INDEXES YIELD name WHERE name STARTS WITH "inbox_batch_" RETURN count(*) AS total'
+            );
+            expect(readyIndexes.records[0].get('total').toNumber()).toBe(6);
+        }
+    });
 
     it('accepts a one-item batch without waiting for a slow worker and restricts polling to its issuer', async () => {
         const receipt = await submit({
@@ -981,6 +1018,157 @@ describe('Universal Inbox batch issuance', () => {
             );
         }
         expect(names).toEqual(['Ada', 'Grace']);
+    });
+
+    it('issues standard per-person Evidence with pure VC2 and Open Badges contexts', async () => {
+        const template = structuredClone(testUnsignedBoost);
+        template['@context'] = [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ];
+        template.type = ['VerifiableCredential', 'OpenBadgeCredential'];
+        delete template.issuanceDate;
+        template.validFrom = new Date().toISOString();
+        const templateUri = await issuer.clients.fullAuth.boost.createBoost({
+            credential: template,
+            name: 'Standard evidence',
+            category: 'Achievement',
+        });
+        const evidence = [
+            {
+                id: 'https://portfolio.test/work.pdf',
+                type: ['Evidence'],
+                name: 'Work sample',
+                genre: 'document',
+            },
+        ];
+        const batch = await issue({
+            configuration: { signingAuthority },
+            items: [
+                {
+                    recipient: email('standard-evidence@test.com'),
+                    templateUri,
+                    configuration: { templateData: { evidence } },
+                },
+            ],
+        });
+        expect(batch.summary.failed).toBe(0);
+        const result = batch.results[0];
+        if (!result.success) throw new Error('Expected successful issuance');
+        const credential = JSON.parse(
+            await decryptInboxCredential((await stored(result.issuanceId)).credential)
+        );
+        expect(credential.evidence).toEqual(evidence);
+        expect(credential['@context']).toEqual(template['@context']);
+        expect(credential.type).not.toContain('BoostCredential');
+        const claimed = await claim(result.claimUrl!);
+        expect(claimed[0].proof).toBeDefined();
+        expect(claimed[0].evidence).toEqual(evidence);
+    });
+
+    it('materializes numeric credits and awarded dates before queued issuance and signing', async () => {
+        const template = structuredClone(testUnsignedBoost) as unknown as Record<string, unknown>;
+        template['@context'] = [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ];
+        template.type = ['VerifiableCredential', 'OpenBadgeCredential'];
+        delete template.issuanceDate;
+        template.validFrom = '{{issue_date}}';
+        template.awardedDate = '{{award_date}}';
+        const subject = template.credentialSubject as Record<string, unknown>;
+        subject.creditsEarned = '{{credits}}';
+        subject.result = [
+            { type: ['Result'], resultDescription: 'urn:uuid:quiz', value: '{{percent}}' },
+        ];
+        (subject.achievement as Record<string, unknown>).resultDescription = [
+            {
+                id: 'urn:uuid:quiz',
+                type: ['ResultDescription'],
+                name: 'Quiz',
+                resultType: 'Percent',
+                valueMin: '0',
+                valueMax: '100',
+            },
+        ];
+        const templateUri = await issuer.clients.fullAuth.boost.createBoost({
+            credential: template as UnsignedVC,
+            name: 'Mapped spreadsheet',
+            category: 'Achievement',
+        });
+        const batch = await issue({
+            configuration: { signingAuthority },
+            items: ['0', '1.5', '12 hours'].map((credits, index) => ({
+                recipient: email(`mapped-${index}@test.com`),
+                templateUri,
+                configuration: {
+                    templateData: { credits, percent: '95', award_date: '2024-04-03T00:00:00Z' },
+                },
+            })),
+        });
+        expect(batch.summary).toMatchObject({ succeeded: 2, failed: 1 });
+        for (const [index, result] of batch.results.entries()) {
+            if (index === 2) {
+                expect(result.success).toBe(false);
+                continue;
+            }
+            if (!result.success) throw new Error('Expected successful mapped row');
+            const credential = JSON.parse(
+                await decryptInboxCredential((await stored(result.issuanceId)).credential)
+            );
+            expect(credential.credentialSubject.creditsEarned).toBe(index === 0 ? 0 : 1.5);
+            expect(credential.credentialSubject.result[0].value).toBe('95');
+            expect(credential.awardedDate).toBe('2024-04-03T00:00:00.000Z');
+            expect(credential.validFrom).not.toBe(credential.awardedDate);
+        }
+        const first = batch.results[0];
+        if (!first.success) throw new Error('Expected first result');
+        const claimed = await claim(first.claimUrl!);
+        expect(claimed[0].proof).toBeDefined();
+        expect(claimed[0].credentialSubject).toMatchObject({ creditsEarned: 0 });
+    });
+
+    it('still rejects extension EvidenceFile fields without their defining context', async () => {
+        const template = structuredClone(testUnsignedBoost);
+        template['@context'] = [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ];
+        template.type = ['VerifiableCredential', 'OpenBadgeCredential'];
+        delete template.issuanceDate;
+        template.validFrom = new Date().toISOString();
+        const templateUri = await issuer.clients.fullAuth.boost.createBoost({
+            credential: template,
+            name: 'Extension evidence',
+            category: 'Achievement',
+        });
+        const batch = await issue({
+            configuration: { signingAuthority },
+            items: [
+                {
+                    recipient: email('extension@test.com'),
+                    templateUri,
+                    configuration: {
+                        templateData: {
+                            evidence: [
+                                {
+                                    id: 'https://proof.test/file',
+                                    type: ['EvidenceFile'],
+                                    fileName: 'file.pdf',
+                                },
+                            ],
+                        },
+                    },
+                },
+            ],
+        });
+        expect(batch.results[0]).toMatchObject({
+            success: false,
+            error: {
+                code: 'BAD_REQUEST',
+                message: expect.stringContaining('Failed to prepare boost credential template'),
+            },
+        });
     });
 
     it('returns HTTP 202 then exposes partial success and passes tenant branding to delivery', async () => {

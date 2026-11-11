@@ -5,6 +5,10 @@ import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
 import {
+    BitstringStatusListEntryValidator,
+    BitstringStatusPurposeValidator,
+} from './bitstring-status-list';
+import {
     ManagedCredentialRefreshReceiptValidator,
     InboxCredentialRefreshReceiptValidator,
     ManagedCredentialRefreshServiceValidator,
@@ -55,6 +59,11 @@ export const LCNProfileValidator = z.object({
     email: z.string().optional().describe('Contact email address for the profile. (deprecated)'),
     image: z.string().optional().describe('Profile image URL for the profile.'),
     heroImage: z.string().optional().describe('Hero image URL for the profile.'),
+    linkedInOrganizationId: z
+        .string()
+        .regex(/^\d+$/)
+        .optional()
+        .describe('Numeric LinkedIn organization ID.'),
     websiteLink: z.string().optional().describe('Website link for the profile.'),
     isServiceProfile: z
         .boolean()
@@ -101,6 +110,7 @@ export const LCNPublicProfileValidator = LCNProfileValidator.pick({
     shortBio: true,
     image: true,
     heroImage: true,
+    linkedInOrganizationId: true,
     type: true,
     isServiceProfile: true,
     display: true,
@@ -471,6 +481,19 @@ export const AutoBoostConfigValidator = z.object({
 });
 export type AutoBoostConfig = z.infer<typeof AutoBoostConfigValidator>;
 
+/** Public metadata: never include private credential claims in these fields. */
+export const CredentialDisplayValidator = z.object({
+    name: z.string().trim().min(1).max(280).optional(),
+    category: z.string().max(280).optional(),
+    image: z
+        .string()
+        .max(2048)
+        .url()
+        .refine(url => url.startsWith('https://'), { message: 'Image URL must use https' })
+        .optional(),
+});
+export type CredentialDisplay = z.infer<typeof CredentialDisplayValidator>;
+
 export const SendBoostTemplateValidator = BoostValidator.partial()
     .omit({ uri: true, claimPermissions: true })
     .extend({
@@ -503,6 +526,24 @@ export const GuardianStatusValidator = z.enum([
     'GUARDIAN_REJECTED',
 ]);
 export type GuardianStatus = z.infer<typeof GuardianStatusValidator>;
+
+export const GuardianApprovalEmailStatusValidator = z
+    .enum(['not_requested', 'sending', 'accepted', 'failed', 'unknown'])
+    .describe(
+        'Outcome of the latest account-level guardian approval email. "accepted" means the email provider accepted the message; it does not confirm delivery.'
+    );
+export type GuardianApprovalEmailStatus = z.infer<typeof GuardianApprovalEmailStatusValidator>;
+
+export const GuardianApprovalRequestStatusValidator = z.object({
+    pendingApproval: z.boolean(),
+    status: GuardianApprovalEmailStatusValidator,
+    guardianEmail: z.string().optional(),
+    updatedAt: z.string().optional(),
+    linkExpiresAt: z.string().optional(),
+    resendAvailableAt: z.string().optional(),
+    attemptsRemaining: z.number().int().nonnegative(),
+});
+export type GuardianApprovalRequestStatus = z.infer<typeof GuardianApprovalRequestStatusValidator>;
 
 // Options for send method (applies when recipient is email/phone, routes to Universal Inbox)
 export const SendOptionsValidator = z.object({
@@ -538,6 +579,10 @@ export const SendBoostInputValidator = z
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
         signedCredential: VCValidator.optional(),
+        display: CredentialDisplayValidator.optional().describe(
+            "Public display metadata for managed and signed-only sends. Nothing is inferred from credential content; omitted names use generic copy. The exception is category: when display.category is omitted for an inline template, the template's category is copied, since consent-flow write authorization is keyed on it."
+        ),
+        statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         options: SendOptionsValidator.optional().describe(
             'Options for email/phone recipients (Universal Inbox)'
         ),
@@ -592,7 +637,13 @@ export const SendInboxResponseValidator = z.object({
 });
 export type SendInboxResponse = z.infer<typeof SendInboxResponseValidator>;
 
+/** Where public status is controlled; not part of the holder's signed refresh receipt. */
+export const StatusManagementValidator = z.enum(['network', 'external', 'mixed', 'none']);
+export type StatusManagement = z.infer<typeof StatusManagementValidator>;
+
 export const SendBoostResponseValidator = z.object({
+    /** Public status providers for a managed send; external entries require provider-side updates. */
+    statusManagement: StatusManagementValidator.optional(),
     type: z.literal('boost'),
     credentialUri: z.string(),
     uri: z.string(),
@@ -608,22 +659,36 @@ export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
 
 export const PrepareRefreshableSendInputValidator = z
     .object({
+        /** Opt in to signing the server-bound statusEntries; omission preserves client allocation. */
+        statusBinding: z.literal('server').optional(),
+        statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         recipient: z.string(),
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
+        display: CredentialDisplayValidator.optional().describe('Public display metadata only'),
         contractUri: z.string().optional(),
         templateData: z.record(z.string(), z.unknown()).optional(),
         integrationId: z.string().optional(),
         /** Credential ID to allocate for; generated server-side when omitted. */
         credentialId: z.string().min(1).optional(),
         idempotencyKey: z.string().min(1).max(200).optional(),
+        /**
+         * `'holder'` requests student-only encryption (LC-2345): the SDK signs and
+         * encrypts locally and the server never receives plaintext. Requires a
+         * profile or DID recipient; rejected for signedCredential-only sends and for
+         * inbox (email/phone) recipients. Defaults to `'network'`.
+         */
+        encryption: z.enum(['network', 'holder']).optional(),
     })
-    .refine(data => Boolean(data.templateUri) !== Boolean(data.template), {
-        message: 'Provide exactly one of templateUri or template.',
+    .refine(data => !(data.templateUri && data.template), {
+        message: 'Provide at most one of templateUri or template.',
     });
 export type PrepareRefreshableSendInput = z.infer<typeof PrepareRefreshableSendInputValidator>;
 
 export const PrepareRefreshableSendResultValidator = z.object({
+    /** Public status providers known at preparation; final send reports the signed entries. */
+    statusManagement: StatusManagementValidator.optional(),
+    statusEntries: z.array(BitstringStatusListEntryValidator).optional(),
     boostUri: z.string(),
     credentialId: z.string(),
     refreshId: z.string(),
@@ -632,6 +697,14 @@ export const PrepareRefreshableSendResultValidator = z.object({
     holderDid: z.string(),
     /** Present when this idempotencyKey already completed: return it without signing. */
     completed: SendBoostResponseValidator.optional(),
+    /**
+     * Present only when `encryption: 'holder'` was requested: the exact
+     * key-agreement verification-method ids (holder + current managers) the SDK
+     * must encrypt to. Recomputed on every call, so a later manager change can
+     * make a previously-prepared set stale (see `credentialRefresh.sendHolderEncryptedRefreshable`
+     * and `credentialRefresh.getEncryptionRecipients`).
+     */
+    recipientKeyIds: z.array(z.string()).optional(),
 });
 export type PrepareRefreshableSendResult = z.infer<typeof PrepareRefreshableSendResultValidator>;
 
@@ -642,8 +715,131 @@ export type SendInput = z.infer<typeof SendInputValidator>;
 export const SendResponseValidator = z.discriminatedUnion('type', [SendBoostResponseValidator]);
 export type SendResponse = z.infer<typeof SendResponseValidator>;
 
-export const ConsentFlowTermsStatusValidator = z.enum(['live', 'stale', 'withdrawn']);
+export const ConsentFlowTermsStatusValidator = z.enum([
+    'live',
+    'consumed',
+    'withdrawn',
+    'needs_reconsent',
+    'suspended',
+]);
 export type ConsentFlowTermsStatus = z.infer<typeof ConsentFlowTermsStatusValidator>;
+
+/** Stable machine-readable reason for an explicit contract-update approval handoff. */
+export const CONTRACT_APPROVAL_REQUIRED = 'CONTRACT_APPROVAL_REQUIRED';
+
+export const ConsentFlowContractChangeKindValidator = z.enum([
+    'relaxed',
+    'expanded_optional',
+    'requires_consent',
+]);
+export type ConsentFlowContractChangeKind = z.infer<typeof ConsentFlowContractChangeKindValidator>;
+
+export const ConsentFlowContractScopeValidator = z.object({
+    area: z.enum(['read', 'write']),
+    type: z.enum(['credential', 'personal']),
+    key: z.string(),
+    required: z.boolean(),
+    reason: z.string().optional(),
+});
+export type ConsentFlowContractScope = z.infer<typeof ConsentFlowContractScopeValidator>;
+
+const ConsentFlowContractDetailValueValidator = z.union([
+    z.string(),
+    z.boolean(),
+    z.string().array(),
+]);
+
+export const ConsentFlowContractDetailChangeValidator = z.object({
+    field: z.enum([
+        'name',
+        'subtitle',
+        'description',
+        'reasonForAccessing',
+        'image',
+        'needsGuardianConsent',
+        'redirectUrl',
+        'frontDoorBoostUri',
+        'expiresAt',
+        'writers',
+        'autoboosts',
+    ]),
+    before: ConsentFlowContractDetailValueValidator.optional(),
+    after: ConsentFlowContractDetailValueValidator.optional(),
+});
+export type ConsentFlowContractDetailChange = z.infer<
+    typeof ConsentFlowContractDetailChangeValidator
+>;
+
+export const ConsentFlowContractDiffValidator = z.object({
+    added: ConsentFlowContractScopeValidator.array(),
+    removed: ConsentFlowContractScopeValidator.array(),
+    changed: ConsentFlowContractScopeValidator.array(),
+    details: ConsentFlowContractDetailChangeValidator.array().optional(),
+});
+export type ConsentFlowContractDiff = z.infer<typeof ConsentFlowContractDiffValidator>;
+
+export const ConsentFlowContractUpdatePreviewValidator = z.object({
+    headline: z.string(),
+    subhead: z.string(),
+    rows: z.array(
+        z.object({
+            scope: ConsentFlowContractScopeValidator,
+            change: z.enum(['added', 'removed', 'changed']),
+            label: z.string(),
+            subtitle: z.string(),
+        })
+    ),
+    primaryLabel: z.string(),
+});
+export type ConsentFlowContractUpdatePreview = z.infer<
+    typeof ConsentFlowContractUpdatePreviewValidator
+>;
+
+export const ConsentFlowContractStatusValidator = z.enum(['active', 'retired']);
+export type ConsentFlowContractStatus = z.infer<typeof ConsentFlowContractStatusValidator>;
+
+export const ConsentFlowContractVersionValidator = z.object({
+    version: z.number().int().positive(),
+    createdAt: z.string(),
+    reason: z.string().optional(),
+    kind: ConsentFlowContractChangeKindValidator.optional(),
+});
+export type ConsentFlowContractVersion = z.infer<typeof ConsentFlowContractVersionValidator>;
+
+export const ConsentFlowContractUpdateResultValidator = z.object({
+    version: z.number().int().positive(),
+    kind: ConsentFlowContractChangeKindValidator,
+    affectedUsers: z.number().int().nonnegative(),
+    preview: ConsentFlowContractUpdatePreviewValidator,
+});
+export type ConsentFlowContractUpdateResult = z.infer<
+    typeof ConsentFlowContractUpdateResultValidator
+>;
+
+export const ConsentFlowConsentStatusValidator = z.object({
+    status: ConsentFlowTermsStatusValidator.or(z.literal('not_consented')),
+    consentedVersion: z.number().int().positive().optional(),
+    currentVersion: z.number().int().positive(),
+    needsReconsent: z.boolean(),
+    reviewUrl: z.string().optional(),
+});
+export type ConsentFlowConsentStatus = z.infer<typeof ConsentFlowConsentStatusValidator>;
+
+export const ConsentFlowContractNotificationDataValidator = z.object({
+    contractUri: z.string(),
+    contractName: z.string().optional(),
+    fromVersion: z.number().int().positive(),
+    toVersion: z.number().int().positive(),
+    kind: ConsentFlowContractChangeKindValidator,
+    reason: z.string().optional(),
+    diff: ConsentFlowContractDiffValidator,
+    reconsentDeadline: z.string().optional(),
+    reviewUrl: z.string(),
+    preview: ConsentFlowContractUpdatePreviewValidator.optional(),
+});
+export type ConsentFlowContractNotificationData = z.infer<
+    typeof ConsentFlowContractNotificationDataValidator
+>;
 
 export const ConsentFlowContractValidator = z.object({
     read: z
@@ -657,6 +853,7 @@ export const ConsentFlowContractValidator = z.object({
                             z.object({
                                 required: z.boolean(),
                                 defaultEnabled: z.boolean().optional(),
+                                reason: z.string().optional(),
                             })
                         )
                         .default({}),
@@ -665,7 +862,11 @@ export const ConsentFlowContractValidator = z.object({
             personal: z
                 .record(
                     z.string(),
-                    z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })
+                    z.object({
+                        required: z.boolean(),
+                        defaultEnabled: z.boolean().optional(),
+                        reason: z.string().optional(),
+                    })
                 )
                 .default({}),
         })
@@ -680,6 +881,7 @@ export const ConsentFlowContractValidator = z.object({
                             z.object({
                                 required: z.boolean(),
                                 defaultEnabled: z.boolean().optional(),
+                                reason: z.string().optional(),
                             })
                         )
                         .default({}),
@@ -688,7 +890,11 @@ export const ConsentFlowContractValidator = z.object({
             personal: z
                 .record(
                     z.string(),
-                    z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })
+                    z.object({
+                        required: z.boolean(),
+                        defaultEnabled: z.boolean().optional(),
+                        reason: z.string().optional(),
+                    })
                 )
                 .default({}),
         })
@@ -696,6 +902,62 @@ export const ConsentFlowContractValidator = z.object({
 });
 export type ConsentFlowContract = z.infer<typeof ConsentFlowContractValidator>;
 export type ConsentFlowContractInput = z.input<typeof ConsentFlowContractValidator>;
+const ConsentFlowContractScopePatchValidator = z
+    .object({
+        required: z.boolean(),
+        defaultEnabled: z.boolean().optional(),
+        reason: z.string().optional(),
+    })
+    .nullable();
+
+export const ConsentFlowContractChangesValidator = z.object({
+    contract: z
+        .object({
+            read: z
+                .object({
+                    anonymize: z.boolean().optional(),
+                    credentials: z
+                        .object({
+                            categories: z
+                                .record(z.string(), ConsentFlowContractScopePatchValidator)
+                                .optional(),
+                        })
+                        .optional(),
+                    personal: z
+                        .record(z.string(), ConsentFlowContractScopePatchValidator)
+                        .optional(),
+                })
+                .optional(),
+            write: z
+                .object({
+                    credentials: z
+                        .object({
+                            categories: z
+                                .record(z.string(), ConsentFlowContractScopePatchValidator)
+                                .optional(),
+                        })
+                        .optional(),
+                    personal: z
+                        .record(z.string(), ConsentFlowContractScopePatchValidator)
+                        .optional(),
+                })
+                .optional(),
+        })
+        .optional(),
+    name: z.string().optional(),
+    subtitle: z.string().optional(),
+    description: z.string().optional(),
+    reasonForAccessing: z.string().optional(),
+    image: z.string().optional(),
+    needsGuardianConsent: z.boolean().optional(),
+    redirectUrl: z.string().optional(),
+    frontDoorBoostUri: z.string().optional(),
+    expiresAt: z.string().nullable().optional(),
+    autoboosts: AutoBoostConfigValidator.array().optional(),
+    writers: z.string().array().optional(),
+    recipients: z.string().array().optional(),
+});
+export type ConsentFlowContractChanges = z.input<typeof ConsentFlowContractChangesValidator>;
 
 export const ConsentFlowContractDetailsValidator = z.object({
     contract: ConsentFlowContractValidator,
@@ -714,12 +976,28 @@ export const ConsentFlowContractDetailsValidator = z.object({
     expiresAt: z.string().optional(),
     autoBoosts: z.string().array().optional(),
     writers: z.array(LCNProfileValidator).optional(),
+    recipients: z.array(LCNPublicProfileValidator.extend({ did: z.string() })).optional(),
+    audienceVersion: z.number().int().nonnegative().optional(),
+    version: z.number().int().positive(),
+    status: ConsentFlowContractStatusValidator.optional(),
+    latestUpdate: z
+        .object({
+            fromVersion: z.number().int().positive(),
+            toVersion: z.number().int().positive(),
+            kind: ConsentFlowContractChangeKindValidator,
+            reason: z.string().optional(),
+            diff: ConsentFlowContractDiffValidator,
+            reconsentDeadline: z.string().optional(),
+            createdAt: z.string(),
+            preview: ConsentFlowContractUpdatePreviewValidator,
+        })
+        .optional(),
 });
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
 
 export const ConsentFlowContractRequestStatusValidator = z
-    .enum(['pending', 'accepted', 'denied'])
+    .enum(['pending', 'accepted', 'denied', 'cancelled'])
     .nullable();
 export type ConsentFlowContractRequestStatus = z.infer<
     typeof ConsentFlowContractRequestStatusValidator
@@ -730,7 +1008,51 @@ export type ConsentFlowContractRequestReadStatus = z.infer<
     typeof ConsentFlowContractRequestReadStatusValidator
 >;
 
-export const ConsentFlowContractRequestForProfileValidator = z.object({
+/** Durable referral identity captured on consent history and correlated events. */
+export const ConsentFlowReferralValidator = z.object({
+    requestId: z.string(),
+    requestedBy: z.string(),
+    externalReferenceId: z.string().max(256).optional(),
+});
+export type ConsentFlowReferral = z.infer<typeof ConsentFlowReferralValidator>;
+
+export const ContractRequestFieldsValidator = ConsentFlowReferralValidator.partial().extend({
+    requestedAt: z.string().optional(),
+    message: z.string().max(500).optional(),
+});
+export type ContractRequestFields = z.infer<typeof ContractRequestFieldsValidator>;
+
+export const SendContractRequestValidator = z.object({
+    contractUri: z.string(),
+    targetProfileId: z.string(),
+    externalReferenceId: z.string().trim().min(1).max(256).optional(),
+    message: z.string().trim().max(500).optional(),
+});
+export type SendContractRequest = z.infer<typeof SendContractRequestValidator>;
+
+export const ConsentFlowWebhookMetadataValidator = z.object({
+    eventId: z.string(),
+    deliveryKey: z.string(),
+    event: z.enum([
+        'request_sent',
+        'request_accepted',
+        'request_denied',
+        'request_cancelled',
+        'consent_created',
+        'consent_updated',
+        'consent_withdrawn',
+        'credentials_synced',
+    ]),
+    contractUri: z.string(),
+    termsUri: z.string().optional(),
+    requestId: z.string().optional(),
+    requestedBy: z.string().optional(),
+    externalReferenceId: z.string().optional(),
+    recipientRole: z.enum(['owner', 'recipient', 'requester', 'target']),
+});
+export type ConsentFlowWebhookMetadata = z.infer<typeof ConsentFlowWebhookMetadataValidator>;
+
+export const ConsentFlowContractRequestForProfileValidator = ContractRequestFieldsValidator.extend({
     profile: LCNProfileValidator,
     status: ConsentFlowContractRequestStatusValidator,
     readStatus: ConsentFlowContractRequestReadStatusValidator.optional(),
@@ -803,10 +1125,16 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
             expiresAt: z.string().optional(),
             oneTime: z.boolean().optional(),
             terms: ConsentFlowTermsValidator,
+            referral: ConsentFlowReferralValidator.optional(),
             contract: ConsentFlowContractDetailsValidator,
             uri: z.string(),
             consenter: LCNProfileValidator,
             status: ConsentFlowTermsStatusValidator,
+            consentedVersion: z.number().int().positive(),
+            lastReviewedVersion: z.number().int().positive().optional(),
+            reconsentDeadline: z.string().optional(),
+            newOptionsUntil: z.string().optional(),
+            cumulativeUpdate: ConsentFlowContractDetailsValidator.shape.latestUpdate,
         })
         .array(),
 });
@@ -932,6 +1260,7 @@ export const ConsentFlowTransactionActionValidator = z.enum([
     'sync',
     'withdraw',
     'write',
+    'reconsent',
 ]);
 export type ConsentFlowTransactionAction = z.infer<typeof ConsentFlowTransactionActionValidator>;
 
@@ -962,10 +1291,15 @@ export const ConsentFlowTransactionValidator = z.object({
     oneTime: z.boolean().optional(),
     terms: ConsentFlowTermsValidator.optional(),
     guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
+    referral: ConsentFlowReferralValidator.optional(),
     id: z.string(),
     action: ConsentFlowTransactionActionValidator,
+    kind: ConsentFlowContractChangeKindValidator.optional(),
     date: z.string(),
     uris: z.string().array().optional(),
+    consentedVersion: z.number().int().positive().optional(),
+    reconsentDeadline: z.string().optional(),
+    newOptionsUntil: z.string().optional(),
 });
 export type ConsentFlowTransaction = z.infer<typeof ConsentFlowTransactionValidator>;
 
@@ -974,9 +1308,13 @@ export const HolderExportConsentRecordValidator = z.object({
     status: ConsentFlowTermsStatusValidator,
     contract: ConsentFlowContractDetailsValidator,
     terms: ConsentFlowTermsValidator,
+    referral: ConsentFlowReferralValidator.optional(),
+    consentedVersion: z.number().int().positive(),
+    reconsentDeadline: z.string().optional(),
+    newOptionsUntil: z.string().optional(),
+    cumulativeUpdate: ConsentFlowContractDetailsValidator.shape.latestUpdate,
     transactions: ConsentFlowTransactionValidator.array(),
 });
-export type HolderExportConsentRecord = z.infer<typeof HolderExportConsentRecordValidator>;
 
 export const HolderExportMetadataValidator = z.object({
     consentRecords: HolderExportConsentRecordValidator.array(),
@@ -1056,10 +1394,12 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'GUARDIAN_APPROVED',
     'GUARDIAN_REJECTED',
     'APP_NOTIFICATION',
+    'ANNOUNCEMENT',
     'CREDENTIAL_REVOKED',
     'CREDENTIAL_SUSPENDED',
     'CREDENTIAL_UNSUSPENDED',
     'CREDENTIAL_REFRESHED',
+    'CONSENT_FLOW_CONTRACT_UPDATED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -1102,6 +1442,13 @@ export type LCNNotificationInbox = z.infer<typeof LCNNotificationInboxValidator>
 export const LCNNotificationMetadataValidator = z
     .object({
         connectionPrompt: LCNConnectionPromptMetadataValidator.optional(),
+        campaignId: z
+            .string()
+            .regex(/^[a-z0-9-]{3,64}$/)
+            .optional(),
+        campaignCreatedAt: z.iso.datetime().optional(),
+        campaignHasInApp: z.boolean().optional(),
+        campaignTestId: z.uuid().optional(),
     })
     .catchall(z.unknown());
 export type LCNNotificationMetadata = z.infer<typeof LCNNotificationMetadataValidator>;
@@ -1111,6 +1458,16 @@ export const LCNNotificationDataValidator = z
         vcUris: z.array(z.string()).optional(),
         vpUris: z.array(z.string()).optional(),
         transaction: ConsentFlowTransactionValidator.optional(),
+        contractUri: z.string().optional(),
+        contractName: z.string().optional(),
+        fromVersion: z.number().int().positive().optional(),
+        toVersion: z.number().int().positive().optional(),
+        kind: ConsentFlowContractChangeKindValidator.optional(),
+        reason: z.string().optional(),
+        diff: ConsentFlowContractDiffValidator.optional(),
+        reconsentDeadline: z.string().optional(),
+        reviewUrl: z.string().optional(),
+        preview: ConsentFlowContractUpdatePreviewValidator.optional(),
         inbox: LCNNotificationInboxValidator.optional(),
         metadata: LCNNotificationMetadataValidator.optional(),
     })
@@ -2188,7 +2545,7 @@ export const AppStoreListingSubmitterValidator = z.object({
 
 export type AppStoreListingSubmitter = z.infer<typeof AppStoreListingSubmitterValidator>;
 
-export const AppStoreListingValidator = z.object({
+const AppStoreListingFieldsValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
     display_name: z.string(),
@@ -2215,12 +2572,35 @@ export const AppStoreListingValidator = z.object({
     contact_email: z.string().email().optional(),
 });
 
+export const PendingListingUpdateStatusValidator = z.enum(['DRAFT', 'PENDING_REVIEW']);
+export type PendingListingUpdateStatus = z.infer<typeof PendingListingUpdateStatusValidator>;
+
+/** Changes to a live app that only take effect once an admin approves them. */
+export const PendingListingUpdateValidator = z.object({
+    status: PendingListingUpdateStatusValidator,
+    submitted_at: z.string().optional(),
+    changes: AppStoreListingFieldsValidator.omit({
+        listing_id: true,
+        app_listing_status: true,
+        promotion_level: true,
+        submitted_at: true,
+        submitter: true,
+    }).partial(),
+    manifest_version: z.number().int().min(1).optional(),
+});
+export type PendingListingUpdate = z.infer<typeof PendingListingUpdateValidator>;
+
+export const AppStoreListingValidator = AppStoreListingFieldsValidator.extend({
+    pending_update: PendingListingUpdateValidator.optional(),
+});
+
 export type AppStoreListing = z.infer<typeof AppStoreListingValidator>;
 
 export const AppStoreListingCreateValidator = AppStoreListingValidator.omit({
     listing_id: true,
     app_listing_status: true,
     promotion_level: true,
+    pending_update: true,
 });
 
 export type AppStoreListingCreateType = z.infer<typeof AppStoreListingCreateValidator>;
@@ -2229,6 +2609,7 @@ export const AppStoreListingUpdateValidator = AppStoreListingValidator.partial()
     listing_id: true,
     app_listing_status: true,
     promotion_level: true,
+    pending_update: true,
 });
 
 export type AppStoreListingUpdateType = z.infer<typeof AppStoreListingUpdateValidator>;
@@ -2264,12 +2645,115 @@ export const AppBoostValidator = z.object({
 export type AppBoost = z.infer<typeof AppBoostValidator>;
 
 // App Event Types (discriminated union for type safety)
-export const SendCredentialEventValidator = z.object({
+export const InlineWalletCategoryValidator = z.enum([
+    'Achievement',
+    'Skill',
+    'ID',
+    'Learning History',
+    'Work History',
+    'Social Badges',
+    'Membership',
+    'Accomplishment',
+    'Experiences',
+    'Accommodation',
+    'Family',
+]);
+
+export const InlineAlignmentValidator = z
+    .object({
+        name: z.string(),
+        url: z.string(),
+        framework: z.string().optional(),
+        code: z.string().optional(),
+    })
+    .passthrough();
+
+export const InlineEvidenceValidator = z
+    .object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+        narrative: z.string().optional(),
+    })
+    .passthrough();
+
+export const InlineWalletSkillTagValidator = z
+    .object({
+        frameworkId: z.string(),
+        id: z.string(),
+        proficiencyLevel: z.string().optional(),
+    })
+    .passthrough();
+
+export const SimpleInlineCredentialTemplateValidator = z
+    .object({
+        rawCredential: z.undefined().optional(),
+        name: z.string(),
+        description: z.string().optional(),
+        image: z.string().optional(),
+        issuerName: z.string().optional(),
+        achievementType: z.string().optional(),
+        category: InlineWalletCategoryValidator.optional(),
+        criteria: z
+            .object({
+                narrative: z.string().optional(),
+                url: z.string().optional(),
+            })
+            .passthrough()
+            .optional(),
+        alignments: z.array(InlineAlignmentValidator).optional(),
+        tags: z.array(z.string()).optional(),
+        activity: z
+            .object({
+                startDate: z.string().optional(),
+                endDate: z.string().optional(),
+            })
+            .passthrough()
+            .optional(),
+        credits: z
+            .object({
+                earned: z.union([z.number(), z.string()]).optional(),
+                available: z.union([z.number(), z.string()]).optional(),
+            })
+            .passthrough()
+            .optional(),
+        validUntil: z.string().optional(),
+        evidence: z.array(InlineEvidenceValidator).optional(),
+        walletSkills: z.array(InlineWalletSkillTagValidator).optional(),
+    })
+    .passthrough();
+
+export const RawInlineCredentialTemplateValidator = z
+    .object({
+        rawCredential: z.record(z.string(), z.unknown()),
+        category: InlineWalletCategoryValidator.optional(),
+        walletSkills: z.array(InlineWalletSkillTagValidator).optional(),
+    })
+    .passthrough();
+
+export const InlineCredentialTemplateValidator = z.union([
+    RawInlineCredentialTemplateValidator,
+    SimpleInlineCredentialTemplateValidator,
+]);
+
+export const LegacySendCredentialEventValidator = z.object({
     type: z.literal('send-credential'),
     templateAlias: z.string(),
     templateData: z.record(z.string(), z.unknown()).optional(),
     preventDuplicateClaim: z.boolean().optional(),
 });
+
+export const InlineSendCredentialEventValidator = z.object({
+    type: z.literal('send-credential'),
+    alias: z.string(),
+    template: InlineCredentialTemplateValidator,
+    templateData: z.record(z.string(), z.unknown()).optional(),
+    preventDuplicateClaim: z.boolean().optional(),
+});
+
+export const SendCredentialEventValidator = z.union([
+    LegacySendCredentialEventValidator,
+    InlineSendCredentialEventValidator,
+]);
 
 export type SendCredentialEvent = z.infer<typeof SendCredentialEventValidator>;
 
@@ -2425,8 +2909,168 @@ export const GetCountersEventValidator = z.object({
 
 export type GetCountersEvent = z.infer<typeof GetCountersEventValidator>;
 
+export const ConsentRequestWalletCategoryValidator = z.enum([
+    'Achievement',
+    'Skill',
+    'ID',
+    'Learning History',
+    'Work History',
+    'Social Badges',
+    'Membership',
+    'Accomplishment',
+    'Experiences',
+    'Accommodation',
+    'Family',
+]);
+
+export const ConsentRequestPersonalFieldValidator = z.enum([
+    'name',
+    'email',
+    'phone',
+    'birthDate',
+    'country',
+    'avatar',
+]);
+
+export const ConsentRequestValidator = z.object({
+    read: z
+        .object({
+            credentialCategories: z.array(ConsentRequestWalletCategoryValidator).optional(),
+            personalFields: z.array(ConsentRequestPersonalFieldValidator).optional(),
+        })
+        .optional(),
+    write: z
+        .object({
+            credentialCategories: z.array(ConsentRequestWalletCategoryValidator).optional(),
+        })
+        .optional(),
+    reason: z.string().optional(),
+});
+
+export type ConsentRequest = z.infer<typeof ConsentRequestValidator>;
+
+export const NormalizedConsentScopesValidator = z.object({
+    read: z.object({
+        credentialCategories: z.array(ConsentRequestWalletCategoryValidator).default([]),
+        personalFields: z.array(ConsentRequestPersonalFieldValidator).default([]),
+    }),
+    write: z.object({
+        credentialCategories: z.array(ConsentRequestWalletCategoryValidator).default([]),
+    }),
+});
+
+export type NormalizedConsentScopes = z.infer<typeof NormalizedConsentScopesValidator>;
+
+export const CapturedTemplateRecordValidator = z
+    .object({
+        alias: z.string(),
+        template: InlineCredentialTemplateValidator,
+        version: z.number().int().min(1),
+        lastUsedAt: z.string(),
+    })
+    .passthrough();
+
+export type CapturedTemplateRecord = z.infer<typeof CapturedTemplateRecordValidator>;
+
+export const CapturedConsentRecordValidator = z
+    .object({
+        scopes: NormalizedConsentScopesValidator,
+        reason: z.string().optional(),
+        lastUsedAt: z.string(),
+    })
+    .passthrough();
+
+export type CapturedConsentRecord = z.infer<typeof CapturedConsentRecordValidator>;
+
+export const AppManifestValidator = z
+    .object({
+        manifestVersion: z.literal(1),
+        appUrl: z.string(),
+        appKey: z.string().max(200).optional(),
+        suggestedName: z.string().optional(),
+        suggestedIconUrl: z.string().optional(),
+        permissions: z.array(z.string()).default([]),
+        templates: z.array(CapturedTemplateRecordValidator).default([]),
+        consentRequests: z.array(CapturedConsentRecordValidator).default([]),
+        usedConsentContract: z.boolean().optional(),
+        featuresLaunched: z.array(z.string()).default([]),
+        counterKeys: z.array(z.string()).default([]),
+        usedLearnerContext: z.boolean(),
+        usedNotifications: z.boolean(),
+        firstCapturedAt: z.string(),
+        lastUpdatedAt: z.string(),
+    })
+    .passthrough();
+
+export type AppManifest = z.infer<typeof AppManifestValidator>;
+
+export const AppManifestVersionStatusValidator = z.enum(['draft', 'active', 'superseded']);
+export type AppManifestVersionStatus = z.infer<typeof AppManifestVersionStatusValidator>;
+
+export const AppManifestVersionValidator = z.object({
+    id: z.string(),
+    version: z.number().int().min(1),
+    manifestHash: z.string(),
+    manifest: AppManifestValidator,
+    status: AppManifestVersionStatusValidator,
+    createdAt: z.string(),
+    activatedAt: z.string().optional(),
+});
+
+export type AppManifestVersion = z.infer<typeof AppManifestVersionValidator>;
+
+const AppManifestStringDiffValidator = z.object({
+    added: z.array(z.string()),
+    removed: z.array(z.string()),
+    changed: z.array(z.string()),
+});
+
+export const AppManifestTemplateRefValidator = z.object({
+    alias: z.string(),
+    version: z.number().int().min(1),
+});
+
+export type AppManifestTemplateRef = z.infer<typeof AppManifestTemplateRefValidator>;
+
+export const AppManifestTemplateChangeValidator = z.object({
+    alias: z.string(),
+    fromVersion: z.number().int().min(1),
+    toVersion: z.number().int().min(1),
+});
+
+export type AppManifestTemplateChange = z.infer<typeof AppManifestTemplateChangeValidator>;
+
+export const AppManifestDiffValidator = z.object({
+    permissions: AppManifestStringDiffValidator,
+    templates: z.object({
+        added: z.array(AppManifestTemplateRefValidator),
+        removed: z.array(AppManifestTemplateRefValidator),
+        changed: z.array(AppManifestTemplateChangeValidator),
+    }),
+    consentScopes: AppManifestStringDiffValidator,
+    featurePaths: AppManifestStringDiffValidator,
+    counterKeys: AppManifestStringDiffValidator,
+    requiresReview: z.boolean(),
+});
+
+export type AppManifestDiff = z.infer<typeof AppManifestDiffValidator>;
+
+export const UpsertConsentContractEventValidator = z.object({
+    type: z.literal('upsert-consent-contract'),
+    scopes: ConsentRequestValidator,
+});
+
+export type UpsertConsentContractEvent = z.infer<typeof UpsertConsentContractEventValidator>;
+
+export const UpsertConsentContractResponseValidator = z.object({
+    contractUri: z.string(),
+    created: z.boolean(),
+});
+
+export type UpsertConsentContractResponse = z.infer<typeof UpsertConsentContractResponseValidator>;
+
 // Add new event types here as the union grows
-export const AppEventValidator = z.discriminatedUnion('type', [
+export const AppEventValidator = z.union([
     SendCredentialEventValidator,
     CheckCredentialEventValidator,
     CheckIssuanceStatusEventValidator,
@@ -2437,6 +3081,7 @@ export const AppEventValidator = z.discriminatedUnion('type', [
     IncrementCounterEventValidator,
     GetCounterEventValidator,
     GetCountersEventValidator,
+    UpsertConsentContractEventValidator,
 ]);
 
 export type AppEvent = z.infer<typeof AppEventValidator>;

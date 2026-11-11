@@ -76,4 +76,37 @@ describe('pending escrow recovery storage', () => {
         await expect(savePendingEscrowRecovery(record)).rejects.toThrow();
         expect(storage.storeDeviceShare).not.toHaveBeenCalled();
     });
+
+    const expectations = {
+        tenant: 'learncard',
+        did: 'did:key:z6Mkexample',
+        holdId: 'hold',
+        clientEphemeralPublicKey: 'ephemeral-pub',
+        blobHash: 'blob-hash',
+        authorityGeneration: 'generation-1',
+        holdDigest: 'hold-digest',
+        ledgerPublicKey: 'ledger-pub',
+        keyId: 'key-1',
+    };
+
+    it('round-trips expectations alongside the resume token and private key', async () => {
+        await savePendingEscrowRecovery({ ...record, expectations }, 'with-expectations');
+        expect(await loadPendingEscrowRecovery('with-expectations')).toEqual({
+            ...record,
+            expectations,
+        });
+    });
+
+    it('drops a record with malformed expectations instead of failing the whole load', async () => {
+        storage.getDeviceShare.mockResolvedValue(
+            JSON.stringify([
+                // Missing most required bindings -- simulates a corrupted or
+                // forward-incompatible blob.
+                { ...record, scope: 'default', expectations: { tenant: 'learncard' } },
+                { ...record, scope: 'other' },
+            ])
+        );
+        expect(await loadPendingEscrowRecovery('default')).toBeUndefined();
+        expect(await loadPendingEscrowRecovery('other')).toEqual(record);
+    });
 });

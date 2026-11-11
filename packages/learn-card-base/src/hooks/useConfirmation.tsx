@@ -80,7 +80,7 @@ export const useConfirmation = ({ widen = false, className = '' }: UseConfirmati
                     hideButton: true,
                     onClose: _onCancel,
                     className: 'confirmation-modal',
-                    sectionClassName: '!max-w-[350px]',
+                    sectionClassName: 'max-w-[350px]!',
                     widen,
                     addShadow: widen,
                 }

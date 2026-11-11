@@ -219,7 +219,7 @@ export const CheckListUploadRawVC: React.FC = () => {
     return (
         <div className="h-full relative bg-grayscale-100">
             <IonHeader color="light" className="rounded-b-[30px] overflow-hidden shadow-md ">
-                <IonToolbar color="light" className="text-white px-4 !py-4">
+                <IonToolbar color="light" className="text-white px-4 py-4!">
                     <div className="flex items-center justify-normal p-2">
                         <div className="flex items-center gap-[10px]">
                             <BulkImportWithPlusIcon className="w-[65px] h-[65px]" />
@@ -275,7 +275,7 @@ export const CheckListUploadRawVC: React.FC = () => {
 
                     {fileErrors.length > 0 && (
                         <div className="flex flex-col gap-[5px] p-[10px] bg-orange-100 rounded-[10px] text-orange-700 w-full">
-                            <h5 className="font-poppins text-[17px] font-[600] flex items-center gap-[8px]  ">
+                            <h5 className="font-poppins text-[17px] font-semibold flex items-center gap-[8px]  ">
                                 <AlertTriangle className="w-[24px] h-[24px]" />
                                 {conditionalPluralize(fileErrors.length, 'Error', {
                                     includeCount: false,
@@ -304,7 +304,7 @@ export const CheckListUploadRawVC: React.FC = () => {
 
                     <button
                         onClick={triggerFileInput}
-                        className={`w-full flex gap-[10px] rounded-[30px] items-center justify-center py-[7px] px-[15px] font-[600] text-[17px] leading-[24px] tracking-[0.25px] bg-${primaryColor} text-white disabled:opacity-60`}
+                        className={`w-full flex gap-[10px] rounded-[30px] items-center justify-center py-[7px] px-[15px] font-semibold text-[17px] leading-[24px] tracking-[0.25px] bg-${primaryColor} text-white disabled:opacity-60`}
                         disabled={isUploading}
                     >
                         <UploadIcon className="w-[25px] h-[25px] text-white" strokeWidth="2" />
@@ -319,7 +319,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                             onIonInput={e => {
                                 setRawVcText(e.detail.value);
                             }}
-                            className="ion-no-padding !mb-0 h-[112px] overflow-hidden bg-grayscale-100 rounded-[10px] text-grayscale-800 text-[15px] font-notoSans"
+                            className="ion-no-padding mb-0! h-[112px] overflow-hidden bg-grayscale-100 rounded-[10px] text-grayscale-800 text-[15px] font-notoSans"
                             // For some reason placeholder-grayscale-400 doesn't work
                             style={{
                                 '--placeholder-color': 'rgb(156 163 175)', // grayscale-400 equivalent
@@ -335,7 +335,7 @@ export const CheckListUploadRawVC: React.FC = () => {
 
                         {rawTextErrors.length > 0 && (
                             <div className="flex flex-col gap-[5px] p-[10px] bg-orange-100 rounded-[10px] text-orange-700">
-                                <h5 className="font-poppins text-[17px] font-[600] flex items-center gap-[8px]  ">
+                                <h5 className="font-poppins text-[17px] font-semibold flex items-center gap-[8px]  ">
                                     <AlertTriangle className="w-[24px] h-[24px]" />
                                     {conditionalPluralize(rawTextErrors.length, 'Error', {
                                         includeCount: false,
@@ -353,7 +353,7 @@ export const CheckListUploadRawVC: React.FC = () => {
 
                         <button
                             onClick={handleAddRawVcText}
-                            className={`w-full flex gap-[10px] rounded-[30px] items-center justify-center py-[7px] px-[15px] font-[600] text-[17px] leading-[24px] tracking-[0.25px] text-white ${
+                            className={`w-full flex gap-[10px] rounded-[30px] items-center justify-center py-[7px] px-[15px] font-semibold text-[17px] leading-[24px] tracking-[0.25px] text-white ${
                                 isUploadingRawVC ? 'opacity-60' : ''
                             } ${
                                 !rawVcText || rawTextErrors.length > 0

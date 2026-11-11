@@ -4,9 +4,9 @@ const PuzzlePiece: React.FC<{
     className?: string;
     size?: string;
     fill?: string;
-    version?: 'outline' | 'filled' | 'with-plus';
-}> = ({ className = '', size = '21', fill = 'none', version = 'outline' }) => {
-    if (version === 'outline') {
+    version?: 'outline-solid' | 'filled' | 'with-plus';
+}> = ({ className = '', size = '21', fill = 'none', version = 'outline-solid' }) => {
+    if (version === 'outline-solid') {
         return (
             <svg
                 width={size}

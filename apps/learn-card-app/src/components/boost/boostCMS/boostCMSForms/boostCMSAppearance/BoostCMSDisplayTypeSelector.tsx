@@ -86,7 +86,7 @@ const BoostCMSDisplayTypeSelector: React.FC<BoostCMSDisplayTypeSelectorProps> = 
                             state={state}
                             handleDisplayTypeChange={handleDisplayTypeChange}
                         />,
-                        { sectionClassName: '!max-w-[400px]' }
+                        { sectionClassName: 'max-w-[400px]!' }
                     );
                 }}
             >

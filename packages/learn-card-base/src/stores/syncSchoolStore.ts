@@ -20,6 +20,7 @@ export interface SyncCredentialsVCs {
     courseEntries: EntryVC[];
     achievements: VC[];
     workHistory: VC[];
+    qualifications: VC[];
     socialBadges: VC[];
     memberships: VC[];
     families: VC[];

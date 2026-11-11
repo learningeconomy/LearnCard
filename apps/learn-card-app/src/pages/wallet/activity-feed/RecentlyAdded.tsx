@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
-import { useGetCredentialList, useModal, ModalTypes } from 'learn-card-base';
-import PassportCredentialCard, { ActivityIndexRecord } from './PassportCredentialCard';
+import { useCredentialCollection, useModal, ModalTypes } from 'learn-card-base';
+import PassportCredentialCard from './PassportCredentialCard';
 import { AllCredentialsModal } from './AllCredentialsModal';
-import { isHiddenActivity } from './activityFeed.helpers';
 import * as m from '../../../paraglide/messages.js';
 
 const MAX_ITEMS = 5;
@@ -12,27 +11,24 @@ export const RecentlyAdded: React.FC = () => {
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
-    const { data } = useGetCredentialList(undefined);
+    const collection = useCredentialCollection(undefined, { mode: 'recent', limit: MAX_ITEMS });
+    const items = useMemo(
+        () =>
+            [...collection.records]
+                .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+                .slice(0, MAX_ITEMS),
+        [collection.records]
+    );
+    const loadingMore = !collection.isComplete && items.length < MAX_ITEMS;
 
     const openSeeAll = () =>
         newModal(<AllCredentialsModal onClose={closeModal} />, {
             hideButton: true,
-            sectionClassName: '!max-w-[760px]',
+            sectionClassName: 'max-w-[760px]!',
         });
 
-    const items = useMemo(() => {
-        const records = (data?.pages?.flatMap(p => p?.records ?? []) ??
-            []) as ActivityIndexRecord[];
-        return records
-            .filter(r => r?.uri && !isHiddenActivity(r.category))
-            .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
-            .slice(0, MAX_ITEMS);
-    }, [data]);
-
-    if (items.length === 0) return null;
-
     return (
-        <section className="mb-[24px]">
+        <section className="mb-[24px]" aria-label={m['passport.activity.recent']()}>
             <div className="flex items-center justify-between mb-[10px]">
                 <h2 className="font-poppins text-[13px] tracking-[1px] text-grayscale-800">
                     {m['passport.activity.recent']()}
@@ -40,12 +36,12 @@ export const RecentlyAdded: React.FC = () => {
                 <button
                     type="button"
                     onClick={openSeeAll}
-                    className="font-poppins text-[13px] font-medium text-grayscale-800 hover:text-grayscale-900 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="font-poppins text-[13px] font-medium text-grayscale-800 hover:text-grayscale-900 transition-colors rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     {m['passport.activity.seeAll']()}
                 </button>
             </div>
-            <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:gap-2 md:overflow-visible md:px-0 md:flex-wrap">
+            <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden md:mx-0 md:gap-2 md:overflow-visible md:px-0 md:flex-wrap">
                 {items.map(record => (
                     <PassportCredentialCard
                         key={record.uri}
@@ -54,6 +50,35 @@ export const RecentlyAdded: React.FC = () => {
                     />
                 ))}
             </div>
+            <p
+                role="status"
+                aria-live="polite"
+                className={`text-sm mt-2 ${collection.isError ? 'rounded-2xl border border-red-100 bg-red-50 p-3 text-red-700' : 'text-grayscale-700'}`}
+            >
+                {collection.isError
+                    ? items.length > 0
+                        ? m['credentialCollection.recentIncomplete']()
+                        : m['credentialCollection.recentError']()
+                    : loadingMore
+                      ? m['credentialCollection.loadingRecent']()
+                      : items.length === 0
+                        ? m['passport.activity.emptyAll']()
+                        : ''}
+            </p>
+            {collection.isError && (
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (!collection.isFetching) void collection.retry();
+                    }}
+                    aria-disabled={collection.isFetching}
+                    className="mt-2 py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
+                >
+                    {collection.isFetching
+                        ? m['credentialCollection.retrying']()
+                        : m['credentialCollection.retryRecent']()}
+                </button>
+            )}
         </section>
     );
 };

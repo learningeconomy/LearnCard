@@ -19,6 +19,7 @@ import {
 
 type ManageSkillsExistingSkillsBodyProps = {
     handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     skillFramework: any; // From api. Has framework with name, description, etc. and skills with paginated skills
     isFileUploading: boolean;
     isManageJsonVersion?: boolean;

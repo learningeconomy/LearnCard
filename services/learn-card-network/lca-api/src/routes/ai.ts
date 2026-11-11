@@ -1,10 +1,11 @@
 import { environment } from '@environment';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { createBedrockClient, generateStructuredOutput } from '@helpers/bedrockGeneration';
+import { generateStoredImage } from '@helpers/imageGeneration';
 import { z } from 'zod';
 
 import { t, didAndChallengeRoute } from '@routes';
-import { TRPCError } from '@trpc/server';
+import { GenerateSkillIconsInputValidator } from '@learncard/types';
 
 import * as filestack from 'filestack-js';
 import { BoostSkillHierarchy, BoostSkillHierarchyValidator } from 'types/skills';
@@ -79,7 +80,7 @@ const IconMapValidator = z.record(
     z.string().min(1).max(8)
 );
 
-// LLM output schema: object-wrapped list to satisfy response_format type 'object'
+// Required-function output schema: object-wrapped list.
 // We'll convert this into the IconMapValidator shape before returning
 const IconListContainerValidator = z.object({
     items: z.array(
@@ -93,6 +94,10 @@ const IconListContainerValidator = z.object({
 const openai = environment.OPENAI_API_KEY
     ? new OpenAI({ apiKey: environment.OPENAI_API_KEY })
     : undefined;
+
+let generationClient: OpenAI | undefined;
+const getGenerationClient = (): OpenAI =>
+    (generationClient ??= createBedrockClient(environment.BEDROCK_BASE_URL));
 
 export const aiRouter = t.router({
     generateBoostInfo: didAndChallengeRoute
@@ -109,41 +114,19 @@ export const aiRouter = t.router({
         })
         .input(z.object({ description: z.string().nonempty(), locale: z.string().optional() }))
         .output(AIResponseValidator)
-        .query(async ({ input, ctx }) => {
-            const {
-                user: { did },
-            } = ctx;
-            if (!openai) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'No OpenAI Key Set',
-                });
-            }
-
+        .query(async ({ input }) => {
             const { description } = input;
 
-            const completion = await openai.chat.completions.create({
-                model: 'gpt-4o-2024-08-06',
-                messages: [
-                    {
-                        role: 'system',
-                        content:
-                            `Generate a title ${aiTitleCharsetRule(
-                                input.locale
-                            )} with a maximum length of 24 characters and separate words with spaces if there is more than one, description, category, type, and narrative for a boost based on an arbitrary description. The narrative is no longer than 300 characters and answers the question "How do you earn this boost?"\n\nStrict constraints:\n- category MUST be EXACTLY one of: "Social Badge", "Achievement", "Course", "ID", "Work History", "Learning History", "Accomplishment", "Accommodation". Use exact casing and spelling; do NOT invent other categories.\n- type MUST be EXACTLY one of: "Certificate", "Badge", "ID". Use exact casing and spelling; do NOT invent other types.\n\nOutput requirements:\n- Return ONLY a JSON object with the keys "title", "description", "category", "type", and optional "narrative".\n- Do not include explanations, markdown, or extra fields.\n- Ensure the JSON parses without code fences.` +
-                            aiLocaleInstruction(input.locale),
-                    },
-                    { role: 'user', content: description },
-                ],
-                // response_format: zodResponseFormat(AIResponseValidator, 'info'),
-                response_format: { type: 'json_object' },
-                user: did,
+            return generateStructuredOutput(getGenerationClient(), {
+                task: 'reasoning',
+                instructions:
+                    `Generate a title ${aiTitleCharsetRule(
+                        input.locale
+                    )} with a maximum length of 24 characters and separate words with spaces if there is more than one, description, category, type, and narrative for a boost based on an arbitrary description. The narrative is no longer than 300 characters and answers the question "How do you earn this boost?"\n\nStrict constraints:\n- category MUST be EXACTLY one of: "Social Badge", "Achievement", "Course", "ID", "Work History", "Learning History", "Accomplishment", "Accommodation". Use exact casing and spelling; do NOT invent other categories.\n- type MUST be EXACTLY one of: "Certificate", "Badge", "ID". Use exact casing and spelling; do NOT invent other types.\n\nOutput requirements:\n- Return ONLY a JSON object with the keys "title", "description", "category", "type", and "narrative".\n- Do not include explanations, markdown, or extra fields.\n- Ensure the JSON parses without code fences.` +
+                    aiLocaleInstruction(input.locale),
+                input: description,
+                schema: AIResponseValidator,
             });
-
-            const content = completion.choices[0]?.message.content ?? '';
-            const response = JSON.parse(content);
-
-            return AIResponseValidator.parseAsync(response);
         }),
 
     generateBoostSkills: didAndChallengeRoute
@@ -159,36 +142,15 @@ export const aiRouter = t.router({
         })
         .input(z.object({ description: z.string().nonempty() }))
         .output(z.array(BoostSkillsValidator))
-        .query(async ({ input, ctx }) => {
-            const {
-                user: { did },
-            } = ctx;
-            if (!openai) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'No OpenAI Key Set',
-                });
-            }
-
+        .query(async ({ input }) => {
             const { description } = input;
 
-            const completion = await openai.chat.completions.create({
-                model: 'gpt-4o-2024-08-06',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `Generate *NO MORE THAN 3* skills for the provided description about a boost that matches the given skills hierarchy. ${aiSkillsHierarchyRule}`,
-                    },
-                    { role: 'user', content: description },
-                ],
-                response_format: zodResponseFormat(BoostSkillHierarchyValidator, 'skills'),
-                user: did,
+            const parsedResponse = await generateStructuredOutput(getGenerationClient(), {
+                task: 'reasoning',
+                instructions: `Generate *NO MORE THAN 3* skills for the provided description about a boost that matches the given skills hierarchy. ${aiSkillsHierarchyRule}`,
+                input: description,
+                schema: BoostSkillHierarchyValidator,
             });
-
-            const response = JSON.parse(completion.choices[0]?.message.content ?? '');
-
-            const parsedResponse = await BoostSkillHierarchyValidator.parseAsync(response);
-
             return transformLLMResultToOutputShape(parsedResponse);
         }),
 
@@ -204,20 +166,9 @@ export const aiRouter = t.router({
                     'Given a list of skill names, returns a mapping of each name to a single unicode emoji that best represents it. No skin tones, flags, or multi-character sequences.',
             },
         })
-        .input(z.object({ names: z.array(z.string().nonempty()).min(1) }))
+        .input(GenerateSkillIconsInputValidator)
         .output(IconMapValidator)
-        .query(async ({ input, ctx }) => {
-            const {
-                user: { did },
-            } = ctx;
-
-            if (!openai) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'No OpenAI Key Set',
-                });
-            }
-
+        .query(async ({ input }) => {
             const { names } = input;
 
             const systemPrompt = `You are assigning a single, standard Unicode emoji to represent each skill name.
@@ -233,42 +184,12 @@ Rules:
                     '\n'
                 )}\n\nReturn a JSON object of the form { items: [{ name, icon }] } for these names.`;
 
-            // TODO switch to gpt 5 and use responses API
-            // will have to bump the openai package
-            let completion: any;
-            try {
-                completion = await openai.chat.completions.create({
-                    model: 'gpt-4o-2024-08-06',
-                    messages: [
-                        {
-                            role: 'system',
-                            content: systemPrompt,
-                        },
-                        { role: 'user', content: userContent },
-                    ],
-                    // Use the object-wrapped list schema for structured outputs
-                    //   currently breaks because response is wrapped in a code fence (```json ... ```)
-                    //   likely would need to to bump openai package version
-                    // response_format: zodResponseFormat(IconListContainerValidator, 'icons'),
-                    response_format: { type: 'json_object' },
-                    user: did,
-                });
-            } catch (error) {
-                console.error('🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-                console.error('error:', error);
-            }
-
-            const content = completion.choices[0]?.message.content ?? '';
-
-            const response = JSON.parse(content);
-            // First, validate the model output with the object-wrapped list schema
-            const parsed = await IconListContainerValidator.parseAsync(response);
-            if (!parsed) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'No parsed structured output returned.',
-                });
-            }
+            const parsed = await generateStructuredOutput(getGenerationClient(), {
+                task: 'formatting',
+                instructions: systemPrompt,
+                input: userContent,
+                schema: IconListContainerValidator,
+            });
 
             // Transform into a record mapping input names to icons
             const record: Record<string, string> = {};
@@ -306,39 +227,7 @@ Rules:
             const {
                 user: { did },
             } = ctx;
-            if (!openai) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'No OpenAI Key Set',
-                });
-            }
-
-            const { prompt } = input;
-            const res = await openai.images.generate({
-                prompt,
-                model: 'dall-e-3',
-                size: '1024x1024',
-                user: did,
-            });
-
-            if (!res.data || !res.data[0]?.url) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'No image URL returned from OpenAI',
-                });
-            }
-
-            const filestackRes = (await client.storeURL(res?.data[0]?.url)) as any;
-            if (!filestackRes || !filestackRes.url) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'Failed to store image URL',
-                });
-            }
-
-            return {
-                url: filestackRes.url,
-            };
+            return generateStoredImage(input.prompt, did, environment, openai, client);
         }),
 });
 

@@ -14,7 +14,7 @@ export const AiInsightsExploreMoreModal: React.FC = () => {
     return (
         <div className="w-full h-full flex flex-col bg-white">
             {/* Fixed Header */}
-            <div className="flex-shrink-0 flex flex-col p-4 gap-4">
+            <div className="shrink-0 flex flex-col p-4 gap-4">
                 <div className="flex items-center justify-between gap-[10px]">
                     <h1 className="text-2xl font-semibold text-indigo-500">
                         {m['aiInsights.exploreYourInsights']()}

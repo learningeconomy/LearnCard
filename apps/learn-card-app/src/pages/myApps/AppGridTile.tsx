@@ -23,7 +23,7 @@ const AppGridTile: React.FC<AppGridTileProps> = ({
             type="button"
             onClick={onClick}
             aria-label={title}
-            className="flex w-full flex-col items-center gap-[10px] focus:outline-none"
+            className="flex w-full flex-col items-center gap-[10px] focus:outline-hidden"
         >
             {isImage ? (
                 <img

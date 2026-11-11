@@ -159,7 +159,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                 className="rounded-full p-0 text-base font-semibold bg-white text-grayscale-800 px-3 py-2 flex items-center justify-center border border-gray-300 w-[180px] relative"
             >
                 <span>{m['boostCMS.all']()}</span>
-                <CaretLeft className="rtl-mirror h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3" />
+                <CaretLeft className="rtl-mirror h-auto w-[5px] text-grayscale-800 -rotate-90 absolute right-3" />
             </button>
         );
     } else {
@@ -174,7 +174,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                     <IconComponent className={`h-[20px] w-[20px] text-${color}`} />
                     <span>{title}</span>
                 </div>
-                <CaretLeft className="rtl-mirror h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3" />
+                <CaretLeft className="rtl-mirror h-auto w-[5px] text-grayscale-800 -rotate-90 absolute right-3" />
             </button>
         );
     }
@@ -191,7 +191,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                     </div>
                 ) : (
                     <div className="w-full max-w-3xl mx-auto px-4 flex flex-wrap items-start justify-center">
-                        <div className="w-full flex items-center justify-between bg-white px-4 py-3 mb-4 rounded-lg shadow-sm">
+                        <div className="w-full flex items-center justify-between bg-white px-4 py-3 mb-4 rounded-lg shadow-xs">
                             <p className="text-grayscale-900 font-semibold text-base whitespace-nowrap mr-2">
                                 {m['boostCMS.stylePack']()}
                             </p>

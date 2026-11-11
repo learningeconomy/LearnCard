@@ -1,15 +1,14 @@
 # SkillsListSkillTags200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**name** | **str** |  | 
-**slug** | **str** |  | 
-**created_at** | **str** |  | [optional] 
-**updated_at** | **str** |  | [optional] 
+| Name           | Type    | Description | Notes      |
+| -------------- | ------- | ----------- | ---------- |
+| **id**         | **str** |             |
+| **name**       | **str** |             |
+| **slug**       | **str** |             |
+| **created_at** | **str** |             | [optional] |
+| **updated_at** | **str** |             | [optional] |
 
 ## Example
 
@@ -28,6 +27,5 @@ skills_list_skill_tags200_response_inner_dict = skills_list_skill_tags200_respon
 # create an instance of SkillsListSkillTags200ResponseInner from a dict
 skills_list_skill_tags200_response_inner_from_dict = SkillsListSkillTags200ResponseInner.from_dict(skills_list_skill_tags200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -15,7 +15,7 @@ export const AppStoreListItemSkeleton: React.FC = () => {
     return (
         <div
             aria-hidden="true"
-            className="w-full max-w-[600px] px-[12px] py-[12px] max-h-[76px] flex bg-white items-center justify-between overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-sm"
+            className="w-full max-w-[600px] px-[12px] py-[12px] max-h-[76px] flex bg-white items-center justify-between overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-xs"
         >
             <div className="flex items-center justify-start w-full">
                 <div className="rounded-lg w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px] overflow-hidden">

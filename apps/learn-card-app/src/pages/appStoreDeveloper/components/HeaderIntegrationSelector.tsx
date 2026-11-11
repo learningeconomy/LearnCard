@@ -8,6 +8,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('header-integration-selector');
 
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
+import { useDeveloperPortal } from '../useDeveloperPortal';
 
 interface HeaderIntegrationSelectorProps {
     integrations: LCNIntegration[];
@@ -34,10 +35,16 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
 
     const { createIntegration, isCreatingIntegration } = useDeveloperPortalContext();
 
-    // Detect if we're on Apps side (has /apps in path) vs Build side
-    const isOnAppsPage = location.pathname.includes('/apps');
-
     const selectedIntegration = integrations.find(i => i.id === selectedId);
+
+    // Projects that hold an app are managed from the Apps tab, so they're left out
+    // here (unless one is the project you're already on).
+    const { useMyApps } = useDeveloperPortal();
+    const { data: apps } = useMyApps(isLoading ? undefined : integrations);
+    const appIntegrationIds = new Set((apps ?? []).map(app => app.integrationId));
+    const buildProjects = integrations.filter(
+        integration => !appIntegrationIds.has(integration.id) || integration.id === selectedId
+    );
 
     // Update dropdown position when opened
     useEffect(() => {
@@ -80,14 +87,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     const handleSelectIntegration = (integration: LCNIntegration) => {
         setIsOpen(false);
 
-        // Navigate based on current context (Apps vs Build)
-        if (isOnAppsPage) {
-            // On Apps side - navigate to that integration's apps page
-            history.push(`/app-store/developer/integrations/${integration.id}/apps`);
-        } else {
-            // On Build side - use the existing onSelect which handles navigation
-            onSelect(integration.id);
-        }
+        onSelect(integration.id);
     };
 
     const handleCreate = async () => {
@@ -122,9 +122,9 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                 className="fixed w-64 bg-white rounded-xl shadow-lg border border-gray-200 z-[9999] overflow-hidden"
                 style={{ top: dropdownPosition.top, right: dropdownPosition.right }}
             >
-                {integrations.length > 0 && (
+                {buildProjects.length > 0 && (
                     <div className="max-h-48 overflow-y-auto">
-                        {integrations.map(integration => {
+                        {buildProjects.map(integration => {
                             const isSetup = integration.status === 'setup' || !integration.status;
 
                             return (
@@ -137,9 +137,9 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                                 >
                                     <div className="flex items-center gap-2 min-w-0">
                                         {isSetup ? (
-                                            <Settings className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                                            <Settings className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                                         ) : (
-                                            <LayoutDashboard className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                                            <LayoutDashboard className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                                         )}
 
                                         <span
@@ -154,7 +154,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                                     </div>
 
                                     {selectedId === integration.id && (
-                                        <Check className="w-4 h-4 text-cyan-500 flex-shrink-0" />
+                                        <Check className="w-4 h-4 text-cyan-500 shrink-0" />
                                     )}
                                 </button>
                             );
@@ -174,7 +174,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                                     placeholder={m[
                                         'developerPortal.components.headerIntegrationSelector.integrationNamePlaceholder'
                                     ]()}
-                                    className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                    className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                     onKeyDown={e => {
                                         if (e.key === 'Enter') handleCreate();
                                         if (e.key === 'Escape') {

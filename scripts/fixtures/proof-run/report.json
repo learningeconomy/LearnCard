@@ -1,0 +1,27 @@
+{
+    "runId": "synthetic-proof-fixture",
+    "status": "failed",
+    "selected": ["account", "sharing", "sdk"],
+    "results": [
+        {
+            "feature": "account",
+            "surface": "web",
+            "status": "passed",
+            "requiredEntries": ["sign-in"],
+            "entries": ["sign-in"],
+            "startedAt": "2026-10-19T10:00:00.000Z",
+            "finishedAt": "2026-10-19T10:00:02.000Z"
+        },
+        {
+            "feature": "sharing",
+            "surface": "web",
+            "status": "failed",
+            "requiredEntries": ["share", "accept"],
+            "startedAt": "2026-10-19T10:00:02.000Z",
+            "finishedAt": "2026-10-19T10:00:05.500Z",
+            "error": "Synthetic failure; this string must stay local: PRIVATE_SENTINEL"
+        }
+    ],
+    "notRun": ["sdk"],
+    "notSelected": ["language"]
+}

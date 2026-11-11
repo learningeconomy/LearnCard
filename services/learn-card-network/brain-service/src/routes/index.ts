@@ -9,7 +9,11 @@ import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
-import { ACT_AS_HEADER, AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
+import {
+    ACT_AS_HEADER,
+    AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX,
+    CONTRACT_APPROVAL_REQUIRED,
+} from '@learncard/types';
 import { ContactMethodType } from '@learncard/types';
 import { MAX_SHARE_LINK_REQUEST_BYTES, utf8ByteLength } from '@learncard/types';
 
@@ -23,6 +27,7 @@ import {
 } from '@accesslayer/profile/relationships/read';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getEmptyLearnCard, isServersDidWebDID } from '@helpers/learnCard.helpers';
+import { isServiceProfileExemptFromGuardianship } from '@helpers/profile.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
 import { ProfileType } from 'types/profile';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
@@ -79,6 +84,18 @@ export const t = initTRPC
             input: RegExpTransformer,
             output: { serialize: o => o, deserialize: o => o },
         },
+        errorFormatter: ({ shape, error }) => ({
+            ...shape,
+            data: {
+                ...shape.data,
+                reason:
+                    error.cause &&
+                    'code' in error.cause &&
+                    error.cause.code === CONTRACT_APPROVAL_REQUIRED
+                        ? CONTRACT_APPROVAL_REQUIRED
+                        : undefined,
+            },
+        }),
     });
 
 export const createContext = async (
@@ -289,7 +306,9 @@ export const PUBLIC_SHARE_LINK_ROUTE_PREFIX = 'publicShareLinks.';
 export const publicShareLinkCacheControlHeaders = (
     paths: readonly string[] | undefined
 ): Record<string, string> =>
-    (paths ?? []).some(path => path.startsWith(PUBLIC_SHARE_LINK_ROUTE_PREFIX))
+    (paths ?? []).some(
+        path => path.startsWith(PUBLIC_SHARE_LINK_ROUTE_PREFIX) || path === 'campaigns.unsubscribe'
+    )
         ? { 'Cache-Control': 'private, no-store' }
         : {};
 
@@ -492,6 +511,17 @@ export const didRouteWithoutInputCapture = withDid(openRouteWithoutInputCapture)
 export const didAndChallengeRouteWithoutInputCapture = withChallenge(didRouteWithoutInputCapture);
 export const profileRouteWithoutInputCapture = withProfile(didAndChallengeRouteWithoutInputCapture);
 
+/** Credential payloads need the same privacy/auth chain, not the share-link byte limit. */
+export const credentialProfileRoute = withProfile(
+    withChallenge(
+        withDid(
+            t.procedure
+                .use(t.middleware(sentryNoInputCaptureMiddleware))
+                .use(sentryTransactionNameMiddleware)
+        )
+    )
+);
+
 export const openProfileManagerRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
@@ -555,7 +585,9 @@ export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
     const { profile } = ctx.user;
     const guardianApprovalToken = ctx._guardianApprovalToken;
     // Service profiles (orgs) are managed for admin purposes, not guardianship.
-    const isChildAccount = !profile.isServiceProfile && (await isProfileManaged(profile.profileId));
+    const isChildAccount =
+        !isServiceProfileExemptFromGuardianship(profile.isServiceProfile, profile.type) &&
+        (await isProfileManaged(profile.profileId));
     let guardianIdentity: { profileId: string; did: string } | undefined;
 
     if (isChildAccount && guardianApprovalToken) {

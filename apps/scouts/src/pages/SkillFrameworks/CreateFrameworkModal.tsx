@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 
 import {
     ModalTypes,
@@ -137,7 +138,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
             setTimeout(() => {
                 newModal(
                     <FrameworkCreatedSuccessModal framework={framework} />,
-                    { sectionClassName: '!bg-transparent !shadow-none' },
+                    { sectionClassName: 'bg-transparent! shadow-none!' },
                     {
                         desktop: ModalTypes.Center,
                         mobile: ModalTypes.Center,
@@ -157,7 +158,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 selectedNetworks={selectedNetworks}
                 onSelectNetworks={networks => setSelectedNetworks(networks)}
             />,
-            { sectionClassName: '!max-w-[500px]' },
+            { sectionClassName: 'max-w-[500px]!' },
             {
                 desktop: ModalTypes.Center,
                 mobile: ModalTypes.Center,
@@ -179,8 +180,8 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 ignoreBoostSearchRestriction
             />,
             {
-                className: '!p-0',
-                sectionClassName: '!p-0',
+                className: 'p-0!',
+                sectionClassName: 'p-0!',
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
@@ -189,7 +190,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
         //         selectedAdmins={selectedAdmins}
         //         onSelectAdmins={admins => setSelectedAdmins(admins)}
         //     />,
-        //     { sectionClassName: '!max-w-[500px]' },
+        //     { sectionClassName: 'max-w-[500px]!' },
         //     {
         //         desktop: ModalTypes.Center,
         //         mobile: ModalTypes.Center,
@@ -278,7 +279,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
             // setTimeout(() => {
             //     newModal(
             //         <FrameworkCreatedSuccessModal isUpdate framework={framework} />,
-            //         { sectionClassName: '!bg-transparent !shadow-none' },
+            //         { sectionClassName: 'bg-transparent! shadow-none!' },
             //         {
             //             desktop: ModalTypes.Center,
             //             mobile: ModalTypes.Center,
@@ -319,7 +320,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
-            <div className="px-[20px] py-[20px] bg-white flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid rounded-b-[30px]">
+            <div className="px-[20px] py-[20px] bg-white flex flex-col gap-[10px] z-20 relative border-b border-grayscale-200 border-solid rounded-b-[30px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <SkillsFrameworkIcon className="w-[40px] h-[40px]" color="currentColor" />
                     <h5 className="text-[22px] font-poppins font-[600] leading-[24px]">
@@ -341,7 +342,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                     <div className="flex flex-col gap-[10px] items-center">
                         <div className="relative">
                             {isUploadingImage && (
-                                <div className="absolute top-0 left-0 z-10 bg-white bg-opacity-60 h-full w-full flex items-center justify-center">
+                                <div className="absolute top-0 left-0 z-10 bg-white/60  h-full w-full flex items-center justify-center">
                                     <IonSpinner
                                         name="crescent"
                                         color="dark"
@@ -370,14 +371,14 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
 
                     <IonInput
                         onIonInput={e => setName(e.detail.value ?? '')}
-                        className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px] !h-[40px] text-[17px] font-poppins"
+                        className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]! h-[40px]! text-[17px] font-poppins"
                         placeholder={m['skillFrameworks.fwNameLabel']()}
                         value={name}
                     />
 
                     <IonTextarea
                         onIonInput={e => setDescription(e.detail.value ?? '')}
-                        className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px]"
+                        className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]!"
                         placeholder={m['skillFrameworks.descLabel']()}
                         value={description}
                         rows={4}
@@ -436,7 +437,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
 
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+                className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
                 <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                     <button
@@ -476,4 +477,4 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
     );
 };
 
-export default CreateFrameworkModal;
+export default withCompetencyAdmin(CreateFrameworkModal);

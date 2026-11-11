@@ -20,20 +20,23 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.inbox_issue200_response_recipient import InboxIssue200ResponseRecipient
+from openapi_client.models.inbox_issue200_response_refresh import InboxIssue200ResponseRefresh
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxIssue200Response(BaseModel):
     """
     InboxIssue200Response
     """ # noqa: E501
-    issuance_id: Optional[StrictStr] = Field(alias="issuanceId")
+    refresh: Optional[InboxIssue200ResponseRefresh] = None
+    issuance_id: StrictStr = Field(alias="issuanceId")
     status: StrictStr
     recipient: InboxIssue200ResponseRecipient
     claim_url: Optional[StrictStr] = Field(default=None, alias="claimUrl")
     recipient_did: Optional[StrictStr] = Field(default=None, alias="recipientDid")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["issuanceId", "status", "recipient", "claimUrl", "recipientDid"]
+    __properties: ClassVar[List[str]] = ["refresh", "issuanceId", "status", "recipient", "claimUrl", "recipientDid"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -43,7 +46,8 @@ class InboxIssue200Response(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -55,8 +59,7 @@ class InboxIssue200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -69,9 +72,8 @@ class InboxIssue200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -83,6 +85,9 @@ class InboxIssue200Response(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of refresh
+        if self.refresh:
+            _dict['refresh'] = self.refresh.to_dict()
         # override the default output from pydantic by calling `to_dict()` of recipient
         if self.recipient:
             _dict['recipient'] = self.recipient.to_dict()
@@ -90,16 +95,6 @@ class InboxIssue200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if issuance_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuance_id is None and "issuance_id" in self.model_fields_set:
-            _dict['issuanceId'] = None
-
-        # set to None if recipient_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient_did is None and "recipient_did" in self.model_fields_set:
-            _dict['recipientDid'] = None
 
         return _dict
 
@@ -112,13 +107,16 @@ class InboxIssue200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
+            "refresh": InboxIssue200ResponseRefresh.from_dict(obj["refresh"]) if obj.get("refresh") is not None else None,
             "issuanceId": obj.get("issuanceId"),
             "status": obj.get("status"),
             "recipient": InboxIssue200ResponseRecipient.from_dict(obj["recipient"]) if obj.get("recipient") is not None else None,
             "claimUrl": obj.get("claimUrl"),
             "recipientDid": obj.get("recipientDid")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

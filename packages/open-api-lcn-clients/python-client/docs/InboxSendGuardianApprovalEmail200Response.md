@@ -1,12 +1,11 @@
 # InboxSendGuardianApprovalEmail200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**message** | **str** |  | 
-**approval_url** | **str** |  | 
+| Name             | Type    | Description | Notes |
+| ---------------- | ------- | ----------- | ----- |
+| **message**      | **str** |             |
+| **approval_url** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ inbox_send_guardian_approval_email200_response_dict = inbox_send_guardian_approv
 # create an instance of InboxSendGuardianApprovalEmail200Response from a dict
 inbox_send_guardian_approval_email200_response_from_dict = InboxSendGuardianApprovalEmail200Response.from_dict(inbox_send_guardian_approval_email200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

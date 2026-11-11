@@ -81,16 +81,14 @@ const ProposalDiff: React.FC<ProposalDiffProps> = ({ diff, pathway }) => {
 
     if (nothingToShow) {
         return (
-            <p className="text-xs text-grayscale-500 italic">
-                This proposal contains no changes.
-            </p>
+            <p className="text-xs text-grayscale-500 italic">This proposal contains no changes.</p>
         );
     }
 
     return (
-        <div className="space-y-3 text-sm">
+        <div className="space-y-v3-3 text-sm">
             {diff.newPathway && (
-                <section className="space-y-1">
+                <section className="space-y-v3-1">
                     <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                         New pathway
                     </p>
@@ -106,12 +104,12 @@ const ProposalDiff: React.FC<ProposalDiffProps> = ({ diff, pathway }) => {
             )}
 
             {diff.addNodes.length > 0 && (
-                <section className="space-y-1.5">
+                <section className="space-y-v3-1.5">
                     <p className="text-xs font-medium text-emerald-700 uppercase tracking-wide">
                         Add {diff.addNodes.length} node{diff.addNodes.length === 1 ? '' : 's'}
                     </p>
 
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-v3-1.5">
                         {diff.addNodes.map(n => (
                             <li
                                 key={n.id}
@@ -132,13 +130,13 @@ const ProposalDiff: React.FC<ProposalDiffProps> = ({ diff, pathway }) => {
             )}
 
             {diff.updateNodes.length > 0 && (
-                <section className="space-y-1.5">
+                <section className="space-y-v3-1.5">
                     <p className="text-xs font-medium text-grayscale-700 uppercase tracking-wide">
                         Update {diff.updateNodes.length} node
                         {diff.updateNodes.length === 1 ? '' : 's'}
                     </p>
 
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-v3-1.5">
                         {diff.updateNodes.map(p => {
                             const fields = [
                                 p.title !== undefined && 'title',
@@ -167,13 +165,13 @@ const ProposalDiff: React.FC<ProposalDiffProps> = ({ diff, pathway }) => {
             )}
 
             {diff.removeNodeIds.length > 0 && (
-                <section className="space-y-1.5">
+                <section className="space-y-v3-1.5">
                     <p className="text-xs font-medium text-grayscale-700 uppercase tracking-wide">
                         Remove {diff.removeNodeIds.length} node
                         {diff.removeNodeIds.length === 1 ? '' : 's'}
                     </p>
 
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-v3-1.5">
                         {diff.removeNodeIds.map(id => (
                             <li
                                 key={id}
@@ -187,12 +185,12 @@ const ProposalDiff: React.FC<ProposalDiffProps> = ({ diff, pathway }) => {
             )}
 
             {(diff.addEdges.length > 0 || diff.removeEdgeIds.length > 0) && (
-                <section className="space-y-1.5">
+                <section className="space-y-v3-1.5">
                     <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                         Connections
                     </p>
 
-                    <ul className="space-y-1">
+                    <ul className="space-y-v3-1">
                         {diff.addEdges.map(e => (
                             <li key={e.id} className="text-xs text-grayscale-600">
                                 <span className="text-emerald-700 font-medium mr-1">+</span>
@@ -215,10 +213,7 @@ const ProposalDiff: React.FC<ProposalDiffProps> = ({ diff, pathway }) => {
                                 : id;
 
                             return (
-                                <li
-                                    key={id}
-                                    className="text-xs text-grayscale-500 line-through"
-                                >
+                                <li key={id} className="text-xs text-grayscale-500 line-through">
                                     <span className="mr-1">−</span>
                                     {label}
                                 </li>

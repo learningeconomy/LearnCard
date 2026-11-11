@@ -6,7 +6,7 @@ import * as m from '../../../paraglide/messages.js';
 
 export const EndorsementRequestSuccess: React.FC<{ closeModal: () => void }> = ({ closeModal }) => {
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-white bg-opacity-10 px-4">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-white/10  px-4">
             <div className="w-full flex flex-col items-center justify-center  bg-white rounded-[20px] px-4 py-8 gap-2">
                 <EndorsmentThumbWithCircle
                     className="w-[50px] h-[50px] text-grayscale-900"

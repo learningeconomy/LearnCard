@@ -32,7 +32,7 @@ export const AppEmbedOfflineState: React.FC<AppEmbedOfflineStateProps> = ({
                 <IonIcon icon={cloudOfflineOutline} className="text-amber-500 text-3xl" />
             </div>
 
-            <div className="space-y-1 mb-6 max-w-xs">
+            <div className="space-y-v3-1 mb-6 max-w-xs">
                 <h2 className="text-xl font-semibold text-grayscale-900">You're offline</h2>
                 <p className="text-sm text-grayscale-600 leading-relaxed">
                     {appName || 'This app'} needs an internet connection. Reconnect to open it.

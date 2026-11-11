@@ -1,12 +1,11 @@
 # InboxClaim200ResponseInboxCredentialSigningAuthority
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**endpoint** | **str** |  | [optional] 
-**name** | **str** |  | [optional] 
+| Name         | Type    | Description | Notes      |
+| ------------ | ------- | ----------- | ---------- |
+| **endpoint** | **str** |             | [optional] |
+| **name**     | **str** |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ inbox_claim200_response_inbox_credential_signing_authority_dict = inbox_claim200
 # create an instance of InboxClaim200ResponseInboxCredentialSigningAuthority from a dict
 inbox_claim200_response_inbox_credential_signing_authority_from_dict = InboxClaim200ResponseInboxCredentialSigningAuthority.from_dict(inbox_claim200_response_inbox_credential_signing_authority_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -79,10 +79,10 @@ const LaunchPad: React.FC = () => {
                         updateVersion={res?.bundle?.version}
                     />,
                     {
-                        sectionClassName: '!max-w-[400px]',
+                        sectionClassName: 'max-w-[400px]!',
                         cancelButtonTextOverride: m['launchPad.maybeLater'](),
-                        topSectionClassName: '!py-[20px]',
-                        androidClassName: isAndroid ? '!mb-[40px]' : '',
+                        topSectionClassName: 'py-[20px]!',
+                        androidClassName: isAndroid ? 'mb-[40px]!' : '',
                     },
                     {
                         desktop: ModalTypes.Cancel,
@@ -122,7 +122,7 @@ const LaunchPad: React.FC = () => {
                     showHardcodedBoostPacks
                     category={BoostCategoryOptionsEnum.socialBadge}
                 />,
-                { className: '!p-0', sectionClassName: '!p-0' }
+                { className: 'p-0!', sectionClassName: 'p-0!' }
             );
         },
         [checkIfUserInNetwork, newModal, closeModal]

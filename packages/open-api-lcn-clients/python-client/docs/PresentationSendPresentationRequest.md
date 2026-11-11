@@ -1,11 +1,11 @@
 # PresentationSendPresentationRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**presentation** | [**PresentationSendPresentationRequestPresentation**](PresentationSendPresentationRequestPresentation.md) |  | 
+| Name             | Type                                                                                                      | Description | Notes      |
+| ---------------- | --------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **presentation** | [**PresentationSendPresentationRequestPresentation**](PresentationSendPresentationRequestPresentation.md) |             |
+| **metadata**     | **Dict[str, Optional[object]]**                                                                           |             | [optional] |
 
 ## Example
 
@@ -24,6 +24,5 @@ presentation_send_presentation_request_dict = presentation_send_presentation_req
 # create an instance of PresentationSendPresentationRequest from a dict
 presentation_send_presentation_request_from_dict = PresentationSendPresentationRequest.from_dict(presentation_send_presentation_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

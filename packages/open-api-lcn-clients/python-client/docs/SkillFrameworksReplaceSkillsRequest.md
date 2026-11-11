@@ -1,11 +1,10 @@
 # SkillFrameworksReplaceSkillsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**skills** | [**List[Schema0]**](Schema0.md) |  | 
+| Name       | Type                            | Description | Notes |
+| ---------- | ------------------------------- | ----------- | ----- |
+| **skills** | [**List[Schema0]**](Schema0.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ skill_frameworks_replace_skills_request_dict = skill_frameworks_replace_skills_r
 # create an instance of SkillFrameworksReplaceSkillsRequest from a dict
 skill_frameworks_replace_skills_request_from_dict = SkillFrameworksReplaceSkillsRequest.from_dict(skill_frameworks_replace_skills_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

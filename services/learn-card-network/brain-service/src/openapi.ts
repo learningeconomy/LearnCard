@@ -1,5 +1,6 @@
 import { generateOpenApiDocument } from 'trpc-to-openapi';
-import express, { type Express } from 'express';
+import express from 'express';
+import type { Express } from 'express';
 
 import { appRouter } from './app';
 
@@ -43,22 +44,78 @@ if (publishRequestBody && !('$ref' in publishRequestBody)) {
     const publishSchema = publishRequestBody.content?.['application/json']?.schema;
 
     if (publishSchema && !('$ref' in publishSchema)) {
+        const properties = publishSchema.properties;
+        const signedCredential = properties?.signedCredential;
+        const credential = properties?.credential;
+        const signingAuthority = properties?.signingAuthority;
+
+        if (!properties?.refreshId || !signedCredential || !credential || !signingAuthority) {
+            throw new Error('Managed refresh publication schema is missing required properties');
+        }
+
+        const commonProperties = {
+            refreshId: properties.refreshId,
+            notifyHolder: properties.notifyHolder!,
+            updateSummary: properties.updateSummary!,
+            updateReason: properties.updateReason!,
+            idempotencyKey: properties.idempotencyKey!,
+        };
+        // Generator 7.25.0 loses the OpenAPI 3.1 closed-object flag. Keep the
+        // template workaround scoped to these mutually exclusive request branches.
+        const closedPublicationBranch = {
+            additionalProperties: false,
+            'x-python-forbid-extra': true,
+        } as const;
+
+        // Each branch must own its complete shape. Generators do not inherit the
+        // parent's properties into oneOf branches; enum also works in the pinned generator.
         publishSchema.oneOf = [
             {
-                properties: { mode: { const: 'issuer-signed' } },
-                required: ['signedCredential'],
-                not: {
-                    anyOf: [{ required: ['credential'] }, { required: ['signingAuthority'] }],
+                type: 'object',
+                properties: {
+                    ...commonProperties,
+                    mode: { type: 'string', enum: ['issuer-signed'] },
+                    signedCredential,
                 },
+                required: ['refreshId', 'mode', 'signedCredential'],
+                ...closedPublicationBranch,
             },
             {
-                properties: { mode: { const: 'signing-authority' } },
-                required: ['credential', 'signingAuthority'],
-                not: { required: ['signedCredential'] },
+                type: 'object',
+                properties: {
+                    ...commonProperties,
+                    mode: { type: 'string', enum: ['signing-authority'] },
+                    credential,
+                    signingAuthority,
+                },
+                required: ['refreshId', 'mode', 'credential', 'signingAuthority'],
+                ...closedPublicationBranch,
             },
         ];
+        delete publishSchema.properties;
+        delete publishSchema.required;
     }
 }
+
+// Preserve the existing Python allocation identity contract without changing
+// None/default serialization for unrelated optional request fields.
+const allocationBody = openApiDocument.paths?.['/credential-refresh/allocate']?.post?.requestBody;
+const allocationSchema =
+    allocationBody && !('$ref' in allocationBody)
+        ? allocationBody.content?.['application/json']?.schema
+        : undefined;
+const allocationHolder =
+    allocationSchema && !('$ref' in allocationSchema)
+        ? allocationSchema.properties?.holder
+        : undefined;
+const allocationProfile =
+    allocationHolder && !('$ref' in allocationHolder)
+        ? allocationHolder.properties?.profileId
+        : undefined;
+if (!allocationProfile || '$ref' in allocationProfile) {
+    throw new Error('Managed refresh allocation schema is missing its holder profile input');
+}
+Object.assign(allocationProfile, { 'x-python-preserve-explicit-null': true });
 
 const SCALAR_HTML = `<!DOCTYPE html>
 <html lang="en">

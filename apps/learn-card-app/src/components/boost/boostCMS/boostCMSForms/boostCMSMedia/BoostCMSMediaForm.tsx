@@ -78,7 +78,7 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
 
     const noAttachments = state?.mediaAttachments?.length === 0;
     const hasAttachments = state?.mediaAttachments?.length > 0;
-    const removePadding = noAttachments ? '!p-0' : '';
+    const removePadding = noAttachments ? 'p-0!' : '';
 
     const handleDeleteonClick = (attachment: BoostCMSMediaAttachment) => {
         setState(state => ({
@@ -88,17 +88,17 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
     };
 
     const isMediaPreviewType = appearance?.previewType === BoostCMSAppearancePreviewTypeEnum.Media;
-    let isToggleDisabled =
+    const isToggleDisabled =
         isMediaDisplayType || noAttachments || (isMediaPreviewType && !hasAttachments);
-    let showAddMediaText =
+    const showAddMediaText =
         (isMediaDisplayType && noAttachments) || (!isMediaDisplayType && !hasAttachments);
     let isChecked = appearance?.previewType !== BoostCMSAppearancePreviewTypeEnum.Default;
     if (isMediaDisplayType) isChecked = true;
 
-    let toggleRequirementsText = isMediaDisplayType
+    const toggleRequirementsText = isMediaDisplayType
         ? m['boost.cms.media.requiredForMediaDisplay']()
         : m['boost.cms.media.addMediaToEnable']();
-    let addMediaText = isMediaDisplayType
+    const addMediaText = isMediaDisplayType
         ? m['boost.cms.media.addMediaToContinue']()
         : m['boost.cms.media.mediaDisplayToggleDescription']();
 
@@ -191,7 +191,7 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
                                     }
                                 />,
                                 {
-                                    sectionClassName: '!max-w-[500px]',
+                                    sectionClassName: 'max-w-[500px]!',
                                     hideButton: true,
                                     usePortal: true,
                                 }

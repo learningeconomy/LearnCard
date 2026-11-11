@@ -157,17 +157,6 @@
     transition: background-color 0.3s ease-in;
 }
 
-.react-code-input-error {
-    & > input {
-        border: 1px solid red;
-
-        &:focus {
-            border: 1px solid red;
-            background-color: white;
-        }
-    }
-}
-
 .PhoneInput.login-phone-input {
     width: 100%;
     margin-top: 0;
@@ -228,20 +217,6 @@
             background-color: none;
             box-shadow: none;
         }
-    }
-}
-
-.PhoneInput.login-phone-input-error {
-    .PhoneInputInput {
-        border: solid 1px red;
-
-        &::placeholder {
-            color: red;
-        }
-    }
-
-    .PhoneInputCountry {
-        border: solid 1px red;
     }
 }
 

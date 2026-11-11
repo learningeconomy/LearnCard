@@ -18,6 +18,7 @@ import {
     getAuthConfig,
     getSSSConfig,
     getConfigCapabilities,
+    resumeAuthRedirect,
 } from 'learn-card-base';
 
 import { useFirebase } from '../../hooks/useFirebase';
@@ -109,7 +110,7 @@ const LoginPage: React.FC = () => {
                 } catch (e) {
                     log.error(e);
                 }
-                history.push(redirectTo);
+                resumeAuthRedirect(history, redirectTo);
             } else if (lcnRedirectTo) {
                 handleLCNetworkRedirect(lcnRedirectTo);
             } else {
@@ -171,7 +172,7 @@ const LoginPage: React.FC = () => {
             )}
             <IonContent fullscreen>
                 <IonGrid className="p-0 m-0 w-full flex-col items-center justify-center">
-                    <IonRow className="p-0 m-0 w-full flex items-center justify-center bg-sp-purple-base relative login-page-header !overflow-hidden">
+                    <IonRow className="p-0 m-0 w-full flex items-center justify-center bg-sp-purple-base relative login-page-header overflow-hidden!">
                         <LanguagePickerCompact className="absolute top-4 right-4 z-10" />
                         <IonCol size="12" className="flex flex-col items-center justify-center">
                             <img src={ScoutPassLogo} alt="" className="w-[55px]" />

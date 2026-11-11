@@ -1,4 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
+import { InAppMessagesAnalyticsHost } from './analytics/InAppMessagesAnalyticsHost';
+import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
@@ -9,21 +11,17 @@ import {
     observeConnectionQuality,
     CONNECTIVITY_PROBE_PATH,
 } from 'learn-card-base';
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';
+import NativeDigitalCredentialsListener from './native-digital-credentials/NativeDigitalCredentialsListener';
 import {
     sqliteInit,
     PushNotificationListener,
     QRCodeScannerOverlay,
     ModalsProvider,
     useSQLiteInitWeb,
-    sqliteStore,
-    ensureReactQueryTableExists,
-    getLogger,
-    InAppMessageHost,
     ConnectionPromptCoordinator,
 } from 'learn-card-base';
 import * as m from './paraglide/messages.js';
@@ -43,6 +41,7 @@ import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGloba
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
 import ModalAccessibilityManager from 'learn-card-base/components/modals/ModalAccessibilityManager';
+import { KeyboardFocusManager } from 'learn-card-base/components/keyboard/KeyboardFocusManager';
 import { getConnectionPromptCopy } from './helpers/connectionPromptCopy';
 
 // Install `window.__pathwaysDev` at the app-root level rather than
@@ -61,13 +60,18 @@ installPathwaysDevGlobals();
 import { AnalyticsContextProvider } from '@analytics';
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
-import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import { FeedbackProvider } from './feedback/reporting';
-import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
+import type { LearnCardAppEnvironment } from './config/buildEnvironment';
+import { persister, QUERY_CACHE_BUSTER } from './helpers/queryPersistence';
 
-const log = getLogger('cache');
+declare const __APP_BUILD_ENV__: LearnCardAppEnvironment;
+
+const DevDebugPanel =
+    __APP_BUILD_ENV__.DEV || __APP_BUILD_ENV__.VITE_ENABLE_AUTH_DEBUG_WIDGET
+        ? React.lazy(() => import('./components/debug/DevDebugPanel'))
+        : null;
 
 const history = createBrowserHistory();
 
@@ -151,110 +155,6 @@ const firstPartyApiOrigins = (): string[] => {
     return [...origins];
 };
 
-const persister = createAsyncStoragePersister({
-    storage: {
-        getItem: async key => {
-            try {
-                const db = sqliteStore.get.db();
-
-                if (!db) return localforage.getItem(key);
-
-                await ensureReactQueryTableExists(db);
-
-                // Check if DB is already open before opening
-                const isOpen = await db.isDBOpen();
-                if (!isOpen.result) {
-                    await db.open();
-                }
-
-                const result = await db.query(`SELECT cache FROM reactQuery WHERE id="${key}";`);
-
-                // Only close if we opened it
-                if (!isOpen.result) {
-                    await db.close();
-                }
-
-                if (result.values?.length === 0) return;
-
-                return result.values![0].cache;
-            } catch (error) {
-                log.error('Error getting from cache', error, { key });
-                // Fallback to localforage on error
-                return localforage.getItem(key);
-            }
-        },
-        setItem: async (key, value) => {
-            try {
-                const db = sqliteStore.get.db();
-
-                if (!db) return localforage.setItem(key, value);
-
-                await ensureReactQueryTableExists(db);
-
-                // Check if DB is already open before opening
-                const isOpen = await db.isDBOpen();
-                if (!isOpen.result) {
-                    await db.open();
-                }
-
-                await db.executeSet([
-                    {
-                        statement:
-                            'INSERT INTO reactQuery (id, cache) VALUES (?, ?) ON CONFLICT (id) DO UPDATE SET cache=excluded.cache;',
-                        values: [key, value],
-                    },
-                ]);
-
-                // Only close if we opened it
-                if (!isOpen.result) {
-                    await db.close();
-                }
-            } catch (error) {
-                log.error('Error setting in cache', error, { key });
-                // Fallback to localforage on error
-                try {
-                    return localforage.setItem(key, value);
-                } catch (fallbackError) {
-                    log.error('Fallback cache error', fallbackError);
-                }
-            }
-        },
-        removeItem: async key => {
-            try {
-                const db = sqliteStore.get.db();
-
-                if (!db) {
-                    await localforage.removeItem(key);
-                    return;
-                }
-
-                await ensureReactQueryTableExists(db);
-
-                // Check if DB is already open before opening
-                const isOpen = await db.isDBOpen();
-                if (!isOpen.result) {
-                    await db.open();
-                }
-
-                await db.execute(`DELETE FROM reactQuery WHERE id="${key}";`);
-
-                // Only close if we opened it
-                if (!isOpen.result) {
-                    await db.close();
-                }
-            } catch (error) {
-                log.error('Error removing from cache', error, { key });
-                // Fallback to localforage on error
-                try {
-                    await localforage.removeItem(key);
-                } catch (fallbackError) {
-                    log.error('Fallback cache removal error', fallbackError);
-                }
-            }
-        },
-    },
-});
-
 const ThemeInitializer: React.FC = () => {
     useInitializeTheme();
 
@@ -306,7 +206,7 @@ const FullApp: React.FC = () => {
     return (
         <PersistQueryClientProvider
             client={client}
-            persistOptions={{ persister, maxAge: CACHE_TTL }}
+            persistOptions={{ persister, maxAge: CACHE_TTL, buster: QUERY_CACHE_BUSTER }}
         >
             <AnalyticsContextProvider>
                 <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
@@ -320,6 +220,7 @@ const FullApp: React.FC = () => {
                                     <IonApp>
                                         <div id="modal-mid-root"></div>
                                         <ModalAccessibilityManager />
+                                        <KeyboardFocusManager />
                                         <Toast />
                                         <SdkActivityIndicator />
                                         <NetworkListener />
@@ -327,6 +228,7 @@ const FullApp: React.FC = () => {
                                         <PushNotificationListener />
                                         <PresentVcModalListener />
                                         <CredentialSyncListener />
+                                        <NativeDigitalCredentialsListener />
                                         {/* Foreground refresh of stale refreshable
                                             credentials; gated by the LaunchDarkly
                                             credentialRefreshForegroundEnabled flag. */}
@@ -344,7 +246,9 @@ const FullApp: React.FC = () => {
                                         <FeedbackProvider>
                                             <AppRouter />
                                         </FeedbackProvider>
-                                        <InAppMessageHost />
+                                        <SharedI18nProvider>
+                                            <InAppMessagesAnalyticsHost />
+                                        </SharedI18nProvider>
                                         <QRCodeScannerListener />
 
                                         {showScannerOverlay && (
@@ -370,7 +274,11 @@ const FullApp: React.FC = () => {
                                             />
                                         )}
 
-                                        <DevDebugPanel />
+                                        {DevDebugPanel && (
+                                            <Suspense fallback={null}>
+                                                <DevDebugPanel />
+                                            </Suspense>
+                                        )}
                                     </IonApp>
                                 </ModalsProvider>
                             </ExternalAuthServiceProvider>

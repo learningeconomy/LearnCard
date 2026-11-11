@@ -8,7 +8,7 @@ import {
     getSigningAuthorityForDid,
 } from '@accesslayer/signing-authority/read';
 
-import { t, didAndChallengeRoute } from '@routes';
+import { t, didAndChallengeRoute, authorizedDidRoute } from '@routes';
 
 import { SigningAuthorityResponseValidator } from '@models';
 import type { MongoSigningAuthorityType } from '@models';
@@ -59,6 +59,44 @@ export const signingAuthorityRouter = t.router({
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Signing Authority was created without a DID.',
+                });
+            }
+
+            return getSigningAuthorityWithEndpoint(
+                { ...signingAuthority, did: signingAuthority.did },
+                ctx.domain
+            );
+        }),
+    ensureManagedSigningAuthority: authorizedDidRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/signing-authority/managed',
+                tags: ['Signing Authority'],
+                summary: 'Get or create a managed Signing Authority',
+                description:
+                    'Trusted-service route that returns the named signing authority for ownerDid, creating it if needed',
+            },
+        })
+        .input(z.object({ name: z.string().min(1), ownerDid: z.string().min(1) }))
+        .output(SigningAuthorityResponseValidator)
+        .mutation(async ({ input, ctx }) => {
+            const { name, ownerDid } = input;
+
+            // A concurrent caller can win the unique (ownerDid, name) insert, so re-read on failure.
+            const signingAuthority =
+                (await getSigningAuthorityForDid(ownerDid, name)) ??
+                (await createSigningAuthorityForDID(ownerDid, name).then(createdId =>
+                    createdId
+                        ? getSigningAuthorityById(createdId)
+                        : getSigningAuthorityForDid(ownerDid, name)
+                ));
+
+            if (!signingAuthority?.did) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Managed Signing Authority could not be created.',
                 });
             }
 

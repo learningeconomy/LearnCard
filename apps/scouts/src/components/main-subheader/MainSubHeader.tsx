@@ -123,7 +123,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                 className="flex items-center justify-start gap-[5px] pl-0"
             >
                 {IconComponentOverride && (
-                    <IconComponentOverride className={`h-[60px] w-[60px] shrink-1 ${textColor}`} />
+                    <IconComponentOverride className={`h-[60px] w-[60px] shrink ${textColor}`} />
                 )}
                 <h2
                     className={`select-none whitespace-nowrap flex flex-col gap-[1px] ${textColor}`}

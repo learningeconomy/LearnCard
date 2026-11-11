@@ -33,10 +33,7 @@ const RequestCannotSatisfy: React.FC<RequestCannotSatisfyProps> = ({
     dcqlSelection,
     onDone,
 }) => {
-    const verifierDisplay = useMemo(
-        () => extractVerifierDisplay(request),
-        [request]
-    );
+    const verifierDisplay = useMemo(() => extractVerifierDisplay(request), [request]);
 
     const unsatisfiedRows = useMemo(
         () => buildUnsatisfiedRows(request, selection, dcqlSelection),
@@ -60,21 +57,17 @@ const RequestCannotSatisfy: React.FC<RequestCannotSatisfyProps> = ({
             }}
         >
             <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden">
-                <div className="px-6 py-7 text-center bg-gradient-to-r from-amber-400 to-amber-500">
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <div className="px-6 py-7 text-center bg-linear-to-r/srgb from-amber-400 to-amber-500">
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-3">
                         <ShieldAlert className="w-9 h-9 text-white" />
                     </div>
 
-                    <h1 className="text-xl font-semibold text-white mb-1">
-                        Missing credentials
-                    </h1>
+                    <h1 className="text-xl font-semibold text-white mb-1">Missing credentials</h1>
 
-                    <p className="text-sm text-white/85 leading-relaxed px-2">
-                        {summary}
-                    </p>
+                    <p className="text-sm text-white/85 leading-relaxed px-2">{summary}</p>
                 </div>
 
-                <div className="p-6 space-y-5">
+                <div className="p-6 space-y-v3-5">
                     <VerifierHeader
                         clientId={request.client_id}
                         clientIdScheme={request.client_id_scheme}
@@ -87,8 +80,8 @@ const RequestCannotSatisfy: React.FC<RequestCannotSatisfyProps> = ({
                                 What was asked for
                             </p>
 
-                            <ul className="space-y-2">
-                                {unsatisfiedRows.map((row) => (
+                            <ul className="space-y-v3-2">
+                                {unsatisfiedRows.map(row => (
                                     <li
                                         key={row.id}
                                         className="flex items-start gap-3 p-3 rounded-xl border border-grayscale-200 bg-grayscale-10"
@@ -144,17 +137,15 @@ const buildUnsatisfiedRows = (
 ): UnsatisfiedRow[] => {
     if (selection) {
         return selection.descriptors
-            .filter((d) => d.candidates.length === 0)
-            .map((d) => {
+            .filter(d => d.candidates.length === 0)
+            .map(d => {
                 const inputDescriptor = request.presentation_definition?.input_descriptors?.find(
-                    (id) => id.id === d.descriptorId
+                    id => id.id === d.descriptorId
                 );
 
                 return {
                     id: d.descriptorId,
-                    title:
-                        inputDescriptor?.name?.trim()
-                        || humanizeIdentifier(d.descriptorId),
+                    title: inputDescriptor?.name?.trim() || humanizeIdentifier(d.descriptorId),
                     purpose: inputDescriptor?.purpose,
                     // Ignore `d.reason` — it's engineer-speak
                     // ("No credential satisfies ... (required format:
@@ -221,7 +212,7 @@ const humanizeIdentifier = (identifier: string): string => {
     // Split on explicit separators first, then on camelCase boundaries.
     const parts = identifier
         .split(/[_\-\s]+/)
-        .flatMap((chunk) =>
+        .flatMap(chunk =>
             chunk
                 .replace(/([a-z])([A-Z])/g, '$1 $2')
                 .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
@@ -231,9 +222,7 @@ const humanizeIdentifier = (identifier: string): string => {
 
     if (parts.length === 0) return identifier;
 
-    return parts
-        .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
-        .join(' ');
+    return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
 };
 
 /**
@@ -260,10 +249,7 @@ const extractVerifierDisplay = (request: AuthorizationRequest) => {
     };
 };
 
-const stringField = (
-    obj: Record<string, unknown>,
-    key: string
-): string | undefined => {
+const stringField = (obj: Record<string, unknown>, key: string): string | undefined => {
     const v = obj[key];
     return typeof v === 'string' && v.length > 0 ? v : undefined;
 };

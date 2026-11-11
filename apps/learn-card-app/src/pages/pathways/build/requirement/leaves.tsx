@@ -59,7 +59,7 @@ const Field: React.FC<{
     children: React.ReactNode;
     hint?: React.ReactNode;
 }> = ({ id, label, children, hint }) => (
-    <div className="space-y-1.5">
+    <div className="space-y-v3-1.5">
         <label className={LABEL} htmlFor={id}>
             {label}
         </label>
@@ -89,7 +89,7 @@ export const CredentialTypeLeaf: React.FC<{
     };
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             <Field
                 id="req-credential-type"
                 label="Credential type"
@@ -176,7 +176,7 @@ export const CtdlCtidLeaf: React.FC<{
         value.ctid.trim().length > 0 && !CTID_REGEX.test(value.ctid.trim());
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <Field
                 id="req-ctdl-ctid"
                 label="CTID"
@@ -224,7 +224,7 @@ export const IssuerCredentialIdLeaf: React.FC<{
     value: Extract<NodeRequirement, { kind: 'issuer-credential-id' }>;
     onChange: (next: NodeRequirement) => void;
 }> = ({ value, onChange }) => (
-    <div className="space-y-3">
+    <div className="space-y-v3-3">
         <Field
             id="req-issuer-did"
             label="Issuer DID"
@@ -327,7 +327,7 @@ export const ObAlignmentLeaf: React.FC<{
     const showFormatWarning = !isProbablyUrl(value.targetUrl);
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <Field
                 id="req-ob-alignment"
                 label="Target URL"
@@ -387,7 +387,7 @@ export const SkillTagLeaf: React.FC<{
     };
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             <Field
                 id="req-skill-tag"
                 label="Skill tag"
@@ -464,7 +464,7 @@ export const ScoreThresholdLeaf: React.FC<{
     };
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             <Field
                 id="req-score-type"
                 label="Credential type"

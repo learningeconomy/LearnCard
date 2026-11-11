@@ -1,5 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { useIsLoggedIn, useModal, useWallet, ModalTypes, redirectStore } from 'learn-card-base';
+import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
@@ -27,7 +28,7 @@ import {
 import * as m from '../../paraglide/messages.js';
 import {
     createVerificationBudget,
-    parseSavedShareLinkMetadata,
+    findSavedSharePresentation,
     readShareAddress,
     SAVED_SHARE_METADATA_TYPE,
     shareWallet,
@@ -39,6 +40,12 @@ import { ProofBadge, ShareLinkPreview } from './ShareLinkPreview';
 import { downloadSharePdf } from './sharePdf';
 import { downloadSharePresentation } from './shareDownload';
 import { enterSharePrivacy } from './sharePrivacy';
+import { ProtectedResumePreview } from './ProtectedResumePreview';
+import { readProtectedResumeChunk } from './protectedResumeReader';
+import {
+    hasProtectedResumePdf,
+    downloadProtectedResumePdf,
+} from '../../helpers/resume-publishing/protectedPdf';
 
 type Ready = {
     payload: SharePayload;
@@ -55,6 +62,7 @@ type ViewState =
     | 'not_found'
     | 'error'
     | 'corrupt'
+    | 'updated'
     | 'ready';
 
 const secondaryButton =
@@ -79,6 +87,7 @@ const isRateLimited = (error: unknown): boolean =>
     (error as { data?: { code?: string } }).data?.code === 'TOO_MANY_REQUESTS';
 
 const ShareLinkViewerContent = ({ id }: { id: string }) => {
+    enterSharePrivacy();
     const location = useLocation();
     const history = useHistory();
     const { hash } = location;
@@ -97,13 +106,141 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
     const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied'>('idle');
     const [downloading, setDownloading] = useState(false);
     const [pdfDownloading, setPdfDownloading] = useState(false);
-    const [actionError, setActionError] = useState<'copy' | 'download'>();
+    const [actionError, setActionError] = useState<'copy' | 'download' | 'try_later'>();
     const [passcode, setPasscode] = useState('');
     const [submittedPasscode, setSubmittedPasscode] = useState<string>();
     const [passcodeError, setPasscodeError] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const saveButtonRef = useRef<HTMLButtonElement>(null);
+    const destinationButtonRef = useRef<HTMLButtonElement>(null);
+    const restoreSaveFocus = useRef(false);
     const visible = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (saveState !== 'saved' && saveState !== 'error') return;
+        const ownedFocus = restoreSaveFocus.current;
+        restoreSaveFocus.current = false;
+        // Do not take focus back if the user moved to another control while saving.
+        if (ownedFocus && document.activeElement === document.body) {
+            (saveState === 'saved' ? destinationButtonRef.current : saveButtonRef.current)?.focus({
+                preventScroll: true,
+            });
+        }
+    }, [saveState]);
     const acknowledged = useRef(new Set<string>());
+    const currentReady = useRef(ready);
+    currentReady.current = ready;
+    const protectedResume = ready?.payload.selection
+        .map(
+            ({ credentialIndex }) =>
+                ready.payload.presentation.verifiableCredential[credentialIndex]
+        )
+        .find(credential => hasProtectedResumePdf(credential));
+
+    const invalidate = useCallback((next: ViewState) => {
+        currentReady.current = undefined;
+        setReady(undefined);
+        setProofs([]);
+        setHolder('checking');
+        setState(next);
+    }, []);
+
+    // Re-authorize cached plaintext before a deliberate download. Metadata and
+    // the content snapshot must both still describe the version we decrypted.
+    const ensureCurrent = useCallback(
+        async (checkContent = true): Promise<boolean> => {
+            const snapshot = currentReady.current;
+            if (!snapshot) return false;
+            const expired = () =>
+                snapshot.metadata.expiresAt !== null &&
+                Date.parse(snapshot.metadata.expiresAt) <= Date.now();
+            if (expired()) {
+                invalidate('expired');
+                return false;
+            }
+            try {
+                const wallet = shareWallet(await getBespokeLearnCard('a'));
+                const metadata = await wallet.invoke.resolveShareLink(id, submittedPasscode);
+                if (currentReady.current !== snapshot) return false;
+                if (metadata.state !== 'active') {
+                    invalidate(metadata.state);
+                    return false;
+                }
+                if (metadata.contentVersion !== snapshot.metadata.contentVersion) {
+                    invalidate('updated');
+                    return false;
+                }
+                if (checkContent) {
+                    const content = await wallet.invoke.getShareLinkContent(id, submittedPasscode);
+                    if (currentReady.current !== snapshot) return false;
+                    if (
+                        content.id !== id ||
+                        content.contentVersion !== snapshot.metadata.contentVersion
+                    ) {
+                        invalidate('updated');
+                        return false;
+                    }
+                }
+                if (
+                    expired() ||
+                    (metadata.expiresAt !== null && Date.parse(metadata.expiresAt) <= Date.now())
+                ) {
+                    invalidate('expired');
+                    return false;
+                }
+                return currentReady.current === snapshot;
+            } catch (error) {
+                if (currentReady.current === snapshot)
+                    invalidate(
+                        isRateLimited(error)
+                            ? 'try_later'
+                            : isPasscodeRejection(error)
+                              ? 'passcode_required'
+                              : 'error'
+                    );
+                return false;
+            }
+        },
+        [id, submittedPasscode, invalidate]
+    );
+
+    const fetchProtectedChunk = useCallback(
+        async (request: Parameters<typeof readProtectedResumeChunk>[0]) => {
+            const snapshot = currentReady.current;
+            if (
+                !snapshot ||
+                request.id !== id ||
+                request.contentVersion !== snapshot.metadata.contentVersion
+            )
+                throw new Error('Resume unavailable');
+            const chunk = await readProtectedResumeChunk(request, submittedPasscode);
+            if (currentReady.current !== snapshot) throw new Error('Resume unavailable');
+            return chunk;
+        },
+        [id, submittedPasscode]
+    );
+
+    useEffect(() => {
+        if (!ready || state !== 'ready') return;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const scheduleExpiry = () => {
+            if (ready.metadata.expiresAt === null) return;
+            const remaining = Date.parse(ready.metadata.expiresAt) - Date.now();
+            if (remaining <= 0) {
+                invalidate('expired');
+                return;
+            }
+            timer = setTimeout(scheduleExpiry, Math.min(remaining, 2147483647));
+        };
+        scheduleExpiry();
+        const checkVisible = () => {
+            if (document.visibilityState === 'visible') void ensureCurrent(false);
+        };
+        document.addEventListener('visibilitychange', checkVisible);
+        return () => {
+            if (timer) clearTimeout(timer);
+            document.removeEventListener('visibilitychange', checkVisible);
+        };
+    }, [ready, state, ensureCurrent, invalidate]);
 
     useEffect(() => {
         enterSharePrivacy();
@@ -111,11 +248,14 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         // One budget bounds the holder proof plus every credential/endorsement
         // check; cancelling on unmount/retry stops any further checks.
         let budget: ReturnType<typeof createVerificationBudget> | undefined;
+        currentReady.current = undefined;
         setReady(undefined);
         setState('loading');
         setProofs([]);
         setHolder('checking');
         setLink('');
+        setSaveState('idle');
+        restoreSaveFocus.current = false;
         setCopyState('idle');
         setActionError(undefined);
         if (!hash && id) {
@@ -250,6 +390,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         void load();
         return () => {
             cancelled = true;
+            currentReady.current = undefined;
             budget?.cancel();
         };
     }, [id, hash, attempt, submittedPasscode, history, location.pathname]);
@@ -321,14 +462,15 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         }
     };
 
-    const download = () => {
+    const download = async () => {
         if (!ready || downloading) return;
         setDownloading(true);
         setActionError(undefined);
         try {
+            if (!(await ensureCurrent())) return;
             downloadSharePresentation(ready.payload, ready.metadata.title);
-        } catch {
-            setActionError('download');
+        } catch (error) {
+            setActionError(isRateLimited(error) ? 'try_later' : 'download');
         } finally {
             setDownloading(false);
         }
@@ -339,9 +481,18 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         setPdfDownloading(true);
         setActionError(undefined);
         try {
-            await downloadSharePdf(visible.current, ready.metadata.title);
-        } catch {
-            setActionError('download');
+            if (protectedResume) {
+                await downloadProtectedResumePdf(
+                    protectedResume,
+                    ready.metadata.title,
+                    () => ensureCurrent(false),
+                    fetchProtectedChunk
+                );
+            } else {
+                await downloadSharePdf(visible.current, ready.metadata.title);
+            }
+        } catch (error) {
+            setActionError(isRateLimited(error) ? 'try_later' : 'download');
         } finally {
             setPdfDownloading(false);
         }
@@ -349,30 +500,36 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
 
     const saveToLearnCard = useCallback(async () => {
         if (!ready || !isLoggedIn || saveState === 'saving' || saveState === 'saved') return;
+        restoreSaveFocus.current = document.activeElement === saveButtonRef.current;
         setSaveState('saving');
         try {
             const wallet = shareWallet(await initWallet());
-            const alreadySaved = (await wallet.invoke.getReceivedPresentations()).some(
-                item =>
-                    item.from === item.to &&
-                    parseSavedShareLinkMetadata(item.metadata)?.shareId === ready.payload.shareId
+            const profile = await wallet.invoke.getProfile();
+            if (!profile?.profileId) throw new Error('profile');
+            const alreadySaved = await findSavedSharePresentation(
+                wallet,
+                await wallet.invoke.getReceivedPresentations(),
+                ready.payload,
+                profile.profileId
             );
+            if (currentReady.current !== ready) return;
             if (alreadySaved) {
                 setSaveState('saved');
                 return;
             }
-            const pendingSave = (await wallet.invoke.getIncomingPresentations()).find(
-                item =>
-                    item.from === item.to &&
-                    parseSavedShareLinkMetadata(item.metadata)?.shareId === ready.payload.shareId
+            const pendingSave = await findSavedSharePresentation(
+                wallet,
+                await wallet.invoke.getIncomingPresentations(),
+                ready.payload,
+                profile.profileId
             );
+            if (currentReady.current !== ready) return;
             if (pendingSave) {
-                await wallet.invoke.acceptPresentation(pendingSave.uri);
-                setSaveState('saved');
+                if (!(await wallet.invoke.acceptPresentation(pendingSave.uri)))
+                    throw new Error('accept');
+                if (currentReady.current === ready) setSaveState('saved');
                 return;
             }
-            const profile = await wallet.invoke.getProfile();
-            if (!profile?.profileId) throw new Error('profile');
             const savedMetadata = {
                 type: SAVED_SHARE_METADATA_TYPE,
                 shareId: ready.payload.shareId,
@@ -389,10 +546,10 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                 savedMetadata,
                 true
             );
-            await wallet.invoke.acceptPresentation(uri);
-            setSaveState('saved');
+            if (!(await wallet.invoke.acceptPresentation(uri))) throw new Error('accept');
+            if (currentReady.current === ready) setSaveState('saved');
         } catch {
-            setSaveState('error');
+            if (currentReady.current === ready) setSaveState('error');
         }
     }, [initWallet, isLoggedIn, ready, saveState]);
 
@@ -400,18 +557,17 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         if (!ready || !isLoggedIn || saveState !== 'idle') return;
         let cancelled = false;
         void initWallet()
-            .then(wallet => shareWallet(wallet).invoke.getReceivedPresentations())
-            .then(received => {
-                if (
-                    !cancelled &&
-                    received.some(
-                        item =>
-                            item.from === item.to &&
-                            parseSavedShareLinkMetadata(item.metadata)?.shareId ===
-                                ready.payload.shareId
-                    )
-                )
-                    setSaveState('saved');
+            .then(async rawWallet => {
+                const wallet = shareWallet(rawWallet);
+                const profile = await wallet.invoke.getProfile();
+                if (!profile?.profileId || cancelled) return;
+                const saved = await findSavedSharePresentation(
+                    wallet,
+                    await wallet.invoke.getReceivedPresentations(),
+                    ready.payload,
+                    profile.profileId
+                );
+                if (!cancelled && saved) setSaveState('saved');
             })
             .catch(() => undefined);
         return () => {
@@ -445,6 +601,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         not_found: [m['shareLinks.notFound'](), m['shareLinks.askNew']()],
         error: [m['shareLinks.connection'](), m['shareLinks.error']()],
         corrupt: [m['shareLinks.corrupt'](), m['shareLinks.incompleteHint']()],
+        updated: [m['resumePublishing.updated'](), m['resumePublishing.updatedHint']()],
         ready: ['', ''],
     }[state];
     return (
@@ -456,7 +613,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                             href="/login"
                             aria-label="LearnCard"
                             rel="noreferrer"
-                            className="flex items-center gap-2.5 shrink-0 rounded text-grayscale-900 transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            className="flex items-center gap-2.5 shrink-0 rounded-sm text-grayscale-900 transition-opacity hover:opacity-70 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                         >
                             <img
                                 src={LearnCardBrandMark}
@@ -473,7 +630,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                             <a
                                 href="/login"
                                 rel="noreferrer"
-                                className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                                className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                             >
                                 <span>{m['shareLinks.close']()}</span>
                                 <IonIcon
@@ -488,11 +645,11 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
             </IonHeader>
             <IonContent>
                 <main className="bg-grayscale-100 text-grayscale-900 min-h-full">
-                    <div className="max-w-3xl mx-auto px-5 py-8 md:py-14 space-y-5">
+                    <div className="max-w-3xl mx-auto px-5 py-8 md:py-14 space-y-v3-5">
                         {state !== 'ready' || !ready ? (
                             <section
                                 role="status"
-                                className="bg-white rounded-[20px] p-8 md:p-12 text-center space-y-4"
+                                className="bg-white rounded-[20px] p-8 md:p-12 text-center space-y-v3-4"
                             >
                                 <span className="inline-flex p-4 rounded-2xl bg-grayscale-100 text-grayscale-600">
                                     <IonIcon
@@ -525,7 +682,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                 )}
                                 {state === 'passcode_required' && (
                                     <form
-                                        className="mx-auto max-w-sm space-y-4 text-left"
+                                        className="mx-auto max-w-sm space-y-v3-4 text-left"
                                         onSubmit={event => {
                                             event.preventDefault();
                                             if (passcode.length < 4) return;
@@ -547,7 +704,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                     setPasscode(event.target.value);
                                                     setPasscodeError(false);
                                                 }}
-                                                className="mt-2 w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="mt-2 w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                                                 placeholder={m['shareLinks.passcodeLabel']()}
                                             />
                                         </label>
@@ -588,11 +745,25 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                         expiresAt={ready.metadata.expiresAt}
                                         proofs={proofRecord}
                                         showOriginal
+                                        renderCredential={(credential, _index, proof) =>
+                                            hasProtectedResumePdf(credential) ? (
+                                                <ProtectedResumePreview
+                                                    credential={credential}
+                                                    onDownload={downloadPdf}
+                                                    downloading={pdfDownloading}
+                                                    proof={
+                                                        proof ? (
+                                                            <ProofBadge state={proof} />
+                                                        ) : undefined
+                                                    }
+                                                />
+                                            ) : undefined
+                                        }
                                         summaryExtra={
                                             <>
                                                 <section
                                                     data-share-export-exclude
-                                                    className="pt-4 border-t border-grayscale-100 space-y-3"
+                                                    className="pt-4 border-t border-grayscale-100 space-y-v3-3"
                                                 >
                                                     <div className="flex items-start gap-3">
                                                         <IonIcon
@@ -603,27 +774,51 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             {m['shareLinks.saveHint']()}
                                                         </p>
                                                     </div>
-                                                    {isLoggedIn ? (
+                                                    {isLoggedIn && saveState === 'saved' ? (
+                                                        <div
+                                                            role="status"
+                                                            className="flex flex-col gap-4 text-sm text-grayscale-700"
+                                                        >
+                                                            <div className="space-y-1">
+                                                                <p>
+                                                                    {m[
+                                                                        'shareLinks.savedCollectionStatus'
+                                                                    ]()}
+                                                                </p>
+                                                                <p>
+                                                                    {m[
+                                                                        'shareLinks.savedCollectionDestination'
+                                                                    ]()}
+                                                                </p>
+                                                            </div>
+                                                            <button
+                                                                ref={destinationButtonRef}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    history.push(
+                                                                        '/privacy-and-data?view=saved'
+                                                                    )
+                                                                }
+                                                                className="w-full rounded-[20px] bg-grayscale-900 px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                                                            >
+                                                                {m[
+                                                                    'shareLinks.viewSavedCollections'
+                                                                ]()}
+                                                            </button>
+                                                        </div>
+                                                    ) : isLoggedIn ? (
                                                         <button
+                                                            ref={saveButtonRef}
                                                             type="button"
                                                             onClick={() => void saveToLearnCard()}
-                                                            disabled={
-                                                                saveState === 'saving' ||
-                                                                saveState === 'saved'
-                                                            }
+                                                            disabled={saveState === 'saving'}
                                                             className="w-full rounded-[20px] bg-grayscale-900 px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                                                         >
                                                             {saveState === 'saving'
                                                                 ? m[
                                                                       'shareLinks.savingToLearnCard'
                                                                   ]()
-                                                                : saveState === 'saved'
-                                                                  ? m[
-                                                                        'shareLinks.savedToLearnCard'
-                                                                    ]()
-                                                                  : m[
-                                                                        'shareLinks.saveToLearnCard'
-                                                                    ]()}
+                                                                : m['shareLinks.saveToLearnCard']()}
                                                         </button>
                                                     ) : (
                                                         <button
@@ -667,7 +862,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                         </p>
                                                     )}
                                                 </section>
-                                                <div className="pt-4 border-t border-grayscale-100 space-y-2">
+                                                <div className="pt-4 border-t border-grayscale-100 space-y-v3-2">
                                                     <p className="text-xs font-medium text-grayscale-700">
                                                         {m['shareLinks.presentationProof']()}
                                                     </p>
@@ -678,7 +873,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                 </div>
                                                 <section
                                                     data-share-export-exclude
-                                                    className="pt-4 border-t border-grayscale-100 space-y-3"
+                                                    className="pt-4 border-t border-grayscale-100 space-y-v3-3"
                                                 >
                                                     <p className="text-xs text-grayscale-500 leading-relaxed">
                                                         {m['shareLinks.downloadHint']()}
@@ -709,7 +904,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             type="button"
                                                             className={secondaryButton}
                                                             disabled={downloading}
-                                                            onClick={download}
+                                                            onClick={() => void download()}
                                                         >
                                                             <IonIcon icon={downloadOutline} />
                                                             {downloading
@@ -723,10 +918,10 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             onClick={() =>
                                                                 newModal(
                                                                     <div
-                                                                        className="sentry-block ph-no-capture bg-white p-6 font-poppins text-grayscale-900 text-center space-y-5"
+                                                                        className="sentry-block ph-no-capture bg-white p-6 font-poppins text-grayscale-900 text-center space-y-v3-5"
                                                                         data-html2canvas-ignore
                                                                     >
-                                                                        <h2 className="text-xl font-semibold break-words">
+                                                                        <h2 className="text-xl font-semibold wrap-break-word">
                                                                             {ready.metadata.title}
                                                                         </h2>
                                                                         <QRCodeSVG
@@ -749,7 +944,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                                         </p>
                                                                         <button
                                                                             type="button"
-                                                                            className="rounded-[20px] !bg-grayscale-900 !text-white px-5 py-3 text-sm font-medium"
+                                                                            className="rounded-[20px] bg-grayscale-900! text-white! px-5 py-3 text-sm font-medium"
                                                                             onClick={closeModal}
                                                                         >
                                                                             {m[
@@ -772,7 +967,11 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             <IonIcon icon={downloadOutline} />
                                                             {pdfDownloading
                                                                 ? m['shareLinks.preparingPdf']()
-                                                                : m['shareLinks.downloadPdf']()}
+                                                                : protectedResume
+                                                                  ? m[
+                                                                        'resumePublishing.downloadExact'
+                                                                    ]()
+                                                                  : m['shareLinks.downloadPdf']()}
                                                         </button>
                                                     </div>
                                                     {actionError && (
@@ -780,9 +979,11 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             role="alert"
                                                             className="text-sm text-red-700"
                                                         >
-                                                            {actionError === 'copy'
-                                                                ? m['shareLinks.copyError']()
-                                                                : m['shareLinks.downloadError']()}
+                                                            {actionError === 'try_later'
+                                                                ? m['shareLinks.tryLaterHint']()
+                                                                : actionError === 'copy'
+                                                                  ? m['shareLinks.copyError']()
+                                                                  : m['shareLinks.downloadError']()}
                                                         </p>
                                                     )}
                                                 </section>
@@ -791,7 +992,9 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                     />
                                 </div>
                                 <p className="text-center text-xs text-grayscale-500 px-4 leading-relaxed">
-                                    {m['shareLinks.recipientHint']()}
+                                    {protectedResume
+                                        ? m['resumePublishing.limits']()
+                                        : m['shareLinks.recipientHint']()}
                                 </p>
                             </>
                         )}
@@ -802,11 +1005,35 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
     );
 };
 
-// A route-param change must discard the previous link's passcode and all other
-// private viewer state before any request for the next link can start.
+// Discard private link state and in-flight save results when the route or
+// active account changes, including organization/profile switches.
 const ShareLinkViewer = () => {
     const { id } = useParams<{ id: string }>();
-    return <ShareLinkViewerContent key={id} id={id} />;
+    const isLoggedIn = useIsLoggedIn();
+    const wallet = walletStore.use.wallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+    // Login state is restored before the wallet. Do not accept a passcode in a
+    // viewer that would be discarded when that wallet supplies its identity.
+    if (isLoggedIn && !wallet) {
+        return (
+            <IonPage className="sentry-block ph-no-capture font-poppins">
+                <IonContent>
+                    <main className="min-h-full bg-grayscale-100 px-5 py-14 text-center">
+                        <section role="status" className="mx-auto max-w-3xl space-y-4">
+                            <h1 className="text-xl font-semibold text-grayscale-900">
+                                {m['shareLinks.opening']()}
+                            </h1>
+                            <p className="text-sm text-grayscale-600">
+                                {m['shareLinks.openingHint']()}
+                            </p>
+                        </section>
+                    </main>
+                </IonContent>
+            </IonPage>
+        );
+    }
+    const account = isLoggedIn ? `${wallet?.id.did() ?? ''}:${switchedDid ?? ''}` : 'anonymous';
+    return <ShareLinkViewerContent key={`${id}:${account}`} id={id} />;
 };
 
 export default ShareLinkViewer;

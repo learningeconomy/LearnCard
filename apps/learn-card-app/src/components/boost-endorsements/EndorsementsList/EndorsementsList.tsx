@@ -54,7 +54,7 @@ export const EndorsementsList: React.FC<{
                 <EndorsementBadge
                     credential={credential}
                     categoryType={categoryType}
-                    className="!px-[8px] !mt-0"
+                    className="px-[8px]! mt-0!"
                     existingEndorsements={existingEndorsements}
                 />
             </div>

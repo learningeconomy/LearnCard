@@ -23,6 +23,7 @@ from openapi_client.models.boost_get_boost200_response_boost_issuer_any_of_addre
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_address_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetBoost200ResponseBoostIssuerAnyOfAddress(BaseModel):
     """
@@ -41,7 +42,8 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddress(BaseModel):
     __properties: ClassVar[List[str]] = ["type", "addressCountry", "addressCountryCode", "addressRegion", "addressLocality", "streetAddress", "postOfficeBoxNumber", "postalCode", "geo"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -53,8 +55,7 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddress(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -67,9 +68,8 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddress(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -92,41 +92,6 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddress(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if address_country (nullable) is None
-        # and model_fields_set contains the field
-        if self.address_country is None and "address_country" in self.model_fields_set:
-            _dict['addressCountry'] = None
-
-        # set to None if address_country_code (nullable) is None
-        # and model_fields_set contains the field
-        if self.address_country_code is None and "address_country_code" in self.model_fields_set:
-            _dict['addressCountryCode'] = None
-
-        # set to None if address_region (nullable) is None
-        # and model_fields_set contains the field
-        if self.address_region is None and "address_region" in self.model_fields_set:
-            _dict['addressRegion'] = None
-
-        # set to None if address_locality (nullable) is None
-        # and model_fields_set contains the field
-        if self.address_locality is None and "address_locality" in self.model_fields_set:
-            _dict['addressLocality'] = None
-
-        # set to None if street_address (nullable) is None
-        # and model_fields_set contains the field
-        if self.street_address is None and "street_address" in self.model_fields_set:
-            _dict['streetAddress'] = None
-
-        # set to None if post_office_box_number (nullable) is None
-        # and model_fields_set contains the field
-        if self.post_office_box_number is None and "post_office_box_number" in self.model_fields_set:
-            _dict['postOfficeBoxNumber'] = None
-
-        # set to None if postal_code (nullable) is None
-        # and model_fields_set contains the field
-        if self.postal_code is None and "postal_code" in self.model_fields_set:
-            _dict['postalCode'] = None
-
         return _dict
 
     @classmethod
@@ -138,7 +103,7 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddress(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "type": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "addressCountry": obj.get("addressCountry"),
             "addressCountryCode": obj.get("addressCountryCode"),
@@ -148,7 +113,9 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddress(BaseModel):
             "postOfficeBoxNumber": obj.get("postOfficeBoxNumber"),
             "postalCode": obj.get("postalCode"),
             "geo": BoostGetBoost200ResponseBoostIssuerAnyOfAddressGeo.from_dict(obj["geo"]) if obj.get("geo") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

@@ -56,6 +56,7 @@ class TestPresentationSendPresentationRequestPresentationAnyOfVerifiableCredenti
                 status = None,
                 terms_of_use = None,
                 evidence = None,
+                render_method = None,
                 proof = None
             )
         else:

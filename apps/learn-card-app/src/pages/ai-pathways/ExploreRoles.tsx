@@ -115,7 +115,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
     const openEditGoalsModal = () => {
         newModal(
             <EditGoalsModal />,
-            { sectionClassName: '!bg-transparent' },
+            { sectionClassName: 'bg-transparent!' },
             {
                 desktop: ModalTypes.Right,
                 mobile: ModalTypes.Right,
@@ -189,7 +189,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
                         value={inlineFilter}
                         onChange={e => setInlineFilter(e.target.value)}
                         placeholder={m['aiPathways.filterResults']()}
-                        className="w-full py-3 px-4 pl-10 border border-grayscale-200 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-600 focus:outline-none focus:border-transparent bg-white"
+                        className="w-full py-3 px-4 pl-10 border border-grayscale-200 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-600 focus:outline-hidden focus:border-transparent bg-white"
                     />
                 </div>
 

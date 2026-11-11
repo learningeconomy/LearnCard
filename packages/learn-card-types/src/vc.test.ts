@@ -1,17 +1,24 @@
 import { expect, test } from 'vitest';
 import { ProofValidator } from './vc';
 
-test('only final ecdsa-rdfc-2019 DataIntegrityProofs may omit created', () => {
+test.each([
+    'ecdsa-rdfc-2019',
+    'ecdsa-jcs-2019',
+    'ecdsa-sd-2023',
+    'eddsa-rdfc-2022',
+    'eddsa-jcs-2022',
+    'bbs-2023',
+])('final %s DataIntegrityProofs may omit created', cryptosuite => {
     const proof = {
         type: 'DataIntegrityProof',
-        cryptosuite: 'ecdsa-rdfc-2019',
+        cryptosuite,
         proofPurpose: 'authentication',
         verificationMethod: 'did:example:holder#key',
         proofValue: 'zSignature',
     };
 
     expect(ProofValidator.parse(proof)).toEqual(proof);
-    const legacy = { ...proof, cryptosuite: 'eddsa-rdfc-2022' };
+    const legacy = { ...proof, cryptosuite: 'unknown-suite' };
     expect(ProofValidator.safeParse(legacy).success).toBe(false);
     expect(ProofValidator.safeParse({ ...legacy, created: '2026-01-01T00:00:00Z' }).success).toBe(
         true

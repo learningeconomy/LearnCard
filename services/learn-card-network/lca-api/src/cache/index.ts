@@ -1,6 +1,6 @@
 /// <reference path="../global.d.ts" />
 
-import { environment } from '@environment';
+import { environment } from '@config/cacheEnvironment';
 import Redis, { RedisValue, RedisKey } from 'ioredis';
 import MemoryRedis, { Redis as RedisMockType } from 'ioredis-mock';
 

@@ -77,4 +77,48 @@ describe('credential refresh constraint readiness', () => {
 
         expect(mocks.run).toHaveBeenCalledTimes(9);
     });
+
+    it('runs the constraint setup once per process across many calls', async () => {
+        mocks.run.mockResolvedValue(undefined);
+
+        const { ensureCredentialRefreshConstraints } =
+            await import('./credential-refresh-constraints');
+
+        // A burst of concurrent callers (cold start plus the first requests) ...
+        await Promise.all(Array.from({ length: 50 }, () => ensureCredentialRefreshConstraints()));
+        // ... and every later caller in the same process.
+        for (let i = 0; i < 200; i++) await ensureCredentialRefreshConstraints();
+
+        expect(mocks.run).toHaveBeenCalledTimes(8);
+        expect(new Set(mocks.run.mock.calls.map(([query]) => query)).size).toBe(8);
+    });
+
+    it('retries transient errors and deadlocks before giving up on a statement', async () => {
+        mocks.run
+            .mockRejectedValueOnce({ code: 'Neo.TransientError.Transaction.DeadlockDetected' })
+            .mockRejectedValueOnce({
+                code: 'Neo.TransientError.Transaction.LockClientStopped',
+                retriable: true,
+            })
+            .mockResolvedValue(undefined);
+
+        const { ensureCredentialRefreshConstraints } =
+            await import('./credential-refresh-constraints');
+
+        await expect(ensureCredentialRefreshConstraints()).resolves.toBeUndefined();
+        // The first statement took three attempts, the other seven one each
+        expect(mocks.run).toHaveBeenCalledTimes(10);
+        expect(mocks.run.mock.calls[0]![0]).toBe(mocks.run.mock.calls[2]![0]);
+    });
+
+    it('does not retry a non-transient failure', async () => {
+        const setupFailure = { code: 'Neo.ClientError.Security.Forbidden' };
+        mocks.run.mockRejectedValueOnce(setupFailure).mockResolvedValue(undefined);
+
+        const { ensureCredentialRefreshConstraints } =
+            await import('./credential-refresh-constraints');
+
+        await expect(ensureCredentialRefreshConstraints()).rejects.toBe(setupFailure);
+        expect(mocks.run).toHaveBeenCalledTimes(1);
+    });
 });

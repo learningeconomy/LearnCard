@@ -12,10 +12,45 @@ on:
                 required: true
                 default: 'changeset-release/main'
 
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+    integration-selection:
+        name: Select integration tests
+        runs-on: ubuntu-latest
+        outputs:
+            brain: ${{ steps.selection.outputs.brain }}
+            campaigns: ${{ steps.selection.outputs.campaigns }}
+            escrow: ${{ steps.selection.outputs.escrow }}
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+            # Repurpose the former recovery-tools runner; do not install the workspace
+            # or allocate integration runners just to decide whether tests apply.
+            - name: Select integration tests
+              id: selection
+              continue-on-error: true
+              env:
+                  BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+                  HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+              run: node scripts/test-ci-selection.cjs
+
     Test:
         runs-on: ubuntu-latest
         environment: ci-tests
+        permissions:
+            contents: read
+            actions: read
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -30,15 +65,209 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            - name: Run tests
-              uses: nick-fields/retry@v2
+            # Keep recovery regressions on the existing unit-test runner so they
+            # cannot delay integration job selection.
+            - name: Test recovery validation, manifest diagnostics, and registry retries
+              run: node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs .github/tests/test-deploy-test-proof.test.cjs
+
+            - name: Test shared native registry readiness gate
+              run: node --test scripts/wait-for-didkit-registry.test.mjs
+
+            - name: Test AI Agent ECR vulnerability gate
+              run: node --test scripts/reject-vulnerable-ecr-image.test.mjs
+
+            # The escrow Rust crates share one pinned toolchain; installing it here
+            # stops nx's parallel `cargo test` runs racing to install it.
+            - name: Install pinned Rust toolchain
+              working-directory: services/escrow-enclave-app
+              run: rustup toolchain install
+
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
               with:
-                  timeout_minutes: 10
-                  max_attempts: 3
-                  command: bunx nx affected --target=test --base=origin/main --head=HEAD
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+            - name: Test retry reporting contract
+              run: node --test scripts/ci-test-retries/retry.test.cjs
+
+            - name: Test artifact pilot contracts
+              run: node --test scripts/nx-artifact-cache/pilot.test.mjs
+
+            - name: Test queue batch shadow observation
+              run: node --test scripts/e2e-hosted/queue-batch-shadow.test.mjs scripts/e2e-hosted/observe-queue-batch.test.mjs scripts/e2e-hosted/queue-proof-shadow.test.mjs
+
+            - name: Test SDK build cache policy when its configuration changes
+              run: |
+                  if git diff --quiet origin/main...HEAD -- \
+                      nx.json package.json bun.lock bunfig.toml .nvmrc ':(glob)tsconfig*.json' \
+                      packages/learn-card-types packages/learn-card-helpers packages/learn-card-core \
+                      tools/executors/workspace/run-command \
+                      .github/tests/test-sdk-cache-policy.cjs .github/workflows/test.yml \
+                      .github/workflows/nx-artifact-producer.yml scripts/nx-artifact-cache; then
+                    echo "SDK cache policy unchanged"
+                  else
+                    node --test .github/tests/test-sdk-cache-policy.cjs
+                    node --test scripts/nx-artifact-cache/native.test.mjs
+                  fi
+
+            - name: Freeze affected test range
+              id: test-range
+              run: |
+                  base=$(git rev-parse origin/main)
+                  head=$(git rev-parse HEAD)
+                  echo "base=$base" >> "$GITHUB_OUTPUT"
+                  echo "head=$head" >> "$GITHUB_OUTPUT"
+                  if [[ "$GITHUB_EVENT_NAME" == merge_group ]]; then
+                    timeout --kill-after=5s 20s bunx nx affected --target=test --base="$base" --head="$head" \
+                      --graph="$RUNNER_TEMP/queue-test-selection.json" || echo 'Queue test proof unavailable; tests still run normally.'
+                  fi
+
+            - name: Select trusted main artifact for queue pilot
+              id: nx-pilot
+              if: github.event_name == 'merge_group' && vars.LC_NX_ARTIFACT_PILOT == 'true'
+              timeout-minutes: 1
+              continue-on-error: true
+              uses: actions/github-script@v8
+              with:
+                  retries: 0
+                  script: |
+                      const { selectProducer } = require('./scripts/nx-artifact-cache/select-producer.cjs');
+                      await selectProducer({ github, context, core });
+
+            - name: Download main build payloads
+              id: nx-pilot-download
+              if: steps.nx-pilot.outputs.artifact-id != ''
+              timeout-minutes: 1
+              continue-on-error: true
+              uses: actions/download-artifact@v4
+              with:
+                  artifact-ids: ${{ steps.nx-pilot.outputs.artifact-id }}
+                  merge-multiple: true
+                  path: ${{ runner.temp }}/nx-pilot-payloads
+                  run-id: ${{ steps.nx-pilot.outputs.run-id }}
+                  github-token: ${{ github.token }}
+
+            - name: Run tests
+              id: tests
+              timeout-minutes: 20
+              run: |
+                  if [ "$LC_NX_PILOT_ACTIVE" = 'true' ]; then
+                    node scripts/nx-artifact-cache/run.mjs consume
+                  else
+                    bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"
+                  fi
               env:
+                  LC_NX_PILOT_ACTIVE: ${{ steps.nx-pilot.outputs.active }}
+                  LC_NX_PILOT_BASE: ${{ github.event.merge_group.base_sha }}
+                  NX_BASE: ${{ steps.test-range.outputs.base }}
+                  NX_HEAD: ${{ steps.test-range.outputs.head }}
+                  LC_CI_TEST_RETRY: '1'
+                  LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+
+            - name: Upload numeric queue cache evidence
+              if: always() && steps.nx-pilot.outputs.active == 'true'
+              timeout-minutes: 1
+              continue-on-error: true
+              uses: actions/upload-artifact@v4
+              with:
+                  name: nx-pilot-queue-evidence
+                  path: ${{ runner.temp }}/nx-pilot/result.json
+                  retention-days: 7
+
+            - name: Summarize test retries
+              if: always()
+              env:
+                  LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
+                  LC_CI_NX_OUTCOME: ${{ steps.tests.outcome }}
+              run: node scripts/ci-test-retries/summary.cjs
+
+            - name: Record queue test proof
+              id: queue-proof
+              if: ${{ success() && github.event_name == 'merge_group' }}
+              continue-on-error: true
+              env:
+                  NX_BASE: ${{ steps.test-range.outputs.base }}
+                  NX_HEAD: ${{ steps.test-range.outputs.head }}
+              run: node scripts/deploy-test-proof.cjs record "$RUNNER_TEMP/queue-test-selection.json" "$RUNNER_TEMP/queue-test-proof/queue-test-proof.json"
+
+            - name: Publish queue test proof
+              if: ${{ success() && github.event_name == 'merge_group' && steps.queue-proof.outputs.publish == 'true' }}
+              continue-on-error: true
+              uses: actions/upload-artifact@v4
+              with:
+                  name: queue-test-proof-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: ${{ runner.temp }}/queue-test-proof/queue-test-proof.json
+                  if-no-files-found: error
+                  retention-days: 7
+
+    escrow-integration:
+        name: Escrow integration (lca-api)
+        needs: integration-selection
+        # Only an explicit, successful skip decision can avoid allocating a runner.
+        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.escrow != 'false') }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            # Live-Mongo (mongodb-memory-server) specs; the nx `test` target only
+            # runs vitest.config.ts, so these are otherwise never exercised in CI.
+            - name: Run escrow integration specs
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run --config vitest.integration.config.ts
+                  test/keys-escrow.spec.ts
+                  test/keys-pin-sign-in.spec.ts
+                  test/keys-pin-lease.spec.ts
+                  test/models/escrow.spec.ts
+                  test/jobs/escrowBlobRewrap.spec.ts
+                  test/jobs/escrowHoldReminders.spec.ts
+
+            # Proves config:check accepts a valid public fixture. Deployments run it
+            # against their real environment.
+            - name: Check ClassLink configuration with a public fixture
+              working-directory: services/learn-card-network/lca-api
+              run: bun run config:check
+              env:
+                  NODE_ENV: production
+                  CLASSLINK_CLIENT_ID: test-client
+                  CLASSLINK_CLIENT_SECRET: test-secret
+                  CLASSLINK_REDIRECT_URIS: https://app.example.org/callback
+                  # Public test keys only; never use these in a deployment.
+                  CLASSLINK_PII_KEY: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=
+                  CLASSLINK_IDENTITY_KEY: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=
+                  CLASSLINK_TENANTS: '{"example":{"displayName":"Example School","state":"XX","allowedEmailDomains":[],"transcriptEnabled":true}}'
+                  TRANSCRIPT_ISSUERS: '{"default":{"endpoint":"https://records.example.org/requests","audience":"records","did":"did:web:records.example.org","profileId":"records"}}'
+
+            # ClassLink SSO + transcript live-Mongo specs (account linking/CONFLICT,
+            # trusted-email gate, transcript lock/ownership, deletion cascade, ClassLink
+            # pinning before a recovery rebind removes a login). Same
+            # gap as above: only vitest.integration.config.ts picks these up.
+            - name: Run ClassLink and transcript integration specs
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run --config vitest.integration.config.ts
+                  test/classlink-router.spec.ts
+                  test/classlink-connect.spec.ts
+                  test/classlink-models.spec.ts
+                  test/classlink-personal-email.spec.ts
+                  test/classlink-preferences.spec.ts
+                  test/classlink-cleanup.spec.ts
+                  test/classlink-synthetic-email.spec.ts
+                  test/transcripts.spec.ts
+                  test/keys-identity-rebind.spec.ts
 
     ai-agent:
         name: AI Agent CI
@@ -47,9 +276,13 @@ jobs:
             contents: read
         runs-on: ubuntu-latest
         timeout-minutes: 20
+        # Pre-step service authentication and troubleshooting: .github/SERVICE_IMAGE_PULLS.md.
         services:
             mongo:
                 image: mongo:7
+                credentials:
+                    username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                    password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
                 ports:
                     - 27017:27017
                 options: >-
@@ -64,6 +297,12 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v7
 
+            - name: Set up AI Agent Node LTS
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: services/learn-card-network/ai-agent/.nvmrc
+                  package-manager-cache: false
+
             - name: Use composite setup action
               uses: ./.github/actions/setup
 
@@ -77,23 +316,45 @@ jobs:
             - name: Run AI Agent tests
               run: bun run --cwd services/learn-card-network/ai-agent test -- run
 
+            - name: Verify feed with real DIDKit WASM
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:feed-wasm
+
+            - name: Verify private Sentry telemetry
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:sentry
+
             - name: Build AI Agent
               run: bun run --cwd services/learn-card-network/ai-agent build
 
             - name: Lint CloudFormation template
               run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
 
-    inbox-security:
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v7
-              with:
-                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
-                  fetch-depth: 0
-            - uses: ./.github/actions/setup
-            - name: Test inbox security and queued issuance with Neo4j, Redis, and SQS
-              run: bunx nx run network-brain-service:test:inbox:e2e
+    brain-graph:
+        name: Brain graph integration
+        needs: integration-selection
+        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false') }}
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            group: graph
+            ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+            run_brain: true
+            run_campaigns: false
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+    brain-delivery:
+        name: Inbox and campaigns integration
+        needs: integration-selection
+        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false' || needs.integration-selection.outputs.campaigns != 'false') }}
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            group: delivery
+            ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+            run_brain: ${{ needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false' }}
+            run_campaigns: ${{ needs.integration-selection.result != 'success' || needs.integration-selection.outputs.campaigns != 'false' }}
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
     # Temporary manual fallback during the hosted-runner cutover.
     # Remove after one sprint of stable GitHub-hosted E2E operation.

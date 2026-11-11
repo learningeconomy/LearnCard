@@ -1,11 +1,10 @@
 # BoostSendBoostRequestOptions
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**skip_notification** | **bool** |  | [optional] [default to False]
+| Name                  | Type     | Description | Notes                         |
+| --------------------- | -------- | ----------- | ----------------------------- |
+| **skip_notification** | **bool** |             | [optional] [default to False] |
 
 ## Example
 
@@ -24,6 +23,5 @@ boost_send_boost_request_options_dict = boost_send_boost_request_options_instanc
 # create an instance of BoostSendBoostRequestOptions from a dict
 boost_send_boost_request_options_from_dict = BoostSendBoostRequestOptions.from_dict(boost_send_boost_request_options_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

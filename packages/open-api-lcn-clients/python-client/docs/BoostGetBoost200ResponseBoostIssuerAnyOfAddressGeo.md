@@ -1,13 +1,12 @@
 # BoostGetBoost200ResponseBoostIssuerAnyOfAddressGeo
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.md) |  | 
-**latitude** | **float** |  | 
-**longitude** | **float** |  | 
+| Name          | Type                                                                                                                            | Description | Notes |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **type**      | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.md) |             |
+| **latitude**  | **float**                                                                                                                       |             |
+| **longitude** | **float**                                                                                                                       |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_get_boost200_response_boost_issuer_any_of_address_geo_dict = boost_get_boo
 # create an instance of BoostGetBoost200ResponseBoostIssuerAnyOfAddressGeo from a dict
 boost_get_boost200_response_boost_issuer_any_of_address_geo_from_dict = BoostGetBoost200ResponseBoostIssuerAnyOfAddressGeo.from_dict(boost_get_boost200_response_boost_issuer_any_of_address_geo_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

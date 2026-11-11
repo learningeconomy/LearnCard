@@ -90,7 +90,7 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
             </div>
 
             {isNodeSelected && (
-                <div className="flex flex-col items-center p-[10px] border-solid border-t-[1px] border-grayscale-200">
+                <div className="flex flex-col items-center p-[10px] border-solid border-t border-grayscale-200">
                     <div
                         className={`bg-transparent flex flex-col gap-[15px] w-full overflow-hidden transition-[max-height,opacity,transform,margin] duration-200 ease-in-out ${
                             isExpanded
@@ -112,7 +112,7 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
                             : m['skills.misc.showOptions']()}
                         <SlimCaretRight
                             className={`w-[15px] h-[15px] ${
-                                isExpanded ? 'rotate-[270deg]' : 'rotate-[90deg]'
+                                isExpanded ? 'rotate-270' : 'rotate-90'
                             }`}
                         />
                     </button>

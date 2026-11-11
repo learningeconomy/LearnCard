@@ -7,6 +7,9 @@ on:
             - 'packages/learn-card-base/src/config/tenantConfigSchema.ts'
             - 'packages/learn-card-base/src/config/tenantDefaults.ts'
 
+permissions:
+    contents: read
+
 jobs:
     validate:
         name: Validate tenant configs

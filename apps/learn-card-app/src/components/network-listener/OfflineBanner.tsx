@@ -153,7 +153,7 @@ export const OfflineBanner: React.FC = () => {
                         type="button"
                         aria-label={m['common.close']()}
                         onClick={() => setShowReconnected(false)}
-                        className="flex items-center justify-center min-w-11 min-h-11 -my-2 -me-2 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-current"
+                        className="flex items-center justify-center min-w-11 min-h-11 -my-2 -me-2 rounded-full focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-current"
                     >
                         <IonIcon icon={closeOutline} className="text-lg" aria-hidden="true" />
                     </button>
@@ -183,7 +183,7 @@ export const OfflineBanner: React.FC = () => {
                         type="button"
                         aria-label={m['common.close']()}
                         onClick={() => setShowSlowWarning(false)}
-                        className="flex items-center justify-center min-w-11 min-h-11 -my-2 -me-2 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-current"
+                        className="flex items-center justify-center min-w-11 min-h-11 -my-2 -me-2 rounded-full focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-current"
                     >
                         <IonIcon icon={closeOutline} className="text-lg" aria-hidden="true" />
                     </button>

@@ -63,7 +63,7 @@ export const AssistantProfileCard: React.FC<{
     return (
         <section className="bg-white border border-grayscale-200 rounded-[20px] p-7 shadow-bottom-2-4">
             {isEditing ? (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <div>
                         <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
                             Assistant name
@@ -73,7 +73,7 @@ export const AssistantProfileCard: React.FC<{
                             type="text"
                             value={name}
                             onChange={event => setName(event.target.value)}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                         />
                     </div>
 
@@ -86,7 +86,7 @@ export const AssistantProfileCard: React.FC<{
                             value={personality}
                             onChange={event => setPersonality(event.target.value)}
                             rows={3}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-y"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-y"
                         />
                     </div>
 
@@ -112,7 +112,7 @@ export const AssistantProfileCard: React.FC<{
                             </button>
                         </div>
 
-                        <div className="min-w-0 space-y-4">
+                        <div className="min-w-0 space-y-v3-4">
                             <div>
                                 <p className="text-xs font-medium text-grayscale-700 mb-2">
                                     Accessory
@@ -214,10 +214,10 @@ export const AssistantProfileCard: React.FC<{
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-[170px_1fr] md:items-center">
                     <AssistantAvatar className="mx-auto md:mx-0" config={avatarConfig} size="lg" />
 
-                    <div className="min-w-0 space-y-5">
+                    <div className="min-w-0 space-y-v3-5">
                         <div>
                             <div className="flex items-center gap-2">
-                                <h2 className="text-2xl font-semibold text-grayscale-900 break-words">
+                                <h2 className="text-2xl font-semibold text-grayscale-900 wrap-break-word">
                                     {profile?.name ?? DEFAULT_PROFILE.name}
                                 </h2>
 

@@ -107,13 +107,13 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
                         disabled={disabled}
                         onClick={() => selectOption(option, isSelected)}
                         onKeyDown={event => handleKeyDown(event, index)}
-                        className={`flex items-center gap-[10px] cursor-pointer rounded-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
+                        className={`flex items-center gap-[10px] cursor-pointer rounded-[10px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
                             disabled ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                     >
                         <span
                             aria-hidden="true"
-                            className={`w-[25px] h-[25px] rounded-full flex items-center justify-center flex-shrink-0
+                            className={`w-[25px] h-[25px] rounded-full flex items-center justify-center shrink-0
                                 ${isSelected ? 'bg-emerald-500' : 'bg-grayscale-300'}
                             `}
                         >

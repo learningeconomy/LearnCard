@@ -54,13 +54,9 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ record, isNew, index })
     return (
         <div
             className={`
-                bg-white rounded-xl shadow-sm overflow-hidden relative
+                bg-white rounded-xl shadow-xs overflow-hidden relative
                 transition-all duration-500 ease-out
-                ${
-                    isAnimating
-                        ? 'animate-slide-in-right ring-2 ring-indigo-400 ring-opacity-50'
-                        : ''
-                }
+                ${isAnimating ? 'animate-slide-in-right ring-2 ring-indigo-400/50 ' : ''}
             `}
             style={{
                 animationDelay: isNew ? '0ms' : `${index * 50}ms`,
@@ -115,7 +111,7 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ record, isNew, index })
                     </div>
 
                     {/* Credential Preview */}
-                    <div className={`w-20 flex-shrink-0 mr-[35px] ${isNew ? 'mt-6' : ''}`}>
+                    <div className={`w-20 shrink-0 mr-[35px] ${isNew ? 'mt-6' : ''}`}>
                         {credential ? (
                             <BoostEarnedCard
                                 credential={credential}
@@ -124,7 +120,7 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ record, isNew, index })
                                 useWrapper={false}
                                 verifierState={false}
                                 hideOptionsMenu
-                                className="!mt-0 scale-75 origin-top-left"
+                                className="mt-0! scale-75 origin-top-left"
                             />
                         ) : (
                             <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">

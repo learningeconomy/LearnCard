@@ -314,6 +314,14 @@ export const refreshAccess = async (learnCard, userDid, contractUri) => {
 
 The shared read function uses `getProfile(userDid)` to resolve the identifier to a profile, then passes its `profileId` to `verifyConsent`. A hidden or unavailable profile denies access here. After withdrawal, `verifyConsent` returns false and the guarded read returns no records. Do not rely on record presence alone: the current per-user data query can retain withdrawn terms. Stop pending issuance and delete any persistent copies too. In a production cache, run these checks periodically as well as before use; do not keep personal data indefinitely when a learner stops visiting.
 
+## 7. Update your contract
+
+Keep the saved `CONTRACT_URI` when your platform needs different access. Call `updateContract` with `dryRun: true` first to see the exact review headline and changed rows without saving or notifying anyone. Then save with an explanation of why the update is needed.
+
+Optional read or write additions stay off for existing users. They can discover and enable them through a quiet feed entry and a new-option label. Required additions pause writes until approval. Check `getConsentStatus(CONTRACT_URI, profileId)` when the user enters the affected feature and offer its `reviewUrl` when `needsReconsent` is true.
+
+Follow [Updating a Contract](../core-concepts/consent-and-permissions/updating-a-contract.md) for a runnable `update-contract.mjs` example, deadlines, and acceptance. Deleting retires the connection and withdraws access; it is not an update mechanism.
+
 ## What you should see
 
 1. Setup prints JSON containing a real `contractUri` and `consentUrl`.

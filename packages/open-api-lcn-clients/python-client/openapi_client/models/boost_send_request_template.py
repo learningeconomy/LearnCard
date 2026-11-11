@@ -26,6 +26,7 @@ from openapi_client.models.boost_send_request_template_default_permissions impor
 from openapi_client.models.boost_send_request_template_skills_inner import BoostSendRequestTemplateSkillsInner
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostSendRequestTemplate(BaseModel):
     """
@@ -34,6 +35,7 @@ class BoostSendRequestTemplate(BaseModel):
     name: Optional[StrictStr] = None
     type: Optional[StrictStr] = None
     category: Optional[StrictStr] = None
+    created: Optional[StrictStr] = None
     status: Optional[StrictStr] = None
     auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
     meta: Optional[Dict[str, Any]] = None
@@ -42,7 +44,7 @@ class BoostSendRequestTemplate(BaseModel):
     credential: BoostSendRequestTemplateCredential
     claim_permissions: Optional[BoostSendRequestTemplateClaimPermissions] = Field(default=None, alias="claimPermissions")
     skills: Optional[Annotated[List[BoostSendRequestTemplateSkillsInner], Field(min_length=1)]] = None
-    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "defaultPermissions", "allowAnyoneToCreateChildren", "credential", "claimPermissions", "skills"]
+    __properties: ClassVar[List[str]] = ["name", "type", "category", "created", "status", "autoConnectRecipients", "meta", "defaultPermissions", "allowAnyoneToCreateChildren", "credential", "claimPermissions", "skills"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -55,7 +57,8 @@ class BoostSendRequestTemplate(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -67,8 +70,7 @@ class BoostSendRequestTemplate(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -81,9 +83,8 @@ class BoostSendRequestTemplate(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -106,24 +107,8 @@ class BoostSendRequestTemplate(BaseModel):
         _items = []
         if self.skills:
             for _item_skills in self.skills:
-                if _item_skills:
-                    _items.append(_item_skills.to_dict())
+                _items.append(_item_skills.to_dict() if _item_skills is not None else None)
             _dict['skills'] = _items
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if type (nullable) is None
-        # and model_fields_set contains the field
-        if self.type is None and "type" in self.model_fields_set:
-            _dict['type'] = None
-
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
-            _dict['category'] = None
-
         return _dict
 
     @classmethod
@@ -135,10 +120,11 @@ class BoostSendRequestTemplate(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "name": obj.get("name"),
             "type": obj.get("type"),
             "category": obj.get("category"),
+            "created": obj.get("created"),
             "status": obj.get("status"),
             "autoConnectRecipients": obj.get("autoConnectRecipients"),
             "meta": obj.get("meta"),
@@ -147,7 +133,9 @@ class BoostSendRequestTemplate(BaseModel):
             "credential": BoostSendRequestTemplateCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
             "claimPermissions": BoostSendRequestTemplateClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
             "skills": [BoostSendRequestTemplateSkillsInner.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

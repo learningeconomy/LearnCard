@@ -21,22 +21,24 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetCredentialsForContract200ResponseRecordsInner(BaseModel):
     """
     ContractsGetCredentialsForContract200ResponseRecordsInner
     """ # noqa: E501
-    credential_uri: Optional[StrictStr] = Field(alias="credentialUri")
-    terms_uri: Optional[StrictStr] = Field(alias="termsUri")
-    contract_uri: Optional[StrictStr] = Field(alias="contractUri")
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
+    credential_uri: StrictStr = Field(alias="credentialUri")
+    terms_uri: StrictStr = Field(alias="termsUri")
+    contract_uri: StrictStr = Field(alias="contractUri")
+    boost_uri: StrictStr = Field(alias="boostUri")
     category: Optional[StrictStr] = None
-    var_date: Optional[StrictStr] = Field(alias="date")
+    var_date: StrictStr = Field(alias="date")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["credentialUri", "termsUri", "contractUri", "boostUri", "category", "date"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -48,8 +50,7 @@ class ContractsGetCredentialsForContract200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -62,9 +63,8 @@ class ContractsGetCredentialsForContract200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -81,36 +81,6 @@ class ContractsGetCredentialsForContract200ResponseRecordsInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if credential_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_uri is None and "credential_uri" in self.model_fields_set:
-            _dict['credentialUri'] = None
-
-        # set to None if terms_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.terms_uri is None and "terms_uri" in self.model_fields_set:
-            _dict['termsUri'] = None
-
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
-            _dict['contractUri'] = None
-
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
-            _dict['category'] = None
-
-        # set to None if var_date (nullable) is None
-        # and model_fields_set contains the field
-        if self.var_date is None and "var_date" in self.model_fields_set:
-            _dict['date'] = None
-
         return _dict
 
     @classmethod
@@ -122,14 +92,16 @@ class ContractsGetCredentialsForContract200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "credentialUri": obj.get("credentialUri"),
             "termsUri": obj.get("termsUri"),
             "contractUri": obj.get("contractUri"),
             "boostUri": obj.get("boostUri"),
             "category": obj.get("category"),
             "date": obj.get("date")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

@@ -4,7 +4,7 @@ import { useHistory } from 'react-router-dom';
 import type { History } from 'history';
 import { ModalTypes, useModal } from 'learn-card-base';
 
-import NewAiSessionContainer from './NewAiSessionContainer';
+import NewAiSessionContainer from './LazyNewAiSessionContainer';
 import TopicNewSessionGate from './TopicNewSessionGate';
 import { NewAiSessionStepEnum } from './newAiSession.helpers';
 import { ChatBotQA, ChatBotQuestionsEnum } from './NewAiSessionChatBot/newAiSessionChatbot.helpers';

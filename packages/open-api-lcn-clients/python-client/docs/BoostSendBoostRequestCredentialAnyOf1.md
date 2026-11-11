@@ -1,16 +1,15 @@
 # BoostSendBoostRequestCredentialAnyOf1
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**protected** | **str** |  | 
-**iv** | **str** |  | 
-**ciphertext** | **str** |  | 
-**tag** | **str** |  | 
-**aad** | **str** |  | [optional] 
-**recipients** | [**List[BoostSendBoostRequestCredentialAnyOf1RecipientsInner]**](BoostSendBoostRequestCredentialAnyOf1RecipientsInner.md) |  | [optional] 
+| Name           | Type                                                                                                                      | Description | Notes      |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **protected**  | **str**                                                                                                                   |             |
+| **iv**         | **str**                                                                                                                   |             |
+| **ciphertext** | **str**                                                                                                                   |             |
+| **tag**        | **str**                                                                                                                   |             |
+| **aad**        | **str**                                                                                                                   |             | [optional] |
+| **recipients** | [**List[BoostSendBoostRequestCredentialAnyOf1RecipientsInner]**](BoostSendBoostRequestCredentialAnyOf1RecipientsInner.md) |             | [optional] |
 
 ## Example
 
@@ -29,6 +28,5 @@ boost_send_boost_request_credential_any_of1_dict = boost_send_boost_request_cred
 # create an instance of BoostSendBoostRequestCredentialAnyOf1 from a dict
 boost_send_boost_request_credential_any_of1_from_dict = BoostSendBoostRequestCredentialAnyOf1.from_dict(boost_send_boost_request_credential_any_of1_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

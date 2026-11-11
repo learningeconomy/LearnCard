@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
     LearnCloud Network API
 
@@ -11,7 +9,9 @@
     Do not edit the class manually.
 """  # noqa: E501
 
+
 import warnings
+from datetime import timezone
 from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
@@ -19,10 +19,13 @@ from typing_extensions import Annotated
 from pydantic import StrictBool, StrictStr
 from typing import List, Optional
 from openapi_client.models.contracts_add_auto_boosts_to_contract_request import ContractsAddAutoBoostsToContractRequest
-from openapi_client.models.contracts_cancel_contract_request_request import ContractsCancelContractRequestRequest
+from openapi_client.models.contracts_add_contract_recipient_request import ContractsAddContractRecipientRequest
 from openapi_client.models.contracts_consent_to_contract200_response import ContractsConsentToContract200Response
 from openapi_client.models.contracts_consent_to_contract_request import ContractsConsentToContractRequest
 from openapi_client.models.contracts_create_consent_flow_contract_request import ContractsCreateConsentFlowContractRequest
+from openapi_client.models.contracts_delete_credential_from_all_contracts200_response import ContractsDeleteCredentialFromAllContracts200Response
+from openapi_client.models.contracts_delete_credential_from_all_contracts_request import ContractsDeleteCredentialFromAllContractsRequest
+from openapi_client.models.contracts_deny_contract_request_request import ContractsDenyContractRequestRequest
 from openapi_client.models.contracts_forward_contract_request_to_profile_request import ContractsForwardContractRequestToProfileRequest
 from openapi_client.models.contracts_get_all_contract_requests_for_profile200_response_inner import ContractsGetAllContractRequestsForProfile200ResponseInner
 from openapi_client.models.contracts_get_all_credentials_for_terms_request import ContractsGetAllCredentialsForTermsRequest
@@ -31,7 +34,6 @@ from openapi_client.models.contracts_get_consent_flow_contracts200_response impo
 from openapi_client.models.contracts_get_consent_flow_contracts_request import ContractsGetConsentFlowContractsRequest
 from openapi_client.models.contracts_get_consented_contracts200_response import ContractsGetConsentedContracts200Response
 from openapi_client.models.contracts_get_consented_contracts_request import ContractsGetConsentedContractsRequest
-from openapi_client.models.contracts_get_consented_data200_response import ContractsGetConsentedData200Response
 from openapi_client.models.contracts_get_consented_data_for_contract200_response import ContractsGetConsentedDataForContract200Response
 from openapi_client.models.contracts_get_consented_data_for_contract_request import ContractsGetConsentedDataForContractRequest
 from openapi_client.models.contracts_get_consented_data_for_did200_response import ContractsGetConsentedDataForDid200Response
@@ -41,13 +43,17 @@ from openapi_client.models.contracts_get_contract_sent_requests200_response_inne
 from openapi_client.models.contracts_get_credentials_for_contract200_response import ContractsGetCredentialsForContract200Response
 from openapi_client.models.contracts_get_credentials_for_contract_request import ContractsGetCredentialsForContractRequest
 from openapi_client.models.contracts_get_request_status_for_profile200_response import ContractsGetRequestStatusForProfile200Response
+from openapi_client.models.contracts_get_shared_insights_requests_for_profile200_response_inner import ContractsGetSharedInsightsRequestsForProfile200ResponseInner
 from openapi_client.models.contracts_get_terms_transaction_history200_response import ContractsGetTermsTransactionHistory200Response
 from openapi_client.models.contracts_get_terms_transaction_history_request import ContractsGetTermsTransactionHistoryRequest
 from openapi_client.models.contracts_mark_contract_request_as_seen_request import ContractsMarkContractRequestAsSeenRequest
 from openapi_client.models.contracts_remove_auto_boosts_from_contract_request import ContractsRemoveAutoBoostsFromContractRequest
 from openapi_client.models.contracts_send_ai_insight_share_request_request import ContractsSendAiInsightShareRequestRequest
 from openapi_client.models.contracts_send_ai_insights_contract_request_request import ContractsSendAiInsightsContractRequestRequest
+from openapi_client.models.contracts_send_contract_request_request import ContractsSendContractRequestRequest
 from openapi_client.models.contracts_sync_credentials_to_contract_request import ContractsSyncCredentialsToContractRequest
+from openapi_client.models.contracts_update_consent_flow_contract200_response import ContractsUpdateConsentFlowContract200Response
+from openapi_client.models.contracts_update_consent_flow_contract_request import ContractsUpdateConsentFlowContractRequest
 from openapi_client.models.contracts_update_consented_contract_terms_request import ContractsUpdateConsentedContractTermsRequest
 from openapi_client.models.contracts_write_credential_to_contract_request import ContractsWriteCredentialToContractRequest
 from openapi_client.models.contracts_write_credential_to_contract_via_signing_authority_request import ContractsWriteCredentialToContractViaSigningAuthorityRequest
@@ -87,9 +93,9 @@ class ContractsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> bool:
-        """Add autoboosts to a contract
+        """Deprecated: add autoboosts to a contract
 
-        Adds one or more autoboost configurations to an existing consent flow contract. The caller must be the contract owner or a designated writer. The signing authority for each autoboost must be registered to the caller.
+        Deprecated compatibility route. Only the contract owner can add autoboosts through a versioned update; additions require reapproval.
 
         :param contracts_add_auto_boosts_to_contract_request: (required)
         :type contracts_add_auto_boosts_to_contract_request: ContractsAddAutoBoostsToContractRequest
@@ -158,9 +164,9 @@ class ContractsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[bool]:
-        """Add autoboosts to a contract
+        """Deprecated: add autoboosts to a contract
 
-        Adds one or more autoboost configurations to an existing consent flow contract. The caller must be the contract owner or a designated writer. The signing authority for each autoboost must be registered to the caller.
+        Deprecated compatibility route. Only the contract owner can add autoboosts through a versioned update; additions require reapproval.
 
         :param contracts_add_auto_boosts_to_contract_request: (required)
         :type contracts_add_auto_boosts_to_contract_request: ContractsAddAutoBoostsToContractRequest
@@ -229,9 +235,9 @@ class ContractsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """Add autoboosts to a contract
+        """Deprecated: add autoboosts to a contract
 
-        Adds one or more autoboost configurations to an existing consent flow contract. The caller must be the contract owner or a designated writer. The signing authority for each autoboost must be registered to the caller.
+        Deprecated compatibility route. Only the contract owner can add autoboosts through a versioned update; additions require reapproval.
 
         :param contracts_add_auto_boosts_to_contract_request: (required)
         :type contracts_add_auto_boosts_to_contract_request: ContractsAddAutoBoostsToContractRequest
@@ -357,9 +363,292 @@ class ContractsApi:
 
 
     @validate_call
+    def contracts_add_contract_recipient(
+        self,
+        contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> bool:
+        """Add a data recipient before first consent
+
+
+        :param contracts_add_contract_recipient_request: (required)
+        :type contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_add_contract_recipient_serialize(
+            contracts_add_contract_recipient_request=contracts_add_contract_recipient_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def contracts_add_contract_recipient_with_http_info(
+        self,
+        contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[bool]:
+        """Add a data recipient before first consent
+
+
+        :param contracts_add_contract_recipient_request: (required)
+        :type contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_add_contract_recipient_serialize(
+            contracts_add_contract_recipient_request=contracts_add_contract_recipient_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def contracts_add_contract_recipient_without_preload_content(
+        self,
+        contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Add a data recipient before first consent
+
+
+        :param contracts_add_contract_recipient_request: (required)
+        :type contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_add_contract_recipient_serialize(
+            contracts_add_contract_recipient_request=contracts_add_contract_recipient_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _contracts_add_contract_recipient_serialize(
+        self,
+        contracts_add_contract_recipient_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if contracts_add_contract_recipient_request is not None:
+            _body_params = contracts_add_contract_recipient_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/consent-flow-contract/recipient/add',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def contracts_cancel_contract_request(
         self,
-        contracts_cancel_contract_request_request: ContractsCancelContractRequestRequest,
+        contracts_mark_contract_request_as_seen_request: ContractsMarkContractRequestAsSeenRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -375,10 +664,10 @@ class ContractsApi:
     ) -> bool:
         """Cancels/removes a contract request
 
-        Removes a REQUESTED_FOR relationship, cancelling the request sent to the specified target profile. Only contract writers are authorized to perform this action.
+        Cancels a pending generic request while retaining its history. Owner/writers, the requesting recipient, or the target may cancel. Legacy requests retain deletion behavior.
 
-        :param contracts_cancel_contract_request_request: (required)
-        :type contracts_cancel_contract_request_request: ContractsCancelContractRequestRequest
+        :param contracts_mark_contract_request_as_seen_request: (required)
+        :type contracts_mark_contract_request_as_seen_request: ContractsMarkContractRequestAsSeenRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -402,7 +691,7 @@ class ContractsApi:
         """ # noqa: E501
 
         _param = self._contracts_cancel_contract_request_serialize(
-            contracts_cancel_contract_request_request=contracts_cancel_contract_request_request,
+            contracts_mark_contract_request_as_seen_request=contracts_mark_contract_request_as_seen_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -430,7 +719,7 @@ class ContractsApi:
     @validate_call
     def contracts_cancel_contract_request_with_http_info(
         self,
-        contracts_cancel_contract_request_request: ContractsCancelContractRequestRequest,
+        contracts_mark_contract_request_as_seen_request: ContractsMarkContractRequestAsSeenRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -446,10 +735,10 @@ class ContractsApi:
     ) -> ApiResponse[bool]:
         """Cancels/removes a contract request
 
-        Removes a REQUESTED_FOR relationship, cancelling the request sent to the specified target profile. Only contract writers are authorized to perform this action.
+        Cancels a pending generic request while retaining its history. Owner/writers, the requesting recipient, or the target may cancel. Legacy requests retain deletion behavior.
 
-        :param contracts_cancel_contract_request_request: (required)
-        :type contracts_cancel_contract_request_request: ContractsCancelContractRequestRequest
+        :param contracts_mark_contract_request_as_seen_request: (required)
+        :type contracts_mark_contract_request_as_seen_request: ContractsMarkContractRequestAsSeenRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -473,7 +762,7 @@ class ContractsApi:
         """ # noqa: E501
 
         _param = self._contracts_cancel_contract_request_serialize(
-            contracts_cancel_contract_request_request=contracts_cancel_contract_request_request,
+            contracts_mark_contract_request_as_seen_request=contracts_mark_contract_request_as_seen_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -501,7 +790,7 @@ class ContractsApi:
     @validate_call
     def contracts_cancel_contract_request_without_preload_content(
         self,
-        contracts_cancel_contract_request_request: ContractsCancelContractRequestRequest,
+        contracts_mark_contract_request_as_seen_request: ContractsMarkContractRequestAsSeenRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -517,10 +806,10 @@ class ContractsApi:
     ) -> RESTResponseType:
         """Cancels/removes a contract request
 
-        Removes a REQUESTED_FOR relationship, cancelling the request sent to the specified target profile. Only contract writers are authorized to perform this action.
+        Cancels a pending generic request while retaining its history. Owner/writers, the requesting recipient, or the target may cancel. Legacy requests retain deletion behavior.
 
-        :param contracts_cancel_contract_request_request: (required)
-        :type contracts_cancel_contract_request_request: ContractsCancelContractRequestRequest
+        :param contracts_mark_contract_request_as_seen_request: (required)
+        :type contracts_mark_contract_request_as_seen_request: ContractsMarkContractRequestAsSeenRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -544,7 +833,7 @@ class ContractsApi:
         """ # noqa: E501
 
         _param = self._contracts_cancel_contract_request_serialize(
-            contracts_cancel_contract_request_request=contracts_cancel_contract_request_request,
+            contracts_mark_contract_request_as_seen_request=contracts_mark_contract_request_as_seen_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -567,7 +856,7 @@ class ContractsApi:
 
     def _contracts_cancel_contract_request_serialize(
         self,
-        contracts_cancel_contract_request_request,
+        contracts_mark_contract_request_as_seen_request,
         _request_auth,
         _content_type,
         _headers,
@@ -593,8 +882,8 @@ class ContractsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if contracts_cancel_contract_request_request is not None:
-            _body_params = contracts_cancel_contract_request_request
+        if contracts_mark_contract_request_as_seen_request is not None:
+            _body_params = contracts_mark_contract_request_as_seen_request
 
 
         # set the HTTP header `Accept`
@@ -1493,6 +1782,575 @@ class ContractsApi:
 
 
     @validate_call
+    def contracts_delete_credential_from_all_contracts(
+        self,
+        contracts_delete_credential_from_all_contracts_request: ContractsDeleteCredentialFromAllContractsRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ContractsDeleteCredentialFromAllContracts200Response:
+        """Delete credential references from all consent terms
+
+        Removes deleted credential URIs from any live consent terms that still reference them
+
+        :param contracts_delete_credential_from_all_contracts_request: (required)
+        :type contracts_delete_credential_from_all_contracts_request: ContractsDeleteCredentialFromAllContractsRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_delete_credential_from_all_contracts_serialize(
+            contracts_delete_credential_from_all_contracts_request=contracts_delete_credential_from_all_contracts_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContractsDeleteCredentialFromAllContracts200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def contracts_delete_credential_from_all_contracts_with_http_info(
+        self,
+        contracts_delete_credential_from_all_contracts_request: ContractsDeleteCredentialFromAllContractsRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[ContractsDeleteCredentialFromAllContracts200Response]:
+        """Delete credential references from all consent terms
+
+        Removes deleted credential URIs from any live consent terms that still reference them
+
+        :param contracts_delete_credential_from_all_contracts_request: (required)
+        :type contracts_delete_credential_from_all_contracts_request: ContractsDeleteCredentialFromAllContractsRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_delete_credential_from_all_contracts_serialize(
+            contracts_delete_credential_from_all_contracts_request=contracts_delete_credential_from_all_contracts_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContractsDeleteCredentialFromAllContracts200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def contracts_delete_credential_from_all_contracts_without_preload_content(
+        self,
+        contracts_delete_credential_from_all_contracts_request: ContractsDeleteCredentialFromAllContractsRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Delete credential references from all consent terms
+
+        Removes deleted credential URIs from any live consent terms that still reference them
+
+        :param contracts_delete_credential_from_all_contracts_request: (required)
+        :type contracts_delete_credential_from_all_contracts_request: ContractsDeleteCredentialFromAllContractsRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_delete_credential_from_all_contracts_serialize(
+            contracts_delete_credential_from_all_contracts_request=contracts_delete_credential_from_all_contracts_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContractsDeleteCredentialFromAllContracts200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _contracts_delete_credential_from_all_contracts_serialize(
+        self,
+        contracts_delete_credential_from_all_contracts_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if contracts_delete_credential_from_all_contracts_request is not None:
+            _body_params = contracts_delete_credential_from_all_contracts_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/consent-flow-contract/consent/prune-deleted-uris',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def contracts_deny_contract_request(
+        self,
+        contracts_deny_contract_request_request: ContractsDenyContractRequestRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> bool:
+        """Deny a pending contract request as its target
+
+
+        :param contracts_deny_contract_request_request: (required)
+        :type contracts_deny_contract_request_request: ContractsDenyContractRequestRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_deny_contract_request_serialize(
+            contracts_deny_contract_request_request=contracts_deny_contract_request_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def contracts_deny_contract_request_with_http_info(
+        self,
+        contracts_deny_contract_request_request: ContractsDenyContractRequestRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[bool]:
+        """Deny a pending contract request as its target
+
+
+        :param contracts_deny_contract_request_request: (required)
+        :type contracts_deny_contract_request_request: ContractsDenyContractRequestRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_deny_contract_request_serialize(
+            contracts_deny_contract_request_request=contracts_deny_contract_request_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def contracts_deny_contract_request_without_preload_content(
+        self,
+        contracts_deny_contract_request_request: ContractsDenyContractRequestRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Deny a pending contract request as its target
+
+
+        :param contracts_deny_contract_request_request: (required)
+        :type contracts_deny_contract_request_request: ContractsDenyContractRequestRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_deny_contract_request_serialize(
+            contracts_deny_contract_request_request=contracts_deny_contract_request_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _contracts_deny_contract_request_serialize(
+        self,
+        contracts_deny_contract_request_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if contracts_deny_contract_request_request is not None:
+            _body_params = contracts_deny_contract_request_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/consent-flow-contracts/deny-request',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def contracts_forward_contract_request_to_profile(
         self,
         contracts_forward_contract_request_to_profile_request: ContractsForwardContractRequestToProfileRequest,
@@ -2359,7 +3217,7 @@ class ContractsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ContractsGetConsentFlowContract200Response:
-        """Get Consent Flow Contracts
+        """Get Consent Flow Contract
 
         Gets Consent Flow Contract Details
 
@@ -2431,7 +3289,7 @@ class ContractsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> ApiResponse[ContractsGetConsentFlowContract200Response]:
-        """Get Consent Flow Contracts
+        """Get Consent Flow Contract
 
         Gets Consent Flow Contract Details
 
@@ -2503,7 +3361,7 @@ class ContractsApi:
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
     ) -> RESTResponseType:
-        """Get Consent Flow Contracts
+        """Get Consent Flow Contract
 
         Gets Consent Flow Contract Details
 
@@ -3208,7 +4066,7 @@ class ContractsApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ContractsGetConsentedData200Response:
+    ) -> ContractsGetConsentedDataForContract200Response:
         """Get the data that has been consented for all of your contracts
 
         This route grabs all the data that has been consented for all of your contracts
@@ -3246,7 +4104,7 @@ class ContractsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContractsGetConsentedData200Response",
+            '200': "ContractsGetConsentedDataForContract200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -3279,7 +4137,7 @@ class ContractsApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[ContractsGetConsentedData200Response]:
+    ) -> ApiResponse[ContractsGetConsentedDataForContract200Response]:
         """Get the data that has been consented for all of your contracts
 
         This route grabs all the data that has been consented for all of your contracts
@@ -3317,7 +4175,7 @@ class ContractsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContractsGetConsentedData200Response",
+            '200': "ContractsGetConsentedDataForContract200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -3388,7 +4246,7 @@ class ContractsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContractsGetConsentedData200Response",
+            '200': "ContractsGetConsentedDataForContract200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -4053,7 +4911,7 @@ class ContractsApi:
     @validate_call
     def contracts_get_contract_sent_requests(
         self,
-        contract_uri: Optional[StrictStr],
+        contract_uri: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4125,7 +4983,7 @@ class ContractsApi:
     @validate_call
     def contracts_get_contract_sent_requests_with_http_info(
         self,
-        contract_uri: Optional[StrictStr],
+        contract_uri: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4197,7 +5055,7 @@ class ContractsApi:
     @validate_call
     def contracts_get_contract_sent_requests_without_preload_content(
         self,
-        contract_uri: Optional[StrictStr],
+        contract_uri: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4617,7 +5475,7 @@ class ContractsApi:
     @validate_call
     def contracts_get_request_status_for_profile(
         self,
-        target_profile_id: Optional[StrictStr],
+        target_profile_id: StrictStr,
         contract_id: Optional[StrictStr] = None,
         contract_uri: Optional[StrictStr] = None,
         _request_timeout: Union[
@@ -4697,7 +5555,7 @@ class ContractsApi:
     @validate_call
     def contracts_get_request_status_for_profile_with_http_info(
         self,
-        target_profile_id: Optional[StrictStr],
+        target_profile_id: StrictStr,
         contract_id: Optional[StrictStr] = None,
         contract_uri: Optional[StrictStr] = None,
         _request_timeout: Union[
@@ -4777,7 +5635,7 @@ class ContractsApi:
     @validate_call
     def contracts_get_request_status_for_profile_without_preload_content(
         self,
-        target_profile_id: Optional[StrictStr],
+        target_profile_id: StrictStr,
         contract_id: Optional[StrictStr] = None,
         contract_uri: Optional[StrictStr] = None,
         _request_timeout: Union[
@@ -4911,6 +5769,284 @@ class ContractsApi:
         return self.api_client.param_serialize(
             method='GET',
             resource_path='/consent-flow-contracts/request-status',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def contracts_get_shared_insights_requests_for_profile(
+        self,
+        target_profile_id: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> List[ContractsGetSharedInsightsRequestsForProfile200ResponseInner]:
+        """Get profiles a user has shared insights with
+
+        Gets profiles with REQUESTED_FOR relationships targeting the current user, including request status.
+
+        :param target_profile_id: (required)
+        :type target_profile_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_get_shared_insights_requests_for_profile_serialize(
+            target_profile_id=target_profile_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[ContractsGetSharedInsightsRequestsForProfile200ResponseInner]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def contracts_get_shared_insights_requests_for_profile_with_http_info(
+        self,
+        target_profile_id: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[List[ContractsGetSharedInsightsRequestsForProfile200ResponseInner]]:
+        """Get profiles a user has shared insights with
+
+        Gets profiles with REQUESTED_FOR relationships targeting the current user, including request status.
+
+        :param target_profile_id: (required)
+        :type target_profile_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_get_shared_insights_requests_for_profile_serialize(
+            target_profile_id=target_profile_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[ContractsGetSharedInsightsRequestsForProfile200ResponseInner]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def contracts_get_shared_insights_requests_for_profile_without_preload_content(
+        self,
+        target_profile_id: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get profiles a user has shared insights with
+
+        Gets profiles with REQUESTED_FOR relationships targeting the current user, including request status.
+
+        :param target_profile_id: (required)
+        :type target_profile_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_get_shared_insights_requests_for_profile_serialize(
+            target_profile_id=target_profile_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[ContractsGetSharedInsightsRequestsForProfile200ResponseInner]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _contracts_get_shared_insights_requests_for_profile_serialize(
+        self,
+        target_profile_id,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        if target_profile_id is not None:
+            
+            _query_params.append(('targetProfileId', target_profile_id))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/consent-flow-contracts/shared-insights-requests-for-profile',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -5231,7 +6367,7 @@ class ContractsApi:
     ) -> bool:
         """Marks a contract request as seen
 
-        Updates the read status of a contract request to \"seen\" for the specified target profile. Only contract writers are authorized to perform this action.
+        Updates the read status of a contract request to \"seen\" for the specified target profile. Targets can mark their existing requests seen. Legacy writer behavior is retained for legacy requests.
 
         :param contracts_mark_contract_request_as_seen_request: (required)
         :type contracts_mark_contract_request_as_seen_request: ContractsMarkContractRequestAsSeenRequest
@@ -5302,7 +6438,7 @@ class ContractsApi:
     ) -> ApiResponse[bool]:
         """Marks a contract request as seen
 
-        Updates the read status of a contract request to \"seen\" for the specified target profile. Only contract writers are authorized to perform this action.
+        Updates the read status of a contract request to \"seen\" for the specified target profile. Targets can mark their existing requests seen. Legacy writer behavior is retained for legacy requests.
 
         :param contracts_mark_contract_request_as_seen_request: (required)
         :type contracts_mark_contract_request_as_seen_request: ContractsMarkContractRequestAsSeenRequest
@@ -5373,7 +6509,7 @@ class ContractsApi:
     ) -> RESTResponseType:
         """Marks a contract request as seen
 
-        Updates the read status of a contract request to \"seen\" for the specified target profile. Only contract writers are authorized to perform this action.
+        Updates the read status of a contract request to \"seen\" for the specified target profile. Targets can mark their existing requests seen. Legacy writer behavior is retained for legacy requests.
 
         :param contracts_mark_contract_request_as_seen_request: (required)
         :type contracts_mark_contract_request_as_seen_request: ContractsMarkContractRequestAsSeenRequest
@@ -5517,7 +6653,7 @@ class ContractsApi:
     ) -> bool:
         """Remove autoboosts from a contract
 
-        Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. The caller must be the contract owner or a designated writer.
+        Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. Only the contract owner may change this configuration.
 
         :param contracts_remove_auto_boosts_from_contract_request: (required)
         :type contracts_remove_auto_boosts_from_contract_request: ContractsRemoveAutoBoostsFromContractRequest
@@ -5588,7 +6724,7 @@ class ContractsApi:
     ) -> ApiResponse[bool]:
         """Remove autoboosts from a contract
 
-        Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. The caller must be the contract owner or a designated writer.
+        Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. Only the contract owner may change this configuration.
 
         :param contracts_remove_auto_boosts_from_contract_request: (required)
         :type contracts_remove_auto_boosts_from_contract_request: ContractsRemoveAutoBoostsFromContractRequest
@@ -5659,7 +6795,7 @@ class ContractsApi:
     ) -> RESTResponseType:
         """Remove autoboosts from a contract
 
-        Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. The caller must be the contract owner or a designated writer.
+        Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. Only the contract owner may change this configuration.
 
         :param contracts_remove_auto_boosts_from_contract_request: (required)
         :type contracts_remove_auto_boosts_from_contract_request: ContractsRemoveAutoBoostsFromContractRequest
@@ -5769,6 +6905,289 @@ class ContractsApi:
         return self.api_client.param_serialize(
             method='POST',
             resource_path='/consent-flow-contracts/autoboosts/remove',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def contracts_remove_contract_recipient(
+        self,
+        contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> bool:
+        """Remove a data recipient
+
+
+        :param contracts_add_contract_recipient_request: (required)
+        :type contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_remove_contract_recipient_serialize(
+            contracts_add_contract_recipient_request=contracts_add_contract_recipient_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def contracts_remove_contract_recipient_with_http_info(
+        self,
+        contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[bool]:
+        """Remove a data recipient
+
+
+        :param contracts_add_contract_recipient_request: (required)
+        :type contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_remove_contract_recipient_serialize(
+            contracts_add_contract_recipient_request=contracts_add_contract_recipient_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def contracts_remove_contract_recipient_without_preload_content(
+        self,
+        contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Remove a data recipient
+
+
+        :param contracts_add_contract_recipient_request: (required)
+        :type contracts_add_contract_recipient_request: ContractsAddContractRecipientRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_remove_contract_recipient_serialize(
+            contracts_add_contract_recipient_request=contracts_add_contract_recipient_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _contracts_remove_contract_recipient_serialize(
+        self,
+        contracts_add_contract_recipient_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if contracts_add_contract_recipient_request is not None:
+            _body_params = contracts_add_contract_recipient_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/consent-flow-contract/recipient/remove',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -6357,6 +7776,289 @@ class ContractsApi:
 
 
     @validate_call
+    def contracts_send_contract_request(
+        self,
+        contracts_send_contract_request_request: ContractsSendContractRequestRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> bool:
+        """Send an attributed contract request
+
+
+        :param contracts_send_contract_request_request: (required)
+        :type contracts_send_contract_request_request: ContractsSendContractRequestRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_send_contract_request_serialize(
+            contracts_send_contract_request_request=contracts_send_contract_request_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def contracts_send_contract_request_with_http_info(
+        self,
+        contracts_send_contract_request_request: ContractsSendContractRequestRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[bool]:
+        """Send an attributed contract request
+
+
+        :param contracts_send_contract_request_request: (required)
+        :type contracts_send_contract_request_request: ContractsSendContractRequestRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_send_contract_request_serialize(
+            contracts_send_contract_request_request=contracts_send_contract_request_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def contracts_send_contract_request_without_preload_content(
+        self,
+        contracts_send_contract_request_request: ContractsSendContractRequestRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Send an attributed contract request
+
+
+        :param contracts_send_contract_request_request: (required)
+        :type contracts_send_contract_request_request: ContractsSendContractRequestRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_send_contract_request_serialize(
+            contracts_send_contract_request_request=contracts_send_contract_request_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _contracts_send_contract_request_serialize(
+        self,
+        contracts_send_contract_request_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if contracts_send_contract_request_request is not None:
+            _body_params = contracts_send_contract_request_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/consent-flow-contracts/request',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def contracts_sync_credentials_to_contract(
         self,
         contracts_sync_credentials_to_contract_request: ContractsSyncCredentialsToContractRequest,
@@ -6627,6 +8329,292 @@ class ContractsApi:
         return self.api_client.param_serialize(
             method='POST',
             resource_path='/consent-flow-contract/sync',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def contracts_update_consent_flow_contract(
+        self,
+        contracts_update_consent_flow_contract_request: ContractsUpdateConsentFlowContractRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ContractsUpdateConsentFlowContract200Response:
+        """Update Consent Flow Contract
+
+        Creates a versioned update to an owned consent flow contract
+
+        :param contracts_update_consent_flow_contract_request: (required)
+        :type contracts_update_consent_flow_contract_request: ContractsUpdateConsentFlowContractRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_update_consent_flow_contract_serialize(
+            contracts_update_consent_flow_contract_request=contracts_update_consent_flow_contract_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContractsUpdateConsentFlowContract200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def contracts_update_consent_flow_contract_with_http_info(
+        self,
+        contracts_update_consent_flow_contract_request: ContractsUpdateConsentFlowContractRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[ContractsUpdateConsentFlowContract200Response]:
+        """Update Consent Flow Contract
+
+        Creates a versioned update to an owned consent flow contract
+
+        :param contracts_update_consent_flow_contract_request: (required)
+        :type contracts_update_consent_flow_contract_request: ContractsUpdateConsentFlowContractRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_update_consent_flow_contract_serialize(
+            contracts_update_consent_flow_contract_request=contracts_update_consent_flow_contract_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContractsUpdateConsentFlowContract200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def contracts_update_consent_flow_contract_without_preload_content(
+        self,
+        contracts_update_consent_flow_contract_request: ContractsUpdateConsentFlowContractRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Update Consent Flow Contract
+
+        Creates a versioned update to an owned consent flow contract
+
+        :param contracts_update_consent_flow_contract_request: (required)
+        :type contracts_update_consent_flow_contract_request: ContractsUpdateConsentFlowContractRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contracts_update_consent_flow_contract_serialize(
+            contracts_update_consent_flow_contract_request=contracts_update_consent_flow_contract_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContractsUpdateConsentFlowContract200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _contracts_update_consent_flow_contract_serialize(
+        self,
+        contracts_update_consent_flow_contract_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if contracts_update_consent_flow_contract_request is not None:
+            _body_params = contracts_update_consent_flow_contract_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/consent-flow-contract/update',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -6932,7 +8920,7 @@ class ContractsApi:
     def contracts_verify_consent(
         self,
         uri: StrictStr,
-        profile_id: Optional[StrictStr],
+        profile_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -7008,7 +8996,7 @@ class ContractsApi:
     def contracts_verify_consent_with_http_info(
         self,
         uri: StrictStr,
-        profile_id: Optional[StrictStr],
+        profile_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -7084,7 +9072,7 @@ class ContractsApi:
     def contracts_verify_consent_without_preload_content(
         self,
         uri: StrictStr,
-        profile_id: Optional[StrictStr],
+        profile_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],

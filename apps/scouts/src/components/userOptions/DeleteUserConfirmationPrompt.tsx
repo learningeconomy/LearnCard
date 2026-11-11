@@ -71,7 +71,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
             if (authToken === 'dummy') {
                 await removeAllVCsFromWallet();
                 await handleLCNetworkProfileDelete();
-                newModal(<DeleteAccountModal />, { sectionClassName: '!max-w-[350px]' });
+                newModal(<DeleteAccountModal />, { sectionClassName: 'max-w-[350px]!' });
                 handleLogout(e);
                 confirmationStore.set.showConfirmation(true);
                 setIsLoading(false);
@@ -79,7 +79,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
             } else if (authStore?.get?.typeOfLogin() === SocialLoginTypes?.scoutsSSO) {
                 await removeAllVCsFromWallet();
                 await handleLCNetworkProfileDelete();
-                newModal(<DeleteAccountModal />, { sectionClassName: '!max-w-[350px]' });
+                newModal(<DeleteAccountModal />, { sectionClassName: 'max-w-[350px]!' });
                 handleLogout(e);
                 confirmationStore.set.showConfirmation(true);
                 setIsLoading(false);
@@ -89,7 +89,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                 if (userDeleted.success) {
                     await removeAllVCsFromWallet();
                     await handleLCNetworkProfileDelete();
-                    newModal(<DeleteAccountModal />, { sectionClassName: '!max-w-[350px]' });
+                    newModal(<DeleteAccountModal />, { sectionClassName: 'max-w-[350px]!' });
                     handleLogout(e);
                     confirmationStore.set.showConfirmation(true);
                     setIsLoading(false);

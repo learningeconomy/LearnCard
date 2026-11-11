@@ -22,14 +22,15 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of1_recipients_inner_header_epk import StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeaderEpk
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader(BaseModel):
     """
     StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader
     """ # noqa: E501
-    alg: Optional[StrictStr]
-    iv: Optional[StrictStr]
-    tag: Optional[StrictStr]
+    alg: StrictStr
+    iv: StrictStr
+    tag: StrictStr
     epk: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeaderEpk] = None
     kid: Optional[StrictStr] = None
     apv: Optional[StrictStr] = None
@@ -38,7 +39,8 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader(BaseModel):
     __properties: ClassVar[List[str]] = ["alg", "iv", "tag", "epk", "kid", "apv", "apu"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -50,8 +52,7 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -64,9 +65,8 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -86,36 +86,6 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if alg (nullable) is None
-        # and model_fields_set contains the field
-        if self.alg is None and "alg" in self.model_fields_set:
-            _dict['alg'] = None
-
-        # set to None if iv (nullable) is None
-        # and model_fields_set contains the field
-        if self.iv is None and "iv" in self.model_fields_set:
-            _dict['iv'] = None
-
-        # set to None if tag (nullable) is None
-        # and model_fields_set contains the field
-        if self.tag is None and "tag" in self.model_fields_set:
-            _dict['tag'] = None
-
-        # set to None if kid (nullable) is None
-        # and model_fields_set contains the field
-        if self.kid is None and "kid" in self.model_fields_set:
-            _dict['kid'] = None
-
-        # set to None if apv (nullable) is None
-        # and model_fields_set contains the field
-        if self.apv is None and "apv" in self.model_fields_set:
-            _dict['apv'] = None
-
-        # set to None if apu (nullable) is None
-        # and model_fields_set contains the field
-        if self.apu is None and "apu" in self.model_fields_set:
-            _dict['apu'] = None
-
         return _dict
 
     @classmethod
@@ -127,7 +97,7 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "alg": obj.get("alg"),
             "iv": obj.get("iv"),
             "tag": obj.get("tag"),
@@ -135,7 +105,9 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader(BaseModel):
             "kid": obj.get("kid"),
             "apv": obj.get("apv"),
             "apu": obj.get("apu")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

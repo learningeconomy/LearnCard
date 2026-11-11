@@ -1,0 +1,271 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { initTRPC } from '@trpc/server';
+
+const state = vi.hoisted(() => ({
+    saved: {} as Record<string, unknown>,
+    profile: { dob: '1990-01-01', country: 'US', type: 'personal' } as {
+        dob?: string;
+        country?: string;
+        type?: string;
+    },
+    profileUnavailable: false,
+    repairFailure: null as 'throw' | 'return-false' | null,
+    lock: 'unlocked' as 'unlocked' | 'locked' | 'student' | 'unknown',
+}));
+vi.mock('@routes', () => {
+    const t = initTRPC.create();
+    return { t, didAndChallengeRoute: t.procedure };
+});
+vi.mock('@accesslayer/preferences/create', () => ({
+    createPreferences: async (_did: string, theme: string) => {
+        state.saved = { theme };
+        return true;
+    },
+}));
+vi.mock('@accesslayer/preferences/read', () => ({
+    getPreferencesForDid: async () => ({ ...state.saved }),
+}));
+vi.mock('@accesslayer/preferences/update', () => ({
+    updatePreferences: async (_did: string, input: Record<string, unknown>) => {
+        if (state.repairFailure === 'throw') throw new Error('write failed');
+        if (state.repairFailure === 'return-false') return false;
+        Object.assign(state.saved, input);
+        return true;
+    },
+}));
+vi.mock('@helpers/currentProfile', () => ({
+    getCurrentProfile: async () => {
+        if (state.profileUnavailable) return null;
+        return { ...state.profile };
+    },
+}));
+// The ClassLink privacy lock is covered by test/classlink-preferences.spec.ts (live Mongo);
+// here it is a switch so the age rules and their interaction with a lock run without Mongo.
+vi.mock('@accesslayer/preferences/privacyLock', () => ({
+    getPrivacyLockState: async () => state.lock,
+}));
+vi.mock('../models/Preferences', () => ({
+    MINOR_PREFERENCE_VALUES: {
+        aiEnabled: false,
+        aiAutoDisabled: true,
+        analyticsEnabled: false,
+        analyticsAutoDisabled: true,
+        bugReportsEnabled: false,
+        bugReportsAutoDisabled: true,
+        isMinor: true,
+    },
+    enforceMinorPreferences: async () => {
+        state.lock = 'locked';
+    },
+}));
+import { preferencesRouter } from './preferences';
+import { ThemeEnum } from '../types/preferences';
+const caller = preferencesRouter.createCaller({
+    user: { did: 'did:example:person', isChallengeValid: true },
+    tenant: { id: 'test-tenant' },
+    authorizationHeader: 'Bearer signed-vp',
+} as never);
+
+beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-29T12:00:00Z'));
+    state.saved = { theme: ThemeEnum.Colorful };
+    state.profile = { dob: '1990-01-01', country: 'US', type: 'personal' };
+    state.profileUnavailable = false;
+    state.repairFailure = null;
+    state.lock = 'unlocked';
+});
+afterEach(() => vi.useRealTimers());
+
+describe('backend analytics age authorization', () => {
+    it.each(['guardian', 'school', 'personal'])(
+        'rejects forged age flags for an underage %s account',
+        async type => {
+            state.profile = { dob: '2012-01-01', country: 'US', type };
+            await caller.updatePreferences({
+                analyticsEnabled: true,
+                isMinor: false,
+                analyticsAutoDisabled: false,
+            });
+            expect(state.saved).toMatchObject({
+                analyticsEnabled: false,
+                isMinor: true,
+                analyticsAutoDisabled: true,
+            });
+            expect(await caller.getPreferencesForDid()).toMatchObject({
+                analyticsEnabled: false,
+                isMinor: true,
+            });
+        }
+    );
+
+    it('permits adult opt-in but derives metadata instead of trusting caller flags', async () => {
+        await caller.updatePreferences({
+            analyticsEnabled: true,
+            isMinor: true,
+            analyticsAutoDisabled: true,
+        });
+        expect(state.saved).toMatchObject({
+            analyticsEnabled: true,
+            isMinor: false,
+            analyticsAutoDisabled: false,
+        });
+        expect((await caller.getPreferencesForDid()).analyticsEnabled).toBe(true);
+    });
+
+    it('repairs incorrect saved consent and keeps it off after the profile becomes eligible', async () => {
+        state.saved.analyticsEnabled = true;
+        state.saved.isMinor = false;
+        state.profile.dob = '2012-01-01';
+        expect((await caller.getPreferencesForDid()).analyticsEnabled).toBe(false);
+        expect(state.saved).toMatchObject({ analyticsEnabled: false, isMinor: true });
+        state.profile.dob = '1990-01-01';
+        expect(await caller.getPreferencesForDid()).toMatchObject({
+            analyticsEnabled: false,
+            isMinor: false,
+        });
+        expect(state.saved.analyticsEnabled).toBe(false);
+    });
+
+    it('re-evaluates trusted country and DOB on every direct API request', async () => {
+        state.profile = { dob: '2010-10-29', country: 'FR' };
+        await caller.updatePreferences({ analyticsEnabled: true });
+        expect((await caller.getPreferencesForDid()).analyticsEnabled).toBe(true);
+        state.profile.country = 'US';
+        expect((await caller.getPreferencesForDid()).analyticsEnabled).toBe(false);
+        expect(state.saved.analyticsEnabled).toBe(false);
+        await caller.updatePreferences({ analyticsEnabled: true });
+        expect(state.saved.analyticsEnabled).toBe(false);
+        state.profile.dob = '2000-01-01';
+        await caller.updatePreferences({ analyticsEnabled: true });
+        expect((await caller.getPreferencesForDid()).analyticsEnabled).toBe(true);
+    });
+
+    it.each([
+        [{ dob: undefined }, true],
+        [{ dob: '' }, true],
+        [{ dob: '1990-01-01', type: 'child' }, false],
+        [{ dob: '2030-01-01' }, false],
+        [{ dob: 'not-a-date' }, false],
+    ])(
+        'honors legacy absent DOB and fails closed for child/invalid/future profiles: %j',
+        async (profile, allowed) => {
+            state.profile = profile;
+            await caller.updatePreferences({ analyticsEnabled: true });
+            expect((await caller.getPreferencesForDid()).analyticsEnabled).toBe(allowed);
+            expect(state.saved.analyticsEnabled).toBe(allowed);
+        }
+    );
+
+    it('keeps preferences available and analytics transiently off when age authority is unknown', async () => {
+        state.saved = {
+            theme: ThemeEnum.Formal,
+            aiEnabled: true,
+            analyticsEnabled: true,
+            isMinor: false,
+        };
+        state.profileUnavailable = true;
+        await expect(caller.getPreferencesForDid()).resolves.toMatchObject({
+            theme: ThemeEnum.Formal,
+            aiEnabled: true,
+            analyticsEnabled: false,
+        });
+        expect(state.saved.analyticsEnabled).toBe(true);
+        await expect(
+            caller.updatePreferences({ theme: ThemeEnum.Colorful, aiEnabled: false })
+        ).resolves.toBe(true);
+        expect(state.saved).toMatchObject({
+            theme: ThemeEnum.Colorful,
+            aiEnabled: false,
+            analyticsEnabled: true,
+        });
+        await caller.updatePreferences({ analyticsEnabled: false, isMinor: true });
+        expect(state.saved).toMatchObject({ analyticsEnabled: false, isMinor: false });
+    });
+    it('rejects opt-in under unknown authority before applying mixed changes', async () => {
+        state.profileUnavailable = true;
+        await expect(
+            caller.updatePreferences({ theme: ThemeEnum.Formal, analyticsEnabled: true })
+        ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+        expect(state.saved).toEqual({ theme: ThemeEnum.Colorful });
+    });
+
+    it.each(['throw', 'return-false'] as const)(
+        'returns fail-closed preferences on %s repair failure, then retries repair',
+        async failure => {
+            state.profile = { dob: '2012-01-01', country: 'US' };
+            state.saved = { theme: ThemeEnum.Formal, analyticsEnabled: true };
+            state.repairFailure = failure;
+            await expect(caller.getPreferencesForDid()).resolves.toMatchObject({
+                theme: ThemeEnum.Formal,
+                analyticsEnabled: false,
+                isMinor: true,
+            });
+            expect(state.saved.analyticsEnabled).toBe(true);
+            state.repairFailure = null;
+            await caller.getPreferencesForDid();
+            expect(state.saved).toMatchObject({ analyticsEnabled: false, isMinor: true });
+        }
+    );
+
+    it('allows onboarding theme writes without a profile and rejects forged analytics authority', async () => {
+        state.profileUnavailable = true;
+        await expect(caller.createPreferences({ theme: ThemeEnum.Formal })).resolves.toBe(true);
+        await expect(
+            caller.updatePreferences({
+                analyticsEnabled: true,
+                analyticsAutoDisabled: false,
+                isMinor: false,
+            })
+        ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+        expect(state.saved).toEqual({ theme: ThemeEnum.Formal });
+    });
+
+    it('repairs a known minor and restores adult authorization after authority recovers', async () => {
+        state.saved = { theme: ThemeEnum.Formal, analyticsEnabled: true };
+        state.profile = { dob: '2012-01-01', country: 'US' };
+        await caller.getPreferencesForDid();
+        expect(state.saved).toMatchObject({ analyticsEnabled: false, isMinor: true });
+        state.profileUnavailable = true;
+        await caller.getPreferencesForDid();
+        expect(state.saved.analyticsEnabled).toBe(false);
+        state.profileUnavailable = false;
+        state.profile = { dob: '1990-01-01', country: 'US' };
+        await caller.updatePreferences({ analyticsEnabled: true });
+        expect(state.saved).toMatchObject({ analyticsEnabled: true, isMinor: false });
+    });
+});
+
+describe('ClassLink privacy lock with age rules', () => {
+    it('keeps a locked adult-profile account locked and never repairs isMinor to false', async () => {
+        state.lock = 'locked';
+        state.saved = { theme: ThemeEnum.Colorful, isMinor: true, analyticsEnabled: false };
+        expect(await caller.getPreferencesForDid()).toMatchObject({
+            isMinor: true,
+            analyticsEnabled: false,
+            aiEnabled: false,
+            locked: true,
+        });
+        expect(state.saved.isMinor).toBe(true);
+        await caller.updatePreferences({ analyticsEnabled: true, aiEnabled: true });
+        expect(state.saved).toMatchObject({
+            analyticsEnabled: false,
+            aiEnabled: false,
+            isMinor: true,
+        });
+    });
+
+    it('lets the lock force analytics off when age authority is unknown, instead of refusing', async () => {
+        state.lock = 'locked';
+        state.profileUnavailable = true;
+        await expect(caller.updatePreferences({ analyticsEnabled: true })).resolves.toBe(true);
+        expect(state.saved).toMatchObject({ analyticsEnabled: false, isMinor: true });
+    });
+
+    it('refuses writes when the student lookup fails', async () => {
+        state.lock = 'unknown';
+        await expect(caller.updatePreferences({ aiEnabled: true })).rejects.toMatchObject({
+            code: 'INTERNAL_SERVER_ERROR',
+        });
+    });
+});

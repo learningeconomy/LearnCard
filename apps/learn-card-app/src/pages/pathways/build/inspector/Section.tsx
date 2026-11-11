@@ -31,7 +31,7 @@
  *
  * The "liquid glass" feel lives here — `backdrop-blur-md bg-white/80`
  * on the sticky header, a hairline 200/60 border, and a small
- * `shadow-sm` on the outer card. No gradients, no tints: restrained.
+ * `shadow-xs` on the outer card. No gradients, no tints: restrained.
  */
 
 import React, { useState } from 'react';
@@ -128,7 +128,7 @@ const Section: React.FC<SectionProps> = ({
         <div
             className={`rounded-[20px] border ${
                 danger ? 'border-red-100 bg-white' : 'border-grayscale-200 bg-white'
-            } shadow-sm overflow-hidden`}
+            } shadow-xs overflow-hidden`}
         >
             {/*
                 Header is both the toggle and the sticky anchor. We make

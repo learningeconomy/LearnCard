@@ -3,3 +3,4 @@ export { ListingDetail } from './ListingDetail';
 export { ListingActions } from './ListingActions';
 export { PromotionMenu } from './PromotionMenu';
 export { ConsentContractPreview } from './ConsentContractPreview';
+export { PendingUpdatePanel } from './PendingUpdatePanel';

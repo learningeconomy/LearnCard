@@ -1,15 +1,14 @@
 # SkillFrameworksReplaceSkills200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**created** | **int** |  | 
-**updated** | **int** |  | 
-**deleted** | **int** |  | 
-**unchanged** | **int** |  | 
-**total** | **int** |  | 
+| Name          | Type    | Description | Notes |
+| ------------- | ------- | ----------- | ----- |
+| **created**   | **int** |             |
+| **updated**   | **int** |             |
+| **deleted**   | **int** |             |
+| **unchanged** | **int** |             |
+| **total**     | **int** |             |
 
 ## Example
 
@@ -28,6 +27,5 @@ skill_frameworks_replace_skills200_response_dict = skill_frameworks_replace_skil
 # create an instance of SkillFrameworksReplaceSkills200Response from a dict
 skill_frameworks_replace_skills200_response_from_dict = SkillFrameworksReplaceSkills200Response.from_dict(skill_frameworks_replace_skills200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

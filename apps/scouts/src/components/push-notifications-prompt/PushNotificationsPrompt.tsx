@@ -99,7 +99,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                 </IonCol>
             </IonRow>
             <IonRow className="w-full flex items-center justify-center mt-4">
-                <IonCol className="flex items-center flex-col max-w-[90%] border-b-[1px] border-grayscale-200">
+                <IonCol className="flex items-center flex-col max-w-[90%] border-b border-grayscale-200">
                     <button
                         onClick={async () => {
                             const permissionState =

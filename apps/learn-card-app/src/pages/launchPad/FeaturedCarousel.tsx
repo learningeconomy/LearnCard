@@ -7,14 +7,14 @@ import * as m from '../../paraglide/messages.js';
 
 // Vibrant color palette for carousel cards
 const CAROUSEL_COLORS = [
-    'bg-gradient-to-br from-indigo-500 to-purple-600',
-    'bg-gradient-to-br from-emerald-500 to-teal-600',
-    'bg-gradient-to-br from-rose-500 to-pink-600',
-    'bg-gradient-to-br from-amber-500 to-orange-600',
-    'bg-gradient-to-br from-cyan-500 to-blue-600',
-    'bg-gradient-to-br from-fuchsia-500 to-purple-600',
-    'bg-gradient-to-br from-lime-500 to-green-600',
-    'bg-gradient-to-br from-sky-500 to-indigo-600',
+    'bg-linear-to-br/srgb from-indigo-500 to-purple-600',
+    'bg-linear-to-br/srgb from-emerald-500 to-teal-600',
+    'bg-linear-to-br/srgb from-rose-500 to-pink-600',
+    'bg-linear-to-br/srgb from-amber-500 to-orange-600',
+    'bg-linear-to-br/srgb from-cyan-500 to-blue-600',
+    'bg-linear-to-br/srgb from-fuchsia-500 to-purple-600',
+    'bg-linear-to-br/srgb from-lime-500 to-green-600',
+    'bg-linear-to-br/srgb from-sky-500 to-indigo-600',
 ];
 
 interface FeaturedCarouselProps {
@@ -92,12 +92,12 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                             key={app.listing_id}
                             onClick={() => handleOpenDetail(app, appIsInstalled)}
                             className={`
-                                flex-shrink-0 min-h-[140px] rounded-2xl p-5
+                                shrink-0 min-h-[140px] rounded-2xl p-5
                                 ${isSingleApp ? 'w-full' : 'w-[280px]'}
                                 ${colorClass}
                                 snap-start cursor-pointer
                                 transition-shadow duration-200 hover:shadow-xl
-                                focus:outline-none focus:ring-2 focus:ring-white/50
+                                focus:outline-hidden focus:ring-2 focus:ring-white/50
                                 transform-gpu
                             `}
                         >
@@ -109,7 +109,7 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                                 }}
                             >
                                 {/* App Icon */}
-                                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white/20 flex-shrink-0 shadow-lg">
+                                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white/20 shrink-0 shadow-lg">
                                     <img
                                         src={app.icon_url}
                                         alt={app.display_name}

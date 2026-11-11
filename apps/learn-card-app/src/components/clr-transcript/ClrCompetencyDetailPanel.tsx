@@ -8,12 +8,15 @@ import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 
 import { useModal } from 'learn-card-base';
-import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
+import {
+    formatClrDate,
+    getLinkedCompetencies,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type {
     ClrTranscriptDisplayModel,
     CompetencyDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
-import { getRelationshipsForRecord } from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { getRelationshipsForRecord } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 type CompetencySection = {
     id: string;
@@ -52,7 +55,7 @@ const ClrCompetencyDetailPanel: React.FC<{
             {
                 id: `course-${course.sourceCredentialId}`,
                 dateLabel: course.earnedAt?.value
-                    ? `Earned ${formatClrDate(course.earnedAt.value)}`
+                    ? formatClrDate(course.earnedAt.value)
                     : undefined,
                 humanCode: course.humanCode?.value,
                 title: course.name?.value ?? 'Course',
@@ -74,7 +77,7 @@ const ClrCompetencyDetailPanel: React.FC<{
             {
                 id: `program-${program.sourceCredentialId}`,
                 dateLabel: program.earnedAt?.value
-                    ? `Awarded ${formatClrDate(program.earnedAt.value)}`
+                    ? formatClrDate(program.earnedAt.value)
                     : undefined,
                 title: program.name?.value ?? 'Program',
                 competencies: programCompetencies,
@@ -122,11 +125,14 @@ const ClrCompetencyDetailPanel: React.FC<{
 
             <div className="border-b border-grayscale-100 border-solid w-[95%] mx-auto" />
 
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-v3-4">
                 {section.competencies.map(competency => (
                     <ClrCompetencyBlock
                         key={competency.sourceCredentialId}
                         competency={competency}
+                        record={model.records.find(
+                            record => record.id === competency.sourceCredentialId
+                        )}
                         relationships={getRelationshipsForRecord(
                             relationships,
                             competency.sourceCredentialId
@@ -140,7 +146,7 @@ const ClrCompetencyDetailPanel: React.FC<{
     );
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
+        <div className="space-y-v3-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
             <div className="bg-white rounded-b-[15px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 flex items-center gap-2 min-w-0">
@@ -154,14 +160,14 @@ const ClrCompetencyDetailPanel: React.FC<{
                     </div>
                     <button
                         onClick={closeModal}
-                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px]"
+                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-2"
                     >
                         <X className="w-6 h-6" />
                     </button>
                 </div>
             </div>
 
-            <div className="px-5 space-y-4">
+            <div className="px-5 space-y-v3-4">
                 {linkedCourseSections.map(section =>
                     renderSection(section, <StudiesIcon className="w-4 h-4" />)
                 )}
@@ -169,7 +175,7 @@ const ClrCompetencyDetailPanel: React.FC<{
                 {linkedProgramSections.map(section =>
                     renderSection(
                         section,
-                        <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-500" />
+                        <CertificateDisplayIcon className="w-4 h-4 text-grayscale-500!" />
                     )
                 )}
 

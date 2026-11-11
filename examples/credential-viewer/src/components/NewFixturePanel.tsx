@@ -361,7 +361,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                                 setFolder(e.target.value);
                                             }
                                         }}
-                                        className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                        className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                     >
                                         {folders.map(f => (
                                             <option key={f} value={f}>
@@ -382,7 +382,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                                     e.target.value.replace(/[^a-z0-9-]/g, '')
                                                 )
                                             }
-                                            className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                            className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                         />
                                     )}
                                 </div>
@@ -400,7 +400,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                     onChange={e =>
                                         setFilename(e.target.value.replace(/[^a-z0-9-]/g, ''))
                                     }
-                                    className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                    className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                 />
 
                                 {fixtureId && (
@@ -422,7 +422,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                 placeholder="Human-readable credential name"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
-                                className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                             />
                         </div>
 
@@ -436,7 +436,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
                                 rows={2}
-                                className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50 resize-none"
+                                className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50 resize-none"
                             />
                         </div>
 
@@ -450,7 +450,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                 <select
                                     value={spec}
                                     onChange={e => setSpec(e.target.value as CredentialSpec)}
-                                    className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                    className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                 >
                                     {W3C_FIXTURE_SPECS.map(s => (
                                         <option key={s} value={s}>
@@ -468,7 +468,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                 <select
                                     value={profile}
                                     onChange={e => setProfile(e.target.value as CredentialProfile)}
-                                    className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                    className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                 >
                                     {CREDENTIAL_PROFILES.map(p => (
                                         <option key={p} value={p}>
@@ -486,7 +486,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                 <select
                                     value={source}
                                     onChange={e => setSource(e.target.value as FixtureSource)}
-                                    className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                    className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                 >
                                     {FIXTURE_SOURCES.map(s => (
                                         <option key={s} value={s}>
@@ -507,7 +507,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                 <select
                                     value={validity}
                                     onChange={e => setValidity(e.target.value as FixtureValidity)}
-                                    className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                    className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                 >
                                     {FIXTURE_VALIDITIES.map(v => (
                                         <option key={v} value={v}>
@@ -567,7 +567,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                 placeholder="learncard, boost, test"
                                 value={tags}
                                 onChange={e => setTags(e.target.value)}
-                                className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                             />
                         </div>
 
@@ -620,7 +620,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                 onChange={e => setCredentialJson(e.target.value)}
                                 rows={14}
                                 spellCheck={false}
-                                className={`w-full font-mono text-xs leading-relaxed bg-gray-950 border rounded-lg px-3 py-2.5 text-gray-200 focus:outline-none focus:ring-1 resize-y ${
+                                className={`w-full font-mono text-xs leading-relaxed bg-gray-950 border rounded-lg px-3 py-2.5 text-gray-200 focus:outline-hidden focus:ring-1 resize-y ${
                                     jsonError
                                         ? 'border-red-700 focus:ring-red-500/50'
                                         : 'border-gray-700 focus:ring-blue-500/50'

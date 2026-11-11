@@ -18,21 +18,23 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authority import ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority
+from typing import Any, ClassVar, Dict, List
+from openapi_client.models.boost_send_boost_via_signing_authority_request_signing_authority import BoostSendBoostViaSigningAuthorityRequestSigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsCreateConsentFlowContractRequestAutoboostsInner(BaseModel):
     """
     ContractsCreateConsentFlowContractRequestAutoboostsInner
     """ # noqa: E501
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
-    signing_authority: ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority = Field(alias="signingAuthority")
+    boost_uri: StrictStr = Field(alias="boostUri")
+    signing_authority: BoostSendBoostViaSigningAuthorityRequestSigningAuthority = Field(alias="signingAuthority")
     __properties: ClassVar[List[str]] = ["boostUri", "signingAuthority"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +46,7 @@ class ContractsCreateConsentFlowContractRequestAutoboostsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -58,9 +59,8 @@ class ContractsCreateConsentFlowContractRequestAutoboostsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -73,11 +73,6 @@ class ContractsCreateConsentFlowContractRequestAutoboostsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of signing_authority
         if self.signing_authority:
             _dict['signingAuthority'] = self.signing_authority.to_dict()
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
         return _dict
 
     @classmethod
@@ -89,10 +84,12 @@ class ContractsCreateConsentFlowContractRequestAutoboostsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "boostUri": obj.get("boostUri"),
-            "signingAuthority": ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None
-        })
+            "signingAuthority": BoostSendBoostViaSigningAuthorityRequestSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

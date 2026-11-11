@@ -50,7 +50,7 @@ const NewDataSource: React.FC<NewDataSourceProps> = ({ handleCloseModal, entryId
             {Boolean(newEntry) && (
                 <>
                     <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px]">
-                        <header className="flex items-center flex-col gap-[10px] border-solid border-b-[1px] border-grayscale-200 pb-[20px] w-full">
+                        <header className="flex items-center flex-col gap-[10px] border-solid border-b border-grayscale-200 pb-[20px] w-full">
                             <span className="text-grayscale-900 text-[14px] font-montserrat normal font-[700] tracking-[7px] text-center">
                                 LearnCard
                             </span>

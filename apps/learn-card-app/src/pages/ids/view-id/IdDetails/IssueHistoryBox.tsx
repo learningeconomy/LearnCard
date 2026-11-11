@@ -19,7 +19,7 @@ const IssueHistoryBox: React.FC<IssueHistoryBoxProps> = ({ boostUri }) => {
                 return (
                     <div
                         key={index}
-                        className="flex flex-col gap-[5px] py-[10px] border-b-[1px] border-grayscale-200 border-solid last:border-b-0 w-full"
+                        className="flex flex-col gap-[5px] py-[10px] border-b border-grayscale-200 border-solid last:border-b-0 w-full"
                     >
                         <div className="flex gap-[6px]">
                             <div className="relative">

@@ -93,7 +93,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                 type={typeOverride || scoutNoun}
             />,
             {
-                sectionClassName: '!max-w-[450px]',
+                sectionClassName: 'max-w-[450px]!',
             },
             {
                 desktop: ModalTypes.Cancel,
@@ -150,7 +150,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                           leaderImage={leaderImage}
                           scoutImage={scoutImage}
                       />,
-                      { sectionClassName: '!max-w-[450px]' },
+                      { sectionClassName: 'max-w-[450px]!' },
                       { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                   );
               } else if (canInviteScout) {
@@ -180,7 +180,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                 role={role}
                 title={credential?.name ?? ''}
             />,
-            { sectionClassName: '!max-w-[400px]' }
+            { sectionClassName: 'max-w-[400px]!' }
         );
     };
 
@@ -188,7 +188,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
 
     if (showEditButton) {
         return (
-            <footer className="w-full z-[99] bg-white bg-opacity-70 border-t-[1px] border-solid border-white fixed bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
+            <footer className="w-full z-[99] bg-white/70  border-t border-solid border-white fixed bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
                 <div className="max-w-[600px] mx-auto flex gap-[10px]">
                     <>
                         <button
@@ -218,7 +218,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
     }
 
     return (
-        <footer className="w-full z-[99] bg-white bg-opacity-70 border-t-[1px] border-solid border-white sticky bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
+        <footer className="w-full z-[99] bg-white/70  border-t border-solid border-white sticky bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
             <div className="max-w-[600px] mx-auto flex gap-[10px]">
                 {!showIdDetails && (
                     <>

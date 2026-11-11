@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Text, Box, useApp } from 'ink';
-import simpleGit from 'simple-git';
+import { simpleGit } from 'simple-git';
 import Gradient from 'ink-gradient';
 import Spinner from 'ink-spinner';
 

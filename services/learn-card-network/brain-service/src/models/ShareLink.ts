@@ -33,6 +33,8 @@ export type ShareLinkRecord = {
     ownerProfileId: string;
     version: number;
     contentVersion: number;
+    attachmentId?: string | null;
+    attachmentChunkCount?: number | null;
     /**
      * Monotonic fence. Bumped on every reservation and on revoke; a worker may
      * only finalize the reservation whose generation still equals this value.
@@ -90,6 +92,8 @@ export const ShareLink = ModelFactory<ShareLinkProperties, Record<string, never>
             ownerProfileId: { type: 'string', required: true },
             version: { type: 'number', required: true },
             contentVersion: { type: 'number', required: true },
+            attachmentId: { type: 'string', required: false },
+            attachmentChunkCount: { type: 'number', required: false },
             generation: { type: 'number', required: true },
             status: { type: 'string', required: true, enum: ['pending', 'active', 'stopped'] },
             contentState: {

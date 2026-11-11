@@ -2,6 +2,7 @@ import { isEqual } from 'lodash';
 import { initLearnCard, type LearnCardFromSeed } from '@learncard/init';
 import type { CredentialRecord } from '@learncard/types';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
+import { installWalletDidWebDocumentFetchCache } from '@learncard/didkit-plugin';
 import { getLCAPlugin } from '@learncard/lca-api-plugin';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
@@ -43,6 +44,8 @@ export const getSigningLearnCard = async (seed: string) => {
     // Pass the locally-bundled DIDKit WASM so did:key derivation works offline.
     // Without it DIDKit fetches its WASM from the network and lc.id.did() throws
     // on a cold offline start — breaking the private-key-first boot path.
+    // App wallet opt-in: 60s did:web doc TTL before getDidKitPlugin's generic 10s install.
+    installWalletDidWebDocumentFetchCache();
     SIGNING_LEARN_CARDS[seed] ??= initLearnCard({ seed, didkit, allowRemoteContexts: true }).catch(
         error => {
             delete SIGNING_LEARN_CARDS[seed];
@@ -101,6 +104,9 @@ const buildBespokeLearnCard = async (
         offline,
     });
 
+    // App wallet opt-in: 60s did:web doc TTL before getDidKitPlugin's generic 10s install.
+    installWalletDidWebDocumentFetchCache();
+
     let network: string | boolean = networkStore.get.networkUrl();
     if (!network || network === PRODUCTION_NETWORK_URL) network = true;
 
@@ -151,15 +157,28 @@ const buildBespokeLearnCard = async (
     return renderMethodAugmented as BespokeLearnCard;
 };
 
+// Query key prefixes that are not scoped by the switched profile DID. Their cached data belongs to
+// whichever profile fetched it, so a profile switch must reset them (LC-2354).
+export const PROFILE_UNSCOPED_QUERY_KEYS = [
+    ['useGetPaginatedManagedBoostsQuery'],
+    ['paginatedBoostRecipients'],
+    ['passportActivities'],
+    ['useTermsTransactions'],
+] as const;
+
 // tip: the useSwitchProfile hook will do this while also updating currentUserStore
-export const switchProfile = async (didWeb?: string) => {
-    const queryClient = new QueryClient();
+export const switchProfile = async (didWeb?: string, queryClient?: QueryClient) => {
     const pk = await requireCurrentUserPrivateKey();
 
     walletStore.set.wallet(await getBespokeLearnCard(pk, didWeb));
     switchedProfileStore.set.switchedDid(didWeb);
 
-    // await queryClient.resetQueries();
+    // Reset after the wallet and DID move so active observers refetch as the new profile.
+    if (queryClient) {
+        for (const queryKey of PROFILE_UNSCOPED_QUERY_KEYS) {
+            void queryClient.resetQueries({ queryKey: [...queryKey] });
+        }
+    }
 };
 
 // returns emoji 🔑 , 🌐, based on did:web or did:key

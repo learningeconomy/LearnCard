@@ -132,7 +132,7 @@ export const FeedbackFollowUpSheet: React.FC<FeedbackFollowUpSheetProps> = ({
     const canSubmit = selected.length > 0 || note.trim().length > 0;
 
     return (
-        <div className="font-poppins p-6 space-y-5 bg-white rounded-[20px]">
+        <div className="font-poppins p-6 space-y-v3-5 bg-white rounded-[20px]">
             <div>
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
                     {m['feedback.followup.title']()}
@@ -172,12 +172,12 @@ export const FeedbackFollowUpSheet: React.FC<FeedbackFollowUpSheetProps> = ({
                     placeholder={m['feedback.followup.placeholder']()}
                     rows={3}
                     className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900
-                               placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500
+                               placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500
                                focus:border-transparent bg-white resize-none"
                 />
             )}
 
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 <button
                     type="button"
                     onClick={handleSubmit}

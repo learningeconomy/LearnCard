@@ -253,41 +253,32 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                 writers,
             });
 
-            // Add autoboosts from other issuers
+            // Configure boosts from other issuers through each issuer's delegated wallet.
             const pk =
                 currentUserStore.get.currentUserPK() ||
                 currentUserStore?.get?.currentUser()?.privateKey;
-
-            // Group auto-boost URIs by issuer DID for more efficient processing
             const urisByIssuerDid = autoboostUrisFromOtherUsers.reduce<Record<string, string[]>>(
                 (acc, uri) => {
                     const issuer = autoBoostIssuers[uri];
-                    if (!acc[issuer.did]) {
-                        acc[issuer.did] = [];
-                    }
-                    acc[issuer.did].push(uri);
+                    (acc[issuer.did] ??= []).push(uri);
                     return acc;
                 },
                 {}
             );
-
-            // Process each issuer's URIs in a single batch
-            await Promise.all(
-                Object.entries(urisByIssuerDid).map(async ([did, uris]) => {
-                    const otherUserWallet = await getBespokeLearnCard(pk!, did);
-                    const { signingAuthority: sa } = await getRegisteredSigningAuthority(
-                        otherUserWallet
-                    );
-
-                    await otherUserWallet.invoke.addAutoBoostsToContract(
+            for (const [did, uris] of Object.entries(urisByIssuerDid)) {
+                const otherUserWallet = await getBespokeLearnCard(pk!, did);
+                const { signingAuthority: sa } =
+                    await getRegisteredSigningAuthority(otherUserWallet);
+                await otherUserWallet.invoke
+                    .getLCNClient()
+                    .contracts.addAutoBoostsToContract.mutate({
                         contractUri,
-                        uris.map(uri => ({
+                        autoboosts: uris.map(uri => ({
                             boostUri: uri,
                             signingAuthority: { name: sa?.name, endpoint: sa?.endpoint },
-                        }))
-                    );
-                })
-            );
+                        })),
+                    });
+            }
 
             onSuccess?.(contractUri);
 
@@ -361,7 +352,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
 
             setTimeout(() => {
                 const handleRecover = () => {
-                    setContract(recoveredState as any);
+                    setContract(recoveredState);
                     setAutoBoostUris(recoveredAutoBoostUris ?? []);
                     clearRecoveredState();
                     closeModal();
@@ -380,7 +371,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                         onDiscard={handleDiscard}
                         discardButtonText="Create New Contract"
                     />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
             }, 300);
@@ -457,7 +448,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                     min={moment().format('YYYY-MM-DD')}
                 />
             </div>,
-            { sectionClassName: '!w-fit' }
+            { sectionClassName: 'w-fit!' }
         );
     };
 
@@ -555,9 +546,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
 
                         <IonInput
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ion-padding ${
-                                expiresAtError
-                                    ? 'border-red-mastercard border-[1px] border-solid'
-                                    : ''
+                                expiresAtError ? 'border-red-mastercard border border-solid' : ''
                             }`}
                             onIonInput={e => updateSlice('expiresAt', e.detail.value)}
                             value={contract.expiresAt}
@@ -616,7 +605,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                         const uri: string =
                                             typeof value === 'function'
                                                 ? value(contract.frontDoorBoostUri ?? '')
-                                                : value ?? '';
+                                                : (value ?? '');
 
                                         if (uri && !autoBoostUris.includes(uri)) {
                                             // add front door cred to auto-claim list
@@ -637,7 +626,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                         <div className="flex items-center justify-center w-full">
                             <button
                                 type="button"
-                                className="w-full text-center py-[8px] px-[10px] font-semibold bg-emerald-700 text-white rounded-[20px] text-[18px] disabled:opacity-60 disabled:bg-grayscale-100 disabled:text-gray-800 border-solid border-[1px] border-grayscale-200 transition-colors"
+                                className="w-full text-center py-[8px] px-[10px] font-semibold bg-emerald-700 text-white rounded-[20px] text-[18px] disabled:opacity-60 disabled:bg-grayscale-100 disabled:text-gray-800 border-solid border border-grayscale-200 transition-colors"
                                 onClick={handlePreview}
                                 disabled={
                                     contractType === ContractType.frontDoorCred &&
@@ -676,8 +665,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                 <h4>Credentials</h4>
                                 <ContractCategoryMultiSelect
                                     values={contract.contract.read.credentials.categories}
-                                    onChange={updateReadCredentials('categories') as any}
-                                    setContract={setContract}
+                                    onChange={updateReadCredentials('categories')}
                                     mode="read"
                                     categoryTitleOverrides={categoryTitleOverrides}
                                 />
@@ -693,7 +681,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
 
                                 <MultiTextInput
                                     values={contract.contract.read.personal}
-                                    onChange={updateRead('personal') as any}
+                                    onChange={updateRead('personal')}
                                     buttonText="New Personal Info"
                                     style="admin-dashboard"
                                 />
@@ -707,8 +695,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                 <h4>Credentials</h4>
                                 <ContractCategoryMultiSelect
                                     values={contract.contract.write.credentials.categories}
-                                    setContract={setContract}
-                                    onChange={updateWriteCredentials('categories') as any}
+                                    onChange={updateWriteCredentials('categories')}
                                     mode="write"
                                     hideVerifiableDataOnWrite
                                     categoryTitleOverrides={categoryTitleOverrides}
@@ -719,7 +706,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                             <h4>Custom Fields</h4>
                             <MultiTextInput
                                 values={contract.contract.write.personal}
-                                onChange={updateWrite('personal') as any}
+                                onChange={updateWrite('personal')}
                                 buttonText="New Personal Info"
                                 style="admin-dashboard"
                             />
@@ -736,7 +723,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                         </span>
                         <button
                             type="button"
-                            className="py-[5px] px-[10px] bg-white rounded-[20px] w-fit text-[16px] shadow-box-bottom disabled:opacity-60 flex gap-[5px] items-center border-solid border-[1px] border-grayscale-200 hover:bg-grayscale-100 transition-colors"
+                            className="py-[5px] px-[10px] bg-white rounded-[20px] w-fit text-[16px] shadow-box-bottom disabled:opacity-60 flex gap-[5px] items-center border-solid border border-grayscale-200 hover:bg-grayscale-100 transition-colors"
                             onClick={() => {
                                 newModal(
                                     <ContractCredentialSelectorModal
@@ -755,7 +742,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                     <AdminManagedBoostRow
                                         key={credUri}
                                         boostUri={credUri}
-                                        className="!w-full"
+                                        className="w-full!"
                                         hideButtons
                                         issuerProfileOverride={autoBoostIssuers[credUri]}
                                     >
@@ -780,7 +767,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                     {/* Render buttons via portal if available, otherwise render inline */}
                     {sectionPortal ? (
                         createPortal(
-                            <div className="flex flex-col justify-center items-center relative !border-none max-w-[500px]">
+                            <div className="flex flex-col justify-center items-center relative border-none! max-w-[500px]">
                                 <button
                                     onClick={handleSubmit}
                                     type="button"
@@ -804,7 +791,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                             sectionPortal
                         )
                     ) : (
-                        <div className="flex flex-col justify-center items-center relative !border-none w-full mt-6 px-4">
+                        <div className="flex flex-col justify-center items-center relative border-none! w-full mt-6 px-4">
                             <button
                                 onClick={handleSubmit}
                                 type="button"

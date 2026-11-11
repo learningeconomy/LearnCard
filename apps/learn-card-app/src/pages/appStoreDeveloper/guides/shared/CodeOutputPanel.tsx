@@ -124,7 +124,7 @@ export const CodeOutputPanel: React.FC<CodeOutputPanelProps> = ({
                     {collapsible && (
                         <button
                             onClick={() => setExpanded(!expanded)}
-                            className="p-1 hover:bg-gray-700 rounded transition-colors"
+                            className="p-1 hover:bg-gray-700 rounded-sm transition-colors"
                         >
                             {expanded ? (
                                 <ChevronUp className="w-4 h-4 text-gray-400" />

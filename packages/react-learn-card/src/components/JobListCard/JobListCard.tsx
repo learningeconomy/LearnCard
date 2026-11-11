@@ -112,15 +112,12 @@ export const JobListCard: React.FC<JobListCardProps> = ({
                     {topText}
                 </div>
             </div>
-            <p className="text-grayscale-500 text-xs line-clamp-1 flex-shrink-0">
-                {' '}
-                {postDateDisplay}
-            </p>
+            <p className="text-grayscale-500 text-xs line-clamp-1 shrink-0"> {postDateDisplay}</p>
 
             <div className="job-listing-center flex mt-[5px]">
                 {imgThumb && (
                     <img
-                        className="object-cover w-[80px] flex-shrink-0 items-center justify-center rounded-[15px] mr-[10px]"
+                        className="object-cover w-[80px] shrink-0 items-center justify-center rounded-[15px] mr-[10px]"
                         src={imgThumb}
                     />
                 )}

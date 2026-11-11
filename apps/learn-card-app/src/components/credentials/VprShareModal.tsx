@@ -3,8 +3,7 @@ import BoostEarnedCard from '../boost/boost-earned-card/BoostEarnedCard';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
 import {
-    CredentialCategoryEnum,
-    categoryMetadata,
+    getCategoryMetadata,
     useGetCredentialList,
     useGetResolvedCredentials,
 } from 'learn-card-base';
@@ -116,9 +115,8 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
         return suggestedVcIds.includes(uniqueId);
     });
 
-    const renderCredentialCard = (credential: any, key: string) => {
-        const categoryImgUrl =
-            categoryMetadata[credential.category as CredentialCategoryEnum].defaultImageSrc;
+    const renderCredentialCard = (credential: (typeof allCredentials)[number], key: string) => {
+        const categoryImgUrl = getCategoryMetadata(credential.category).defaultImageSrc;
         const uniqueId = credential.vc ? getUniqueId(credential.vc) : credential.record.uri;
 
         return (
@@ -211,7 +209,7 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
                             <input
                                 type="text"
                                 placeholder="Search all credentials..."
-                                className="w-full px-4 py-2.5 bg-white border border-grayscale-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-grayscale-900 placeholder-grayscale-500"
+                                className="w-full px-4 py-2.5 bg-white border border-grayscale-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-grayscale-900 placeholder-grayscale-500"
                                 value={searchInput}
                                 onChange={e => setSearchInput(e.target.value.toLowerCase())}
                             />

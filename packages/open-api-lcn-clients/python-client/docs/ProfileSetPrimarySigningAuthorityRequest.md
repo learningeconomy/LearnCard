@@ -1,12 +1,11 @@
 # ProfileSetPrimarySigningAuthorityRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**endpoint** | **str** |  | 
-**name** | **str** |  | 
+| Name         | Type    | Description | Notes |
+| ------------ | ------- | ----------- | ----- |
+| **endpoint** | **str** |             |
+| **name**     | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ profile_set_primary_signing_authority_request_dict = profile_set_primary_signing
 # create an instance of ProfileSetPrimarySigningAuthorityRequest from a dict
 profile_set_primary_signing_authority_request_from_dict = ProfileSetPrimarySigningAuthorityRequest.from_dict(profile_set_primary_signing_authority_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -360,6 +360,45 @@ describe('connection prompt methods', () => {
     });
 });
 
+describe('updateContract patch shapes', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it.each(['read', 'write'] as const)(
+        'rejects overlapping %s patches without a server mutation',
+        async area => {
+            const mutate = vi.fn();
+            const client = {
+                ...getMockClient(),
+                contracts: { updateConsentFlowContract: { mutate } },
+            };
+            vi.mocked(getBrainClient).mockResolvedValue(client as never);
+            const learnCard = getMockLearnCard();
+            const plugin = await getLearnCardNetworkPlugin(
+                learnCard,
+                'https://network.example/trpc'
+            );
+
+            await expect(
+                plugin.methods?.updateContract(learnCard, 'contract:1', {
+                    [area]: {
+                        credentials: { categories: { Transcript: { required: true } } },
+                        personal: {},
+                    },
+                    contract: {
+                        [area]: {
+                            credentials: { categories: { Certificate: { required: true } } },
+                            personal: {},
+                        },
+                    },
+                })
+            ).rejects.toThrow(
+                'Contract read/write updates must use either the top-level or nested contract shape'
+            );
+            expect(mutate).not.toHaveBeenCalled();
+        }
+    );
+});
+
 describe('credential refresh methods', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -613,6 +652,38 @@ describe('credential refresh methods', () => {
         expect(client.utilities.getDid.query).not.toHaveBeenCalled();
     });
 
+    it('sendBoost throws instead of signing when the boost is a display-only anchor', async () => {
+        const client = getMockClient();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({ displayOnlyAnchor: true, display: {} }),
+        });
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const { learnCard } = getMockIssuingLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+
+        await expect(
+            plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1')
+        ).rejects.toThrow('display-only anchor');
+
+        expect(learnCard.invoke.issueCredential).not.toHaveBeenCalled();
+    });
+
+    it('sendBoost signs normally when the boost has its own display object (not a display-only anchor)', async () => {
+        const client = getMockClient();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({
+                display: { backgroundColor: '#fff', backgroundImage: '', displayType: 'card' },
+            }),
+        });
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const { learnCard } = getMockIssuingLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+
+        await plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1');
+
+        expect(learnCard.invoke.issueCredential).toHaveBeenCalled();
+    });
+
     it('sendBoost receipt preserves the exact credentialStatus descriptor from the signed VC', async () => {
         const client = getMockClient();
         vi.mocked(getBrainClient).mockResolvedValue(client as never);
@@ -788,5 +859,49 @@ it('recovers valid deliveries despite decryption and validation failures on the 
         failed: 2,
         hasMore: true,
         cursor: 'good',
+    });
+});
+
+describe('concurrent profile reads', () => {
+    beforeEach(() => vi.clearAllMocks());
+    it('deduplicates in-flight reads but fetches again after completion', async () => {
+        let resolve!: (profile: typeof PROFILE) => void;
+        const query = vi.fn(
+            () =>
+                new Promise<typeof PROFILE>(r => {
+                    resolve = r;
+                })
+        );
+        const client = getMockClient();
+        const profileClient = { ...client.profile, getOtherProfile: { query } };
+        vi.mocked(getBrainClient).mockResolvedValue({ ...client, profile: profileClient } as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        const requests = Array.from({ length: 5 }, () =>
+            plugin.methods!.getProfile(learnCard, 'userb')
+        );
+        await vi.waitFor(() => expect(query).toHaveBeenCalledTimes(1));
+        resolve(PROFILE);
+        expect(await Promise.all(requests)).toEqual(Array(5).fill(PROFILE));
+        const fresh = plugin.methods!.getProfile(learnCard, 'userb');
+        await vi.waitFor(() => expect(query).toHaveBeenCalledTimes(2));
+        resolve({ ...PROFILE, displayName: 'Updated' });
+        await expect(fresh).resolves.toMatchObject({ displayName: 'Updated' });
+    });
+    it('clears rejected lookups so subsequent calls can retry', async () => {
+        const query = vi
+            .fn()
+            .mockRejectedValueOnce(new Error('offline'))
+            .mockResolvedValue(PROFILE);
+        const client = getMockClient();
+        vi.mocked(getBrainClient).mockResolvedValue({
+            ...client,
+            profile: { ...client.profile, getOtherProfile: { query } },
+        } as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        await expect(plugin.methods!.getProfile(learnCard, 'userb')).rejects.toThrow('offline');
+        await expect(plugin.methods!.getProfile(learnCard, 'userb')).resolves.toEqual(PROFILE);
+        expect(query).toHaveBeenCalledTimes(2);
     });
 });

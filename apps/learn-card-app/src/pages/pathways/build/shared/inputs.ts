@@ -11,7 +11,7 @@
 export const LABEL = 'text-xs font-medium text-grayscale-700';
 
 export const INPUT =
-    'w-full py-2.5 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-poppins';
+    'w-full py-2.5 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-poppins';
 
 /**
  * Pill-shaped toggle button (used by the "what they submit" chip

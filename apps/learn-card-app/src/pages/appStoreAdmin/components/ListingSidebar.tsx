@@ -5,10 +5,11 @@ import { StatusBadge } from '../../appStoreDeveloper/components/StatusBadge';
 import type { AppListingStatus, ExtendedAppStoreListing } from '../../appStoreDeveloper/types';
 import * as m from '../../../paraglide/messages.js';
 
-type FilterStatus = AppListingStatus | 'ALL';
+type FilterStatus = AppListingStatus | 'ALL' | 'UPDATES';
 
 const FILTER_OPTIONS: { value: FilterStatus; label: () => string }[] = [
     { value: 'PENDING_REVIEW', label: () => m['appStoreAdmin.sidebar.filterPending']() },
+    { value: 'UPDATES', label: () => m['appStoreAdmin.sidebar.filterUpdates']() },
     { value: 'ALL', label: () => m['appStoreAdmin.sidebar.filterAll']() },
     { value: 'LISTED', label: () => m['appStoreAdmin.sidebar.filterListed']() },
     { value: 'DRAFT', label: () => m['appStoreAdmin.sidebar.filterDraft']() },
@@ -51,12 +52,12 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
 
     return (
         <div
-            className={`w-full md:w-80 border-r border-gray-200 bg-white flex flex-col flex-shrink-0 ${
+            className={`w-full md:w-80 border-r border-gray-200 bg-white flex flex-col shrink-0 ${
                 isHidden ? 'hidden md:flex' : ''
             }`}
         >
             {/* Search and Filters */}
-            <div className="p-4 border-b border-gray-200 space-y-3">
+            <div className="p-4 border-b border-gray-200 space-y-v3-3">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
 
@@ -65,7 +66,7 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
                         placeholder={m['appStoreAdmin.sidebar.searchPlaceholder']()}
                         value={searchQuery}
                         onChange={e => onSearchChange(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                     />
                 </div>
 
@@ -104,7 +105,7 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
             </div>
 
             {/* Listings */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            <div className="flex-1 overflow-y-auto p-3 space-y-v3-2">
                 {isLoading ? (
                     <div className="text-center py-12">
                         <Loader2 className="w-8 h-8 text-cyan-500 mx-auto mb-3 animate-spin" />
@@ -124,7 +125,7 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
                             onClick={() => onSelectListing(listing)}
                             className={`w-full text-left p-3 rounded-xl border transition-all ${
                                 selectedListing?.listing_id === listing.listing_id
-                                    ? 'border-cyan-500 bg-cyan-50 shadow-sm'
+                                    ? 'border-cyan-500 bg-cyan-50 shadow-xs'
                                     : 'border-gray-200 bg-white hover:border-gray-300'
                             }`}
                         >
@@ -132,7 +133,7 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
                                 <img
                                     src={listing.icon_url}
                                     alt={listing.display_name}
-                                    className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                    className="w-10 h-10 rounded-lg object-cover shrink-0"
                                     onError={e => {
                                         (e.target as HTMLImageElement).src =
                                             'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';

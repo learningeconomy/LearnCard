@@ -1,0 +1,26 @@
+{
+    "description": "Public RFC8032 test seed only; never use for accounts. Envelope indices refer to escrow-vectors.json. This tests intent binding, not plaintext authorization.",
+    "seedHex": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+    "publicKeyHex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+    "sourceFixtureIndex": 0,
+    "targetFixtureIndex": 1,
+    "canonicalHex": "6c6561726e636172642d657363726f772d656e726f6c6c6d656e742d696e74656e742d7632000000000400000002000000096c6561726e63617264000000386469643a6b65793a7a364d6b74777570646d4c58565671547a43773469343672347547796f734758526e5233586a4e345a71376f4d4d73770000000a73746167696e672d67320000000800000000000000070000000103000000208090217ef11060bfa380c4a4b26d76a64811216176ecb60749652fabf3b094250000002031dc237e14eb2f3116dc5559a904d72f71d76722076c2ed994c4100e5fc63c930000000103000000040000002a0000000800000000000000040000000e676f6c64656e2d63617272792d3100000001010000000000000000",
+    "intent": {
+        "version": 2,
+        "tenant": "learncard",
+        "did": "did:key:z6MktwupdmLXVVqTzCw4i46r4uGyosGXRnR3XjN4Zq7oMMsw",
+        "authorityGeneration": "staging-g2",
+        "expectedEnrollmentVersion": 7,
+        "action": "carry",
+        "sourceBlobIdentity": "8090217ef11060bfa380c4a4b26d76a64811216176ecb60749652fabf3b09425",
+        "targetBlobIdentity": "31dc237e14eb2f3116dc5559a904d72f71d76722076c2ed994c4100e5fc63c93",
+        "pinAction": "keep",
+        "shareVersion": 42,
+        "enrollmentEpoch": 4,
+        "requestId": "golden-carry-1",
+        "allowRewrap": true,
+        "recoveryEmail": null,
+        "recoveryLanguage": null
+    },
+    "signature": "9vlbx0xm5clOZIQ0aWKnKYL8tMeirW9Cd7oK6a31aEIqw7mOeneio+wNIKXh1uZRPW0JxQSOHJtqaexf01DxDw=="
+}

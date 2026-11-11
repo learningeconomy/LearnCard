@@ -14,7 +14,7 @@ import ScanRecipientButton, {
 } from '../../../components/recipient-picker/ScanRecipientButton';
 
 const INPUT_CLASS =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 
 const Avatar: React.FC<{
@@ -128,7 +128,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                     onClick={() => onModeChange('people')}
                     className={`flex-1 py-2.5 px-3 rounded-full font-medium text-sm whitespace-nowrap transition-colors ${
                         mode === 'people'
-                            ? 'bg-grayscale-900 text-white shadow-sm'
+                            ? 'bg-grayscale-900 text-white shadow-xs'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
@@ -139,7 +139,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                     onClick={() => onModeChange('self')}
                     className={`flex-1 py-2.5 px-3 rounded-full font-medium text-sm whitespace-nowrap transition-colors ${
                         mode === 'self'
-                            ? 'bg-grayscale-900 text-white shadow-sm'
+                            ? 'bg-grayscale-900 text-white shadow-xs'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
@@ -150,7 +150,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                     onClick={() => onModeChange('link')}
                     className={`flex-1 py-2.5 px-3 rounded-full font-medium text-sm whitespace-nowrap transition-colors ${
                         mode === 'link'
-                            ? 'bg-grayscale-900 text-white shadow-sm'
+                            ? 'bg-grayscale-900 text-white shadow-xs'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
@@ -207,14 +207,14 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                             autoCorrect="off"
                             className={`w-full py-3.5 pl-12 ${
                                 canScan ? 'pr-20' : 'pr-12'
-                            } border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all`}
+                            } border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all`}
                         />
                         {query && (
                             <button
                                 type="button"
                                 onClick={() => setQuery('')}
                                 className={`absolute ${
-                                    canScan ? 'end-12' : 'end-4'
+                                    canScan ? 'inset-e-12' : 'inset-e-4'
                                 } top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors`}
                                 aria-label={m['aiPathways.clearSearch']()}
                             >
@@ -224,7 +224,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                         <ScanRecipientButton
                             recipients={recipients}
                             onRecipientsChange={onRecipientsChange}
-                            className="end-1"
+                            className="inset-e-1"
                         />
                     </div>
 
@@ -234,7 +234,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                                 <Loader2 className="w-6 h-6 animate-spin" />
                             </div>
                         ) : (
-                            <div className="space-y-1 pb-4">
+                            <div className="space-y-v3-1 pb-4">
                                 {displayList.map(profile => {
                                     const isSelected = recipients.some(
                                         r =>

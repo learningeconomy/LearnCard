@@ -21,18 +21,20 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsSendAiInsightShareRequestRequest(BaseModel):
     """
     ContractsSendAiInsightShareRequestRequest
     """ # noqa: E501
     child_profile_id: Optional[StrictStr] = Field(default=None, alias="childProfileId")
-    target_profile_id: Optional[StrictStr] = Field(alias="targetProfileId")
-    share_link: Optional[StrictStr] = Field(alias="shareLink")
+    target_profile_id: StrictStr = Field(alias="targetProfileId")
+    share_link: StrictStr = Field(alias="shareLink")
     __properties: ClassVar[List[str]] = ["childProfileId", "targetProfileId", "shareLink"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +46,7 @@ class ContractsSendAiInsightShareRequestRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -58,9 +59,8 @@ class ContractsSendAiInsightShareRequestRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -70,21 +70,6 @@ class ContractsSendAiInsightShareRequestRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if child_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.child_profile_id is None and "child_profile_id" in self.model_fields_set:
-            _dict['childProfileId'] = None
-
-        # set to None if target_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.target_profile_id is None and "target_profile_id" in self.model_fields_set:
-            _dict['targetProfileId'] = None
-
-        # set to None if share_link (nullable) is None
-        # and model_fields_set contains the field
-        if self.share_link is None and "share_link" in self.model_fields_set:
-            _dict['shareLink'] = None
-
         return _dict
 
     @classmethod
@@ -96,11 +81,13 @@ class ContractsSendAiInsightShareRequestRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "childProfileId": obj.get("childProfileId"),
             "targetProfileId": obj.get("targetProfileId"),
             "shareLink": obj.get("shareLink")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

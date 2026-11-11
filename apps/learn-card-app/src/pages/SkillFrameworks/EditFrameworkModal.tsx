@@ -100,14 +100,14 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
                     <>
                         <IonInput
                             onIonInput={e => setName(e.detail.value ?? '')}
-                            className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px] !h-[40px]"
+                            className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]! h-[40px]!"
                             placeholder="Framework Name *"
                             value={name}
                         />
 
                         <IonInput
                             onIonInput={e => setDescription(e.detail.value ?? '')}
-                            className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px] !h-[40px]"
+                            className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]! h-[40px]!"
                             placeholder="Framework Description"
                             value={description}
                         />
@@ -135,7 +135,7 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
                                 <button
                                     onClick={handleFileSelect}
                                     disabled={isUploadingImage}
-                                    className="flex gap-[10px] items-center py-[5px] pl-[5px] pr-[10px] rounded-[30px] border-solid border-[1px] border-grayscale-200 w-full hover:bg-grayscale-50 disabled:opacity-50"
+                                    className="flex gap-[10px] items-center py-[5px] pl-[5px] pr-[10px] rounded-[30px] border-solid border border-grayscale-200 w-full hover:bg-grayscale-50 disabled:opacity-50"
                                 >
                                     <div className="bg-grayscale-900 p-[5px] rounded-full">
                                         <UploadIcon className="w-[25px] h-[25px]" strokeWidth="2" />

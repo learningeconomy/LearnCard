@@ -322,7 +322,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                 placeholder={m['skills.search.searchPlaceholder']()}
                                 maxlength={MAX_SEARCH_LENGTH}
                                 onIonInput={e => setSearchInput(e.detail.value ?? '')}
-                                className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[14px] !pl-[44px] !text-left !pr-[36px]"
+                                className="bg-grayscale-100 text-grayscale-800 rounded-[10px] py-[4px]! font-normal !font-notoSans text-[14px] pl-[44px]! text-left! pr-[36px]!"
                             />
                             {searchInput && (
                                 <button
@@ -337,7 +337,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                     )}
 
                     {showSelectedSkills && selectedSkills.length > 0 && (
-                        <div className="py-[10px] border-t-[1px] border-solid border-grayscale-200 flex flex-col gap-[10px]">
+                        <div className="py-[10px] border-t border-solid border-grayscale-200 flex flex-col gap-[10px]">
                             <h4 className="flex gap-[5px] items-center text-grayscale-900 font-poppins text-[14px] font-bold">
                                 <VerifiedBadgeIcon />
                                 {conditionalPluralize(selectedSkills.length, 'Self Assigned Skill')}

@@ -40,9 +40,13 @@ class TestProfileCreateProfileRequest(unittest.TestCase):
                 short_bio = '',
                 bio = '',
                 is_private = True,
+                profile_visibility = 'public',
+                show_email = True,
+                allow_connection_requests = 'anyone',
                 email = '',
                 image = '',
                 hero_image = '',
+                linked_in_organization_id = '4',
                 website_link = '',
                 type = '',
                 notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj',
@@ -64,7 +68,9 @@ class TestProfileCreateProfileRequest(unittest.TestCase):
                 role = '',
                 dob = '',
                 country = '',
-                approved = True
+                locale = '',
+                approved = True,
+                auth_token = ''
             )
         else:
             return ProfileCreateProfileRequest(

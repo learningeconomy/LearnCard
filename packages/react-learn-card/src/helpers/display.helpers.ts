@@ -25,6 +25,7 @@ export const getDefaultDisplayType = (category: string): DisplayTypeEnum => {
 
     if (
         category === LCCategoryEnum.achievement ||
+        category === LCCategoryEnum.qualifications ||
         category === LCCategoryEnum.accommodations ||
         category === LCCategoryEnum.accomplishments ||
         category === LCCategoryEnum.learningHistory

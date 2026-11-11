@@ -4,6 +4,7 @@ import idPurple from '../assets/images/id-purple.png';
 import learningHistoryGraphic from '../assets/images/backpack.png';
 import skillsGraphic from '../assets/images/walletskills.webp';
 import achievementsGraphic from '../assets/images/walletTrophy.png';
+import qualificationsGraphic from '../assets/images/qualifications.svg';
 import socialBadge from '../assets/images/social-badge-2.png';
 import experienceMountain from '../assets/images/experience-mountain.png';
 import goalsTarget from '../assets/images/goals-target.png';
@@ -32,6 +33,7 @@ export const TYPE_TO_IMG_SRC = {
     [WalletCategoryTypes.learningHistory]: apple,
     [WalletCategoryTypes.socialBadge]: socialBadge,
     [WalletCategoryTypes.achievements]: achievementsGraphic,
+    [WalletCategoryTypes.qualifications]: qualificationsGraphic,
     [WalletCategoryTypes.accomplishments]: learningHistoryGraphic,
     [WalletCategoryTypes.skills]: skillsGraphic,
     [WalletCategoryTypes.jobHistory]: experienceMountain,
@@ -52,6 +54,7 @@ export const TYPE_TO_WALLET_COLOR = {
     [WalletCategoryTypes.learningHistory]: 'emerald-300',
     [WalletCategoryTypes.socialBadge]: 'cyan-300',
     [WalletCategoryTypes.achievements]: 'orange-300',
+    [WalletCategoryTypes.qualifications]: 'orange-300',
     [WalletCategoryTypes.accomplishments]: 'lime-300',
     [WalletCategoryTypes.skills]: 'violet-300',
     [WalletCategoryTypes.jobHistory]: 'blue-300',
@@ -72,6 +75,7 @@ export const TYPE_TO_WALLET_LIGHT_COLOR = {
     [WalletCategoryTypes.learningHistory]: 'emerald-200',
     [WalletCategoryTypes.socialBadge]: 'cyan-200',
     [WalletCategoryTypes.achievements]: 'orange-200',
+    [WalletCategoryTypes.qualifications]: 'orange-200',
     [WalletCategoryTypes.accomplishments]: 'lime-200',
     [WalletCategoryTypes.skills]: 'violet-200',
     [WalletCategoryTypes.jobHistory]: 'blue-200',
@@ -92,6 +96,7 @@ export const TYPE_TO_WALLET_DARK_COLOR = {
     [WalletCategoryTypes.learningHistory]: 'emerald-500',
     [WalletCategoryTypes.socialBadge]: 'cyan-500',
     [WalletCategoryTypes.achievements]: 'orange-500',
+    [WalletCategoryTypes.qualifications]: 'orange-700',
     [WalletCategoryTypes.accomplishments]: 'lime-500',
     [WalletCategoryTypes.skills]: 'violet-500',
     [WalletCategoryTypes.jobHistory]: 'blue-500',

@@ -14,14 +14,13 @@ import {
     QRCodeScannerOverlay,
     PushNotificationListener,
     useIsLoggedIn,
-    sqliteStore,
-    ensureReactQueryTableExists,
     ModalsProvider,
     useSQLiteInitWeb,
     lazyWithRetry,
     Toast,
     InAppMessageHost,
 } from 'learn-card-base';
+import { sanitizePersistedQueries } from 'learn-card-base/react-query/infiniteQueryGuard';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { LocaleProfileSync } from './i18n/useSyncLocaleToProfile';
@@ -33,63 +32,32 @@ import NetworkListener from './components/network-listener/NetworkListener';
 import UserProfileSetupListener from './components/user-profile/UserProfileSetupListener';
 import { QRCodeScannerStore } from 'learn-card-base';
 import * as m from './paraglide/messages.js';
+import { queryCacheStorage } from './helpers/queryPersistence';
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
+declare const __APP_VERSION__: string | undefined;
+
+// A new app version discards the persisted query cache, so cache shapes written by an older
+// build can't crash a newer one (LC-2330). Costs one cold cache per release.
+const CACHE_BUSTER = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '';
+
 const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
 
-const persister = createAsyncStoragePersister({
-    storage: {
-        getItem: async key => {
-            const db = sqliteStore.get.db();
-
-            if (!db) return;
-
-            await ensureReactQueryTableExists(db);
-
-            await db.open();
-
-            const result = await db.query(`SELECT cache FROM reactQuery WHERE id="${key}";`);
-
-            await db.close();
-
-            if (result.values?.length === 0) return;
-
-            return result.values![0].cache;
-        },
-        setItem: async (key, value) => {
-            const db = sqliteStore.get.db();
-
-            if (!db) return;
-
-            await ensureReactQueryTableExists(db);
-
-            await db.open();
-            await db.executeSet([
-                {
-                    statement:
-                        'INSERT INTO reactQuery (id, cache) VALUES (?, ?) ON CONFLICT (id) DO UPDATE SET cache=excluded.cache;',
-                    values: [key, value],
-                },
-            ]);
-
-            await db.close();
-        },
-        removeItem: async key => {
-            const db = sqliteStore.get.db();
-
-            if (!db) return;
-
-            await ensureReactQueryTableExists(db);
-
-            await db.open();
-
-            await db.execute(`DELETE FROM reactQuery WHERE id="${key}";`);
-
-            await db.close();
-        },
-    },
+const asyncPersister = createAsyncStoragePersister({
+    storage: queryCacheStorage,
 });
+
+// Drop malformed InfiniteData entries on restore before hydrate (LC-2352).
+const persister = {
+    ...asyncPersister,
+    persistClient: async (client: Parameters<typeof asyncPersister.persistClient>[0]) =>
+        asyncPersister.persistClient(sanitizePersistedQueries(client)),
+    restoreClient: async () => {
+        const snapshot = await asyncPersister.restoreClient();
+        return snapshot ? sanitizePersistedQueries(snapshot) : undefined;
+    },
+};
 
 setupIonicReact({ swipeBackEnabled: false });
 
@@ -101,7 +69,7 @@ const FullApp: React.FC = () => {
     return (
         <PersistQueryClientProvider
             client={client}
-            persistOptions={{ persister, maxAge: CACHE_TTL }}
+            persistOptions={{ persister, maxAge: CACHE_TTL, buster: CACHE_BUSTER }}
         >
             <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
             <IonReactRouter>

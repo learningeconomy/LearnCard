@@ -41,7 +41,7 @@ const CountrySelectorModal: React.FC<CountrySelectorModalProps> = ({ selected, o
                         value={query}
                         placeholder={m['onboarding.country.search']()}
                         onChange={event => setQuery(event.target.value)}
-                        className="w-full bg-grayscale-100 text-grayscale-800 placeholder:text-grayscale-400 rounded-[12px] py-[5px] px-[15px] font-normal text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        className="w-full bg-grayscale-100 text-grayscale-800 placeholder:text-grayscale-400 rounded-[12px] py-[5px] px-[15px] font-normal text-base focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                     />
                 </div>
                 <div className="px-2 pb-4 overflow-y-auto flex-1">

@@ -169,7 +169,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
         return (
             <div className="max-w-2xl mx-auto py-8">
                 <div className="text-center mb-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-200">
+                    <div className="w-16 h-16 bg-linear-to-br/srgb from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-200">
                         <Rocket className="w-8 h-8 text-white" />
                     </div>
 
@@ -182,14 +182,14 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                     </p>
                 </div>
 
-                <div className="space-y-4 mb-10">
+                <div className="space-y-v3-4 mb-10">
                     {steps.map((step, index) => (
                         <div
                             key={step.number}
-                            className="flex items-start gap-4 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm"
+                            className="flex items-start gap-4 bg-white rounded-2xl border border-gray-100 p-5 shadow-xs"
                         >
                             <div
-                                className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${step.color}`}
+                                className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${step.color}`}
                             >
                                 <step.icon className="w-5 h-5" />
                             </div>
@@ -209,7 +209,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                             </div>
 
                             {index < steps.length - 1 && (
-                                <div className="absolute left-[2.15rem] top-[4.5rem] w-px h-4 bg-gray-200" />
+                                <div className="absolute left-[2.15rem] top-18 w-px h-4 bg-gray-200" />
                             )}
                         </div>
                     ))}
@@ -233,7 +233,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
     }
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-v3-5">
             {/* Header with Create button */}
             <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-700">
@@ -296,7 +296,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
             {/* Content */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Listings List - hidden on mobile when a listing is selected */}
-                <div className={`space-y-2 ${selectedListing ? 'hidden md:block' : ''}`}>
+                <div className={`space-y-v3-2 ${selectedListing ? 'hidden md:block' : ''}`}>
                     {isLoading ? (
                         <div className="text-center py-12">
                             <Loader2 className="w-8 h-8 text-cyan-500 mx-auto animate-spin" />
@@ -345,7 +345,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                 onClick={() => setSelectedListing(listing)}
                                 className={`w-full text-left p-3 rounded-xl border transition-all ${
                                     selectedListing?.listing_id === listing.listing_id
-                                        ? 'border-cyan-500 bg-cyan-50 shadow-sm'
+                                        ? 'border-cyan-500 bg-cyan-50 shadow-xs'
                                         : 'border-gray-200 bg-white hover:border-gray-300'
                                 }`}
                             >
@@ -353,7 +353,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                     <img
                                         src={listing.icon_url}
                                         alt={listing.display_name}
-                                        className="w-11 h-11 rounded-xl object-cover flex-shrink-0"
+                                        className="w-11 h-11 rounded-xl object-cover shrink-0"
                                         onError={e => {
                                             (e.target as HTMLImageElement).src =
                                                 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
@@ -378,7 +378,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         </p>
                                     </div>
 
-                                    <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                                    <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
                                 </div>
                             </button>
                         ))
@@ -424,7 +424,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                             </div>
                         </div>
 
-                        <div className="space-y-4 mb-5">
+                        <div className="space-y-v3-4 mb-5">
                             <div>
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
                                     {m['developerPortal.components.partnerDashboard.description']()}

@@ -1,16 +1,14 @@
 import React from 'react';
-import moment from 'moment';
 
 import SlimCaretRight from '../../svgs/SlimCaretRight';
+import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
 import NonBoostPreview from '../../boost/boostCMS/BoostPreview/NonBoostPreview';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostLinkedCredentialsBox from '../../boost/boostLinkedCredentials/BoostLinkedCredentialsBox';
 
-import CredentialVerificationDisplay, {
-    getInfoFromCredential,
-} from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 import {
     useModal,
@@ -47,6 +45,7 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
     });
+    /* eslint-disable prefer-const */
     let {
         issuerName,
         issuerProfileImageElement,
@@ -83,14 +82,11 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
 
         loading: vcInfoLoading,
     } = useGetVCInfo(credential, categoryType);
-
-    const { createdAt } = getInfoFromCredential(credential, dateFormat, {
-        uppercaseDate: false,
-    });
+    /* eslint-enable prefer-const */
 
     const isBoost = credential && isBoostCredential(credential);
 
-    const issueDate = moment(createdAt).format(dateFormat);
+    const issueDate = formatCredentialDate(credential, dateFormat);
 
     const isAwardDisplay = displayType === 'award';
     const isCertDisplayType = displayType === 'certificate';
@@ -231,7 +227,7 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
                             ? 'hidden'
                             : 'mt-[0px] mb-[8px]'
                     }
-                    badgeCircleCustomClass={`!w-[80px] h-[80px] mt-1 ${
+                    badgeCircleCustomClass={`w-[80px]! h-[80px] mt-1 ${
                         isAwardDisplay || isMeritBadge ? '' : 'shadow-3xl'
                     }`}
                     badgeRibbonContainerCustomClass="left-[34%] bottom-[-40%]"
@@ -247,7 +243,7 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
                 <p className="flex text-xs text-grayscale-700 text-left">
                     <CredentialVerificationDisplay
                         credential={credential}
-                        iconClassName="!w-[15px] !h-[15px] mr-1"
+                        iconClassName="w-[15px]! h-[15px]! mr-1"
                     />
                     {issuerName} • {issueDate}
                 </p>

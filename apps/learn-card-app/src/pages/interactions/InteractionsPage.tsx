@@ -122,6 +122,7 @@ const InteractionsPage: React.FC = () => {
             } else {
                 throw new Error('Invalid interaction data received from the server.');
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (e: any) {
             log.error('Error fetching interaction details:', e);
             setError(e.message || 'An unknown error occurred while processing the interaction.');

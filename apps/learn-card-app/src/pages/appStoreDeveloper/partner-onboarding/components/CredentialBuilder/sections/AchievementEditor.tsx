@@ -146,6 +146,11 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                 walletFolder: 'Boosts',
             },
             {
+                value: 'Qualifications',
+                label: m['wallet.categories.qualifications'](),
+                walletFolder: 'Qualifications',
+            },
+            {
                 value: 'ID',
                 label: m['developerPortal.credentialBuilder.achievement.walletCategories.id'](),
                 walletFolder: 'IDs',
@@ -218,7 +223,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
             />
 
             {/* Achievement Type Section */}
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 {!useCustomType ? (
                     <FieldEditor
                         label={m['developerPortal.credentialBuilder.achievement.type']()}
@@ -230,7 +235,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                         showDynamicToggle={!disableDynamicFields}
                     />
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <label className="block text-xs font-medium text-gray-600">
                             {m['developerPortal.credentialBuilder.achievement.type']()}
                         </label>
@@ -246,7 +251,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                                 <select
                                     value={customCategory}
                                     onChange={e => setCustomCategory(e.target.value)}
-                                    className="w-full px-3 py-2 pr-8 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent appearance-none bg-white"
+                                    className="w-full px-3 py-2 pr-8 text-sm border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:border-transparent appearance-none bg-white"
                                 >
                                     {walletCategories.map(cat => (
                                         <option key={cat.value} value={cat.value}>
@@ -279,7 +284,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                                 placeholder={m[
                                     'developerPortal.credentialBuilder.achievement.customTypeNamePlaceholder'
                                 ]()}
-                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                             />
                             <p className="text-xs text-gray-400 mt-1">
                                 {m[
@@ -313,7 +318,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                         type="checkbox"
                         checked={useCustomType}
                         onChange={e => handleToggleCustomType(e.target.checked)}
-                        className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+                        className="w-4 h-4 text-amber-600 border-gray-300 rounded-sm focus:ring-amber-500"
                     />
                     <span className="text-xs text-gray-600">
                         {m['developerPortal.credentialBuilder.achievement.useCustomType']()}
@@ -483,7 +488,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                         {(achievement.tag || []).map((tag, index) => (
                             <span
                                 key={index}
-                                className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs"
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded-sm text-xs"
                             >
                                 {tag}
                                 <button
@@ -505,7 +510,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                         placeholder={m[
                             'developerPortal.credentialBuilder.achievement.tagsPlaceholder'
                         ]()}
-                        className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-amber-500"
+                        className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-sm focus:outline-hidden focus:ring-1 focus:ring-amber-500"
                         onKeyDown={e => {
                             if (e.key === 'Enter') {
                                 e.preventDefault();
@@ -533,7 +538,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                     {m['developerPortal.credentialBuilder.achievement.criteria']()}
                 </h4>
 
-                <div className="space-y-3 pl-3 border-l-2 border-amber-200">
+                <div className="space-y-v3-3 pl-3 border-l-2 border-amber-200">
                     <FieldEditor
                         label={m[
                             'developerPortal.credentialBuilder.achievement.criteriaNarrative'
@@ -571,7 +576,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                     <button
                         type="button"
                         onClick={addAlignment}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded-sm hover:bg-amber-200 transition-colors"
                     >
                         <Plus className="w-3 h-3" />
                         {m['developerPortal.credentialBuilder.achievement.addAlignment']()}
@@ -587,11 +592,11 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                         {m['developerPortal.credentialBuilder.achievement.noAlignments']()}
                     </p>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-v3-4">
                         {(achievement.alignment || []).map((alignment, index) => (
                             <div
                                 key={alignment.id}
-                                className="pl-3 border-l-2 border-amber-200 space-y-2"
+                                className="pl-3 border-l-2 border-amber-200 space-y-v3-2"
                             >
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-amber-700">
@@ -603,7 +608,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => removeAlignment(index)}
-                                        className="p-1 text-gray-400 hover:text-red-500 rounded"
+                                        className="p-1 text-gray-400 hover:text-red-500 rounded-sm"
                                     >
                                         <X className="w-3 h-3" />
                                     </button>

@@ -18,18 +18,19 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.claim_hook_get_claim_hooks_for_boost200_response_records_inner_all_of_one_of2_data import ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf2Data
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
     """
     ClaimHookGetClaimHooksForBoost200ResponseRecordsInner
     """ # noqa: E501
-    id: Optional[StrictStr]
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
-    updated_at: Optional[StrictStr] = Field(alias="updatedAt")
+    id: StrictStr
+    created_at: StrictStr = Field(alias="createdAt")
+    updated_at: StrictStr = Field(alias="updatedAt")
     type: StrictStr
     data: ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf2Data
     __properties: ClassVar[List[str]] = ["id", "createdAt", "updatedAt", "type", "data"]
@@ -42,7 +43,8 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -54,8 +56,7 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -68,9 +69,8 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -83,21 +83,6 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of data
         if self.data:
             _dict['data'] = self.data.to_dict()
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
-            _dict['createdAt'] = None
-
-        # set to None if updated_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.updated_at is None and "updated_at" in self.model_fields_set:
-            _dict['updatedAt'] = None
-
         return _dict
 
     @classmethod
@@ -109,13 +94,15 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "id": obj.get("id"),
             "createdAt": obj.get("createdAt"),
             "updatedAt": obj.get("updatedAt"),
             "type": obj.get("type"),
             "data": ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf2Data.from_dict(obj["data"]) if obj.get("data") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

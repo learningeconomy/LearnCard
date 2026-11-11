@@ -95,7 +95,7 @@ const CreateSigningAuthorityModal: React.FC<{ fetchSigningAuthorities: () => voi
             <div className="flex flex-col w-full">
                 <IonInput
                     className={`ion-padding bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium tracking-widest text-base ${
-                        errors.name ? 'border-red-500 border-[1px] border-solid' : 'mb-[10px]'
+                        errors.name ? 'border-red-500 border border-solid' : 'mb-[10px]'
                     }`}
                     type="text"
                     onIonInput={e => {
@@ -114,7 +114,7 @@ const CreateSigningAuthorityModal: React.FC<{ fetchSigningAuthorities: () => voi
             </div>
             {sectionPortal &&
                 createPortal(
-                    <div className="flex flex-col justify-center items-center relative !border-none max-w-[500px]">
+                    <div className="flex flex-col justify-center items-center relative border-none! max-w-[500px]">
                         <button
                             disabled={!name || loading}
                             onClick={() => createSigningAuthority()}

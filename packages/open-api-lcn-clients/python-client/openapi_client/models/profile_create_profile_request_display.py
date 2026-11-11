@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ProfileCreateProfileRequestDisplay(BaseModel):
     """
@@ -40,7 +41,8 @@ class ProfileCreateProfileRequestDisplay(BaseModel):
     __properties: ClassVar[List[str]] = ["backgroundColor", "backgroundImage", "fadeBackgroundImage", "repeatBackgroundImage", "fontColor", "accentColor", "accentFontColor", "idBackgroundImage", "fadeIdBackgroundImage", "idBackgroundColor", "repeatIdBackgroundImage"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -52,8 +54,7 @@ class ProfileCreateProfileRequestDisplay(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -66,9 +67,8 @@ class ProfileCreateProfileRequestDisplay(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -78,41 +78,6 @@ class ProfileCreateProfileRequestDisplay(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if background_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.background_color is None and "background_color" in self.model_fields_set:
-            _dict['backgroundColor'] = None
-
-        # set to None if background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.background_image is None and "background_image" in self.model_fields_set:
-            _dict['backgroundImage'] = None
-
-        # set to None if font_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.font_color is None and "font_color" in self.model_fields_set:
-            _dict['fontColor'] = None
-
-        # set to None if accent_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.accent_color is None and "accent_color" in self.model_fields_set:
-            _dict['accentColor'] = None
-
-        # set to None if accent_font_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.accent_font_color is None and "accent_font_color" in self.model_fields_set:
-            _dict['accentFontColor'] = None
-
-        # set to None if id_background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.id_background_image is None and "id_background_image" in self.model_fields_set:
-            _dict['idBackgroundImage'] = None
-
-        # set to None if id_background_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.id_background_color is None and "id_background_color" in self.model_fields_set:
-            _dict['idBackgroundColor'] = None
-
         return _dict
 
     @classmethod
@@ -124,7 +89,7 @@ class ProfileCreateProfileRequestDisplay(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "backgroundColor": obj.get("backgroundColor"),
             "backgroundImage": obj.get("backgroundImage"),
             "fadeBackgroundImage": obj.get("fadeBackgroundImage"),
@@ -136,7 +101,9 @@ class ProfileCreateProfileRequestDisplay(BaseModel):
             "fadeIdBackgroundImage": obj.get("fadeIdBackgroundImage"),
             "idBackgroundColor": obj.get("idBackgroundColor"),
             "repeatIdBackgroundImage": obj.get("repeatIdBackgroundImage")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

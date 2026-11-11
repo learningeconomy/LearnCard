@@ -3,7 +3,7 @@
  *
  * Resolution order (first match wins):
  *   1. Explicit `X-Tenant-Id` header — native apps, any client that knows its tenant
- *   2. `Origin` / `Referer` header hostname — web apps (e.g. alpha.vetpass.app → vetpass)
+ *   2. `Origin` / `Referer` header hostname — web apps (e.g. staging.vetpass.app → vetpass)
  *   3. `DEFAULT_TENANT_ID` env var — per-tenant deploys, cron jobs, server-to-server
  *   4. Fallback to 'learncard'
  *
@@ -32,7 +32,7 @@ export interface RequestHeaders {
     /** Value of the X-Tenant-Id header. */
     'x-tenant-id'?: string | undefined;
 
-    /** Origin header (e.g. "https://alpha.vetpass.app"). */
+    /** Origin header (e.g. "https://staging.vetpass.app"). */
     origin?: string | undefined;
 
     /** Referer header (fallback for Origin). */
@@ -51,7 +51,6 @@ export interface RequestHeaders {
 const ORIGIN_MAP: Record<string, string> = {
     // VetPass
     'vetpass.app': 'vetpass',
-    'alpha.vetpass.app': 'vetpass',
     'staging.vetpass.app': 'vetpass',
 
     // ScoutPass
@@ -128,7 +127,7 @@ const extractHostname = (urlString: string): string | undefined => {
 const tenantIdFromHostname = (hostname: string): string | undefined => {
     if (ORIGIN_MAP[hostname]) return ORIGIN_MAP[hostname];
 
-    // Strip subdomains: "alpha.vetpass.app" → "vetpass.app"
+    // Strip subdomains: "preview.vetpass.app" → "vetpass.app"
     const parts = hostname.split('.');
 
     for (let i = 1; i < parts.length - 1; i++) {

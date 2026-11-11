@@ -110,7 +110,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                 <IonGrid className="flex items-center justify-center p-[20px] pb-[100px] max-w-[700px]">
                     <section className="w-full">
                         <div className="flex flex-col gap-[15px] text-grayscale-900">
-                            <h1 className="text-[17px] font-[500] leading-[21px]">
+                            <h1 className="text-[17px] font-medium leading-[21px]">
                                 {m['credsBundle.selectBoostsToShare']()}
                             </h1>
                         </div>
@@ -122,18 +122,18 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                 <>
                                     <div className="flex flex-col items-center justify-center bg-white gap-[10px] text-[14px] leading-[18px] py-[20px] px-[40px] mt-[7px] mx-[7px] shadow-[0_0_7px_0px_rgba(0,0,0,0.2)] rounded-[10px]">
                                         <ProfilePicture
-                                            customContainerClass="flex mr-[10px] flex-shrink-0 border-gray-300 border-[2px] w-[55px] h-[55px] items-center justify-center rounded-full overflow-hidden object-cover text-white font-medium text-4xl"
-                                            customImageClass="w-full h-full object-cover flex-shrink-0"
+                                            customContainerClass="flex mr-[10px] shrink-0 border-gray-300 border-2 w-[55px] h-[55px] items-center justify-center rounded-full overflow-hidden object-cover text-white font-medium text-4xl"
+                                            customImageClass="w-full h-full object-cover shrink-0"
                                             customSize={500}
                                         />
-                                        <p className="font-[700] text-grayscale-900">
+                                        <p className="font-bold text-grayscale-900">
                                             {currentUser?.name || currentUser?.email}
                                         </p>
 
-                                        <p className="font-[500] text-grayscale-700 text-center">
+                                        <p className="font-medium text-grayscale-700 text-center">
                                             {m['credsBundle.createBundleDesc']()}
                                         </p>
-                                        <p className="font-[500] text-grayscale-700 text-center">
+                                        <p className="font-medium text-grayscale-700 text-center">
                                             {m['credsBundle.selectedCount']({
                                                 count: totalSelectedCount,
                                                 type: name,
@@ -143,7 +143,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
 
                                     <div className="mt-[15px] text--[14px]">
                                         {credentialsLoading && (
-                                            <div className="w-full h-full flex flex-col opacity-[50%] items-center justify-center mt-[40px]">
+                                            <div className="w-full h-full flex flex-col opacity-50 items-center justify-center mt-[40px]">
                                                 <IonSpinner />
                                                 <p className="mt-[20px]">
                                                     {m['credsBundle.fetchingBoosts']()}
@@ -169,7 +169,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                                     alt=""
                                                     className="max-w-[250px] m-auto mb-[20px]"
                                                 />
-                                                <div className="flex flex-col gap-[20px] text-grayscale-900 font-[700] font-montserrat">
+                                                <div className="flex flex-col gap-[20px] text-grayscale-900 font-bold font-montserrat">
                                                     <span className="text-[30px]">
                                                         {m['credsBundle.noCredentials']()}
                                                     </span>

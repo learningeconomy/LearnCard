@@ -9,6 +9,7 @@ import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
+import PreviewCredentialFooter from './PreviewCredentialFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostMediaPreview from './BoostMediaPreview';
@@ -22,9 +23,9 @@ import {
     isStandaloneCourseCredential,
     normalizeClrTranscriptDisplayModel,
     ClrTranscriptSurface,
-} from '../../../../helpers/clrRenderer.helpers';
-import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
-import { getClrIssuerLogo } from '../../../clr-transcript/clrKind.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { getDownloadableEvidence } from 'learn-card-base/helpers/credentials/clr/helpers';
+import { getClrIssuerLogo } from 'learn-card-base/helpers/credentials/clr/kind';
 import {
     getAchievementType,
     getCredentialName,
@@ -125,8 +126,16 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     isPreview = false,
 }) => {
     const { track } = useAnalytics();
+    // A preview flag must not hide verification of an already signed credential.
+    const isUnsignedPreview =
+        isPreview && !credential?.proof && !credential?.boostCredential?.proof;
     const { initWallet } = useWallet();
-    const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
+    const [verificationResult, setVerificationResult] = useState<{
+        credential: VC;
+        items: VerificationItem[];
+    }>();
+    const vcVerifications =
+        verificationResult?.credential === credential ? verificationResult.items : [];
     const viewedCredentialIdRef = React.useRef<string | undefined>(undefined);
     const renderMethod = getSvgMustacheRenderMethod(credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
@@ -146,16 +155,24 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const { isMobile } = useDeviceTypeByWidth();
 
     useEffect(() => {
-        if (isPreview) return;
+        if (isUnsignedPreview) return;
+        let cancelled = false;
 
         const verify = async () => {
-            const wallet = await initWallet();
-            const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
-            setVCVerifications(verifications);
+            try {
+                const wallet = await initWallet();
+                const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
+                if (!cancelled) setVerificationResult({ credential, items: verifications ?? [] });
+            } catch {
+                if (!cancelled) setVerificationResult({ credential, items: [] });
+            }
         };
 
         verify();
-    }, [credential, isPreview]);
+        return () => {
+            cancelled = true;
+        };
+    }, [credential, isUnsignedPreview]);
 
     useEffect(() => {
         if (!isEarnedBoost || isPreview) return;
@@ -206,10 +223,10 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 isEarnedBoost={isEarnedBoost}
                 isClrChildCredential={isClrChildCredential}
                 renderMethodCredential={credential as VC | UnsignedVC}
-                isPreview={isPreview}
+                isPreview={isUnsignedPreview}
             />,
             {
-                className: '!bg-transparent',
+                className: 'bg-transparent!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -302,7 +319,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     if (showsCoursePanel || (isMobile && isClrCredential)) {
         previewWrapperPaddingClass = 'px-0';
-        previewContentPaddingClass = '!p-0';
+        previewContentPaddingClass = 'p-0!';
     } else if (shouldUseHostCardPadding) {
         previewWrapperPaddingClass = 'px-2';
         previewContentPaddingClass = 'px-6';
@@ -335,12 +352,19 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 issuerOverride={issuerOverride}
                 issueHistory={issueHistory}
                 categoryType={categoryType}
-                verificationItems={verifications}
+                skipVerification={isUnsignedPreview}
+                verificationItems={isUnsignedPreview ? [] : verifications}
                 lifecycleStatus={lifecycleStatus}
                 customThumbComponent={customThumbComponent}
                 customBodyCardComponent={customBodyCardComponent}
                 customFooterComponent={
-                    isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+                    isUnsignedPreview ? (
+                        <PreviewCredentialFooter />
+                    ) : isClrChildCredential ? (
+                        <VerifiedChildCLRFooter />
+                    ) : (
+                        customFooterComponent
+                    )
                 }
                 subjectDID={subjectDID}
                 subjectImageComponent={subjectImageComponent}
@@ -384,6 +408,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 boost={clrCredential}
                 // boostUri comes from boost cards; credentialUri from direct credential views
                 boostUri={boostUri ?? credentialUri}
+                verificationItems={verifications}
                 options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
             />
         );
@@ -428,7 +453,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                                 isCertificate && !isStandaloneCourse
                                     ? 'certificate-display-zoom'
                                     : ''
-                            } ${isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
+                            } ${isID ? 'px-0! mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
                         >
                             <section
                                 className={`w-full overflow-y-auto max-h-full disable-scrollbars ${
@@ -452,7 +477,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                             isEarnedBoost={isEarnedBoost}
                             isClrChildCredential={isClrChildCredential}
                             renderMethodCredential={credential as VC | UnsignedVC}
-                            isPreview={isPreview}
+                            isPreview={isUnsignedPreview}
                         />
                     )}
                 </div>

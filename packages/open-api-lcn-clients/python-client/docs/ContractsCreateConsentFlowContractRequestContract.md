@@ -1,12 +1,11 @@
 # ContractsCreateConsentFlowContractRequestContract
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**read** | [**ContractsCreateConsentFlowContractRequestContractRead**](ContractsCreateConsentFlowContractRequestContractRead.md) |  | [optional] 
-**write** | [**ContractsCreateConsentFlowContractRequestContractWrite**](ContractsCreateConsentFlowContractRequestContractWrite.md) |  | [optional] 
+| Name      | Type                                                                                                                    | Description | Notes      |
+| --------- | ----------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **read**  | [**ContractsCreateConsentFlowContractRequestContractRead**](ContractsCreateConsentFlowContractRequestContractRead.md)   |             | [optional] |
+| **write** | [**ContractsCreateConsentFlowContractRequestContractWrite**](ContractsCreateConsentFlowContractRequestContractWrite.md) |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_create_consent_flow_contract_request_contract_dict = contracts_create_
 # create an instance of ContractsCreateConsentFlowContractRequestContract from a dict
 contracts_create_consent_flow_contract_request_contract_from_dict = ContractsCreateConsentFlowContractRequestContract.from_dict(contracts_create_consent_flow_contract_request_contract_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

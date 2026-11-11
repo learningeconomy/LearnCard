@@ -116,7 +116,7 @@ const BoostCMSBasicInfoForm: React.FC<{
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
                         className={`rtl-mirror h-auto w-3 text-grayscale-800 ${
-                            showAbout ? 'rotate-[-90deg]' : 'rotate-180'
+                            showAbout ? '-rotate-90' : 'rotate-180'
                         }`}
                     />
                 </button>
@@ -146,7 +146,7 @@ const BoostCMSBasicInfoForm: React.FC<{
                             onIonInput={e => handleStateChange('description', e.detail.value)}
                             placeholder={m['boostCMS.whatFor']({ title })}
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base font-notoSans ${
-                                disabled ? '!opacity-60' : ''
+                                disabled ? 'opacity-60!' : ''
                             }`}
                             rows={3}
                             disabled={
@@ -161,7 +161,7 @@ const BoostCMSBasicInfoForm: React.FC<{
                             onIonInput={e => handleStateChange('narrative', e.detail.value)}
                             placeholder={m['boostCMS.howEarn']({ title })}
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base font-notoSans ${
-                                disabled ? '!opacity-60' : ''
+                                disabled ? 'opacity-60!' : ''
                             }`}
                             rows={10}
                             disabled={

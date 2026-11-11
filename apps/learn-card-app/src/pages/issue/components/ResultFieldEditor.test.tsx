@@ -38,6 +38,62 @@ const legacyPercentTemplate = (): OBv3CredentialTemplate => ({
 });
 
 describe('ResultFieldEditor', () => {
+    it('lets the issuer edit a second linked grade without overwriting the first', () => {
+        const onChange = vi.fn();
+        const Harness = () => {
+            const first = writeResult(legacyPercentTemplate(), {
+                resultType: 'Percent',
+                value: '95',
+            });
+            const [template, setTemplate] = useState(() =>
+                writeResult(
+                    first,
+                    { resultType: 'LetterGrade', value: 'A-', name: staticField('Letter grade') },
+                    1
+                )
+            );
+            return (
+                <ResultFieldEditor
+                    template={template}
+                    onChangeTemplate={next => {
+                        onChange(next);
+                        setTemplate(next);
+                    }}
+                    canMakeDynamic={false}
+                />
+            );
+        };
+        render(<Harness />);
+        fireEvent.change(screen.getByRole('combobox', { name: /Result field/ }), {
+            target: { value: '1' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('e.g. A-'), { target: { value: 'B+' } });
+        const last = onChange.mock.calls.at(-1)![0];
+        expect(readResultState(last, 0).value).toBe('95');
+        expect(readResultState(last, 1).value).toBe('B+');
+    });
+
+    it('isolates edits to results that initially share a scale description', () => {
+        const template = writeResult(legacyPercentTemplate(), {
+            resultType: 'Percent',
+            value: '95',
+        });
+        const first = template.credentialSubject.result![0];
+        template.credentialSubject.result!.push({
+            ...first,
+            id: 'second',
+            value: staticField('85'),
+        });
+        const changed = writeResult(template, { resultType: 'LetterGrade', value: 'A-' }, 1);
+        expect(readResultState(changed, 0).resultType).toBe('Percent');
+        expect(readResultState(changed, 1).resultType).toBe('LetterGrade');
+        expect(readResultState(changed, 0).resultDescription?.id).not.toBe(
+            readResultState(changed, 1).resultDescription?.id
+        );
+        const removed = writeResult(template, { resultType: 'Percent', value: '' }, 1);
+        expect(readResultState(removed, 0).resultDescription).toBeDefined();
+    });
+
     it('keeps a nonnumeric legacy result editable when Percent is selected', () => {
         const onChangeTemplate = vi.fn();
         const Harness = () => {

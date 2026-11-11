@@ -103,9 +103,9 @@ const SkeletonRow: React.FC<{ index: number }> = ({ index }) => (
         style={{ animationDelay: `${index * 60}ms` }}
     >
         <span className="shrink-0 w-9 h-9 rounded-full bg-grayscale-100" />
-        <div className="flex-1 min-w-0 space-y-1.5">
-            <div className="h-3 bg-grayscale-100 rounded w-2/3" />
-            <div className="h-2.5 bg-grayscale-100 rounded w-1/2" />
+        <div className="flex-1 min-w-0 space-y-v3-1.5">
+            <div className="h-3 bg-grayscale-100 rounded-sm w-2/3" />
+            <div className="h-2.5 bg-grayscale-100 rounded-sm w-1/2" />
         </div>
     </div>
 );
@@ -122,7 +122,7 @@ const MeanwhileTips: React.FC<{ tips: EmptyTip[] }> = ({ tips }) => (
                     key={tip.key}
                     type="button"
                     onClick={tip.onClick}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-grayscale-10 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-grayscale-10 transition-colors text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <span className="shrink-0 w-10 h-10 rounded-full bg-grayscale-100 flex items-center justify-center text-grayscale-700">
                         {TipIcon ? (
@@ -156,7 +156,7 @@ const ActionableRow: React.FC<{
         <button
             type="button"
             onClick={item.onClick}
-            className="w-full flex items-center gap-2.5 py-2 pl-2 pr-2.5 rounded-xl border-l-2 border-amber-300 bg-amber-50/40 hover:bg-amber-50 active:scale-[0.99] transition-all text-left animate-fade-in-up focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            className="w-full flex items-center gap-2.5 py-2 pl-2 pr-2.5 rounded-xl border-l-2 border-amber-300 bg-amber-50/40 hover:bg-amber-50 active:scale-[0.99] transition-all text-left animate-fade-in-up focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
             style={{ animationDelay: `${animationDelayMs}ms` }}
         >
             <span className="shrink-0 relative w-7 h-7">
@@ -321,7 +321,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     <button
                         type="button"
                         onClick={() => history.push('/notifications')}
-                        className="flex items-center gap-1 self-end text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-0.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        className="flex items-center gap-1 self-end text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-0.5 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         {actionableTotal > MAX_ACTIONABLE
                             ? m['dashboard.activity.viewMore']({
@@ -374,7 +374,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     <button
                         type="button"
                         onClick={() => history.push('/wallet')}
-                        className="flex items-center gap-1 self-end text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        className="flex items-center gap-1 self-end text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-1 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         {m['dashboard.activity.viewAllPassport']()}
                         <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />

@@ -1,12 +1,11 @@
 # InboxGetMyIssuedCredentialsRequestRecipient
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**value** | **str** |  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **type**  | **str** |             |
+| **value** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ inbox_get_my_issued_credentials_request_recipient_dict = inbox_get_my_issued_cre
 # create an instance of InboxGetMyIssuedCredentialsRequestRecipient from a dict
 inbox_get_my_issued_credentials_request_recipient_from_dict = InboxGetMyIssuedCredentialsRequestRecipient.from_dict(inbox_get_my_issued_credentials_request_recipient_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

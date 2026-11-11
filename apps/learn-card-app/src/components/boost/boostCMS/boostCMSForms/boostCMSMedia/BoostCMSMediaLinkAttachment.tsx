@@ -75,7 +75,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                     type="text"
                     value={state.links?.[currentIndex]?.title || newLinkTitle}
                     onIonInput={e => {
-                        let stateCopy = structuredClone(state.links);
+                        const stateCopy = structuredClone(state.links);
                         if (stateCopy[currentIndex]) {
                             stateCopy[currentIndex].title = e.detail.value as string;
                             setState(stateCopy);
@@ -96,7 +96,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                     type="text"
                     value={state.links?.[currentIndex]?.url || newLinkUrl}
                     onIonInput={e => {
-                        let stateCopy = structuredClone(state.links);
+                        const stateCopy = structuredClone(state.links);
                         if (stateCopy[currentIndex]) {
                             stateCopy[currentIndex].url = e.detail.value as string;
                             setState(stateCopy);
@@ -113,12 +113,12 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
             {sectionPortal &&
                 createPortal(
                     <div className="w-full flex flex-col items-center justify-center">
-                        <div className="flex justify-center gap-[10px] items-center relative !border-none w-full max-w-[500px]">
+                        <div className="flex justify-center gap-[10px] items-center relative border-none! w-full max-w-[500px]">
                             <button
                                 onClick={() => {
                                     if (newLinkUrl) {
-                                        let stateCopy = structuredClone(state);
-                                        let stateUpdate = [
+                                        const stateCopy = structuredClone(state);
+                                        const stateUpdate = [
                                             ...stateCopy.links,
                                             {
                                                 title: newLinkTitle || newLinkUrl,
@@ -139,7 +139,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                             </button>
                         </div>
 
-                        <div className="flex flex-col justify-center items-center relative !border-none w-full max-w-[500px]">
+                        <div className="flex flex-col justify-center items-center relative border-none! w-full max-w-[500px]">
                             <button
                                 onClick={() => {
                                     if (createMode) {

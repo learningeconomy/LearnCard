@@ -28,7 +28,7 @@ const AddressBookContactCard: React.FC = () => {
                 connections={connections ?? []}
                 qrOnly
             />,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };

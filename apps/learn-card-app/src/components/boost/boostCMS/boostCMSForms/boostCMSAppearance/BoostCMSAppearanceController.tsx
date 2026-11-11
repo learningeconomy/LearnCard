@@ -33,7 +33,9 @@ type BoostCMSAppearanceControllerProps = {
     state: BoostCMSState;
     setState?: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     boostUserType?: BoostUserTypeEnum;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     customTypes?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     setCustomTypes?: React.Dispatch<any>;
     disabled?: boolean;
     handleCategoryAndTypeChange?: (
@@ -58,9 +60,11 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
     const { newModal } = useModal();
     const { getThemedCategoryIcons } = useTheme();
 
-    const categoryType = state?.basicInfo?.type
-        || CATEGORY_MAP[state?.basicInfo?.achievementType as keyof typeof CATEGORY_MAP] as BoostCategoryOptionsEnum | undefined
-        || BoostCategoryOptionsEnum.achievement;
+    const categoryType =
+        state?.basicInfo?.type ||
+        (CATEGORY_MAP[state?.basicInfo?.achievementType as keyof typeof CATEGORY_MAP] as
+            BoostCategoryOptionsEnum | undefined) ||
+        BoostCategoryOptionsEnum.achievement;
 
     const boostMetadata = getBoostMetadata(categoryType);
     const { Icon } = getThemedCategoryIcons(
@@ -70,6 +74,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
 
     const defaultThumbnail = boostCategoryMetadata[categoryType]?.CategoryImage;
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let badgeCircleText = '';
 
     if (isCustomBoostType(state?.basicInfo?.achievementType)) {
@@ -130,8 +135,8 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
     } else if (isMediaDisplayType) {
         controllerContainerStyles =
             'relative flex items-center justify-center w-[170px] h-[155px] rounded-[25px] border-white border-solid border-4 bg-white z-50 overflow-hidden';
-        imageStyles = 'w-[100%] h-[100%] object-contain !rounded-[25px]';
-        backgroundImageStyles = '!min-h-[150px] !max-h-[150px] !rounded-none';
+        imageStyles = 'w-full h-full object-contain rounded-[25px]!';
+        backgroundImageStyles = 'min-h-[150px]! max-h-[150px]! rounded-none!';
     }
 
     if (isMediaDisplayType) {
@@ -169,7 +174,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
                                     disabled={disabled}
                                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                                 />,
-                                { sectionClassName: '!max-w-[500px]', hideButton: true }
+                                { sectionClassName: 'max-w-[500px]!', hideButton: true }
                             );
                         }}
                         className={`absolute bg-white h-12 w-12 z-15 rounded-tr-full rounded-br-full flex items-center justify-center ${
@@ -183,7 +188,10 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
                     <div
                         className={`relative flex items-center justify-center rounded-full border-white border-solid border-4 bg-${subColor} overflow-hidden object-contain bg-${subColor} ${imageStyles}`}
                     >
-                        <img src={state?.appearance?.badgeThumbnail || defaultThumbnail} alt="badge thumbnail" />
+                        <img
+                            src={state?.appearance?.badgeThumbnail || defaultThumbnail}
+                            alt="badge thumbnail"
+                        />
                     </div>
                 )}
 

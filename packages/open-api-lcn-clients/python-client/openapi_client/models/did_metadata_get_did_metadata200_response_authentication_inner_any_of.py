@@ -19,16 +19,17 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_send_request_template_credential_any_of_context_inner import BoostSendRequestTemplateCredentialAnyOfContextInner
+from openapi_client.models.boost_send_boost_request_credential_any_of_context_inner import BoostSendBoostRequestCredentialAnyOfContextInner
 from openapi_client.models.did_metadata_get_did_metadata200_response_authentication_inner_any_of_public_key_jwk import DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOfPublicKeyJwk
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf(BaseModel):
     """
     DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf
     """ # noqa: E501
-    context: Optional[List[BoostSendRequestTemplateCredentialAnyOfContextInner]] = Field(default=None, alias="@context")
+    context: Optional[List[BoostSendBoostRequestCredentialAnyOfContextInner]] = Field(default=None, alias="@context")
     id: StrictStr
     type: StrictStr
     controller: StrictStr
@@ -40,7 +41,8 @@ class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf(BaseModel):
     __properties: ClassVar[List[str]] = ["@context", "id", "type", "controller", "publicKeyJwk", "publicKeyBase58", "publicKeyMultibase", "blockChainAccountId"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -52,8 +54,7 @@ class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -66,9 +67,8 @@ class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -84,8 +84,7 @@ class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf(BaseModel):
         _items = []
         if self.context:
             for _item_context in self.context:
-                if _item_context:
-                    _items.append(_item_context.to_dict())
+                _items.append(_item_context.to_dict() if _item_context is not None else None)
             _dict['@context'] = _items
         # override the default output from pydantic by calling `to_dict()` of public_key_jwk
         if self.public_key_jwk:
@@ -106,8 +105,8 @@ class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
-            "@context": [BoostSendRequestTemplateCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
+        _values = {
+            "@context": [BoostSendBoostRequestCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
             "id": obj.get("id"),
             "type": obj.get("type"),
             "controller": obj.get("controller"),
@@ -115,7 +114,9 @@ class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf(BaseModel):
             "publicKeyBase58": obj.get("publicKeyBase58"),
             "publicKeyMultibase": obj.get("publicKeyMultibase"),
             "blockChainAccountId": obj.get("blockChainAccountId")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

@@ -3,7 +3,7 @@ import { syncEnvVars } from '@trigger.dev/build/extensions/core';
 
 export default defineConfig({
     project: process.env.AI_AGENT_TRIGGER_PROJECT_REF ?? 'proj_lyfepdqcmztsyzcqmcvx',
-    runtime: 'node',
+    runtime: 'node-24',
     logLevel: 'log',
     maxDuration: 3600,
     retries: {

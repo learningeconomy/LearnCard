@@ -58,10 +58,10 @@ const AssessmentEditor: React.FC<{
     };
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             <p className={LABEL}>Criteria</p>
 
-            <ul className="space-y-2">
+            <ul className="space-y-v3-2">
                 {value.rubric.criteria.map((c, i) => (
                     <li key={c.id} className="flex gap-2 items-start">
                         <input

@@ -1,12 +1,12 @@
 # BoostUpdateBoostRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**updates** | [**BoostUpdateBoostRequestUpdates**](BoostUpdateBoostRequestUpdates.md) |  | 
+| Name        | Type                                                                                    | Description | Notes      |
+| ----------- | --------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **uri**     | **str**                                                                                 |             |
+| **updates** | [**BoostUpdateBoostRequestUpdates**](BoostUpdateBoostRequestUpdates.md)                 |             |
+| **skills**  | [**List[BoostSendRequestTemplateSkillsInner]**](BoostSendRequestTemplateSkillsInner.md) |             | [optional] |
 
 ## Example
 
@@ -25,6 +25,5 @@ boost_update_boost_request_dict = boost_update_boost_request_instance.to_dict()
 # create an instance of BoostUpdateBoostRequest from a dict
 boost_update_boost_request_from_dict = BoostUpdateBoostRequest.from_dict(boost_update_boost_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

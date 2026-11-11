@@ -37,7 +37,7 @@ const ConsentFlowSyncData: React.FC = () => {
 
     const { challenge, domain, uri, returnTo } = queryString.parse(location.search);
 
-    const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
+    const contractUri = Array.isArray(uri) ? (uri[0] ?? '') : (uri ?? '');
 
     const { data: contractDetails } = useContract(contractUri);
     const { data: consentedContracts, isLoading } = useConsentedContracts();
@@ -53,14 +53,14 @@ const ConsentFlowSyncData: React.FC = () => {
             newModal(
                 <PostConsentFlowSyncCard consentedContract={consentedContract} />,
                 {
-                    sectionClassName: '!max-w-[400px]',
+                    sectionClassName: 'max-w-[400px]!',
                 },
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
             );
         } else {
             newModal(
                 <ConsentFlowSyncCard contractDetails={contractDetails} contractUri={contractUri} />,
-                { sectionClassName: '!max-w-[400px] !bg-transparent !shadow-none' }
+                { sectionClassName: 'max-w-[400px]! bg-transparent! shadow-none!' }
             );
         }
     };
@@ -77,7 +77,7 @@ const ConsentFlowSyncData: React.FC = () => {
         <IonContent className="fs-ion-content-fix bg-emerald-700 [&::part(scroll)]:justify-end">
             <section className="max-h-full py-[20px] overflow-y-auto disable-scrollbars safe-area-top-margin">
                 <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px]">
-                    <header className="flex items-center flex-col gap-[10px] border-solid border-b-[1px] border-grayscale-200 pb-[20px] w-full">
+                    <header className="flex items-center flex-col gap-[10px] border-solid border-b border-grayscale-200 pb-[20px] w-full">
                         <span className="text-grayscale-900 text-[14px] font-montserrat normal font-[700] tracking-[7px] text-center">
                             LearnCard
                         </span>
@@ -95,7 +95,7 @@ const ConsentFlowSyncData: React.FC = () => {
                     </header>
 
                     <div className="flex flex-col gap-[10px] items-center">
-                        <span className="text-grayscale-900 text-[20px] font-poppins font-[600] leading-[160%]">
+                        <span className="text-grayscale-900 text-[20px] font-poppins font-semibold leading-[160%]">
                             {m['consentFlow.syncMyData']()}
                         </span>
                         <span className="text-grayscale-800 text-[17px] font-poppins text-center">

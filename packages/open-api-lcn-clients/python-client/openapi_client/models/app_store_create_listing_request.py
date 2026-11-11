@@ -18,21 +18,23 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.app_store_create_listing_request_listing import AppStoreCreateListingRequestListing
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class AppStoreCreateListingRequest(BaseModel):
     """
     AppStoreCreateListingRequest
     """ # noqa: E501
-    integration_id: Optional[StrictStr] = Field(alias="integrationId")
+    integration_id: StrictStr = Field(alias="integrationId")
     listing: AppStoreCreateListingRequestListing
     __properties: ClassVar[List[str]] = ["integrationId", "listing"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +46,7 @@ class AppStoreCreateListingRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -58,9 +59,8 @@ class AppStoreCreateListingRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -73,11 +73,6 @@ class AppStoreCreateListingRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of listing
         if self.listing:
             _dict['listing'] = self.listing.to_dict()
-        # set to None if integration_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.integration_id is None and "integration_id" in self.model_fields_set:
-            _dict['integrationId'] = None
-
         return _dict
 
     @classmethod
@@ -89,10 +84,12 @@ class AppStoreCreateListingRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "integrationId": obj.get("integrationId"),
             "listing": AppStoreCreateListingRequestListing.from_dict(obj["listing"]) if obj.get("listing") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

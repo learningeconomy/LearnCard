@@ -9,6 +9,7 @@ import {
     ensureAiPassportSession,
     getAiPassportAuthMode,
     getAiPassportWebSocketProtocols,
+    createAiPassportRequestScope,
 } from './aiPassportAuth';
 
 const originalFetch = globalThis.fetch;
@@ -21,6 +22,45 @@ const wallet = (did: string, issuePresentation: Mock) => {
     walletStore.set.wallet(account);
     return account;
 };
+
+describe('foreground request scopes', () => {
+    it.each(['wallet', 'profile', 'service', 'logout'])(
+        'cancels on %s changes, including switching away and back',
+        kind => {
+            const did = 'did:key:scope-test';
+            networkStore.set.aiServiceUrl('https://scope.example.test');
+            const original = wallet(did, vi.fn());
+            const scope = createAiPassportRequestScope(did);
+            expect(scope.signal.aborted).toBe(false);
+            if (kind === 'wallet') {
+                wallet('did:key:other', vi.fn());
+                walletStore.set.wallet(original);
+            } else if (kind === 'profile') {
+                switchedProfileStore.set.switchedDid('did:web:other');
+                switchedProfileStore.set.switchedDid(undefined);
+            } else if (kind === 'service') {
+                networkStore.set.aiServiceUrl('https://other.example.test');
+                networkStore.set.aiServiceUrl('https://scope.example.test');
+            } else clearAiPassportAuth();
+            expect(scope.signal.aborted).toBe(true);
+            scope.dispose();
+        }
+    );
+
+    it('follows external cancellation and disposes completed scopes', () => {
+        const did = 'did:key:scope-test';
+        wallet(did, vi.fn());
+        const external = new AbortController();
+        const scope = createAiPassportRequestScope(did, external.signal);
+        external.abort();
+        expect(scope.signal.aborted).toBe(true);
+        scope.dispose();
+        const completed = createAiPassportRequestScope(did);
+        completed.dispose();
+        clearAiPassportAuth();
+        expect(completed.signal.aborted).toBe(false);
+    });
+});
 
 afterEach(() => {
     clearAiPassportAuth();

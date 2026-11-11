@@ -1,4 +1,32 @@
+import type { CampaignAudienceResult } from '@learncard/types';
+import type {
+    SendContractRequest,
+    ConsentFlowContractRequestForProfile,
+    GuardianApprovalRequestStatus,
+} from '@learncard/types';
 import type { LCNClient } from '@learncard/network-brain-client';
+import type {
+    Campaign,
+    CampaignAudienceInput,
+    AnnouncementPreferences,
+    CampaignEvent,
+    CampaignStats,
+    CampaignDispatchPreview,
+    CampaignDispatchOptions,
+    CampaignStatus,
+    CreateCampaignInput,
+    UpdateCampaignInput,
+    ListCampaignsInput,
+    MyCampaign,
+    PageCampaignAudienceInput,
+    PaginatedCampaigns,
+    PaginatedCampaignAudience,
+    PublishCredentialSharePreview,
+    ConsentFlowContractChanges,
+    ConsentFlowContractUpdateResult,
+    ConsentFlowContractVersion,
+    ConsentFlowConsentStatus,
+} from '@learncard/types';
 import {
     LCNProfile,
     LCNVisibleProfile,
@@ -22,6 +50,10 @@ import {
     ShareLinkOwnerRecoveryOutput,
     ShareLinkPublicState,
     ShareLinkPublicContentView,
+    PutShareLinkAttachmentChunkInput,
+    DeleteShareLinkAttachmentChunksInput,
+    GetShareLinkAttachmentChunkInput,
+    ShareLinkAttachmentChunkOutput,
     AcknowledgeViewOutput,
     Boost,
     BoostQuery,
@@ -60,7 +92,6 @@ import {
     PaginatedConsentFlowDataForDid,
     PaginatedContractCredentials,
     AutoBoostConfig,
-    SendInput,
     SendResponse,
     AuthGrantType,
     AuthGrantQuery,
@@ -113,6 +144,9 @@ import {
     AppStoreListing,
     AppStoreListingCreateType,
     AppStoreListingUpdateType,
+    AppManifest,
+    AppManifestVersion,
+    AppManifestDiff,
     AppListingStatus,
     PromotionLevel,
     PaginatedAppStoreListings,
@@ -132,7 +166,11 @@ import {
     PublishCredentialRefreshInput,
     PublishCredentialRefreshResult,
     GetCredentialRefreshHistoryInput,
+    type GetCredentialRefreshReceiptInput,
+    type CredentialRefreshReceipt,
     GetCredentialRefreshHistoryResult,
+    type SendBoostInput,
+    type CredentialRefreshUpdateReason,
 } from '@learncard/types';
 import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -190,6 +228,32 @@ export type SendBoostResultFor<Options> = [EnableRefreshOf<Options>] extends [tr
       ? string | SendBoostRefreshResult
       : string;
 
+/**
+ * `send` input extended with the LC-2345 holder-mode `encryption` field. A local
+ * intersection rather than a `@learncard/types` edit, because today the field is
+ * validated and enforced entirely client-side (rejected for inbox recipients,
+ * `signedCredential`, and servers that don't return `recipientKeyIds`).
+ */
+export type SendBoostInputWithEncryption = SendBoostInput & {
+    /**
+     * `'holder'` requests student-only encryption: the SDK signs and encrypts
+     * locally so the server never receives plaintext. Requires `refresh: true` and a
+     * profile or DID recipient. Defaults to `'network'`.
+     */
+    encryption?: 'network' | 'holder';
+};
+
+/** Options for {@link LearnCardNetworkPluginMethods.publishHolderEncryptedRefreshable}. */
+export type PublishHolderEncryptedRefreshableOptions = {
+    /** Applied locally with the same templating `send` uses; never sent to the server. */
+    templateData?: Record<string, unknown>;
+    /** Replaces server-inferred materiality: the server cannot compare encrypted content across versions. */
+    notify: boolean;
+    updateSummary?: string;
+    updateReason?: CredentialRefreshUpdateReason;
+    idempotencyKey?: string;
+};
+
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
@@ -199,12 +263,23 @@ export type LearnCardNetworkPluginDependentMethods = {
     ) => Promise<VC>;
     clearDidWebCache?: () => Promise<void>;
     createDagJwe: (cleartext: any, recipients: string[]) => Promise<JWE>;
+    /** Encrypts only to explicit recipients, without adding the caller. */
+    createDagJweExact?: <T>(cleartext: T, recipients: string[]) => Promise<JWE>;
     decryptDagJwe: (jwe: JWE, jwks: any[]) => Promise<any>;
     resolveDid: (did: string) => Promise<DidDocument>;
 };
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginMethods = {
+    /**
+     * Publish opted-in, publisher-supplied metadata bound to an encrypted presentation URI.
+     * Provide an owned preview ID and the same URI to refresh it; its URI cannot be rebound.
+     * A missing or mismatched refresh returns NOT_FOUND. This does not verify the credential or issuer.
+     * Returns an opaque UUID; public lookup also requires the matching share URI.
+     */
+    publishCredentialSharePreview: (preview: PublishCredentialSharePreview) => Promise<string>;
+    /** Remove an owned preview; returns false if absent/unowned. Social copies may persist. */
+    deleteCredentialSharePreview: (id: string) => Promise<boolean>;
     createProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'> & { authToken?: string }
     ) => Promise<string>;
@@ -309,6 +384,13 @@ export type LearnCardNetworkPluginMethods = {
      * no caller-supplied owner/namespace/object authority is accepted.
      */
     createShareLink: (input: CreateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    putShareLinkAttachmentChunk: (input: PutShareLinkAttachmentChunkInput) => Promise<{ ok: true }>;
+    deleteShareLinkAttachmentChunks: (
+        input: DeleteShareLinkAttachmentChunksInput
+    ) => Promise<{ ok: boolean }>;
+    getShareLinkAttachmentChunk: (
+        input: GetShareLinkAttachmentChunkInput
+    ) => Promise<ShareLinkAttachmentChunkOutput>;
     updateShareLink: (input: UpdateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
     revokeShareLink: (input: {
         id: string;
@@ -573,12 +655,27 @@ export type LearnCardNetworkPluginMethods = {
         input: PublishCredentialRefreshInput
     ) => Promise<PublishCredentialRefreshResult>;
     /**
+     * Holder-mode (LC-2345) counterpart of `publishCredentialRefresh`: builds and
+     * signs a new version locally from `receipt`'s bindings, encrypts it exactly to
+     * the current holder + manager recipients, and sends only the ciphertext
+     * handoff. Rejects when local signing is unavailable.
+     */
+    publishHolderEncryptedRefreshable: (
+        receipt: ManagedCredentialRefreshReceipt,
+        credential: UnsignedVC,
+        options: PublishHolderEncryptedRefreshableOptions
+    ) => Promise<PublishCredentialRefreshResult>;
+    /**
      * Cursor-paginated, metadata-only issuer audit history for a managed refresh.
      * Never includes credential bodies or encrypted payloads.
      */
     getCredentialRefreshHistory: (
         input: GetCredentialRefreshHistoryInput
     ) => Promise<GetCredentialRefreshHistoryResult>;
+    /** Read the authenticated public binding for a pending managed delivery. */
+    getCredentialRefreshReceipt: (
+        input: GetCredentialRefreshReceiptInput
+    ) => Promise<CredentialRefreshReceipt | null>;
     revokeBoostRecipient: (
         boostUri: string,
         recipientProfileId: string,
@@ -629,24 +726,59 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<{ boostUri: string; challenge: string }>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
 
-    send: (input: SendInput) => Promise<SendResponse>;
+    send: (input: SendBoostInputWithEncryption) => Promise<SendResponse>;
 
     createContract: (contract: {
         contract: ConsentFlowContract;
+        reasonForAccessing?: string;
+        needsGuardianConsent?: boolean;
+        redirectUrl?: string;
+        frontDoorBoostUri?: string;
         name: string;
         subtitle?: string;
         description?: string;
         image?: string;
         expiresAt?: string;
         writers?: string[];
+        recipients?: string[];
         autoboosts?: AutoBoostConfig[];
     }) => Promise<string>;
-    addAutoBoostsToContract: (
-        contractUri: string,
-        autoboosts: AutoBoostConfig[]
-    ) => Promise<boolean>;
-    removeAutoBoostsFromContract: (contractUri: string, boostUris: string[]) => Promise<boolean>;
+    /**
+     * Updates a live request at the same URI, or previews it without saving.
+     * Scope maps merge with the current request. Set an entry to null to remove it;
+     * expiresAt: null clears expiry. AutoBoost and writer arrays replace their lists.
+     * Pass expectedVersion from the original draft to reject intervening publications.
+     * @example
+     * await learnCard.invoke.updateContract(uri, {
+     *     read: { credentials: { categories: {
+     *         Transcript: { required: true, reason: 'to calculate your GPA' },
+     *     } } },
+     * }, { reason: 'We added transcripts so we can show your GPA on your résumé.' });
+     */
+    updateContract: (
+        uri: string,
+        changes: ConsentFlowContractChanges & NonNullable<ConsentFlowContractChanges['contract']>,
+        options?: {
+            reason?: string;
+            reconsentDeadline?: string;
+            dryRun?: boolean;
+            expectedVersion?: number;
+        }
+    ) => Promise<ConsentFlowContractUpdateResult>;
+    addContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
+    removeContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
+    /** Gets the current request, including its version.
+     * @example const contract = await learnCard.invoke.getContract(uri);
+     */
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
+    /** Lists a request's saved versions, newest first.
+     * @example const versions = await learnCard.invoke.getContractVersions(uri);
+     */
+    getContractVersions: (uri: string) => Promise<ConsentFlowContractVersion[]>;
+    /** Checks a user's access state and provides a review link when approval is needed.
+     * @example const { needsReconsent, reviewUrl } = await learnCard.invoke.getConsentStatus(uri, profileId);
+     */
+    getConsentStatus: (uri: string, profileId: string) => Promise<ConsentFlowConsentStatus>;
     getContracts: (
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowContractQuery }
     ) => Promise<PaginatedConsentFlowContracts>;
@@ -676,6 +808,9 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
+            /** Bind acceptance to the pending referral the learner reviewed. */
+            expectedRequestId?: string;
         },
         recipientToken?: string
     ) => Promise<{ termsUri: string; redirectUrl?: string }>;
@@ -688,7 +823,15 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
         }
+    ) => Promise<boolean>;
+    /** Accepts the reviewed update using the user's selected data.
+     * @example await learnCard.invoke.acceptContractUpdate(termsUri, { version: 2, terms, audienceVersion: currentContract.audienceVersion });
+     */
+    acceptContractUpdate: (
+        termsUri: string,
+        update: { version: number; terms: ConsentFlowTerms; audienceVersion?: number }
     ) => Promise<boolean>;
     withdrawConsent: (uri: string) => Promise<boolean>;
     getConsentFlowTransactions: (
@@ -708,13 +851,19 @@ export type LearnCardNetworkPluginMethods = {
 
     syncCredentialsToContract: (
         termsUri: string,
-        categories: Record<string, string[]>
+        categories: Record<string, string[]>,
+        audienceVersion?: number
     ) => Promise<boolean>;
 
     deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{
         contractsUpdated: number;
         removedSharedUris: number;
     }>;
+
+    /** Sends one attributed request; identical pending retries are idempotent. */
+    sendContractRequest: (request: SendContractRequest) => Promise<boolean>;
+    /** Target-only denial preserves the request and its referral reference. */
+    denyContractRequest: (contractUri: string) => Promise<boolean>;
 
     sendAiInsightsContractRequest: (
         contractUri: string,
@@ -728,31 +877,25 @@ export type LearnCardNetworkPluginMethods = {
         childProfileId?: string
     ) => Promise<boolean>;
 
-    getContractSentRequests: (contractUri: string) => Promise<
-        {
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
-    >;
+    getContractSentRequests: (
+        contractUri: string
+    ) => Promise<ConsentFlowContractRequestForProfile[]>;
 
     getRequestStatusForProfile: (
         targetProfileId: string,
-        contractId?: string | undefined,
-        contractUri?: string | undefined
-    ) => Promise<{
-        profile: LCNProfile;
-        status: 'pending' | 'accepted' | 'denied' | null;
-        readStatus?: 'unseen' | 'seen' | null;
-    } | null>;
+        contractId?: string,
+        contractUri?: string
+    ) => Promise<ConsentFlowContractRequestForProfile | null>;
 
     getAllContractRequestsForProfile: (targetProfileId: string) => Promise<
-        {
-            contract: ConsentFlowContract & { uri: string };
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
+        (ConsentFlowContractRequestForProfile & {
+            contract: ConsentFlowContract & {
+                uri: string;
+                name?: string;
+                image?: string;
+                description?: string;
+            };
+        })[]
     >;
 
     getSharedInsightsRequestsForProfile: (targetProfileId: string) => Promise<
@@ -845,7 +988,8 @@ export type LearnCardNetworkPluginMethods = {
         guardianEmail: string;
         ttlHours?: number;
         template?: { id?: string; model?: Record<string, unknown> };
-    }) => Promise<{ message: string; approvalUrl: string }>;
+    }) => Promise<{ message: string; approvalUrl: string; status: 'accepted' }>;
+    getGuardianApprovalStatus: () => Promise<GuardianApprovalRequestStatus>;
     approveGuardianRequest: (token: string) => Promise<{ message: string }>;
     approveGuardianRequestByPath: (token: string) => Promise<{ message: string }>;
     getGuardianPendingCredential: (token: string) => Promise<{
@@ -993,11 +1137,62 @@ export type LearnCardNetworkPluginMethods = {
     deleteAppStoreListing: (listingId: string) => Promise<boolean>;
     submitAppStoreListingForReview: (listingId: string) => Promise<boolean>;
     unsubmitAppStoreListing: (listingId: string) => Promise<boolean>;
+    /** Sends held changes to a live app for review; the live listing is unchanged until approval. */
+    submitAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
+    withdrawAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
+    discardAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
     getListingsForIntegration: (
         integrationId: string,
         options?: Partial<PaginationOptionsType>
     ) => Promise<PaginatedAppStoreListings>;
     countListingsForIntegration: (integrationId: string) => Promise<number>;
+
+    submitAppManifest: (
+        integrationId: string,
+        manifest: AppManifest
+    ) => Promise<{
+        version: number;
+        manifestHash: string;
+        diff: AppManifestDiff | null;
+        noop: boolean;
+    }>;
+    getManifestVersions: (
+        integrationId: string,
+        options?: { limit?: number; cursor?: string }
+    ) => Promise<{
+        hasMore: boolean;
+        cursor?: string;
+        records: Pick<
+            AppManifestVersion,
+            'id' | 'version' | 'manifestHash' | 'status' | 'createdAt' | 'activatedAt'
+        >[];
+    }>;
+    getManifestVersion: (
+        integrationId: string,
+        version: number
+    ) => Promise<AppManifestVersion | undefined>;
+    getManifestDiff: (
+        integrationId: string,
+        toVersion: number,
+        fromVersion?: number
+    ) => Promise<AppManifestDiff>;
+    applyManifestVersion: (
+        integrationId: string,
+        version: number,
+        listingId?: string
+    ) => Promise<{
+        applied: boolean;
+        /** True when the listing is live and the new version is waiting for review. */
+        pendingReview?: boolean;
+        version: number;
+        reconciled: {
+            templatesUpserted: number;
+            templatesSkipped: number;
+            contractsUpserted: number;
+            contractsSkipped: number;
+            signingAuthorityEnsured: boolean;
+        };
+    }>;
 
     browseAppStore: (options?: {
         limit?: number;
@@ -1033,6 +1228,39 @@ export type LearnCardNetworkPluginMethods = {
     }>;
 
     isAppStoreAdmin: () => Promise<boolean>;
+    getAnnouncementPreferences: () => Promise<AnnouncementPreferences>;
+    updateAnnouncementPreferences: (
+        updates: Partial<AnnouncementPreferences>
+    ) => Promise<AnnouncementPreferences>;
+    unsubscribeFromAnnouncements: (token: string) => Promise<boolean>;
+    campaignsIsAdmin: () => Promise<boolean>;
+    campaignsCreate: (input: CreateCampaignInput) => Promise<Campaign>;
+    campaignsUpdate: (input: UpdateCampaignInput) => Promise<Campaign>;
+    campaignsGet: (campaignId: string) => Promise<Campaign>;
+    campaignsList: (input?: ListCampaignsInput) => Promise<PaginatedCampaigns>;
+    campaignsDelete: (campaignId: string) => Promise<boolean>;
+    campaignsSetStatus: (campaignId: string, status: CampaignStatus) => Promise<Campaign>;
+    campaignsPreviewAudience: (input: CampaignAudienceInput) => Promise<CampaignAudienceResult>;
+    campaignsAddAudience: (input: CampaignAudienceInput) => Promise<CampaignAudienceResult>;
+    campaignsPageAudience: (input: PageCampaignAudienceInput) => Promise<PaginatedCampaignAudience>;
+    campaignsGetStats: (campaignId: string) => Promise<CampaignStats>;
+    /** Test selected channels only for the signed-in administrator, regardless of campaign status. */
+    campaignsSendTestToMe: (campaignId: string) => Promise<boolean>;
+    /** Start paced notification delivery for an eligible live campaign. */
+    /** Preview eligible inbox recipients before confirming an audience notification send. */
+    campaignsPreviewDispatch: (campaignId: string) => Promise<CampaignDispatchPreview>;
+    /** Supply the preview token to reject stale or repeated confirmations. */
+    campaignsDispatch: (
+        campaignId: string,
+        options?: CampaignDispatchOptions
+    ) => Promise<{ dispatchId: string }>;
+    getMyCampaigns: () => Promise<MyCampaign[]>;
+    recordCampaignEvent: (
+        campaignId: string,
+        event: CampaignEvent,
+        testId?: string
+    ) => Promise<boolean>;
+    enrollInCampaign: (campaignId: string) => Promise<boolean>;
     adminUpdateListingStatus: (listingId: string, status: AppListingStatus) => Promise<boolean>;
     adminUpdatePromotionLevel: (
         listingId: string,
@@ -1042,7 +1270,9 @@ export type LearnCardNetworkPluginMethods = {
         limit?: number;
         cursor?: string;
         status?: AppListingStatus;
+        pendingUpdatesOnly?: boolean;
     }) => Promise<PaginatedAppStoreListings>;
+    adminReviewListingUpdate: (listingId: string, approve: boolean) => Promise<boolean>;
 
     // App Store Boost Management
     addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;

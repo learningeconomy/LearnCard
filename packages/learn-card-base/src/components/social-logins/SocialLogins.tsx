@@ -121,7 +121,7 @@ export const SocialLogins: React.FC<{
                 </IonCol>
             )}
             <div className="w-[80%] pl-[12px] pr-[12px] flex items-center justify-center flex max-w-[600px]">
-                <p className="border-b-[2px] border-solid border-[#EFF0F5] leading-[0.1em] mb-[20px] mt-[24px] w-full text-center">
+                <p className="border-b-2 border-solid border-[#EFF0F5] leading-[0.1em] mb-[20px] mt-[24px] w-full text-center">
                     <span className="bg-white py-0 px-[10px]">OR</span>
                 </p>
             </div>

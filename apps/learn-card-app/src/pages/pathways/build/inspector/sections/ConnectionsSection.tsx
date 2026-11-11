@@ -58,7 +58,7 @@ interface ConnectionsSectionProps {
 
 const LABEL = 'text-xs font-medium text-grayscale-700';
 const INPUT =
-    'w-full py-2.5 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-poppins';
+    'w-full py-2.5 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-poppins';
 
 /**
  * Add the same prereq to every member of a collection in one pass.
@@ -168,7 +168,7 @@ const ConnectionsSection: React.FC<ConnectionsSectionProps> = ({
 
     return (
         <Section icon={linkOutline} title="Connections" summary={summary} defaultOpen={false}>
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 {/*
                     Collection membership banner. Only shows when the
                     detector has folded this node into a group. Reads
@@ -184,7 +184,7 @@ const ConnectionsSection: React.FC<ConnectionsSectionProps> = ({
                             aria-hidden
                         />
 
-                        <div className="min-w-0 flex-1 space-y-1">
+                        <div className="min-w-0 flex-1 space-y-v3-1">
                             <p className="text-xs font-medium text-emerald-900">
                                 Step {memberIndex} of {collection.memberIds.length} in a shared group
                             </p>
@@ -202,7 +202,7 @@ const ConnectionsSection: React.FC<ConnectionsSectionProps> = ({
                         gate it behind another step.
                     </p>
                 ) : (
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-v3-1.5">
                         {prereqEdges.map(edge => {
                             const from = pathway.nodes.find(n => n.id === edge.from);
                             const isShared =
@@ -271,7 +271,7 @@ const ConnectionsSection: React.FC<ConnectionsSectionProps> = ({
                 )}
 
                 {candidatePrereqs.length > 0 && (
-                    <div className="space-y-1.5 pt-1">
+                    <div className="space-y-v3-1.5 pt-1">
                         <label className={LABEL} htmlFor="node-add-prereq">
                             {bulkActive
                                 ? `Add a prerequisite to all ${collection!.memberIds.length} steps`

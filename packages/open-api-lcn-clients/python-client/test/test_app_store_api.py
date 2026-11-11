@@ -40,6 +40,20 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_apply_manifest_version(self) -> None:
+        """Test case for app_store_apply_manifest_version
+
+        Apply App Manifest Version
+        """
+        pass
+
+    def test_app_store_associate_listing_with_signing_authority(self) -> None:
+        """Test case for app_store_associate_listing_with_signing_authority
+
+        Associate Listing with Signing Authority
+        """
+        pass
+
     def test_app_store_browse_listed_apps(self) -> None:
         """Test case for app_store_browse_listed_apps
 
@@ -75,6 +89,13 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_discard_listing_update(self) -> None:
+        """Test case for app_store_discard_listing_update
+
+        Discard Listing Update
+        """
+        pass
+
     def test_app_store_get_boosts_for_listing(self) -> None:
         """Test case for app_store_get_boosts_for_listing
 
@@ -86,6 +107,13 @@ class TestAppStoreApi(unittest.TestCase):
         """Test case for app_store_get_installed_apps
 
         Get Installed Apps
+        """
+        pass
+
+    def test_app_store_get_integration_for_listing(self) -> None:
+        """Test case for app_store_get_integration_for_listing
+
+        Get Integration for Listing
         """
         pass
 
@@ -103,6 +131,13 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_get_listing_signing_authority(self) -> None:
+        """Test case for app_store_get_listing_signing_authority
+
+        Get Listing Signing Authority
+        """
+        pass
+
     def test_app_store_get_listings_for_integration(self) -> None:
         """Test case for app_store_get_listings_for_integration
 
@@ -110,10 +145,45 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_get_manifest_diff(self) -> None:
+        """Test case for app_store_get_manifest_diff
+
+        Get App Manifest Diff
+        """
+        pass
+
+    def test_app_store_get_manifest_version(self) -> None:
+        """Test case for app_store_get_manifest_version
+
+        Get App Manifest Version
+        """
+        pass
+
+    def test_app_store_get_manifest_versions(self) -> None:
+        """Test case for app_store_get_manifest_versions
+
+        Get App Manifest Versions
+        """
+        pass
+
+    def test_app_store_get_my_credentials_from_app(self) -> None:
+        """Test case for app_store_get_my_credentials_from_app
+
+        Get credentials earned from an app
+        """
+        pass
+
     def test_app_store_get_public_listing(self) -> None:
         """Test case for app_store_get_public_listing
 
         Get Public App Listing
+        """
+        pass
+
+    def test_app_store_get_public_listing_by_slug(self) -> None:
+        """Test case for app_store_get_public_listing_by_slug
+
+        Get Public App Listing by Slug
         """
         pass
 
@@ -138,10 +208,31 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_send_app_notification(self) -> None:
+        """Test case for app_store_send_app_notification
+
+        Send App Notification
+        """
+        pass
+
+    def test_app_store_submit_app_manifest(self) -> None:
+        """Test case for app_store_submit_app_manifest
+
+        Submit App Manifest
+        """
+        pass
+
     def test_app_store_submit_for_review(self) -> None:
         """Test case for app_store_submit_for_review
 
         Submit Listing for Review
+        """
+        pass
+
+    def test_app_store_submit_listing_update(self) -> None:
+        """Test case for app_store_submit_listing_update
+
+        Submit Listing Update for Review
         """
         pass
 
@@ -152,10 +243,24 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_unsubmit_for_review(self) -> None:
+        """Test case for app_store_unsubmit_for_review
+
+        Unsubmit Listing from Review
+        """
+        pass
+
     def test_app_store_update_listing(self) -> None:
         """Test case for app_store_update_listing
 
         Update App Store Listing
+        """
+        pass
+
+    def test_app_store_withdraw_listing_update(self) -> None:
+        """Test case for app_store_withdraw_listing_update
+
+        Withdraw Listing Update from Review
         """
         pass
 

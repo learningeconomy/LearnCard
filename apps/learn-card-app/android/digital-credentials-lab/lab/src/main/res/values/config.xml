@@ -1,0 +1,3 @@
+<resources>
+    <bool name="lc_digital_credentials_enabled">true</bool>
+</resources>

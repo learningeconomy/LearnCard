@@ -63,8 +63,8 @@ const ArtifactEditor: React.FC<{
     value: Extract<Policy, { kind: 'artifact' }>;
     onChange: (next: Policy) => void;
 }> = ({ value, onChange }) => (
-    <div className="space-y-3">
-        <div className="space-y-1.5">
+    <div className="space-y-v3-3">
+        <div className="space-y-v3-1.5">
             <label className={LABEL} htmlFor="policy-artifact-prompt">
                 Prompt to the learner
             </label>
@@ -79,7 +79,7 @@ const ArtifactEditor: React.FC<{
             />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-v3-1.5">
             <label className={LABEL} htmlFor="policy-artifact-type">
                 What they submit
             </label>

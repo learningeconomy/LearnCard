@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
     LearnCloud Network API
 
@@ -11,12 +9,15 @@
     Do not edit the class manually.
 """  # noqa: E501
 
+
 import warnings
+from datetime import timezone
 from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
 from pydantic import StrictStr
+from typing import Optional
 from openapi_client.models.storage_resolve200_response import StorageResolve200Response
 from openapi_client.models.storage_store_request import StorageStoreRequest
 
@@ -42,6 +43,7 @@ class StorageApi:
     def storage_resolve(
         self,
         uri: StrictStr,
+        challenge: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -61,6 +63,8 @@ class StorageApi:
 
         :param uri: (required)
         :type uri: str
+        :param challenge:
+        :type challenge: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -85,6 +89,7 @@ class StorageApi:
 
         _param = self._storage_resolve_serialize(
             uri=uri,
+            challenge=challenge,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -114,6 +119,7 @@ class StorageApi:
     def storage_resolve_with_http_info(
         self,
         uri: StrictStr,
+        challenge: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -133,6 +139,8 @@ class StorageApi:
 
         :param uri: (required)
         :type uri: str
+        :param challenge:
+        :type challenge: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -157,6 +165,7 @@ class StorageApi:
 
         _param = self._storage_resolve_serialize(
             uri=uri,
+            challenge=challenge,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -186,6 +195,7 @@ class StorageApi:
     def storage_resolve_without_preload_content(
         self,
         uri: StrictStr,
+        challenge: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -205,6 +215,8 @@ class StorageApi:
 
         :param uri: (required)
         :type uri: str
+        :param challenge:
+        :type challenge: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -229,6 +241,7 @@ class StorageApi:
 
         _param = self._storage_resolve_serialize(
             uri=uri,
+            challenge=challenge,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -253,6 +266,7 @@ class StorageApi:
     def _storage_resolve_serialize(
         self,
         uri,
+        challenge,
         _request_auth,
         _content_type,
         _headers,
@@ -278,6 +292,10 @@ class StorageApi:
         if uri is not None:
             
             _query_params.append(('uri', uri))
+            
+        if challenge is not None:
+            
+            _query_params.append(('challenge', challenge))
             
         # process the header parameters
         # process the form parameters

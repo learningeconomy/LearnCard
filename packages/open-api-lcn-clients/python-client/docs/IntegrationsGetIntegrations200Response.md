@@ -1,13 +1,12 @@
 # IntegrationsGetIntegrations200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**cursor** | **str** |  | [optional] 
-**has_more** | **bool** |  | 
-**records** | [**List[IntegrationsGetIntegrations200ResponseRecordsInner]**](IntegrationsGetIntegrations200ResponseRecordsInner.md) |  | 
+| Name         | Type                                                                                                                  | Description | Notes      |
+| ------------ | --------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **cursor**   | **str**                                                                                                               |             | [optional] |
+| **has_more** | **bool**                                                                                                              |             |
+| **records**  | [**List[IntegrationsGetIntegrations200ResponseRecordsInner]**](IntegrationsGetIntegrations200ResponseRecordsInner.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ integrations_get_integrations200_response_dict = integrations_get_integrations20
 # create an instance of IntegrationsGetIntegrations200Response from a dict
 integrations_get_integrations200_response_from_dict = IntegrationsGetIntegrations200Response.from_dict(integrations_get_integrations200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

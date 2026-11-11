@@ -123,7 +123,7 @@ const ViewIdModal: React.FC<ViewIdModalProps> = ({
                 )}
             </div>
 
-            <footer className="w-full bg-white bg-opacity-70 border-t-[1px] border-solid border-white absolute bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
+            <footer className="w-full bg-white/70  border-t border-solid border-white absolute bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
                 <div className="max-w-[600px] mx-auto flex gap-[10px]">
                     {!isClaimMode && (
                         <>

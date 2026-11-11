@@ -1,5 +1,13 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { isEncrypted, isVC2Format } from '@learncard/helpers';
+import type { Transaction } from 'neo4j-driver';
+import { neogma } from '@instance';
+import {
+    CredentialFieldError,
+    isDisplayOnlyAnchorTemplate,
+    isEncrypted,
+    isVC2Format,
+    materializeCredentialFields,
+} from '@learncard/helpers';
 import { TRPCError } from '@trpc/server';
 import {
     VC,
@@ -14,6 +22,7 @@ import {
     getIssuerDisplayName,
     getIssuerOwnerProfile,
     getIssuerProfileId,
+    isAppStoreListingIssuer,
 } from '../types/issuer';
 import { trace, traceDb } from '@tracing';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
@@ -25,13 +34,14 @@ import {
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
-import { BoostInstance } from '@models';
+import { BoostInstance, CredentialInstance } from '@models';
 import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
+import { releaseUnlinkedCredential } from '@accesslayer/credential/delete';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import {
     createSentCredentialRelationship,
-    createCredentialIssuedViaContractRelationship,
+    createContractCredentialRelationships,
     createListingSentCredentialRelationship,
 } from '@accesslayer/credential/relationships/create';
 import { acceptCredential, getCredentialUri } from './credential.helpers';
@@ -79,12 +89,35 @@ export const isEditableBoost = (boost: BoostInstance): boolean => {
  */
 export const isBoostViewableByClaimLink = async (boost: BoostInstance): Promise<boolean> => {
     const defaultRoles = await boost.findRelationships({ alias: 'defaultRole' });
-    const defaultRole = defaultRoles[0]?.target as any;
+    const defaultRole = defaultRoles[0]?.target;
     const canView = defaultRole?.canView ?? defaultRole?.dataValues?.canView;
 
     if (typeof canView === 'boolean') return canView;
 
     return true;
+};
+
+/**
+ * Stamps the issuance time onto a credential built from a Boost template.
+ *
+ * A template's own issuanceDate/validFrom is when the template was written, not when this
+ * credential is issued, and templates created through the API are not date-validated: a
+ * malformed value (e.g. "2025-10-19+053008:18:16") makes DIDKit refuse to sign. VC 2.0
+ * templates get validFrom and lose any leftover issuanceDate, which the VC 2.0 context doesn't
+ * define (DIDKit rejects it as an undefined JSON-LD term). VC 1.1 templates get issuanceDate.
+ */
+export const stampIssuanceDate = <T extends UnsignedVC | VC>(
+    credential: T,
+    now: string = new Date().toISOString()
+): T => {
+    if (isVC2Format(credential)) {
+        credential.validFrom = now;
+        delete credential.issuanceDate;
+    } else {
+        credential.issuanceDate = now;
+    }
+
+    return credential;
 };
 
 export const convertCredentialToBoostTemplateJSON = (
@@ -109,6 +142,8 @@ export const sendBoost = async ({
     skipNotification = false,
     autoAcceptCredential = false,
     contractTerms,
+    contractWriterProfileId,
+    allowConsumedOneTime = false,
     metadata,
     activityId,
     integrationId,
@@ -122,6 +157,8 @@ export const sendBoost = async ({
     skipNotification?: boolean;
     autoAcceptCredential?: boolean;
     contractTerms?: DbTermsType;
+    contractWriterProfileId?: string;
+    allowConsumedOneTime?: boolean;
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
@@ -150,43 +187,78 @@ export const sendBoost = async ({
             }
 
             // Preserve the issuer's payload without decrypting or counter-signing it.
-            const credentialInstance = await traceDb('storeCredential', () =>
-                storeCredential(credential)
-            );
-
-            const tasks = [
-                createBoostInstanceOfRelationship(credentialInstance, boost),
-                createSentCredentialRelationship(
-                    from,
-                    to,
-                    credentialInstance,
-                    metadata,
-                    activityId,
-                    integrationId
-                ),
-            ];
-
-            if (listingId) {
-                tasks.push(
-                    createListingSentCredentialRelationship(
-                        listingId,
-                        to,
-                        credentialInstance,
-                        metadata,
-                        activityId,
-                        integrationId
+            // Contract auto-boosts are signed by the writer, whose profile owns the status list.
+            const persistDelivery = async (
+                transaction?: Transaction
+            ): Promise<CredentialInstance> => {
+                const stored = await traceDb('storeCredential', () =>
+                    storeCredential(
+                        credential,
+                        transaction,
+                        contractWriterProfileId ?? fromProfile.profileId
                     )
                 );
+                if (!contractTerms) {
+                    await traceDb('createRelationships', async () => {
+                        await createBoostInstanceOfRelationship(stored, boost, transaction);
+                        await createSentCredentialRelationship(
+                            from,
+                            to,
+                            stored,
+                            metadata,
+                            activityId,
+                            integrationId,
+                            transaction
+                        );
+                        if (
+                            listingId &&
+                            (!isAppStoreListingIssuer(from) ||
+                                from.listing.listing_id !== listingId)
+                        ) {
+                            await createListingSentCredentialRelationship(
+                                listingId,
+                                to,
+                                stored,
+                                metadata,
+                                activityId,
+                                integrationId,
+                                transaction
+                            );
+                        }
+                    });
+                }
+                return stored;
+            };
+            const credentialInstance = contractTerms
+                ? await persistDelivery()
+                : await neogma.getTransaction(null, persistDelivery);
+
+            try {
+                if (contractTerms) {
+                    await traceDb('createRelationships', () =>
+                        createContractCredentialRelationships({
+                            issuer: from,
+                            writerProfileId: contractWriterProfileId ?? fromProfile.profileId,
+                            recipient: to,
+                            credential: credentialInstance,
+                            boost,
+                            terms: contractTerms,
+                            metadata,
+                            activityId,
+                            integrationId,
+                            listingId,
+                            allowConsumedOneTime,
+                        })
+                    );
+                }
+            } catch (error) {
+                try {
+                    await releaseUnlinkedCredential(credentialInstance.id);
+                } catch {
+                    console.error('BOOST_UNLINKED_CREDENTIAL_CLEANUP_FAILED');
+                }
+                throw error;
             }
-
-            if (contractTerms) {
-                tasks.push(
-                    createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
-                );
-            }
-
-            await traceDb('createRelationships', () => Promise.all(tasks));
-
             if (autoAcceptCredential) {
                 await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
                     skipNotification,
@@ -255,6 +327,8 @@ export const issueClaimLinkBoost = async (
 
     boostCredential.issuer = signingAuthorityForUser.relationship.did;
 
+    stampIssuanceDate(boostCredential);
+
     setCredentialSubjectIds(boostCredential, getDidWeb(domain, to.profileId));
 
     // Embed the boostURI into the boost credential for verification purposes.
@@ -314,11 +388,21 @@ export const prepareCredentialFromBoost = async (
         recipientDid?: string;
         recipientName?: string;
         issuerDid?: string;
+        /** Transient issuance body for a display-only managed anchor; never persisted. */
+        credential?: UnsignedVC | VC;
     } = {}
 ): Promise<UnsignedVC> => {
     const { templateData, recipientDid, recipientName, issuerDid } = options;
 
-    let boostJsonString = boost.dataValues.boost;
+    let boostJsonString = options.credential
+        ? convertCredentialToBoostTemplateJSON(options.credential)
+        : boost.dataValues.boost;
+    if (!options.credential && isDisplayOnlyAnchorTemplate(JSON.parse(boostJsonString))) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Display-only anchors require an issuance credential in the request.',
+        });
+    }
     const allowAutoAppendEvidence = shouldAutoAppendTemplateEvidence(boostJsonString);
 
     // Auto-inject known system variables into templateData
@@ -331,17 +415,20 @@ export const prepareCredentialFromBoost = async (
         boostJsonString = renderBoostTemplate(boostJsonString, mergedTemplateData);
     }
 
-    const credential = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+    let credential: UnsignedVC;
+    try {
+        credential = materializeCredentialFields(
+            parseRenderedTemplate<UnsignedVC>(boostJsonString)
+        ) as UnsignedVC;
+    } catch (error) {
+        if (error instanceof CredentialFieldError)
+            throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+        throw error;
+    }
 
     appendTemplateEvidenceToCredential(credential, mergedTemplateData, allowAutoAppendEvidence);
 
-    // Set issuance date based on VC version
-    const now = new Date().toISOString();
-    if (isVC2Format(credential)) {
-        credential.validFrom = now;
-    } else {
-        credential.issuanceDate = now;
-    }
+    stampIssuanceDate(credential);
 
     // Set issuer if provided
     if (issuerDid) {
@@ -432,7 +519,16 @@ export const appendTemplateEvidenceToCredential = (
     // EvidenceFile subterms — otherwise the signer fails later with an opaque
     // JSON-LD key-expansion error. Surface a clear message instead so the
     // caller can prompt the user to republish the boost.
-    if (!credentialContextSupportsDynamicEvidence(credential)) {
+    const usesEvidenceExtensions = normalizedTemplateEvidence.some(item => {
+        if (!item || typeof item !== 'object') return false;
+        const evidence = item as Record<string, unknown>;
+        const types = Array.isArray(evidence.type) ? evidence.type : [evidence.type];
+        return (
+            types.includes('EvidenceFile') ||
+            ['fileName', 'fileType', 'fileSize'].some(key => key in evidence)
+        );
+    });
+    if (usesEvidenceExtensions && !credentialContextSupportsDynamicEvidence(credential)) {
         throw new TRPCError({
             code: 'PRECONDITION_FAILED',
             message:
@@ -482,7 +578,6 @@ const credentialContextSupportsDynamicEvidence = (credential: UnsignedVC): boole
  * Throws TRPCError if not found.
  */
 export const resolveBoostByUri = async (boostUri: string): Promise<BoostInstance> => {
-    const { TRPCError } = await import('@trpc/server');
     const { getBoostByUri } = await import('@accesslayer/boost/read');
 
     const boost = await getBoostByUri(boostUri);

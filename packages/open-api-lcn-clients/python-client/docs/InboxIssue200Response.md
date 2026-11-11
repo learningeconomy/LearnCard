@@ -1,15 +1,15 @@
 # InboxIssue200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**issuance_id** | **str** |  | 
-**status** | **str** |  | 
-**recipient** | [**InboxIssue200ResponseRecipient**](InboxIssue200ResponseRecipient.md) |  | 
-**claim_url** | **str** |  | [optional] 
-**recipient_did** | **str** |  | [optional] 
+| Name              | Type                                                                    | Description | Notes      |
+| ----------------- | ----------------------------------------------------------------------- | ----------- | ---------- |
+| **refresh**       | [**InboxIssue200ResponseRefresh**](InboxIssue200ResponseRefresh.md)     |             | [optional] |
+| **issuance_id**   | **str**                                                                 |             |
+| **status**        | **str**                                                                 |             |
+| **recipient**     | [**InboxIssue200ResponseRecipient**](InboxIssue200ResponseRecipient.md) |             |
+| **claim_url**     | **str**                                                                 |             | [optional] |
+| **recipient_did** | **str**                                                                 |             | [optional] |
 
 ## Example
 
@@ -28,6 +28,5 @@ inbox_issue200_response_dict = inbox_issue200_response_instance.to_dict()
 # create an instance of InboxIssue200Response from a dict
 inbox_issue200_response_from_dict = InboxIssue200Response.from_dict(inbox_issue200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

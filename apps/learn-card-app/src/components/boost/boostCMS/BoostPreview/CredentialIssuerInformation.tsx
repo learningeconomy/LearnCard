@@ -35,12 +35,12 @@ const CredentialIssuerInformation: React.FC<CredentialIssuerInformationProps> = 
     return (
         <div className="p-[15px] bg-white flex flex-col items-start gap-[10px] rounded-[20px] w-full shadow-bottom-2-4">
             <h3 className="text-[17px] font-poppins text-grayscale-900">Issuer Information</h3>
-            <div className="flex flex-col gap-[10px] py-[10px] border-b-[1px] border-solid border-grayscale-200">
+            <div className="flex flex-col gap-[10px] py-[10px] border-b border-solid border-grayscale-200">
                 <CredentialVerificationDisplay
                     credential={credential}
-                    iconClassName="!w-[20px] !h-[20px] mr-1"
+                    iconClassName="w-[20px]! h-[20px]! mr-1"
                     showText
-                    className="!capitalize text-[14px] font-poppins font-[500]"
+                    className="capitalize! text-[14px] font-poppins font-[500]"
                 />
                 <p className="text-[14px] font-poppins text-grayscale-700">
                     A trusted verifier is an organization that has been officially vetted by a
@@ -82,7 +82,7 @@ const CredentialIssuerInformation: React.FC<CredentialIssuerInformationProps> = 
             </div>
 
             {credentialId && (
-                <div className="flex flex-col gap-[5px] py-[10px] border-b-[1px] border-solid border-grayscale-200 last:border-b-0 w-full">
+                <div className="flex flex-col gap-[5px] py-[10px] border-b border-solid border-grayscale-200 last:border-b-0 w-full">
                     <p className="text-[11px] font-poppins text-grayscale-600 uppercase font-[500]">
                         Credential ID
                     </p>
@@ -91,7 +91,7 @@ const CredentialIssuerInformation: React.FC<CredentialIssuerInformationProps> = 
             )}
 
             {credentialEngineUrl && (
-                <div className="flex flex-col gap-[5px] py-[10px] border-b-[1px] border-solid border-grayscale-200 last:border-b-0 w-full">
+                <div className="flex flex-col gap-[5px] py-[10px] border-b border-solid border-grayscale-200 last:border-b-0 w-full">
                     <p className="text-[11px] font-poppins text-grayscale-600 uppercase font-[500]">
                         Credential Engine URL
                     </p>
@@ -105,7 +105,7 @@ const CredentialIssuerInformation: React.FC<CredentialIssuerInformationProps> = 
             )}
 
             {researchOrganizationRegistryId && (
-                <div className="flex flex-col gap-[5px] py-[10px] border-b-[1px] border-solid border-grayscale-200 last:border-b-0 w-full">
+                <div className="flex flex-col gap-[5px] py-[10px] border-b border-solid border-grayscale-200 last:border-b-0 w-full">
                     <p className="text-[11px] font-poppins text-grayscale-600 uppercase font-[500]">
                         Research Organization Registry ID
                     </p>
@@ -116,7 +116,7 @@ const CredentialIssuerInformation: React.FC<CredentialIssuerInformationProps> = 
             )}
 
             {researchOrganizationRegistryUrl && (
-                <div className="flex flex-col gap-[5px] py-[10px] border-b-[1px] border-solid border-grayscale-200 last:border-b-0 w-full">
+                <div className="flex flex-col gap-[5px] py-[10px] border-b border-solid border-grayscale-200 last:border-b-0 w-full">
                     <p className="text-[11px] font-poppins text-grayscale-600 uppercase font-[500]">
                         Research Organization Registry URL
                     </p>

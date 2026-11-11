@@ -19,11 +19,15 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+from typing_extensions import Annotated
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.models.contracts_get_consent_flow_contract200_response import ContractsGetConsentFlowContract200Response
-from openapi_client.models.contracts_get_consented_contracts200_response_records_inner_terms import ContractsGetConsentedContracts200ResponseRecordsInnerTerms
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_cumulative_update import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdate
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_referral import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral
+from openapi_client.models.storage_resolve200_response_any_of1 import StorageResolve200ResponseAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
     """
@@ -31,23 +35,30 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
     """ # noqa: E501
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
-    terms: ContractsGetConsentedContracts200ResponseRecordsInnerTerms
+    terms: StorageResolve200ResponseAnyOf1
+    referral: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral] = None
     contract: ContractsGetConsentFlowContract200Response
-    uri: Optional[StrictStr]
-    consenter: BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+    uri: StrictStr
+    consenter: BoostGetBoostRecipients200ResponseInnerToAnyOf3
     status: StrictStr
+    consented_version: Annotated[int, Field(le=9007199254740991, strict=True, gt=0)] = Field(alias="consentedVersion")
+    last_reviewed_version: Optional[Annotated[int, Field(le=9007199254740991, strict=True, gt=0)]] = Field(default=None, alias="lastReviewedVersion")
+    reconsent_deadline: Optional[StrictStr] = Field(default=None, alias="reconsentDeadline")
+    new_options_until: Optional[StrictStr] = Field(default=None, alias="newOptionsUntil")
+    cumulative_update: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdate] = Field(default=None, alias="cumulativeUpdate")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "contract", "uri", "consenter", "status"]
+    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "referral", "contract", "uri", "consenter", "status", "consentedVersion", "lastReviewedVersion", "reconsentDeadline", "newOptionsUntil", "cumulativeUpdate"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['live', 'stale', 'withdrawn']):
-            raise ValueError("must be one of enum values ('live', 'stale', 'withdrawn')")
+        if value not in set(['live', 'consumed', 'withdrawn', 'needs_reconsent', 'suspended']):
+            raise ValueError("must be one of enum values ('live', 'consumed', 'withdrawn', 'needs_reconsent', 'suspended')")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -59,8 +70,7 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -73,9 +83,8 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -90,26 +99,22 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of terms
         if self.terms:
             _dict['terms'] = self.terms.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of referral
+        if self.referral:
+            _dict['referral'] = self.referral.to_dict()
         # override the default output from pydantic by calling `to_dict()` of contract
         if self.contract:
             _dict['contract'] = self.contract.to_dict()
         # override the default output from pydantic by calling `to_dict()` of consenter
         if self.consenter:
             _dict['consenter'] = self.consenter.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of cumulative_update
+        if self.cumulative_update:
+            _dict['cumulativeUpdate'] = self.cumulative_update.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
-            _dict['expiresAt'] = None
-
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
 
         return _dict
 
@@ -122,15 +127,23 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "expiresAt": obj.get("expiresAt"),
             "oneTime": obj.get("oneTime"),
-            "terms": ContractsGetConsentedContracts200ResponseRecordsInnerTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "terms": StorageResolve200ResponseAnyOf1.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "referral": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral.from_dict(obj["referral"]) if obj.get("referral") is not None else None,
             "contract": ContractsGetConsentFlowContract200Response.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
             "uri": obj.get("uri"),
-            "consenter": BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.from_dict(obj["consenter"]) if obj.get("consenter") is not None else None,
-            "status": obj.get("status")
-        })
+            "consenter": BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(obj["consenter"]) if obj.get("consenter") is not None else None,
+            "status": obj.get("status"),
+            "consentedVersion": obj.get("consentedVersion"),
+            "lastReviewedVersion": obj.get("lastReviewedVersion"),
+            "reconsentDeadline": obj.get("reconsentDeadline"),
+            "newOptionsUntil": obj.get("newOptionsUntil"),
+            "cumulativeUpdate": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdate.from_dict(obj["cumulativeUpdate"]) if obj.get("cumulativeUpdate") is not None else None
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

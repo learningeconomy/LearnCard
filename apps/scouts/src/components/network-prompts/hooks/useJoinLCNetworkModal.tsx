@@ -48,7 +48,7 @@ export const useJoinLCNetworkModal = (
                 showNotificationsModal={showNotificationsModal}
             />,
             {
-                sectionClassName: '!max-w-[400px]',
+                sectionClassName: 'max-w-[400px]!',
                 cancelButtonTextOverride: m['common.skipForNow'](),
             }
         );

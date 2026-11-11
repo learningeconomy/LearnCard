@@ -1,12 +1,11 @@
 # InboxIssueRequestRecipientOneOf1
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**value** | **str** |  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **type**  | **str** |             |
+| **value** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ inbox_issue_request_recipient_one_of1_dict = inbox_issue_request_recipient_one_o
 # create an instance of InboxIssueRequestRecipientOneOf1 from a dict
 inbox_issue_request_recipient_one_of1_from_dict = InboxIssueRequestRecipientOneOf1.from_dict(inbox_issue_request_recipient_one_of1_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

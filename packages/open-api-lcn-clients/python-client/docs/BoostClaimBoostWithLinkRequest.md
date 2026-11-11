@@ -1,12 +1,11 @@
 # BoostClaimBoostWithLinkRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**boost_uri** | **str** |  | 
-**challenge** | **str** |  | 
+| Name          | Type    | Description | Notes |
+| ------------- | ------- | ----------- | ----- |
+| **boost_uri** | **str** |             |
+| **challenge** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_claim_boost_with_link_request_dict = boost_claim_boost_with_link_request_i
 # create an instance of BoostClaimBoostWithLinkRequest from a dict
 boost_claim_boost_with_link_request_from_dict = BoostClaimBoostWithLinkRequest.from_dict(boost_claim_boost_with_link_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

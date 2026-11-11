@@ -37,6 +37,8 @@ export const getNavBarColor = (
         return 'bg-white';
     } else if (path === '/achievements') {
         return 'bg-pink-300';
+    } else if (path === '/qualifications') {
+        return 'bg-orange-300';
     } else if (path === '/currencies' || path === '/socialBadges') {
         return 'bg-blue-300';
     } else if (path === '/ids') {
@@ -74,6 +76,7 @@ export const showNavBar = (path?: string): boolean => {
     if (
         path === '/wallet-worker' ||
         path === '/store' ||
+        path === '/exchange' ||
         path === '/get' ||
         path === '/sync-my-school' ||
         path === '/sync-my-school-simple' ||

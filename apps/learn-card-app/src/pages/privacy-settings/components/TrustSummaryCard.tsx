@@ -84,7 +84,7 @@ const TrustSummaryCard: React.FC<TrustSummaryCardProps> = ({ contracts, delay = 
 
     return (
         <section
-            className="relative overflow-hidden rounded-[24px] p-6 desktop:p-7 animate-fade-in-up border border-white/70 ring-1 ring-grayscale-900/[0.06] shadow-[0_8px_30px_rgba(24,34,78,0.10)] bg-gradient-to-br from-emerald-50 via-white/90 to-white/90 backdrop-blur-xl"
+            className="relative overflow-hidden rounded-[24px] p-6 desktop:p-7 animate-fade-in-up border border-white/70 ring-1 ring-grayscale-900/6 shadow-[0_8px_30px_rgba(24,34,78,0.10)] bg-linear-to-br/srgb from-emerald-50 via-white/90 to-white/90 backdrop-blur-xl"
             style={delay ? { animationDelay: `${delay}ms`, animationFillMode: 'both' } : undefined}
         >
             <div className="flex flex-col desktop:flex-row desktop:items-center gap-5 desktop:gap-6">
@@ -143,7 +143,7 @@ const TrustSummaryCard: React.FC<TrustSummaryCardProps> = ({ contracts, delay = 
                 </div>
 
                 {!isEmpty && (
-                    <div className="flex -space-x-2.5 pl-[72px] desktop:pl-0 desktop:shrink-0">
+                    <div className="flex -space-x-v3-2.5 pl-[72px] desktop:pl-0 desktop:shrink-0">
                         {shownProof.map(item => (
                             <ProofAvatar key={item.uri} name={item.name} image={item.image} />
                         ))}

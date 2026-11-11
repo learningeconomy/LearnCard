@@ -20,28 +20,29 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_image import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImage
+from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_other_identifier_inner import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner
+from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType
 from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_address import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress
-from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_image import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfImage
-from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_other_identifier_inner import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInner
-from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_type import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
     """
     BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf
     """ # noqa: E501
     id: Optional[StrictStr] = None
-    type: Optional[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType] = None
+    type: Optional[BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType] = None
     name: Optional[StrictStr] = None
     url: Optional[StrictStr] = None
     phone: Optional[StrictStr] = None
     description: Optional[StrictStr] = None
     endorsement: Optional[List[Any]] = None
-    image: Optional[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfImage] = None
+    image: Optional[BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImage] = None
     email: Optional[Annotated[str, Field(strict=True)]] = None
     address: Optional[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress] = None
-    other_identifier: Optional[List[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInner]] = Field(default=None, alias="otherIdentifier")
+    other_identifier: Optional[List[BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner]] = Field(default=None, alias="otherIdentifier")
     official: Optional[StrictStr] = None
     parent_org: Optional[Any] = Field(default=None, alias="parentOrg")
     family_name: Optional[StrictStr] = Field(default=None, alias="familyName")
@@ -55,18 +56,19 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "type", "name", "url", "phone", "description", "endorsement", "image", "email", "address", "otherIdentifier", "official", "parentOrg", "familyName", "givenName", "additionalName", "patronymicName", "honorificPrefix", "honorificSuffix", "familyNamePrefix", "dateOfBirth"]
 
-    @field_validator('email')
+    @field_validator('email', mode="before")
     def email_validate_regular_expression(cls, value):
         """Validates the regular expression"""
         if value is None:
             return value
 
-        if not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -78,8 +80,7 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -92,9 +93,8 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -119,17 +119,15 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
         _items = []
         if self.other_identifier:
             for _item_other_identifier in self.other_identifier:
-                if _item_other_identifier:
-                    _items.append(_item_other_identifier.to_dict())
+                _items.append(_item_other_identifier.to_dict() if _item_other_identifier is not None else None)
             _dict['otherIdentifier'] = _items
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if parent_org (nullable) is None
-        # and model_fields_set contains the field
-        if self.parent_org is None and "parent_org" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.parent_org is None and "parent_org" in self.model_fields_set and "parent_org" not in excluded_fields:
             _dict['parentOrg'] = None
 
         return _dict
@@ -143,18 +141,18 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "id": obj.get("id"),
-            "type": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
+            "type": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "name": obj.get("name"),
             "url": obj.get("url"),
             "phone": obj.get("phone"),
             "description": obj.get("description"),
             "endorsement": obj.get("endorsement"),
-            "image": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfImage.from_dict(obj["image"]) if obj.get("image") is not None else None,
+            "image": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImage.from_dict(obj["image"]) if obj.get("image") is not None else None,
             "email": obj.get("email"),
             "address": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress.from_dict(obj["address"]) if obj.get("address") is not None else None,
-            "otherIdentifier": [BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInner.from_dict(_item) for _item in obj["otherIdentifier"]] if obj.get("otherIdentifier") is not None else None,
+            "otherIdentifier": [BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner.from_dict(_item) for _item in obj["otherIdentifier"]] if obj.get("otherIdentifier") is not None else None,
             "official": obj.get("official"),
             "parentOrg": obj.get("parentOrg"),
             "familyName": obj.get("familyName"),
@@ -165,7 +163,9 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
             "honorificSuffix": obj.get("honorificSuffix"),
             "familyNamePrefix": obj.get("familyNamePrefix"),
             "dateOfBirth": obj.get("dateOfBirth")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

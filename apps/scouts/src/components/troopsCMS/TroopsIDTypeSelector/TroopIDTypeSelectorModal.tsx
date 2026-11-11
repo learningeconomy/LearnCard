@@ -9,12 +9,12 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { troopsCMSViewModeDefaults, TroopsCMSViewModeEnum } from '../troopCMSState';
 import { CredentialCategoryEnum } from 'learn-card-base';
-import { Boost } from '@learncard/types';
+import { VC } from '@learncard/types';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 const TroopIDTypeSelectorModal: React.FC<{
     handleCloseModal: () => void;
-    earnedBoostIDs: Boost[];
+    earnedBoostIDs: VC[];
     isLoading?: boolean;
     onSuccess?: (boostUri?: string) => void;
 }> = ({ handleCloseModal, earnedBoostIDs = [], isLoading, onSuccess }) => {

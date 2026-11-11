@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { summarizeAssessment } from './clr.helpers';
+import { summarizeAssessment } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 import type {
     AssessmentDisplayModel,
     ResultDisplayModel,
     RubricLevelDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const mapped = <T>(value: T) => ({
     value,

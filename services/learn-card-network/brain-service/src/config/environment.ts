@@ -2,6 +2,16 @@ import 'dotenv/config';
 
 import { z } from 'zod';
 import {
+    DEFAULT_SKILL_EMBEDDING_DIMENSION,
+    DEFAULT_SKILL_EMBEDDING_REGION,
+    DEFAULT_SKILL_EMBEDDING_TIMEOUT_MS,
+    DEPLOYED_SKILL_EMBEDDING_ALLOWLIST,
+    NOVA2_EMBEDDING_MODEL_ID,
+    isDeployedRuntime,
+    isNova2EmbeddingModelId,
+    isSupportedSkillEmbeddingDimension,
+} from './skillEmbedding';
+import {
     environmentPort,
     optionalEnvironmentBoolean,
     optionalEnvironmentPort,
@@ -11,10 +21,40 @@ import {
     requiredEnvironmentString,
 } from '@learncard/helpers';
 
+const optionalPositiveInteger = z.preprocess(
+    value => (value === '' || value === undefined ? undefined : value),
+    z.coerce.number().int().positive().optional()
+);
+
 const credentialRefreshNotificationWindowHours = z.preprocess(
     value => (value === '' || value === undefined ? undefined : value),
     z.coerce.number().finite().positive().default(24)
 );
+
+const credentialRefreshPreviousDigestKeys = z
+    .string()
+    .default('{}')
+    .transform((value, context) => {
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(value);
+        } catch {
+            context.addIssue({
+                code: 'custom',
+                message: 'Must be a JSON object mapping digest versions to string keys',
+            });
+            return z.NEVER;
+        }
+        const result = z.record(z.string(), z.string()).safeParse(parsed);
+        if (!result.success) {
+            context.addIssue({
+                code: 'custom',
+                message: 'Must be a JSON object mapping digest versions to string keys',
+            });
+            return z.NEVER;
+        }
+        return result.data;
+    });
 
 export const brainServiceEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -27,7 +67,25 @@ export const brainServiceEnvironmentShape = {
     CLIENT_APP_DOMAIN_NAME: optionalEnvironmentString,
     CLIENT_APP_PORT: optionalEnvironmentPort,
     LOGIN_PROVIDER_DID: optionalEnvironmentString,
+    SIGNING_AUTHORITY_ENDPOINT: optionalEnvironmentUrl,
     APP_STORE_ADMIN_PROFILE_IDS: optionalEnvironmentString,
+    CAMPAIGN_ADMIN_PROFILE_IDS: optionalEnvironmentString,
+    CAMPAIGN_QUEUE_URL: optionalEnvironmentUrl,
+    CAMPAIGN_UNSUBSCRIBE_SECRET: optionalEnvironmentString,
+    CAMPAIGN_APP_ORIGINS: optionalEnvironmentString,
+    POSTMARK_BROADCAST_STREAM: z.string().trim().min(1).default('broadcast'),
+    CAMPAIGN_EMAIL_PAGE_SIZE: z.preprocess(
+        value => (value === '' ? undefined : value),
+        z.coerce.number().int().min(1).max(1000).default(500)
+    ),
+    CAMPAIGN_DISPATCH_PAGE_SIZE: z.preprocess(
+        value => (value === '' ? undefined : value),
+        z.coerce.number().int().min(1).max(1000).default(1000)
+    ),
+    CAMPAIGN_DISPATCH_DELAY_SECONDS: z.preprocess(
+        value => (value === '' ? undefined : value),
+        z.coerce.number().int().min(0).max(900).default(60)
+    ),
     SKILL_FRAMEWORK_ADMIN_PROFILE_IDS: optionalEnvironmentString,
     SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID: optionalEnvironmentString,
     TRUSTED_BRAIN_SERVICES: optionalEnvironmentString,
@@ -67,8 +125,25 @@ export const brainServiceEnvironmentShape = {
     GIT_SHA: optionalEnvironmentString,
     SENTRY_DSN: optionalEnvironmentUrl,
     SENTRY_ENV: optionalEnvironmentString,
+    // LC-2206 legacy path: Google gemini-embedding-001 (768-d). Semantic search reads the legacy
+    // index with Google query embeddings while SKILL_EMBEDDING_BEDROCK_READ_ENABLED is off, and
+    // skill writes keep the legacy vectors current. Removed by the post-rollback cleanup.
     SKILL_EMBEDDING_GOOGLE_API_KEY: optionalEnvironmentString,
     SKILL_EMBEDDING_GOOGLE_MODEL: optionalEnvironmentString,
+    // LC-2206: Amazon Nova 2 embeddings on Bedrock, SigV4 with the execution role only.
+    // ENABLED turns on Nova writes (new/updated skills, backfill); READ_ENABLED switches semantic
+    // search to the Nova index. Reads default off; flipping READ_ENABLED back off is the rollback.
+    SKILL_EMBEDDING_BEDROCK_ENABLED: optionalEnvironmentBoolean.default(false),
+    SKILL_EMBEDDING_BEDROCK_READ_ENABLED: optionalEnvironmentBoolean.default(false),
+    SKILL_EMBEDDING_BEDROCK_MODEL_ID: optionalEnvironmentString,
+    SKILL_EMBEDDING_BEDROCK_REGION: optionalEnvironmentString,
+    SKILL_EMBEDDING_DIMENSION: optionalPositiveInteger,
+    SKILL_EMBEDDING_BEDROCK_TIMEOUT_MS: optionalPositiveInteger,
+    SKILL_EMBEDDING_CONCURRENCY: optionalPositiveInteger,
+    // Read only to refuse ambient overrides in deployed runtimes; never used to authenticate.
+    AWS_ENDPOINT_URL: optionalEnvironmentString,
+    AWS_ENDPOINT_URL_BEDROCK_RUNTIME: optionalEnvironmentString,
+    AWS_BEARER_TOKEN_BEDROCK: optionalEnvironmentString,
     SKILL_EMBEDDING_CACHE_TTL_SECONDS: optionalEnvironmentPort,
     SKILL_EMBEDDING_BATCH_SIZE: optionalEnvironmentPort,
     SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: optionalEnvironmentPort,
@@ -77,6 +152,7 @@ export const brainServiceEnvironmentShape = {
     SKILL_SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN: optionalEnvironmentPort,
     BITSTRING_STATUS_LIST_SIZE: optionalEnvironmentPort,
     CREDENTIAL_REFRESH_DIGEST_SECRET: optionalEnvironmentString,
+    CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS: credentialRefreshPreviousDigestKeys,
     SHARE_LINK_REQUEST_HASH_SECRET: optionalEnvironmentString,
     CREDENTIAL_REFRESH_ENABLED: optionalEnvironmentBoolean.default(false),
     CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: credentialRefreshNotificationWindowHours,
@@ -99,14 +175,147 @@ export const brainServiceEnvironmentShape = {
     BITSTRING_STATUS_LIST_ALLOW_SMALL: optionalEnvironmentBoolean.default(false),
 } satisfies z.ZodRawShape;
 
+type SkillEmbeddingEnvironment = {
+    NODE_ENV: string;
+    IS_OFFLINE: boolean;
+    AWS_LAMBDA_FUNCTION_NAME?: string;
+    SKILL_EMBEDDING_BEDROCK_ENABLED: boolean;
+    SKILL_EMBEDDING_BEDROCK_READ_ENABLED: boolean;
+    SKILL_EMBEDDING_BACKFILL_ON_STARTUP: boolean;
+    SKILL_EMBEDDING_BEDROCK_MODEL_ID: string;
+    SKILL_EMBEDDING_BEDROCK_REGION: string;
+    SKILL_EMBEDDING_DIMENSION: number;
+    AWS_ENDPOINT_URL?: string;
+    AWS_ENDPOINT_URL_BEDROCK_RUNTIME?: string;
+    AWS_BEARER_TOKEN_BEDROCK?: string;
+};
+
+/**
+ * LC-2206 startup guard. Any model or dimension that Nova 2 cannot serve is always rejected;
+ * deployed runtimes (staging and production) additionally only accept the reviewed allowlist,
+ * and refuse endpoint overrides and long-term Bedrock API keys.
+ */
+export const refineSkillEmbeddingEnvironment = (
+    environment: SkillEmbeddingEnvironment,
+    context: z.RefinementCtx
+): void => {
+    const modelId = environment.SKILL_EMBEDDING_BEDROCK_MODEL_ID;
+    const dimension = environment.SKILL_EMBEDDING_DIMENSION;
+    const region = environment.SKILL_EMBEDDING_BEDROCK_REGION;
+
+    if (!isNova2EmbeddingModelId(modelId)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['SKILL_EMBEDDING_BEDROCK_MODEL_ID'],
+            message: 'Must be an Amazon Nova 2 multimodal embeddings model ID',
+        });
+    }
+
+    if (!isSupportedSkillEmbeddingDimension(dimension)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['SKILL_EMBEDDING_DIMENSION'],
+            message: 'Must be one of 256, 384, 1024 or 3072',
+        });
+    }
+
+    if (
+        environment.SKILL_EMBEDDING_BACKFILL_ON_STARTUP &&
+        !environment.SKILL_EMBEDDING_BEDROCK_ENABLED
+    ) {
+        context.addIssue({
+            code: 'custom',
+            path: ['SKILL_EMBEDDING_BEDROCK_ENABLED'],
+            message: 'Required when SKILL_EMBEDDING_BACKFILL_ON_STARTUP=true',
+        });
+    }
+
+    // Nova query embeddings need Bedrock; reading the Nova index without it would fail every search.
+    if (
+        environment.SKILL_EMBEDDING_BEDROCK_READ_ENABLED &&
+        !environment.SKILL_EMBEDDING_BEDROCK_ENABLED
+    ) {
+        context.addIssue({
+            code: 'custom',
+            path: ['SKILL_EMBEDDING_BEDROCK_ENABLED'],
+            message: 'Required when SKILL_EMBEDDING_BEDROCK_READ_ENABLED=true',
+        });
+    }
+
+    if (!isDeployedRuntime(environment)) return;
+
+    const allowlist = DEPLOYED_SKILL_EMBEDDING_ALLOWLIST;
+
+    if (!(allowlist.modelIds as readonly string[]).includes(modelId)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['SKILL_EMBEDDING_BEDROCK_MODEL_ID'],
+            message: `Deployed runtimes only allow ${allowlist.modelIds.join(', ')}`,
+        });
+    }
+
+    if (!(allowlist.dimensions as readonly number[]).includes(dimension)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['SKILL_EMBEDDING_DIMENSION'],
+            message: `Deployed runtimes only allow ${allowlist.dimensions.join(', ')}`,
+        });
+    }
+
+    if (!(allowlist.regions as readonly string[]).includes(region)) {
+        context.addIssue({
+            code: 'custom',
+            path: ['SKILL_EMBEDDING_BEDROCK_REGION'],
+            message: `Deployed runtimes only allow ${allowlist.regions.join(', ')}`,
+        });
+    }
+
+    if (!environment.SKILL_EMBEDDING_BEDROCK_ENABLED) return;
+
+    for (const key of ['AWS_ENDPOINT_URL', 'AWS_ENDPOINT_URL_BEDROCK_RUNTIME'] as const) {
+        if (environment[key]) {
+            context.addIssue({
+                code: 'custom',
+                path: [key],
+                message: 'Bedrock endpoint overrides are not allowed in deployed runtimes',
+            });
+        }
+    }
+
+    if (environment.AWS_BEARER_TOKEN_BEDROCK) {
+        context.addIssue({
+            code: 'custom',
+            path: ['AWS_BEARER_TOKEN_BEDROCK'],
+            message: 'Skill embeddings use the execution role (SigV4), not Bedrock API keys',
+        });
+    }
+};
+
 export const brainServiceEnvironmentSchema = z
     .object(brainServiceEnvironmentShape)
     .transform(environment => ({
         ...environment,
         NOTIFICATIONS_SERVICE_PORT: environment.NOTIFICATIONS_SERVICE_PORT ?? 5100,
         CLIENT_APP_PORT: environment.CLIENT_APP_PORT ?? 3000,
+        SKILL_EMBEDDING_BEDROCK_MODEL_ID:
+            environment.SKILL_EMBEDDING_BEDROCK_MODEL_ID ?? NOVA2_EMBEDDING_MODEL_ID,
+        SKILL_EMBEDDING_BEDROCK_REGION:
+            environment.SKILL_EMBEDDING_BEDROCK_REGION ?? DEFAULT_SKILL_EMBEDDING_REGION,
+        SKILL_EMBEDDING_DIMENSION:
+            environment.SKILL_EMBEDDING_DIMENSION ?? DEFAULT_SKILL_EMBEDDING_DIMENSION,
+        SKILL_EMBEDDING_BEDROCK_TIMEOUT_MS: Math.min(
+            Math.max(
+                environment.SKILL_EMBEDDING_BEDROCK_TIMEOUT_MS ??
+                    DEFAULT_SKILL_EMBEDDING_TIMEOUT_MS,
+                1_000
+            ),
+            60_000
+        ),
+        SKILL_EMBEDDING_CONCURRENCY: Math.min(environment.SKILL_EMBEDDING_CONCURRENCY ?? 1, 8),
     }))
     .superRefine((environment, context) => {
+        refineSkillEmbeddingEnvironment(environment, context);
+
         if (
             environment.NODE_ENV === 'production' &&
             !environment.IS_OFFLINE &&
@@ -124,17 +333,6 @@ export const brainServiceEnvironmentSchema = z
                 code: 'custom',
                 path: ['POSTHOG_API_KEY'],
                 message: 'Required when ENABLE_SEND_CREDENTIAL_TELEMETRY=true',
-            });
-        }
-
-        if (
-            environment.SKILL_EMBEDDING_BACKFILL_ON_STARTUP &&
-            !environment.SKILL_EMBEDDING_GOOGLE_API_KEY
-        ) {
-            context.addIssue({
-                code: 'custom',
-                path: ['SKILL_EMBEDDING_GOOGLE_API_KEY'],
-                message: 'Required when SKILL_EMBEDDING_BACKFILL_ON_STARTUP=true',
             });
         }
 
@@ -178,6 +376,10 @@ export const getNotificationRuntimeEnvironment = (): NotificationRuntimeEnvironm
 
 const credentialRefreshRuntimeEnvironmentSchema = z
     .object({
+        CREDENTIAL_REFRESH_DIGEST_KEY_VERSION: z
+            .string()
+            .regex(/^[A-Za-z0-9_-]+$/)
+            .default('v1'),
         NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
         DOMAIN_NAME: brainServiceEnvironmentShape.DOMAIN_NAME,
         CREDENTIAL_REFRESH_DIGEST_SECRET:
@@ -203,6 +405,18 @@ const credentialRefreshRuntimeEnvironmentSchema = z
 export type CredentialRefreshRuntimeEnvironment = z.output<
     typeof credentialRefreshRuntimeEnvironmentSchema
 >;
+
+/** Previous keys are startup-validated and only read again when matching an older digest. */
+export const getCredentialRefreshPreviousDigestKeys = (): Record<string, string> =>
+    parseEnvironment(
+        z.object({ CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS: credentialRefreshPreviousDigestKeys }),
+        process.env,
+        {
+            project: 'brain-service credential refresh',
+            source: 'process environment',
+            examplePath: 'services/learn-card-network/brain-service/.env.example',
+        }
+    ).CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS;
 
 /** Reads refresh settings at call time so tests and local route registration can override them. */
 export const getCredentialRefreshRuntimeEnvironment = (): CredentialRefreshRuntimeEnvironment =>

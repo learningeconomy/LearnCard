@@ -69,7 +69,7 @@ const GroupedConsentFlowCard: React.FC<GroupedConsentFlowCardProps> = ({ notific
                 notifications={notifications}
                 onArchiveGroup={handleArchiveGroup}
             />,
-            { sectionClassName: '!max-w-[520px]' }
+            { sectionClassName: 'max-w-[520px]!' }
         );
     };
 

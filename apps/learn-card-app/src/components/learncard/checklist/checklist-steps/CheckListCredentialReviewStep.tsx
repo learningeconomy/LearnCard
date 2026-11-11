@@ -1,40 +1,41 @@
-import React, { useState } from 'react';
-import { UploadTypesEnum } from 'learn-card-base';
+import React, { useEffect, useRef, useState } from 'react';
+import { UploadTypesEnum, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useTheme } from '../../../../theme/hooks/useTheme';
 import CredentialEditView from './CredentialEditView';
 import { getWalletCategory, getCategoryDisplayLabel } from './AchievementTypeSelectorModal';
 import * as m from '../../../../paraglide/messages.js';
-
-export type ParsedCredential = { vc: any; metadata?: { name?: string; category?: string } };
+import type { UnsignedVC } from '@learncard/types';
+import type { ParsedFileCredential } from 'learn-card-base/types/file-extraction';
+import { UnsignedVCValidator } from '@learncard/types';
+import { getField } from './credentialEditFields';
 
 type Props = {
-    credentials: ParsedCredential[];
+    credentials: ParsedFileCredential[];
     fileType: UploadTypesEnum;
-    onConfirm: (selectedVcs: any[]) => void;
+    onConfirm: (selectedVcs: UnsignedVC[]) => Promise<void>;
     onBack: () => void;
     isLoading?: boolean;
-    onEditCredential?: (index: number, editedVc: any) => void;
+    onEditCredential?: (index: number, editedVc: UnsignedVC) => void;
 };
 
-const getCredentialDisplayName = (cred: ParsedCredential): string => {
+const getCredentialDisplayName = (cred: ParsedFileCredential): string => {
     return (
         cred.metadata?.name ||
-        cred.vc?.name ||
-        cred.vc?.credentialSubject?.name ||
-        cred.vc?.credentialSubject?.achievement?.name ||
+        getField(cred.vc, 'name') ||
+        getField(cred.vc, 'credentialSubject.name') ||
+        getField(cred.vc, 'credentialSubject.achievement.name') ||
         'Unnamed Credential'
     );
 };
 
-const getCredentialCategory = (cred: ParsedCredential): string => {
+const getCredentialCategory = (cred: ParsedFileCredential): string => {
     if (cred.metadata?.category) return getCategoryDisplayLabel(cred.metadata.category);
-    const achievementType = cred.vc?.credentialSubject?.achievement?.achievementType;
-    const type = Array.isArray(achievementType) ? achievementType[0] : achievementType;
+    const type = getField(cred.vc, 'credentialSubject.achievement.achievementType');
     if (type) {
         const category = getWalletCategory(type);
         if (category) return category;
     }
-    return cred.vc?.credentialSubject?.type || '';
+    return getField(cred.vc, 'credentialSubject.type');
 };
 
 export const CheckListCredentialReviewStep: React.FC<Props> = ({
@@ -47,6 +48,17 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
 }) => {
     const [selected, setSelected] = useState<Set<number>>(new Set(credentials.map((_, i) => i)));
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const confirming = useRef(false);
+    const confirmFocus = useRef<HTMLButtonElement | null>(null);
+    useEffect(() => {
+        if (isLoading || !confirmFocus.current) return;
+        const button = confirmFocus.current;
+        confirmFocus.current = null;
+        if (button.isConnected && document.activeElement === document.body) {
+            button.focus({ preventScroll: true });
+        }
+    }, [isLoading]);
+    const { presentToast } = useToast();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -67,16 +79,31 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
         });
     };
 
-    const handleConfirm = () => {
-        const selectedVcs = Array.from(selected).map(i => credentials[i].vc);
-        onConfirm(selectedVcs);
+    const handleConfirm = async (event: React.MouseEvent<HTMLButtonElement>) => {
+        if (confirming.current || isLoading) return;
+        confirming.current = true;
+        const button = event.currentTarget;
+        confirmFocus.current = document.activeElement === button ? button : null;
+        try {
+            await onConfirm(Array.from(selected).map(i => credentials[i].vc));
+        } finally {
+            confirming.current = false;
+        }
     };
 
     const allSelected = selected.size === credentials.length;
 
-    const handleEditSave = (editedVc: any) => {
+    const handleEditSave = (editedVc: Record<string, unknown>) => {
+        const parsed = UnsignedVCValidator.safeParse(editedVc);
+        if (!parsed.success) {
+            presentToast(m['passport.buildMyLearnCard.managers.toastGenericError'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            return;
+        }
         if (editingIndex !== null && onEditCredential) {
-            onEditCredential(editingIndex, editedVc);
+            onEditCredential(editingIndex, parsed.data);
         }
         setEditingIndex(null);
     };
@@ -100,6 +127,7 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
                     </h4>
                     <button
                         onClick={toggleAll}
+                        disabled={isLoading}
                         className={`text-sm font-semibold text-${primaryColor}`}
                     >
                         {allSelected
@@ -128,8 +156,13 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
                                         : 'border-grayscale-200 bg-grayscale-50'
                                 }`}
                             >
-                                <div
-                                    className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                                <button
+                                    type="button"
+                                    role="checkbox"
+                                    aria-checked={isSelected}
+                                    aria-label={name}
+                                    disabled={isLoading}
+                                    className="flex text-left items-center gap-3 min-w-0 flex-1 cursor-pointer"
                                     onClick={() => toggle(i)}
                                 >
                                     <div
@@ -165,9 +198,11 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
                                             </p>
                                         )}
                                     </div>
-                                </div>
+                                </button>
                                 {onEditCredential && (
                                     <button
+                                        disabled={isLoading}
+                                        aria-label={`${m['passport.buildMyLearnCard.misc.editCredential']()}: ${name}`}
                                         onClick={e => {
                                             e.stopPropagation();
                                             setEditingIndex(i);
@@ -198,20 +233,21 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
             <div className="flex gap-3 mt-4">
                 <button
                     onClick={onBack}
+                    disabled={isLoading}
                     className="flex-1 py-3 rounded-[30px] font-semibold text-grayscale-900 bg-grayscale-200"
                 >
                     {m['common.back']()}
                 </button>
                 <button
-                    onClick={handleConfirm}
+                    onClick={event => void handleConfirm(event)}
                     disabled={isLoading}
                     className={`flex-1 py-3 rounded-[30px] font-semibold text-white bg-${primaryColor} disabled:opacity-50`}
                 >
                     {isLoading
                         ? m['passport.buildMyLearnCard.misc.saving']()
                         : selected.size > 0
-                        ? m['passport.buildMyLearnCard.review.save']({ count: selected.size })
-                        : m['passport.buildMyLearnCard.misc.save']()}
+                          ? m['passport.buildMyLearnCard.review.save']({ count: selected.size })
+                          : m['passport.buildMyLearnCard.misc.save']()}
                 </button>
             </div>
         </div>

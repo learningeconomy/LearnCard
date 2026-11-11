@@ -1,13 +1,13 @@
 # AppStoreAdminGetAllListingsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] 
-**cursor** | **str** |  | [optional] 
-**status** | **str** |  | [optional] 
+| Name                     | Type      | Description | Notes      |
+| ------------------------ | --------- | ----------- | ---------- |
+| **limit**                | **float** |             | [optional] |
+| **cursor**               | **str**   |             | [optional] |
+| **status**               | **str**   |             | [optional] |
+| **pending_updates_only** | **bool**  |             | [optional] |
 
 ## Example
 
@@ -26,6 +26,5 @@ app_store_admin_get_all_listings_request_dict = app_store_admin_get_all_listings
 # create an instance of AppStoreAdminGetAllListingsRequest from a dict
 app_store_admin_get_all_listings_request_from_dict = AppStoreAdminGetAllListingsRequest.from_dict(app_store_admin_get_all_listings_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

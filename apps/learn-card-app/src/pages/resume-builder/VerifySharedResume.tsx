@@ -79,6 +79,7 @@ const VerifySharedResume: React.FC = () => {
                 title: 'Downloaded',
                 type: ToastTypeEnum.Success,
             });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (error: any) {
             presentToast(error?.message ?? 'Failed to download resume.', {
                 title: 'Download Failed',
@@ -253,7 +254,7 @@ const VerifySharedResume: React.FC = () => {
             </IonHeader>
 
             <IonContent fullscreen className="bg-grayscale-100">
-                <div className="min-h-full bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.16),_transparent_35%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_100%)]">
+                <div className="min-h-full bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.16),transparent_35%),linear-gradient(180deg,#F8FAFC_0%,#EEF2FF_100%)]">
                     <div className="mx-auto max-w-[1180px] px-4 py-6 sm:px-6 lg:px-8">
                         {loading ? (
                             <div className="flex min-h-[70vh] items-center justify-center">

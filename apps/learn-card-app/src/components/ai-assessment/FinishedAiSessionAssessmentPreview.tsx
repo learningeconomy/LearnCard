@@ -73,6 +73,7 @@ export const FinishedAiSessionAssessmentPreview: React.FC<{
                 handleClose={closeModal}
                 boost={session?.vc}
                 boostUri={session?.boost.uri}
+                credentialRecordUri={session?.record?.uri}
                 categoryType={CredentialCategoryEnum.achievement}
             />,
             {},

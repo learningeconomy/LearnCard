@@ -22,7 +22,7 @@ vi.mock('learn-card-base', () => ({
     BoostCategoryOptionsEnum: { socialBadge: 'Social Badge' },
     BoostPageViewMode: { Card: 'card' },
     CredentialCategoryEnum: { achievement: 'Achievement', socialBadge: 'Social Badge' },
-    categoryMetadata: { Achievement: { walletSubtype: 'achievement' } },
+    getCategoryMetadata: () => ({ walletSubtype: 'achievement' }),
     getBoostMetadata: () => ({
         color: 'sp-blue-dark-ocean',
         credentialType: 'Achievement',

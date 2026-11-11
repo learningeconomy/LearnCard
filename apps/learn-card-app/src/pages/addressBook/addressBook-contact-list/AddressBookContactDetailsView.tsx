@@ -281,7 +281,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
             <ContactCredentialHistoryModal contact={contact} onClose={closeModal} />,
             {
                 hideButton: true,
-                sectionClassName: '!max-w-[760px] !overflow-hidden',
+                sectionClassName: 'max-w-[760px]! overflow-hidden!',
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
@@ -395,7 +395,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
 
     const footer = (
         <footer className="shrink-0 border-t border-grayscale-200 bg-white px-6 py-4">
-            <div className="mx-auto w-full max-w-md space-y-3">
+            <div className="mx-auto w-full max-w-md space-y-v3-3">
                 {isConnected ? (
                     <button
                         type="button"
@@ -552,7 +552,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 <button
                                     type="button"
                                     onClick={openCredentialHistory}
-                                    className="shrink-0 rounded-sm text-sm font-semibold text-indigo-600 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    className="shrink-0 rounded-xs text-sm font-semibold text-indigo-600 transition-opacity hover:opacity-80 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                 >
                                     {m['common.viewAll']()}
                                 </button>
@@ -607,7 +607,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                         {credentialPreviewItems.map(item => (
                                             <SwiperSlide
                                                 key={`${item.direction}-${item.uri}`}
-                                                className="!h-auto"
+                                                className="h-auto!"
                                                 style={{
                                                     width: 'min(300px, calc(100vw - 96px))',
                                                 }}

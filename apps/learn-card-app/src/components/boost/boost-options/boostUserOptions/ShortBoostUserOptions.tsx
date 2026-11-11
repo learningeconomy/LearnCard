@@ -51,6 +51,7 @@ export enum ShortBoostStepsEnum {
 const ShortBoostUserOptions: React.FC<{
     handleCloseModal: () => void;
     boostCredential: VC | UnsignedVC;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     boost: any;
     boostUri: string;
     profileId: string;
@@ -223,7 +224,7 @@ const ShortBoostUserOptions: React.FC<{
                 history={history}
             />,
             {
-                sectionClassName: '!max-w-[600px]',
+                sectionClassName: 'max-w-[600px]!',
             },
             {
                 mobile: ModalTypes.FullScreen,
@@ -285,7 +286,7 @@ const ShortBoostUserOptions: React.FC<{
                         </div>
                     </div>
                 )}
-                <h1 className="font-poppins text-[22px] font-[600] leading-[130%] tracking-[-0.25px] py-[15px] flex items-center justify-center w-full h-full text-grayscale-900">
+                <h1 className="font-poppins text-[22px] font-semibold leading-[130%] tracking-[-0.25px] py-[15px] flex items-center justify-center w-full h-full text-grayscale-900">
                     {m['boost.shortBoost.selectRecipient']()}
                 </h1>
                 <button
@@ -293,7 +294,7 @@ const ShortBoostUserOptions: React.FC<{
                     className="flex items-center gap-[10px] font-notoSans text-grayscale-800 text-[18px] py-[10px] w-full"
                 >
                     <ProfilePicture
-                        customContainerClass="w-[35px] h-[35px] overflow-hidden rounded-full flex-shrink-0"
+                        customContainerClass="w-[35px] h-[35px] overflow-hidden rounded-full shrink-0"
                         customImageClass="w-full h-full object-cover"
                     />
                     {m['boost.shortBoost.myself']()}
@@ -309,7 +310,7 @@ const ShortBoostUserOptions: React.FC<{
                 </button>
                 {sectionPortal &&
                     createPortal(
-                        <div className="flex flex-col justify-center items-center relative !border-none max-w-[500px]">
+                        <div className="flex flex-col justify-center items-center relative border-none! max-w-[500px]">
                             {boost.status === 'LIVE' && (
                                 <button
                                     onClick={() => {
@@ -317,7 +318,7 @@ const ShortBoostUserOptions: React.FC<{
                                     }}
                                     className={`flex items-center justify-center bg-${
                                         color || 'grayscale-900'
-                                    } disabled:bg-grayscale-400 rounded-full py-2 text-white font-poppins text-lg font-[600] w-full shadow-bottom-4-4`}
+                                    } disabled:bg-grayscale-400 rounded-full py-2 text-white font-poppins text-lg font-semibold w-full shadow-bottom-4-4`}
                                 >
                                     {m['boost.shortBoost.generateLink']()}
                                 </button>
@@ -369,7 +370,7 @@ const ShortBoostUserOptions: React.FC<{
         <BoostShareableCode
             boostUri={boostUri}
             state={shareableCodeState}
-            customClassName="p-[20px] m-0 !rounded-[15px]"
+            customClassName="p-[20px] m-0 rounded-[15px]!"
             showTitle
             showGenerateClaimLinkToggle={false}
             defaultGenerateLinkToggleState={true}

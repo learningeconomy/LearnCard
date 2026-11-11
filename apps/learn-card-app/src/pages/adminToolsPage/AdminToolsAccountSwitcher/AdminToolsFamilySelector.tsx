@@ -2,12 +2,13 @@ import React from 'react';
 
 import { ProfilePicture, useModal } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
+import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 
-import { VC } from '@learncard/types';
+import type { VC } from '@learncard/types';
 
 export const AdminToolsFamilySelector: React.FC<{
     families: VC[];
-    selectedFamily: VC | undefined;
+    selectedFamily: { name: string; picture: string; uri: string } | undefined;
     setSelectedFamily: React.Dispatch<
         React.SetStateAction<
             | {
@@ -27,16 +28,16 @@ export const AdminToolsFamilySelector: React.FC<{
                 <h4 className="text-[20px] text-grayscale-900 py-4">Select a Family</h4>
 
                 {families.map(family => {
-                    const isSelected =
-                        family?.boostCredential?.name === selectedFamily?.name &&
-                        family?.boostId === selectedFamily?.uri;
+                    const displayFamily = unwrapBoostCredential(family);
+                    const isSelected = family.boostId === selectedFamily?.uri;
 
                     return (
                         <button
+                            key={family.boostId}
                             onClick={() => {
                                 setSelectedFamily({
-                                    name: family?.boostCredential?.name,
-                                    picture: family?.boostCredential?.image,
+                                    name: displayFamily?.name ?? '',
+                                    picture: displayFamily?.image ?? '',
                                     uri: family?.boostId,
                                 });
                                 closeModal();
@@ -49,11 +50,9 @@ export const AdminToolsFamilySelector: React.FC<{
                                     customContainerClass="w-[40px] h-[40px]"
                                     customImageClass="w-full h-full object-cover"
                                     overrideSrc
-                                    overrideSrcURL={family?.boostCredential?.image}
+                                    overrideSrcURL={displayFamily?.image}
                                 />
-                                <p className="text-grayscale-700 ml-2">
-                                    {family?.boostCredential?.name}
-                                </p>
+                                <p className="text-grayscale-700 ml-2">{displayFamily?.name}</p>
                             </div>
 
                             {isSelected && (

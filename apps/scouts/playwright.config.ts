@@ -13,6 +13,8 @@ import { devices } from '@playwright/test';
 const config: PlaywrightTestConfig = {
     globalSetup: './playwright-global-setup.ts',
     testDir: './tests',
+    // SDK storage regressions use an isolated server and their own auth config.
+    testIgnore: ['**/auth/**'],
     /* Maximum time one test can run for. */
     timeout: 60 * 1000,
     expect: {

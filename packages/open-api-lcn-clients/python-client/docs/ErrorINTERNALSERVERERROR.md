@@ -4,11 +4,11 @@ The error information
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**message** | **str** | The error message | 
-**code** | **str** | The error code | 
-**issues** | [**List[ContactMethodsSendChallenge200Response]**](ContactMethodsSendChallenge200Response.md) | An array of issues that were responsible for the error | [optional] 
+| Name        | Type                                                                                          | Description                                            | Notes      |
+| ----------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------- |
+| **message** | **str**                                                                                       | The error message                                      |
+| **code**    | **str**                                                                                       | The error code                                         |
+| **issues**  | [**List[ContactMethodsSendChallenge200Response]**](ContactMethodsSendChallenge200Response.md) | An array of issues that were responsible for the error | [optional] |
 
 ## Example
 
@@ -27,6 +27,5 @@ error_internalservererror_dict = error_internalservererror_instance.to_dict()
 # create an instance of ErrorINTERNALSERVERERROR from a dict
 error_internalservererror_from_dict = ErrorINTERNALSERVERERROR.from_dict(error_internalservererror_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

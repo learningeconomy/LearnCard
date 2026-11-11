@@ -3,10 +3,10 @@ import type {
     ShareContentCleanupStatus,
     ShareLinkOperationKind,
 } from '@helpers/share-link-lifecycle';
-import type { ShareLinkPolicySnapshot } from '@helpers/share-link-policy';
+import type { CurrentShareLinkPolicy, ShareLinkPolicySnapshot } from '@helpers/share-link-policy';
 
 import type { ShareContentState, ShareLinkRecord, ShareLinkStatus } from '../../models/ShareLink';
-import type { ShareLinkTransactionOptions } from './transaction';
+import type { ShareLinkTransaction, ShareLinkTransactionOptions } from './transaction';
 
 /** Namespace + owner + share id binding used by every lifecycle operation. */
 export type ShareLinkKey = {
@@ -55,6 +55,8 @@ export type ShareLinkOperationRecord = {
  * a bounded lease so a restart can either resume or supersede it.
  */
 export type ShareLinkReservationRecord = {
+    attachmentId?: string | null;
+    attachmentChunkCount?: number | null;
     shareId: string;
     namespace: string;
     ownerProfileId: string;
@@ -122,6 +124,7 @@ export type ShareContentBinding = {
 };
 
 export type ReserveCreateInput = {
+    attachment?: import('@learncard/types').ShareLinkAttachment;
     namespace: string;
     ownerProfileId: string;
     clientRequestId: string;
@@ -143,6 +146,7 @@ export type ReserveCreateInput = {
 };
 
 export type ReserveReplacementContent = ShareContentBinding & {
+    attachment?: import('@learncard/types').ShareLinkAttachment;
     /** Must equal the current visible content version + 1. */
     contentVersion: number;
     selectedCount: number;
@@ -194,6 +198,7 @@ export type ReserveShareLinkResult =
       };
 
 export type FinalizeReservationInput = {
+    verifiedAttachmentId?: string;
     namespace: string;
     ownerProfileId: string;
     shareId: string;
@@ -210,10 +215,10 @@ export type FinalizeReservationInput = {
     verifiedContentHash?: string;
     /** Production-only graph-local policy recheck under the share write lock. */
     resolveCurrentPolicy?: (
-        tx: import('./transaction').ShareLinkTransaction,
+        tx: ShareLinkTransaction,
         ownerProfileId: string,
         now: Date
-    ) => Promise<import('@helpers/share-link-policy/types').ShareLinkPolicySnapshot>;
+    ) => Promise<CurrentShareLinkPolicy>;
     now?: Date;
     /** Maintenance-only: bounded transaction timeout for this unit. */
     transactionTimeoutMs?: number;

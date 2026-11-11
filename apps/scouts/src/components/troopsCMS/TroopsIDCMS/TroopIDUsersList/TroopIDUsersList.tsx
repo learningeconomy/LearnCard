@@ -182,7 +182,7 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                     return (
                         <div
                             key={index}
-                            className="flex items-center justify-between w-full bg-white border-t-grayscale-100 border-t-solid border-t-[1px] py-[10px]"
+                            className="flex items-center justify-between w-full bg-white border-t-grayscale-100 border-t-solid border-t py-[10px]"
                         >
                             <div className="flex items-center justify-start w-full gap-[10px]">
                                 <UserProfilePicture
@@ -195,7 +195,7 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                                     <p className="text-grayscale-900 font-notoSans text-[17px]">
                                         {user?.displayName || user?.profileId}
                                     </p>
-                                    <p className="text-grayscale-500 font-[500] font-notoSans flex items-center justify-center text-[14px]">
+                                    <p className="text-grayscale-500 font-medium font-notoSans flex items-center justify-center text-[14px]">
                                         {typeTitle}
                                     </p>
                                 </div>

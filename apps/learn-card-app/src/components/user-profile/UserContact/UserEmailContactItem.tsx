@@ -96,7 +96,7 @@ export const UserEmailContactItem: React.FC<{
     return (
         <div
             key={email.id}
-            className="w-full flex flex-col items-center justify-start border-b-solid border-b-[1px] border-grayscale-200 pb-4"
+            className="w-full flex flex-col items-center justify-start border-b-solid border-b border-grayscale-200 pb-4"
         >
             <div className="w-full flex items-center justify-start gap-2">
                 <span aria-hidden="true">
@@ -159,7 +159,7 @@ export const UserEmailContactItem: React.FC<{
                     disabled={isRemoveLoading}
                     aria-busy={isRemoveLoading}
                     aria-label={`${m['profile.email.remove']()} ${email.value}`}
-                    className="bg-white border-solid border-[1px] border-grayscale-200 rounded-full h-[48px] w-[48px] flex items-center justify-center"
+                    className="bg-white border-solid border border-grayscale-200 rounded-full h-[48px] w-[48px] flex items-center justify-center"
                 >
                     {isRemoveLoading ? (
                         <IonSpinner name="crescent" aria-hidden="true" />

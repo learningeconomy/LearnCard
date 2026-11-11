@@ -105,13 +105,13 @@ const TextInput: React.FC<TextInputProps> = ({
                     onIonBlur={onBlur}
                     onKeyDown={onKeyDown}
                     className={`text-grayscale-900 font-poppins text-[14px] leading-[130%] w-full
-                        ${hasPaddingLeftOverride ? '' : hasStartContent ? '!pl-[48px]' : '!pl-[15px]'}
+                        ${hasPaddingLeftOverride ? '' : hasStartContent ? 'pl-[48px]!' : 'pl-[15px]!'}
                         ${
                             hasPaddingRightOverride
                                 ? ''
                                 : hasEndContent
-                                  ? '!pr-[48px] !py-[1px]'
-                                  : '!pr-[15px] !py-0'
+                                  ? 'pr-[48px]! py-px!'
+                                  : 'pr-[15px]! py-0!'
                         }
                         ${inputClassName}`}
                 />

@@ -23,7 +23,7 @@ const ExternalEditor: React.FC<{
     onChange: (next: Policy) => void;
 }> = ({ value, onChange }) => (
     <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
+        <div className="space-y-v3-1.5">
             <label className={LABEL} htmlFor="policy-external-server">
                 Tool provider
             </label>
@@ -40,7 +40,7 @@ const ExternalEditor: React.FC<{
             />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-v3-1.5">
             <label className={LABEL} htmlFor="policy-external-tool">
                 Tool name
             </label>

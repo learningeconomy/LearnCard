@@ -83,7 +83,7 @@ const GrowSkillsCourseItem: React.FC<GrowSkillsCourseItemProps> = ({ program }) 
         >
             <div className="px-[15px] py-[20px] flex h-full flex-col gap-[5px]">
                 <div className="flex items-start gap-[10px]">
-                    <ThickStudiesIconWithShape className="w-[35px] h-[35px] flex-shrink-0" />
+                    <ThickStudiesIconWithShape className="w-[35px] h-[35px] shrink-0" />
                     <div className="flex-1 min-w-0">
                         <h3 className="text-[17px] font-poppins font-[600] text-grayscale-900 leading-[24px] tracking-[0.25px] line-clamp-2 text-left">
                             {program?.ProgramName}
@@ -98,7 +98,7 @@ const GrowSkillsCourseItem: React.FC<GrowSkillsCourseItemProps> = ({ program }) 
                         </p>
                         {programLengthDisplay && (
                             <div className="flex items-center gap-[5px]">
-                                <CalendarClock className="w-[20px] h-[20px] text-grayscale-700 flex-shrink-0" />
+                                <CalendarClock className="w-[20px] h-[20px] text-grayscale-700 shrink-0" />
                                 <span className="text-[13px] text-grayscale-600 font-bold font-poppins capitalize">
                                     {programLengthDisplay}
                                 </span>
@@ -109,7 +109,7 @@ const GrowSkillsCourseItem: React.FC<GrowSkillsCourseItemProps> = ({ program }) 
                     <img
                         src={logo}
                         alt={program?.SchoolName || 'Institution'}
-                        className="!w-[40px] !h-[40px] rounded-full object-contain shrink-0 ml-auto"
+                        className="w-[40px]! h-[40px]! rounded-full object-contain shrink-0 ml-auto"
                     />
                 </div>
 

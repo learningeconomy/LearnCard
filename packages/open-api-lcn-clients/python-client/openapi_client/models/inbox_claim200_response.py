@@ -22,19 +22,21 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.inbox_claim200_response_inbox_credential import InboxClaim200ResponseInboxCredential
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxClaim200Response(BaseModel):
     """
     InboxClaim200Response
     """ # noqa: E501
     inbox_credential: InboxClaim200ResponseInboxCredential = Field(alias="inboxCredential")
-    status: Optional[StrictStr]
+    status: StrictStr
     recipient_did: Optional[StrictStr] = Field(default=None, alias="recipientDid")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["inboxCredential", "status", "recipientDid"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class InboxClaim200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -60,9 +61,8 @@ class InboxClaim200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -82,16 +82,6 @@ class InboxClaim200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if status (nullable) is None
-        # and model_fields_set contains the field
-        if self.status is None and "status" in self.model_fields_set:
-            _dict['status'] = None
-
-        # set to None if recipient_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient_did is None and "recipient_did" in self.model_fields_set:
-            _dict['recipientDid'] = None
-
         return _dict
 
     @classmethod
@@ -103,11 +93,13 @@ class InboxClaim200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "inboxCredential": InboxClaim200ResponseInboxCredential.from_dict(obj["inboxCredential"]) if obj.get("inboxCredential") is not None else None,
             "status": obj.get("status"),
             "recipientDid": obj.get("recipientDid")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

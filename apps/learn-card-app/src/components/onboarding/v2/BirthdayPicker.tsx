@@ -269,7 +269,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
                 aria-label={columnLabel}
                 aria-activedescendant={`onboarding-${type}-${selectedVal}`}
                 tabIndex={0}
-                className="flex-1 h-[200px] overflow-y-auto snap-y snap-mandatory relative z-10 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 [&::-webkit-scrollbar]:hidden"
+                className="flex-1 h-[200px] overflow-y-auto snap-y snap-mandatory relative z-10 rounded-xl focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 [&::-webkit-scrollbar]:hidden"
                 style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
                 onScroll={() => {
                     if (isProgrammaticScroll.current[type]) return;
@@ -325,7 +325,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
                     {m['onboarding.scrollToChoose']()}
                 </p>
             )}
-            <div className="relative w-full bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl shadow-sm p-2 overflow-hidden">
+            <div className="relative w-full bg-white/80 backdrop-blur-xs border border-grayscale-200/60 rounded-2xl shadow-xs p-2 overflow-hidden">
                 <div className="absolute top-1/2 left-2 right-2 -translate-y-1/2 h-[40px] bg-emerald-50/60 rounded-xl border-y border-grayscale-200/70 pointer-events-none z-0" />
 
                 <div

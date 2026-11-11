@@ -1,11 +1,10 @@
 # SkillFrameworksCountBoostsThatUseFramework200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**count** | **float** |  | 
+| Name      | Type      | Description | Notes |
+| --------- | --------- | ----------- | ----- |
+| **count** | **float** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ skill_frameworks_count_boosts_that_use_framework200_response_dict = skill_framew
 # create an instance of SkillFrameworksCountBoostsThatUseFramework200Response from a dict
 skill_frameworks_count_boosts_that_use_framework200_response_from_dict = SkillFrameworksCountBoostsThatUseFramework200Response.from_dict(skill_frameworks_count_boosts_that_use_framework200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

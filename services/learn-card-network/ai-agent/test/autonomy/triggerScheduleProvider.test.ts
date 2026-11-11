@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { configure } from '@trigger.dev/sdk';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
     createAgentAutonomyScheduleService,
@@ -12,6 +13,7 @@ import {
     createTriggerAgentAutonomyScheduleProvider,
     getTriggerScheduleDeduplicationKey,
     TRIGGER_AUTONOMOUS_SCHEDULE_TASK_ID,
+    TRIGGER_AUTONOMOUS_SCHEDULE_WINDOW,
     type AgentAutonomyScheduleProvider,
     type TriggerScheduleClient,
 } from '../../src/autonomy/triggerScheduleProvider';
@@ -115,7 +117,6 @@ describe('Trigger.dev schedule synchronization', () => {
     });
 
     it('disables locally before deleting the provider schedule', async () => {
-        let runtime: LearnCardAssistantSchedulesRuntime;
         const provider: AgentAutonomyScheduleProvider = {
             upsert: vi.fn(async () => 'sched_1'),
             remove: vi.fn(async () => {
@@ -124,7 +125,7 @@ describe('Trigger.dev schedule synchronization', () => {
                 });
             }),
         };
-        runtime = createRuntime(provider);
+        const runtime = createRuntime(provider);
         await runtime.create(input());
 
         await runtime.remove(OWNER_DID, 'schedule-1');
@@ -155,6 +156,7 @@ describe('Trigger.dev schedule synchronization', () => {
             timezone: 'America/New_York',
             externalId: OWNER_DID,
             deduplicationKey: getTriggerScheduleDeduplicationKey('dev', schedule),
+            window: '0m',
         });
         expect(client.deactivate).toHaveBeenCalledWith('sched_1');
         expect(client.activate).not.toHaveBeenCalled();
@@ -179,6 +181,69 @@ describe('Trigger.dev schedule synchronization', () => {
         );
         expect(client.create).not.toHaveBeenCalled();
         await expect(runtime.list(OWNER_DID)).resolves.toEqual([]);
+    });
+});
+
+describe('Trigger.dev schedule window', () => {
+    // Shape of GET /api/v1/schedules/{id} for the staging smoke schedule that never fired: the
+    // default 1h window pushed the effective start 20 minutes past the cron minute.
+    const capturedSchedule = {
+        id: 'sched_anmjoirhw4wx14pmpf37u',
+        type: 'IMPERATIVE',
+        task: TRIGGER_AUTONOMOUS_SCHEDULE_TASK_ID,
+        active: true,
+        nextRun: '2026-10-19T21:23:00.000Z',
+        nextRunEffectiveAt: '2026-10-19T21:43:30.800Z',
+        generator: { type: 'CRON', expression: '23 21 * * 1', description: '' },
+        timezone: 'UTC',
+        window: '1h',
+        externalId: OWNER_DID,
+        deduplicationKey: `staging:${OWNER_DID}:schedule-1`,
+        environments: [{ id: 'env_1', type: 'PRODUCTION' }],
+    };
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('asks the real Trigger.dev SDK for a 0m window on create and update', async () => {
+        const requests: Array<{ url: string; method: string; body: unknown }> = [];
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+                requests.push({
+                    url: String(url),
+                    method: init?.method ?? 'GET',
+                    body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined,
+                });
+
+                return new Response(JSON.stringify(capturedSchedule), {
+                    status: 200,
+                    headers: { 'content-type': 'application/json' },
+                });
+            })
+        );
+        configure({ baseURL: 'https://trigger.test', accessToken: 'tr_test_placeholder' });
+        const provider = createTriggerAgentAutonomyScheduleProvider({
+            environment: 'staging',
+            isOwnerAllowed: async () => true,
+        });
+        const runtime = createRuntime(provider);
+
+        await runtime.create(input());
+        await runtime.update({ ownerDid: OWNER_DID, id: 'schedule-1', timeOfDay: '08:00' });
+
+        const scheduleWrites = requests.filter(
+            request => request.method === 'POST' && request.url.endsWith('/api/v1/schedules')
+        );
+        expect(TRIGGER_AUTONOMOUS_SCHEDULE_WINDOW).toBe('0m');
+        expect(scheduleWrites).toHaveLength(2);
+        for (const request of scheduleWrites) {
+            expect(request.body).toMatchObject({
+                task: TRIGGER_AUTONOMOUS_SCHEDULE_TASK_ID,
+                window: '0m',
+            });
+        }
     });
 });
 

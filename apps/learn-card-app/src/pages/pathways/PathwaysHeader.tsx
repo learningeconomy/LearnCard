@@ -27,7 +27,7 @@
  *      it doesn't have. The Proposals pill (alert surface) shares
  *      the same right-side slot when active.
  *
- * The sticky backdrop-blur ("liquid glass") treatment persists across
+ * The sticky backdrop-blur-sm ("liquid glass") treatment persists across
  * breakpoints so the shell reads as one continuous chrome rather than
  * two different components.
  *
@@ -153,7 +153,7 @@ const PathwaysHeader: React.FC<PathwaysHeaderProps> = () => {
                                            text-xs sm:text-sm font-medium
                                            text-grayscale-700
                                            transition-colors"
-                                activeClassName="!bg-white !text-grayscale-900 shadow-sm"
+                                activeClassName="bg-white! text-grayscale-900! shadow-xs"
                             >
                                 {mode.label}
                             </NavLink>

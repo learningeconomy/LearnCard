@@ -1,12 +1,11 @@
 # AppStoreAddBoostToListingRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**boost_uri** | **str** |  | 
-**template_alias** | **str** |  | 
+| Name               | Type    | Description | Notes |
+| ------------------ | ------- | ----------- | ----- |
+| **boost_uri**      | **str** |             |
+| **template_alias** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ app_store_add_boost_to_listing_request_dict = app_store_add_boost_to_listing_req
 # create an instance of AppStoreAddBoostToListingRequest from a dict
 app_store_add_boost_to_listing_request_from_dict = AppStoreAddBoostToListingRequest.from_dict(app_store_add_boost_to_listing_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

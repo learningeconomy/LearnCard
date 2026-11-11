@@ -1,16 +1,30 @@
 # StorageStoreRequestItemAnyOfAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**context** | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md) |  | 
-**id** | **str** |  | [optional] 
-**type** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md) |  | 
-**verifiable_credential** | [**PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential**](PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.md) |  | [optional] 
-**holder** | **str** |  | [optional] 
-**proof** | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md) |  | 
+| Name                      | Type                                                                                                                                                        | Description | Notes      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **context**               | [**List[BoostSendBoostRequestCredentialAnyOfContextInner]**](BoostSendBoostRequestCredentialAnyOfContextInner.md)                                           |             |
+| **id**                    | **str**                                                                                                                                                     |             | [optional] |
+| **type**                  | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.md)                                           |             |
+| **issuer**                | [**BoostSendRequestTemplateCredentialAnyOfIssuer**](BoostSendRequestTemplateCredentialAnyOfIssuer.md)                                                       |             |
+| **credential_subject**    | [**BoostSendBoostRequestCredentialAnyOfCredentialSubject**](BoostSendBoostRequestCredentialAnyOfCredentialSubject.md)                                       |             |
+| **refresh_service**       | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)                                             |             | [optional] |
+| **credential_schema**     | [**BoostSendBoostRequestCredentialAnyOfCredentialSchema**](BoostSendBoostRequestCredentialAnyOfCredentialSchema.md)                                         |             | [optional] |
+| **issuance_date**         | **str**                                                                                                                                                     |             | [optional] |
+| **expiration_date**       | **str**                                                                                                                                                     |             | [optional] |
+| **credential_status**     | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)                                             |             | [optional] |
+| **name**                  | **str**                                                                                                                                                     |             | [optional] |
+| **description**           | **str**                                                                                                                                                     |             | [optional] |
+| **valid_from**            | **str**                                                                                                                                                     |             | [optional] |
+| **valid_until**           | **str**                                                                                                                                                     |             | [optional] |
+| **status**                | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)                                             |             | [optional] |
+| **terms_of_use**          | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)                                             |             | [optional] |
+| **evidence**              | [**BoostSendBoostRequestCredentialAnyOfEvidence**](BoostSendBoostRequestCredentialAnyOfEvidence.md)                                                         |             | [optional] |
+| **render_method**         | [**BoostSendBoostRequestCredentialAnyOfRenderMethod**](BoostSendBoostRequestCredentialAnyOfRenderMethod.md)                                                 |             | [optional] |
+| **proof**                 | [**BoostSendBoostRequestCredentialAnyOfProof**](BoostSendBoostRequestCredentialAnyOfProof.md)                                                               |             |
+| **verifiable_credential** | [**PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential**](PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.md) |             | [optional] |
+| **holder**                | **str**                                                                                                                                                     |             | [optional] |
 
 ## Example
 
@@ -29,6 +43,5 @@ storage_store_request_item_any_of_any_of_dict = storage_store_request_item_any_o
 # create an instance of StorageStoreRequestItemAnyOfAnyOf from a dict
 storage_store_request_item_any_of_any_of_from_dict = StorageStoreRequestItemAnyOfAnyOf.from_dict(storage_store_request_item_any_of_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,8 +1,15 @@
 export type RecipientMode = 'self' | 'people' | 'link';
 
 export type Recipient =
-    | { kind: 'profile'; profileId: string; displayName: string; image?: string; did?: string }
-    | { kind: 'email'; email: string };
+    | {
+          kind: 'profile';
+          profileId: string;
+          displayName: string;
+          image?: string;
+          did?: string;
+          rowId?: string;
+      }
+    | { kind: 'email'; email: string; displayName?: string; rowId?: string };
 
 export interface LinkOptions {
     expiresAt?: string;
@@ -14,7 +21,7 @@ export const isEmail = (value: string): boolean => {
 };
 
 export const recipientKey = (recipient: Recipient): string =>
-    recipient.kind === 'profile' ? recipient.profileId : recipient.email;
+    recipient.rowId ?? (recipient.kind === 'profile' ? recipient.profileId : recipient.email);
 
 export const recipientLabel = (recipient: Recipient): string =>
     recipient.kind === 'profile' ? recipient.displayName : recipient.email;
@@ -27,7 +34,8 @@ export const prettifyEmailName = (email: string): string => {
 };
 
 export const recipientDisplayName = (recipient: Recipient): string =>
-    recipient.kind === 'profile' ? recipient.displayName : prettifyEmailName(recipient.email);
+    recipient.displayName ||
+    (recipient.kind === 'email' ? prettifyEmailName(recipient.email) : recipient.profileId);
 
 export const summarizeRecipients = (recipients: Recipient[]): string => {
     const names = recipients.map(recipientDisplayName).filter(Boolean);

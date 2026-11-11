@@ -21,24 +21,26 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostSendBoostRequestCredentialAnyOfProofAnyOf(BaseModel):
     """
     BoostSendBoostRequestCredentialAnyOfProofAnyOf
     """ # noqa: E501
-    type: Optional[StrictStr]
-    created: Optional[StrictStr]
+    type: StrictStr
+    created: Optional[StrictStr] = None
     challenge: Optional[StrictStr] = None
     domain: Optional[StrictStr] = None
     nonce: Optional[StrictStr] = None
-    proof_purpose: Optional[StrictStr] = Field(alias="proofPurpose")
-    verification_method: Optional[StrictStr] = Field(alias="verificationMethod")
+    proof_purpose: StrictStr = Field(alias="proofPurpose")
+    verification_method: StrictStr = Field(alias="verificationMethod")
     jws: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["type", "created", "challenge", "domain", "nonce", "proofPurpose", "verificationMethod", "jws"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -50,8 +52,7 @@ class BoostSendBoostRequestCredentialAnyOfProofAnyOf(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -64,9 +65,8 @@ class BoostSendBoostRequestCredentialAnyOfProofAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -83,46 +83,6 @@ class BoostSendBoostRequestCredentialAnyOfProofAnyOf(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if type (nullable) is None
-        # and model_fields_set contains the field
-        if self.type is None and "type" in self.model_fields_set:
-            _dict['type'] = None
-
-        # set to None if created (nullable) is None
-        # and model_fields_set contains the field
-        if self.created is None and "created" in self.model_fields_set:
-            _dict['created'] = None
-
-        # set to None if challenge (nullable) is None
-        # and model_fields_set contains the field
-        if self.challenge is None and "challenge" in self.model_fields_set:
-            _dict['challenge'] = None
-
-        # set to None if domain (nullable) is None
-        # and model_fields_set contains the field
-        if self.domain is None and "domain" in self.model_fields_set:
-            _dict['domain'] = None
-
-        # set to None if nonce (nullable) is None
-        # and model_fields_set contains the field
-        if self.nonce is None and "nonce" in self.model_fields_set:
-            _dict['nonce'] = None
-
-        # set to None if proof_purpose (nullable) is None
-        # and model_fields_set contains the field
-        if self.proof_purpose is None and "proof_purpose" in self.model_fields_set:
-            _dict['proofPurpose'] = None
-
-        # set to None if verification_method (nullable) is None
-        # and model_fields_set contains the field
-        if self.verification_method is None and "verification_method" in self.model_fields_set:
-            _dict['verificationMethod'] = None
-
-        # set to None if jws (nullable) is None
-        # and model_fields_set contains the field
-        if self.jws is None and "jws" in self.model_fields_set:
-            _dict['jws'] = None
-
         return _dict
 
     @classmethod
@@ -134,7 +94,7 @@ class BoostSendBoostRequestCredentialAnyOfProofAnyOf(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "type": obj.get("type"),
             "created": obj.get("created"),
             "challenge": obj.get("challenge"),
@@ -143,7 +103,9 @@ class BoostSendBoostRequestCredentialAnyOfProofAnyOf(BaseModel):
             "proofPurpose": obj.get("proofPurpose"),
             "verificationMethod": obj.get("verificationMethod"),
             "jws": obj.get("jws")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

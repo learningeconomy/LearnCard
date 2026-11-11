@@ -241,8 +241,8 @@ const ActionSection: React.FC<ActionSectionProps> = ({
             iconTone="emerald"
             defaultOpen={false}
         >
-            <div className="space-y-4">
-                <div className="space-y-1.5">
+            <div className="space-y-v3-4">
+                <div className="space-y-v3-1.5">
                     <label className={LABEL} htmlFor="action-kind">
                         Launch destination
                     </label>
@@ -364,8 +364,8 @@ const InAppRouteEditor: React.FC<{
     value: InAppRouteAction;
     onChange: (next: InAppRouteAction) => void;
 }> = ({ value, onChange }) => (
-    <div className="space-y-3">
-        <div className="space-y-1.5">
+    <div className="space-y-v3-3">
+        <div className="space-y-v3-1.5">
             <label className={LABEL} htmlFor="action-in-app-to">
                 Path
             </label>
@@ -494,9 +494,9 @@ const AppListingEditor: React.FC<{
     const resolved = resolveQuery.data ?? null;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             {/* Listing id input */}
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="action-listing-id">
                     Listing ID
                 </label>
@@ -548,7 +548,7 @@ const AppListingEditor: React.FC<{
             </div>
 
             {/* Quick-pick rail */}
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 <label className={LABEL}>Quick-pick</label>
 
                 <div className="relative">
@@ -629,7 +629,7 @@ const AppListingEditor: React.FC<{
             </div>
 
             {/* Deep-link section — optional */}
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="action-deep-link">
                     Deep link section{' '}
                     <span className="text-grayscale-400 font-normal">
@@ -727,8 +727,8 @@ const AiSessionEditor: React.FC<{
         && value.topicUri.trim() !== terminationTopicUri.trim();
 
     return (
-        <div className="space-y-3">
-            <div className="space-y-1.5">
+        <div className="space-y-v3-3">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="action-ai-topic">
                     Topic URI
                 </label>
@@ -765,7 +765,7 @@ const AiSessionEditor: React.FC<{
                 </div>
             )}
 
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="action-ai-pathway">
                     AI Learning Pathway URI{' '}
                     <span className="text-grayscale-400 font-normal">
@@ -788,7 +788,7 @@ const AiSessionEditor: React.FC<{
                 </p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="action-ai-seed">
                     Seed prompt{' '}
                     <span className="text-grayscale-400 font-normal">
@@ -822,8 +822,8 @@ const ExternalUrlEditor: React.FC<{
     value: ExternalUrlAction;
     onChange: (next: ExternalUrlAction) => void;
 }> = ({ value, onChange }) => (
-    <div className="space-y-3">
-        <div className="space-y-1.5">
+    <div className="space-y-v3-3">
+        <div className="space-y-v3-1.5">
             <label className={LABEL} htmlFor="action-external-url">
                 URL
             </label>
@@ -838,7 +838,7 @@ const ExternalUrlEditor: React.FC<{
             />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-v3-1.5">
             <label className={LABEL} htmlFor="action-external-deep">
                 Mobile deep link{' '}
                 <span className="text-grayscale-400 font-normal">
@@ -887,8 +887,8 @@ const McpToolEditor: React.FC<{
         });
 
     return (
-        <div className="space-y-3">
-            <div className="space-y-1.5">
+        <div className="space-y-v3-3">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="action-mcp-server">
                     Server ID
                 </label>
@@ -903,7 +903,7 @@ const McpToolEditor: React.FC<{
                 />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="action-mcp-tool">
                     Tool name
                 </label>

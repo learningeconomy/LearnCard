@@ -28,6 +28,23 @@ const I18nContext = createContext<I18nContextValue | null>(null);
  * inside its own catalog/resolver.
  */
 export const EN_DEFAULTS: Record<string, string> = {
+    'inAppMessages.next': 'Next',
+    'inAppMessages.previous': 'Previous',
+    'inAppMessages.done': 'Done',
+    'inAppMessages.progress': 'Story progress',
+    'inAppMessages.error': 'Something went wrong. Please try again.',
+    'inAppMessages.retry': 'Try Again',
+    'inAppMessages.loading': 'Loading…',
+    'inAppMessages.opening': 'Opening…',
+    'inAppMessages.checking': 'Checking…',
+    'inAppMessages.downloading': 'Downloading… {progress}%',
+    'inAppMessages.installing': 'Installing…',
+    'inAppMessages.upToDate': "You're on the latest version.",
+    'consentAudience.title': 'Review who receives your data',
+    'consentAudience.description':
+        'Your selected information will be available to everyone listed below.',
+    'consentAudience.confirm': 'Confirm Sharing',
+    'consentAudience.cancel': 'Cancel',
     'common.close': 'Close',
     'common.select': 'Select',
     'verification.selfIssued': 'Self Issued',
@@ -37,9 +54,12 @@ export const EN_DEFAULTS: Record<string, string> = {
     'verification.untrustedIssuer': 'Untrusted Issuer',
     'credential.lifecycle.revoked': 'Revoked',
     'credential.lifecycle.suspended': 'Suspended',
+    'credential.lifecycle.expired': 'Expired',
+    'credential.expires': 'Expires',
     'credential.category.badge': 'Badge',
     'credential.category.family': 'Family',
     'credential.category.achievement': 'Achievement',
+    'credential.category.qualifications': 'Qualification',
     'credential.category.course': 'Course',
     'credential.category.membership': 'Membership',
     'credential.category.skill': 'Skill',
@@ -55,6 +75,19 @@ export const EN_DEFAULTS: Record<string, string> = {
 };
 
 /**
+ * Canonicalizes a BCP-47 locale and uses English for malformed input.
+ * Validation also rejects request delimiters in crafted storage values, keeping
+ * the locale safe for backend request parameters as well as Intl formatters.
+ */
+export const normalizeLocale = (value: string): string => {
+    try {
+        return Intl.getCanonicalLocales(value)[0] ?? 'en';
+    } catch {
+        return 'en';
+    }
+};
+
+/**
  * The user's active language as a plain BCP-47 string, read from the same
  * localStorage key the app's i18n writes (`i18n.language`). For non-React call
  * sites (network mutations, WebSocket setup) that need to tell the backend
@@ -65,11 +98,7 @@ export const getActiveLocale = (): string => {
         if (typeof localStorage !== 'undefined') {
             const raw = localStorage.getItem('i18n.language');
             if (raw) {
-                // Strip anything that isn't a valid BCP-47 character (alphanumeric +
-                // hyphen) before this value is sent to the backend. A crafted
-                // localStorage entry — e.g. via XSS — must not be able to alter
-                // request parameters. An all-invalid value collapses to 'en'.
-                return raw.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
+                return normalizeLocale(raw);
             }
         }
     } catch {
@@ -79,7 +108,7 @@ export const getActiveLocale = (): string => {
     try {
         const liveLocale =
             typeof document !== 'undefined' ? document.documentElement?.lang : undefined;
-        if (liveLocale) return liveLocale.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
+        if (liveLocale) return normalizeLocale(liveLocale);
     } catch {
         // document may be unavailable (native/SSR) — default to English.
     }

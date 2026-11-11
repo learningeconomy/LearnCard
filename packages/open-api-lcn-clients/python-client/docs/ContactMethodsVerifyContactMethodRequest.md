@@ -1,11 +1,10 @@
 # ContactMethodsVerifyContactMethodRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**token** | **str** |  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **token** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ contact_methods_verify_contact_method_request_dict = contact_methods_verify_cont
 # create an instance of ContactMethodsVerifyContactMethodRequest from a dict
 contact_methods_verify_contact_method_request_from_dict = ContactMethodsVerifyContactMethodRequest.from_dict(contact_methods_verify_contact_method_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

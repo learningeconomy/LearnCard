@@ -1,25 +1,26 @@
 # ActivityGetActivityChain200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**activity_id** | **str** |  | 
-**event_type** | **str** |  | 
-**timestamp** | **str** |  | 
-**actor_profile_id** | **str** |  | 
-**recipient_type** | **str** |  | 
-**recipient_identifier** | **str** |  | 
-**boost_uri** | **str** |  | [optional] 
-**credential_uri** | **str** |  | [optional] 
-**inbox_credential_id** | **str** |  | [optional] 
-**integration_id** | **str** |  | [optional] 
-**source** | **str** |  | 
-**metadata** | **Dict[str, object]** |  | [optional] 
-**boost** | [**ActivityGetActivity200ResponseBoost**](ActivityGetActivity200ResponseBoost.md) |  | [optional] 
-**recipient_profile** | [**ActivityGetActivity200ResponseRecipientProfile**](ActivityGetActivity200ResponseRecipientProfile.md) |  | [optional] 
+| Name                     | Type                                                                                                    | Description | Notes      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **id**                   | **str**                                                                                                 |             |
+| **activity_id**          | **str**                                                                                                 |             |
+| **event_type**           | **str**                                                                                                 |             |
+| **timestamp**            | **str**                                                                                                 |             |
+| **actor_profile_id**     | **str**                                                                                                 |             | [optional] |
+| **on_behalf_of**         | **str**                                                                                                 |             | [optional] |
+| **recipient_type**       | **str**                                                                                                 |             |
+| **recipient_identifier** | **str**                                                                                                 |             |
+| **boost_uri**            | **str**                                                                                                 |             | [optional] |
+| **credential_uri**       | **str**                                                                                                 |             | [optional] |
+| **inbox_credential_id**  | **str**                                                                                                 |             | [optional] |
+| **integration_id**       | **str**                                                                                                 |             | [optional] |
+| **source**               | **str**                                                                                                 |             |
+| **metadata**             | **Dict[str, Optional[object]]**                                                                         |             | [optional] |
+| **status**               | **str**                                                                                                 |             | [optional] |
+| **boost**                | [**ActivityGetActivity200ResponseBoost**](ActivityGetActivity200ResponseBoost.md)                       |             | [optional] |
+| **recipient_profile**    | [**ActivityGetActivity200ResponseRecipientProfile**](ActivityGetActivity200ResponseRecipientProfile.md) |             | [optional] |
 
 ## Example
 
@@ -38,6 +39,5 @@ activity_get_activity_chain200_response_inner_dict = activity_get_activity_chain
 # create an instance of ActivityGetActivityChain200ResponseInner from a dict
 activity_get_activity_chain200_response_inner_from_dict = ActivityGetActivityChain200ResponseInner.from_dict(activity_get_activity_chain200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

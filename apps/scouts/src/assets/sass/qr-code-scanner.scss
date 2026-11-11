@@ -34,3 +34,68 @@
         opacity: 0.55;
     }
 }
+// ML Kit renders the camera beneath the WebView. Keep the scanner controls
+// visible while hiding routes, modal backdrops, and other app chrome.
+body.scanner-active {
+    visibility: hidden;
+    background: transparent !important;
+    --background: transparent;
+    --ion-background-color: transparent;
+
+    #root,
+    ion-app {
+        background: transparent !important;
+    }
+
+    // A portal or component can override inherited visibility. Keep every
+    // background descendant hidden (and out of focus/accessibility navigation).
+    :not(.qr-code-scanner-overlay, .qr-code-scanner-overlay *) {
+        visibility: hidden !important;
+    }
+
+    .qr-code-scanner-overlay {
+        visibility: visible;
+    }
+}
+
+// Keep scanner notices compact, with a gutter even on narrow phones.
+#center-modal.scanner-notice-modal {
+    --lc-gutter: 20px;
+    padding-inline: 20px;
+
+    &.open {
+        background-color: rgba(24, 34, 78, 0.24);
+        backdrop-filter: blur(6px);
+    }
+
+    & > section {
+        width: 100%;
+        max-width: 380px;
+        max-height: 100%;
+        padding: 0 !important;
+        border-radius: 20px;
+        box-shadow: 0 16px 48px rgba(24, 34, 78, 0.16);
+        animation: scanner-notice-intro 180ms ease-out;
+        transition: transform 180ms ease-out;
+    }
+}
+
+@keyframes scanner-notice-intro {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #center-modal.scanner-notice-modal,
+    #center-modal.scanner-notice-modal > section {
+        animation: none;
+        transition: none;
+    }
+}

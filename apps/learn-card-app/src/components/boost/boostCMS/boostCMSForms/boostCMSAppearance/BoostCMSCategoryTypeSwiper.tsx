@@ -33,6 +33,7 @@ const BoostVCTypeSwiper: React.FC<{
     }, [boostUserType]);
 
     const width = useScreenWidth(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const swiperRef = useRef<any>();
 
     const [prevEl] = useState<HTMLElement | null>(null);
@@ -121,8 +122,10 @@ const BoostVCTypeSwiper: React.FC<{
             {_boostVCTypeOptions &&
                 _boostVCTypeOptions.map(
                     ({ title, IconComponent, type, iconCircleClass }, index) => {
-                        let bgColor = type === activeCategoryType ? `bg-grayscale-100` : 'bg-white';
+                        const bgColor =
+                            type === activeCategoryType ? `bg-grayscale-100` : 'bg-white';
 
+                        // eslint-disable-next-line no-unsafe-optional-chaining -- existing expression; guarding it changes what this returns or throws
                         const { Icon, IconWithShape } = getThemedCategoryIcons?.(type);
 
                         // ! dont show the family category in the boost cms
@@ -132,6 +135,7 @@ const BoostVCTypeSwiper: React.FC<{
                         )
                             return <></>;
 
+                        // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
                         let icon = null;
 
                         if (IconWithShape) {

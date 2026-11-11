@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { IonPopover } from '@ionic/react';
 import { Info } from 'lucide-react';
 
-import type { SourceMappedField } from '../../helpers/clrRenderer.helpers';
+import type { SourceMappedField } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrSourceInfo: React.FC<{
     field?: SourceMappedField<unknown>;
@@ -37,7 +37,7 @@ const ClrSourceInfo: React.FC<{
                     setIsOpen(false);
                     setPopoverEvent(undefined);
                 }}
-                className="[--max-width:calc(100vw_-_2rem)] [--width:16rem]"
+                className="[--max-width:calc(100vw-2rem)] [--width:16rem]"
             >
                 <div className="rounded-xl bg-white p-3">
                     <p className="text-xs font-medium text-grayscale-700">{field.specField}</p>

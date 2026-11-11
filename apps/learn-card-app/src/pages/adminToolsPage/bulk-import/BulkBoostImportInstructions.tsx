@@ -5,6 +5,7 @@ const BulkBoostImportInstructions: React.FC = () => {
         <ol className="flex flex-col w-[550px] mx-auto">
             <li>
                 1. Fill out this{' '}
+                {/* eslint-disable-next-line react/jsx-no-target-blank -- adding rel=noreferrer changes referrer behavior */}
                 <a
                     className="text-blue-700 underline"
                     target="_blank"

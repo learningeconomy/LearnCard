@@ -54,7 +54,7 @@ const ArtifactCountEditor: React.FC<{
     onChange: (next: Termination) => void;
 }> = ({ value, onChange }) => (
     <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
+        <div className="space-y-v3-1.5">
             <label className={LABEL} htmlFor="term-count">
                 How many
             </label>
@@ -71,7 +71,7 @@ const ArtifactCountEditor: React.FC<{
             />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-v3-1.5">
             <label className={LABEL} htmlFor="term-type">
                 Of what
             </label>

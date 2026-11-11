@@ -1,11 +1,10 @@
 # AppStoreAdminUpdatePromotionLevelRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**promotion_level** | **str** |  | 
+| Name                | Type    | Description | Notes |
+| ------------------- | ------- | ----------- | ----- |
+| **promotion_level** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ app_store_admin_update_promotion_level_request_dict = app_store_admin_update_pro
 # create an instance of AppStoreAdminUpdatePromotionLevelRequest from a dict
 app_store_admin_update_promotion_level_request_from_dict = AppStoreAdminUpdatePromotionLevelRequest.from_dict(app_store_admin_update_promotion_level_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -75,7 +75,7 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
         >
             <div
                 onClick={handleClick}
-                className={`${notificationCardStyles.shell} min-h-[100px] gap-3 !items-center cursor-pointer`}
+                className={`${notificationCardStyles.shell} min-h-[100px] gap-3 items-center! cursor-pointer`}
             >
                 {/* Icon */}
                 <div className={`${notificationCardStyles.iconChip} ${chipColor}`}>

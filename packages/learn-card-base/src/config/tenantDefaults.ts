@@ -28,6 +28,8 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
 
     devDomain: 'localhost:3000',
 
+    stage: 'production',
+
     apis: {
         brainService: 'https://network.learncard.com/trpc',
         brainServiceApi: 'https://network.learncard.com/api',
@@ -56,7 +58,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         },
 
         sss: {
-            serverUrl: 'https://api.learncard.app/trpc',
+            serverUrl: 'https://api.learncard.app/api',
             escrowRelayPublicKey: '',
             escrowRelayKeyId: '',
             escrowEnclaveMode: 'off',
@@ -97,15 +99,22 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
     },
 
     features: {
+        contractRequests: false,
         aiFeatures: true,
         appStore: true,
         analytics: true,
         themeSwitching: true,
         introSlides: true,
         launchPadQuickActions: true,
+        classlinkSso: false,
+        classlinkTranscriptOptIn: false,
+        classlinkPersonalEmail: false,
+        schoolConnect: false,
         pathways: false,
         dashboardHome: false,
         useSeededSkillFrameworks: false,
+        escrowRolloutPercent: 0,
+        escrowRolloutAllowlist: [],
         samplePersonas: [],
         legacySamplePersonaContractUris: [],
     },
@@ -136,6 +145,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         privacyPolicyUrl: 'https://www.learncard.com/learncard-privacy-policy',
         contactUrl: 'https://www.learningeconomy.io/contact',
         websiteUrl: 'https://www.learncard.com/',
+        supportEmail: 'support@learningeconomy.io',
     },
 
     native: {

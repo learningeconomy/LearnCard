@@ -1,0 +1,5 @@
+/* The surface owns insets; this bounds the desktop list and keeps controls in flow. */
+#center-modal > .verifier-history-modal {
+    height: 75%;
+    overflow: hidden;
+}

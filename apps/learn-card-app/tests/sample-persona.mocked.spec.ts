@@ -1,11 +1,11 @@
 import { initLearnCard } from '@learncard/init';
 import { getBundle, getFixture, prepareFixture } from '@learncard/credential-library';
-import type { VC } from '@learncard/types';
 
 import { expect, test } from './fixtures/mocked-test';
 
 import { TEST_USER_PROFILE_ID, TEST_USER_SEED } from './constants';
 import { installNetwork } from './mocks/network';
+import type { BrainOutputs, CloudOutputs } from './mocks/trpc';
 import { mockLaunchDarkly } from './route.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
 
@@ -97,16 +97,21 @@ test.beforeAll(async () => {
 });
 
 test.describe('Sample persona @mocked', () => {
-    test('adds sample credentials, shows the persistent sample state, and removes it', async ({
-        page,
-    }) => {
+    test.beforeEach(async ({ page }) => {
         await mockLaunchDarkly(page, {
             enableNewDemoFlow: { value: true },
         });
         const trpc = await installNetwork(page);
         let hasSample = false;
 
-        trpc.on('profile.getProfile', () => ({
+        // The HAR only recorded this identity read alongside user.getDids.
+        // It can also batch with index.get while sample setup or reload is in flight.
+        trpc.on(
+            'utilities.getDid',
+            () => 'did:web:localhost%3A4100' satisfies CloudOutputs['utilities']['getDid']
+        );
+
+        const userProfile = {
             profileId: TEST_USER_PROFILE_ID,
             did: testUserDid,
             displayName: 'Mocked User',
@@ -114,8 +119,57 @@ test.describe('Sample persona @mocked', () => {
             bio: '',
             dob: '1990-01-01',
             country: 'US',
-        }));
+        } satisfies BrainOutputs['profile']['getProfile'];
+        trpc.on('profile.getProfile', () => userProfile);
         trpc.on('profile.updateProfile', () => true);
+        trpc.on('campaigns.isAdmin', () => false satisfies BrainOutputs['campaigns']['isAdmin']);
+        // Reload batches consent reads with these dashboard queries. The tRPC mock
+        // falls back for the whole batch if any procedure is missing, and the HAR
+        // cannot replay the new batch with this test's persisted sample state.
+        trpc.on(
+            'profile.getOtherProfile',
+            () => userProfile satisfies BrainOutputs['profile']['getOtherProfile']
+        );
+        trpc.on(
+            'profile.pendingConnectionPrompts',
+            () => [] satisfies BrainOutputs['profile']['pendingConnectionPrompts']
+        );
+        trpc.on(
+            'boost.getPaginatedBoosts',
+            () =>
+                ({
+                    records: [],
+                    hasMore: false,
+                }) satisfies BrainOutputs['boost']['getPaginatedBoosts']
+        );
+        trpc.on(
+            'activity.getMyActivities',
+            () =>
+                ({
+                    records: [],
+                    hasMore: false,
+                }) satisfies BrainOutputs['activity']['getMyActivities']
+        );
+        trpc.on(
+            'inbox.getMyInboxDeliveries',
+            () =>
+                ({
+                    records: [],
+                    hasMore: false,
+                }) satisfies BrainOutputs['inbox']['getMyInboxDeliveries']
+        );
+        trpc.on(
+            'skillFrameworks.getAllAvailableFrameworks',
+            () =>
+                ({
+                    records: [],
+                    hasMore: false,
+                }) satisfies BrainOutputs['skillFrameworks']['getAllAvailableFrameworks']
+        );
+        trpc.on(
+            'activity.getMyCredentialLifecycleStatuses',
+            () => ({}) satisfies BrainOutputs['activity']['getMyCredentialLifecycleStatuses']
+        );
         trpc.on('contracts.getConsentFlowContract', () => contract);
         trpc.on('contracts.getConsentedContracts', () => ({
             hasMore: false,
@@ -145,14 +199,16 @@ test.describe('Sample persona @mocked', () => {
         }));
         trpc.on('contracts.getCredentialsForContract', () => ({
             hasMore: false,
-            records: autoBoostUris.map((boostUri, index) => ({
-                credentialUri: `lc:cloud:localhost%3A4100/trpc:credential:sample-persona-${index}`,
-                termsUri,
-                contractUri,
-                boostUri,
-                category: 'Achievement',
-                date: '2026-09-17T00:00:00.000Z',
-            })),
+            records: hasSample
+                ? autoBoostUris.map((boostUri, index) => ({
+                      credentialUri: `lc:cloud:localhost%3A4100/trpc:credential:sample-persona-${index}`,
+                      termsUri,
+                      contractUri,
+                      boostUri,
+                      category: 'Achievement',
+                      date: '2026-09-17T00:00:00.000Z',
+                  }))
+                : [],
         }));
         trpc.on('contracts.withdrawConsent', () => {
             hasSample = false;
@@ -181,10 +237,15 @@ test.describe('Sample persona @mocked', () => {
             contractsUpdated: 0,
             removedSharedUris: 0,
         }));
+    });
 
+    test('adds sample credentials, shows the persistent sample state, and removes it', async ({
+        page,
+    }) => {
         await waitForAuthenticatedState(page, {
             path: '/wallet',
             profileId: TEST_USER_PROFILE_ID,
+            waitUntil: 'commit',
         });
 
         await page.getByRole('button', { name: /Build My LearnCard/ }).click();
@@ -196,9 +257,15 @@ test.describe('Sample persona @mocked', () => {
         const removeButton = sampleCard.getByRole('button', {
             name: 'Remove sample credentials',
         });
-        await expect(removeButton).toBeVisible({ timeout: 30_000 });
 
-        await page.reload();
+        // Consent makes Remove visible before credential synchronization finishes.
+        // The add flow closes this dialog only after synchronization has completed.
+        await expect(page.getByRole('dialog', { name: 'Build My LearnCard' })).not.toBeVisible({
+            timeout: 30_000,
+        });
+
+        // The button below proves app readiness; unrelated resources need not finish loading.
+        await page.reload({ waitUntil: 'commit' });
         await expect(page.getByRole('button', { name: /Build My LearnCard/ })).toBeVisible({
             timeout: 30_000,
         });
@@ -206,6 +273,7 @@ test.describe('Sample persona @mocked', () => {
         await expect(page.getByRole('heading', { name: 'Sample LearnCard' })).toBeVisible({
             timeout: 30_000,
         });
+        await expect(removeButton).toBeVisible({ timeout: 30_000 });
         await removeButton.click();
         await page
             .getByRole('dialog')
@@ -216,17 +284,23 @@ test.describe('Sample persona @mocked', () => {
         await expect(page.getByRole('button', { name: 'Sync My School' })).toBeVisible({
             timeout: 30_000,
         });
+    });
 
+    test('keeps the legacy school flow when the new demo flag is disabled', async ({ page }) => {
         await page.unroute(/.*\.launchdarkly\..*/);
         await mockLaunchDarkly(page, {
             enableNewDemoFlow: { value: false },
         });
-        await page.reload();
+        await waitForAuthenticatedState(page, {
+            path: '/wallet',
+            profileId: TEST_USER_PROFILE_ID,
+            waitUntil: 'commit',
+        });
         await page.getByRole('button', { name: /Build My LearnCard/ }).click();
 
         await expect(page.getByRole('heading', { name: 'Demo School' })).toBeVisible({
             timeout: 30_000,
         });
-        await expect(sampleCard).toHaveCount(0);
+        await expect(page.getByRole('region', { name: 'See an example LearnCard' })).toHaveCount(0);
     });
 });

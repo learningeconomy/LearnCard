@@ -23,7 +23,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
     });
     const openSeedPhraseModal = () => {
         newModal(<SeedPhraseModal />, {
-            sectionClassName: '!max-w-[500px]',
+            sectionClassName: 'max-w-[500px]!',
             hideButton: true,
         });
     };
@@ -85,7 +85,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                 {!hideSelfCustodialLogin && (
                     <IonCol
                         size="12"
-                        className="w-full flex flex-col items-center justify-center text-center mt-[20px] space-y-[4px] "
+                        className="w-full flex flex-col items-center justify-center text-center mt-[20px] space-y-v3-[4px] "
                     >
                         <p className="text-white font-medium text-base">
                             {m['login.footer.selfCustodialLogin']()}

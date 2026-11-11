@@ -1,14 +1,13 @@
 # BoostSearchSkillsAvailableForBoostRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**query** | [**BoostSearchSkillsAvailableForBoostRequestQuery**](BoostSearchSkillsAvailableForBoostRequestQuery.md) |  | 
-**limit** | **int** |  | [optional] [default to 50]
-**cursor** | **str** |  | [optional] 
+| Name       | Type                                                                                                    | Description | Notes                      |
+| ---------- | ------------------------------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **uri**    | **str**                                                                                                 |             |
+| **query**  | [**BoostSearchSkillsAvailableForBoostRequestQuery**](BoostSearchSkillsAvailableForBoostRequestQuery.md) |             |
+| **limit**  | **int**                                                                                                 |             | [optional] [default to 50] |
+| **cursor** | **str**                                                                                                 |             | [optional]                 |
 
 ## Example
 
@@ -27,6 +26,5 @@ boost_search_skills_available_for_boost_request_dict = boost_search_skills_avail
 # create an instance of BoostSearchSkillsAvailableForBoostRequest from a dict
 boost_search_skills_available_for_boost_request_from_dict = BoostSearchSkillsAvailableForBoostRequest.from_dict(boost_search_skills_available_for_boost_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

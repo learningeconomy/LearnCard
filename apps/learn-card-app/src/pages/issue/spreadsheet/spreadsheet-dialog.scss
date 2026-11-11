@@ -1,0 +1,30 @@
+// Modal surfaces retain inset ownership; only constrain this workspace's dimensions.
+#center-modal.issue-spreadsheet-dialog > section {
+    width: calc(100% - 48px);
+    max-width: 1100px;
+    height: min(900px, 90dvh);
+    max-height: 90dvh;
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#full-screen-modal.issue-spreadsheet-dialog > section {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#center-modal.issue-spreadsheet-completion > section {
+    width: calc(100% - 32px);
+    max-width: 440px;
+    max-height: 90dvh;
+    border-radius: 20px;
+    overflow-y: auto;
+}

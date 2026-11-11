@@ -957,10 +957,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             {/* Info */}
             <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <FileStack className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <FileStack className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
 
                 <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">
@@ -973,13 +973,13 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             {/* Editing hint when a template is expanded */}
             {expandedId && localTemplates.some(t => t.id === expandedId && t.isNew) && (
                 <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <AlertCircle className="w-4 h-4 shrink-0" />
                     <span>{m['developerPortal.onboarding.templateBuilder.editingHint']()}</span>
                 </div>
             )}
 
             {/* Templates */}
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 {localTemplates.map(template => (
                     <div key={template.id}>
                         {/* Master Template with Children */}
@@ -1031,7 +1031,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 {expandedId === template.id && (
                                     <div className="p-4 bg-white border-t border-violet-200">
                                         {/* Master Template Info */}
-                                        <div className="mb-4 p-3 bg-violet-50 rounded-lg space-y-2">
+                                        <div className="mb-4 p-3 bg-violet-50 rounded-lg space-y-v3-2">
                                             {(() => {
                                                 const issuanceFieldMap = ISSUANCE_FIELDS.reduce(
                                                     (acc, f) => ({ ...acc, [f.id]: f }),
@@ -1101,7 +1101,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         </div>
 
                                         {/* Child Templates List */}
-                                        <div className="space-y-2">
+                                        <div className="space-y-v3-2">
                                             <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                                                 <span className="font-medium">
                                                     {m[
@@ -1112,13 +1112,13 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                 </span>
                                             </div>
 
-                                            <div className="max-h-64 overflow-y-auto space-y-2">
+                                            <div className="max-h-64 overflow-y-auto space-y-v3-2">
                                                 {template.childTemplates?.map((child, idx) => (
                                                     <div
                                                         key={child.id}
                                                         className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 group"
                                                     >
-                                                        <span className="w-6 h-6 bg-gray-200 rounded text-xs flex items-center justify-center text-gray-600 font-medium">
+                                                        <span className="w-6 h-6 bg-gray-200 rounded-sm text-xs flex items-center justify-center text-gray-600 font-medium">
                                                             {idx + 1}
                                                         </span>
 
@@ -1302,7 +1302,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         </div>
 
                         {/* Modal Body */}
-                        <div className="flex-1 overflow-auto p-4 space-y-6">
+                        <div className="flex-1 overflow-auto p-4 space-y-v3-6">
                             {/* Explanation */}
                             <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
                                 <p className="font-medium mb-1">
@@ -1413,7 +1413,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     </span>
                                 </div>
 
-                                <div className="space-y-2">
+                                <div className="space-y-v3-2">
                                     {csvColumns.map(column => {
                                         const mapping = columnMappings[column] || 'skip';
                                         const sampleValue = csvSampleRows[0]?.[column] || '';
@@ -1442,7 +1442,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                 </div>
 
                                                 <ArrowDown
-                                                    className={`w-4 h-4 flex-shrink-0 ${
+                                                    className={`w-4 h-4 shrink-0 ${
                                                         mapping === 'skip'
                                                             ? 'text-gray-300'
                                                             : 'text-emerald-500'
@@ -1457,7 +1457,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                             [column]: e.target.value,
                                                         }))
                                                     }
-                                                    className={`px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+                                                    className={`px-3 py-2 text-sm border rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500 ${
                                                         mapping === 'skip'
                                                             ? 'border-gray-300 bg-white'
                                                             : 'border-emerald-300 bg-white'
@@ -1546,7 +1546,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                                 [field.id]: e.target.checked,
                                                             }))
                                                         }
-                                                        className="w-4 h-4 rounded border-gray-300 text-violet-500 focus:ring-2 focus:ring-violet-500"
+                                                        className="w-4 h-4 rounded-sm border-gray-300 text-violet-500 focus:ring-2 focus:ring-violet-500"
                                                     />
 
                                                     <div className="flex-1">
@@ -1554,7 +1554,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                             <span className="font-medium text-gray-800 text-sm">
                                                                 {field.label}
                                                             </span>
-                                                            <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-violet-100 text-violet-700">
+                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-sm font-medium bg-violet-100 text-violet-700">
                                                                 {m[
                                                                     'developerPortal.onboarding.templateBuilder.csvDynamic'
                                                                 ]()}
@@ -1566,7 +1566,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                     </div>
 
                                                     {isIncluded && (
-                                                        <code className="text-xs text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded">
+                                                        <code className="text-xs text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded-sm">
                                                             {`{{${field.id}}}`}
                                                         </code>
                                                     )}
@@ -1579,7 +1579,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 {/* System fields - informational only */}
                                 <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-cyan-100 text-cyan-700">
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-sm font-medium bg-cyan-100 text-cyan-700">
                                             {m[
                                                 'developerPortal.onboarding.templateBuilder.csvSystem'
                                             ]()}
@@ -1590,7 +1590,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                             ]()}
                                         </span>
                                     </div>
-                                    <div className="space-y-1">
+                                    <div className="space-y-v3-1">
                                         {ISSUANCE_FIELDS.filter(f => f.type === 'system').map(
                                             field => (
                                                 <div
@@ -1617,7 +1617,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     {m['developerPortal.onboarding.templateBuilder.csvPreview']()}
                                 </h4>
 
-                                <div className="space-y-2">
+                                <div className="space-y-v3-2">
                                     {csvSampleRows.slice(0, 3).map((row, idx) => {
                                         const nameCol = Object.entries(columnMappings).find(
                                             ([_, type]) => type === 'achievement.name'
@@ -1743,13 +1743,13 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             <div className="flex-1">
                                 {childValidationStatus === 'invalid' && childValidationError && (
                                     <div className="flex items-start gap-2 text-sm text-red-700">
-                                        <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                        <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
                                         <span className="line-clamp-2">{childValidationError}</span>
                                     </div>
                                 )}
                                 {childValidationStatus === 'unknown' && (
                                     <div className="flex items-center gap-2 text-sm text-gray-500">
-                                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                        <AlertCircle className="w-4 h-4 shrink-0" />
                                         <span>
                                             {m[
                                                 'developerPortal.onboarding.templateBuilder.childValidateHint'
@@ -1759,7 +1759,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 )}
                                 {childValidationStatus === 'valid' && (
                                     <div className="flex items-center gap-2 text-sm text-emerald-600">
-                                        <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                                        <CheckCircle className="w-4 h-4 shrink-0" />
                                         <span>
                                             {m[
                                                 'developerPortal.onboarding.templateBuilder.childValidated'

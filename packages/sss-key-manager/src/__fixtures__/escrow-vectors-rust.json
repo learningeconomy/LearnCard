@@ -1,0 +1,82 @@
+{
+    "enclave": {
+        "publicKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECVRoc4kHR3+X+iXmKIV9/iMO9qvg8HUkImCcysqCx/VL0fEDRtfEBjczuzZN4gynIZyZLdwpjbCA8cWXjcAbKg==",
+        "privateKey": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgbhFeSMtxwXqJIj6OWV0dHcWnEmgEM9wtsjuUUOdaPeqhRANCAAQJVGhziQdHf5f6JeYohX3+Iw72q+DwdSQiYJzKyoLH9UvR8QNG18QGNzO7Nk3iDKchnJkt3CmNsIDxxZeNwBsq"
+    },
+    "blobs": [
+        {
+            "plaintext": {
+                "version": 1,
+                "recoveryShare": "abcde",
+                "did": "did:example:legacy",
+                "shareVersion": 1
+            },
+            "envelope": {
+                "version": 1,
+                "algorithm": "P-256-HKDF-SHA256-AES-256-GCM",
+                "keyId": "rust-key.1",
+                "ephemeralPublicKey": "BPwtxvI3oAEajX0fj/jul5WHsViEp7BV6A4ivXhkgtWenYc2Ouo2TuZOYHsbc++3CGA4QXQPiCxQnqkPPrwUByI=",
+                "salt": "dKH9sN2lp60pdk1uXy3hLwqIEbEhrJv6lVKgp8G0ziY=",
+                "iv": "nUjpAFLA61XUv6IU",
+                "ciphertext": "fTRtp3brvlYAuB8Ta4ktH1AKFNd42QXnh/BMCgvdd6KMXMPP5veaixxM5Givr5oD2TChw/hyamMR6Rv5RZI33Pkk/DEYLmZl4NVCi70w/alrDIaP0XVKLAFtIm7MZDvYhw=="
+            }
+        },
+        {
+            "plaintext": {
+                "version": 1,
+                "recoveryShare": "0001abababababababababababababababababababababababababababababababababababababababababababababababab",
+                "did": "did:example:pin",
+                "shareVersion": 42,
+                "pinVerifier": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+            },
+            "envelope": {
+                "version": 1,
+                "algorithm": "P-256-HKDF-SHA256-AES-256-GCM",
+                "keyId": "rust-key.1",
+                "ephemeralPublicKey": "BAk7irFe8DkxDb/fWm/VF9muFjIoVW6/xt6Nza4eEJc5c0GR8Y3SzTZHhpWRYcPXPkKRizHt0r+AJT+MQTiF60U=",
+                "salt": "4OQwfSWhLI2OExTkJ/1DrYN5/m2sdyXQgd8PXQ+PEYw=",
+                "iv": "53dwpmMCTVw/cK+y",
+                "ciphertext": "gJbHdZ68WA3X0HSH8qcfuPsCk0ewPbMc1O9D+jndB6KoG4BpuJK10D3tF0Y2MahZQnIhuxSmyaMkO7UGESuXJZ5WUYT8i5cLQt7aWfLTmMSqKBzr6ZEGQnWjXfaCfjkwhMQ1mw3XrCwtPocJDbyh6YKRuslNqapAPg9pjNSO8HyMQku3OzBajLLSVgpSiCmP+baq0bESwdGRtoSR45TwhO2M/Ku5TKS4mhkhc1blglsT4PlS4pmGBTx4chyiAIKplimZOiNcHMV3o/3ffqF4OFHU1C0oWz2T8pd1DOOoqcSAahw3Aus3pUPxtd7GC1q1/uoY2EqqMb57nE7TU8LlMVxOC+HmJagjWGf7GkLzpg=="
+            }
+        }
+    ],
+    "releases": [
+        {
+            "plaintext": {
+                "version": 1,
+                "recoveryShare": "abcde",
+                "did": "did:example:legacy",
+                "shareVersion": 1,
+                "holdId": "hold-0.test_1"
+            },
+            "envelope": {
+                "version": 1,
+                "algorithm": "P-256-HKDF-SHA256-AES-256-GCM",
+                "keyId": "client",
+                "ephemeralPublicKey": "BN2LoJ9k9yh5SR5063D0jtiO7KoBBrExFnhdF4+Kf0I9sAzEG/mahOBt70qzcTmLoYMyVgydQqGRZfKkaYFSIac=",
+                "salt": "ZFpydJ/zt2zPy2iAOwBzn16wiSM/pOri1xNoDU2mLQA=",
+                "iv": "nZ4LNzSu+Z/jXGR4",
+                "ciphertext": "pplV/CIqyJwk9+gBsL5GgNP8iV+phfJA9BnCrsGvUDQ5JNQSehoCh8XRaZbpvVKwP+5SLK/6dg1R2uwe24+/yTF2lS4H/WEZRfeLxdOxeLfAxnhBnVgGBYr+ej2WG8oXq8JmPQcMeR10pkS55qxdqq7W3xYfwTcr1iY="
+            }
+        },
+        {
+            "plaintext": {
+                "version": 1,
+                "recoveryShare": "0001abababababababababababababababababababababababababababababababababababababababababababababababab",
+                "did": "did:example:pin",
+                "shareVersion": 42,
+                "pinVerifier": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+                "holdId": "hold-1.test_1"
+            },
+            "envelope": {
+                "version": 1,
+                "algorithm": "P-256-HKDF-SHA256-AES-256-GCM",
+                "keyId": "client",
+                "ephemeralPublicKey": "BHVxS4Dg37HGkVi6wdP40EmflisEuT7tlPH3/FsHJFK6+pJ579HDa/t24+PeciTjO5OvJvzKwBZNhsA0sy20AnA=",
+                "salt": "Dbun+NEj/gq+Ru8icMGzBq4KKgjvS+qIj6nEnzol40I=",
+                "iv": "KLZ97qA9/jwJ+F3b",
+                "ciphertext": "H/VkToIgIszzXBhdvdFZdYIt9dFzfELqDaULp+pPA1a3MOOavtUMvgl1JB6LNOjD30VEKgS5Y5Oripg1sWdk7cTY84JcvgY5sxUuz86h+MmfVeyw5Txh0ljTDSLagxJLOD+WHt0XmGUIcIUe8PAXoASvqEVj9Zud4ZXe/TO4agN8+NnFSkyDgPFDevjKy464LqEom71XbR2po1rBYhWJsCj2AxnvaB5bvPOl9/DjLSGmFi+kxi2C3Nn67LMNdWBKu/KswzUTrkwkQOUXN0JnJIxtV2ekEHxSkyrrUAAsGlci3nzshGH6b30bntIkHY7+2lcUIgv1HbTm6nFuLrgas00YEW+OralLZT5Ecnb1E2H25s8ggp/gc4GvfP9IrltwwYWr9ASY2Hg="
+            }
+        }
+    ]
+}

@@ -1,11 +1,14 @@
 import { createStore } from '@udecode/zustood';
 import { UploadTypesEnum } from 'learn-card-base/react-query/queries/checklist';
+import type { ParsedFileCredential, RawArtifactCredential } from '../types/file-extraction';
 
 export type PendingReviewData = {
-    credentials: Array<{ vc: any; metadata?: { name?: string; category?: string } }>;
-    rawArtifact: any;
-    /** For multi-file uploads (transcripts), additional raw artifacts beyond the first */
-    additionalRawArtifacts?: any[];
+    credentials: ParsedFileCredential[];
+    rawArtifact: RawArtifactCredential;
+    /** Original sources for a multi-file review. */
+    additionalRawArtifacts?: RawArtifactCredential[];
+    /** Confirmed originals, retained so reopening review cannot replace a newer resume. */
+    storedArtifacts?: { id: string; uri: string }[];
 };
 
 export const checklistStore = createStore('checklistStore')<{
@@ -19,6 +22,8 @@ export const checklistStore = createStore('checklistStore')<{
     pendingReview: {
         resume: PendingReviewData | null;
         transcript: PendingReviewData | null;
+        certificate: PendingReviewData | null;
+        diploma: PendingReviewData | null;
     };
 }>(
     {
@@ -32,6 +37,8 @@ export const checklistStore = createStore('checklistStore')<{
         pendingReview: {
             resume: null,
             transcript: null,
+            certificate: null,
+            diploma: null,
         },
     },
     { persist: { name: 'checklistStore', enabled: false } }
@@ -41,7 +48,10 @@ export const checklistStore = createStore('checklistStore')<{
             state.isParsing[type as keyof typeof state.isParsing] = value;
         });
     },
-    setPendingReview: (type: 'resume' | 'transcript', data: PendingReviewData | null) => {
+    setPendingReview: (
+        type: 'resume' | 'transcript' | 'certificate' | 'diploma',
+        data: PendingReviewData | null
+    ) => {
         set.state(state => {
             state.pendingReview[type] = data;
         });

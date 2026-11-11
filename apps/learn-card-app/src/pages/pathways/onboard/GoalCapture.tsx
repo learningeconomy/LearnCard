@@ -35,7 +35,7 @@ const GoalCapture: React.FC<GoalCaptureProps> = ({ initial = '', onContinue, onS
     const trimmed = text.trim();
 
     return (
-        <div className="max-w-md mx-auto px-4 py-10 font-poppins space-y-5">
+        <div className="max-w-md mx-auto px-4 py-10 font-poppins space-y-v3-5">
             <div>
                 <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide mb-1">
                     Step 1 of 3
@@ -52,7 +52,7 @@ const GoalCapture: React.FC<GoalCaptureProps> = ({ initial = '', onContinue, onS
                 </p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <label htmlFor="pathways-goal" className="text-xs font-medium text-grayscale-700">
                     In your own words
                 </label>
@@ -64,7 +64,7 @@ const GoalCapture: React.FC<GoalCaptureProps> = ({ initial = '', onContinue, onS
                     placeholder={PLACEHOLDER}
                     rows={3}
                     className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900
-                               placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500
+                               placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500
                                focus:border-transparent bg-white resize-none font-poppins"
                     maxLength={280}
                 />
@@ -72,7 +72,7 @@ const GoalCapture: React.FC<GoalCaptureProps> = ({ initial = '', onContinue, onS
                 <p className="text-xs text-grayscale-400 text-right">{text.length} / 280</p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 <button
                     type="button"
                     onClick={() => onContinue(trimmed)}

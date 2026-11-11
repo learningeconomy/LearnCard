@@ -104,7 +104,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                     {m['developerPortal.credentialBuilder.associations.noAssociations']()}
                 </p>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {associations.map((assoc, index) => {
                         const sourceAch = achievements.find(
                             a => a.id === assoc.sourceAchievementId
@@ -124,7 +124,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                         return (
                             <div
                                 key={assoc.id}
-                                className="p-3 border border-gray-200 rounded-lg space-y-2"
+                                className="p-3 border border-gray-200 rounded-lg space-y-v3-2"
                             >
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-purple-700">
@@ -135,7 +135,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => removeAssociation(index)}
-                                        className="p-1 text-gray-400 hover:text-red-500 rounded"
+                                        className="p-1 text-gray-400 hover:text-red-500 rounded-sm"
                                     >
                                         <X className="w-3 h-3" />
                                     </button>
@@ -156,7 +156,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                                     sourceAchievementId: e.target.value,
                                                 })
                                             }
-                                            className={`w-full px-3 py-2 pr-8 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white ${
+                                            className={`w-full px-3 py-2 pr-8 text-sm border rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white ${
                                                 sourceError ? 'border-red-300' : 'border-gray-200'
                                             }`}
                                         >
@@ -194,7 +194,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                                     associationType: staticField(e.target.value),
                                                 })
                                             }
-                                            className="w-full px-3 py-2 pr-8 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white"
+                                            className="w-full px-3 py-2 pr-8 text-sm border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white"
                                         >
                                             {CLR2_ASSOCIATION_TYPES.map(type => (
                                                 <option key={type} value={type}>
@@ -221,7 +221,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                                     targetAchievementId: e.target.value,
                                                 })
                                             }
-                                            className={`w-full px-3 py-2 pr-8 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white ${
+                                            className={`w-full px-3 py-2 pr-8 text-sm border rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white ${
                                                 targetError ? 'border-red-300' : 'border-gray-200'
                                             }`}
                                         >
@@ -246,7 +246,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
 
                                 {/* Relationship summary */}
                                 {sourceAch && targetAch && (
-                                    <div className="p-2 bg-purple-50 border border-purple-200 rounded text-xs text-purple-700">
+                                    <div className="p-2 bg-purple-50 border border-purple-200 rounded-sm text-xs text-purple-700">
                                         <span className="font-medium">
                                             {sourceAch.achievement.name.value || 'Source'}
                                         </span>{' '}
@@ -271,7 +271,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                 type="button"
                 onClick={addAssociation}
                 disabled={achievements.length < 2}
-                className="mt-3 flex items-center gap-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-3 flex items-center gap-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-700 rounded-sm hover:bg-purple-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <Plus className="w-3 h-3" />
                 {m['developerPortal.credentialBuilder.associations.addAssociation']()}

@@ -148,7 +148,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
 
                         <button
                             onClick={handleCancelClick}
-                            className={`rounded-[24px] flex items-center justify-center border-[1px] border-grayscale-200 border-solid h-[42px] w-[42px] bg-white font-semibold mr-2 p-[0px] tracking-wide `}
+                            className={`rounded-[24px] flex items-center justify-center border border-grayscale-200 border-solid h-[42px] w-[42px] bg-white font-semibold mr-2 p-0 tracking-wide `}
                             name="notification-view-button"
                         >
                             {!isArchived && (

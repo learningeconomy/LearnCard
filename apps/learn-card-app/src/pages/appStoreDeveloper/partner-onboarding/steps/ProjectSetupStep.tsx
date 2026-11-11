@@ -210,9 +210,9 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
     const projectSelected = !!createdProject;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             {/* Step 1: Project Selection */}
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -268,13 +268,13 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
 
                 {/* Project Selection UI - only when not selected */}
                 {!projectSelected && !integrationsLoading && (
-                    <div className="ml-11 space-y-3">
+                    <div className="ml-11 space-y-v3-3">
                         {/* Existing Integrations */}
                         {existingIntegrations &&
                             existingIntegrations.length > 0 &&
                             !showCreateNew && (
                                 <>
-                                    <div className="space-y-2">
+                                    <div className="space-y-v3-2">
                                         {existingIntegrations.map(integration => (
                                             <button
                                                 key={integration.id}
@@ -328,7 +328,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                         {(!existingIntegrations ||
                             existingIntegrations.length === 0 ||
                             showCreateNew) && (
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 {showCreateNew &&
                                     existingIntegrations &&
                                     existingIntegrations.length > 0 && (
@@ -351,7 +351,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                         placeholder={m[
                                             'developerPortal.onboarding.projectSetup.projectNamePlaceholder'
                                         ]()}
-                                        className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                                        className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden"
                                     />
 
                                     <button
@@ -379,7 +379,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
 
             {/* Step 2: Credentials - only shows after project selected */}
             {projectSelected && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <div className="flex items-center gap-3">
                         <div
                             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -403,7 +403,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                         </div>
                     </div>
 
-                    <div className="ml-11 space-y-4">
+                    <div className="ml-11 space-y-v3-4">
                         {/* Issuer DID - Compact collapsible */}
                         <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <button
@@ -440,7 +440,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                         <button
                                             onClick={handleCopyDid}
                                             disabled={!did}
-                                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
+                                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-sm transition-colors shrink-0"
                                         >
                                             {copiedDid ? (
                                                 <Check className="w-4 h-4 text-emerald-500" />
@@ -460,7 +460,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                         </div>
 
                         {/* API Key */}
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <div className="flex items-center gap-2">
                                 <Key className="w-4 h-4 text-amber-500" />
                                 <span className="text-sm font-medium text-gray-700">
@@ -474,7 +474,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                     {isCreatingGrant ? 'Creating API key...' : 'Loading...'}
                                 </div>
                             ) : apiToken ? (
-                                <div className="space-y-2">
+                                <div className="space-y-v3-2">
                                     <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
                                         <code className="flex-1 text-sm text-gray-600 font-mono truncate">
                                             {showToken ? apiToken : '••••••••••••••••••••••••'}
@@ -482,7 +482,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
 
                                         <button
                                             onClick={() => setShowToken(!showToken)}
-                                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
                                         >
                                             {showToken ? (
                                                 <EyeOff className="w-4 h-4" />
@@ -493,7 +493,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
 
                                         <button
                                             onClick={handleCopyToken}
-                                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
                                         >
                                             {copiedToken ? (
                                                 <Check className="w-4 h-4 text-emerald-500" />
@@ -511,10 +511,10 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                     </p>
                                 </div>
                             ) : (
-                                <div className="space-y-2">
+                                <div className="space-y-v3-2">
                                     {authGrants.length > 0 && (
                                         <>
-                                            <div className="space-y-1.5">
+                                            <div className="space-y-v3-1.5">
                                                 {authGrants.map(grant => (
                                                     <button
                                                         key={grant.id}

@@ -7,7 +7,7 @@ import ClrTranscriptEvidenceList, {
 import StructuredTranscriptView from './StructuredTranscriptView';
 import SparseAcademicRecordView from './SparseAcademicRecordView';
 
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const VerifierInspectionView: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -15,7 +15,7 @@ const VerifierInspectionView: React.FC<{
     const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             <ClrTranscriptWarningsPanel warnings={model.warnings} />
             {model.courses.length > 0 ? (
                 <StructuredTranscriptView model={model} showSource />

@@ -70,7 +70,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
     const thumbnail = getBadgeThumbnail(state);
     const defaultDescription = state.inheritNetworkContent
         ? state.parentID?.basicInfo?.description
-        : state?.basicInfo?.description ?? '';
+        : (state?.basicInfo?.description ?? '');
     const defaultDescriptionNoun =
         rootViewMode === TroopsCMSViewModeEnum.global ||
         rootViewMode === TroopsCMSViewModeEnum.network
@@ -129,7 +129,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                                 onSelect(option);
                                 closeModal();
                             }}
-                            className="flex gap-[10px] items-center py-[12px] text-grayscale-900 border-b-[1px] border-grayscale-200 border-solid last:border-b-0 w-full text-left"
+                            className="flex gap-[10px] items-center py-[12px] text-grayscale-900 border-b border-grayscale-200 border-solid last:border-b-0 w-full text-left"
                         >
                             <span className="font-notoSans text-[17px]">{option}</span>
                             {selected === option && (

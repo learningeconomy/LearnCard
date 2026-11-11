@@ -89,7 +89,7 @@ const FALLBACK_ICON_URL = 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb
 
 const TEXT_INPUT =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 ' +
-    'placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 ' +
+    'placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 ' +
     'focus:border-transparent bg-white font-poppins';
 
 interface QuickBuildWizardProps {
@@ -366,8 +366,8 @@ const IdeaStage: React.FC<{
     canContinue: boolean;
     onContinue: () => void;
 }> = ({ title, goal, onTitleChange, onGoalChange, canContinue, onContinue }) => (
-    <div className="space-y-6">
-        <div className="space-y-1.5">
+    <div className="space-y-v3-6">
+        <div className="space-y-v3-1.5">
             <label htmlFor="qb-title" className="text-xs font-medium text-grayscale-700">
                 What's the journey?
             </label>
@@ -388,7 +388,7 @@ const IdeaStage: React.FC<{
             />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-v3-1.5">
             <label htmlFor="qb-goal" className="text-xs font-medium text-grayscale-700">
                 What does done look like?{' '}
                 <span className="text-grayscale-400 font-normal">(optional)</span>
@@ -444,7 +444,7 @@ const StepsStage: React.FC<{
     creating,
     onCreate,
 }) => (
-    <div className="space-y-3">
+    <div className="space-y-v3-3">
         {steps.map((step, index) =>
             step.kind === 'nested' ? (
                 <NestedStepCard
@@ -545,7 +545,7 @@ const NestedStepCard: React.FC<{
                 {index + 1}
             </span>
 
-            <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="min-w-0 flex-1 space-y-v3-1.5">
                 <input
                     type="text"
                     value={step.title}
@@ -554,7 +554,7 @@ const NestedStepCard: React.FC<{
                     maxLength={80}
                     className="w-full py-2 px-3 border border-grayscale-300 rounded-xl text-sm
                                text-grayscale-900 placeholder:text-grayscale-400 bg-white font-poppins
-                               focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                               focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
 
                 <p className="text-[11px] text-emerald-700 flex items-center gap-1.5">
@@ -630,7 +630,7 @@ const StepCard: React.FC<{
     };
 
     return (
-        <div className="rounded-2xl border border-grayscale-200 bg-white p-3.5 space-y-3">
+        <div className="rounded-2xl border border-grayscale-200 bg-white p-3.5 space-y-v3-3">
             <div className="flex items-start gap-2.5">
                 <span
                     aria-hidden
@@ -649,7 +649,7 @@ const StepCard: React.FC<{
                     maxLength={80}
                     className="flex-1 min-w-0 py-2 px-3 border border-grayscale-300 rounded-xl text-sm
                                text-grayscale-900 placeholder:text-grayscale-400 bg-white font-poppins
-                               focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                               focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
 
                 <button
@@ -698,7 +698,7 @@ const StepCard: React.FC<{
                     </button>
                 </div>
             ) : pickerOpen ? (
-                <div className="pl-8 space-y-2">
+                <div className="pl-8 space-y-v3-2">
                     <div className="relative">
                         <IonIcon
                             icon={searchOutline}
@@ -715,7 +715,7 @@ const StepCard: React.FC<{
                             autoFocus
                             className="w-full py-2 pl-9 pr-3 border border-grayscale-300 rounded-xl text-sm
                                        text-grayscale-900 placeholder:text-grayscale-400 bg-white font-poppins
-                                       focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                       focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                         />
                     </div>
 
@@ -888,9 +888,9 @@ const CompletionControl: React.FC<{
     };
 
     return (
-        <div className="space-y-2.5 rounded-xl border border-grayscale-200 bg-grayscale-10 p-3">
+        <div className="space-y-v3-2.5 rounded-xl border border-grayscale-200 bg-grayscale-10 p-3">
             {appBoosts.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-v3-1.5">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-grayscale-500">
                         Awarded by this app
                     </p>
@@ -915,7 +915,7 @@ const CompletionControl: React.FC<{
                 </div>
             )}
 
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-grayscale-500">
                     A credential you manage
                 </p>
@@ -934,7 +934,7 @@ const CompletionControl: React.FC<{
                         placeholder="Search your credentials"
                         className="w-full py-2 pl-9 pr-3 border border-grayscale-300 rounded-xl text-sm
                                    text-grayscale-900 placeholder:text-grayscale-400 bg-white font-poppins
-                                   focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                   focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     />
                 </div>
 

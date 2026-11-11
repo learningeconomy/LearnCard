@@ -22,6 +22,11 @@ import AchievementsIcon, {
     AchievementsIconWithLightShape,
     ACHIEVEMENTS_DEFAULTS,
 } from './AchievementsIcon';
+import {
+    QualificationsIcon,
+    QualificationsIconWallet,
+    QualificationsIconEmptyState,
+} from './QualificationsIcon';
 import StudiesIcon, {
     StudiesIconWithShape,
     StudiesIconWithLightShape,
@@ -51,6 +56,7 @@ import IDsIcon, { IDsIconWithShape, IDsIconWithLightShape, IDS_DEFAULTS } from '
 import { ALL_BOOSTS_DEFAULTS } from './AllBoostsIcon';
 
 export type { IconPalette };
+export * from './QualificationsIcon';
 
 export {
     AI_SESSIONS_DEFAULTS,
@@ -75,6 +81,13 @@ export const WALLET_ICON_PALETTE_DEFAULTS: Record<string, Required<IconPalette>>
     Skills: SKILLS_DEFAULTS,
     Boosts: BOOSTS_DEFAULTS,
     Achievements: ACHIEVEMENTS_DEFAULTS,
+    Qualifications: {
+        primary: '#F97316',
+        primaryLight: '#FFEDD5',
+        secondary: '#FB923C',
+        accent: '#FDBA74',
+        stroke: '#C2410C',
+    },
     Studies: STUDIES_DEFAULTS,
     Portfolio: PORTFOLIO_DEFAULTS,
     Assistance: ASSISTANCE_DEFAULTS,
@@ -101,6 +114,9 @@ export const WalletIcons = {
     AchievementsIcon,
     AchievementsIconWithShape,
     AchievementsIconWithLightShape,
+    QualificationsIcon,
+    QualificationsIconWallet,
+    QualificationsIconEmptyState,
     StudiesIcon,
     StudiesIconWithShape,
     StudiesIconWithLightShape,

@@ -169,7 +169,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                                         /* fallback: no-op */
                                     }
                                 }}
-                                className="flex-shrink-0 p-1 text-gray-400 hover:text-cyan-600 rounded transition-colors"
+                                className="shrink-0 p-1 text-gray-400 hover:text-cyan-600 rounded-sm transition-colors"
                                 title={m[
                                     'developerPortal.onboarding.templateBuilder.copyUriTitle'
                                 ]()}
@@ -219,10 +219,10 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
                     {/* Save / Cancel buttons */}
                     {onSave && (
-                        <div className="p-3 bg-gray-50 border-t border-gray-200 space-y-2">
+                        <div className="p-3 bg-gray-50 border-t border-gray-200 space-y-v3-2">
                             {structuralErrors.length > 0 && (
                                 <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
-                                    <X className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                    <X className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                                     <p className="text-xs text-red-700">
                                         {structuralErrors.map(e => e.message).join('. ')}
                                     </p>
@@ -232,7 +232,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                             {builderValidationStatus === 'invalid' &&
                                 structuralErrors.length === 0 && (
                                     <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
-                                        <X className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <X className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                                         <p className="text-xs text-red-700">
                                             {m[
                                                 'developerPortal.onboarding.templateBuilder.validationErrors'

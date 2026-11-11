@@ -75,22 +75,7 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
     const aiTopics = useMemo(() => {
         if (!topics?.length) return [];
 
-        if (activeTab === AiSessionsTabsEnum.chatGPT) {
-            const chatGPTProfile = aiPassportApps?.find(
-                app => app?.type === AiPassportAppsEnum.chatGPT
-            );
-            return topics?.filter(t => t?.topicRecord?.contractUri === chatGPTProfile?.contractUri);
-        } else if (activeTab === AiSessionsTabsEnum.claude) {
-            const claudeProfile = aiPassportApps?.find(
-                app => app?.type === AiPassportAppsEnum.claude
-            );
-            return topics?.filter(t => t?.topicRecord?.contractUri === claudeProfile?.contractUri);
-        } else if (activeTab === AiSessionsTabsEnum.gemini) {
-            const geminiProfile = aiPassportApps?.find(
-                app => app?.type === AiPassportAppsEnum.gemini
-            );
-            return topics?.filter(t => t?.topicRecord?.contractUri === geminiProfile?.contractUri);
-        } else if (activeTab === AiSessionsTabsEnum.learnCard) {
+        if (activeTab === AiSessionsTabsEnum.learnCard) {
             const learncardappProfile = aiPassportApps?.find(
                 app => app?.type === AiPassportAppsEnum.learncardapp
             );
@@ -191,7 +176,7 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
                             })}
                             {displayTopics.length === 0 && (
                                 <div className="w-full flex items-center justify-center z-10 mt-4">
-                                    <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
+                                    <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t border-solid border-grayscale-200 pt-2">
                                         <p className="text-grayscale-800 text-base font-normal font-notoSans">
                                             {m['ai.noResultsFor']()}{' '}
                                             <span className="text-black italic">{searchInput}</span>

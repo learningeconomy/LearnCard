@@ -130,7 +130,7 @@ const EndorsementRelationshipSelector: React.FC<{
             </div>
             {sectionPortal &&
                 createPortal(
-                    <div className="flex justify-center items-center relative !border-none max-w-[500px] gap-[10px] pb-2">
+                    <div className="flex justify-center items-center relative border-none! max-w-[500px] gap-[10px] pb-2">
                         <button
                             onClick={closeModal}
                             className="bg-white text-grayscale-900 text-[17px] py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"

@@ -1,12 +1,11 @@
 # BoostAddBoostAdminRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**profile_id** | **str** |  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **uri**        | **str** |             |
+| **profile_id** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_add_boost_admin_request_dict = boost_add_boost_admin_request_instance.to_d
 # create an instance of BoostAddBoostAdminRequest from a dict
 boost_add_boost_admin_request_from_dict = BoostAddBoostAdminRequest.from_dict(boost_add_boost_admin_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

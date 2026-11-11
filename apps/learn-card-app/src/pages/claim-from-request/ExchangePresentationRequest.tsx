@@ -19,14 +19,20 @@ import { useGetCredentialList } from 'learn-card-base';
 import VprQueryByExample from '../credentialStorage/vpr/VprQueryByExample';
 import { useCurrentUser } from 'learn-card-base';
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
+import type { VerifierPresentationRequest } from '../../helpers/verifier-history/disclosure';
+import type { DisclosureAttempt } from '../../helpers/verifier-history/history';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('exchange-presentation-request');
 
 interface ExchangePresentationRequestProps {
-    verifiablePresentationRequest: any; // Contains the verifiablePresentationRequest from the server
+    verifiablePresentationRequest: VerifierPresentationRequest; // Contains the verifiablePresentationRequest from the server
     strategy?: VCAPIRequestStrategy;
-    onSubmit: (body: { verifiablePresentation: VP } | VP) => void;
+    onSubmit: (
+        body: { verifiablePresentation: VP } | VP,
+        credentialClaimCount?: number,
+        history?: DisclosureAttempt
+    ) => void | Promise<void>;
     onCancel?: () => void;
 }
 
@@ -40,11 +46,14 @@ const ExchangePresentationRequest: React.FC<ExchangePresentationRequestProps> = 
 
     const purpose = verifiablePresentationRequest?.purpose || 'share some information';
 
-    const handleSubmit = async (data: { verifiablePresentation: VP }) => {
+    const handleSubmit = async (
+        data: { verifiablePresentation: VP },
+        history?: DisclosureAttempt
+    ) => {
         if (strategy === VCAPIRequestStrategy.Wrapped) {
-            onSubmit(data);
+            await onSubmit(data, undefined, history);
         } else {
-            onSubmit(data?.verifiablePresentation);
+            await onSubmit(data?.verifiablePresentation, undefined, history);
         }
     };
 

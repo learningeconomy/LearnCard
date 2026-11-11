@@ -21,13 +21,14 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner(BaseModel):
     """
     BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner
     """ # noqa: E501
-    id: Optional[StrictStr]
-    statement: Optional[StrictStr]
+    id: StrictStr
+    statement: StrictStr
     description: Optional[StrictStr] = None
     code: Optional[StrictStr] = None
     icon: Optional[StrictStr] = None
@@ -45,7 +46,8 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -57,8 +59,7 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -71,9 +72,8 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -90,36 +90,6 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if statement (nullable) is None
-        # and model_fields_set contains the field
-        if self.statement is None and "statement" in self.model_fields_set:
-            _dict['statement'] = None
-
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
-            _dict['description'] = None
-
-        # set to None if code (nullable) is None
-        # and model_fields_set contains the field
-        if self.code is None and "code" in self.model_fields_set:
-            _dict['code'] = None
-
-        # set to None if icon (nullable) is None
-        # and model_fields_set contains the field
-        if self.icon is None and "icon" in self.model_fields_set:
-            _dict['icon'] = None
-
-        # set to None if framework_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.framework_id is None and "framework_id" in self.model_fields_set:
-            _dict['frameworkId'] = None
-
         return _dict
 
     @classmethod
@@ -131,7 +101,7 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "id": obj.get("id"),
             "statement": obj.get("statement"),
             "description": obj.get("description"),
@@ -140,7 +110,9 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner(BaseModel):
             "type": obj.get("type") if obj.get("type") is not None else 'skill',
             "status": obj.get("status") if obj.get("status") is not None else 'active',
             "frameworkId": obj.get("frameworkId")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

@@ -18,20 +18,23 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
+from openapi_client.models.app_store_app_event_request_event import AppStoreAppEventRequestEvent
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class AppStoreAppEventRequest(BaseModel):
     """
     AppStoreAppEventRequest
     """ # noqa: E501
-    listing_id: Optional[StrictStr] = Field(alias="listingId")
-    event: Dict[str, Any]
+    listing_id: StrictStr = Field(alias="listingId")
+    event: AppStoreAppEventRequestEvent
     __properties: ClassVar[List[str]] = ["listingId", "event"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -43,8 +46,7 @@ class AppStoreAppEventRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -57,9 +59,8 @@ class AppStoreAppEventRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -69,11 +70,9 @@ class AppStoreAppEventRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if listing_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_id is None and "listing_id" in self.model_fields_set:
-            _dict['listingId'] = None
-
+        # override the default output from pydantic by calling `to_dict()` of event
+        if self.event:
+            _dict['event'] = self.event.to_dict()
         return _dict
 
     @classmethod
@@ -85,10 +84,12 @@ class AppStoreAppEventRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "listingId": obj.get("listingId"),
-            "event": obj.get("event")
-        })
+            "event": AppStoreAppEventRequestEvent.from_dict(obj["event"]) if obj.get("event") is not None else None
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

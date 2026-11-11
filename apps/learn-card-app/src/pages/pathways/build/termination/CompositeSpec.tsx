@@ -51,8 +51,8 @@ const CompositeEditor: React.FC<{
         });
 
     return (
-        <div className="space-y-3">
-            <div className="space-y-1.5">
+        <div className="space-y-v3-3">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="term-require">
                     Require
                 </label>
@@ -70,12 +70,12 @@ const CompositeEditor: React.FC<{
                 </select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 <p className={LABEL}>Sub-goals</p>
 
-                <ul className="space-y-3 pl-3 border-l-2 border-grayscale-200">
+                <ul className="space-y-v3-3 pl-3 border-l-2 border-grayscale-200">
                     {value.of.map((sub, i) => (
-                        <li key={i} className="space-y-2">
+                        <li key={i} className="space-y-v3-2">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-grayscale-500">
                                     Sub-goal {i + 1}

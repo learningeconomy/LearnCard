@@ -29,8 +29,10 @@ import type {
     DidAuthVpSigner,
     EscrowAttestationPolicy,
     EscrowHoldStatus,
+    EscrowPinAttemptContext,
     EscrowRecoveryStart,
     EscrowEnrollmentState,
+    RevokeOtherDevicesResult,
 } from './types';
 import {
     EscrowPinLockedError,
@@ -38,11 +40,13 @@ import {
     EscrowPinThrottledError,
     EscrowHoldRestartThrottledError,
     EscrowPinUnavailableError,
+    PinSignInStaleError,
 } from './types';
 import {
     ESCROW_PIN_LOCKED_MESSAGE,
     ESCROW_PIN_MISMATCH_PATTERN,
     ESCROW_PIN_UNAVAILABLE_MESSAGE,
+    type EscrowRecoveryExpectations,
 } from '@learncard/types';
 import {
     validatePin,
@@ -50,8 +54,28 @@ import {
     derivePinProof,
     ESCROW_PIN_MAX_ATTEMPTS,
 } from './escrow-pin';
-import { encryptEscrowBlob, generateEscrowKeyPair, openEscrowRelease } from './escrow-crypto';
+import {
+    canonicalEscrowEmailBrand,
+    encryptEscrowBlob,
+    generateEscrowKeyPair,
+    openEscrowRelease,
+} from './escrow-crypto';
 import { verifyEnclaveAttestation } from './escrow-attestation';
+import {
+    createEscrowEnrollmentIntent,
+    resolveEscrowEnrollmentAction,
+    verifyEscrowAuthorityState,
+    verifyEscrowEnrollmentCommit,
+    verifyEscrowHoldRecord,
+    verifyEscrowCodeDelivery,
+    verifyEscrowHoldConfirmation,
+    escrowAuthorityMeasurements,
+    type EscrowHoldRecordLike,
+} from './escrow-authority';
+import { getEscrowBlobIdentity } from './escrow-enrollment-intent';
+import type { VerifiedEnclaveIdentity, EscrowAuthorityState } from './escrow-authority.types';
+import { ESCROW_AUTHORITY_TENANT_PATTERN, EscrowEvidenceError } from './escrow-authority.types';
+import type { EscrowEnvelope } from './escrow-crypto';
 import type { EmailRelayBranding } from './email-relay-crypto';
 
 import {
@@ -93,6 +117,16 @@ const SSS_DB_NAME = 'lcb-sss-keys';
 const DEFAULT_DEVICE_SHARE_ID = 'sss-device-share';
 const MAX_RECONCILIATION_HISTORY = 5;
 
+/**
+ * OFF by default. Every input to the uncarryable-PIN inference (recovery methods,
+ * share version, PIN state) comes from lca-api, so a compromised API could forge it
+ * for a healthy PIN account and have the client sign away the PIN path (Custard7's
+ * PR #1815 review). With it off the strategy returns `pin-reset-required` and the
+ * app asks the user to set a new PIN. Enabling it needs an independently trustworthy
+ * recovery signal and security sign-off: POST_RECOVERY_ESCROW_REPAIR_DESIGN.md, Q1.
+ */
+export const DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN = false;
+
 export interface SSSStorageFunctions {
     storeDeviceShare: (share: string, id?: string) => Promise<void>;
     getDeviceShare: (id?: string) => Promise<string | null>;
@@ -105,10 +139,55 @@ export interface SSSStorageFunctions {
 
 export interface SSSStrategyConfig {
     /** Enable automatic enrollment under an explicit enclave trust policy. */
-    escrow?: { enabled: boolean; attestation: EscrowAttestationPolicy };
+    escrow?: {
+        enabled: boolean;
+        attestation: EscrowAttestationPolicy;
+        /**
+         * The escrow authority's tenant label: the enclave's measured
+         * `ESCROW_AUTHORITY_TENANT`, which it signs into every authority record and
+         * requires in every signed enrollment intent. Used for everything the
+         * enclave verifies (intent tenant, authority state, hold, code-delivery and
+         * persisted recovery expectations). Everything else (X-Tenant-Id, email
+         * branding, same-tenant guards) keeps using {@link SSSStrategyConfig.tenantId}.
+         *
+         * Defaults to `tenantId` (then `'learncard'`). Set it explicitly when this app
+         * shares another tenant's single-tenant enclave, e.g. VetPass on LearnCard's
+         * (`'learncard'`). Must match `/^[A-Za-z0-9_-]{1,128}$/`.
+         */
+        authorityTenant?: string;
+        /**
+         * Display name sealed into the escrow blob for enclave-sent emails
+         * (D21, `recoveryBrand`), e.g. `'VetPass'`. Sealed only when the
+         * recovery email and language are (nitro enroll/replace), never on a
+         * carry. Unset: the enclave brands emails from its measured tenant label.
+         *
+         * Set only after every live enclave host runs the brand-aware image: an
+         * older image drops the field whenever it re-encrypts the blob.
+         * Must pass {@link canonicalEscrowEmailBrand} (ASCII letters, digits,
+         * space, `-`, `'`, `&`; 1-32 characters); `createSSSStrategy` throws
+         * otherwise.
+         */
+        emailBrand?: string;
+    };
 
     /** Report enrollment failures without logging recovery material. */
     onEscrowError?: (err: unknown) => void;
+
+    /**
+     * Nitro repair only: when the signed authority still has a PIN but lca-api holds
+     * no PIN to carry (an identity-recovery rebind deleted it), sign a PIN `clear`
+     * instead of a `carry` that lca-api would reject with PRECONDITION_FAILED.
+     * Defaults to {@link DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN} (off). Do not enable
+     * without security sign-off: POST_RECOVERY_ESCROW_REPAIR_DESIGN.md, open question Q1.
+     */
+    autoClearUncarryablePin?: boolean;
+
+    /**
+     * Called once after every committed automatic PIN clear
+     * ({@link SSSStrategyConfig.autoClearUncarryablePin}). Must not throw; defaults
+     * to a console warning. Never receives the DID, email or PIN material.
+     */
+    onEscrowPinAutoCleared?: (event: EscrowPinAutoClearedEvent) => void;
 
     /** Server URL for key share operations */
     serverUrl: string;
@@ -173,16 +252,44 @@ const requestTimeoutSignal = (ms = SERVER_REQUEST_TIMEOUT_MS): AbortSignal | und
         ? AbortSignal.timeout(ms)
         : undefined;
 
+/** HTTP/2 responses have an empty statusText, so always lead with the numeric status. */
+const describeHttpStatus = (response: Response): string =>
+    response.statusText ? `${response.status} ${response.statusText}` : `${response.status}`;
+
 type EscrowEnrollmentResult =
-    | { enrolled: false; reason: 'disabled' | 'opted-out' }
+    | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' | 'pin-reset-required' }
     | { enrolled: true; changed: false }
-    | { enrolled: true; changed: true; shareVersion: number };
+    | { enrolled: true; changed: true; shareVersion: number; pinCleared?: 'automatic' };
+
+/** Telemetry for an automatic post-rebind PIN clear. Carries no DID, email or PIN data. */
+export interface EscrowPinAutoClearedEvent {
+    type: 'escrow.pin.auto_cleared';
+    /** Share version the PIN-free enrollment was committed at. */
+    shareVersion: number;
+    /** Share version the signed authority was still active at (pre-rebind). */
+    authorityShareVersion: number | null;
+}
 
 /** HTTP failure metadata without potentially sensitive server response text. */
 export class EscrowRequestError extends Error {
-    constructor(public readonly status: number) {
+    constructor(
+        public readonly status: number,
+        public readonly reason?: 'codeMismatch' | 'codeExpired' | 'codeLocked'
+    ) {
         super('Escrow request failed');
         this.name = 'EscrowRequestError';
+    }
+}
+
+/** lca-api refused a write because escrow state changed after the caller's reads (409). */
+const isConflictRefusal = (error: unknown): boolean =>
+    error instanceof EscrowRequestError && error.status === 409;
+
+/** Independently generated splits can reuse a share's final-byte x-coordinate. */
+export class DuplicateShareCoordinateError extends Error {
+    constructor() {
+        super('Stored shares have the same coordinate and cannot be combined');
+        this.name = 'DuplicateShareCoordinateError';
     }
 }
 
@@ -207,7 +314,7 @@ const fetchAuthShareRaw = async (
     if (!response.ok) {
         if (response.status === 404) return null;
 
-        throw new Error(`Failed to fetch key status: ${response.statusText}`);
+        throw new Error(`Failed to fetch key status: ${describeHttpStatus(response)}`);
     }
 
     return response.json();
@@ -239,7 +346,7 @@ const putAuthShare = async (
     });
 
     if (!response.ok) {
-        const message = `Failed to store auth share: ${response.statusText}`;
+        const message = `Failed to store auth share: ${describeHttpStatus(response)}`;
         // A gateway/server failure or request timeout can arrive AFTER commit.
         // Only an explicit client rejection proves this write was not accepted.
         if (response.status >= 400 && response.status < 500 && response.status !== 408) {
@@ -292,7 +399,7 @@ const requestFreshDidAuthVp = async (
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to request DID challenge: ${response.statusText}`);
+        throw new Error(`Failed to request DID challenge: ${describeHttpStatus(response)}`);
     }
 
     const data = (await response.json()) as { challenge?: string };
@@ -350,6 +457,7 @@ interface IdentityRecoverySessionResponse {
         credentialId?: string;
         shareVersion?: number;
     }>;
+    primaryDid: string | null;
 }
 
 interface IdentityRecoveryMaterialResponse {
@@ -412,7 +520,7 @@ const postRecoveryMethod = async (
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to add recovery method: ${response.statusText}`);
+        throw new Error(`Failed to add recovery method: ${describeHttpStatus(response)}`);
     }
 };
 
@@ -551,7 +659,7 @@ const sendEmailBackupShare = async (
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to send recovery share: ${response.statusText}`);
+        throw new Error(`Failed to send recovery share: ${describeHttpStatus(response)}`);
     }
 };
 
@@ -963,14 +1071,35 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         emailBranding,
         tenantId,
     } = config;
+    // Enclave-verified tenant (see SSSStrategyConfig.escrow.authorityTenant); never
+    // sent as X-Tenant-Id. Defaults keep LearnCard/Scouts behaviour unchanged.
+    const authorityTenant = config.escrow?.authorityTenant ?? tenantId ?? 'learncard';
+    if (config.escrow && !ESCROW_AUTHORITY_TENANT_PATTERN.test(authorityTenant))
+        throw new Error(
+            'Invalid escrow authority tenant: expected 1-128 letters, digits, "_" or "-".'
+        );
+    // D21: strict on write (the enclave and parsers are lenient on read), and
+    // canonicalized once here so every enrollment path seals the same value.
+    const emailBrand =
+        config.escrow?.emailBrand === undefined
+            ? undefined
+            : canonicalEscrowEmailBrand(config.escrow.emailBrand);
+    if (config.escrow?.emailBrand !== undefined && emailBrand === undefined)
+        throw new Error(
+            'Invalid escrow email brand: expected 1-32 ASCII letters, digits, spaces, "-", "\'" or "&", starting with a letter.'
+        );
     const storage = config.storage || defaultStorage;
     let storageGeneration = 0;
     const localWrites = new Set<Promise<void>>();
 
     // Capture before any await (including the rotation lock). A forgotten device
     // must not be restored by a late write or by atomic-update rollback.
-    const guardedStorage = (): SSSStorageFunctions => {
+    const guardedStorage = (): SSSStorageFunctions & { assertCurrent: () => void } => {
         const generation = storageGeneration;
+        const assertCurrent = (): void => {
+            if (generation !== storageGeneration)
+                throw new Error('This recovery request was cancelled.');
+        };
         const write = (operation: () => Promise<void>): Promise<void> => {
             if (generation !== storageGeneration) {
                 return Promise.reject(new Error('This recovery request was cancelled.'));
@@ -979,8 +1108,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             localWrites.add(pending);
             return pending.finally(() => localWrites.delete(pending));
         };
-        const guarded: SSSStorageFunctions = {
+        const guarded: SSSStorageFunctions & { assertCurrent: () => void } = {
             ...storage,
+            assertCurrent,
             storeDeviceShare: (share, id) => write(() => storage.storeDeviceShare(share, id)),
             storeShareVersion: (version, id) => write(() => storage.storeShareVersion(version, id)),
             clearAllShares: id => write(() => storage.clearAllShares(id)),
@@ -1037,6 +1167,13 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
               recoveryShare: string;
               authShare: string;
               rebindSessionToken: string;
+              /** Recovered from an existing escrow enrollment (hold or PIN), not another method. */
+              fromEscrow: boolean;
+              /**
+               * PIN sign-in awaiting a new login: completion only links that login
+               * (no re-split, no history or recovery-method change) at this version.
+               */
+              pinKeep?: { shareVersion: number; pinAttempts?: EscrowPinAttemptContext };
               rebind?: { shares: SSSShares; storageId: string | undefined; attempted: boolean };
           }
         | undefined;
@@ -1050,6 +1187,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     } | null = null;
 
     let escrowEnrollmentInFlight: Promise<EscrowEnrollmentResult> | undefined;
+    // A stale-blob repair is attempted at most once per strategy instance
+    // (i.e. once per app session); a failed attempt is logged and left for
+    // the next session rather than retried on every subsequent call.
+    let staleEscrowReenrollAttempted = false;
+    let verifiedEscrowEnvelope: EscrowEnvelope | undefined;
 
     // Material from a rotation whose escrow POST failed. Retained in memory so a
     // retry within this session re-posts instead of burning another share version.
@@ -1070,6 +1212,22 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         });
         // Never propagate response bodies or status text that could contain secrets.
         if (!response.ok) {
+            if (path === '/confirm' && response.status === 403) {
+                const body: unknown = await response.json().catch(() => undefined);
+                const reason =
+                    body &&
+                    typeof body === 'object' &&
+                    'message' in body &&
+                    typeof body.message === 'string'
+                        ? body.message
+                        : undefined;
+                throw new EscrowRequestError(
+                    response.status,
+                    reason === 'codeMismatch' || reason === 'codeExpired' || reason === 'codeLocked'
+                        ? reason
+                        : undefined
+                );
+            }
             if (!pinAttempt && path === '/recover' && response.status === 429) {
                 const body: unknown = await response.json().catch(() => undefined);
                 const message =
@@ -1137,13 +1295,125 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }
     };
 
-    const fetchVerifiedEnclaveKey = async (): Promise<{ publicKey: string; keyId: string }> => {
+    const fetchVerifiedEnclaveKey = async (): Promise<VerifiedEnclaveIdentity> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
-        const { attestation } = await escrowRequest<{ attestation: unknown }>('/attestation', {
+        const nonce = crypto.getRandomValues(new Uint8Array(32));
+        const nonceHex = Array.from(nonce, byte => byte.toString(16).padStart(2, '0')).join('');
+        const { attestation } = await escrowRequest<{ attestation: unknown }>(
+            `/attestation?nonce=${nonceHex}`,
+            {
+                method: 'GET',
+                headers: buildHeaders('', undefined, tenantId),
+            }
+        );
+        return verifyEnclaveAttestation(attestation, config.escrow.attestation, nonce);
+    };
+
+    /** Shared by the public `getEscrowRecoveryStatus` and [D]'s internal
+     * confirm-time verification, so both read the enclave-signed
+     * `holdRecord` field via this package's own `EscrowHoldStatus` type
+     * rather than the narrower cross-package `KeyDerivationStrategy`
+     * interface (which never exposes it to generic callers). */
+    const fetchEscrowHoldStatus = async (
+        params:
+            | { holdId: string; resumeToken: string }
+            | { token: string; providerType: AuthProviderType }
+    ): Promise<EscrowHoldStatus | null> => {
+        const query = new URLSearchParams(
+            'holdId' in params ? { holdId: params.holdId } : { providerType: params.providerType }
+        );
+        const secret = 'holdId' in params ? params.resumeToken : params.token;
+        const result = await escrowRequest<{ hold: EscrowHoldStatus | null }>(`/status?${query}`, {
             method: 'GET',
-            headers: buildHeaders('', undefined, tenantId),
+            headers: {
+                ...buildHeaders('', undefined, tenantId),
+                'X-Auth-Token': secret,
+            },
         });
-        return verifyEnclaveAttestation(attestation, config.escrow.attestation);
+        return result.hold;
+    };
+
+    const recoveryExpectations = (
+        holdId: string,
+        expected?: EscrowRecoveryExpectations
+    ): EscrowRecoveryExpectations => {
+        if (
+            !expected ||
+            expected.holdId !== holdId ||
+            expected.tenant !== authorityTenant ||
+            !expected.did ||
+            !expected.clientEphemeralPublicKey ||
+            !expected.blobHash ||
+            !expected.authorityGeneration ||
+            !expected.holdDigest ||
+            !expected.ledgerPublicKey ||
+            !expected.keyId
+        )
+            throw new EscrowEvidenceError();
+        // Do not let callers mutate the bindings while attestation/network IO is pending.
+        return { ...expected };
+    };
+
+    const verifyPendingHold = async (
+        status: EscrowHoldStatus,
+        expected: EscrowRecoveryExpectations,
+        identity: VerifiedEnclaveIdentity
+    ): Promise<EscrowHoldRecordLike> => {
+        if (
+            !config.escrow ||
+            identity.mode !== 'nitro' ||
+            !identity.authority ||
+            identity.authority.ledgerPublicKey !== expected.ledgerPublicKey ||
+            ![identity.keyId, ...identity.previousKeyIds].includes(expected.keyId) ||
+            status.holdId !== expected.holdId ||
+            !status.holdRecord
+        )
+            throw new EscrowEvidenceError();
+        const record = status.holdRecord;
+        const verified = await verifyEscrowHoldRecord(record, expected, identity, {
+            historical: true,
+            allowedMeasurements: await escrowAuthorityMeasurements(config.escrow.attestation),
+            authorityGeneration: expected.authorityGeneration,
+        });
+        if (
+            verified.holdDigest !== expected.holdDigest ||
+            verified.receipt.keyId !== expected.keyId
+        )
+            throw new EscrowEvidenceError();
+        return record;
+    };
+
+    const fetchAuthorityState = async (
+        token: string,
+        providerType: AuthProviderType,
+        privateKey: string,
+        did: string,
+        signer: DidAuthVpSigner,
+        identity: VerifiedEnclaveIdentity,
+        assertCurrent: () => void
+    ): Promise<EscrowAuthorityState> => {
+        assertCurrent();
+        if (identity.mode !== 'nitro' || !identity.authority)
+            throw new Error('The enclave does not support verified enrollment.');
+        const nonce = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte =>
+            byte.toString(16).padStart(2, '0')
+        ).join('');
+        const vp = await requestFreshDidAuthVp(serverUrl, privateKey, did, signer, tenantId);
+        assertCurrent();
+        const response = await escrowRequest<unknown>('/authority-state', {
+            method: 'POST',
+            headers: buildHeaders(token, vp, tenantId),
+            body: JSON.stringify({ authToken: token, providerType, nonce }),
+        });
+        const result = await verifyEscrowAuthorityState(
+            response,
+            nonce,
+            authorityTenant,
+            did,
+            identity
+        );
+        assertCurrent();
+        return result;
     };
 
     const enrollEscrow = async (
@@ -1151,22 +1421,73 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         providerType: AuthProviderType,
         privateKey: string,
         primaryDid: string,
-        shares: SSSShares,
+        // Only the recovery share is sealed; a PIN sign-in re-set has no other share.
+        shares: Pick<SSSShares, 'recoveryShare'>,
         shareVersion: number,
         signDidAuthVp?: DidAuthVpSigner,
-        verifiedKey?: { publicKey: string; keyId: string },
+        verifiedKey?: VerifiedEnclaveIdentity,
         pinMaterial?: { pinSalt: string; pinVerifier: string },
-        clearPin = false
+        clearPin = false,
+        assertCurrent = guardedStorage().assertCurrent,
+        // P9.1 (attack C): the device's own authenticated-account email + app
+        // locale, bound into both the blob plaintext and the signed intent for
+        // nitro/authority mode. Kept last (after the long-established
+        // `assertCurrent` position) so existing positional callers that pass
+        // `assertCurrent` explicitly are never silently shifted. Only
+        // included in the blob plaintext when this call will resolve to
+        // enroll/replace (see `willCarryPin` below) — Rust rejects a Carry
+        // target blob whose plaintext already carries either field, since
+        // the enclave always fills them in from the source blob instead.
+        recoveryEmail = '',
+        recoveryLanguage = '',
+        // Same-PIN refresh after a PIN sign-in (E): the server writes only while the
+        // current PIN still shows exactly these charges.
+        expectedPinCharges?: { attemptsRemaining: number; wrongAttempts: number }
     ): Promise<void> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
         if (!signDidAuthVp) throw new Error('DID proof signing is required for escrow enrollment');
-        const { publicKey, keyId } = verifiedKey ?? (await fetchVerifiedEnclaveKey());
+        const identity = verifiedKey ?? (await fetchVerifiedEnclaveKey());
+        assertCurrent();
+        const { publicKey, keyId } = identity;
+        const authority =
+            config.escrow.attestation.mode === 'nitro'
+                ? await fetchAuthorityState(
+                      token,
+                      providerType,
+                      privateKey,
+                      primaryDid,
+                      signDidAuthVp,
+                      identity,
+                      assertCurrent
+                  )
+                : undefined;
+        // P9.1 (attack C): calls the SAME `resolveEscrowEnrollmentAction` used
+        // by `createEscrowEnrollmentIntent` below, so the blob PLAINTEXT built
+        // here and the signed intent built later always agree on whether this
+        // is a carry — the enclave rejects a Carry target blob whose
+        // plaintext carries a non-null recoveryEmail/recoveryLanguage.
+        const bindsRecoveryContact =
+            !authority ||
+            resolveEscrowEnrollmentAction(
+                authority,
+                pinMaterial ? 'set' : clearPin ? 'clear' : 'automatic'
+            ).bindsRecoveryContact;
         const envelope = await encryptEscrowBlob(
             {
                 recoveryShare: shares.recoveryShare,
                 did: primaryDid,
                 shareVersion,
                 ...(pinMaterial ? { pinVerifier: pinMaterial.pinVerifier } : {}),
+                // D21: the brand is sealed exactly when the contact is, so a
+                // carry (whose target the enclave refuses if it claims one)
+                // never sends it; the enclave inherits the source's brand.
+                ...(authority && recoveryEmail && bindsRecoveryContact
+                    ? {
+                          recoveryEmail,
+                          recoveryLanguage,
+                          ...(emailBrand ? { recoveryBrand: emailBrand } : {}),
+                      }
+                    : {}),
             },
             publicKey,
             keyId
@@ -1178,7 +1499,20 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             signDidAuthVp,
             tenantId
         );
-        await escrowRequest('', {
+        const signedIntent = authority
+            ? await createEscrowEnrollmentIntent({
+                  state: authority,
+                  target: envelope,
+                  shareVersion,
+                  privateKey,
+                  pinAction: pinMaterial ? 'set' : clearPin ? 'clear' : 'automatic',
+                  recoveryEmail,
+                  recoveryLanguage,
+              })
+            : undefined;
+        assertCurrent();
+        verifiedEscrowEnvelope = undefined;
+        const response = await escrowRequest<unknown>('', {
             method: 'POST',
             headers: buildHeaders(token, vp, tenantId),
             body: JSON.stringify({
@@ -1188,15 +1522,34 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 shareVersion,
                 enclaveKeyId: keyId,
                 ...(pinMaterial ? { pinSalt: pinMaterial.pinSalt } : {}),
-                ...(clearPin ? { clearPin: true } : {}),
+                ...((signedIntent ? signedIntent.intent.pinAction === 'clear' : clearPin)
+                    ? { clearPin: true }
+                    : {}),
+                ...(signedIntent
+                    ? { signedIntent, sourceEnvelope: authority?.envelope ?? null }
+                    : {}),
+                ...(expectedPinCharges ? { expectedPinCharges } : {}),
             }),
         });
+        if (signedIntent) {
+            const committed = await verifyEscrowEnrollmentCommit(
+                response,
+                signedIntent.intent,
+                identity
+            );
+            assertCurrent();
+            verifiedEscrowEnvelope = committed.envelope ?? undefined;
+        }
     };
 
-    const tryEnrollEscrow = async (...args: Parameters<typeof enrollEscrow>): Promise<void> => {
-        if (!config.escrow?.enabled) return;
+    /** `tryEnrollEscrow` that also returns a failed attempt's error, for callers that retry. */
+    const attemptEnrollEscrow = async (
+        ...args: Parameters<typeof enrollEscrow>
+    ): Promise<{ enrolled: true } | { enrolled: false; error?: unknown }> => {
+        if (!config.escrow?.enabled) return { enrolled: false };
         try {
             await enrollEscrow(...args);
+            return { enrolled: true };
         } catch (err) {
             // A reporting callback must not turn a successful rotation into a failure.
             try {
@@ -1205,17 +1558,46 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             } catch {
                 console.warn('SSS: escrow error reporting failed');
             }
+            return { enrolled: false, error: err };
         }
+    };
+
+    const tryEnrollEscrow = async (...args: Parameters<typeof enrollEscrow>): Promise<boolean> =>
+        (await attemptEnrollEscrow(...args)).enrolled;
+
+    /** Report a committed automatic PIN clear so the caller can prompt for a new PIN. */
+    const withAutoClear = (
+        shareVersion: number,
+        autoClearedFrom: { authorityShareVersion: number | null } | undefined
+    ): EscrowEnrollmentResult => {
+        if (!autoClearedFrom) return { enrolled: true, changed: true, shareVersion };
+        try {
+            const event: EscrowPinAutoClearedEvent = {
+                type: 'escrow.pin.auto_cleared',
+                shareVersion,
+                authorityShareVersion: autoClearedFrom.authorityShareVersion,
+            };
+            if (config.onEscrowPinAutoCleared) config.onEscrowPinAutoCleared(event);
+            else console.warn('SSS: escrow PIN cleared automatically', event);
+        } catch {
+            console.warn('SSS: escrow event reporting failed');
+        }
+        return { enrolled: true, changed: true, shareVersion, pinCleared: 'automatic' };
     };
 
     const ensureEscrowEnrollmentUnguarded = async (
         self: SSSKeyDerivationStrategy,
         params: Parameters<NonNullable<SSSKeyDerivationStrategy['ensureEscrowEnrollment']>>[0],
-        storage: SSSStorageFunctions,
-        forceRotate = false
+        storage: SSSStorageFunctions & { assertCurrent: () => void },
+        forceRotate = false,
+        allowDisabledEnrollment = false
     ): Promise<EscrowEnrollmentResult> => {
+        let clearPinForEnrollment = forceRotate || params.options?.clearPin === true;
+        let autoClearedFrom: { authorityShareVersion: number | null } | undefined;
         if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
         const pin = params.options?.pin;
+        const recoveryEmail = params.options?.recoveryEmail ?? '';
+        const recoveryLanguage = params.options?.recoveryLanguage ?? '';
         if (pin !== undefined) {
             const validation = validatePin(pin);
             if (!validation.ok)
@@ -1226,10 +1608,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 );
         }
         const status = await self.fetchServerKeyStatus(params.token, params.providerType);
+        storage.assertCurrent();
         if (status.escrowOptedOut) return { enrolled: false, reason: 'opted-out' };
-        if (
-            !forceRotate &&
-            pin === undefined &&
+        let currentlyEnrolled =
             status.shareVersion !== null &&
             status.recoveryMethods.some(
                 method =>
@@ -1238,87 +1619,235 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     (Boolean(method.confirmedAt) ||
                         ('confirmationStatus' in method &&
                             method.confirmationStatus === 'confirmed'))
-            )
+            );
+        if (
+            params.options?.requirePriorEnrollment &&
+            config.escrow.attestation.mode !== 'nitro' &&
+            !status.recoveryMethods.some(method => method.type === 'escrow')
         )
+            return { enrolled: false, reason: 'not-enrolled' };
+        let verifiedKey: VerifiedEnclaveIdentity | undefined;
+        // Locked, stale or unknown PIN state never satisfies a clear request.
+        let hasPin = status.escrowPin?.state !== 'none';
+        if (config.escrow.attestation.mode === 'nitro') {
+            if (!status.primaryDid || !params.signDidAuthVp)
+                throw new Error('Owner proof signing is required for escrow enrollment.');
+            verifiedKey = await fetchVerifiedEnclaveKey();
+            const current = await fetchAuthorityState(
+                params.token,
+                params.providerType,
+                params.privateKey,
+                status.primaryDid,
+                params.signDidAuthVp,
+                verifiedKey,
+                storage.assertCurrent
+            );
+            // The signed authority survives the identity rebind that drops Mongo's blob.
+            if (params.options?.requirePriorEnrollment && current.status === 'empty')
+                return { enrolled: false, reason: 'not-enrolled' };
+            if (current.status === 'disabled') {
+                verifiedEscrowEnvelope = undefined;
+                if (!allowDisabledEnrollment) return { enrolled: false, reason: 'opted-out' };
+                // Explicit enable without a new PIN clears the retired verifier.
+                clearPinForEnrollment ||= current.hasPin && pin === undefined;
+            }
+            currentlyEnrolled =
+                currentlyEnrolled &&
+                current.status === 'active' &&
+                current.shareVersion === status.shareVersion &&
+                current.envelope?.keyId === verifiedKey.keyId;
+            // lca-api must serve the authority's copy: a PIN operation whose result never
+            // reached Mongo leaves the old copy there, and every hold or PIN attempt
+            // against it is refused. Older servers do not report the identity.
+            let identityMismatch = false;
+            if (currentlyEnrolled && current.envelope && status.escrowBlobIdentity !== undefined) {
+                const authorityIdentity = await getEscrowBlobIdentity(current.envelope);
+                if (authorityIdentity !== status.escrowBlobIdentity) {
+                    // The authority-state read settles a crashed operation server-side;
+                    // read lca-api's copy again before treating it as a mismatch.
+                    const reread = await self.fetchServerKeyStatus(
+                        params.token,
+                        params.providerType
+                    );
+                    storage.assertCurrent();
+                    // While a PIN operation holds the server's lease its copy may trail
+                    // the authority for a moment; lca-api converges on its own, so this
+                    // is not (yet) a stale copy and must not prompt a PIN reset.
+                    identityMismatch =
+                        reread.escrowBlobIdentity !== authorityIdentity &&
+                        reread.escrowUpdating !== true;
+                }
+            }
+            if (identityMismatch) currentlyEnrolled = false;
+            if (currentlyEnrolled) verifiedEscrowEnvelope = current.envelope ?? undefined;
+            // lca-api's PIN record (salt) belongs to the old copy, so neither a carry nor a
+            // keep can repair a PIN-protected mismatch: only a user-chosen PIN (`set`) or an
+            // explicit clear re-binds both. Never rotate or sign here.
+            if (identityMismatch && current.hasPin && pin === undefined && !clearPinForEnrollment)
+                return { enrolled: false, reason: 'pin-reset-required' };
+            hasPin = current.hasPin;
+            // After an identity-recovery rebind lca-api has no PIN left to carry, so an
+            // automatic carry/keep can only fail.
+            const uncarryablePin =
+                !clearPinForEnrollment &&
+                current.status === 'active' &&
+                current.hasPin &&
+                pin === undefined &&
+                !currentlyEnrolled &&
+                status.escrowPin?.state === 'none';
+            // Opt-in only (design doc Q1): sign a clear instead. Rebind evidence: the
+            // signed authority is still active at an older share version, and lca-api
+            // lists no confirmed escrow method at any version. All but the authority
+            // are lca-api claims, so this is forgeable by a compromised API.
+            if (
+                uncarryablePin &&
+                (config.autoClearUncarryablePin ?? DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN) &&
+                current.shareVersion !== null &&
+                status.shareVersion !== null &&
+                current.shareVersion < status.shareVersion &&
+                !status.recoveryMethods.some(
+                    method =>
+                        method.type === 'escrow' &&
+                        (Boolean(method.confirmedAt) ||
+                            ('confirmationStatus' in method &&
+                                method.confirmationStatus === 'confirmed'))
+                )
+            ) {
+                clearPinForEnrollment = true;
+                autoClearedFrom = { authorityShareVersion: current.shareVersion };
+            } else if (uncarryablePin) {
+                // Never rotate or sign here: only a user-chosen PIN (`set`) resolves it.
+                return { enrolled: false, reason: 'pin-reset-required' };
+            }
+        }
+        // A current, PIN-free enrollment already satisfies a clear request
+        // (e.g. post-recovery repair after direct enrollment succeeded).
+        if (
+            currentlyEnrolled &&
+            !forceRotate &&
+            pin === undefined &&
+            !hasPin &&
+            !status.escrowStale
+        )
+            clearPinForEnrollment = false;
+        // A confirmed enrollment whose sealed blob no longer matches the active
+        // enclave (P6 mode migration/rollback, or a rotated enclave key) still
+        // needs the same rotation a missing enrollment would get — but only one
+        // automatic attempt per session, so a still-unreachable enclave doesn't
+        // retry on every ensureEscrowEnrollment call within the same session.
+        const repairingStaleBlob =
+            pin === undefined &&
+            !clearPinForEnrollment &&
+            currentlyEnrolled &&
+            !!status.escrowStale &&
+            !staleEscrowReenrollAttempted;
+        if (!clearPinForEnrollment && pin === undefined && currentlyEnrolled && !repairingStaleBlob)
             // Automatic repair preserves current enrollment regardless of PIN status.
             // The enclave can carry an existing verifier when shares rotate.
             return { enrolled: true, changed: false };
+        if (repairingStaleBlob) staleEscrowReenrollAttempted = true;
         if (!status.primaryDid) throw new Error('Cannot enroll escrow without a primary DID');
         if (!params.signDidAuthVp) {
             throw new Error('DID proof signing is required for escrow enrollment');
         }
-        if (
-            !forceRotate &&
-            pin === undefined &&
-            unenrolledRotation &&
-            unenrolledRotation.shareVersion === status.shareVersion &&
-            unenrolledRotation.primaryDid === status.primaryDid
-        ) {
-            const retry = unenrolledRotation;
+        try {
+            if (
+                !forceRotate &&
+                pin === undefined &&
+                unenrolledRotation &&
+                unenrolledRotation.shareVersion === status.shareVersion &&
+                unenrolledRotation.primaryDid === status.primaryDid
+            ) {
+                const retry = unenrolledRotation;
+                await enrollEscrow(
+                    params.token,
+                    params.providerType,
+                    params.privateKey,
+                    retry.primaryDid,
+                    retry.shares,
+                    retry.shareVersion,
+                    params.signDidAuthVp,
+                    undefined,
+                    undefined,
+                    clearPinForEnrollment || retry.clearPin,
+                    storage.assertCurrent,
+                    recoveryEmail,
+                    recoveryLanguage
+                );
+                unenrolledRotation = undefined;
+                return withAutoClear(retry.shareVersion, autoClearedFrom);
+            }
+            // Verify the enclave before rotating: a bad attestation must not burn
+            // a share version (and, repeated, the retained auth-share history).
+            verifiedKey ??= await fetchVerifiedEnclaveKey();
+            storage.assertCurrent();
+            const pinSalt = pin !== undefined ? generatePinSalt() : undefined;
+            const pinMaterial =
+                pin !== undefined && pinSalt !== undefined
+                    ? { pinSalt, pinVerifier: await derivePinProof(pin, pinSalt) }
+                    : undefined;
+            const storageId = activeStorageId;
+            const primaryDid = status.primaryDid;
+            const { shares, shareVersion } = await withShareUpdateLock(storage, storageId, () =>
+                persistSharesWithoutLock(
+                    params.privateKey,
+                    serverUrl,
+                    params.token,
+                    params.providerType,
+                    primaryDid,
+                    storage,
+                    storageId,
+                    undefined,
+                    params.signDidAuthVp,
+                    tenantId
+                )
+            );
+            lastEmailShare = shares.emailShare;
+            lastShareVersion = shareVersion;
+            lastServerSnapshot = {
+                currentVersion: shareVersion,
+                resolvedVersion: shareVersion,
+                authShare: shares.authShare,
+                primaryDid: status.primaryDid,
+            };
+            unenrolledRotation = pinMaterial
+                ? undefined
+                : {
+                      shares,
+                      shareVersion,
+                      primaryDid: status.primaryDid,
+                      clearPin: clearPinForEnrollment,
+                  };
             await enrollEscrow(
                 params.token,
                 params.providerType,
                 params.privateKey,
-                retry.primaryDid,
-                retry.shares,
-                retry.shareVersion,
+                status.primaryDid,
+                shares,
+                shareVersion,
                 params.signDidAuthVp,
-                undefined,
-                undefined,
-                retry.clearPin
+                verifiedKey,
+                pinMaterial,
+                clearPinForEnrollment,
+                storage.assertCurrent,
+                recoveryEmail,
+                recoveryLanguage
             );
             unenrolledRotation = undefined;
-            return { enrolled: true, changed: true, shareVersion: retry.shareVersion };
+            return withAutoClear(shareVersion, autoClearedFrom);
+        } catch (err) {
+            // A background repair the caller never asked for must not surface as
+            // a hard failure (mirrors tryEnrollEscrow's existing swallow-and-report
+            // shape); an explicit not-yet-enrolled/PIN/forced rotation still throws.
+            if (!repairingStaleBlob || config.escrow.attestation.mode === 'nitro') throw err;
+            try {
+                if (config.onEscrowError) config.onEscrowError(err);
+                else console.warn('SSS: escrow enrollment failed');
+            } catch {
+                console.warn('SSS: escrow error reporting failed');
+            }
+            return { enrolled: true, changed: false };
         }
-        // Verify the enclave before rotating: a bad attestation must not burn
-        // a share version (and, repeated, the retained auth-share history).
-        const verifiedKey = await fetchVerifiedEnclaveKey();
-        const pinSalt = pin !== undefined ? generatePinSalt() : undefined;
-        const pinMaterial =
-            pin !== undefined && pinSalt !== undefined
-                ? { pinSalt, pinVerifier: await derivePinProof(pin, pinSalt) }
-                : undefined;
-        const storageId = activeStorageId;
-        const primaryDid = status.primaryDid;
-        const { shares, shareVersion } = await withShareUpdateLock(storage, storageId, () =>
-            persistSharesWithoutLock(
-                params.privateKey,
-                serverUrl,
-                params.token,
-                params.providerType,
-                primaryDid,
-                storage,
-                storageId,
-                undefined,
-                params.signDidAuthVp,
-                tenantId
-            )
-        );
-        lastEmailShare = shares.emailShare;
-        lastShareVersion = shareVersion;
-        lastServerSnapshot = {
-            currentVersion: shareVersion,
-            resolvedVersion: shareVersion,
-            authShare: shares.authShare,
-            primaryDid: status.primaryDid,
-        };
-        unenrolledRotation = pinMaterial
-            ? undefined
-            : { shares, shareVersion, primaryDid: status.primaryDid, clearPin: forceRotate };
-        await enrollEscrow(
-            params.token,
-            params.providerType,
-            params.privateKey,
-            status.primaryDid,
-            shares,
-            shareVersion,
-            params.signDidAuthVp,
-            verifiedKey,
-            pinMaterial,
-            forceRotate
-        );
-        unenrolledRotation = undefined;
-        return { enrolled: true, changed: true, shareVersion };
     };
 
     const recordPromotion =
@@ -1347,6 +1876,608 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         };
     };
 
+    /**
+     * Verified wrong entries recorded against the current PIN, or undefined when the
+     * server cannot prove the count (legacy record, older server, failed lookup). A
+     * status with no PIN counts as zero.
+     */
+    const recordedWrongPinAttempts = (escrowPin: unknown): number | undefined => {
+        const status = escrowPin as { state?: unknown; wrongAttempts?: unknown } | undefined;
+        if (status?.state === 'none') return 0;
+        const count = status?.wrongAttempts;
+        return typeof count === 'number' && Number.isSafeInteger(count) && count >= 0
+            ? count
+            : undefined;
+    };
+
+    /** A valid, non-negative attempt count from the caller, or undefined. */
+    const attemptCount = (value: unknown): number | undefined =>
+        typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
+
+    /**
+     * Whether a PIN sign-in may treat every wrong entry recorded against the PIN as the
+     * user's own typing (own-typos rule, E; approved 2026-11-03). Requires:
+     * - zero wrong entries when the flow started (`priorWrongAttempts`; unknown counts
+     *   as "some"), and
+     * - every status read during this release showing exactly the wrong entries this
+     *   client submitted in the flow (`ownWrongAttempts`), so a guess from anywhere
+     *   else (more entries) or an unexplained count (fewer, unknown) is never excused.
+     * Without `attempts` (older callers), or when a status shows a different PIN
+     * generation than the flow's (`pinSalt`), no own entries are excused and the prior
+     * count is the one read just before this release: the original #1905 rule.
+     */
+    const pinSignInClean = (
+        observed: unknown[],
+        flowAttempts: EscrowPinAttemptContext | undefined
+    ): { clean: boolean; ownWrongAttempts: number } => {
+        const flowSalt = flowAttempts?.pinSalt;
+        const sameGeneration =
+            typeof flowSalt !== 'string' ||
+            observed.every(status => {
+                const salt = (status as { salt?: unknown } | undefined)?.salt;
+                return typeof salt !== 'string' || salt === flowSalt;
+            });
+        const attempts = sameGeneration ? flowAttempts : undefined;
+        const own = attempts ? attemptCount(attempts.ownWrongAttempts) : 0;
+        if (own === undefined) return { clean: false, ownWrongAttempts: 0 };
+        const prior = attempts
+            ? attemptCount(attempts.priorWrongAttempts)
+            : recordedWrongPinAttempts(observed[0]);
+        const clean =
+            prior === 0 &&
+            observed.length > 0 &&
+            observed.every(status => recordedWrongPinAttempts(status) === own);
+        return { clean, ownWrongAttempts: own };
+    };
+
+    /**
+     * The charges a same-PIN refresh may replace, or undefined when it must not run:
+     * the sign-in is clean (see pinSignInClean) and exactly one charge landed between
+     * the two reads (this release). Any other charge may be someone else's guess still
+     * in flight, so the PIN keeps its reduced budget. The server re-checks these
+     * charges in the write itself (`expectedPinCharges`), so a guess landing after
+     * these reads still blocks the refresh.
+     */
+    const refreshablePinCharges = (
+        before: unknown,
+        after: unknown,
+        ownWrongAttempts: number
+    ): { attemptsRemaining: number; wrongAttempts: number } | undefined => {
+        const pre = before as { state?: unknown; attemptsRemaining?: unknown } | undefined;
+        const post = after as { state?: unknown; attemptsRemaining?: unknown } | undefined;
+        if (pre?.state !== 'enabled' || post?.state !== 'enabled') return undefined;
+        if (typeof pre.attemptsRemaining !== 'number' || typeof post.attemptsRemaining !== 'number')
+            return undefined;
+        if (post.attemptsRemaining !== pre.attemptsRemaining - 1) return undefined;
+        return { attemptsRemaining: post.attemptsRemaining, wrongAttempts: ownWrongAttempts };
+    };
+
+    /** New salt and verifier for a PIN just proven; undefined when it fails the PIN rules. */
+    const freshPinMaterial = async (
+        pin: string
+    ): Promise<{ pinSalt: string; pinVerifier: string } | undefined> => {
+        if (!validatePin(pin).ok) return undefined;
+        try {
+            const pinSalt = generatePinSalt();
+            return { pinSalt, pinVerifier: await derivePinProof(pin, pinSalt) };
+        } catch {
+            return undefined;
+        }
+    };
+
+    /**
+     * Store a PIN-released recovery share as this device's share at its own version.
+     * Only the main slot is written: the recovery share is never staged as a pending
+     * candidate, and unrelated candidates are left for the usual reconciliation, because
+     * a PIN sign-in changes nothing on the server.
+     */
+    const adoptReleasedShare = async (
+        storage: SSSStorageFunctions & { assertCurrent: () => void },
+        storageId: string | undefined,
+        released: { primaryDid: string; recoveryShare: string; authShare: string },
+        shareVersion: number,
+        currentVersion: number
+    ): Promise<void> => {
+        await storage.storeDeviceShare(released.recoveryShare, storageId);
+        await storage.storeShareVersion(shareVersion, storageId);
+        // The released split's email share is not known on this device.
+        lastEmailShare = undefined;
+        lastShareVersion = shareVersion;
+        lastServerSnapshot = {
+            currentVersion,
+            resolvedVersion: shareVersion,
+            authShare: released.authShare,
+            primaryDid: released.primaryDid,
+        };
+    };
+
+    /**
+     * PIN sign-in with the login already bound to the account (the default "keep"
+     * path). Nothing is re-split and no server state changes apart from re-setting the
+     * same PIN for a fresh attempt budget. That re-set runs only when the server shows
+     * zero wrong entries against the current PIN at release time; otherwise the PIN
+     * keeps its reduced budget and `newPinRequired` asks the user for a different PIN,
+     * so a guesser gets at most one budget per PIN in total. `pin` is used in this
+     * call only: never stored in pending/retry state, logged or reported.
+     *
+     * Version race: if another device rotated after the release, the device is stored
+     * at the released version as long as the server still holds it in history
+     * (`deferred-rotation`; the next start-up's reconcileShares advances it without
+     * wiping). If that version is gone (a revoke or rebind), it fails closed with
+     * PinSignInStaleError and stores nothing; it never falls back to a rotation.
+     */
+    const completePinSignInKeep = async (
+        params: {
+            token: string;
+            providerType: AuthProviderType;
+            signDidAuthVp?: DidAuthVpSigner;
+            options?: { recoveryEmail?: string; recoveryLanguage?: string };
+        },
+        released: {
+            privateKey: string;
+            primaryDid: string;
+            recoveryShare: string;
+            authShare: string;
+            shareVersion: number;
+        },
+        pin: string,
+        /** PIN status read before this release; undefined when that read failed. */
+        pinBefore: unknown,
+        /** Own-typos context from the caller's PIN sign-in flow (E). */
+        pinAttempts?: EscrowPinAttemptContext
+    ): Promise<RecoveryResult> => {
+        const storage = guardedStorage();
+        const generation = storageGeneration;
+        const storageId = activeStorageId;
+        const assertActive = (): void => {
+            if (activeStorageId !== storageId || storageGeneration !== generation) {
+                throw new Error('This recovery request was cancelled.');
+            }
+        };
+
+        const {
+            mode,
+            newPinRequired: newPinRequiredAtRelease,
+            refreshCharges,
+        } = await withShareUpdateLock(storage, storageId, () =>
+            withRotationLock(async () => {
+                assertActive();
+                const current = await fetchAuthShareRaw(
+                    serverUrl,
+                    params.token,
+                    params.providerType,
+                    undefined,
+                    tenantId
+                );
+                assertActive();
+                if (
+                    !current ||
+                    current.primaryDid !== released.primaryDid ||
+                    typeof current.shareVersion !== 'number'
+                ) {
+                    throw new PinSignInStaleError();
+                }
+                let mode: 'kept' | 'deferred-rotation';
+                if (current.shareVersion === released.shareVersion) {
+                    if (authShareToString(current.authShare) !== released.authShare) {
+                        throw new PinSignInStaleError();
+                    }
+                    mode = 'kept';
+                } else {
+                    const historical =
+                        current.shareVersion > released.shareVersion
+                            ? await fetchAuthShareRaw(
+                                  serverUrl,
+                                  params.token,
+                                  params.providerType,
+                                  released.shareVersion,
+                                  tenantId
+                              )
+                            : null;
+                    if (authShareToString(historical?.authShare) !== released.authShare) {
+                        throw new PinSignInStaleError();
+                    }
+                    mode = 'deferred-rotation';
+                }
+                assertActive();
+                await adoptReleasedShare(
+                    storage,
+                    storageId,
+                    released,
+                    released.shareVersion,
+                    current.shareVersion
+                );
+                pendingIdentityRecovery = undefined;
+                // Both reads count: the one after this release (a success never resets the
+                // count) and the one before it (a legacy record without a verified count
+                // reports 0 once any release has been reserved, so only the earlier read
+                // shows that its history is unknown). Each must show exactly this flow's
+                // own wrong entries (zero for callers without a flow context).
+                const { clean, ownWrongAttempts } = pinSignInClean(
+                    [pinBefore, current.escrowPin],
+                    pinAttempts
+                );
+                return {
+                    mode,
+                    newPinRequired: !clean,
+                    refreshCharges: clean
+                        ? refreshablePinCharges(pinBefore, current.escrowPin, ownWrongAttempts)
+                        : undefined,
+                };
+            })
+        );
+
+        // Same PIN, new salt and verifier, enrolled at the same version: a fresh
+        // attempt budget without a rotation. Skipped after a race (the other device's
+        // rotation already re-enrolled escrow) and whenever wrong entries are recorded
+        // against this PIN (the user must pick a different PIN instead). A failure
+        // leaves the PIN at this version valid, so nothing is cleared and no repair is
+        // scheduled.
+        let pinRefreshed = false;
+        let pinRefreshFailed = false;
+        let newPinRequired = newPinRequiredAtRelease;
+        if (mode === 'kept' && !newPinRequired && refreshCharges && params.signDidAuthVp) {
+            const pinMaterial = await freshPinMaterial(pin);
+            const refresh =
+                pinMaterial === undefined
+                    ? undefined
+                    : await attemptEnrollEscrow(
+                          params.token,
+                          params.providerType,
+                          released.privateKey,
+                          released.primaryDid,
+                          { recoveryShare: released.recoveryShare },
+                          released.shareVersion,
+                          params.signDidAuthVp,
+                          undefined,
+                          pinMaterial,
+                          false,
+                          storage.assertCurrent,
+                          params.options?.recoveryEmail,
+                          params.options?.recoveryLanguage,
+                          refreshCharges
+                      );
+            pinRefreshed = refresh?.enrolled === true;
+            // Reported, not swallowed: the PIN keeps (at most) its reduced budget. A commit
+            // whose receipt was lost is not confirmed here, so it reports failed too (an
+            // under-claim: the budget is in fact full). lca-api either
+            // refused before the authority (both copies unchanged) or converges to the
+            // authority's commit; a copy left behind is caught by ensureEscrowEnrollment's
+            // identity check, which never clears the PIN on its own.
+            pinRefreshFailed = pinMaterial !== undefined && !pinRefreshed;
+            // A refused refresh usually means the charges moved after our reads, most
+            // likely someone else's entry: re-check before showing the calm sheet. If the
+            // status can't be read, a 409 (charges changed) still counts as a warning.
+            if (pinRefreshFailed) {
+                const latest = await fetchAuthShareRaw(
+                    serverUrl,
+                    params.token,
+                    params.providerType,
+                    undefined,
+                    tenantId
+                ).catch(() => undefined);
+                newPinRequired = latest
+                    ? !pinSignInClean([pinBefore, latest.escrowPin], pinAttempts).clean
+                    : isConflictRefusal(refresh && !refresh.enrolled ? refresh.error : undefined);
+            }
+        }
+        assertActive();
+        return {
+            privateKey: released.privateKey,
+            did: released.primaryDid,
+            escrowEnrolled: true,
+            escrowRecovery: true,
+            pinSignIn: {
+                mode,
+                pinRefreshed,
+                newPinRequired,
+                ...(pinRefreshFailed ? { pinRefreshFailed: true } : {}),
+            },
+        };
+    };
+
+    /**
+     * PIN sign-in completed with a login that is not yet bound (lost-login flow). The
+     * PIN-release rebind token links the login on the server without touching shares,
+     * history, recovery methods or escrow. No PIN is held across the new-login step, so
+     * the attempt budget is not refreshed here.
+     */
+    const completePinSignInRelink = async (
+        params: Parameters<NonNullable<SSSKeyDerivationStrategy['completeIdentityRecovery']>>[0],
+        pending: NonNullable<typeof pendingIdentityRecovery>,
+        signDidAuthVp: DidAuthVpSigner
+    ): Promise<RecoveryResult> => {
+        const storage = guardedStorage();
+        const generation = storageGeneration;
+        const storageId = activeStorageId;
+        const shareVersion = pending.pinKeep!.shareVersion;
+        const assertActive = (): void => {
+            if (
+                activeStorageId !== storageId ||
+                pendingIdentityRecovery !== pending ||
+                storageGeneration !== generation
+            ) {
+                throw new Error('This recovery request was cancelled.');
+            }
+        };
+
+        await withShareUpdateLock(storage, storageId, () =>
+            withRotationLock(async () => {
+                assertActive();
+                const didAuthVp = await requestFreshDidAuthVp(
+                    serverUrl,
+                    pending.privateKey,
+                    pending.primaryDid,
+                    signDidAuthVp,
+                    tenantId
+                );
+                assertActive();
+                try {
+                    const response = await postJson<{
+                        success: true;
+                        shareVersion: number;
+                        linked: boolean;
+                    }>(
+                        `${serverUrl}/keys/recovery-session/pin-sign-in`,
+                        {
+                            recoverySessionToken: pending.rebindSessionToken,
+                            providerType: params.providerType,
+                            primaryDid: pending.primaryDid,
+                        },
+                        {
+                            ...buildHeaders('', didAuthVp, tenantId),
+                            'X-Auth-Token': params.token,
+                        }
+                    );
+                    if (response.shareVersion !== shareVersion) throw new PinSignInStaleError();
+                } catch (error) {
+                    // The single-use token may have been consumed before the response was
+                    // lost (or by an earlier attempt). The link is proven only when this
+                    // login now resolves to the same account, version and auth share.
+                    const current = await fetchAuthShareRaw(
+                        serverUrl,
+                        params.token,
+                        params.providerType,
+                        undefined,
+                        tenantId
+                    ).catch(() => null);
+                    if (
+                        !current ||
+                        current.primaryDid !== pending.primaryDid ||
+                        current.shareVersion !== shareVersion ||
+                        authShareToString(current.authShare) !== pending.authShare
+                    ) {
+                        throw error;
+                    }
+                }
+                assertActive();
+                await adoptReleasedShare(storage, storageId, pending, shareVersion, shareVersion);
+                pendingIdentityRecovery = undefined;
+            })
+        );
+
+        if (activeStorageId !== storageId || storageGeneration !== generation) {
+            throw new Error('This recovery request was cancelled.');
+        }
+        // The budget is never refreshed here; this only tells the app whether the PIN
+        // has recorded wrong entries (unknown counts as yes) so it asks for a new one.
+        const status = await fetchAuthShareRaw(
+            serverUrl,
+            params.token,
+            params.providerType,
+            undefined,
+            tenantId
+        ).catch(() => null);
+        return {
+            privateKey: pending.privateKey,
+            did: pending.primaryDid,
+            escrowEnrolled: true,
+            escrowRecovery: true,
+            pinSignIn: {
+                mode: 'relinked',
+                pinRefreshed: false,
+                newPinRequired: !pinSignInClean([status?.escrowPin], pending.pinKeep?.pinAttempts)
+                    .clean,
+            },
+        };
+    };
+
+    /**
+     * Rebinds a pending identity recovery to the new sign-in and re-enrolls escrow.
+     * A pending PIN sign-in (`pinKeep`) only links the login; see completePinSignInRelink.
+     */
+    const completeIdentityRecoveryWith = async (
+        params: Parameters<NonNullable<SSSKeyDerivationStrategy['completeIdentityRecovery']>>[0]
+    ): Promise<RecoveryResult> => {
+        const storage = guardedStorage();
+        const generation = storageGeneration;
+        const pending = pendingIdentityRecovery;
+        const signDidAuthVp = params.signDidAuthVp;
+
+        if (!pending) throw new Error('No identity recovery is waiting for a new sign-in');
+        if (!signDidAuthVp) {
+            throw new Error('DID proof signing is required to bind a new sign-in');
+        }
+        if (pending.pinKeep) return completePinSignInRelink(params, pending, signDidAuthVp);
+
+        const storageId = activeStorageId;
+        const { shares, shareVersion } = await withShareUpdateLock(storage, storageId, () =>
+            withRotationLock(async () => {
+                const assertActive = (): void => {
+                    if (
+                        activeStorageId !== storageId ||
+                        pendingIdentityRecovery !== pending ||
+                        storageGeneration !== generation
+                    ) {
+                        throw new Error('This recovery request was cancelled.');
+                    }
+                };
+                assertActive();
+                const candidates = await readPendingShareCandidates(storage, storageId);
+                if (pending.rebind && pending.rebind.storageId !== storageId) {
+                    throw new Error('Active account changed during identity recovery');
+                }
+                if (
+                    candidates.some(
+                        candidate => candidate.share !== pending.rebind?.shares.deviceShare
+                    )
+                ) {
+                    throw new Error('Reconcile the pending share update before binding a sign-in');
+                }
+
+                let shareVersion: number | undefined;
+                const retry = pending.rebind?.attempted ?? false;
+                if (retry && pending.rebind) {
+                    const current = await fetchAuthShareRaw(
+                        serverUrl,
+                        params.token,
+                        params.providerType,
+                        undefined,
+                        tenantId
+                    );
+                    const authShare = authShareToString(current?.authShare);
+                    // prepareIdentityRecovery already verified this key's DID.
+                    // Comparing the reconstructed key avoids trusting server DID metadata.
+                    if (authShare && current?.shareVersion != null) {
+                        const health = await verifyStoredShares(
+                            {
+                                getDevice: async () => pending.rebind!.shares.deviceShare,
+                                getAuth: async () => authShare,
+                            },
+                            pending.primaryDid,
+                            async key => (key === pending.privateKey ? pending.primaryDid : '')
+                        );
+                        if (health.healthy) shareVersion = current.shareVersion;
+                    }
+                }
+
+                assertActive();
+                if (shareVersion === undefined) {
+                    const didAuthVp = await requestFreshDidAuthVp(
+                        serverUrl,
+                        pending.privateKey,
+                        pending.primaryDid,
+                        signDidAuthVp,
+                        tenantId
+                    );
+                    assertActive();
+                    pending.rebind ??= {
+                        shares: (await splitAndVerify(pending.privateKey)).shares,
+                        storageId,
+                        attempted: false,
+                    };
+                    const rebind = pending.rebind;
+                    if (
+                        !candidates.some(candidate => candidate.share === rebind.shares.deviceShare)
+                    ) {
+                        await addPendingShareCandidate(
+                            storage,
+                            { share: rebind.shares.deviceShare, createdAt: Date.now() },
+                            storageId
+                        );
+                    }
+                    assertActive();
+                    rebind.attempted = true;
+                    try {
+                        const response = await postJson<{
+                            shareVersion: number;
+                            recoveryMethodsRequireConfirmation: string[];
+                        }>(
+                            `${serverUrl}/keys/recovery-session/rebind`,
+                            {
+                                recoverySessionToken: pending.rebindSessionToken,
+                                providerType: params.providerType,
+                                primaryDid: pending.primaryDid,
+                                authShare: {
+                                    encryptedData: rebind.shares.authShare,
+                                    encryptedDek: '',
+                                    iv: '',
+                                },
+                            },
+                            {
+                                ...buildHeaders('', didAuthVp, tenantId),
+                                'X-Auth-Token': params.token,
+                            }
+                        );
+
+                        shareVersion = response.shareVersion;
+                    } catch (error) {
+                        // A retry's rejection does not disprove an earlier commit
+                        // (the first request may still have been in flight at the read).
+                        if (error instanceof ShareWriteRejectedError && !retry) {
+                            await removePendingShareCandidate(
+                                storage,
+                                rebind.shares.deviceShare,
+                                storageId
+                            );
+                            pending.rebind = undefined;
+                        }
+                        throw error;
+                    }
+                }
+                if (shareVersion === undefined || !pending.rebind) {
+                    throw new Error('Server did not confirm the new share');
+                }
+                assertActive();
+                const shares = pending.rebind.shares;
+                await storage.storeDeviceShare(shares.deviceShare, storageId);
+                await storage.storeShareVersion(shareVersion, storageId);
+                await clearPendingShareCandidates(storage, storageId);
+                assertActive();
+                lastEmailShare = shares.emailShare;
+                lastShareVersion = shareVersion;
+                lastServerSnapshot = {
+                    currentVersion: shareVersion,
+                    resolvedVersion: shareVersion,
+                    authShare: shares.authShare,
+                    primaryDid: pending.primaryDid,
+                };
+                pendingIdentityRecovery = undefined;
+                return { shares, shareVersion };
+            })
+        );
+
+        // The rebind wiped lca-api's PIN record, so the old PIN cannot be carried and
+        // is cleared. Only a hold (7-day) release reaches this rebind: a PIN release
+        // keeps the account instead (completePinSignInKeep / completePinSignInRelink).
+        // Other recovery methods leave enrollment to the caller's rollout gate.
+        const enrolled =
+            pending.fromEscrow &&
+            (await tryEnrollEscrow(
+                params.token,
+                params.providerType,
+                pending.privateKey,
+                pending.primaryDid,
+                shares,
+                shareVersion,
+                signDidAuthVp,
+                undefined,
+                undefined,
+                true,
+                storage.assertCurrent,
+                params.options?.recoveryEmail,
+                params.options?.recoveryLanguage
+            ));
+        if (activeStorageId !== storageId || storageGeneration !== generation) {
+            throw new Error('This recovery request was cancelled.');
+        }
+        if (!enrolled) {
+            // The repair clears: PIN material (an offline-guessable verifier) is never kept.
+            unenrolledRotation = {
+                shares,
+                shareVersion,
+                primaryDid: pending.primaryDid,
+                clearPin: true,
+            };
+        }
+        return {
+            privateKey: pending.privateKey,
+            did: pending.primaryDid,
+            escrowEnrolled: enrolled,
+            escrowRecovery: pending.fromEscrow,
+        };
+    };
+
     return {
         name: 'sss',
 
@@ -1360,6 +2491,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // --- User scoping ---
 
         setActiveUser(userId: string): void {
+            verifiedEscrowEnvelope = undefined;
             if (activeStorageId !== `sss-device-share:${userId}`) storageGeneration++;
             activeStorageId = `sss-device-share:${userId}`;
             lastServerSnapshot = null;
@@ -1421,6 +2553,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             }
 
             storageGeneration++;
+            verifiedEscrowEnvelope = undefined;
             await Promise.allSettled(localWrites);
             await clearPendingShareCandidates(storage, storageId);
             return storage.clearAllShares(storageId);
@@ -1439,6 +2572,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async reconstructKey(localKey: string, remoteKey: string): Promise<string> {
+            const coordinate = localKey.slice(-2).toLowerCase();
+            if (
+                localKey.length === remoteKey.length &&
+                /^(?:[0-9a-f]{2}){2,}$/i.test(localKey) &&
+                /^(?:[0-9a-f]{2}){2,}$/i.test(remoteKey) &&
+                coordinate !== '00' &&
+                coordinate === remoteKey.slice(-2).toLowerCase()
+            ) {
+                throw new DuplicateShareCoordinateError();
+            }
             return reconstructFromShares([localKey, remoteKey]);
         },
 
@@ -1736,7 +2879,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 maskedRecoveryEmail: data.maskedRecoveryEmail ?? null,
                 escrowOptedOut: data.escrowOptedOut === true,
                 escrowPin: data.escrowPin,
+                escrowStale: data.escrowStale,
+                ...(typeof data.escrowBlobIdentity === 'string'
+                    ? { escrowBlobIdentity: data.escrowBlobIdentity }
+                    : {}),
+                ...(data.escrowUpdating === true ? { escrowUpdating: true } : {}),
                 sssActivationState: data.sssActivationState ?? 'active',
+                ...(typeof data.priorEscrowEnrollment === 'boolean'
+                    ? { priorEscrowEnrollment: data.priorEscrowEnrollment }
+                    : {}),
             };
         },
 
@@ -1780,7 +2931,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to mark migrated: ${response.statusText}`);
+                throw new Error(`Failed to mark migrated: ${describeHttpStatus(response)}`);
             }
         },
 
@@ -1796,7 +2947,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to activate SSS key: ${response.statusText}`);
+                throw new Error(`Failed to activate SSS key: ${describeHttpStatus(response)}`);
             }
         },
 
@@ -1806,24 +2957,92 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             if (!config.escrow?.enabled) return { state: 'disabled' };
             const status = await this.fetchServerKeyStatus(params.token, params.providerType);
             if (status.escrowOptedOut) return { state: 'opted-out', escrowPin: status.escrowPin };
-            const state =
+            const confirmedEscrow = status.recoveryMethods.filter(
+                method =>
+                    method.type === 'escrow' &&
+                    (Boolean(method.confirmedAt) ||
+                        ('confirmationStatus' in method &&
+                            method.confirmationStatus === 'confirmed'))
+            );
+            const enrolled =
                 status.shareVersion !== null &&
-                status.recoveryMethods.some(
-                    method =>
-                        method.type === 'escrow' &&
-                        method.shareVersion === status.shareVersion &&
-                        (Boolean(method.confirmedAt) ||
-                            ('confirmationStatus' in method &&
-                                method.confirmationStatus === 'confirmed'))
-                )
-                    ? 'enrolled'
-                    : 'not-enrolled';
-            return { state, escrowPin: status.escrowPin };
+                confirmedEscrow.some(method => method.shareVersion === status.shareVersion);
+            // Previously enrolled accounts must bypass the new-enrollment rollout
+            // even when a rotation succeeded but resealing the escrow blob failed.
+            if (confirmedEscrow.length > 0 && (!enrolled || status.escrowStale))
+                return {
+                    state: 'stale',
+                    escrowPin: status.escrowPin,
+                    staleReason: status.escrowStale,
+                };
+            if (enrolled) return { state: 'enrolled', escrowPin: status.escrowPin };
+            // A rebind leaves escrow methods `pending`, which /keys/auth-share omits but
+            // reports as priorEscrowEnrollment; flag them so the caller can request a
+            // prior-enrollment repair instead of a first-time enrollment. Older servers
+            // lack the field, so fall back to the (confirmed-only) method list.
+            const priorEscrowMethod =
+                status.priorEscrowEnrollment ??
+                status.recoveryMethods.some(method => method.type === 'escrow');
+            return {
+                state: 'not-enrolled',
+                escrowPin: status.escrowPin,
+                ...(priorEscrowMethod ? { priorEscrowMethod: true } : {}),
+            };
         },
 
         async disableEscrowRecovery(params): Promise<void> {
+            const assertCurrent = guardedStorage().assertCurrent;
             const status = await this.fetchServerKeyStatus(params.token, params.providerType);
             if (!status.primaryDid) throw new Error('Cannot disable escrow without a primary DID');
+            if (config.escrow?.attestation.mode === 'nitro') {
+                const identity = await fetchVerifiedEnclaveKey();
+                const current = await fetchAuthorityState(
+                    params.token,
+                    params.providerType,
+                    params.privateKey,
+                    status.primaryDid,
+                    params.signDidAuthVp,
+                    identity,
+                    assertCurrent
+                );
+                if (current.status === 'disabled') {
+                    verifiedEscrowEnvelope = undefined;
+                    return;
+                }
+                const signedIntent = await createEscrowEnrollmentIntent({
+                    state: current,
+                    target: null,
+                    shareVersion: current.shareVersion ?? 0,
+                    privateKey: params.privateKey,
+                    pinAction: 'disable',
+                    // Disable always nulls these server-side regardless of input.
+                    recoveryEmail: '',
+                    recoveryLanguage: '',
+                });
+                const vp = await requestFreshDidAuthVp(
+                    serverUrl,
+                    params.privateKey,
+                    status.primaryDid,
+                    params.signDidAuthVp,
+                    tenantId
+                );
+                assertCurrent();
+                const response = await escrowRequest<unknown>('/disable', {
+                    method: 'POST',
+                    headers: buildHeaders(params.token, vp, tenantId),
+                    body: JSON.stringify({
+                        authToken: params.token,
+                        providerType: params.providerType,
+                        optOut: true,
+                        signedIntent,
+                        sourceEnvelope: current.envelope,
+                    }),
+                });
+                await verifyEscrowEnrollmentCommit(response, signedIntent.intent, identity);
+                assertCurrent();
+                verifiedEscrowEnvelope = undefined;
+                return;
+            }
             const vp = await requestFreshDidAuthVp(
                 serverUrl,
                 params.privateKey,
@@ -1865,16 +3084,43 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         providerType: params.providerType,
                     }),
                 });
-                return ensureEscrowEnrollmentUnguarded(this, params, storage);
+                const result = await ensureEscrowEnrollmentUnguarded(
+                    this,
+                    params,
+                    storage,
+                    false,
+                    true
+                );
+                // Explicit enable never requests prior-enrollment-only repair.
+                if (result.enrolled) return result;
+                if (result.reason === 'not-enrolled')
+                    throw new Error('Escrow enrollment did not complete');
+                if (result.reason === 'pin-reset-required')
+                    throw new Error('Set a new recovery PIN to turn on automatic recovery.');
+                return { enrolled: false as const, reason: result.reason };
             });
         },
 
         async setEscrowPin({ pin, ...params }): Promise<void> {
             const storage = guardedStorage();
             const result = await withRotationLock(() =>
-                ensureEscrowEnrollmentUnguarded(this, { ...params, options: { pin } }, storage)
+                // P9.1: preserve the caller's recoveryEmail/recoveryLanguage — do
+                // not replace `params.options` wholesale, or nitro enroll/replace
+                // loses its required recovery contact.
+                ensureEscrowEnrollmentUnguarded(
+                    this,
+                    {
+                        ...params,
+                        options: {
+                            pin,
+                            recoveryEmail: params.options?.recoveryEmail,
+                            recoveryLanguage: params.options?.recoveryLanguage,
+                        },
+                    },
+                    storage
+                )
             );
-            if (!result.enrolled) {
+            if (!result.enrolled || !result.changed) {
                 throw new Error('Automatic recovery is not available for this account.');
             }
         },
@@ -1884,7 +3130,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const result = await withRotationLock(() =>
                 ensureEscrowEnrollmentUnguarded(this, params, storage, true)
             );
-            if (!result.enrolled) {
+            if (!result.enrolled || !result.changed) {
                 throw new Error('Automatic recovery is not available for this account.');
             }
         },
@@ -1907,8 +3153,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             }
         },
 
+        getVerifiedEscrowEnvelope(): EscrowEnvelope | null {
+            return verifiedEscrowEnvelope ? { ...verifiedEscrowEnvelope } : null;
+        },
+
         /** Start or explicitly restart a hold with fresh client-bound resume secrets. */
         async startEscrowRecovery(params): Promise<EscrowRecoveryStart> {
+            const expectedDid = params.expectedDid;
+            const nitro = config.escrow?.attestation.mode === 'nitro';
+            if (nitro && (!expectedDid || (params.tenantId ?? tenantId) !== tenantId))
+                throw new EscrowEvidenceError();
             const sessionProof = params.recoverySessionToken !== undefined;
             if (
                 sessionProof
@@ -1938,28 +3192,139 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 },
                 params.options?.releasePolicy === 'pin'
             );
-            return { ...result, clientEphemeralPrivateKey: pair.privateKey };
+            // [D] Verify the enclave itself committed to creating THIS exact
+            // hold — recipient key, DID and blob identity — before trusting
+            // the response. Skipped for a reported existing hold
+            // (`resumeToken: null`): that response isn't bound to this call's
+            // freshly generated key pair in the first place (see
+            // EscrowRecoveryPanel's `existingHold` display), so there is
+            // nothing of ours to verify it against.
+            let expectations: EscrowRecoveryExpectations | undefined;
+            if (nitro && result.resumeToken !== null) {
+                const identity = await fetchVerifiedEnclaveKey();
+                if (
+                    identity.mode !== 'nitro' ||
+                    !identity.authority ||
+                    !result.holdRecord ||
+                    !expectedDid
+                )
+                    throw new EscrowEvidenceError();
+                const verified = await verifyEscrowHoldRecord(
+                    result.holdRecord,
+                    {
+                        tenant: authorityTenant,
+                        did: expectedDid,
+                        holdId: result.holdId,
+                        clientEphemeralPublicKey: pair.publicKey,
+                        blobHash: result.holdRecord.hold.blobHash,
+                    },
+                    identity
+                );
+                expectations = {
+                    tenant: authorityTenant,
+                    did: expectedDid,
+                    holdId: result.holdId,
+                    clientEphemeralPublicKey: pair.publicKey,
+                    blobHash: result.holdRecord.hold.blobHash,
+                    authorityGeneration: verified.authorityGeneration,
+                    holdDigest: verified.holdDigest,
+                    ledgerPublicKey: identity.authority.ledgerPublicKey,
+                    keyId: verified.receipt.keyId,
+                };
+                result.codeSent = result.delivery
+                    ? await verifyEscrowCodeDelivery(result.delivery, expectations, identity)
+                    : undefined;
+            }
+            // Never accept a server-supplied expectations object, even in software mode.
+            return { ...result, clientEphemeralPrivateKey: pair.privateKey, expectations };
         },
 
         /** Read hold status; secrets (auth or resume token) never travel in a URL. */
         async getEscrowRecoveryStatus(params): Promise<EscrowHoldStatus | null> {
-            const query = new URLSearchParams(
-                'holdId' in params
-                    ? { holdId: params.holdId }
-                    : { providerType: params.providerType }
-            );
-            const secret = 'holdId' in params ? params.resumeToken : params.token;
-            const result = await escrowRequest<{ hold: EscrowHoldStatus | null }>(
-                `/status?${query}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        ...buildHeaders('', undefined, tenantId),
-                        'X-Auth-Token': secret,
-                    },
+            const expected =
+                config.escrow?.attestation.mode === 'nitro' && 'holdId' in params
+                    ? recoveryExpectations(params.holdId, params.expectations)
+                    : undefined;
+            const status = await fetchEscrowHoldStatus(params);
+            if (expected && status)
+                await verifyPendingHold(status, expected, await fetchVerifiedEnclaveKey());
+            return status;
+        },
+
+        /** Submit the confirmation code emailed by the enclave for an authority-mode hold. */
+        async confirmEscrowRecovery(params): Promise<{ success: true }> {
+            // [D] Fetch and verify the hold record this code is being
+            // confirmed against (the same hold `startEscrowRecovery` already
+            // verified at creation) BEFORE submitting the code, then verify
+            // the confirmation result commits to that SAME hold — a wrong
+            // recipient key, hold id/digest, DID, unsigned/forged record, or
+            // a retry snapshot for a different hold all fail closed here.
+            let pending:
+                | {
+                      identity: VerifiedEnclaveIdentity;
+                      holdRecord: EscrowHoldRecordLike;
+                      expected: EscrowRecoveryExpectations;
+                  }
+                | undefined;
+            if (config.escrow?.attestation.mode === 'nitro') {
+                const expected = recoveryExpectations(params.holdId, params.expectations);
+                if ((params.tenantId ?? tenantId) !== tenantId) throw new EscrowEvidenceError();
+                const identity = await fetchVerifiedEnclaveKey();
+                const status = await fetchEscrowHoldStatus({
+                    holdId: params.holdId,
+                    resumeToken: params.resumeToken,
+                });
+                if (!status?.holdRecord) {
+                    throw new EscrowEvidenceError();
                 }
-            );
-            return result.hold;
+                const holdRecord = await verifyPendingHold(status, expected, identity);
+                pending = { identity, holdRecord, expected };
+            }
+            const confirm = () =>
+                escrowRequest<{ success: true; receipt?: unknown }>('/confirm', {
+                    method: 'POST',
+                    headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
+                    body: JSON.stringify({
+                        holdId: params.holdId,
+                        resumeToken: params.resumeToken,
+                        code: params.code,
+                    }),
+                });
+            const result = await confirm();
+            if (pending) {
+                if (!result.receipt) {
+                    throw new EscrowEvidenceError();
+                }
+                const receipt = await verifyEscrowHoldConfirmation(
+                    result.receipt,
+                    pending.holdRecord,
+                    pending.expected,
+                    pending.identity
+                );
+                // A commit's secret-keyed requestDigest cannot be checked by the
+                // client. Require the idempotent readback snapshot, which exposes
+                // the exact hold digest without exposing an offline code oracle.
+                if (receipt.kind === 'commit') {
+                    const readback = await confirm();
+                    const snapshot = await verifyEscrowHoldConfirmation(
+                        readback.receipt,
+                        pending.holdRecord,
+                        pending.expected,
+                        pending.identity
+                    );
+                    if (snapshot.kind !== 'snapshot') throw new EscrowEvidenceError();
+                }
+            }
+            return { success: true };
+        },
+
+        /** Request a fresh confirmation code for a hold awaiting confirmation. */
+        async resendEscrowRecoveryCode(params): Promise<{ success: true }> {
+            return escrowRequest<{ success: true }>('/resend', {
+                method: 'POST',
+                headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
+                body: JSON.stringify({ holdId: params.holdId, resumeToken: params.resumeToken }),
+            });
         },
 
         /** Cancel a pending hold with a fresh DID-owner proof. */
@@ -1990,6 +3355,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             input: RecoveryInput;
             didFromPrivateKey?: (privateKey: string) => Promise<string>;
             signDidAuthVp?: DidAuthVpSigner;
+            options?: { recoveryEmail?: string; recoveryLanguage?: string };
         }): Promise<RecoveryResult> {
             const storage = guardedStorage();
             const { token, providerType, input, didFromPrivateKey, signDidAuthVp } = params;
@@ -1999,14 +3365,48 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     throw new Error('DID verification is required for escrow recovery');
                 // Each PIN call owns a fresh, single-use hold and in-memory key pair.
                 // Never persist this key or retry completion after a burned attempt.
+                // Without a bound login, the PIN start is proven by the verified
+                // recovery-email session instead (lost-login sign-in).
+                if (input.method === 'escrow-pin' && !token && !input.recoverySessionToken)
+                    throw new Error('PIN recovery requires signing in first.');
+                // (E) The PIN status before this release, for the same-PIN refresh
+                // decision in completePinSignInKeep. A failed read counts as unknown.
+                const pinBefore =
+                    input.method === 'escrow-pin' && token
+                        ? await fetchAuthShareRaw(
+                              serverUrl,
+                              token,
+                              providerType,
+                              undefined,
+                              tenantId
+                          ).then(
+                              (current: { escrowPin?: unknown } | null) => current?.escrowPin,
+                              () => undefined
+                          )
+                        : undefined;
                 const start =
                     input.method === 'escrow-pin'
                         ? await this.startEscrowRecovery!({
-                              token,
-                              providerType,
+                              ...(token
+                                  ? { token, providerType }
+                                  : { recoverySessionToken: input.recoverySessionToken }),
+                              expectedDid: input.expectedDid,
                               options: { releasePolicy: 'pin' },
                           })
                         : input;
+                const expected =
+                    config.escrow?.attestation.mode === 'nitro'
+                        ? recoveryExpectations(start.holdId, start.expectations)
+                        : undefined;
+                if (expected) {
+                    if (!start.resumeToken) throw new EscrowEvidenceError();
+                    const status = await fetchEscrowHoldStatus({
+                        holdId: start.holdId,
+                        resumeToken: start.resumeToken,
+                    });
+                    if (!status) throw new EscrowEvidenceError();
+                    await verifyPendingHold(status, expected, await fetchVerifiedEnclaveKey());
+                }
                 let pinProof: string | undefined;
                 if (input.method === 'escrow-pin') {
                     if (!('pinSalt' in start) || !start.pinSalt || !start.resumeToken)
@@ -2033,6 +3433,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     start.clientEphemeralPrivateKey
                 );
                 if (
+                    expected &&
+                    (plaintext.did !== expected.did || plaintext.holdId !== expected.holdId)
+                )
+                    throw new EscrowEvidenceError();
+                if (
                     plaintext.holdId !== start.holdId ||
                     plaintext.did !== material.primaryDid ||
                     plaintext.shareVersion !== material.shareVersion
@@ -2052,17 +3457,52 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         'Recovery produced an incorrect key. Try another recovery method.'
                     );
                 }
+                // PIN sign-in keeps the account by default: no re-split, no rebind.
+                // Reached only after this call's PIN release succeeded and the DID matched.
+                if (input.method === 'escrow-pin' && token) {
+                    return completePinSignInKeep(
+                        { token, providerType, signDidAuthVp, options: params.options },
+                        {
+                            privateKey,
+                            primaryDid: material.primaryDid,
+                            recoveryShare: plaintext.recoveryShare,
+                            authShare,
+                            shareVersion: material.shareVersion,
+                        },
+                        input.pin,
+                        pinBefore,
+                        input.pinAttempts
+                    );
+                }
                 pendingIdentityRecovery = {
                     privateKey,
                     primaryDid: material.primaryDid,
                     recoveryShare: plaintext.recoveryShare,
                     authShare,
                     rebindSessionToken: material.rebindSessionToken,
+                    fromEscrow: true,
+                    // The PIN itself is not kept across the new-login step.
+                    ...(input.method === 'escrow-pin'
+                        ? {
+                              pinKeep: {
+                                  shareVersion: material.shareVersion,
+                                  ...(input.pinAttempts
+                                      ? { pinAttempts: { ...input.pinAttempts } }
+                                      : {}),
+                              },
+                          }
+                        : {}),
                 };
-                // The OTP path uses exactly this pending state and atomic rebind operation.
-                // Without a provider session the caller completes it after signing in.
+                // The OTP path uses exactly this pending state. Without a provider session
+                // the caller completes it after signing in: a hold release with the
+                // atomic rebind, a PIN release by linking the new login only.
                 if (!token) return { privateKey, did: material.primaryDid };
-                return this.completeIdentityRecovery!({ token, providerType, signDidAuthVp });
+                return completeIdentityRecoveryWith({
+                    token,
+                    providerType,
+                    signDidAuthVp,
+                    options: params.options,
+                });
             }
 
             let recoveryShare: string;
@@ -2788,6 +4228,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     recoveryShare,
                     authShare,
                     rebindSessionToken: material.rebindSessionToken,
+                    fromEscrow: false,
                 };
 
                 return { privateKey, did: material.primaryDid };
@@ -2807,143 +4248,146 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async completeIdentityRecovery(params): Promise<RecoveryResult> {
-            const storage = guardedStorage();
-            const generation = storageGeneration;
-            const pending = pendingIdentityRecovery;
-            const signDidAuthVp = params.signDidAuthVp;
+            // Public entry (sign-in completion, retry). A pending PIN sign-in only links
+            // the login; any other pending recovery rebinds with a full rotation.
+            return completeIdentityRecoveryWith(params);
+        },
 
-            if (!pending) throw new Error('No identity recovery is waiting for a new sign-in');
-            if (!signDidAuthVp) {
-                throw new Error('DID proof signing is required to bind a new sign-in');
+        /**
+         * "Secure my account": one atomic server update re-splits the key and drops all
+         * older auth share versions, signing out other devices and turning off the old
+         * phrase/backup/passkey/email key. Staged through the pending-candidate slot, so
+         * a lost acknowledgement is promoted by the usual reconciliation. Escrow is then
+         * re-enrolled with `pin` (fresh salt) or, for `null`, without a PIN. The PIN is
+         * used in this call only and never kept in retry state.
+         */
+        async revokeOtherDevices(params): Promise<RevokeOtherDevicesResult> {
+            const { token, providerType, privateKey, did, signDidAuthVp, pin } = params;
+            if (!signDidAuthVp) throw new Error('DID proof signing is required');
+            if (pin !== null) {
+                const validation = validatePin(pin);
+                if (!validation.ok)
+                    throw new Error(
+                        validation.reason === 'length'
+                            ? 'PIN must contain 6–12 digits.'
+                            : 'Choose a PIN without trivial or sequential patterns.'
+                    );
             }
-
+            const storage = guardedStorage();
             const storageId = activeStorageId;
+            const assertUser = captureActiveUserGuard();
+            const assertActive = (): void => {
+                assertUser();
+                storage.assertCurrent();
+            };
+            const before = await fetchAuthShareRaw(
+                serverUrl,
+                token,
+                providerType,
+                undefined,
+                tenantId
+            );
+            if (!before || before.primaryDid !== did) {
+                throw new Error('This account could not be found. Sign in again.');
+            }
+            // Re-enroll only an account that had escrow and has not opted out.
+            const hadEscrow =
+                !before.escrowOptedOut &&
+                (before.priorEscrowEnrollment === true ||
+                    (Array.isArray(before.recoveryMethods) &&
+                        before.recoveryMethods.some(
+                            (method: { type?: string }) => method?.type === 'escrow'
+                        )));
+            const didFromKey = async (key: string): Promise<string> =>
+                key === privateKey ? did : `${did}:mismatch`;
+
             const { shares, shareVersion } = await withShareUpdateLock(storage, storageId, () =>
                 withRotationLock(async () => {
-                    const assertActive = (): void => {
-                        if (
-                            activeStorageId !== storageId ||
-                            pendingIdentityRecovery !== pending ||
-                            storageGeneration !== generation
-                        ) {
-                            throw new Error('This recovery request was cancelled.');
-                        }
-                    };
-                    assertActive();
-                    const candidates = await readPendingShareCandidates(storage, storageId);
-                    if (pending.rebind && pending.rebind.storageId !== storageId) {
-                        throw new Error('Active account changed during identity recovery');
-                    }
-                    if (
-                        candidates.some(
-                            candidate => candidate.share !== pending.rebind?.shares.deviceShare
-                        )
-                    ) {
-                        throw new Error(
-                            'Reconcile the pending share update before binding a sign-in'
-                        );
-                    }
-
-                    let shareVersion: number | undefined;
-                    const retry = pending.rebind?.attempted ?? false;
-                    if (retry && pending.rebind) {
-                        const current = await fetchAuthShareRaw(
-                            serverUrl,
-                            params.token,
-                            params.providerType,
-                            undefined,
-                            tenantId
-                        );
-                        const authShare = authShareToString(current?.authShare);
-                        // prepareIdentityRecovery already verified this key's DID.
-                        // Comparing the reconstructed key avoids trusting server DID metadata.
-                        if (authShare && current?.shareVersion != null) {
-                            const health = await verifyStoredShares(
-                                {
-                                    getDevice: async () => pending.rebind!.shares.deviceShare,
-                                    getAuth: async () => authShare,
-                                },
-                                pending.primaryDid,
-                                async key => (key === pending.privateKey ? pending.primaryDid : '')
+                    const { snapshot } = await resolvePendingShareCandidates(
+                        storage,
+                        storageId,
+                        async () => {
+                            const data = await fetchAuthShareRaw(
+                                serverUrl,
+                                token,
+                                providerType,
+                                undefined,
+                                tenantId
                             );
-                            if (health.healthy) shareVersion = current.shareVersion;
-                        }
-                    }
-
-                    assertActive();
-                    if (shareVersion === undefined) {
-                        const didAuthVp = await requestFreshDidAuthVp(
-                            serverUrl,
-                            pending.privateKey,
-                            pending.primaryDid,
-                            signDidAuthVp,
-                            tenantId
-                        );
-                        assertActive();
-                        pending.rebind ??= {
-                            shares: (await splitAndVerify(pending.privateKey)).shares,
-                            storageId,
-                            attempted: false,
-                        };
-                        const rebind = pending.rebind;
-                        if (
-                            !candidates.some(
-                                candidate => candidate.share === rebind.shares.deviceShare
+                            return {
+                                currentVersion: data?.shareVersion ?? null,
+                                authShare: authShareToString(data?.authShare),
+                            };
+                        },
+                        did,
+                        didFromKey,
+                        assertActive,
+                        recordPromotion(did),
+                        async version =>
+                            authShareToString(
+                                (
+                                    await fetchAuthShareRaw(
+                                        serverUrl,
+                                        token,
+                                        providerType,
+                                        version,
+                                        tenantId
+                                    )
+                                )?.authShare
                             )
-                        ) {
+                    );
+                    if (!snapshot.currentVersion) {
+                        throw new Error('This account could not be found. Sign in again.');
+                    }
+                    const expectedShareVersion = snapshot.currentVersion;
+                    const didAuthVp = await requestFreshDidAuthVp(
+                        serverUrl,
+                        privateKey,
+                        did,
+                        signDidAuthVp,
+                        tenantId
+                    );
+                    assertActive();
+                    let shareVersion: number | undefined;
+                    let stagedShare = '';
+                    const shares = await atomicShareUpdate(privateKey, {
+                        storeDevice: async share => {
+                            assertActive();
+                            stagedShare = share;
                             await addPendingShareCandidate(
                                 storage,
-                                { share: rebind.shares.deviceShare, createdAt: Date.now() },
+                                { share, createdAt: Date.now() },
                                 storageId
                             );
-                        }
-                        assertActive();
-                        rebind.attempted = true;
-                        try {
+                        },
+                        clearDevice: () =>
+                            removePendingShareCandidate(storage, stagedShare, storageId),
+                        storeAuth: async share => {
+                            assertActive();
                             const response = await postJson<{
+                                success: true;
                                 shareVersion: number;
                                 recoveryMethodsRequireConfirmation: string[];
                             }>(
-                                `${serverUrl}/keys/recovery-session/rebind`,
+                                `${serverUrl}/keys/revoke-other-devices`,
                                 {
-                                    recoverySessionToken: pending.rebindSessionToken,
-                                    providerType: params.providerType,
-                                    primaryDid: pending.primaryDid,
-                                    authShare: {
-                                        encryptedData: rebind.shares.authShare,
-                                        encryptedDek: '',
-                                        iv: '',
-                                    },
+                                    authToken: token,
+                                    providerType,
+                                    primaryDid: did,
+                                    authShare: { encryptedData: share, encryptedDek: '', iv: '' },
+                                    expectedShareVersion,
                                 },
-                                {
-                                    ...buildHeaders('', didAuthVp, tenantId),
-                                    'X-Auth-Token': params.token,
-                                }
+                                buildHeaders(token, didAuthVp, tenantId)
                             );
-
                             shareVersion = response.shareVersion;
-                        } catch (error) {
-                            // A retry's rejection does not disprove an earlier commit
-                            // (the first request may still have been in flight at the read).
-                            if (error instanceof ShareWriteRejectedError && !retry) {
-                                await removePendingShareCandidate(
-                                    storage,
-                                    rebind.shares.deviceShare,
-                                    storageId
-                                );
-                                pending.rebind = undefined;
-                            }
-                            throw error;
-                        }
+                        },
+                    });
+                    if (shareVersion === undefined) {
+                        throw new Error('Server did not return a share version');
                     }
-                    if (shareVersion === undefined || !pending.rebind) {
-                        throw new Error('Server did not confirm the new share');
-                    }
-                    assertActive();
-                    const shares = pending.rebind.shares;
                     await storage.storeDeviceShare(shares.deviceShare, storageId);
                     await storage.storeShareVersion(shareVersion, storageId);
-                    await clearPendingShareCandidates(storage, storageId);
+                    await removePendingShareCandidate(storage, shares.deviceShare, storageId);
                     assertActive();
                     lastEmailShare = shares.emailShare;
                     lastShareVersion = shareVersion;
@@ -2951,29 +4395,48 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         currentVersion: shareVersion,
                         resolvedVersion: shareVersion,
                         authShare: shares.authShare,
-                        primaryDid: pending.primaryDid,
+                        primaryDid: did,
                     };
-                    pendingIdentityRecovery = undefined;
                     return { shares, shareVersion };
                 })
             );
 
-            await tryEnrollEscrow(
-                params.token,
-                params.providerType,
-                pending.privateKey,
-                pending.primaryDid,
+            // lca-api unset the escrow blob and PIN with the old versions; re-enroll now.
+            if (!hadEscrow || !config.escrow?.enabled) {
+                return { shareVersion, escrowEnrolled: false, pinKept: false };
+            }
+            const pinMaterial = pin === null ? undefined : await freshPinMaterial(pin);
+            const enrollArgs: Parameters<typeof enrollEscrow> = [
+                token,
+                providerType,
+                privateKey,
+                did,
                 shares,
                 shareVersion,
                 signDidAuthVp,
                 undefined,
-                undefined,
-                true
-            );
-            if (activeStorageId !== storageId || storageGeneration !== generation) {
-                throw new Error('This recovery request was cancelled.');
+                pinMaterial,
+                !pinMaterial,
+                storage.assertCurrent,
+                params.options?.recoveryEmail,
+                params.options?.recoveryLanguage,
+            ];
+            const attempt = await attemptEnrollEscrow(...enrollArgs);
+            // A definite authority refusal (403): an old-copy PIN compare still in flight
+            // at the revoke can commit while this intent is evaluated, and the authority
+            // then refuses it on its operation revision. Nothing committed and lca-api
+            // released the lease, so one retry (re-derived from the authority's current
+            // state) keeps the PIN just chosen instead of the PIN-clearing repair.
+            const enrolled =
+                attempt.enrolled ||
+                (attempt.error instanceof EscrowRequestError &&
+                    attempt.error.status === 403 &&
+                    (await tryEnrollEscrow(...enrollArgs)));
+            if (!enrolled) {
+                // The repair clears: PIN material (an offline-guessable verifier) is never kept.
+                unenrolledRotation = { shares, shareVersion, primaryDid: did, clearPin: true };
             }
-            return { privateKey: pending.privateKey, did: pending.primaryDid };
+            return { shareVersion, escrowEnrolled: enrolled, pinKept: enrolled && !!pinMaterial };
         },
 
         // --- Contact method management ---
@@ -3069,6 +4532,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         async cleanup(): Promise<void> {
             storageGeneration++;
+            verifiedEscrowEnvelope = undefined;
             await Promise.allSettled(localWrites);
         },
     };

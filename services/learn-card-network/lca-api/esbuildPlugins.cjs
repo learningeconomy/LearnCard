@@ -2,6 +2,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const { sentryEsbuildPlugin } = require('@sentry/esbuild-plugin');
+const { withSentryRateLimitRetry } = require('../../../scripts/sentry-rate-limit-retry.cjs');
 
 const forceCjsSodiumWrapperPlugin = {
     name: 'force-cjs-sodium-wrapper',
@@ -40,9 +41,12 @@ const copyDidkitWasmPlugin = {
 module.exports = [
     forceCjsSodiumWrapperPlugin,
     copyDidkitWasmPlugin,
-    sentryEsbuildPlugin({
-        authToken: process.env.SENTRY_AUTH_TOKEN,
-        org: process.env.SENTRY_ORG,
-        project: process.env.SENTRY_PROJECT,
-    }),
+    withSentryRateLimitRetry(
+        sentryEsbuildPlugin({
+            telemetry: process.env.SENTRY_BUILD_TELEMETRY !== 'false',
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT,
+        })
+    ),
 ];

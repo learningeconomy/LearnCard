@@ -34,7 +34,7 @@ export interface LearnCardAssistantCardCta {
 
 export interface LearnCardAssistantCardFeedback {
     type: 'thumbs-down';
-    createdAt: string;
+    createdAt: string | null;
 }
 
 export interface LearnCardAssistantCard {

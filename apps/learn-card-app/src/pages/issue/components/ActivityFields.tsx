@@ -20,7 +20,7 @@ interface ActivityFieldsProps {
 }
 
 const INPUT_CLASS =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 
 export const ActivityFields: React.FC<ActivityFieldsProps> = ({
@@ -95,8 +95,8 @@ export const ActivityFields: React.FC<ActivityFieldsProps> = ({
                                     descriptor.input === 'date'
                                         ? 'date'
                                         : descriptor.input === 'number'
-                                        ? 'number'
-                                        : 'text'
+                                          ? 'number'
+                                          : 'text'
                                 }
                                 inputMode={descriptor.input === 'number' ? 'decimal' : undefined}
                                 value={value}

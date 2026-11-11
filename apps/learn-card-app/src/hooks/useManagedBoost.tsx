@@ -97,7 +97,7 @@ export const useManagedBoost = (
     const { data: recipientCount } = useCountBoostRecipients(boost?.uri);
     const { data: recipients, isLoading: recipientsLoading } = useGetBoostRecipients(boost?.uri);
 
-    let issueHistory: {
+    const issueHistory: {
         id: number;
         name: string;
         thumb: string;
@@ -136,7 +136,7 @@ export const useManagedBoost = (
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Manage Issuances</h2>
                 <IssuanceList boostUri={boost.uri} surface="managed-boosts" />
             </div>,
-            { sectionClassName: '!max-w-[480px]' },
+            { sectionClassName: 'max-w-[480px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };

@@ -100,9 +100,9 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <div className="w-16 h-16 bg-linear-to-br/srgb from-emerald-400 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                     <Rocket className="w-8 h-8 text-white" />
                 </div>
 
@@ -118,10 +118,10 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
                         {m['developerPortal.guides.goLive.setupComplete']()}
                     </h3>
 
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         {completedItems.map((item, index) => (
                             <div key={index} className="flex items-center gap-3">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                                 <span className="text-gray-700">{item}</span>
                             </div>
                         ))}
@@ -161,7 +161,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
                 <button
                     onClick={handleGoLive}
                     disabled={isActivating || !integration}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-cyan-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-200"
+                    className="flex items-center gap-2 px-6 py-3 bg-linear-to-r/srgb from-emerald-500 to-cyan-500 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-cyan-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-200"
                 >
                     {isActivating ? (
                         <>

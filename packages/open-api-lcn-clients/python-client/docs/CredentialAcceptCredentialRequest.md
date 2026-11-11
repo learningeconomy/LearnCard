@@ -1,12 +1,11 @@
 # CredentialAcceptCredentialRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**options** | [**CredentialAcceptCredentialRequestOptions**](CredentialAcceptCredentialRequestOptions.md) |  | [optional] 
+| Name        | Type                                                                                        | Description | Notes      |
+| ----------- | ------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **uri**     | **str**                                                                                     |             |
+| **options** | [**CredentialAcceptCredentialRequestOptions**](CredentialAcceptCredentialRequestOptions.md) |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ credential_accept_credential_request_dict = credential_accept_credential_request
 # create an instance of CredentialAcceptCredentialRequest from a dict
 credential_accept_credential_request_from_dict = CredentialAcceptCredentialRequest.from_dict(credential_accept_credential_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

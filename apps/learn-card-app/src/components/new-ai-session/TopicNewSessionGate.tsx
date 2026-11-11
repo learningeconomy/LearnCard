@@ -9,7 +9,7 @@ import { useDeviceTypeByWidth, useGetEnrichedSession, useModal } from 'learn-car
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
 
-import NewAiSessionContainer from './NewAiSessionContainer';
+import NewAiSessionContainer from './LazyNewAiSessionContainer';
 import { LearnCardAiChatBot } from './LearnCardAiChatBot/LearnCardAiChatBot';
 import {
     fetchLearningPathwaysForSession,

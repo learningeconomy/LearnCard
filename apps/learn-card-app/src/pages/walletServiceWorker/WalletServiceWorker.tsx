@@ -1,47 +1,51 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { initLearnCard } from '@learncard/init';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('wallet-service-worker');
-
 import { redirectStore, chapiStore } from 'learn-card-base';
-
-import LoadingPage from '../loadingPage/LoadingPage';
+import type { CredentialStoreEvent } from '@learncard/chapi-plugin';
 import { isExchangeRequest } from '../../helpers/chapi.helpers';
+import { CredentialReceiveScreen } from '../credentialStorage/CredentialReceiveScreen';
 
 const WalletServiceWorker = () => {
+    const activation = useRef<Promise<void>>();
+    const [failed, setFailed] = useState(false);
     useEffect(() => {
-        const chapiInit = async () => {
-            const wallet = await initLearnCard();
-            chapiStore.set.isChapiInteraction(true);
-
-            log.info('🪪 CHAPI Interaction Registering', chapiStore.get.isChapiInteraction());
-
-            wallet.invoke.activateChapiHandler({
-                get: async () => {
-                    log.info('activateChapiHandler::get::🎃');
-                    redirectStore.set.authRedirect('get');
-                    return { type: 'redirect', url: `${window.location.origin}/get` };
-                },
-                store: async event => {
-                    log.info('activateChapiHandler::store::🛠', event);
-
-                    // TODO: Fix event.event weirdness here upstream
-                    if (isExchangeRequest((event as any).event)) {
-                        redirectStore.set.authRedirect('exchange');
-
-                        return { type: 'redirect', url: `${window.location.origin}/exchange` };
-                    }
-
-                    redirectStore.set.authRedirect('store');
-                    return { type: 'redirect', url: `${window.location.origin}/store` };
-                },
-            });
+        let cancelled = false;
+        if (!activation.current) {
+            activation.current = (async () => {
+                const wallet = await initLearnCard();
+                chapiStore.set.isChapiInteraction(true);
+                await wallet.invoke.activateChapiHandler({
+                    get: async () => {
+                        redirectStore.set.authRedirect('get');
+                        return { type: 'redirect', url: `${window.location.origin}/get` };
+                    },
+                    store: async incoming => {
+                        // web-credential-handler versions may wrap the underlying event.
+                        const event =
+                            (incoming as CredentialStoreEvent & { event?: CredentialStoreEvent })
+                                .event ?? incoming;
+                        const route = isExchangeRequest(event) ? 'exchange' : 'store';
+                        redirectStore.set.authRedirect(route);
+                        return { type: 'redirect', url: `${window.location.origin}/${route}` };
+                    },
+                });
+            })();
+        }
+        activation.current.catch(() => {
+            if (!cancelled) setFailed(true);
+        });
+        return () => {
+            cancelled = true;
         };
-
-        chapiInit();
     }, []);
-
-    return <LoadingPage />;
+    return (
+        <CredentialReceiveScreen
+            credentials={[]}
+            connecting
+            loading={!failed}
+            error={failed ? 'request' : undefined}
+        />
+    );
 };
 
 export default WalletServiceWorker;

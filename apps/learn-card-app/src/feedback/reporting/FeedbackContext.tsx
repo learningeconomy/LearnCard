@@ -419,7 +419,7 @@ export const FeedbackProvider: React.FC<{
                 composerModalIdRef.current = newModal(
                     composer,
                     {
-                        sectionClassName: '!max-w-[480px] !bg-white',
+                        sectionClassName: 'max-w-[480px]! bg-white!',
                         onClose: () => handleComposerClosed(owner),
                     },
                     { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }

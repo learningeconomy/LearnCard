@@ -1,6 +1,7 @@
 import { QueryBuilder, BindParam } from 'neogma';
 
 import { AppStoreListing } from '@models';
+import { neogma } from '@instance';
 import {
     FlatAppStoreListingType,
     AppStoreListingType,
@@ -50,6 +51,12 @@ export const updateAppStoreListing = async (
         updatesToPersist.submitted_at = updates.submitted_at;
     if (typeof updates.contact_email !== 'undefined')
         updatesToPersist.contact_email = updates.contact_email;
+    if (typeof updates.pending_update_json !== 'undefined')
+        updatesToPersist.pending_update_json = updates.pending_update_json;
+    if (typeof updates.pending_update_status !== 'undefined')
+        updatesToPersist.pending_update_status = updates.pending_update_status;
+    if (typeof updates.pending_update_submitted_at !== 'undefined')
+        updatesToPersist.pending_update_submitted_at = updates.pending_update_submitted_at;
 
     const params: Partial<FlatAppStoreListingType> = updatesToPersist;
 
@@ -66,4 +73,12 @@ export const updateAppStoreListing = async (
         .run();
 
     return result.summary.updateStatistics.containsUpdates();
+};
+
+export const clearPendingListingUpdate = async (listingId: string): Promise<void> => {
+    await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})
+         REMOVE listing.pending_update_json, listing.pending_update_status, listing.pending_update_submitted_at`,
+        { listingId }
+    );
 };

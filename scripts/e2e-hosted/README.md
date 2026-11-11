@@ -1,0 +1,237 @@
+# Hosted E2E execution
+
+The `E2E` workflow runs the browser job and three service-test shards concurrently.
+Each job owns its Docker stack. Within the browser job, functional tests run before
+accessibility tests so legacy database resets cannot interrupt another suite.
+
+## When full E2E runs
+
+Full browser and service E2E run automatically in the merge queue. Documentation-only
+queue entries retain their existing exemption. PR updates (including draft PRs)
+only report the required `E2E` check with a summary explaining that full E2E is
+deferred; a green PR check is not evidence that the suites ran. Keep the merge queue
+required on `main`: the queue's `E2E` check must pass before merging code changes.
+Unit tests, mock tests, and verification keep their existing triggers.
+
+### Run full E2E on a PR before queuing
+
+In **Actions → E2E → Run workflow**, select the PR branch and set **LearnCard branch
+or commit SHA to test** to that branch or its current head SHA. The input defaults
+to `main`, so set it explicitly when testing a PR. Leave browser spec files at their
+default to run the usual full set; all service shards run as well. Manual runs also
+work for draft and documentation-only PRs.
+
+With GitHub CLI, replace `1234` with the PR number (same-repository branches):
+
+```sh
+pr_branch=$(gh pr view 1234 --json headRefName --jq .headRefName)
+pr_sha=$(gh pr view 1234 --json headRefOid --jq .headRefOid)
+gh workflow run e2e.yml --ref "$pr_branch" -f ref="$pr_sha"
+```
+
+`--ref` selects the workflow revision; `-f ref=` selects the source revision tested
+by both suites. A commit SHA pins the tested source even if the PR is updated while
+the run waits. Inspect the manual run in Actions for its result and artifacts.
+Manual runs do not replace validation of the combined revision in the merge queue.
+
+## Browser workers
+
+The default three specs use `playwright.parallel.config.ts`: two Firefox workers,
+parallel tests within files, and no shared authentication setup. The
+`tests/fixtures/isolated-test.ts` fixture provides fresh `learner`, `recipient`, and
+`issuer` actors per test attempt. Pass the same actor to browser authentication and
+SDK helpers. Every actor has its own seed and profile ID, including on retries.
+Tests start with empty browser storage and leave backend data until stack teardown.
+
+```ts
+import { test, expect } from './fixtures/isolated-test';
+import { waitForAuthenticatedState } from './test.helpers';
+
+test('my independent flow', async ({ page, actors }) => {
+    await waitForAuthenticatedState(page, actors.learner);
+    // Assert only on this test's data.
+});
+```
+
+App listings are globally visible, so they also need unique names and IDs and
+assertions scoped to the created listing. Do not assert global record counts or
+rely on another test running first. Never call `/delete-all` in a parallel test.
+
+`run-browser.sh` selects the parallel config only when every requested filename
+is one of `consent-flow-race.spec.ts`, `app-store.spec.ts`, or
+`wallet-credentials.spec.ts`. Other selections use the original serial config;
+this preserves manual runs of legacy specs with global database cleanup.
+Accessibility remains a separate serial invocation. Add a suite to both the
+parallel config's `testMatch` and the launcher's allowlist only after auditing its
+identities, resources, hooks, and cleanup.
+
+The mocked tier also uses two workers and parallel tests. Its HAR is read-only
+and its mocks belong to each browser context. Recording remains serial through
+`playwright.mock-record.config.ts` so workers never write the same HAR.
+
+## Build cache
+
+`Dockerfile.monorepo` exposes a `dependencies` stage containing only workspace
+manifests, patches, and installed dependencies. BuildKit reads the source through
+a temporary bind mount to collect manifests without creating a source image layer.
+
+The browser job exports this stage through a cache-only target using `mode=min`
+and uses it to compile the SPA. This full source/build image is never loaded into
+Docker by hosted jobs. Source and app image layers are never exported to the remote
+cache, avoiding uploads of source layers that change on every commit.
+
+## Backend runtime
+
+Hosted browser and service jobs load the separate `backend` target, retaining the
+`learncard-monorepo-local` tag expected by Compose. It installs only production
+dependencies of Brain, LearnCloud, LCA API, and their transitive workspaces using
+Bun filters. All workspace manifests remain available for frozen-lockfile validation,
+but app source, NX, Serverless and test runners are excluded from the
+runtime image. Cloud explicitly owns its runtime Swagger assets and schema helper.
+
+`prepare-backend-source.mjs` follows dependencies, optional dependencies and peer
+workspace dependencies to copy required source and assets at their original paths.
+This preserves TypeScript entrypoints, `development` exports and service-test bind
+mounts without introducing a second bundling strategy. Required WASM and email
+assets are retained. Root TypeScript configuration files remain available for aliases.
+
+The backend dependency stage has its own `e2e-backend-dependencies` cache-only
+export with `mode=min`. Service shards never install the app's build dependencies
+inside Docker. The browser job uses both caches. The backend cache starts cold on
+its first CI run; compare a subsequent run before drawing conclusions about timings.
+
+Both dependency stages use Bun 1.4.4 for lockfile v3. Runtime stages inherit their
+installed dependency layers and copy only the Bun 1.3.14 executable to preserve
+`localhost:host-gateway` did:web resolution. Neither hosted Compose startup commands
+nor final runtime stages run `bun install`. The original full `source` target remains
+the default for existing local Docker build commands.
+
+## Browser runtime
+
+Hosted browser and service prerequisite builds set `SENTRY_BUILD_TELEMETRY=false`. The three
+service esbuild configurations pass this through to Sentry's `telemetry` option:
+the older LearnCloud plugin can otherwise fail its build-start hook when the
+optional telemetry endpoint is unreachable. Release injection remains enabled;
+ordinary builds retain the plugin's default telemetry behavior.
+
+The hosted launcher derives the official Playwright `-noble` image tag from the
+installed package version. Browsers and OS dependencies are already in that image;
+there is no per-run apt installation. Tests mount the installed workspace at its
+original absolute path and run as the runner user, preserving workspace links and
+artifact ownership. Linux host networking preserves the existing localhost URLs.
+Both functional tests and accessibility/global setup run inside this image.
+
+The app Dockerfile builds with the monorepo image, then copies only the generated
+`build/` directory into Nginx. The runtime listens on port 3000, serves SPA routes
+through index.html, and returns 404 for missing assets. Backend containers use the separate backend runtime described above.
+
+## Runner storage
+
+`prepare-storage.sh` requires 15 GiB free on `/` and 35 GiB for Docker. `ubuntu-latest`
+sometimes assigns a 72G copy-on-write VM with about 13G free instead of the usual
+145G disk. When a GitHub-hosted runner is short, the script deletes unused
+preinstalled toolchains (Android, .NET, GHC, CodeQL, Boost, Swift, PowerShell) and
+Docker images, measures again, and records `reclaim=` and `reclaimed_root_kib=` in
+`storage-plan.txt`. Runners large enough already, and persistent runners, are never
+touched. Override the list with `E2E_RECLAIM_PATHS`.
+
+## Cache writers and cleanup
+
+### Shared SDK compilation (LC-2312 / CI-15a)
+
+`sdk-build-cache.yml` publishes an exact snapshot of the fixed browser/service SDK
+prerequisite union after successful compilation on `main`. E2E jobs only restore;
+they never publish SDK outputs. The app, Docker work, runtime readiness checks and
+all tests still execute. No Nx database or test result is shared.
+
+For example, changing an app button can reuse the SDK compiled on `main`, while
+Vite still compiles that button and Playwright still tests the changed app. SDK,
+compiler, lockfile, embedded CLI snippet or compiler-environment changes require
+a different snapshot. SDK release metadata uses this input identity; the fresh
+app build still uses the tested Git SHA.
+
+The plan audits both task graphs and every declared output directory. Unexpected
+prerequisite targets or unsupported inputs preserve the complete ordinary Nx
+graph. A miss, unavailable restore or rejected inventory rebuilds prerequisites;
+a compilation or test failure still fails the job. Hashes, file modes and a full
+inventory detect missing, changed, extra or linked snapshot entries. Only an
+accepted inventory or successful compilation permits skipping dependency tasks.
+
+The key deliberately hashes all tracked packages, services, tools, scripts,
+patches, root files, workspace manifests and `docs/snippets/`, plus the task plan,
+toolchain, platform and restricted compiler environment. It excludes app source
+and commit IDs. Absolute workspace/tool paths are included conservatively, so a
+different runner layout misses. Build-time environment additions require auditing
+`compilerEnvironment`; runtime test variables are unaffected.
+
+For a controlled manual baseline, dispatch E2E on the same ref with
+`use_sdk_cache=false`. This disables restore while retaining the same SDK phase,
+compiler environment and concurrency. Compare `sdk_dependency_build` against
+`sdk_output_restore`, then compare the complete required-job durations and test
+counts across several runs. Key/lookup overhead and a cold producer cost time too;
+an SDK phase win alone does not establish a faster complete workflow.
+
+`verify_sdk_producer=true` adds a producer probe to a manual E2E run; feature refs
+compile and snapshot without publishing. After merge, verify a successful `main`
+publication, reuse on a second app-only PR commit and merge-group reuse. These
+scope checks require the workflow on the default branch. A corrupt immutable
+cache remains a safe miss/rebuild until eviction or manual deletion. The broader
+Test Runner experiment in #1681 remains research; its affected-set keys and mixed
+timing results are not evidence of cross-PR reuse or a measured net speedup.
+
+### Dependency cache and builders
+
+The browser job and service shards 2/3 restore the Bun dependency cache without
+saving it. Service shard 1 is the sole writer within each E2E run. The shared setup
+action retains cache saving by default for other workflows. This avoids sibling
+jobs compressing the same dependency cache only to lose a cache-key reservation.
+
+Buildx removal is skipped only when `runner.environment` is `github-hosted`:
+GitHub discards that VM after the job. Persistent runners retain builder cleanup.
+Application stack teardown still runs in every job.
+
+## Measuring changes
+
+Artifacts contain `timings.tsv` (including capacity snapshot and stack teardown
+durations), capacity snapshots, Docker build logs, and
+Playwright JSON reports. Compare the slowest required job across multiple runs,
+including cold and warm caches. Compare the actual functional test and accessibility
+durations separately from image builds, image loading, setup, and cleanup.
+
+Baseline browser stage durations on September 30, 2026:
+
+| Run         | Docker preparation | Functional suite | Accessibility |
+| ----------- | -----------------: | ---------------: | ------------: |
+| 36670842853 |             12m48s |            5m55s |         3m53s |
+| 36673410610 |             11m03s |            6m07s |         4m01s |
+| 36686252727 |             22m57s |            6m03s |         3m58s |
+
+The last run spent 7m56s exporting the old base cache. These are observations,
+not a promised speedup: remote cache behavior and runner capacity must be verified
+with the new workflow. Increasing browser shards repeats stack preparation and
+should be considered only after measuring this version.
+
+## Local checks
+
+```sh
+bash .github/tests/test-hosted-e2e-backend-source.test.sh
+bash .github/tests/test-hosted-e2e-script-contract.test.sh
+bash .github/tests/test-hosted-e2e-playwright.test.sh
+bash .github/tests/test-hosted-e2e-concurrency.test.sh
+bash .github/tests/test-hosted-e2e-browser-runtime.test.sh
+bash .github/tests/test-hosted-e2e-readiness.test.sh
+
+cd apps/learn-card-app
+bunx playwright test --config=playwright.mock.config.ts --repeat-each=2
+# With the real stack already running:
+E2E_EXTERNAL_STACK=true bunx playwright test --config=playwright.parallel.config.ts
+```
+
+## Bun installer/runtime compatibility
+
+The dependency stage uses Bun 1.4.4 for lockfile v3. The source stage inherits
+those layers and copies only the Bun 1.3.14 executable from the compatible runtime
+image. Both `bun` and its `bunx` link are checked during the build. This retains
+the cross-service localhost/DID workaround without copying the installed `/app`
+tree into a fresh runtime base. The hosted DID-resolution preflight and full
+service/browser suites verify compatibility.

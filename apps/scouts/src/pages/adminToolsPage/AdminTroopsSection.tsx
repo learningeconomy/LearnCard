@@ -7,9 +7,7 @@ import AdminTroopRow from './AdminTroopRow';
 import { IonSpinner } from '@ionic/react';
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
 
-type AdminTroopsSectionProps = {};
-
-const AdminTroopsSection: React.FC<AdminTroopsSectionProps> = () => {
+const AdminTroopsSection: React.FC = () => {
     const { data: troops, isLoading: troopsLoading } = useGetIDs();
 
     return (
@@ -20,8 +18,8 @@ const AdminTroopsSection: React.FC<AdminTroopsSectionProps> = () => {
             </h2>
 
             <div className="flex flex-col gap-[10px] pl-[15px]">
-                {troops?.map((troop, index) => {
-                    return <AdminTroopRow key={`troop-${index}`} credential={troop} />;
+                {troops?.map(({ vc, uri }, index) => {
+                    return <AdminTroopRow key={uri ?? `troop-${index}`} credential={vc} />;
                 })}
                 {troopsLoading && <IonSpinner color="dark" />}
             </div>

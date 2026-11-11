@@ -98,32 +98,32 @@ const KIND_THEME: Record<
     }
 > = {
     format_gap: {
-        headerClass: 'bg-gradient-to-r from-indigo-500 to-violet-600',
+        headerClass: 'bg-linear-to-r/srgb from-indigo-500 to-violet-600',
         Icon: Sparkles,
         subtitle: 'A new format we’re working on.',
     },
     trust_gap: {
-        headerClass: 'bg-gradient-to-r from-amber-500 to-orange-500',
+        headerClass: 'bg-linear-to-r/srgb from-amber-500 to-orange-500',
         Icon: ShieldAlert,
         subtitle: 'LearnCard kept your credentials safe.',
     },
     transport: {
-        headerClass: 'bg-gradient-to-r from-slate-500 to-slate-700',
+        headerClass: 'bg-linear-to-r/srgb from-slate-500 to-slate-700',
         Icon: WifiOff,
         subtitle: 'We couldn’t reach the other side.',
     },
     request_invalid: {
-        headerClass: 'bg-gradient-to-r from-rose-500 to-orange-500',
+        headerClass: 'bg-linear-to-r/srgb from-rose-500 to-orange-500',
         Icon: AlertCircle,
         subtitle: 'The request had a problem.',
     },
     wallet: {
-        headerClass: 'bg-gradient-to-r from-rose-500 to-orange-500',
+        headerClass: 'bg-linear-to-r/srgb from-rose-500 to-orange-500',
         Icon: Wrench,
         subtitle: 'Something on our end didn’t work.',
     },
     unknown: {
-        headerClass: 'bg-gradient-to-r from-red-500 to-red-600',
+        headerClass: 'bg-linear-to-r/srgb from-red-500 to-red-600',
         Icon: AlertCircle,
         subtitle: 'We couldn’t complete your request.',
     },
@@ -197,7 +197,7 @@ export const ExchangeErrorDisplay: React.FC<ExchangeErrorDisplayProps> = ({
         <div className="min-h-full flex items-center justify-center p-4 font-poppins safe-area-top-margin">
             <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden animate-fade-in-up">
                 <div className={`${theme.headerClass} px-6 py-7 text-center`}>
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-3">
                         <HeaderIcon className="w-9 h-9 text-white" />
                     </div>
 
@@ -210,7 +210,7 @@ export const ExchangeErrorDisplay: React.FC<ExchangeErrorDisplayProps> = ({
                     </p>
                 </div>
 
-                <div className="p-6 space-y-5">
+                <div className="p-6 space-y-v3-5">
                     {verifierInfo && <VerifierHeader {...verifierInfo} />}
                     {issuerInfo && <IssuerHeader {...issuerInfo} />}
 
@@ -235,7 +235,7 @@ export const ExchangeErrorDisplay: React.FC<ExchangeErrorDisplayProps> = ({
                             </summary>
 
                             <div className="mt-2 rounded-xl bg-grayscale-10 border border-grayscale-200 p-3">
-                                <p className="text-xs text-grayscale-600 font-mono break-words leading-relaxed">
+                                <p className="text-xs text-grayscale-600 font-mono wrap-break-word leading-relaxed">
                                     {rawErrorMessage}
                                 </p>
                             </div>
@@ -253,7 +253,7 @@ export const ExchangeErrorDisplay: React.FC<ExchangeErrorDisplayProps> = ({
                         />
                     )}
 
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-v3-3 pt-1">
                         {onRetry && !isFormatGap && (
                             <button
                                 onClick={onRetry}
@@ -344,7 +344,7 @@ const ReportSection: React.FC<ReportSectionProps> = ({
 
     // composing | sending
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <label htmlFor="exchange-error-note" className="text-xs font-medium text-grayscale-700">
                 Anything to add? (optional)
             </label>
@@ -356,7 +356,7 @@ const ReportSection: React.FC<ReportSectionProps> = ({
                 placeholder="What were you trying to do? Any extra context?"
                 rows={3}
                 disabled={state === 'sending'}
-                className="w-full py-2.5 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-none disabled:opacity-50"
+                className="w-full py-2.5 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-none disabled:opacity-50"
             />
 
             <button

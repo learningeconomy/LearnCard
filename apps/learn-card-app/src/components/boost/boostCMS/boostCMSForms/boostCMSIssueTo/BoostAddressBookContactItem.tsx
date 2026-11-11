@@ -92,10 +92,10 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
         newModal(
             <RecipientMediaAttachmentsModal recipient={contact} setIssueTo={_setIssueTo} />,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
                 usePortal: true,
-                portalClassName: '!max-w-[500px]',
+                portalClassName: 'max-w-[500px]!',
             },
             {
                 desktop: ModalTypes.Cancel,
@@ -151,7 +151,7 @@ export const BoostAddressBookContactItem: React.FC<BoostAddressBookContactItemPr
 
     if (version === 'sleek') {
         return (
-            <div className="flex gap-[10px] items-center py-[10px] border-b-[1px] border-grayscale-line border-solid last:border-b-0">
+            <div className="flex gap-[10px] items-center py-[10px] border-b border-grayscale-line border-solid last:border-b-0">
                 <UserProfilePicture
                     customContainerClass="flex justify-center items-center w-[35px] h-[35px] rounded-full overflow-hidden text-white font-medium text-2xl"
                     customImageClass="flex justify-center items-center w-[35px] h-[35px] min-w-[35px] min-h-[35px] rounded-full overflow-hidden object-cover"

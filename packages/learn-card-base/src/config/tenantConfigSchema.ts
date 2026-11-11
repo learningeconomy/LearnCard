@@ -11,6 +11,13 @@
 import { z, type ZodIssue } from 'zod';
 
 /**
+ * Same as `ESCROW_AUTHORITY_TENANT_PATTERN` in `@learncard/sss-key-manager`. Copied, not
+ * imported, so the Node config scripts that load this schema don't pull in the SDK;
+ * `tenantConfigSchema.test.ts` asserts the two stay identical.
+ */
+export const ESCROW_AUTHORITY_TENANT_LABEL = /^[A-Za-z0-9_-]{1,128}$/;
+
+/**
  * URL string that also accepts `TODO_*` sentinel placeholders.
  *
  * Tenant configs under development use `TODO_BRAIN_SERVICE_URL` etc. as
@@ -55,14 +62,100 @@ export const tenantFirebaseConfigSchema = z
     })
     .passthrough();
 
+/** 96 hex chars = 48-byte SHA-384 digest (both Nitro PCRs and imageSha384 use this length). */
+const hex96 = z.string().regex(/^[0-9a-fA-F]{96}$/, 'Expected a 96-character hex string (SHA-384)');
+
+/**
+ * Nitro measurement pin. Two accepted shapes:
+ *  - A full PCR0/1/2 tuple (the only shape that can ever match an attestation —
+ *    see `verifyNitroAttestationDocument` in `@learncard/sss-key-manager`).
+ *  - A legacy image-only pin (`{ imageSha384 }`), kept for backward compatibility with
+ *    existing configs. These are accepted by the schema but map to NO nitro pins:
+ *    `sss-key-manager` treats image-only pins as never-matching (see P4.3 / 7db56e2e5).
+ */
+const pcrTupleMeasurementSchema = z
+    .object({
+        pcr0: hex96,
+        pcr1: hex96,
+        pcr2: hex96,
+        imageSha384: hex96.optional(),
+    })
+    .passthrough();
+
+const legacyImageOnlyMeasurementSchema = z
+    .object({
+        imageSha384: hex96,
+        pcr0: hex96.optional(),
+        pcr1: hex96.optional(),
+        pcr2: hex96.optional(),
+    })
+    .passthrough();
+
+const escrowEnclaveMeasurementSchema = z.union([
+    pcrTupleMeasurementSchema,
+    legacyImageOnlyMeasurementSchema,
+]);
+
+export const tenantKeycloakConfigSchema = z
+    .object({
+        serverUrl: z.string().url(),
+        realm: z.string().min(1),
+        clientId: z.string().min(1),
+        scopes: z.array(z.string()).default(['openid', 'profile', 'email', 'phone']),
+        redirectUri: z.string().optional(),
+        postLogoutRedirectUri: z.string().optional(),
+        /**
+         * Native only. Static page (apps/learn-card-app/public/auth/continue.html on the tenant web domain)
+         * opened first in the system auth sheet so it shows a branded loader instead of blank redirects.
+         * Omit to open the Keycloak authorize URL directly.
+         */
+        authBridgeUrl: z.string().url().optional(),
+    })
+    .passthrough();
+
+export type TenantKeycloakConfig = z.infer<typeof tenantKeycloakConfigSchema>;
+
 export const tenantSSSConfigSchema = z
     .object({
-        serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
+        serverUrl: urlOrPlaceholder().default('https://api.learncard.app/api'),
         escrowRelayPublicKey: z.string().default(''),
         escrowRelayKeyId: z.string().default(''),
         escrowEnclaveMode: z.enum(['off', 'software', 'nitro']).default('off'),
         escrowEnclavePublicKeys: z.array(z.string()).default([]),
-        escrowEnclaveMeasurements: z.array(z.object({ imageSha384: z.string() })).default([]),
+        escrowEnclaveMeasurements: z.array(escrowEnclaveMeasurementSchema).default([]),
+        /** SHA-256 (hex) of the pinned Nitro root certificate DER. Overrides the AWS default root. */
+        escrowEnclaveRootSha256: z
+            .string()
+            .regex(/^[0-9a-f]{64}$/i, 'Expected a 64-character hex SHA-256 hash')
+            .optional(),
+        /** Max attestation age in ms. Nitro policy default is 300000 (5 min) when unset. */
+        escrowEnclaveMaxAgeMs: z.number().int().positive().max(3_600_000).optional(),
+        /**
+         * The escrow enclave's measured authority tenant label (`ESCROW_AUTHORITY_TENANT`),
+         * used for every value the enclave verifies or signs. Defaults to this tenant's
+         * `tenantId`. Set it when this app shares another tenant's single-tenant enclave:
+         * VetPass uses LearnCard's (`"learncard"`). Branding, emails, X-Tenant-Id and
+         * rollout keep using `tenantId`.
+         */
+        escrowAuthorityTenant: z
+            .string()
+            .regex(ESCROW_AUTHORITY_TENANT_LABEL, 'Expected 1-128 letters, digits, "_" or "-"')
+            .optional(),
+        /**
+         * D21: seal this app's `branding.name` into the escrow blob so the enclave's own
+         * recovery emails (code, recovery started, release warning) carry this app's brand
+         * instead of the authority tenant's. Default false. Turn on only after every live
+         * enclave host runs the brand-aware image: an older image drops the sealed brand
+         * whenever it re-encrypts a blob. See ROLLOUT.md.
+         */
+        escrowSealEmailBrand: z.boolean().optional(),
+        /**
+         * D21: `branding.name` of the other apps that share this app's DIDs and seal their own
+         * brand (LearnCard lists `VetPass`). While `escrowSealEmailBrand` is on, the recovery
+         * screens warn that enclave emails may carry one of these brands ("last writer wins"
+         * on a shared DID). Ignored while sealing is off.
+         */
+        escrowSharedEmailBrands: z.array(z.string().trim().min(1).max(64)).optional(),
         enableEmailBackupShare: z.boolean().default(true),
         requireEmailForPhoneUsers: z.boolean().default(true),
     })
@@ -87,6 +180,7 @@ export const tenantAuthConfigSchema = z
         // is used at runtime. Each block is self-contained with its own schema.
         // Unknown providers pass through via the parent .passthrough().
         firebase: tenantFirebaseConfigSchema.optional(),
+        keycloak: tenantKeycloakConfigSchema.optional(),
 
         // Key-derivation strategy config blocks — only the one matching
         // `keyDerivation` is used at runtime.
@@ -95,6 +189,14 @@ export const tenantAuthConfigSchema = z
     })
     .passthrough()
     .superRefine((auth, context) => {
+        if (auth.provider === 'keycloak' && !auth.keycloak) {
+            context.addIssue({
+                code: 'custom',
+                path: ['keycloak'],
+                message: 'Required when auth.provider is keycloak',
+            });
+        }
+
         if (auth.provider === 'firebase' && !auth.firebase) {
             context.addIssue({
                 code: 'custom',
@@ -153,6 +255,7 @@ const deleteSuccessStylesSchema = z
 export const tenantBrandingConfigSchema = z
     .object({
         name: z.string().default('LearnCard'),
+        contractRequestLabel: z.string().optional(),
         shortName: z.string().optional(),
         logoUrl: z.string().optional(),
         faviconUrl: z.string().optional(),
@@ -210,12 +313,30 @@ export const samplePersonaConfigSchema = z
 
 export const tenantFeatureConfigSchema = z
     .object({
+        /** Generic referral UI. Requires the enableContractRequests LaunchDarkly flag too. */
+        contractRequests: z.boolean().default(false),
         aiFeatures: z.boolean().default(true),
         appStore: z.boolean().default(true),
         analytics: z.boolean().default(true),
         themeSwitching: z.boolean().default(true),
         introSlides: z.boolean().default(true),
         launchPadQuickActions: z.boolean().default(true),
+
+        /** Enable ClassLink single sign-on for the tenant. */
+        classlinkSso: z.boolean().default(false),
+
+        /** Allow the tenant to opt users into ClassLink transcript sharing. */
+        classlinkTranscriptOptIn: z.boolean().default(false),
+
+        /**
+         * Invite ClassLink-signed-in (non-student) accounts to add a verified personal email
+         * so they keep access after leaving school. Requires `classlinkSso`. Never shown to
+         * ClassLink student sessions or accounts locked as minors.
+         */
+        classlinkPersonalEmail: z.boolean().default(false),
+
+        /** Show the School Connect app, where users connect a school account (ClassLink today). */
+        schoolConnect: z.boolean().default(false),
 
         /**
          * Pathways v2 — greenfield experimental feature at `/pathways`.
@@ -236,6 +357,33 @@ export const tenantFeatureConfigSchema = z
          * set `true` in the `config.local.json` / `config.staging.json` overlays.
          */
         useSeededSkillFrameworks: z.boolean().default(false),
+
+        /**
+         * Staged rollout percentage (0-100) for AUTOMATIC escrow recovery enrollment.
+         *
+         * This narrows WHO gets silently auto-enrolled by `AuthCoordinator`'s background
+         * `ensureEscrowEnrollment` call (see `config/escrowRollout.ts`). It does NOT gate
+         * whether escrow exists for the tenant at all — `auth.sss.escrowEnclaveMode` is
+         * the on/off switch for that — and it never affects users who are already
+         * enrolled, nor a user who explicitly opts in via `enableEscrowRecovery()`.
+         * Defaults to 0 so escrow stays internal-only until a tenant explicitly stages
+         * a rollout (see the P7.3 runbook at `services/escrow-enclave-app/ROLLOUT.md`).
+         */
+        escrowRolloutPercent: z.number().int().min(0).max(100).default(0),
+
+        /**
+         * Allowlist of internal testers for automatic escrow enrollment, independent of
+         * `escrowRolloutPercent` (an allowlisted user is enrolled at 0% too).
+         *
+         * Entries are lowercase hex SHA-256 hashes of the user's stable identifier
+         * (their primary DID) — NEVER raw emails/DIDs. Compute one with:
+         *   printf '%s' '<did>' | shasum -a 256 | cut -d' ' -f1
+         * See `isEscrowRolloutEnabledFor` in `config/escrowRollout.ts`.
+         */
+        escrowRolloutAllowlist: z
+            .array(z.string().regex(/^[0-9a-f]{64}$/i, 'Expected a 64-character hex SHA-256 hash'))
+            .default([]),
+
         samplePersonas: z.array(samplePersonaConfigSchema).default([]),
         legacySamplePersonaContractUris: z.array(z.string().min(1)).default([]),
     })
@@ -270,6 +418,8 @@ export const tenantLinksConfigSchema = z
         privacyPolicyUrl: urlOrPlaceholder().optional(),
         contactUrl: urlOrPlaceholder().optional(),
         websiteUrl: urlOrPlaceholder().optional(),
+        /** Where users can ask for help, e.g. to request that their school be added. */
+        supportEmail: z.string().email().optional(),
     })
     .passthrough();
 
@@ -352,6 +502,23 @@ export const tenantConfigSchema = z
         domain: z.string(),
         devDomain: z.string().optional(),
 
+        /**
+         * The deploy stage this config was baked/served for — 'local', 'staging', or
+         * 'production'. Written by `prepare-native-config.ts --stage <stage>` (learn-card-app)
+         * and the equivalent `VITE_NODE_ENV`-driven overlay (scouts) at build time.
+         *
+         * This is deliberately distinct from the Vite build *mode* (`IS_PRODUCTION` /
+         * `isProductionEnvironment()`), which is `'production'` for every deployed build
+         * including staging. `stage` is the only signal that tells production-mode code
+         * apart from a staging deploy — see `getEscrowStrategyConfig`'s software-enclave
+         * guard in `authConfig.ts`.
+         *
+         * Defaults to `'production'` so a config that predates this field, or one served by
+         * an edge function that doesn't set it, fails closed rather than accidentally
+         * unlocking a staging-only behavior.
+         */
+        stage: z.enum(['local', 'staging', 'production']).default('production'),
+
         apis: tenantApiConfigSchema,
         auth: tenantAuthConfigSchema,
         storage: tenantStorageConfigSchema.default({
@@ -369,7 +536,8 @@ export const tenantConfigSchema = z
         email: tenantEmailConfigSchema.optional(),
         native: tenantNativeConfigSchema.optional(),
         ecosystem: tenantEcosystemConfigSchema.optional(),
-        registries: tenantRegistriesConfigSchema.default({}),
+        // Parse an absent block so each registry field receives its declared default.
+        registries: tenantRegistriesConfigSchema.prefault({}),
     })
     .passthrough();
 

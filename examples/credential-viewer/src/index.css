@@ -1,12 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css';
+@import 'tailwindcss/utilities.css';
+@import '../../../packages/learn-card-base/src/assets/styles/tailwind-v3-compat.css';
 
 body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+        'Inter',
+        system-ui,
+        -apple-system,
+        sans-serif;
 }
 
-code, pre, .font-mono {
+code,
+pre,
+.font-mono {
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 

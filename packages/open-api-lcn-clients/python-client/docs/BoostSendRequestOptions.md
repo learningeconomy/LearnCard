@@ -4,11 +4,13 @@ Options for email/phone recipients (Universal Inbox)
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**webhook_url** | **str** | Webhook URL to receive claim notifications | [optional] 
-**suppress_delivery** | **bool** | If true, returns claimUrl without sending email/SMS | [optional] 
-**branding** | [**BoostSendRequestOptionsBranding**](BoostSendRequestOptionsBranding.md) |  | [optional] 
+| Name                  | Type                                                                      | Description                                                                                                                       | Notes      |
+| --------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **webhook_url**       | **str**                                                                   | Webhook URL to receive claim notifications                                                                                        | [optional] |
+| **suppress_delivery** | **bool**                                                                  | If true, returns claimUrl without sending email/SMS                                                                               | [optional] |
+| **branding**          | [**BoostSendRequestOptionsBranding**](BoostSendRequestOptionsBranding.md) |                                                                                                                                   | [optional] |
+| **guardian_email**    | **str**                                                                   | Guardian email that must approve before student can claim                                                                         | [optional] |
+| **expires_in_days**   | **int**                                                                   | How many days the credential stays claimable in the Universal Inbox (default 30). Does not change the credential validity period. | [optional] |
 
 ## Example
 
@@ -27,6 +29,5 @@ boost_send_request_options_dict = boost_send_request_options_instance.to_dict()
 # create an instance of BoostSendRequestOptions from a dict
 boost_send_request_options_from_dict = BoostSendRequestOptions.from_dict(boost_send_request_options_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

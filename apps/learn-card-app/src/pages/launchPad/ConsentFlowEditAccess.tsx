@@ -20,7 +20,7 @@ import {
     useCurrentUser,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import { getPersonalEntry, isSupportedPersonalField } from '../../helpers/contract.helpers';
+import { getPersonalEntry, isSupportedPersonalField } from '../../helpers/consentPersonalFields';
 import * as m from '../../paraglide/messages.js';
 
 export enum ConsentFlowEditAccessViewModes {
@@ -30,10 +30,10 @@ export enum ConsentFlowEditAccessViewModes {
 
 type ConsentFlowEditAccessProps = {
     contractDetails: ConsentFlowContractDetails;
-    termsUri: string;
+    termsUri?: string;
     terms: ConsentFlowTerms;
     setTerms: Updater<ConsentFlowTerms>;
-    onWithdrawConsent: () => void;
+    onWithdrawConsent?: () => void;
 };
 
 const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
@@ -50,8 +50,9 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
     const currentUser = useCurrentUser();
 
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
-    const { mutateAsync: withdrawConsent, isPending: isWithdrawingConsent } =
-        useWithdrawConsent(termsUri);
+    const { mutateAsync: withdrawConsent, isPending: isWithdrawingConsent } = useWithdrawConsent(
+        termsUri ?? ''
+    );
 
     const [terms, setTerms] = useImmer(initialTerms);
 
@@ -106,6 +107,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
     const contractCredentialsExist = (contractCredentials?.length ?? 0) > 0;
 
     const handleWithdrawConsent = async (options?: { deleteContractCredentials?: boolean }) => {
+        if (!termsUri) return;
         const { deleteContractCredentials = false } = options ?? {};
 
         withdrawConsent(termsUri).then(async () => {
@@ -128,7 +130,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                 }
             }
             closeAllModals();
-            onWithdrawConsent();
+            onWithdrawConsent?.();
         });
     };
 
@@ -140,7 +142,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
             await confirm({
                 text: (
                     <div className="flex flex-col gap-[5px] mb-[10px]">
-                        <span className="font-[600] text-center">
+                        <span className="font-semibold text-center">
                             You will be disconnected from this contract
                         </span>
                         <span className="text-center">
@@ -189,7 +191,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                     </button>
 
                                     <div className="flex items-center justify-normal">
-                                        <div className="w-[40px] h-[40px] flex items-center justify-center rounded-[10px] overflow-hidden shadow-sm">
+                                        <div className="w-[40px] h-[40px] flex items-center justify-center rounded-[10px] overflow-hidden shadow-xs">
                                             <img
                                                 src={
                                                     contractDetails?.image ??

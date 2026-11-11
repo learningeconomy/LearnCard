@@ -38,6 +38,13 @@ class TestWorkflowsParticipateInExchange200Response(unittest.TestCase):
                 verifiable_presentation = {
                     'key' : null
                     },
+                inbox_deliveries = [
+                    openapi_client.models.workflows_participate_in_exchange_200_response_inbox_deliveries_inner.workflows_participateInExchange_200_response_inboxDeliveries_inner(
+                        id = '', 
+                        credential = {
+                            'key' : null
+                            }, )
+                    ],
                 verifiable_presentation_request = openapi_client.models.workflows_participate_in_exchange_200_response_verifiable_presentation_request.workflows_participateInExchange_200_response_verifiablePresentationRequest(
                     query = [
                         openapi_client.models.workflows_participate_in_exchange_200_response_verifiable_presentation_request_query_inner.workflows_participateInExchange_200_response_verifiablePresentationRequest_query_inner(

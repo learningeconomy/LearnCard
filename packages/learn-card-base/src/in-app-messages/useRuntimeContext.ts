@@ -50,6 +50,7 @@ export const useInAppMessageRuntimeContext = (): {
 } => {
     const role = useGetCurrentUserRole();
     const [versions, setVersions] = useState<InAppMessageRuntimeContext['versions'] | null>(null);
+    const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
         let cancelled = false;
@@ -68,12 +69,22 @@ export const useInAppMessageRuntimeContext = (): {
         };
     }, []);
 
+    useEffect(() => {
+        const interval = globalThis.setInterval(() => setNow(Date.now()), 60_000);
+
+        return () => globalThis.clearInterval(interval);
+    }, []);
+
     if (versions === null) return { context: null, ready: false };
 
     const context: InAppMessageRuntimeContext = {
         platform: Capacitor.getPlatform() as InAppMessagePlatform,
         role,
         versions,
+        now,
+        credentials: null,
+        credentialsComplete: false,
+        recentEvents: [],
     };
 
     return { context, ready: true };

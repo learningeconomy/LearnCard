@@ -1,3 +1,5 @@
+import { FileExtractionDiagnosticValidator } from '../types/file-extraction';
+
 // ---------------------------------------------------------------------------
 // Memory-only diagnostic log buffer (LC-2086)
 //
@@ -54,10 +56,14 @@ let _collectionEnabled = false;
 // Messages originate throughout the application, so pattern-based redaction
 // is insufficient: relative claim paths and credential IDs have no reliable
 // PII shape. Preserve only explicitly approved static event names.
-const SAFE_EVENT_MESSAGES = new Set(['feedback.screenshot.capture_failed']);
+const SAFE_EVENT_MESSAGES: Record<string, true> = {
+    'feedback.screenshot.capture_failed': true,
+    'file.extraction.completed': true,
+    'file.persistence.completed': true,
+};
 
 const sanitizeEventMessage = (message: string): string =>
-    SAFE_EVENT_MESSAGES.has(message) ? message : SCRUBBED;
+    Object.hasOwn(SAFE_EVENT_MESSAGES, message) ? message : SCRUBBED;
 
 // ---------------------------------------------------------------------------
 // Value sanitization
@@ -161,7 +167,15 @@ export const recordDiagnosticLog = (input: DiagnosticLogInput): void => {
         message: sanitizeEventMessage(input.message),
     };
     if (input.scope !== undefined) entry.scope = sanitizeScope(input.scope);
-    const data = sanitizeDiagnosticData(input.data);
+    const isFileEvent =
+        input.message === 'file.extraction.completed' ||
+        input.message === 'file.persistence.completed';
+    const fileData = isFileEvent ? FileExtractionDiagnosticValidator.safeParse(input.data) : null;
+    const data = isFileEvent
+        ? fileData?.success
+            ? fileData.data
+            : undefined
+        : sanitizeDiagnosticData(input.data);
     if (data !== undefined) entry.data = data;
 
     _entries.push(entry);
@@ -190,3 +204,6 @@ export const setDiagnosticLogCollectionEnabled = (enabled: boolean): void => {
     _collectionEnabled = enabled;
     if (!enabled) _entries = [];
 };
+
+/** Whether the authenticated-adult eligibility adapter currently permits collection. */
+export const isDiagnosticLogCollectionEnabled = (): boolean => _collectionEnabled;

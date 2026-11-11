@@ -1,15 +1,14 @@
 # ClaimHookGetClaimHooksForBoostRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**query** | [**ClaimHookGetClaimHooksForBoostRequestQuery**](ClaimHookGetClaimHooksForBoostRequestQuery.md) |  | [optional] 
-**uri** | **str** |  | 
+| Name       | Type                                                                                            | Description | Notes                      |
+| ---------- | ----------------------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**  | **float**                                                                                       |             | [optional] [default to 25] |
+| **cursor** | **str**                                                                                         |             | [optional]                 |
+| **sort**   | **str**                                                                                         |             | [optional]                 |
+| **query**  | [**ClaimHookGetClaimHooksForBoostRequestQuery**](ClaimHookGetClaimHooksForBoostRequestQuery.md) |             | [optional]                 |
+| **uri**    | **str**                                                                                         |             |
 
 ## Example
 
@@ -28,6 +27,5 @@ claim_hook_get_claim_hooks_for_boost_request_dict = claim_hook_get_claim_hooks_f
 # create an instance of ClaimHookGetClaimHooksForBoostRequest from a dict
 claim_hook_get_claim_hooks_for_boost_request_from_dict = ClaimHookGetClaimHooksForBoostRequest.from_dict(claim_hook_get_claim_hooks_for_boost_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

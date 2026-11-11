@@ -71,6 +71,7 @@ export const useSyncDataSource = (id: string) => {
             } catch (error) {
                 walletStore.set.setIsSyncing(WalletSyncState.NotSyncing);
                 log.info('fetch::error', error);
+                // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
                 throw new Error('There was an error fetching your credentials.');
             }
 
@@ -135,6 +136,7 @@ export const useSyncDataSource = (id: string) => {
             } catch (error) {
                 walletStore.set.setIsSyncing(WalletSyncState.NotSyncing);
                 log.info('fetch2::error', error);
+                // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
                 throw new Error('There was an error fetching your credentials.');
             }
 

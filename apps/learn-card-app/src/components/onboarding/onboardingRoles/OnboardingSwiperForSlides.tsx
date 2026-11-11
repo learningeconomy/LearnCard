@@ -40,6 +40,7 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
         clickable: true,
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleSlideChange = (swiper: any) => {
         setActiveSlideIndex(swiper.activeIndex);
     };
@@ -54,7 +55,7 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
             newModal(<LaunchPadActionModal />, {
                 className:
                     'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
-                sectionClassName: '!max-w-[500px] disable-scrollbars',
+                sectionClassName: 'max-w-[500px]! disable-scrollbars',
             });
         }, 500);
     };
@@ -99,7 +100,7 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
 
             <div className={`w-full flex flex-col items-center p-[10px] ${currentBgColor}`}>
                 <button
-                    className="border-[1px] border-grayscale-800 border-solid bg-white max-w-[335px] w-full py-[10px] rounded-[40px] text-grayscale-800 font-poppins font-semibold text-[17px] mb-[10px]"
+                    className="border border-grayscale-800 border-solid bg-white max-w-[335px] w-full py-[10px] rounded-[40px] text-grayscale-800 font-poppins font-semibold text-[17px] mb-[10px]"
                     onClick={isLastSlide ? handleGetStarted : handleNextSlide}
                 >
                     {isLastSlide ? m['onboarding.slides.getStarted']() : m['common.next']()}

@@ -229,7 +229,7 @@ const InlineAPITokenManager: React.FC = () => {
     const activeGrants = authGrants.filter(g => g.status === 'active');
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             {/* Header with create button */}
             <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-600">
@@ -253,7 +253,7 @@ const InlineAPITokenManager: React.FC = () => {
 
             {/* Create form */}
             {showCreateForm && (
-                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg space-y-3">
+                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg space-y-v3-3">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                             {m['developerPortal.integrationGuide.apiTokens.tokenName']()}
@@ -265,7 +265,7 @@ const InlineAPITokenManager: React.FC = () => {
                             placeholder={m[
                                 'developerPortal.integrationGuide.apiTokens.tokenNamePlaceholder'
                             ]()}
-                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         />
                     </div>
 
@@ -276,7 +276,7 @@ const InlineAPITokenManager: React.FC = () => {
                         <select
                             value={selectedScope}
                             onChange={e => setSelectedScope(e.target.value)}
-                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         >
                             {getScopeOptions().map(option => (
                                 <option key={option.value} value={option.value}>
@@ -489,7 +489,7 @@ const InlineSigningAuthoritySetup: React.FC = () => {
     return (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
                     <Shield className="w-5 h-5 text-amber-600" />
                 </div>
 
@@ -576,7 +576,7 @@ const EmbeddedIframeGuide: React.FC<{ selectedPermissions?: AppPermission[] }> =
     selectedPermissions = [],
 }) => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
                 <p className="text-sm text-cyan-800">
                     {m['developerPortal.integrationGuide.iframe.intro']()}
@@ -627,7 +627,7 @@ Access-Control-Allow-Headers: Content-Type`}
 
                 <p className="text-xs text-gray-500 mt-3">
                     {m['developerPortal.integrationGuide.iframe.step2OrYarn']()}
-                    <code className="bg-gray-100 px-1.5 py-0.5 rounded">
+                    <code className="bg-gray-100 px-1.5 py-0.5 rounded-sm">
                         yarn add @learncard/partner-connect
                     </code>
                 </p>
@@ -669,7 +669,7 @@ log.info('User Profile:', identity.profile);`}
                 </p>
 
                 {selectedPermissions.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         {selectedPermissions.map(permission => {
                             const methodInfo = getPermissionToMethods()[permission];
                             if (!methodInfo) return null;
@@ -679,7 +679,7 @@ log.info('User Profile:', identity.profile);`}
                                     className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg"
                                 >
                                     <div className="flex items-center justify-between mb-2">
-                                        <code className="text-xs font-mono text-cyan-700 bg-white px-2 py-1 rounded">
+                                        <code className="text-xs font-mono text-cyan-700 bg-white px-2 py-1 rounded-sm">
                                             {methodInfo.method}
                                         </code>
                                         <span className="text-xs text-cyan-600">
@@ -692,10 +692,10 @@ log.info('User Profile:', identity.profile);`}
                         })}
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <div className="p-3 bg-gray-50 rounded-lg">
                             <div className="flex items-center justify-between mb-2">
-                                <code className="text-xs font-mono text-cyan-700 bg-cyan-50 px-2 py-1 rounded">
+                                <code className="text-xs font-mono text-cyan-700 bg-cyan-50 px-2 py-1 rounded-sm">
                                     requestIdentity()
                                 </code>
                                 <span className="text-xs text-gray-500">
@@ -711,7 +711,7 @@ log.info('User Profile:', identity.profile);`}
 
                         <div className="p-3 bg-gray-50 rounded-lg">
                             <div className="flex items-center justify-between mb-2">
-                                <code className="text-xs font-mono text-cyan-700 bg-cyan-50 px-2 py-1 rounded">
+                                <code className="text-xs font-mono text-cyan-700 bg-cyan-50 px-2 py-1 rounded-sm">
                                     sendCredential()
                                 </code>
                                 <span className="text-xs text-gray-500">
@@ -928,7 +928,7 @@ await learnCard.invoke.send({
     }, [builtCredential]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <OBv3CredentialBuilder
                 isOpen={showCredentialBuilder}
                 onClose={() => setShowCredentialBuilder(false)}
@@ -965,7 +965,7 @@ await learnCard.invoke.send({
                                 ]()}
                             </span>
                         </p>
-                        <code className="text-xs bg-green-100 px-2 py-1 rounded break-all block">
+                        <code className="text-xs bg-green-100 px-2 py-1 rounded-sm break-all block">
                             {contractUri}
                         </code>
                     </div>
@@ -1069,7 +1069,7 @@ log.info('LearnCard DID:', learnCard.id.did());`}
                 <div className="mb-4">
                     <button
                         onClick={() => setShowCredentialBuilder(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-sm font-medium hover:from-cyan-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r/srgb from-cyan-500 to-blue-600 text-white rounded-xl text-sm font-medium hover:from-cyan-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
                     >
                         <Award className="w-4 h-4" />
                         {m['developerPortal.integrationGuide.consent.step5BuildCred']()}
@@ -1102,7 +1102,7 @@ log.info('LearnCard DID:', learnCard.id.did());`}
                     {m['developerPortal.integrationGuide.common.flowSummary']()}
                 </h4>
 
-                <ol className="text-xs text-gray-600 space-y-2 list-decimal list-inside">
+                <ol className="text-xs text-gray-600 space-y-v3-2 list-decimal list-inside">
                     <li>{m['developerPortal.integrationGuide.consent.flowStep1']()}</li>
                     <li>{m['developerPortal.integrationGuide.consent.flowStep2']()}</li>
                     <li>{m['developerPortal.integrationGuide.consent.flowStep3']()}</li>
@@ -1120,7 +1120,7 @@ log.info('LearnCard DID:', learnCard.id.did());`}
                     {m['developerPortal.integrationGuide.consent.step6Desc']()}
                 </p>
 
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <div>
                         <p className="text-xs text-gray-500 mb-2 font-medium">
                             {m['developerPortal.integrationGuide.consent.step6AllData']()}
@@ -1171,7 +1171,7 @@ log.info('User consent records:', userConsentData.records);`}
 // Server Headless Guide - using Universal Inbox
 const ServerHeadlessGuide: React.FC<{ webhookUrl?: string }> = ({ webhookUrl }) => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                 <p className="text-sm text-emerald-800">
                     {m['developerPortal.integrationGuide.server.intro']()}
@@ -1369,7 +1369,7 @@ app.post('/webhooks/learncard', (req, res) => {
                     {m['developerPortal.integrationGuide.common.flowSummary']()}
                 </h4>
 
-                <div className="space-y-2 text-xs text-gray-600">
+                <div className="space-y-v3-2 text-xs text-gray-600">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">
                             1
@@ -1423,7 +1423,7 @@ app.post('/webhooks/learncard', (req, res) => {
 // Direct Link Guide
 const DirectLinkGuide: React.FC<{ url?: string }> = ({ url }) => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <p className="text-sm text-blue-800">
                     {m['developerPortal.integrationGuide.directLink.intro']()}
@@ -1489,7 +1489,7 @@ log.info('User Profile:', didDocument);`}
                     {m['developerPortal.integrationGuide.directLink.whenToUse']()}
                 </h4>
 
-                <ul className="space-y-1 text-xs text-gray-600">
+                <ul className="space-y-v3-1 text-xs text-gray-600">
                     <li className="flex items-center gap-2">
                         <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                         {m['developerPortal.integrationGuide.directLink.useCase1']()}
@@ -1513,7 +1513,7 @@ log.info('User Profile:', didDocument);`}
 // AI Tutor Guide
 const AITutorGuide: React.FC<{ aiTutorUrl?: string }> = ({ aiTutorUrl }) => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl">
                 <p className="text-sm text-violet-800">
                     {m['developerPortal.integrationGuide.aiTutor.intro']()}
@@ -1533,7 +1533,7 @@ const AITutorGuide: React.FC<{ aiTutorUrl?: string }> = ({ aiTutorUrl }) => {
 
                 <p className="text-xs text-gray-500 mt-3">
                     {m['developerPortal.integrationGuide.aiTutor.step1Redirect']()}{' '}
-                    <code className="bg-gray-100 px-1 rounded">
+                    <code className="bg-gray-100 px-1 rounded-sm">
                         {aiTutorUrl || 'https://yourtutor.com'}/chats?topic=...
                     </code>
                 </p>
@@ -1607,7 +1607,7 @@ await learnCard.invoke.send({
                     {m['developerPortal.integrationGuide.aiTutor.userFlow']()}
                 </h4>
 
-                <div className="space-y-2 text-xs text-gray-600">
+                <div className="space-y-v3-2 text-xs text-gray-600">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">
                             1
@@ -1700,7 +1700,7 @@ export const IntegrationGuidePanel: React.FC<IntegrationGuidePanelProps> = ({
         <>
             {/* Backdrop */}
             <div
-                className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[9998] transition-opacity duration-300 ${
+                className={`fixed inset-0 bg-black/30 backdrop-blur-xs z-[9998] transition-opacity duration-300 ${
                     isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`}
                 onClick={onClose}
@@ -1713,7 +1713,7 @@ export const IntegrationGuidePanel: React.FC<IntegrationGuidePanelProps> = ({
                 }`}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-tl-2xl">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-linear-to-r/srgb from-cyan-500 to-cyan-600 rounded-tl-2xl">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-white/20 rounded-lg">
                             <Code className="w-5 h-5 text-white" />

@@ -7,8 +7,8 @@ interface RecoveryPromptModalProps {
 }
 
 const SEVERITY_HEADER_CLASS: Record<UserPrompt['severity'], string> = {
-    info: 'bg-gradient-to-r from-emerald-500 to-teal-500',
-    warning: 'bg-gradient-to-r from-amber-500 to-orange-500',
+    info: 'bg-linear-to-r/srgb from-emerald-500 to-teal-500',
+    warning: 'bg-linear-to-r/srgb from-amber-500 to-orange-500',
 };
 
 export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({ prompt, onResolve }) => {
@@ -19,9 +19,9 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({ prompt
             <div className={`${SEVERITY_HEADER_CLASS[prompt.severity]} p-6 sm:rounded-t-[20px]`}>
                 <h2 className="text-xl font-semibold text-white">{prompt.title}</h2>
             </div>
-            <div className="p-6 sm:p-8 space-y-5">
+            <div className="p-6 sm:p-8 space-y-v3-5">
                 <p className="text-sm text-grayscale-600 leading-relaxed">{prompt.body}</p>
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <button
                         type="button"
                         onClick={() => onResolve(true)}

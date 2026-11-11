@@ -51,6 +51,7 @@ export interface AggregateUploadResult {
 export const useUploadVcFromText = () => {
     const { initWallet } = useWallet();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const isOpenBadgeV2 = (obj: any) => {
         const ctx = obj?.['@context'];
         if (typeof ctx === 'string' && ctx.includes('openbadges/v2')) return true;
@@ -61,6 +62,7 @@ export const useUploadVcFromText = () => {
     // callers that hold an object (extracted from a VP, or a bare VC) must use this so a
     // nested `verifiableCredential` field can't cause the object's children to be validated
     // in place of the object itself.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const validateCredentialObject = (parsed: any): string[] | undefined => {
         if (isOpenBadgeV2(parsed)) return undefined;
 
@@ -75,6 +77,7 @@ export const useUploadVcFromText = () => {
                 const allErrors = [...fieldErrors, ...formErrors].filter(Boolean) as string[];
                 return allErrors.length ? allErrors : ['Invalid credential.'];
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (error: any) {
             return [error.message];
         }
@@ -105,6 +108,7 @@ export const useUploadVcFromText = () => {
     };
 
     const uploadSingleCredential = async (
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         parsed: any,
         options: UploadOptions = {}
     ): Promise<UploadResult> => {
@@ -139,6 +143,7 @@ export const useUploadVcFromText = () => {
                     category: categoryObvV2,
                     fileInfo: fileInfo || {},
                 };
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             } catch (err: any) {
                 return {
                     success: false,
@@ -187,6 +192,7 @@ export const useUploadVcFromText = () => {
                             category,
                             fileInfo: fileInfo || {},
                         };
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     } catch (error: any) {
                         return {
                             success: false,
@@ -203,6 +209,7 @@ export const useUploadVcFromText = () => {
                     category,
                     fileInfo: fileInfo || {},
                 };
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             } catch (error: any) {
                 return {
                     success: false,
@@ -211,6 +218,7 @@ export const useUploadVcFromText = () => {
                     fileInfo: fileInfo || {},
                 };
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (error: any) {
             return {
                 success: false,
@@ -263,6 +271,7 @@ export const useUploadVcFromText = () => {
 
         try {
             // Handle both raw VCs and JSON strings
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             let rawCredential: any;
             if (typeof input === 'string') {
                 try {
@@ -313,6 +322,7 @@ export const useUploadVcFromText = () => {
                         };
                     }
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             } catch (error: any) {
                 return {
                     success: false,
@@ -320,6 +330,7 @@ export const useUploadVcFromText = () => {
                     category,
                 };
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (error: any) {
             return {
                 success: false,

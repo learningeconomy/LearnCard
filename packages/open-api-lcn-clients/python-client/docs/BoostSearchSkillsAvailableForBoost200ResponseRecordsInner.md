@@ -1,18 +1,17 @@
 # BoostSearchSkillsAvailableForBoost200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**statement** | **str** |  | 
-**description** | **str** |  | [optional] 
-**code** | **str** |  | [optional] 
-**icon** | **str** |  | [optional] 
-**type** | **str** |  | [default to 'skill']
-**status** | **str** |  | [default to 'active']
-**framework_id** | **str** |  | [optional] 
+| Name             | Type    | Description | Notes                 |
+| ---------------- | ------- | ----------- | --------------------- |
+| **id**           | **str** |             |
+| **statement**    | **str** |             |
+| **description**  | **str** |             | [optional]            |
+| **code**         | **str** |             | [optional]            |
+| **icon**         | **str** |             | [optional]            |
+| **type**         | **str** |             | [default to 'skill']  |
+| **status**       | **str** |             | [default to 'active'] |
+| **framework_id** | **str** |             | [optional]            |
 
 ## Example
 
@@ -31,6 +30,5 @@ boost_search_skills_available_for_boost200_response_records_inner_dict = boost_s
 # create an instance of BoostSearchSkillsAvailableForBoost200ResponseRecordsInner from a dict
 boost_search_skills_available_for_boost200_response_records_inner_from_dict = BoostSearchSkillsAvailableForBoost200ResponseRecordsInner.from_dict(boost_search_skills_available_for_boost200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,0 +1,5 @@
+// Keep the entry/credential preview compact; SpreadsheetReview retains its larger workspace.
+#center-modal.issue-spreadsheet-dialog > section:has(.issue-import-dialog) {
+    max-width: 840px;
+    height: auto;
+}

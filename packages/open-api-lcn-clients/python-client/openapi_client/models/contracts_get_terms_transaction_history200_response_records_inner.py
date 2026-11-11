@@ -19,9 +19,13 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_get_terms_transaction_history200_response_records_inner_terms import ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms
+from typing_extensions import Annotated
+from openapi_client.models.contracts_get_consented_data_for_did200_response_records_inner_guardian_approval import ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_referral import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral
+from openapi_client.models.storage_resolve200_response_any_of1 import StorageResolve200ResponseAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
     """
@@ -29,23 +33,40 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
     """ # noqa: E501
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
-    terms: Optional[ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms] = None
-    id: Optional[StrictStr]
+    terms: Optional[StorageResolve200ResponseAnyOf1] = None
+    guardian_approval: Optional[ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval] = Field(default=None, alias="guardianApproval")
+    referral: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral] = None
+    id: StrictStr
     action: StrictStr
-    var_date: Optional[StrictStr] = Field(alias="date")
+    kind: Optional[StrictStr] = None
+    var_date: StrictStr = Field(alias="date")
     uris: Optional[List[StrictStr]] = None
+    consented_version: Optional[Annotated[int, Field(le=9007199254740991, strict=True, gt=0)]] = Field(default=None, alias="consentedVersion")
+    reconsent_deadline: Optional[StrictStr] = Field(default=None, alias="reconsentDeadline")
+    new_options_until: Optional[StrictStr] = Field(default=None, alias="newOptionsUntil")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "id", "action", "date", "uris"]
+    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "guardianApproval", "referral", "id", "action", "kind", "date", "uris", "consentedVersion", "reconsentDeadline", "newOptionsUntil"]
 
     @field_validator('action')
     def action_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['consent', 'update', 'sync', 'withdraw', 'write']):
-            raise ValueError("must be one of enum values ('consent', 'update', 'sync', 'withdraw', 'write')")
+        if value not in set(['consent', 'update', 'sync', 'withdraw', 'write', 'reconsent']):
+            raise ValueError("must be one of enum values ('consent', 'update', 'sync', 'withdraw', 'write', 'reconsent')")
+        return value
+
+    @field_validator('kind')
+    def kind_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['relaxed', 'expanded_optional', 'requires_consent']):
+            raise ValueError("must be one of enum values ('relaxed', 'expanded_optional', 'requires_consent')")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -57,8 +78,7 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -71,9 +91,8 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -88,25 +107,16 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of terms
         if self.terms:
             _dict['terms'] = self.terms.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of guardian_approval
+        if self.guardian_approval:
+            _dict['guardianApproval'] = self.guardian_approval.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of referral
+        if self.referral:
+            _dict['referral'] = self.referral.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
-            _dict['expiresAt'] = None
-
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if var_date (nullable) is None
-        # and model_fields_set contains the field
-        if self.var_date is None and "var_date" in self.model_fields_set:
-            _dict['date'] = None
 
         return _dict
 
@@ -119,15 +129,23 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "expiresAt": obj.get("expiresAt"),
             "oneTime": obj.get("oneTime"),
-            "terms": ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "terms": StorageResolve200ResponseAnyOf1.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "guardianApproval": ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval.from_dict(obj["guardianApproval"]) if obj.get("guardianApproval") is not None else None,
+            "referral": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral.from_dict(obj["referral"]) if obj.get("referral") is not None else None,
             "id": obj.get("id"),
             "action": obj.get("action"),
+            "kind": obj.get("kind"),
             "date": obj.get("date"),
-            "uris": obj.get("uris")
-        })
+            "uris": obj.get("uris"),
+            "consentedVersion": obj.get("consentedVersion"),
+            "reconsentDeadline": obj.get("reconsentDeadline"),
+            "newOptionsUntil": obj.get("newOptionsUntil")
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

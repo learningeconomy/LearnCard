@@ -113,10 +113,10 @@ const LaunchRow: React.FC<{
 }> = ({ copy, resolved, onDispatch, onInAppNavigate }) => {
     const rowClass = `group flex items-center justify-between gap-3
          px-4 py-3 rounded-[18px]
-         bg-white/70 backdrop-blur
+         bg-white/70 backdrop-blur-sm
          border border-grayscale-200
          hover:bg-white hover:border-grayscale-300
-         hover:shadow-sm transition-all duration-200
+         hover:shadow-xs transition-all duration-200
          text-left w-full`;
 
     const iconGlyph = resolved.kind === 'external-url' ? openOutline : mapOutline;
@@ -575,6 +575,7 @@ const NodeDetail: React.FC = () => {
     // `{ listing: null, error }` and we fall through to the legacy
     // `LaunchRow` which at least routes the learner to `/app/:id`
     // where the public-listing page can show an honest error state.
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
     const listingForNode = useListingForNode(node);
     const hasAppListingAction = resolved.kind === 'app-listing';
     const showAppListingCard =
@@ -603,14 +604,14 @@ const NodeDetail: React.FC = () => {
 
     return (
         <OverlayFrame onClose={close} hidden={suppressed}>
-            <div className="px-6 pt-10 pb-8 space-y-5">
+            <div className="px-6 pt-10 pb-8 space-y-v3-5">
                 {/* -------------------------------------------------- */}
                 {/* Header: title, short context, progress ring         */}
                 {/* -------------------------------------------------- */}
                 <motion.header
                     {...SECTION_MOTION}
                     transition={{ ...SECTION_MOTION.transition, delay: 0.05 }}
-                    className="space-y-3 pr-10"
+                    className="space-y-v3-3 pr-10"
                 >
                     {/*
                         Row 1: image · title + requirement · progress.
@@ -663,7 +664,7 @@ const NodeDetail: React.FC = () => {
                             />
                         )}
 
-                        <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex-1 min-w-0 space-y-v3-1">
                             <h2 className="text-[22px] font-semibold text-grayscale-900 leading-[1.2]">
                                 {node.title}
                             </h2>
@@ -686,7 +687,7 @@ const NodeDetail: React.FC = () => {
                         they had before.
                     */}
                     {(node.description || inlinePrompt) && (
-                        <div className="space-y-1.5">
+                        <div className="space-y-v3-1.5">
                             {node.description && (
                                 <p className="text-sm text-grayscale-600 leading-relaxed">
                                     {node.description}
@@ -759,9 +760,9 @@ const NodeDetail: React.FC = () => {
                         <div className="flex items-start gap-3">
                             <div className="w-14 h-14 rounded-xl bg-grayscale-100 animate-pulse" />
 
-                            <div className="min-w-0 flex-1 space-y-2 pt-1">
-                                <div className="h-4 w-3/4 rounded bg-grayscale-100 animate-pulse" />
-                                <div className="h-3 w-5/6 rounded bg-grayscale-100 animate-pulse" />
+                            <div className="min-w-0 flex-1 space-y-v3-2 pt-1">
+                                <div className="h-4 w-3/4 rounded-sm bg-grayscale-100 animate-pulse" />
+                                <div className="h-3 w-5/6 rounded-sm bg-grayscale-100 animate-pulse" />
                                 <div className="h-4 w-16 rounded-full bg-grayscale-100 animate-pulse" />
                             </div>
                         </div>
@@ -808,7 +809,7 @@ const NodeDetail: React.FC = () => {
                     <motion.div
                         {...SECTION_MOTION}
                         transition={{ ...SECTION_MOTION.transition, delay: 0.12 }}
-                        className="space-y-3"
+                        className="space-y-v3-3"
                     >
                         {isComposite ? (
                             // Composite node: delegate the body to
@@ -882,7 +883,7 @@ const NodeDetail: React.FC = () => {
                                        bg-emerald-50/80 backdrop-blur-xl
                                        border border-emerald-100
                                        shadow-lg shadow-emerald-900/5
-                                       space-y-3"
+                                       space-y-v3-3"
                         >
                             <div className="flex items-center gap-3">
                                 <motion.span
@@ -896,7 +897,7 @@ const NodeDetail: React.FC = () => {
                                     }}
                                     className="shrink-0 w-9 h-9 rounded-full bg-emerald-600
                                                flex items-center justify-center
-                                               shadow-sm shadow-emerald-600/30"
+                                               shadow-xs shadow-emerald-600/30"
                                     aria-hidden
                                 >
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -967,7 +968,7 @@ const NodeDetail: React.FC = () => {
                             key="commit"
                             {...SECTION_MOTION}
                             transition={{ ...SECTION_MOTION.transition, delay: 0.18 }}
-                            className="space-y-2"
+                            className="space-y-v3-2"
                         >
                             <motion.button
                                 type="button"

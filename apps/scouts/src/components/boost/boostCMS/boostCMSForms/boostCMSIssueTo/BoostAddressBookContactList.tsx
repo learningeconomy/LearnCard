@@ -49,7 +49,7 @@ export const BoostAddressBookContactList: React.FC<BoostAddressBookContactListPr
     });
 
     return (
-        <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
+        <IonList lines="none" className="flex flex-col items-center justify-center w-full">
             {contactItems}
         </IonList>
     );

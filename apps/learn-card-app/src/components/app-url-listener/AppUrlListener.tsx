@@ -2,7 +2,7 @@ import { enterSharePrivacy } from '../share-links/sharePrivacy';
 import React, { useEffect, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
-import { PluginListenerHandle } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 
 import {
     isTenantHttpsUrl,
@@ -11,8 +11,27 @@ import {
 } from '../../hooks/parseClaimInput';
 import { resolveTenantParseConfig } from '../../hooks/resolveTenantParseConfig';
 import { getLogger } from 'learn-card-base';
+import {
+    isClassLinkNativeCallbackUrl,
+    isClassLinkNativeSessionInFlight,
+    toClassLinkCallbackPath,
+} from '../../auth/classlink/classlinkPkce';
 
 const log = getLogger('app-url-listener');
+
+/**
+ * ClassLink callback URLs already routed in this JS context. On a cold start the same URL
+ * arrives both as Capacitor's retained `appUrlOpen` event and from `getLaunchUrl` (which
+ * stays the same for the life of the native activity), so a second delivery or a remount
+ * must not replay it (the single-use attempt is already consumed and the callback would
+ * restart sign-in).
+ */
+const routedClassLinkLaunchUrls = new Set<string>();
+
+/** Test-only: forget routed ClassLink launch URLs. */
+export const resetRoutedClassLinkLaunchUrls = (): void => {
+    routedClassLinkLaunchUrls.clear();
+};
 
 export const AppUrlListener: React.FC = () => {
     const history = useHistory();
@@ -21,11 +40,37 @@ export const AppUrlListener: React.FC = () => {
 
     useEffect(() => {
         let listener: PluginListenerHandle | null = null;
+        let disposed = false;
+        let receivedWarmLink = false;
+
+        /**
+         * Routes a ClassLink callback no live auth session will handle. Returns true when
+         * `url` is a ClassLink callback (routed or deliberately left alone).
+         *
+         * Cold start (the OS killed the app while the sign-in sheet was open): the session's
+         * own listener died with the old JS context, and Capacitor delivers the callback as a
+         * retained `appUrlOpen` event and/or the launch URL, so route it here. While a session
+         * is in flight its listener owns the callback, so it is never routed twice.
+         */
+        const routeClassLinkCallback = (url: string): boolean => {
+            if (!isClassLinkNativeCallbackUrl(url)) return false;
+            if (isClassLinkNativeSessionInFlight() || routedClassLinkLaunchUrls.has(url)) {
+                return true;
+            }
+            routedClassLinkLaunchUrls.add(url);
+            history.replace(toClassLinkCallbackPath(url));
+            return true;
+        };
 
         const handleUrlOpen = (event: URLOpenListenerEvent) => {
             try {
+                if (routeClassLinkCallback(event.url)) return;
                 const isOnTenantHttpsDomain = isTenantHttpsUrl(event.url, parserConfig);
                 const incoming = new URL(event.url);
+                if (isOnTenantHttpsDomain && /^\/m\/[^/]+\/?$/.test(incoming.pathname)) {
+                    history.push(encodeURI(incoming.pathname));
+                    return;
+                }
                 if (isOnTenantHttpsDomain && /^\/s(?:\/|$)/.test(incoming.pathname)) {
                     enterSharePrivacy();
                     history.push(incoming.pathname + incoming.hash);
@@ -77,11 +122,24 @@ export const AppUrlListener: React.FC = () => {
         };
 
         const setupListener = async () => {
-            listener = await App.addListener('appUrlOpen', handleUrlOpen);
+            listener = await App.addListener('appUrlOpen', event => {
+                receivedWarmLink = true;
+                if (!disposed) handleUrlOpen(event);
+            });
+            if (disposed) {
+                await listener.remove();
+                return;
+            }
+            if (Capacitor.isNativePlatform()) {
+                const launch = await App.getLaunchUrl();
+                if (disposed || receivedWarmLink || !launch) return;
+                handleUrlOpen(launch);
+            }
         };
-        setupListener();
+        void setupListener().catch(() => log.warn('Unable to register app links'));
 
         return () => {
+            disposed = true;
             if (listener) {
                 listener.remove();
             }

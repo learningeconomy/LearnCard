@@ -1,7 +1,7 @@
 {
     "name": "@learncard/vc-plugin",
-    "version": "1.6.2",
-    "description": "",
+    "version": "1.7.0",
+    "description": "Issues, verifies, and refreshes Verifiable Credentials and Presentations.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/vc-plugin.esm.js",

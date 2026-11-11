@@ -1,12 +1,11 @@
 # AppStoreGetListingsForIntegrationRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] 
-**cursor** | **str** |  | [optional] 
+| Name       | Type      | Description | Notes      |
+| ---------- | --------- | ----------- | ---------- |
+| **limit**  | **float** |             | [optional] |
+| **cursor** | **str**   |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ app_store_get_listings_for_integration_request_dict = app_store_get_listings_for
 # create an instance of AppStoreGetListingsForIntegrationRequest from a dict
 app_store_get_listings_for_integration_request_from_dict = AppStoreGetListingsForIntegrationRequest.from_dict(app_store_get_listings_for_integration_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -54,6 +54,7 @@ class TestStorageStoreRequestItem(unittest.TestCase):
                 status = None,
                 terms_of_use = None,
                 evidence = None,
+                render_method = None,
                 proof = None,
                 verifiable_credential = None,
                 holder = '',
@@ -63,12 +64,12 @@ class TestStorageStoreRequestItem(unittest.TestCase):
                 tag = '',
                 aad = '',
                 recipients = [
-                    openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner.credential_sendCredential_request_credential_anyOf_1_recipients_inner(
-                        header = openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner_header.credential_sendCredential_request_credential_anyOf_1_recipients_inner_header(
+                    openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner.boost_sendBoost_request_credential_anyOf_1_recipients_inner(
+                        header = openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner_header.boost_sendBoost_request_credential_anyOf_1_recipients_inner_header(
                             alg = '', 
                             iv = '', 
                             tag = '', 
-                            epk = openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner_header_epk.credential_sendCredential_request_credential_anyOf_1_recipients_inner_header_epk(
+                            epk = openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner_header_epk.boost_sendBoost_request_credential_anyOf_1_recipients_inner_header_epk(
                                 kty = '', 
                                 crv = '', 
                                 x = '', 
@@ -79,7 +80,9 @@ class TestStorageStoreRequestItem(unittest.TestCase):
                             apv = '', 
                             apu = '', ), 
                         encrypted_key = '', )
-                    ]
+                    ],
+                format = 'w3c-vc-2.0',
+                data = ''
             )
         else:
             return StorageStoreRequestItem(
@@ -94,6 +97,8 @@ class TestStorageStoreRequestItem(unittest.TestCase):
                 iv = '',
                 ciphertext = '',
                 tag = '',
+                format = 'w3c-vc-2.0',
+                data = '',
         )
         """
 

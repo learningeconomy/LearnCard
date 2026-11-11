@@ -18,20 +18,22 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsMarkContractRequestAsSeenRequest(BaseModel):
     """
     ContractsMarkContractRequestAsSeenRequest
     """ # noqa: E501
-    contract_uri: Optional[StrictStr] = Field(alias="contractUri")
-    target_profile_id: Optional[StrictStr] = Field(alias="targetProfileId")
+    contract_uri: StrictStr = Field(alias="contractUri")
+    target_profile_id: StrictStr = Field(alias="targetProfileId")
     __properties: ClassVar[List[str]] = ["contractUri", "targetProfileId"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -43,8 +45,7 @@ class ContractsMarkContractRequestAsSeenRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -57,9 +58,8 @@ class ContractsMarkContractRequestAsSeenRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -69,16 +69,6 @@ class ContractsMarkContractRequestAsSeenRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
-            _dict['contractUri'] = None
-
-        # set to None if target_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.target_profile_id is None and "target_profile_id" in self.model_fields_set:
-            _dict['targetProfileId'] = None
-
         return _dict
 
     @classmethod
@@ -90,10 +80,12 @@ class ContractsMarkContractRequestAsSeenRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "contractUri": obj.get("contractUri"),
             "targetProfileId": obj.get("targetProfileId")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

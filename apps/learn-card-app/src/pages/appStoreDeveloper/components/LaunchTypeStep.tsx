@@ -36,7 +36,7 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="text-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-700">
                     {m['developerPortal.components.launchTypeStep.title']()}
@@ -119,7 +119,7 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                                 </div>
 
                                 {isSelected && !isComingSoon && (
-                                    <CheckCircle2 className="w-5 h-5 text-cyan-500 flex-shrink-0" />
+                                    <CheckCircle2 className="w-5 h-5 text-cyan-500 shrink-0" />
                                 )}
                             </div>
                         </button>

@@ -142,7 +142,7 @@ const FrameworkSearchResultItem: React.FC<FrameworkSearchResultItemProps> = ({
                             <div className="w-[40px] h-[40px] rounded-full bg-grayscale-300" />
                         )}
                         <button
-                            className="pl-[10px] border-l-[1px] border-grayscale-200 border-solid text-grayscale-500 h-full"
+                            className="pl-[10px] border-l border-grayscale-200 border-solid text-grayscale-500 h-full"
                             onClick={e => {
                                 e.stopPropagation();
                                 onClick?.(node, path);

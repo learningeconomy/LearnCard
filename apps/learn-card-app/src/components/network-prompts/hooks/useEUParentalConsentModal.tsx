@@ -45,7 +45,7 @@ export const useEUParentalConsentModal = (onDismiss?: () => void) => {
             />,
             {
                 sectionClassName:
-                    '!bg-transparent !border-none !shadow-none !rounded-none !mx-auto',
+                    'bg-transparent! border-none! shadow-none! rounded-none! mx-auto!',
             },
             {
                 desktop: ModalTypes.FullScreen,
@@ -59,8 +59,8 @@ export const useEUParentalConsentModal = (onDismiss?: () => void) => {
             const age = profile?.dob ? calculateAge(profile.dob) : Number.NaN;
             const needsConsent = Boolean(
                 profile?.country &&
-                    !Number.isNaN(age) &&
-                    requiresEUParentalConsent(profile.country, age)
+                !Number.isNaN(age) &&
+                requiresEUParentalConsent(profile.country, age)
             );
             const isExplicitlyUnapproved = profile?.approved === false;
 

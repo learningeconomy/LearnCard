@@ -17,24 +17,28 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
+from openapi_client.models.app_store_get_listings_for_integration200_response_records_inner_pending_update import AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate
+from openapi_client.models.app_store_get_listings_for_integration200_response_records_inner_submitter import AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
     """
     AppStoreGetInstalledApps200ResponseRecordsInner
     """ # noqa: E501
-    listing_id: Optional[StrictStr]
+    listing_id: StrictStr
     slug: Optional[StrictStr] = None
-    display_name: Optional[StrictStr]
-    tagline: Optional[StrictStr]
-    full_description: Optional[StrictStr]
-    icon_url: Optional[StrictStr]
+    display_name: StrictStr
+    tagline: StrictStr
+    full_description: StrictStr
+    icon_url: StrictStr
     app_listing_status: StrictStr
     launch_type: StrictStr
-    launch_config_json: Optional[StrictStr]
+    launch_config_json: StrictStr
     category: Optional[StrictStr] = None
     promo_video_url: Optional[StrictStr] = None
     promotion_level: Optional[StrictStr] = None
@@ -43,11 +47,17 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
     privacy_policy_url: Optional[StrictStr] = None
     terms_url: Optional[StrictStr] = None
     hero_background_color: Optional[StrictStr] = None
+    min_age: Optional[Annotated[int, Field(le=18, strict=True, ge=0)]] = None
+    age_rating: Optional[StrictStr] = None
+    submitted_at: Optional[StrictStr] = None
+    contact_email: Optional[Annotated[str, Field(strict=True)]] = None
     highlights: Optional[List[StrictStr]] = None
     screenshots: Optional[List[StrictStr]] = None
-    installed_at: Optional[StrictStr]
+    submitter: Optional[AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter] = None
+    pending_update: Optional[AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate] = None
+    installed_at: StrictStr
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["listing_id", "slug", "display_name", "tagline", "full_description", "icon_url", "app_listing_status", "launch_type", "launch_config_json", "category", "promo_video_url", "promotion_level", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "hero_background_color", "highlights", "screenshots", "installed_at"]
+    __properties: ClassVar[List[str]] = ["listing_id", "slug", "display_name", "tagline", "full_description", "icon_url", "app_listing_status", "launch_type", "launch_config_json", "category", "promo_video_url", "promotion_level", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "hero_background_color", "min_age", "age_rating", "submitted_at", "contact_email", "highlights", "screenshots", "submitter", "pending_update", "installed_at"]
 
     @field_validator('app_listing_status')
     def app_listing_status_validate_enum(cls, value):
@@ -73,8 +83,29 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
             raise ValueError("must be one of enum values ('FEATURED_CAROUSEL', 'CURATED_LIST', 'STANDARD', 'DEMOTED')")
         return value
 
+    @field_validator('age_rating')
+    def age_rating_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['4+', '9+', '12+', '17+']):
+            raise ValueError("must be one of enum values ('4+', '9+', '12+', '17+')")
+        return value
+
+    @field_validator('contact_email', mode="before")
+    def contact_email_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        return value
+
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -86,8 +117,7 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -100,9 +130,8 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -114,85 +143,16 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of submitter
+        if self.submitter:
+            _dict['submitter'] = self.submitter.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of pending_update
+        if self.pending_update:
+            _dict['pending_update'] = self.pending_update.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if listing_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_id is None and "listing_id" in self.model_fields_set:
-            _dict['listing_id'] = None
-
-        # set to None if slug (nullable) is None
-        # and model_fields_set contains the field
-        if self.slug is None and "slug" in self.model_fields_set:
-            _dict['slug'] = None
-
-        # set to None if display_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.display_name is None and "display_name" in self.model_fields_set:
-            _dict['display_name'] = None
-
-        # set to None if tagline (nullable) is None
-        # and model_fields_set contains the field
-        if self.tagline is None and "tagline" in self.model_fields_set:
-            _dict['tagline'] = None
-
-        # set to None if full_description (nullable) is None
-        # and model_fields_set contains the field
-        if self.full_description is None and "full_description" in self.model_fields_set:
-            _dict['full_description'] = None
-
-        # set to None if icon_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.icon_url is None and "icon_url" in self.model_fields_set:
-            _dict['icon_url'] = None
-
-        # set to None if launch_config_json (nullable) is None
-        # and model_fields_set contains the field
-        if self.launch_config_json is None and "launch_config_json" in self.model_fields_set:
-            _dict['launch_config_json'] = None
-
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
-            _dict['category'] = None
-
-        # set to None if promo_video_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.promo_video_url is None and "promo_video_url" in self.model_fields_set:
-            _dict['promo_video_url'] = None
-
-        # set to None if ios_app_store_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.ios_app_store_id is None and "ios_app_store_id" in self.model_fields_set:
-            _dict['ios_app_store_id'] = None
-
-        # set to None if android_app_store_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.android_app_store_id is None and "android_app_store_id" in self.model_fields_set:
-            _dict['android_app_store_id'] = None
-
-        # set to None if privacy_policy_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.privacy_policy_url is None and "privacy_policy_url" in self.model_fields_set:
-            _dict['privacy_policy_url'] = None
-
-        # set to None if terms_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.terms_url is None and "terms_url" in self.model_fields_set:
-            _dict['terms_url'] = None
-
-        # set to None if hero_background_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.hero_background_color is None and "hero_background_color" in self.model_fields_set:
-            _dict['hero_background_color'] = None
-
-        # set to None if installed_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.installed_at is None and "installed_at" in self.model_fields_set:
-            _dict['installed_at'] = None
 
         return _dict
 
@@ -205,7 +165,7 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "listing_id": obj.get("listing_id"),
             "slug": obj.get("slug"),
             "display_name": obj.get("display_name"),
@@ -223,10 +183,18 @@ class AppStoreGetInstalledApps200ResponseRecordsInner(BaseModel):
             "privacy_policy_url": obj.get("privacy_policy_url"),
             "terms_url": obj.get("terms_url"),
             "hero_background_color": obj.get("hero_background_color"),
+            "min_age": obj.get("min_age"),
+            "age_rating": obj.get("age_rating"),
+            "submitted_at": obj.get("submitted_at"),
+            "contact_email": obj.get("contact_email"),
             "highlights": obj.get("highlights"),
             "screenshots": obj.get("screenshots"),
+            "submitter": AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter.from_dict(obj["submitter"]) if obj.get("submitter") is not None else None,
+            "pending_update": AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate.from_dict(obj["pending_update"]) if obj.get("pending_update") is not None else None,
             "installed_at": obj.get("installed_at")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

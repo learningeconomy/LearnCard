@@ -1,11 +1,10 @@
 # SkillsGetFullSkillTree200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**skills** | [**List[Schema1]**](Schema1.md) |  | 
+| Name       | Type                            | Description | Notes |
+| ---------- | ------------------------------- | ----------- | ----- |
+| **skills** | [**List[Schema1]**](Schema1.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ skills_get_full_skill_tree200_response_dict = skills_get_full_skill_tree200_resp
 # create an instance of SkillsGetFullSkillTree200Response from a dict
 skills_get_full_skill_tree200_response_from_dict = SkillsGetFullSkillTree200Response.from_dict(skills_get_full_skill_tree200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

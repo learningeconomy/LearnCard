@@ -40,13 +40,17 @@ class TestProfileCreateServiceProfileRequest(unittest.TestCase):
                 short_bio = '',
                 bio = '',
                 is_private = True,
+                profile_visibility = 'public',
+                show_email = True,
+                allow_connection_requests = 'anyone',
                 email = '',
                 image = '',
                 hero_image = '',
+                linked_in_organization_id = '4',
                 website_link = '',
                 type = '',
                 notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj',
-                display = openapi_client.models.profile_create_service_profile_request_display.profile_createServiceProfile_request_display(
+                display = openapi_client.models.profile_create_profile_request_display.profile_createProfile_request_display(
                     background_color = '', 
                     background_image = '', 
                     fade_background_image = True, 
@@ -64,6 +68,7 @@ class TestProfileCreateServiceProfileRequest(unittest.TestCase):
                 role = '',
                 dob = '',
                 country = '',
+                locale = '',
                 approved = True
             )
         else:

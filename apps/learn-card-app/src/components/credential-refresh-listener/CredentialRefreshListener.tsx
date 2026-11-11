@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 
 import { App } from '@capacitor/app';
+import { useQueryClient } from '@tanstack/react-query';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -95,6 +96,7 @@ export const useForceRefreshLearnCloudCredential = () => {
  * - No work happens when the feature flag is disabled or the user is logged out.
  */
 const CredentialRefreshListener: React.FC = () => {
+    const queryClient = useQueryClient();
     const flags = useFlags();
     const flagEnabled = flags[CREDENTIAL_REFRESH_FOREGROUND_FLAG] === true;
     const isLoggedIn = useIsLoggedIn();
@@ -127,7 +129,10 @@ const CredentialRefreshListener: React.FC = () => {
                     if (existingScan) return existingScan;
 
                     const accountScan = (async () => {
-                        const candidates = await getCredentialRefreshCandidates(wallet);
+                        const candidates = await getCredentialRefreshCandidates(
+                            wallet,
+                            queryClient
+                        );
 
                         // Discovery succeeded: the session's one ordinary scan is spent,
                         // even if individual records below fail.
@@ -203,7 +208,7 @@ const CredentialRefreshListener: React.FC = () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('focus', handleWindowFocus);
         };
-    }, [flagEnabled, isLoggedIn]);
+    }, [flagEnabled, isLoggedIn, queryClient]);
 
     return null;
 };

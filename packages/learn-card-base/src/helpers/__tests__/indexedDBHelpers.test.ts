@@ -1,14 +1,20 @@
 /**
  * Regression tests for clearAllIndexedDB.
  *
- * Ensures that logout cleanup never destroys the SSS device
- * share IndexedDB database ('lcb-sss-keys').
+ * Ensures logout preserves Firebase's open database infrastructure and device
+ * recovery storage while removing disposable app databases.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { clearAllIndexedDB } from '../indexedDBHelpers';
 import type { KeyDerivationStrategy } from '../../auth-coordinator/types';
+import { CREDENTIAL_FACTS_DATABASE_NAME } from '../../in-app-messages/credentialFactsStore';
+
+const logs = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
+vi.mock('../../logging/logger', () => ({
+    getLogger: () => logs,
+}));
 
 // ---------------------------------------------------------------------------
 // Mock window.indexedDB
@@ -26,17 +32,21 @@ const mockDatabases = (names: string[]) => {
             deletedDBs.push(name);
 
             return {
-                set onsuccess(_: unknown) {},
-                set onerror(_: unknown) {},
+                onsuccess: undefined as (() => void) | undefined,
+                onerror: undefined as (() => void) | undefined,
+                onblocked: undefined as (() => void) | undefined,
+                error: null as DOMException | null,
             };
         }),
     };
 
     (globalThis as Record<string, unknown>).window = { indexedDB: fakeIndexedDB };
+    return fakeIndexedDB;
 };
 
 beforeEach(() => {
     deletedDBs = [];
+    vi.clearAllMocks();
 });
 
 // ---------------------------------------------------------------------------
@@ -44,6 +54,90 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('clearAllIndexedDB', () => {
+    it.each([undefined, { getPreservedStorageKeys: () => [] } as unknown as KeyDerivationStrategy])(
+        'preserves Firebase databases while clearing app data (strategy: %s)',
+        async strategy => {
+            mockDatabases([
+                'firebase-heartbeat-database',
+                'firebaseLocalStorageDb',
+                'firebase-installations-database',
+                'app-cache',
+            ]);
+
+            await clearAllIndexedDB(strategy);
+
+            expect(deletedDBs).toEqual(['app-cache']);
+            expect(logs.info).toHaveBeenCalledWith(
+                'IndexedDB logout cleanup scheduled',
+                expect.objectContaining({
+                    databaseCount: 4,
+                    preservedCount: 3,
+                    preservedFirebaseDatabases: ['auth', 'heartbeat', 'installations'],
+                    deletionCount: 1,
+                })
+            );
+        }
+    );
+
+    it('logs blocked cleanup without recording database identifiers', async () => {
+        const indexedDB = mockDatabases(['app-cache']);
+
+        await clearAllIndexedDB();
+        const request = indexedDB.deleteDatabase.mock.results[0]!.value;
+        request.onblocked?.();
+
+        expect(logs.warn).toHaveBeenCalledWith(
+            'IndexedDB logout cleanup blocked by an open connection',
+            expect.objectContaining({ databaseKind: 'app', deletionId: 1 })
+        );
+    });
+
+    it('reports completion only after pending deletions settle, including blocked and failed requests', async () => {
+        const indexedDB = mockDatabases(['cache-private@example.org', 'other-cache']);
+        await clearAllIndexedDB();
+        const first = indexedDB.deleteDatabase.mock.results[0]!.value;
+        const second = indexedDB.deleteDatabase.mock.results[1]!.value;
+        const finished = (): unknown[][] =>
+            logs.info.mock.calls.filter(
+                ([message]) => message === 'IndexedDB logout cleanup finished'
+            );
+
+        expect(finished()).toHaveLength(0);
+        first.onblocked?.();
+        expect(finished()).toHaveLength(0);
+        first.onsuccess?.();
+        expect(finished()).toHaveLength(0);
+        second.error = new DOMException('private@example.org', 'UnknownError');
+        second.onerror?.();
+        expect(finished()).toEqual([
+            [
+                'IndexedDB logout cleanup finished',
+                expect.objectContaining({
+                    deletionCount: 2,
+                    pendingDeletions: 0,
+                    failedDeletions: 1,
+                }),
+            ],
+        ]);
+        expect(logs.warn).toHaveBeenCalledWith(
+            'IndexedDB logout deletion failed',
+            expect.objectContaining({ deletionId: 2, errorType: 'UnknownError' })
+        );
+        expect(JSON.stringify([...logs.info.mock.calls, ...logs.warn.mock.calls])).not.toContain(
+            'private@example.org'
+        );
+    });
+
+    it('finishes immediately when all databases are preserved', async () => {
+        mockDatabases(['firebaseLocalStorageDb', 'lcb-sss-keys']);
+        await clearAllIndexedDB();
+        expect(deletedDBs).toEqual([]);
+        expect(logs.info).toHaveBeenCalledWith(
+            'IndexedDB logout cleanup finished',
+            expect.objectContaining({ deletionCount: 0, pendingDeletions: 0, failedDeletions: 0 })
+        );
+    });
+
     it('should NOT delete lcb-sss-keys when no strategy is provided', async () => {
         mockDatabases(['lcb-sss-keys', 'app-cache', 'some-other-db']);
 
@@ -52,6 +146,14 @@ describe('clearAllIndexedDB', () => {
         expect(deletedDBs).not.toContain('lcb-sss-keys');
         expect(deletedDBs).toContain('app-cache');
         expect(deletedDBs).toContain('some-other-db');
+    });
+
+    it('deletes the on-device in-app message facts database on logout', async () => {
+        mockDatabases(['lcb-sss-keys', CREDENTIAL_FACTS_DATABASE_NAME]);
+
+        await clearAllIndexedDB();
+
+        expect(deletedDBs).toContain(CREDENTIAL_FACTS_DATABASE_NAME);
     });
 
     it('should NOT delete databases returned by strategy.getPreservedStorageKeys()', async () => {
@@ -95,5 +197,9 @@ describe('clearAllIndexedDB', () => {
         };
 
         await expect(clearAllIndexedDB()).resolves.toBeUndefined();
+        expect(logs.error).toHaveBeenCalledWith(
+            'IndexedDB logout cleanup failed',
+            expect.objectContaining({ cleanupAttemptId: expect.any(Number), errorType: 'error' })
+        );
     });
 });

@@ -1,12 +1,11 @@
 # BoostAttachFrameworkToBoostRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**boost_uri** | **str** |  | 
-**framework_id** | **str** |  | 
+| Name             | Type    | Description | Notes |
+| ---------------- | ------- | ----------- | ----- |
+| **boost_uri**    | **str** |             |
+| **framework_id** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_attach_framework_to_boost_request_dict = boost_attach_framework_to_boost_r
 # create an instance of BoostAttachFrameworkToBoostRequest from a dict
 boost_attach_framework_to_boost_request_from_dict = BoostAttachFrameworkToBoostRequest.from_dict(boost_attach_framework_to_boost_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

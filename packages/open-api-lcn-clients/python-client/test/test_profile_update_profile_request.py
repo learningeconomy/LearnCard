@@ -40,13 +40,17 @@ class TestProfileUpdateProfileRequest(unittest.TestCase):
                 short_bio = '',
                 bio = '',
                 is_private = True,
-                email = '',
+                profile_visibility = 'public',
+                show_email = True,
+                allow_connection_requests = 'anyone',
                 image = '',
                 hero_image = '',
                 website_link = '',
+                linked_in_organization_id = '4807288800152802179809',
                 type = '',
-                notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj',
-                display = openapi_client.models.profile_create_service_profile_request_display.profile_createServiceProfile_request_display(
+                email = '',
+                notifications_webhook = '',
+                display = openapi_client.models.profile_create_profile_request_display.profile_createProfile_request_display(
                     background_color = '', 
                     background_image = '', 
                     fade_background_image = True, 
@@ -58,12 +62,13 @@ class TestProfileUpdateProfileRequest(unittest.TestCase):
                     fade_id_background_image = True, 
                     id_background_color = '', 
                     repeat_id_background_image = True, ),
-                highlighted_credentials = [
-                    ''
-                    ],
                 role = '',
                 dob = '',
                 country = '',
+                locale = '',
+                highlighted_credentials = [
+                    ''
+                    ],
                 approved = True
             )
         else:

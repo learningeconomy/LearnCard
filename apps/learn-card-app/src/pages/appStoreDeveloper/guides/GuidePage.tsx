@@ -11,10 +11,14 @@ import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { USE_CASES, UseCaseId } from './types';
+import { GuideProjectPicker } from '../build/GuideProjectPicker';
+import { useDeveloperPortal } from '../useDeveloperPortal';
+import { getListingMode } from '../submit/listingLifecycle';
+import { STATUS_LABELS, getAppStatusPath } from '../apps/myApps';
 
 import IssueCredentialsGuide from './useCases/IssueCredentialsGuide';
 import EmbedClaimGuide from './useCases/EmbedClaimGuide';
-import EmbedAppGuide from './useCases/EmbedAppGuide';
+import EmbedAppGuide from './embedApp/EmbedAppQuickGuide';
 import ConsentFlowGuide from './useCases/ConsentFlowGuide';
 import VerifyCredentialsGuide from './useCases/VerifyCredentialsGuide';
 import ServerWebhooksGuide from './useCases/ServerWebhooksGuide';
@@ -53,6 +57,10 @@ const GuidePage: React.FC = () => {
     // If no integration ID in URL, show a "select project" prompt instead of auto-selecting
     // (removed auto-redirect to first integration)
 
+    const { useListingsForIntegration } = useDeveloperPortal();
+    const { data: projectListings } = useListingsForIntegration(currentIntegrationId);
+    const submittedApp = projectListings?.find(listing => getListingMode(listing) !== 'draft');
+
     // If integration is active, redirect to dashboard (shouldn't be on guides page)
     // Cast to string since server can return 'active' but type may not include it
     if (currentIntegration && (currentIntegration.status as string) === 'active') {
@@ -86,49 +94,6 @@ const GuidePage: React.FC = () => {
     const useCaseConfig = USE_CASES[useCaseId];
     const GuideComponent = GUIDE_COMPONENTS[useCaseId];
 
-    // If no integration selected, show a "select project" prompt
-    if (!currentIntegrationId && !isLoadingIntegrations) {
-        const headerContent = (
-            <HeaderIntegrationSelector
-                integrations={integrations}
-                selectedId={null}
-                onSelect={selectIntegration}
-                isLoading={isLoadingIntegrations}
-            />
-        );
-
-        return (
-            <IonPage>
-                <AppStoreHeader
-                    title={m['developerPortal.guides.page.title']()}
-                    rightContent={headerContent}
-                />
-
-                <IonContent className="ion-padding">
-                    <div className="max-w-2xl mx-auto py-12 text-center">
-                        <div className="w-16 h-16 bg-cyan-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <ArrowLeft className="w-8 h-8 text-cyan-600" />
-                        </div>
-
-                        <h1 className="text-2xl font-semibold text-gray-800 mb-2">
-                            {m['developerPortal.guides.page.selectProject.title']()}
-                        </h1>
-
-                        <p className="text-gray-500 mb-6">
-                            {m['developerPortal.guides.page.selectProject.description']()}
-                        </p>
-
-                        {integrations.length === 0 && (
-                            <p className="text-sm text-amber-600">
-                                {m['developerPortal.guides.page.selectProject.noProjects']()}
-                            </p>
-                        )}
-                    </div>
-                </IonContent>
-            </IonPage>
-        );
-    }
-
     if (!useCaseConfig || !GuideComponent) {
         return (
             <IonPage>
@@ -156,17 +121,37 @@ const GuidePage: React.FC = () => {
         );
     }
 
+    if (!currentIntegrationId) {
+        if (isLoadingIntegrations) {
+            return (
+                <IonPage>
+                    <AppStoreHeader title={mDynamic(useCaseConfig.titleKey)} />
+                    <IonContent className="ion-padding">
+                        <div className="flex items-center justify-center min-h-[400px]">
+                            <Loader2 className="w-8 h-8 text-grayscale-400 animate-spin" />
+                        </div>
+                    </IonContent>
+                </IonPage>
+            );
+        }
+
+        return (
+            <IonPage>
+                <AppStoreHeader title={mDynamic(useCaseConfig.titleKey)} />
+                <IonContent className="ion-padding">
+                    <GuideProjectPicker guideType={useCaseId} integrations={integrations} />
+                </IonContent>
+            </IonPage>
+        );
+    }
+
     const isActive = (currentIntegration?.status as string) === 'active';
 
     const headerContent = (
         <div className="flex items-center gap-3">
             {!isActive && currentIntegrationId && (
                 <button
-                    onClick={() =>
-                        history.push(
-                            `/app-store/developer/integrations/${currentIntegrationId}/guides`
-                        )
-                    }
+                    onClick={() => history.push('/app-store/developer/build')}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
@@ -190,6 +175,22 @@ const GuidePage: React.FC = () => {
             <AppStoreHeader title={mDynamic(useCaseConfig.titleKey)} rightContent={headerContent} />
 
             <IonContent className="ion-padding">
+                {submittedApp && (
+                    <div className="max-w-3xl mx-auto mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-3 font-poppins">
+                        <p className="flex-1 text-sm text-emerald-800">
+                            <span className="font-medium">{submittedApp.display_name}</span> is
+                            already {STATUS_LABELS[getListingMode(submittedApp)].toLowerCase()}.
+                            This guide is here if you want to add more to it.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => history.push(getAppStatusPath(submittedApp.listing_id))}
+                            className="py-2 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity shrink-0"
+                        >
+                            See App Status
+                        </button>
+                    </div>
+                )}
                 <GuideComponent
                     selectedIntegration={currentIntegration}
                     setSelectedIntegration={handleSetSelectedIntegration}

@@ -21,6 +21,9 @@ export const ConsentFlowTransaction = ModelFactory<
         label: 'ConsentFlowTransaction',
         schema: {
             id: { type: 'string', required: true },
+            'referral.requestId': { type: 'string', required: false },
+            'referral.requestedBy': { type: 'string', required: false },
+            'referral.externalReferenceId': { type: 'string', required: false },
             status: { type: 'string', required: true },
             expiresAt: { type: 'string', required: false },
             oneTime: { type: 'boolean', required: false },

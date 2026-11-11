@@ -140,7 +140,7 @@ export const NotificationsSubHeader: React.FC<{
                 {!isEmptyState && (
                     <button
                         onClick={handleMarkAllRead}
-                        className="text-[14px] text-grayscale-800 flex items-center justify-center font-semibold min-w-[140px] rounded-[36px] border-solid border-[1px] border-grayscale-200 py-[7px] px-[20px]"
+                        className="text-[14px] text-grayscale-800 flex items-center justify-center font-semibold min-w-[140px] rounded-[36px] border-solid border border-grayscale-200 py-[7px] px-[20px]"
                     >
                         {m['notifications.archiveAll']()}{' '}
                         <X className="ml-[5px] w-[15px] h-[15px]" />
@@ -156,7 +156,7 @@ export const NotificationsSubHeader: React.FC<{
                             }}
                             className={`pr-4 text-grayscale-600 text-[14px] font-semibold ${
                                 tab === 'active'
-                                    ? 'text-indigo-500 text-center rounded-[50px] px-[15px] py-[5px] border-solid border-[1px] border-[rgba(99, 102, 241, 0.40)] mr-[15px]'
+                                    ? 'text-indigo-500 text-center rounded-[50px] px-[15px] py-[5px] border-solid border border-[rgba(99, 102, 241, 0.40)] mr-[15px]'
                                     : ''
                             }`}
                         >
@@ -168,7 +168,7 @@ export const NotificationsSubHeader: React.FC<{
                             }}
                             className={`pr-4 text-grayscale-600 text-[14px] font-semibold ${
                                 tab === 'archived'
-                                    ? 'text-indigo-500 text-center rounded-[50px] px-[15px] py-[5px] border-solid border-[1px] border-[rgba(99, 102, 241, 0.40)] '
+                                    ? 'text-indigo-500 text-center rounded-[50px] px-[15px] py-[5px] border-solid border border-[rgba(99, 102, 241, 0.40)] '
                                     : ''
                             }`}
                         >

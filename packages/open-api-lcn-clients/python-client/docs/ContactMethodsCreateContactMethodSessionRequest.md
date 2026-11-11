@@ -1,12 +1,11 @@
 # ContactMethodsCreateContactMethodSessionRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**contact_method** | [**ContactMethodsCreateContactMethodSessionRequestContactMethod**](ContactMethodsCreateContactMethodSessionRequestContactMethod.md) |  | 
-**otp_challenge** | **str** |  | 
+| Name               | Type                                                                                                                                | Description | Notes |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contact_method** | [**ContactMethodsCreateContactMethodSessionRequestContactMethod**](ContactMethodsCreateContactMethodSessionRequestContactMethod.md) |             |
+| **otp_challenge**  | **str**                                                                                                                             |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ contact_methods_create_contact_method_session_request_dict = contact_methods_cre
 # create an instance of ContactMethodsCreateContactMethodSessionRequest from a dict
 contact_methods_create_contact_method_session_request_from_dict = ContactMethodsCreateContactMethodSessionRequest.from_dict(contact_methods_create_contact_method_session_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

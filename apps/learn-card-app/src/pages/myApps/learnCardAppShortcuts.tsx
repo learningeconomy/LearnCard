@@ -13,6 +13,7 @@ import { FamiliesIconWithShape } from 'learn-card-base/svgs/wallet/FamiliesIcon'
 import { BoostsIconWithShape } from 'learn-card-base/svgs/wallet/BoostsIcon';
 import ResumeBuilderTileIcon from './icons/ResumeBuilderTileIcon';
 import DataSharingTileIcon from './icons/DataSharingTileIcon';
+import SchoolConnectTileIcon from './icons/SchoolConnectTileIcon';
 
 export type ShortcutActionHelpers = {
     push: (path: string) => void;
@@ -23,6 +24,7 @@ export type LearnCardAppShortcut = {
     title: string;
     gradientFrom: string;
     gradientTo: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     Icon: React.FC<any>;
     getAction: (helpers: ShortcutActionHelpers) => () => void;
 };
@@ -54,6 +56,15 @@ export const JOURNEYS_SHORTCUT: LearnCardAppShortcut = {
     gradientTo: '#6366F1',
     Icon: JourneysTileIcon,
     getAction: route('/pathways'),
+};
+
+export const SCHOOL_CONNECT_SHORTCUT: LearnCardAppShortcut = {
+    key: 'schoolConnect',
+    title: 'School Connect',
+    gradientFrom: '#A7F3D0',
+    gradientTo: '#059669',
+    Icon: SchoolConnectTileIcon,
+    getAction: route('/school-connect'),
 };
 
 export const LEARNCARD_APP_SHORTCUTS: LearnCardAppShortcut[] = [

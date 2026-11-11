@@ -60,7 +60,7 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
                     className={`min-w-[235px] main-header-sp-logo ${getHeaderBrandingColor(
                         branding,
                         location.pathname
-                    )} ${textColor} ${className} !ml-[-10px]`}
+                    )} ${textColor} ${className} ml-[-10px]!`}
                 />
             </button>
         );

@@ -294,7 +294,7 @@ const IssueVCCreator: React.FC<{ category: CredentialCategory; closeModal?: any 
             )}
 
             {loading && (
-                <div className="z-[1000] create-vc-loading h-full bg-opacity-60 bg-grayscale-50 fixed top-[0px] left-[0px] flex flex-col justify-center items-center w-full h-full">
+                <div className="z-[1000] create-vc-loading h-full  bg-grayscale-50/60 fixed top-[0px] left-[0px] flex flex-col justify-center items-center w-full h-full">
                     <div className="loading-content mt-[-150px]  flex flex-col justify-center items-center">
                         <p className="font-semibold pb-[20px] text-gray-900">
                             Creating Verified Credential...

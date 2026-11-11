@@ -99,7 +99,7 @@ const QrCodeUserCard: React.FC<{
     const handleShare = () => {
         newModal(
             <ShareModal handleCloseModal={closeModal} />,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };

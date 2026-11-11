@@ -65,7 +65,7 @@ const ValidationBanner: React.FC<ValidationBannerProps> = ({
 
     return (
         <ul
-            className="space-y-1.5 p-2 rounded-[20px] border border-grayscale-200 bg-white shadow-sm"
+            className="space-y-v3-1.5 p-2 rounded-[20px] border border-grayscale-200 bg-white shadow-xs"
             aria-label="Issues with this step"
         >
             {relevant.map((issue, idx) => (

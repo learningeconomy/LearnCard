@@ -49,22 +49,17 @@ const IdentityBanner: React.FC<IdentityBannerProps> = ({ kicker, phrase }) => {
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 }}
-            className="px-1 space-y-0.5"
+            className="px-1 space-y-v3-0.5"
         >
             <div className="flex items-center gap-1.5">
-                <span
-                    aria-hidden
-                    className="w-1.5 h-1.5 rounded-full bg-emerald-500"
-                />
+                <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
 
-                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-700">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-700">
                     {kicker}
                 </p>
             </div>
 
-            <p className="text-base text-grayscale-900 font-medium leading-snug">
-                {phrase}
-            </p>
+            <p className="text-base text-grayscale-900 font-medium leading-snug">{phrase}</p>
         </motion.section>
     );
 };

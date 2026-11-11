@@ -22,12 +22,12 @@ import SkillsMyHub from './SkillsMyHub';
 import SkillsAdminPanel from './SkillsAdminPanel';
 import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import { SkillFramework } from '../../components/boost/boost';
-import { useIsCurrentUserLCNUser } from 'learn-card-base';
+import { useCanManageCompetencies } from '../../hooks/useCanManageCompetencies';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 import SkillsTabs, { SkillsTab } from './SkillsTabs';
 
 const SkillsPage: React.FC = () => {
-    const { data: isNetworkUser } = useIsCurrentUserLCNUser();
+    const canShowAdminPanel = useCanManageCompetencies();
     const {
         data: allResolvedCreds,
         isFetching: credentialsFetching,
@@ -52,7 +52,7 @@ const SkillsPage: React.FC = () => {
         isBoostsEmpty = false;
     }
 
-    const skillsMap = mapBoostsToSkills(resolvedCreds as any) as Record<
+    const skillsMap = mapBoostsToSkills(resolvedCreds) as Record<
         string,
         { length?: number; totalSubskills?: number }
     >;
@@ -74,15 +74,13 @@ const SkillsPage: React.FC = () => {
 
     const total = (totalSkills || 0) + (totalSubskills || 0);
 
-    const canShowAdminPanel = isNetworkUser === true;
-
     useEffect(() => {
         if (!canShowAdminPanel && selectedTab === SkillsTab.AdminPanel) {
             setSelectedTab(SkillsTab.MyHub);
         }
     }, [canShowAdminPanel, selectedTab]);
 
-    if (frameworkToBrowse) {
+    if (frameworkToBrowse && canShowAdminPanel) {
         // could remove this if we want to use the modal instead (which we're currently doing)
         return (
             <BrowseFrameworkPage

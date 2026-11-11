@@ -1,0 +1,22 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "types": ["bun-types", "node"],
+        "typeRoots": ["../../../../node_modules/@types", "../../../../node_modules"],
+        "customConditions": ["development"],
+        "moduleResolution": "bundler",
+        "module": "esnext",
+        "target": "es2022",
+        "skipLibCheck": true,
+        "allowImportingTsExtensions": true
+    },
+    "include": [
+        "./**/*.ts",
+        "../../../../services/learn-card-network/brain-service/test/verification/campaigns.ts",
+        "../../../../packages/plugins/chapi/src/global.d.ts",
+        "../../../../packages/plugins/didkey/src/global.d.ts",
+        "../../../../packages/plugins/vpqr/src/global.d.ts",
+        "../../../../packages/plugins/openid4vc/src/safe-regex.d.ts"
+    ]
+}

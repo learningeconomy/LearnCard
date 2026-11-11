@@ -32,6 +32,7 @@ export type {
     EscrowEnrollmentState,
     EscrowEnrollmentOptions,
     EscrowPinStatus,
+    EscrowRecoveryExpectations,
 } from '@learncard/types';
 
 // --- SSS-specific (canonical source: @learncard/sss-key-manager) ---
@@ -65,13 +66,55 @@ import type {
  */
 export type RecoveryReason = 'new_device' | 'stale_local_key' | 'missing_server_data';
 
+/**
+ * Set on `ready` after a PIN sign-in, which kept the account instead of resetting it.
+ * The app shows a one-time review ("Did you lose a device, or think someone else knows
+ * your PIN?") and clears it with `acknowledgePinSignIn()` or `secureAccount()`.
+ */
+export interface PinSignInInfo {
+    /** See `RecoveryResult.pinSignIn.mode`. */
+    mode: 'kept' | 'relinked' | 'deferred-rotation';
+    /** False when the fresh-attempt-budget re-set did not run; the PIN stays valid. */
+    pinRefreshed: boolean;
+    /**
+     * The re-set was attempted and could not be confirmed (for example a concurrent PIN
+     * attempt made lca-api refuse it, or the authority's receipt was lost). The PIN still
+     * works, with at most its reduced budget; it is not a reason to ask for a new PIN by
+     * itself.
+     */
+    pinRefreshFailed?: boolean;
+    /**
+     * Wrong PIN entries are recorded against the current PIN that were not this
+     * sign-in's own typing (or the server could not say), so the same PIN was not
+     * re-set: the app asks for a different PIN (`setEscrowPin`, which rejects the PIN
+     * just used with `SameEscrowPinError`). Until then the PIN keeps its reduced budget.
+     * Own-typos rule: wrong entries this device submitted during this sign-in flow
+     * never set it; only entries recorded before the flow started, or any entry from
+     * elsewhere during it, do.
+     */
+    newPinRequired: boolean;
+    /**
+     * Wrong PIN entries recorded before this sign-in session started (misses in this
+     * session never count). Omitted when the server could not say.
+     */
+    priorWrongAttempts?: number;
+}
+
 export type UnifiedAuthState =
     | { status: 'idle' }
     | { status: 'authenticating' }
     | { status: 'authenticated'; authUser: AuthUser }
     | { status: 'checking_key_status' }
     | { status: 'needs_setup'; authUser: AuthUser }
-    | { status: 'needs_migration'; authUser: AuthUser; migrationData?: Record<string, unknown> }
+    | {
+          status: 'needs_migration';
+          authUser: AuthUser;
+          /**
+           * `web3AuthKey` (the legacy key), `source` (MigrationKeySource) and
+           * `expectedDid` (the DID the server already holds, if any).
+           */
+          migrationData?: Record<string, unknown>;
+      }
     | {
           status: 'needs_recovery';
           escrowPin?: EscrowPinStatus;
@@ -80,6 +123,13 @@ export type UnifiedAuthState =
           recoveryReason: RecoveryReason;
           maskedRecoveryEmail?: string | null;
           sssActivationState?: SssActivationState | null;
+          /**
+           * The account's DID as independently known from the server key-status
+           * lookup (never from an escrow status response). Required by Nitro
+           * escrow recovery (hold start and PIN release) to bind the request to
+           * this account; see `EscrowRecoveryExpectations`.
+           */
+          expectedDid?: string;
       }
     | {
           status: 'identity_recovery';
@@ -89,6 +139,16 @@ export type UnifiedAuthState =
           recoveryMethods: RecoveryMethodInfo[];
           recoveredDid?: string;
           error?: string;
+          /** PIN availability from the verified recovery session, before any attempt. */
+          escrowPin?: EscrowPinStatus;
+          /**
+           * The verified account's DID, independently known from the
+           * verify-recovery-session response (never from an escrow response).
+           * Required by Nitro escrow recovery (hold start/restart) to bind the
+           * request to this account when no provider session exists yet; see
+           * `expectedDid` on the `needs_recovery` state above.
+           */
+          expectedDid?: string;
       }
     | { status: 'awaiting_rebind'; did: string }
     | {
@@ -97,6 +157,7 @@ export type UnifiedAuthState =
           did: string;
           privateKey: string;
           sssActivationState?: SssActivationState | null;
+          pinSignIn?: PinSignInInfo;
       }
     | { status: 'deriving_key' }
     | {
@@ -105,6 +166,36 @@ export type UnifiedAuthState =
           pendingEscrowHold?: { holdId: string; requestedAt: string; releaseAfter: string };
           /** Whether a recovery PIN is set on the escrow release policy, and attempts remaining. */
           escrowPin?: EscrowPinStatus;
+          /**
+           * The strategy cleared a retired PIN on its own during a post-recovery repair.
+           * The app must prompt for a new PIN, then call `acknowledgeEscrowPinAutoClear`.
+           */
+          escrowPinAutoCleared?: true;
+          /**
+           * The signed authority still has a PIN that lca-api cannot carry (e.g. after an
+           * identity-recovery rebind), so automatic repair stopped without signing
+           * anything. The app should ask the user to set a new PIN (`setEscrowPin`).
+           */
+          escrowPinResetRequired?: true;
+          /** Present once after a PIN sign-in; see PinSignInInfo. */
+          pinSignIn?: PinSignInInfo;
+          /**
+           * Ask the user for a new, different PIN: wrong entries are recorded against
+           * the current PIN (`escrowPin.wrongAttempts > 0`), or a PIN sign-in just
+           * reported `newPinRequired`. Derived by the coordinator on every update;
+           * `dismissEscrowPinChange()` hides it for this session only, so it returns on
+           * the next app start while wrong entries remain recorded. Cleared once a
+           * new PIN is set or the account is secured.
+           */
+          escrowPinChangeRequired?: true;
+          /**
+           * Wrong PIN entries are recorded against the current PIN, other than this
+           * session's own typing excused by a PIN sign-in (own-typos rule). Unlike
+           * `escrowPinChangeRequired`, a dismissal does not hide it. Drives the settings
+           * "Sign out of other devices" attention dot. Legacy records without a verified
+           * count never set it.
+           */
+          escrowPinAttention?: true;
           authUser?: AuthUser;
           did: string;
           privateKey: string;
@@ -112,6 +203,13 @@ export type UnifiedAuthState =
           sssActivationState?: SssActivationState | null;
       }
     | { status: 'error'; error: string; canRetry: boolean; previousState?: UnifiedAuthState };
+
+/** The `Storage` subset used by the "choose a new PIN" guard (`localStorage` fits). */
+export interface PinChangeGuardStorage {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+    removeItem(key: string): void;
+}
 
 /**
  * Auth Coordinator Config
@@ -149,11 +247,36 @@ export interface AuthCoordinatorConfig {
     onLogout?: () => Promise<void>;
 
     /**
+     * Optional: where the "choose a new PIN" guard keeps its tag across app starts, so
+     * the PIN used for a PIN sign-in that had recorded wrong entries is still refused
+     * after a restart (see RECOVERY.md). The tag is an HMAC keyed from the account's
+     * private key, so it cannot be checked without that key. Defaults to
+     * `localStorage` when available; `null` keeps it in memory for this session only.
+     */
+    pinChangeGuardStorage?: PinChangeGuardStorage | null;
+
+    /**
      * Optional: wipe any pending escrow recovery request from the storage the
      * app actually uses for device secrets. Called by `forgetDevice()`. When
      * omitted the coordinator clears the web (IndexedDB / sessionStorage) copy.
      */
     clearPendingEscrowRecovery?: () => Promise<void>;
+
+    /**
+     * Optional: gate AUTOMATIC escrow enrollment for a specific user (staged
+     * rollout). Called with the user's DID before `refreshEscrow` invokes the
+     * strategy's `ensureEscrowEnrollment`; returning `false` skips that call
+     * for this account this cycle. A rejected promise is treated as `false`
+     * (fail closed — never silently auto-enroll on a broken gate).
+     *
+     * Only the automatic-enrollment call is gated: reads
+     * (`getEscrowEnrollmentState`, `getEscrowRecoveryStatus`) and explicit
+     * user actions (`enableEscrowRecovery`, recovery execution) are never
+     * gated, so already-enrolled users keep working even when this returns
+     * `false`. Defaults to always-allowed when omitted, which preserves
+     * existing behavior for any consumer that doesn't configure a rollout.
+     */
+    isEscrowEnrollmentAllowed?: (userKey: string) => Promise<boolean>;
 
     /**
      * Optional: threshold (in ms) for detecting legacy accounts that need migration.
@@ -187,4 +310,41 @@ export interface AuthCoordinatorConfig {
      * @default 4000
      */
     serverStatusTimeoutMs?: number;
+
+    /**
+     * P9.1 (attack C): optional, app-supplied current locale (one of the
+     * app's compiled recovery-email languages, e.g. 'en'/'es'/'fr'/'ar'),
+     * bound alongside the account email into the sealed escrow blob on every
+     * enroll/replace. The device is the source of truth for this binding —
+     * lca-api cannot read or change it afterward; changing the recovery
+     * address or language requires a fresh enrollment from the device, not
+     * an edit. Omitted/unrecognized values fail closed at the enclave for
+     * nitro/authority-mode enroll/replace, never silently defaulted.
+     */
+    getRecoveryLanguage?: () => string | undefined;
+
+    /**
+     * Optional: confirm a legacy key belongs to the signed-in account before
+     * `migrate()` writes anything. The first DID stored on the server is
+     * permanent (later writes from another DID are refused), so a wrong key
+     * must be stopped here, not repaired later.
+     *
+     * Not called when the server already holds a DID for this account; the
+     * coordinator compares against that directly. `mismatch` ends in a
+     * non-retryable error; `unknown` (or a throw) proceeds for a freshly
+     * derived key and defers migration for a cached key, which then reaches
+     * `ready` without writing. Omit to keep the previous unchecked behavior.
+     */
+    verifyMigrationIdentity?: (check: MigrationIdentityCheck) => Promise<MigrationIdentityVerdict>;
 }
+
+/** Where a legacy key being migrated came from. */
+export type MigrationKeySource = 'cached' | 'derived';
+
+export interface MigrationIdentityCheck {
+    privateKey: string;
+    did: string;
+    source: MigrationKeySource;
+}
+
+export type MigrationIdentityVerdict = 'match' | 'mismatch' | 'unknown';

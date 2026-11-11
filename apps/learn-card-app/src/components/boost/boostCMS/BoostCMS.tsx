@@ -211,6 +211,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         };
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
     const [currentStep, setCurrentStep] = useState<BoostCMSStepsEnum>(BoostCMSStepsEnum.create);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -308,7 +309,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         }}
                         onDiscard={handleDiscard}
                     />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
             }, 300);
@@ -385,7 +386,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         </div>
                     </div>
                 </div>,
-                { sectionClassName: '!max-w-[400px]' },
+                { sectionClassName: 'max-w-[400px]!' },
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
             );
 
@@ -599,7 +600,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             if (isMediaDisplay && state?.mediaAttachments?.length === 0) {
                 newModal(
                     <BoostCMSMediaDisplayWarning handleShowMediaOptions={handleShowMediaOptions} />,
-                    { sectionClassName: '!max-w-[400px]' },
+                    { sectionClassName: 'max-w-[400px]!' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
                 return;
@@ -874,9 +875,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                                 finalBoostUri,
                                 { mediaAttachments: issuee.mediaAttachments }
                             );
-                            const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                                sentBoost
-                            );
+                            const issuedVcUri =
+                                await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
                             await addCredentialToWallet({ uri: issuedVcUri });
                             return issuedVcUri;
@@ -965,7 +965,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 }}
                 skippedPublishStep={skippedPublishStep}
             />,
-            { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
+            { sectionClassName: 'max-w-[400px]!', cancelButtonTextOverride: buttonText },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -982,7 +982,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     </p>
                 }
             />,
-            { sectionClassName: '!max-w-[500px]' }
+            { sectionClassName: 'max-w-[500px]!' }
         );
     };
 

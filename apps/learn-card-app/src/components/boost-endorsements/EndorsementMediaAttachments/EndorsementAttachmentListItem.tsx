@@ -103,7 +103,7 @@ const EndorsementAttachmentListItem: React.FC<{
                             src={media.url || ''}
                             className="h-full w-full object-cover"
                         />
-                        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-linear-to-t/srgb from-black to-transparent"></div>
 
                         <Camera className="absolute right-2 bottom-2 h-[30px] w-[30px] text-white" />
                     </div>
@@ -117,7 +117,7 @@ const EndorsementAttachmentListItem: React.FC<{
 
             {isVideo && (
                 <>
-                    <div className="w-2/5 relative overflow-hidden rounded-[20px] shadow-3xl min-h-[120px] max-h-[120px] flex-shrink-0">
+                    <div className="w-2/5 relative overflow-hidden rounded-[20px] shadow-3xl min-h-[120px] max-h-[120px] shrink-0">
                         <a
                             href={media.url || ''}
                             target="_blank"
@@ -129,7 +129,7 @@ const EndorsementAttachmentListItem: React.FC<{
                                 alt={media.title || 'Video Cover'}
                                 className="h-full w-full object-cover"
                             />
-                            <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent"></div>
+                            <div className="absolute bottom-0 left-0 w-full h-1/2 bg-linear-to-t/srgb from-black to-transparent"></div>
                             <Video className="absolute right-2 bottom-2 h-[30px] w-[30px] text-white" />
                         </a>
                     </div>
@@ -160,7 +160,7 @@ const EndorsementAttachmentListItem: React.FC<{
                     style={{ textDecoration: 'none' }}
                 >
                     <FileIcon className="text-[#FF3636] h-[45px] min-h-[45px] min-w-[45px] w-[45px] ml-2" />
-                    <div className="flex items-start justify-center text-left ml-2 flex-col flex-grow">
+                    <div className="flex items-start justify-center text-left ml-2 flex-col grow">
                         <p className="text-grayscale-800 text-xs text-left line-clamp-1">
                             {media.title}
                         </p>
@@ -185,7 +185,7 @@ const EndorsementAttachmentListItem: React.FC<{
                 >
                     <div className="flex items-center justify-start">
                         <LinkChain className={`text-${primaryColor} h-[45px] w-[45px] ml-2`} />
-                        <div className="flex items-start justify-center text-left ml-2 flex-col flex-grow">
+                        <div className="flex items-start justify-center text-left ml-2 flex-col grow">
                             <p className="text-grayscale-800 text-xs text-left line-clamp-1 break-all">
                                 {media.title}
                             </p>
@@ -204,14 +204,14 @@ const EndorsementAttachmentListItem: React.FC<{
                     <button
                         onClick={handleEdit}
                         type="button"
-                        className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow"
+                        className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow-sm"
                     >
                         <Pencil className="h-[60%]" />
                     </button>
                 )}
                 {showDeleteButton && (
                     <div
-                        className="flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow"
+                        className="flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow-sm"
                         onClick={handleDelete}
                     >
                         <TrashBin className="h-[25px] w-[25px] text-grayscale-800" />

@@ -15,6 +15,7 @@ import LearningProfileCard from './components/LearningProfileCard';
 import AppsCard from './components/AppsCard';
 import DataTrustCard from './components/DataTrustCard';
 import RecoveryBanner from '../../components/recovery/RecoveryBanner';
+import PendingApprovalBanner from '../../components/pending-approval-banner/PendingApprovalBanner';
 import type { DashboardViewModel } from './DashboardView.types';
 
 type DashboardViewProps = {
@@ -24,6 +25,7 @@ type DashboardViewProps = {
 const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
     const {
         brandName,
+        collection,
         header,
         heroSlot,
         checklistItems,
@@ -36,6 +38,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
         primaryButtonClass,
         slots,
         recoveryPrompt,
+        pendingGuardianApproval = false,
         dataTrust,
         activity,
         learningProfile,
@@ -63,7 +66,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                                 type="button"
                                 onClick={header.onScanQrTopRight}
                                 aria-label={m['dashboard.header.scanQrAria']()}
-                                className="w-9 h-9 rounded-full bg-grayscale-100 hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                className="w-9 h-9 rounded-full bg-grayscale-100 hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800 active:scale-95 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <QRCodeScanner version="2" />
                             </button>
@@ -71,12 +74,48 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                     />
                 </GenericErrorBoundary>
 
+                {/* Keep the empty live region mounted so later failures can be announced. */}
+                {collection && (
+                    <section
+                        aria-label={
+                            collection.isError ? m['credentialCollection.totalsAria']() : undefined
+                        }
+                        className={
+                            collection.isError
+                                ? 'text-sm rounded-2xl border border-red-100 bg-red-50 p-3 text-red-700'
+                                : 'sr-only'
+                        }
+                    >
+                        <p role="status" aria-live="polite" aria-atomic="true">
+                            {collection.isError ? m['credentialCollection.totalsError']() : ''}
+                        </p>
+                        {collection.isError && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (!collection.isFetching) void collection.retry();
+                                }}
+                                aria-disabled={collection.isFetching}
+                                className="mt-2 py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 focus-visible:ring-2 focus-visible:ring-emerald-500 aria-disabled:opacity-40"
+                            >
+                                {collection.isFetching
+                                    ? m['credentialCollection.retrying']()
+                                    : m['credentialCollection.retryTotals']()}
+                            </button>
+                        )}
+                    </section>
+                )}
+
                 <GenericErrorBoundary>
                     <QuickActionsRow slots={slots} />
                 </GenericErrorBoundary>
 
                 <GenericErrorBoundary>
-                    <RecoveryBanner {...recoveryPrompt} />
+                    {pendingGuardianApproval ? (
+                        <PendingApprovalBanner />
+                    ) : (
+                        <RecoveryBanner {...recoveryPrompt} />
+                    )}
                 </GenericErrorBoundary>
 
                 <div className="grid grid-cols-1 desktop:grid-cols-12 gap-5">

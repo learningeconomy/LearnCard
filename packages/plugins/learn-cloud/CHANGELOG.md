@@ -1,5 +1,116 @@
 # learn-card-core
 
+## 2.3.52
+
+### Patch Changes
+
+- [#1851](https://github.com/learningeconomy/LearnCard/pull/1851) [`83dad5258438dd7cbc1fba3035f1b009c703653e`](https://github.com/learningeconomy/LearnCard/commit/83dad5258438dd7cbc1fba3035f1b009c703653e) Thanks [@gerardopar](https://github.com/gerardopar)! - Normalize restored null pagination cursors before querying the LearnCloud index.
+
+- [#1871](https://github.com/learningeconomy/LearnCard/pull/1871) [`a7923d7deaf0baf7205bbae1f6fe132e846fed44`](https://github.com/learningeconomy/LearnCard/commit/a7923d7deaf0baf7205bbae1f6fe132e846fed44) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2294] Search complete credential collections, keep visible totals stable, and recover from incomplete loading without misleading empty states.
+
+    Keep searching other records and metadata pages when one legacy credential cannot load, while preserving an incomplete, retryable result. Scope shared-credential metadata caches to the reader account, and translate collection status and recovery feedback in LearnCard and ScoutPass with accessible dashboard contrast.
+
+    Search older wrapped credentials by displayed and achievement names, keep scrolling after collection totals finish, and refresh only the originating account's affected lists once per bulk save. Localize LearnCard's unavailable category counts with narrow, right-to-left-safe layouts, and preserve live ScoutPass managed-list localization.
+
+    Await optimistic list/count updates after saving without making claim completion or contract sync wait for background paginated rescans.
+
+- Updated dependencies [[`fea9c25ec76f230944a1713500a280c80e2a9cc0`](https://github.com/learningeconomy/LearnCard/commit/fea9c25ec76f230944a1713500a280c80e2a9cc0), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/helpers@1.8.0
+    - @learncard/core@9.4.44
+    - @learncard/learn-cloud-client@1.6.52
+    - @learncard/didkit-plugin@1.10.10
+
+## Unreleased
+
+### Patch Changes
+
+- Allow credential collection retries after failed service identity discovery (LC-2294). Keep successful and in-flight discovery shared, but discard rejected discovery promises so a restored connection can recover without restarting the account.
+
+## 2.3.51
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.43
+    - @learncard/helpers@1.7.3
+    - @learncard/learn-cloud-client@1.6.51
+    - @learncard/didkit-plugin@1.10.9
+
+## 2.3.50
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.42
+    - @learncard/helpers@1.7.2
+    - @learncard/learn-cloud-client@1.6.50
+    - @learncard/didkit-plugin@1.10.8
+
+## 2.3.49
+
+### Patch Changes
+
+- Updated dependencies [[`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990)]:
+    - @learncard/didkit-plugin@1.10.7
+    - @learncard/learn-cloud-client@1.6.49
+
+## 2.3.48
+
+### Patch Changes
+
+- Updated dependencies [[`d93c1b15856f341b4bd36415bf39052de9b6b198`](https://github.com/learningeconomy/LearnCard/commit/d93c1b15856f341b4bd36415bf39052de9b6b198), [`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7)]:
+    - @learncard/didkit-plugin@1.10.6
+    - @learncard/helpers@1.7.1
+    - @learncard/core@9.4.41
+    - @learncard/learn-cloud-client@1.6.48
+
+## 2.3.47
+
+### Patch Changes
+
+- Updated dependencies [[`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/helpers@1.7.0
+    - @learncard/core@9.4.40
+    - @learncard/learn-cloud-client@1.6.47
+    - @learncard/didkit-plugin@1.10.5
+
+## 2.3.46
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.39
+    - @learncard/helpers@1.6.3
+    - @learncard/learn-cloud-client@1.6.46
+    - @learncard/didkit-plugin@1.10.4
+
+## 2.3.45
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/learn-cloud-client@1.6.45
+
+## 2.3.44
+
+### Patch Changes
+
+- Updated dependencies [[`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/didkit-plugin@1.10.3
+    - @learncard/core@9.4.38
+    - @learncard/helpers@1.6.2
+    - @learncard/learn-cloud-client@1.6.44
+
+## 2.3.43
+
+### Patch Changes
+
+- Updated dependencies [[`d436c39e00994e6d8c77e7b94985a51fe1f42adb`](https://github.com/learningeconomy/LearnCard/commit/d436c39e00994e6d8c77e7b94985a51fe1f42adb)]:
+    - @learncard/helpers@1.6.1
+    - @learncard/core@9.4.37
+    - @learncard/learn-cloud-client@1.6.43
+    - @learncard/didkit-plugin@1.10.2
+
 ## 2.3.42
 
 ### Patch Changes

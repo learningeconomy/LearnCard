@@ -35,7 +35,14 @@
         },
         "build": {
             "executor": "nx:run-script",
-            "inputs": ["source"],
+            "inputs": [
+                "source",
+                "{projectRoot}/bundle.mjs",
+                "{projectRoot}/esbuildPlugins.cjs",
+                "{projectRoot}/package.json",
+                "{projectRoot}/tsconfig*.json",
+                "{workspaceRoot}/packages/service-config/src/**/*"
+            ],
             "options": {
                 "script": "build"
             }
@@ -73,7 +80,7 @@
         },
         "test": {
             "executor": "nx:run-script",
-            "inputs": ["source", "tests"],
+            "inputs": ["source", "tests", "ciTestConfig"],
             "options": {
                 "script": "test"
             }
@@ -104,12 +111,49 @@
                 "script": "test:inbox:e2e"
             }
         },
+        "test:profile-search": {
+            "executor": "nx:run-script",
+            "cache": false,
+            "dependsOn": ["^build"],
+            "inputs": ["source", "tests", "{projectRoot}/vitest.profile-search-neo4j.config.ts"],
+            "options": {
+                "script": "test:profile-search"
+            }
+        },
         "test:integration": {
             "executor": "nx:run-script",
             "inputs": ["source", "tests"],
             "options": {
                 "script": "test:integration"
             }
+        },
+        "test:campaigns": {
+            "executor": "nx:run-script",
+            "cache": false,
+            "dependsOn": ["^build"],
+            "inputs": [
+                "source",
+                "tests",
+                "{projectRoot}/vitest.campaigns.config.ts",
+                "{projectRoot}/test-setup.ts"
+            ],
+            "options": {
+                "script": "test:campaigns"
+            }
+        },
+        "test:boost-recipients": {
+            "executor": "nx:run-script",
+            "cache": false,
+            "dependsOn": ["^build"],
+            "inputs": ["source", "tests", "{projectRoot}/vitest.boost-recipients-neo4j.config.ts"],
+            "options": {
+                "script": "test:boost-recipients"
+            }
+        },
+        "build:integration-dependencies": {
+            "executor": "nx:noop",
+            "cache": false,
+            "dependsOn": ["^build"]
         }
     }
 }

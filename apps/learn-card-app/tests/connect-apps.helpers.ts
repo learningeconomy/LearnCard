@@ -332,6 +332,7 @@ export const getCredentialsSharedWithSmartResume = async () => {
 
     const mostRecentBundle = sharedCreds[0];
     const bundle = await srLearnCard.invoke.resolveFromLCN(mostRecentBundle.uri);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const decrypted = await srLearnCard.invoke.decryptDagJwe<any>(bundle as any);
 
     return decrypted.verifiableCredential;

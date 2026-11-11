@@ -54,6 +54,7 @@ export const AiSessionItem: React.FC<{
         if (forceSingleView || !app) {
             newModal(
                 <AiSessionAssessmentPreviewContainer
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     app={app as any}
                     topicRecord={topicRecord}
                     topicVc={topicVc}
@@ -94,7 +95,7 @@ export const AiSessionItem: React.FC<{
         <button
             disabled={isLoading}
             onClick={handleViewSession}
-            className={`flex items-center justify-between w-full bg-white rounded-2xl shadow-sm px-4 py-3 mb-3 ${
+            className={`flex items-center justify-between w-full bg-white rounded-2xl shadow-xs px-4 py-3 mb-3 ${
                 isSelectedSession ? 'ring-2 ring-cyan-200' : ''
             }`}
         >
@@ -112,6 +113,7 @@ export const AiSessionItem: React.FC<{
                 </div>
                 <div className="flex flex-col items-start w-full min-w-0">
                     <p className="w-full text-grayscale-900 text-[17px] leading-tight font-poppins font-semibold text-left line-clamp-1 ml-3">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR */}
                         {getAiSessionTitle(sessionCredential as any) || m['ai.untitledSession']()}
                     </p>
                     <p className="text-grayscale-600 text-sm font-poppins text-left line-clamp-1 ml-3">

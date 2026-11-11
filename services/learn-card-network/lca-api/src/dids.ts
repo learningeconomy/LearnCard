@@ -50,7 +50,14 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         const learnCard = await getLearnCard();
 
-        const domainName: string = request.hostname || (request as any).requestContext.domainName;
+        // A configured DOMAIN_NAME pins the service identity: the document (cached once for
+        // every hostname) always matches the did:web transcript assertions are signed as
+        // (`getTranscriptRequesterDid`) and the did:web signing-authority identity
+        // (`getServerDidWebDID`), whatever hostname the first request arrived on.
+        const domainName: string | undefined =
+            environment.DOMAIN_NAME ||
+            request.hostname ||
+            (request as { requestContext?: { domainName?: string } }).requestContext?.domainName;
         const domain =
             !domainName || environment.IS_OFFLINE
                 ? `localhost%3A${environment.PORT || 3000}`

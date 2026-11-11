@@ -38,6 +38,7 @@ class TestBoostCreateBoostRequest(unittest.TestCase):
                 name = '',
                 type = '',
                 category = '',
+                created = '',
                 status = 'DRAFT',
                 auto_connect_recipients = True,
                 meta = {
@@ -45,8 +46,9 @@ class TestBoostCreateBoostRequest(unittest.TestCase):
                     },
                 allow_anyone_to_create_children = True,
                 credential = None,
-                claim_permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
+                claim_permissions = openapi_client.models.boost_send_request_template_claim_permissions.boost_send_request_template_claimPermissions(
                     role = '', 
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 
@@ -58,8 +60,9 @@ class TestBoostCreateBoostRequest(unittest.TestCase):
                     can_manage_children_permissions = '', 
                     can_manage_children_profiles = True, 
                     can_view_analytics = True, ),
-                default_permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
+                default_permissions = openapi_client.models.boost_send_request_template_claim_permissions.boost_send_request_template_claimPermissions(
                     role = '', 
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 
@@ -74,7 +77,8 @@ class TestBoostCreateBoostRequest(unittest.TestCase):
                 skills = [
                     openapi_client.models.boost_send_request_template_skills_inner.boost_send_request_template_skills_inner(
                         framework_id = '', 
-                        id = '', )
+                        id = '', 
+                        proficiency_level = 1.337, )
                     ]
             )
         else:

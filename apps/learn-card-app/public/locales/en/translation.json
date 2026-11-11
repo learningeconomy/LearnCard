@@ -1,4 +1,424 @@
 {
+    "classlinkPersonalEmail": {
+        "title": "Add a personal email",
+        "body": "So you can keep your account after you leave school.",
+        "email": "Personal email",
+        "code": "6-digit code",
+        "send": "Send Code",
+        "sending": "Sending…",
+        "verify": "Verify",
+        "verifying": "Verifying…",
+        "skip": "Skip for Now",
+        "success": "Personal email added.",
+        "schoolError": "Use a personal email, not your school email",
+        "conflictError": "This email is already used by another account.",
+        "codeError": "Invalid or expired code. Please try again.",
+        "limitError": "Too many codes requested. Please try again later.",
+        "error": "Something went wrong. Please try again."
+    },
+    "transcriptOptIn": {
+        "title": "Get your {{state}} transcript",
+        "body": "We'll ask your school records to send your transcript here.",
+        "consent": "I agree to share my student ID with {{state}} school records, and to add my transcript to my account when it arrives.",
+        "submit": "Get My Transcript",
+        "requesting": "Requesting…",
+        "requested": "Your transcript is on its way. We'll let you know when it arrives.",
+        "noneYet": "There's no transcript for you yet. Check back later.",
+        "reauthRequired": "Reconnect your school account to continue",
+        "reauthButton": "Reconnect",
+        "reauthing": "Reconnecting…",
+        "noStateId": "We couldn't find your student record. Ask your school to check your ClassLink account.",
+        "error": "We couldn't reach your school records right now. Please try again later.",
+        "tryAgain": "Try Again",
+        "requestingFrom": "Requesting from {{state}} school records…",
+        "takingAWhile": "This can take a while. We'll let you know when it's here.",
+        "addedToAccount": "Added to your account",
+        "updated": "Updated {{date}}",
+        "viewTranscript": "View Transcript",
+        "arrivedTitle": "Your transcript arrived",
+        "transcript": "Transcript",
+        "gradYear": "Class of {{year}}",
+        "gpa": "GPA: {{gpa}}",
+        "receivedLoading": "Your transcript was received. It will appear here in a moment.",
+        "finishingUp": "Finishing up…",
+        "inPassport": "It's in your Passport.",
+        "viewInPassport": "View in Passport",
+        "bannerTitle": "Get your official transcript",
+        "bannerFailed": "We couldn't reach your school records",
+        "getIt": "Get it",
+        "checkManually": "It may already be waiting in your notifications. Open it there to add it to your account, or check again.",
+        "checkAgain": "Check Again",
+        "openNotifications": "Open Notifications",
+        "autoAcceptFailed": "We couldn't add your transcript automatically. You can accept it here instead.",
+        "preparingTranscript": "Your school is preparing your transcript.",
+        "willAddWhenArrives": "We'll add it here as soon as it arrives.",
+        "waiting": "Waiting",
+        "checkNow": "Check now",
+        "requestSent": "Request Sent",
+        "untrackableBody": "We'll notify you when it arrives.",
+        "flow": {
+            "requestSent": "Request sent",
+            "preparing": "Your school is preparing your transcript",
+            "adding": "Adding it to your account",
+            "usuallyTakes": "This usually takes less than a minute.",
+            "takingLonger": "We'll let you know as soon as your transcript is here. You can keep going.",
+            "continue": "Continue",
+            "onTheWayTitle": "Your transcript is on its way",
+            "stillWorkingTitle": "Still working on it",
+            "arrivedBody": "It's saved to your account.",
+            "courses": "Courses",
+            "gpa": "GPA",
+            "classOf": "Class of",
+            "noneYetTitle": "Nothing to add yet"
+        },
+        "promptTitle": "Get Your Transcript",
+        "notNow": "Not now"
+    },
+    "consentUpdate": {
+        "summary": {
+            "requestDetails": "Request details",
+            "before": "Current",
+            "after": "After update",
+            "notRequested": "Not requested"
+        },
+        "details": {
+            "frontDoorCurrent": "Current credential",
+            "frontDoorUpdated": "Updated credential",
+            "frontDoorBoostUri": "Front door credential",
+            "expiresAt": "Access expiration",
+            "writers": "People who can write",
+            "autoboosts": "Automatic credential deliveries",
+            "personCountOne": "{{count}} person",
+            "peopleCount": "{{count}} people",
+            "credentialCountOne": "{{count}} credential",
+            "credentialsCount": "{{count}} credentials",
+            "set": "Set"
+        },
+        "editor": {
+            "accessSettings": "Settings for {{label}}",
+            "title": "Update contract",
+            "close": "Close contract editor",
+            "description": "Edit the current request, review your changes, then publish when you’re ready.",
+            "noContract": "Create or select a consent request before editing it.",
+            "loading": "Loading request…",
+            "loadError": "Couldn’t load the current request. Please try again.",
+            "unsupportedNetwork": "Contract updates aren’t available on this network yet. Connect to the updated service and try again.",
+            "retry": "Try Again",
+            "currentVersion": "Current version: {{version}}",
+            "customField": "Custom field for {{area}}",
+            "addField": "Add field",
+            "removeAccess": "Remove {{label}}",
+            "selectImage": "Choose request image",
+            "removeImage": "Remove request image",
+            "image": "Image",
+            "reason": "Why are you making this update?",
+            "reasonPlaceholder": "Explain what changes for the people using your app",
+            "reasonRequired": "Add a short explanation before previewing or publishing this update (140 characters maximum).",
+            "reasonHint": "People see this explanation when reviewing the update (140 characters maximum).",
+            "summary": "Your changes",
+            "noChanges": "Change a field to prepare an update.",
+            "approvalNeeded": "People must approve this update before the app can write data again.",
+            "optionalNotice": "New optional access stays off until people turn it on.",
+            "quietNotice": "This update does not need another approval.",
+            "updated": "Updated",
+            "notSet": "Not set",
+            "cleared": "Cleared",
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "optionalOn": "Optional · on for new connections",
+            "optionalOff": "Optional · off by default",
+            "retired": "This request has been retired and can’t be updated.",
+            "published": "Update published · version {{version}}",
+            "preview": "Preview Update",
+            "previewing": "Preparing preview…",
+            "consumerNotification": "Everyone connected to this contract will be notified and asked to review the changes.",
+            "publish": "Publish Update",
+            "publishing": "Publishing update…",
+            "reload": "Reload current request",
+            "reloading": "Reloading request…",
+            "conflict": "This request changed elsewhere. Reload the current request before publishing.",
+            "previewError": "Couldn’t prepare the preview. Your changes are still here; please try again.",
+            "publishError": "Couldn’t publish the update. Your changes are still here; please try again.",
+            "publishedReloadError": "The update was published, but the current request couldn’t be reloaded. Reload it before making another update.",
+            "createError": "Couldn’t create the request. Please try again."
+        },
+        "dismissing": "Dismissing…",
+        "dismissError": "Couldn’t dismiss this update. Please try again.",
+        "approvedUpdate": "Approved update",
+        "approvedUpdateDescription": "You approved the updated request from {{appName}}.",
+        "headline": {
+            "paused": "{{name}}'s access is paused",
+            "read": "{{name}} is asking to see your {{label}}",
+            "write": "{{name}} is asking to add {{label}} to your account",
+            "multiple": "{{name}} is asking for more access",
+            "changed": "{{name}} changed its request",
+            "optional": "{{name}} has a new option",
+            "removed": "{{name}} now sees less"
+        },
+        "subhead": {
+            "reconnect": "Approve the update to reconnect.",
+            "newItems": "{{count}} new items",
+            "review": "Review what's different.",
+            "optional": "Turn it on if you want. Nothing changes unless you do.",
+            "removed": "Stopped asking for {{label}}.",
+            "changed": "Its request has changed."
+        },
+        "action": {
+            "reconnect": "Reconnect",
+            "allow": "Allow",
+            "allowAccess": "Allow access",
+            "continue": "Continue",
+            "done": "Done",
+            "saveChoices": "Save choices"
+        },
+        "ui": {
+            "close": "Close",
+            "saving": "Saving…",
+            "stopSharing": "Stop sharing",
+            "askParent": "Ask a parent",
+            "saveError": "Something went wrong. Please try again.",
+            "new": "New",
+            "removed": "Removed",
+            "updated": "Updated",
+            "turnOnOption": "Turn on this option",
+            "required": "Required",
+            "whySeeing": "Why am I seeing this?",
+            "appContext": "{{name}} is an app you connected to {{brand}}. You decide what it can see and what it can add to your account. You can change this any time.",
+            "parentNeeded": "A parent is needed to continue.",
+            "stopSharingWarning": "{{name}} will lose access to everything you’ve shared. You can reconnect later.",
+            "keepSharing": "Keep sharing",
+            "stopSharingWith": "Stop sharing with {{name}}",
+            "respondBy": "Respond by {{date}} to keep sharing",
+            "loadError": "We couldn’t load this update. Please try again.",
+            "tryAgain": "Try again",
+            "noLongerAvailable": "This update is no longer available.",
+            "unchangedRead": "{{name}} already sees {{items}}. That doesn’t change.",
+            "unchangedWrite": "{{name}} can already add {{items}}. That doesn’t change.",
+            "unchangedDefault": "Your existing choices stay the same.",
+            "noExistingAccess": "No access is currently enabled for this app.",
+            "noDefaultAccess": "No default access stays unchanged.",
+            "allAccessChanged": "Your existing access is included in the changes above.",
+            "defaultAccess": "Current request’s default access",
+            "defaultAccessDescription": "This preview shows default choices, not a person’s saved permissions.",
+            "readAccess": "Read access",
+            "writeAccess": "Write access",
+            "saved": "Saved",
+            "changes": "Changes"
+        },
+        "review": "Review this update",
+        "dismiss": "Dismiss",
+        "needsReview": "Needs your review",
+        "newOption": "New option · added within the last 14 days",
+        "appUpdatedTerms": "App update",
+        "appUpdatedTermsDescription": "{{appName}} updated its access request.",
+        "notification": {
+            "relaxedWithItem": "{{appName}} stopped asking for your {{removed}}",
+            "changed": "{{appName}} changed its request",
+            "review": "{{appName}} needs your review",
+            "option": "{{appName}} has a new option"
+        },
+        "scope": {
+            "transcripts": {
+                "label": "Transcripts",
+                "description": "Records of completed courses and learning."
+            },
+            "certificates": {
+                "label": "Certificates",
+                "description": "Credentials recognizing qualifications or completed learning."
+            },
+            "achievements": {
+                "label": "Achievements",
+                "description": "Milestones earned through effort, skill, or perseverance."
+            },
+            "skills": {
+                "label": "Skills",
+                "description": "Abilities developed through training, practice, or experience."
+            },
+            "workHistory": {
+                "label": "Work History",
+                "description": "Professional roles and activities over time."
+            },
+            "learningHistory": {
+                "label": "Learning History",
+                "description": "Structured programs of learning."
+            },
+            "ids": {
+                "label": "IDs",
+                "description": "Credentials used to verify identity."
+            },
+            "socialBadges": {
+                "label": "Social Badges",
+                "description": "Digital labels recognizing participation or group membership."
+            },
+            "memberships": {
+                "label": "Memberships",
+                "description": "Records of memberships."
+            },
+            "accomplishments": {
+                "label": "Accomplishments",
+                "description": "Collections of work that showcase skills and experience."
+            },
+            "experiences": {
+                "label": "Experiences",
+                "description": "Knowledge and skills gained through professional roles and activities."
+            },
+            "accommodations": {
+                "label": "Accommodations",
+                "description": "Adjustments made to support accessibility."
+            },
+            "family": {
+                "label": "Family",
+                "description": "Family profiles connected through shared learning journeys."
+            },
+            "name": {
+                "label": "Name",
+                "description": "Your name."
+            },
+            "email": {
+                "label": "Email",
+                "description": "Your email address."
+            },
+            "profilePhoto": {
+                "label": "Profile photo",
+                "description": "Your profile photo."
+            },
+            "qualifications": {
+                "label": "Qualifications",
+                "description": "Education, training, and professional qualifications."
+            },
+            "goals": {
+                "label": "Goals",
+                "description": "Learning and career goals you want to achieve."
+            },
+            "professionalTitle": {
+                "label": "Professional title",
+                "description": "The title that describes your professional role."
+            },
+            "roleExperience": {
+                "label": "Role experience",
+                "description": "Experience gained in a particular professional role."
+            },
+            "workExperience": {
+                "label": "Work experience",
+                "description": "Your work activities, responsibilities, and experience."
+            },
+            "payRate": {
+                "label": "Pay rate",
+                "description": "Your pay amount and payment period."
+            },
+            "workLifeBalance": {
+                "label": "Work-life balance",
+                "description": "Your preferences for balancing work and personal life."
+            },
+            "jobStability": {
+                "label": "Job stability",
+                "description": "Your preferences for job security and stability."
+            },
+            "selfAssignedSkills": {
+                "label": "Self-assigned skills",
+                "description": "Skills you have added to your own profile."
+            },
+            "aiSummaries": {
+                "label": "AI summaries",
+                "description": "Summaries of your AI-assisted learning sessions."
+            },
+            "aiTopics": {
+                "label": "AI topics",
+                "description": "Topics explored in your AI-assisted learning."
+            },
+            "aiAssessments": {
+                "label": "AI assessments",
+                "description": "Assessments from your AI-assisted learning."
+            },
+            "aiInsights": {
+                "label": "AI insights",
+                "description": "Insights about your learning progress and skills."
+            },
+            "learningPathways": {
+                "label": "Learning pathways",
+                "description": "Plans and steps toward your learning goals."
+            }
+        }
+    },
+    "credentialCollection": {
+        "searchIncomplete": "Search incomplete. Found so far: {{count}}.",
+        "searching": "Searching… Found so far: {{count}}.",
+        "loadError": "Credentials loaded: {{count}}. The collection is incomplete.",
+        "loadErrorEmpty": "Could not load credentials. The collection is incomplete.",
+        "retrying": "Retrying…",
+        "retry": "Retry loading credentials",
+        "loadingEarned": "Loading earned credentials",
+        "initialError": "Credentials could not be loaded. Try again.",
+        "loadingCredentials": "Loading credentials…",
+        "recentIncomplete": "Some recent credentials could not be loaded. These results are incomplete.",
+        "recentError": "Recent credentials could not be loaded.",
+        "loadingRecent": "Loading recent credentials…",
+        "retryRecent": "Retry recent credentials",
+        "totalsAria": "Credential totals",
+        "totals": "Credentials: {{credentials}} · Skills: {{skills}}",
+        "totalsError": "Credential totals could not be loaded.",
+        "countUnavailable": "Count unavailable",
+        "counting": "Counting credentials…",
+        "retryTotals": "Retry credential totals"
+    },
+    "clrTranscript": {
+        "credits": {
+            "earnedNotSuppliedAria": "Earned credits not supplied",
+            "earnedNotSupplied": "Earned —",
+            "earnedQuantity": "{{value}} earned",
+            "availableQuantity": "{{value}} available",
+            "inferredQuantity": "{{value}} from description"
+        },
+        "relationships": {
+            "targetAmbiguous": "Target ambiguous",
+            "targetUnresolved": "Target unresolved",
+            "parent": "Part of {{name}}",
+            "child": "Includes {{name}}",
+            "prerequisite": "Requires {{name}}",
+            "unlock": "Unlocks {{name}}",
+            "peer": "Taken alongside {{name}}",
+            "equivalent": "Equivalent to {{name}}",
+            "supersededBy": "Superseded by {{name}}",
+            "replacement": "Replaces {{name}}",
+            "related": "Related {{name}}",
+            "openRecord": "Open {{name}}: {{label}}",
+            "relatedRecords": "Related records"
+        },
+        "details": {
+            "issuedBy": "Issued by",
+            "assessedBy": "Assessed by",
+            "createdBy": "Achievement created by",
+            "activityStarted": "Activity started",
+            "activityEnded": "Activity ended",
+            "awarded": "Awarded",
+            "validFrom": "Valid from",
+            "validUntil": "Valid until",
+            "fieldOfStudy": "Field of study",
+            "specialization": "Specialization",
+            "language": "Language",
+            "version": "Version",
+            "role": "Role",
+            "narrative": "Learner narrative",
+            "licenseNumber": "License number",
+            "criteria": "Criteria",
+            "viewCriteria": "View criteria",
+            "criteriaReference": "Criteria reference",
+            "additionalDetails": "Additional details",
+            "tags": "Tags",
+            "achievementId": "Achievement ID",
+            "learnerId": "Learner ID",
+            "achievementIdentifiers": "Achievement identifiers",
+            "learnerIdentifiers": "Learner identifiers",
+            "identifier": "Identifier",
+            "hashedIdentifier": "{{label}} (hashed)",
+            "otherRecords": "Other Records",
+            "itemCountOne": "{{count}} item",
+            "itemCountOther": "{{count}} items",
+            "record": "Record",
+            "recordDetails": "Record Details",
+            "closeRecordDetails": "Close record details"
+        }
+    },
     "inboxClaimSetup": {
         "setup": "Finish setting up your account to claim your credential.",
         "continue": "Continue Account Setup",
@@ -9,7 +429,7 @@
         "description": "Stay in touch and recognize what comes next.",
         "connect": "Connect",
         "skipForNow": "Skip for Now",
-        "connecting": "Connecting...",
+        "connecting": "Connecting…",
         "skipping": "Skipping...",
         "error": "Something went wrong. Please try again.",
         "connected": "Connected",
@@ -62,6 +482,7 @@
         "membersCount": "{{count}} members",
         "socialBoosts": "Social Boosts",
         "newChildOrOrganization": "New Child or Organization",
+        "newOrganization": "New Organization",
         "selectProfileType": "Select a Profile Type",
         "organizationProfile": "Organization Profile",
         "organization": "Organization",
@@ -133,6 +554,7 @@
         "continue": "Continue",
         "loading": "Loading...",
         "add": "Add",
+        "publishing": "Publishing…",
         "saving": "Saving...",
         "searchResults": {
             "noResults": "No results found",
@@ -194,6 +616,7 @@
             "skills": "Skills",
             "socialBadges": "Badges",
             "achievements": "Achievements",
+            "qualifications": "Qualifications",
             "studies": "Studies",
             "portfolio": "Portfolio",
             "assistance": "Assistance",
@@ -331,6 +754,32 @@
                     "toastAddedBody": "Your journey is now reflected in portable, trusted credentials.",
                     "toastParseFailed": "Failed to parse JSON VC."
                 },
+                "credentialAdded": "1 credential added",
+                "credentialsAdded": "{{count}} credentials added",
+                "openFile": "Open File",
+                "openingFile": "Opening...",
+                "retryExtraction": "Try Again",
+                "retrySave": "Retry Save",
+                "retrying": "Trying again...",
+                "documentNoCredentials": "No credentials were extracted. Try another file.",
+                "credentialsReady": "Credentials ready for review: {{count}}.",
+                "originalDocumentSaved": "The original document is saved.",
+                "extractionFailedSavingOriginal": "We could not extract credentials. Saving your original document...",
+                "saveOutcomeError": "We couldn't save your file. You can try again.",
+                "credentialSaveOutcomeError": "Your file is saved. Some selected credentials couldn't be saved.",
+                "extractionRetryError": "We couldn't extract credentials. You can try again.",
+                "errorNoReadableText": "We could not find readable text in this file.",
+                "errorInputInvalid": "We could not read that file. Please choose it again.",
+                "errorFileTooLarge": "This file is too large. Choose a file smaller than 4 MB.",
+                "errorReadFailed": "We could not read this file. Please try a different file.",
+                "errorContentRejected": "We could not identify a supported document in this file.",
+                "errorUploadBusy": "Uploads are still busy. Please try again shortly.",
+                "errorProcessingFailed": "We could not process this file right now. Please try again.",
+                "errorConsentDenied": "AI processing is not available for this account.",
+                "errorResponseInvalid": "We received an incomplete result. Please try again.",
+                "errorNetworkFailed": "Connection issue. Check your internet and try again.",
+                "errorAiGateLoading": "We’re loading your AI settings. Try again shortly.",
+                "documentUnavailable": "This document is unavailable.",
                 "addButton": "Add",
                 "schools": {
                     "title": "Schools",
@@ -390,6 +839,7 @@
                 "noMatches": "No matching types found"
             },
             "loader": {
+                "waitingForCapacity": "Uploads are busy. Waiting for a turn…",
                 "notifyWhenReady": "Notify me when it's ready",
                 "quotes": {
                     "resume": {
@@ -677,6 +1127,7 @@
                 "all": "All",
                 "socialBadge": "Badge",
                 "achievement": "Achievement",
+                "qualifications": "Qualification",
                 "learningHistory": "Course",
                 "accomplishment": "Portfolio item",
                 "accommodation": "Assistance",
@@ -688,6 +1139,7 @@
                 "all": "All",
                 "socialBadge": "Badges",
                 "achievement": "Achievements",
+                "qualifications": "Qualifications",
                 "learningHistory": "Courses",
                 "accomplishment": "Portfolio",
                 "accommodation": "Assistance",
@@ -708,6 +1160,7 @@
             "article": {
                 "socialBadge": "a",
                 "achievement": "an",
+                "qualifications": "a",
                 "learningHistory": "a",
                 "accomplishment": "a",
                 "accommodation": "an",
@@ -879,6 +1332,7 @@
             "aiInsights": "Insights",
             "skills": "Skills",
             "socialBadges": "Badges",
+            "qualifications": "Qualifications",
             "achievements": "Achievements",
             "studies": "Studies",
             "portfolio": "Portfolio",
@@ -887,6 +1341,7 @@
             "families": "Families",
             "ids": "IDs"
         },
+        "newQualification": "New Qualification",
         "certificate": "Certificate",
         "confirmDelete": "Are you sure you want to delete this credential?",
         "courseSyllabus": "Course Syllabus",
@@ -898,6 +1353,7 @@
         "evidenceFile": "Evidence File",
         "expirationDate": "Expiration Date",
         "expired": "Expired",
+        "expires": "Expires",
         "expiredId": "Expired ID",
         "filter": "Filter",
         "gridView": "Grid",
@@ -925,6 +1381,7 @@
             "skills": "Skill",
             "socialBadges": "Badge",
             "achievements": "Achievement",
+            "qualifications": "Qualification",
             "studies": "Study",
             "portfolio": "Portfolio",
             "assistance": "Assistance",
@@ -944,6 +1401,10 @@
             "achievement": {
                 "lead": "Your",
                 "link": "proudest moments"
+            },
+            "qualifications": {
+                "lead": "Your",
+                "link": "professional qualifications"
             },
             "accomplishment": {
                 "lead": "Your",
@@ -989,6 +1450,7 @@
                 "assistance": "Accommodations are adjustments made to the environment or processes to enable students, employees, or participants with disabilities to participate fully. Examples include providing extra time on tests for students with learning disabilities, offering sign language interpreters for individuals who are deaf, adjusting work schedules for those with medical needs, or modifying a workspace for accessibility.",
                 "socialBadges": "Social Badges are digital icons or labels used on online platforms to signify achievements, statuses, roles, or milestones of users. They serve to recognize accomplishments, indicate member roles, encourage participation, and foster community engagement. These badges can denote anything from completing tasks, participating in events, to being part of specific groups.",
                 "achievements": "Achievements are milestones or accomplishments that are earned through effort, skill, or perseverance. They signify the completion of goals, the overcoming of challenges, or the recognition of excellence in various aspects of life, including personal, professional, educational, or recreational areas. Achievements can range from academic degrees, career advancements, personal milestones, creative endeavors, to competitive victories.",
+                "qualifications": "Qualifications are professional credentials, such as licenses, certifications, and apprenticeship, journeyman, or master certificates.",
                 "portfolio": "A portfolio is a curated collection of an individual's work, projects, or achievements that showcase their skills, experience, and growth over time. It serves as tangible proof of capability and creativity, often spanning professional, academic, or personal domains, and is used to demonstrate value to potential collaborators, employers, or audiences.",
                 "skills": "Skills are abilities or competencies developed through training, practice, or experience that enable an individual to perform tasks effectively. They can be classified into hard skills, which are specific, teachable, and often quantifiable abilities related to a particular task or job, such as coding, welding, or foreign language proficiency. Soft skills, on the other hand, are interpersonal and cognitive abilities that facilitate human interactions, such as communication, problem-solving, and teamwork.",
                 "experiences": "Experiences are the knowledge and skills gained from involvement in various professional roles and activities over time. They encompass the breadth of work-related tasks, projects, and responsibilities an individual has undertaken within different organizations or as a freelancer. Professional experiences contribute significantly to an individual's expertise, capabilities, and understanding of industry standards and practices.",
@@ -1031,7 +1493,8 @@
                 "error": "Unable to verify code. Please try again."
             },
             "error": {
-                "invalidEmail": "Missing or Invalid Email"
+                "invalidEmail": "Missing or Invalid Email",
+                "sendFailed": "Unable to send code. Please try again."
             },
             "label": "Email"
         },
@@ -1071,7 +1534,14 @@
             "button": "Sign in with SMS",
             "smsSent": "A verification code has been sent",
             "error": {
-                "invalidPhone": "Phone is required!"
+                "invalidPhone": "Phone is required!",
+                "invalidPhoneNumber": "Please enter a valid phone number.",
+                "invalidCode": "Invalid or expired code.",
+                "tooManyAttempts": "Too many attempts. Please resend code.",
+                "tooManyRequests": "Too many attempts from this phone number. For your security, please wait 10–15 minutes before trying again, or sign in with email instead.",
+                "quotaExceeded": "We can't send a text message right now. Please try again later or sign in with email.",
+                "network": "Connection issue. Please check your internet and try again.",
+                "generic": "Something went wrong. Please try again."
             }
         },
         "qrApproved": {
@@ -1119,7 +1589,9 @@
             "notDeveloper": "Not a developer? ",
             "signInNormally": "Sign in normally",
             "securityWarning": "Keep your seed private. Anyone with it controls this account.",
-            "pasteHint": "Paste it into the field below."
+            "pasteHint": "Paste it into the field below.",
+            "showSeed": "Show seed",
+            "hideSeed": "Hide seed"
         },
         "sharedComputer": "Shared or public computer",
         "signInFromAnotherDevice": "Sign in from another device",
@@ -1134,6 +1606,13 @@
                 "apple": "Apple",
                 "google": "Google"
             }
+        },
+        "classlink": {
+            "cancelled": "ClassLink sign-in was cancelled.",
+            "expired": "That sign-in link expired. Please try again.",
+            "failed": "We couldn't sign you in with ClassLink. Please try again.",
+            "timedOut": "ClassLink sign-in took too long. Please try again.",
+            "unavailable": "School sign-in is temporarily unavailable. Please try again in a few minutes."
         },
         "welcome": {
             "heading": "Welcome to {{brand}}",
@@ -1195,7 +1674,22 @@
                 },
                 "error": {
                     "invalidEmail": "Please enter a valid email.",
-                    "sendFailed": "Failed to send consent request. Please try again."
+                    "sendFailed": "Failed to send consent request. Please try again.",
+                    "cooldown": "You can send another request at {{time}}.",
+                    "inProgress": "A request is already being sent. Please wait a moment."
+                },
+                "status": {
+                    "accepted": "Your approval request was sent to <0>{{email}}</0>. If your guardian doesn't see it, ask them to check their spam folder.",
+                    "failed": "We couldn't send the approval request to <0>{{email}}</0>. Please try sending it again.",
+                    "sending": "Sending the approval request…",
+                    "unknown": "Your account is awaiting guardian approval. If your guardian hasn't received an approval request, you can send another one below.",
+                    "expired": "The approval link sent to <0>{{email}}</0> has expired. Send a new one."
+                },
+                "resendRequest": "Resend Request",
+                "banner": {
+                    "title": "Pending guardian approval",
+                    "limited": "Some features stay limited until your parent or guardian approves your account.",
+                    "manage": "Resend or change email"
                 }
             },
             "us": {
@@ -1227,6 +1721,8 @@
             "imA": "I'm a ",
             "selectRole": "Select Role",
             "fullName": "Full Name",
+            "fullNameOptional": "Full Name (optional)",
+            "classlinkNameHint": "Only people you connect with can see your name.",
             "dateOfBirth": "Date of Birth",
             "age": "Age: {{age}}",
             "countryOfResidence": "Country of Residence",
@@ -1409,26 +1905,36 @@
             "privacyDesc": "Change anytime in Settings.",
             "brandAi": "{{brand}} AI",
             "aiMinorNote": "AI features are disabled for minors.",
+            "schoolLockedNote": "Your school turns off AI features, analytics, and bug reports for student accounts.",
             "analytics": "Analytics",
             "bugReports": "Bug Reports",
             "createMy": "Create my {{brand}}",
             "almostThere": "Almost there!",
             "youreIn": "You're in!",
             "guardianEmailed": "We've emailed your guardian to approve your account. You can start exploring now — some features unlock once they confirm.",
+            "guardianEmailFailed": "We couldn't send the approval request to <0>{{email}}</0>. You can start exploring now and send it again from your dashboard.",
             "ready": "Your {{brand}} is ready.",
             "whoAreYou": "Who are you? (Optional)",
             "explore": "Explore {{brand}}",
             "pin": {
-                "title": "Add a recovery PIN",
-                "body": "If you ever lose this device, a 6-digit PIN gets you back in within seconds.",
+                "title": "Create your PIN",
+                "body": "You'll use it to sign in on new devices.",
                 "confirmTitle": "Confirm your PIN",
                 "confirmBody": "Enter the same 6 digits again.",
                 "saving": "Saving your PIN…",
                 "success": "You're protected",
                 "skip": "Skip for now",
                 "startOver": "Start over",
+                "saveFailedSkip": "Couldn't save your PIN. Try again, or skip for now and set it up later.",
                 "hint": "You can change or remove it anytime in Settings."
             }
+        },
+        "transcript": {
+            "title": "Your official transcript, in your pocket.",
+            "desc": "Get your school records delivered directly to your account.",
+            "get": "Get My Transcript",
+            "notNow": "Not Now",
+            "onItsWay": "Your transcript is on its way."
         }
     },
     "profile": {
@@ -1447,7 +1953,8 @@
             "loading": "Loading...",
             "deleting": "Deleting Account...",
             "recentLoginRequired": "A recent login is required!",
-            "reauthenticateHere": "Reauthenticate here"
+            "reauthenticateHere": "Reauthenticate here",
+            "fallbackPhrase": "DELETE"
         },
         "deleteAccount": "Delete Account",
         "didCopied": "DID copied to clipboard",
@@ -1487,7 +1994,8 @@
             "button": "Export Seed Phrase",
             "revealPrompt": "I understand - Reveal My Seed",
             "confirm": "Confirm",
-            "cancel": "Cancel"
+            "cancel": "Cancel",
+            "fallbackPhrase": "EXPORT"
         },
         "exportSeedPhrase": "Export Seed Phrase",
         "fullName": "Full Name",
@@ -1755,6 +2263,8 @@
         "previewCredentials": "Preview {{count}} Credentials"
     },
     "consentFlow": {
+        "aiPassportReauthenticationRequired": "Go back to AI Passport and sign in again.",
+        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "guardianApprovalRequired": "Ask a current account manager to approve this connection, then try again.",
         "acceptAndSync": "Accept & Sync",
         "accepted": "Accepted",
@@ -1874,9 +2384,40 @@
             "name": "name",
             "email": "email",
             "profilePicture": "profile picture"
-        }
+        },
+        "retryPublication": "Your sharing choices are saved. Try again to finish sending them."
     },
     "recovery": {
+        "cancel": {
+            "invalidLink": {
+                "title": "This link isn't valid",
+                "body": "Open the most recent email we sent, or sign in to check on your account.",
+                "signIn": "Sign In"
+            },
+            "confirm": {
+                "title": "Cancel account recovery?",
+                "body": "Someone asked to recover your account. If this wasn't you, cancel it now.",
+                "cancelBtn": "Cancel Recovery",
+                "notNowBtn": "Not now",
+                "cancelling": "Cancelling..."
+            },
+            "success": {
+                "title": "Recovery cancelled. Your account is safe.",
+                "body": "We recommend signing in and reviewing your recovery options.",
+                "doneBtn": "Open LearnCard"
+            },
+            "expired": {
+                "title": "Link expired",
+                "body": "This link has expired or was already used. If you still see a recovery in progress, sign in to cancel it.",
+                "signInBtn": "Sign In"
+            },
+            "error": {
+                "network": "Connection issue. Please check your internet and try again.",
+                "tooMany": "Too many attempts. Please wait a minute and try again.",
+                "generic": "Something went wrong. Please try again.",
+                "tryAgainBtn": "Try Again"
+            }
+        },
         "automatic": {
             "title": "Automatic recovery",
             "on": "On — your account can be restored after a 7-day waiting period.",
@@ -2145,7 +2686,8 @@
             "successDescription": "Your account is connected to your new login. Set up recovery again to keep it protected.",
             "tooManyAttempts": "Too many incorrect attempts. Try again later.",
             "invalidCode": "That code is incorrect or expired. Request a new code and try again.",
-            "invalidRecoveryMethod": "That recovery method could not verify your account. Try another method."
+            "invalidRecoveryMethod": "That recovery method could not verify your account. Try another method.",
+            "successDescriptionKept": "Your account is connected to your new login. Your other devices and recovery methods still work."
         },
         "pin": {
             "setPin": "Set a recovery PIN",
@@ -2175,14 +2717,45 @@
             "change": "Change",
             "afterRecovery": {
                 "title": "Set a new recovery PIN",
-                "body": "The PIN you just used has been retired — each PIN works once, so your account stays protected. Choose a new one to keep instant recovery ready.",
+                "body": "Your recovery PIN is no longer active. Choose a new one to keep instant recovery ready.",
                 "hint": "Same rules as before: 6 digits, nothing obvious."
             },
             "afterHoldRecovery": {
                 "title": "Skip the wait next time",
                 "body": "You're back in. Set a 6-digit PIN so you can recover instantly next time, without waiting 7 days."
             },
-            "useInstead": "Use my recovery PIN instead"
+            "pinResetRequired": {
+                "title": "Set a new recovery PIN",
+                "body": "Your old recovery PIN can no longer be used since your account was recovered. Set a new 6-digit PIN to restore automatic recovery."
+            },
+            "useInstead": "Use my recovery PIN instead",
+            "samePin": "Choose a different PIN from the one you just used.",
+            "newPinRequired": {
+                "title": "Choose a new recovery PIN",
+                "body": "Your recovery PIN was entered incorrectly before, so it has fewer tries left. Choose a different 6-digit PIN to get all your tries back.",
+                "skipNote": "If you skip this, your current PIN keeps working with fewer tries left. You can choose a new one later in Account Recovery."
+            },
+            "escrowNotice": "An encrypted piece of your account key is held by a secure service. Your PIN unlocks it right away, without a 7-day wait. <0>Learn more</0>"
+        },
+        "confirmCode": {
+            "mismatch": "That code isn't right. Try again.",
+            "expired": "That code has expired. Send a new one.",
+            "locked": "Too many tries. Send a new code.",
+            "notSent": "We couldn't send your code. Wait a minute before resending.",
+            "title": "Check your email",
+            "description": "Enter the code we sent to confirm this request.",
+            "confirming": "Confirming...",
+            "error": "That code didn't work or expired. Check it and try again, or tap Resend code for a new one.",
+            "failed": "Something went wrong. Check your connection and try again.",
+            "resend": "Resend code",
+            "resending": "Resending...",
+            "resent": "We sent a new code.",
+            "resendError": "You've asked for several codes recently. Please wait a bit and try again.",
+            "resendFailed": "We couldn't send a new code. Check your connection and try again."
+        },
+        "invalidRequest": "This recovery request is no longer valid. Start a new one.",
+        "status": {
+            "failed": "We couldn't check your request right now."
         },
         "addWayBackIn": "Add a way back in",
         "addAnotherMethod": "Add another method",
@@ -2235,9 +2808,90 @@
             "discardEmail": "Discard",
             "discardNote": "The one you saved won't work. You can make a new one anytime."
         },
-        "notFinished": "Not finished"
+        "notFinished": "Not finished",
+        "pinHero": {
+            "title": "Confirm it's you",
+            "description": "Enter your 6-digit PIN to finish signing in.",
+            "otherWays": "Other ways to confirm",
+            "device": "Approve from another device",
+            "deviceDesc": "Scan a code with a device you're signed in on",
+            "showMore": "Show {{count}} more",
+            "showLess": "Show less",
+            "trouble": "Trouble signing in?"
+        },
+        "pinSignIn": {
+            "verifying": "Checking your PIN...",
+            "incorrectOne": "Incorrect PIN. 1 attempt left.",
+            "unavailable": "PIN sign-in isn't available for this account. Use another way to sign in.",
+            "failed": "Something went wrong. Please try again.",
+            "newCodeNeeded": "For your security, each PIN try needs a new email code. Send a new code to try again."
+        },
+        "pinSignInReview": {
+            "title": "You're signed in",
+            "body": "Your other devices stay signed in too.",
+            "secureLink": "Lost a device? Secure your account",
+            "warnTitle": "Someone may have tried your PIN",
+            "warnBodyOne": "It was entered incorrectly 1 time before you signed in. Choose a new PIN to stay protected.",
+            "warnBodyTwo": "It was entered incorrectly 2 times before you signed in. Choose a new PIN to stay protected.",
+            "warnBody": "It was entered incorrectly {{count}} times before you signed in. Choose a new PIN to stay protected.",
+            "warnBodyUnknown": "Your PIN may have been entered incorrectly before you signed in. Choose a new PIN to stay protected.",
+            "choosePin": "Choose a new PIN",
+            "notNow": "Not now"
+        },
+        "secureAccount": {
+            "title": "Secure your account",
+            "intro": "Use this if you think someone else got into your account. It will:",
+            "signOut": "Stop your other devices and other logins from signing in again",
+            "turnOff": "Turn off your old recovery phrase, backup file, passkey and email recovery key",
+            "stayHere": "Keep you signed in on this device",
+            "openDevices": "A device that is open right now may keep working until it signs out. This can't undo anything someone already did with your account.",
+            "afterwards": "Afterwards, you'll add new ways to get back in.",
+            "continue": "Secure my account",
+            "pinTitle": "Keep a recovery PIN",
+            "pinDesc": "Choose a 6-digit PIN. If someone else might know your current PIN, pick a new one. To keep your current PIN, enter it here.",
+            "skipPin": "Continue without a PIN",
+            "skipPinNote": "You can set a new PIN later in Account Recovery.",
+            "working": "Securing your account...",
+            "workingHint": "Keep this page open until it's done.",
+            "doneTitle": "Your account is secured",
+            "doneBody": "Other devices and logins can't sign in again, and your old recovery methods are off.",
+            "pinKept": "Your recovery PIN is on.",
+            "pinNotKept": "Your recovery PIN is off. You can set one again in Account Recovery.",
+            "nextStep": "Add a new way back in so you don't get locked out.",
+            "setUpPasskey": "Set up a passkey",
+            "setUpRecovery": "Add a recovery method",
+            "conflict": "Your account changed while we were securing it. Please try again.",
+            "failed": "We couldn't finish securing your account. Please try again.",
+            "sessionExpired": "Your session expired. Sign in again to secure your account.",
+            "opening": "Opening account security...",
+            "pinDescNewPin": "Choose a new 6-digit PIN, different from your current one."
+        },
+        "signOutOtherDevices": {
+            "section": "Security",
+            "label": "Sign out of other devices",
+            "caption": "Lost a device or see something unfamiliar?",
+            "attention": "Your PIN was entered incorrectly."
+        },
+        "inProgress": "Recovery is already running. Wait for it to finish, then try again.",
+        "emailSender": {
+            "code": "We'll email you a code from {{sender}}, the service that secures your {{brand}} account.",
+            "updates": "Some emails about this request come from {{sender}}, the service that secures your {{brand}} account.",
+            "codeMixed": "Your code may come from {{brand}} or from {{sender}}, the service that secures your {{brand}} account.",
+            "updatesMixed": "Some emails about this request may come from {{brand}} or from {{sender}}, the service that secures your {{brand}} account.",
+            "codeShared": "If you also use {{sender}} with this account, your code may come from {{sender}} instead of {{brand}}.",
+            "updatesShared": "If you also use {{sender}} with this account, some emails about this request may come from {{sender}} instead of {{brand}}."
+        }
     },
     "alerts": {
+        "announcement": "Announcement",
+        "newAlert": "New",
+        "markRead": "Mark as read",
+        "read": "Read",
+        "markingRead": "Marking as read…",
+        "archiving": "Archiving…",
+        "restore": "Restore",
+        "restoring": "Restoring…",
+        "updateFailed": "Couldn’t update this alert. Please try again.",
         "accepted": "Accepted",
         "active": "Active",
         "alreadyConnected": "You are already connected.",
@@ -2346,6 +3000,8 @@
         "generic": "Something went wrong. Please try again.",
         "goHome": "Go Home",
         "network": "Connection issue. Please check your internet and try again.",
+        "updateRequired": "Your account uses a newer way to sign in. Please update to the latest version of the app (closing and reopening it is often enough), then sign in again.",
+        "updateRequiredTitle": "Update required",
         "notFound": "Page not found.",
         "retry": "Try Again",
         "sessionExpired": "Your session has expired. Please sign in again.",
@@ -2491,7 +3147,7 @@
             "step2": "Your credential arrives safely",
             "step3": "It's yours to keep, forever",
             "privacy": "Your identity is only shared to complete this exchange. You're always in control of your data.",
-            "connecting": "Connecting...",
+            "connecting": "Connecting…",
             "claimButton": "Claim my credential",
             "decline": "No thanks, take me home",
             "loginRequired": "Please log in to continue."
@@ -2543,6 +3199,7 @@
         "modal": {
             "earnedTitle": "You've Earned a Credential!",
             "claimedTitle": "Credential Claimed!",
+            "verificationFailed": "We couldn't verify this",
             "claimedBody": "The credential has been added to your wallet.",
             "loadingCredential": "Loading credential...",
             "loadErrorTitle": "Unable to Load Credential",
@@ -2628,7 +3285,35 @@
         "readMore": "Read More",
         "connectHandler": "Connect Handler",
         "connected": "Credential handler connected",
-        "connFail": "Couldn’t connect the credential handler. Your browser may have blocked it — check permissions and try again."
+        "connFail": "Couldn’t connect the credential handler. Your browser may have blocked it — check permissions and try again.",
+        "receive": {
+            "title": "Add to Passport",
+            "description": "Review the credentials before saving them to your account.",
+            "from": "Requested by {{origin}}",
+            "loading": "Getting credentials...",
+            "saved": "Saved to your Passport. You can return to the issuing website.",
+            "credential": "Credential",
+            "issuerUnavailable": "Issuer name unavailable",
+            "details": "Details",
+            "progress": "Saved {{saved}} of {{total}} credentials",
+            "cancel": "Cancel",
+            "saving": "Saving...",
+            "retry": "Try Again",
+            "accept": "Save to Passport",
+            "error": {
+                "invalid": "This offer is not supported or contains an invalid credential. Return to the issuing website and start a new request.",
+                "request": "We could not get the credentials. Return to the issuing website and try again.",
+                "save": "We could not finish saving. Try again to continue from where you left off.",
+                "response": "Your credentials were saved, but we could not notify the issuing website.",
+                "account": "Your account changed. Return to the issuing website and start a new request.",
+                "cancel": "We could not notify the issuing website that you cancelled. Return to that website and start a new request."
+            },
+            "cancelled": "Request cancelled. Return to the issuing website.",
+            "connectTitle": "Connecting your account",
+            "connectDescription": "Preparing this website’s request.",
+            "connecting": "Connecting…",
+            "savedBeforeCancel": "Credentials already saved remain in your Passport ({{saved}})."
+        }
     },
     "legal": {
         "connectionsEncrypted": "All connections are encrypted.",
@@ -2770,7 +3455,9 @@
             "verifying": "Verifying...",
             "forUser": "for {{name}}",
             "requiresFiveDigits": "PIN requires 5 digits",
-            "invalidPin": "Invalid PIN. Please try again"
+            "invalidPin": "Invalid PIN. Please try again",
+            "approvalRequiresPin": "A parent PIN is needed for this action. Switch to the parent account to set one up.",
+            "parentIdentityUnavailable": "Your account information is missing. Please sign in again."
         },
         "guardianInvite": {
             "shareTitle": "Guardian Invite",
@@ -2960,7 +3647,8 @@
             "preview": {
                 "criteria": "Criteria",
                 "certificate": "Certificate",
-                "id": "ID"
+                "id": "ID",
+                "awardedOn": "Awarded on {{date}}"
             },
             "loading": {
                 "issuing": "Issuing boost...",
@@ -3587,6 +4275,20 @@
         "skillsHub": "Skills Hub"
     },
     "base": {
+        "inAppMessages": {
+            "next": "Next",
+            "previous": "Previous",
+            "done": "Done",
+            "progress": "Story progress",
+            "error": "Something went wrong. Please try again.",
+            "retry": "Try Again",
+            "loading": "Loading…",
+            "opening": "Opening…",
+            "checking": "Checking…",
+            "downloading": "Downloading… {{progress}}%",
+            "installing": "Installing…",
+            "upToDate": "You're on the latest version."
+        },
         "verification": {
             "selfIssued": "Self Issued",
             "trustedIssuer": "Trusted Issuer",
@@ -3610,6 +4312,7 @@
                 "badge": "Badge",
                 "family": "Family",
                 "achievement": "Achievement",
+                "qualifications": "Qualification",
                 "course": "Course",
                 "membership": "Membership",
                 "skill": "Skill",
@@ -3619,9 +4322,17 @@
                 "assistance": "Assistance"
             },
             "lifecycle": {
+                "expired": "Expired",
                 "revoked": "Revoked",
                 "suspended": "Suspended"
-            }
+            },
+            "expires": "Expires"
+        },
+        "consentAudience": {
+            "title": "Review who receives your data",
+            "description": "Your selected information will be available to everyone listed below.",
+            "confirm": "Confirm Sharing",
+            "cancel": "Cancel"
         }
     },
     "sdk": {
@@ -3659,7 +4370,9 @@
             "lifecycle": {
                 "revoked": "Revoked",
                 "suspended": "Suspended"
-            }
+            },
+            "awardedOn": "Awarded on {{date}}",
+            "awardedOnBy": "Awarded on {{date}} by"
         }
     },
     "skills": {
@@ -4178,7 +4891,7 @@
         "activityCount": "Showing {{count}} activities from this app",
         "editAccess": "Edit access",
         "dataAccess": "Data access",
-        "connecting": "Connecting...",
+        "connecting": "Connecting…",
         "disconnecting": "Disconnecting...",
         "connected": "Connected",
         "disconnected": "Successfully Disconnected",
@@ -4257,7 +4970,7 @@
         "unableToLoadPermissions": "Unable to load data permissions for this app.",
         "uninstallNote": "You can uninstall this app at any time from your installed apps.",
         "previewOnly": "Preview Only",
-        "connecting": "Connecting...",
+        "connecting": "Connecting…",
         "install": "Install",
         "permission": {
             "requestIdentity": {
@@ -4469,6 +5182,7 @@
         }
     },
     "notifications": {
+        "viewCampaign": "View",
         "contract": "your contract",
         "loadErr": "Unable to load activity",
         "updates": "Updates",
@@ -4546,6 +5260,19 @@
             "maxClaims": "Max claims (optional)",
             "unlimited": "Unlimited"
         }
+    },
+    "credentialShare": {
+        "copyLink": "Copy Link",
+        "publicPreviewPersistent": "Public preview is published and may remain available. Social apps may keep their own copies, even if you later change sharing settings.",
+        "publicPreviewPrivate": "A public preview shows the credential name, issuer and image. Once published, it may remain available, and social apps may keep copies. Everything else stays encrypted.",
+        "issuerUnavailable": "Issuer details are unavailable. You can still share the encrypted link.",
+        "enablePreview": "Enable Public Preview",
+        "publishingPreview": "Publishing preview...",
+        "addToLinkedIn": "Add to LinkedIn",
+        "postToLinkedIn": "Post to LinkedIn",
+        "linkedInOrgId": "LinkedIn organization ID (optional)",
+        "linkedInOrgIdHelp": "Find the numeric ID in your LinkedIn admin page URL. Enter the number, not the page slug. Leave blank to remove it.",
+        "linkedInOrgIdError": "Enter digits only."
     },
     "developerPortal": {
         "shell": {
@@ -8082,9 +8809,9 @@
                     "description": "Set up a consent flow to send and access user data and credentials with their permission."
                 },
                 "courseCatalog": {
-                    "title": "Connect Course Catalog",
-                    "subtitle": "Enterprise LMS integration",
-                    "description": "Full guided setup for LMS partners. Configure webhooks, build credential templates, map your data, and go live with automatic credential issuance."
+                    "title": "Issue from a Course Catalog",
+                    "subtitle": "Turn a spreadsheet of courses into credentials",
+                    "description": "Upload your list of courses, get a credential design for each one, then award them to learners as they finish."
                 },
                 "verifyCredentials": {
                     "title": "Verify Credentials",
@@ -8246,7 +8973,8 @@
             "filterAll": "All",
             "filterListed": "Listed",
             "filterDraft": "Draft",
-            "filterArchived": "Archived"
+            "filterArchived": "Archived",
+            "filterUpdates": "Updates"
         },
         "listing": {
             "submittedBy": "Submitted by:",
@@ -8313,6 +9041,23 @@
                 "standardDesc": "Normal visibility in search and browse",
                 "demoted": "Demoted",
                 "demotedDesc": "Reduced visibility in listings"
+            },
+            "update": {
+                "title": "Update waiting for review",
+                "description": "These changes go live only if you approve them.",
+                "draftNote": "The developer is still editing an update.",
+                "capabilities": "Also changes what the app can do (version {{version}}).",
+                "approve": "Approve Update",
+                "reject": "Reject Update",
+                "fieldName": "Name",
+                "fieldTagline": "Tagline",
+                "fieldDescription": "Description",
+                "fieldIcon": "Icon",
+                "fieldScreenshots": "Screenshots",
+                "fieldHighlights": "Highlights",
+                "fieldLinks": "Links and contact",
+                "fieldLaunch": "Where the app runs",
+                "fieldOther": "Other details"
             }
         }
     },
@@ -8335,7 +9080,8 @@
         "manyResults": "{{count}} results for \"{{query}}\"",
         "shortcuts": {
             "skillInsights": "Skill Insights",
-            "boostAFriend": "Boost a Friend"
+            "boostAFriend": "Boost a Friend",
+            "schoolConnect": "School Connect"
         }
     },
     "addToPassport": {
@@ -8803,16 +9549,16 @@
         "addByHint": "Add by name, @username, or email",
         "linkOnIssue": "We'll create a shareable link when you issue.",
         "alreadyHave": "Already have something?",
-        "startFromLink": "Start from a link, file, or ID",
+        "startFromLink": "Import a credential or spreadsheet",
         "sendExisting": "Send one you've made",
-        "startFromSomething": "Start from something",
-        "importIntro": "Paste a link, a Credential Engine ID, or a credential's data — we'll figure out the rest.",
-        "importPlaceholder": "Paste a URL, ce- ID, or credential JSON…",
-        "importSupports": "We support links, IDs, and files",
-        "uploadFile": "Upload file",
+        "startFromSomething": "Import a credential or spreadsheet",
+        "importIntro": "Choose a file or paste content you already have.",
+        "importPlaceholder": "Paste your link or copied data here…",
+        "importSupports": "JSON · CSV · TSV · XLSX",
+        "uploadFile": "Choose file",
         "pasteInstead": "Open the source, copy its JSON, and paste it above.",
-        "bringingIn": "Bringing it in…",
-        "bringItIn": "Bring it in",
+        "bringingIn": "Checking content…",
+        "bringItIn": "Review content",
         "foundIt": "Found it",
         "fromCredEngine": "From Credential Engine",
         "useThis": "Use this",
@@ -9210,7 +9956,8 @@
         },
         "preview": {
             "willLook": "This is how your credential will look.",
-            "pickToStart": "Pick a type to start designing your credential."
+            "pickToStart": "Pick a type to start designing your credential.",
+            "verificationPending": "Verification runs after you issue it."
         },
         "err": {
             "network": "Connection issue. Check your internet and try again.",
@@ -9222,6 +9969,197 @@
             "recipient": "We couldn't reach one of your recipients. Double-check the names or emails and try again.",
             "invalid": "Some details on this credential aren't valid yet. Please review and try again.",
             "generic": "Something went wrong issuing your credential. Please try again."
+        },
+        "sheet": {
+            "invalidEmail": "Enter a valid email address.",
+            "duplicateEmail": "This recipient appears more than once.",
+            "required": "Fill in the required fields.",
+            "invalidEvidence": "Enter a complete http or https evidence link.",
+            "formula": "Recalculate this formula in your spreadsheet and upload again.",
+            "tooLarge": "Use a file under 10 MB with at most 10,000 people and 200 columns.",
+            "tooComplex": "This workbook is too complex to import. Remove unused sheets or split it into smaller files.",
+            "storage": "Recovery could not be saved on this device. Free some space and try again.",
+            "corrupt": "This saved run could not be read. Keep your spreadsheet and check sent results before starting again.",
+            "contextChanged": "Your account or network changed. Return to the original account to resume.",
+            "expired": "This request is too old to resend safely. Contact support to reconcile these deliveries. Other people can still be issued credentials.",
+            "busy": "This run is already active or has changed. Reload to see its latest results.",
+            "chooseEmail": "Choose the column containing recipient email addresses.",
+            "mappedColumnMissing": "An included column is missing. Restore it in the spreadsheet or remove it from Map columns before importing again.",
+            "mapping": "Check the column names and fix the highlighted rows.",
+            "wrongRun": "This file belongs to another saved run. Open it on the original account and device.",
+            "fileType": "Choose a CSV, TSV, or XLSX file.",
+            "malformed": "This spreadsheet could not be read. Check the file and try again.",
+            "review": "Review spreadsheet",
+            "worksheet": "Worksheet",
+            "emailColumn": "Recipient email column",
+            "headerRow": "Column names row",
+            "noHeader": "No column names",
+            "importSummary": "People found: {{count}} · Rows skipped: {{skipped}}",
+            "importing": "Reading spreadsheet...",
+            "addPeople": "Add People",
+            "upload": "Upload spreadsheet",
+            "getTemplate": "Get CSV template",
+            "emailFor": "Email for {{name}}",
+            "evidenceFor": "Evidence for {{name}}",
+            "skip": "Skip",
+            "details": "People and fields",
+            "download": "Download table",
+            "recipient": "Recipient",
+            "evidence": "Evidence link",
+            "sending": "Sending {{count}} of {{total}}...",
+            "savedDraft": "Draft saved on this device",
+            "results": "{{sent}} sent · {{failed}} failed",
+            "confirming": "{{count}} need confirmation",
+            "waiting": "{{count}} waiting",
+            "resume": "Resume",
+            "retryFailed": "Retry Failed",
+            "downloadFailed": "Download {{count}} Failed Rows",
+            "newRun": "Start Another Run",
+            "confirmingHelp": "Check email delivery again without sending twice. If it stays unconfirmed, contact support before issuing again. Profile sends need manual confirmation.",
+            "recoverable": "A saved issuance run is available on this device.",
+            "restore": "Restore Saved Run",
+            "lockedRows": "Sent or submitted rows cannot be changed. Edit only unsent or failed rows.",
+            "saving": "Saving…",
+            "viewSaved": "View saved run",
+            "dismissRecovery": "Skip for Now",
+            "checking": "Checking delivery status…",
+            "checkStatus": "Check Again",
+            "previous": "Previous person",
+            "next": "Next person",
+            "previewPosition": "{{index}} of {{total}} · {{name}}",
+            "peopleSummary": "{{count}} people",
+            "viewAll": "View All",
+            "searchPeople": "Search people",
+            "pageRows": "Rows {{first}}–{{last}} of {{total}}",
+            "needsConfirmation": "Needs confirmation",
+            "design": {
+                "peopleHint": "Review recipients, fix issues, and personalize their credential fields.",
+                "issueCount": "Needs attention · {{count}}",
+                "noIssues": "No issues found",
+                "reviewPeople": "Review people",
+                "editorHint": "Changes are saved to your draft as you edit.",
+                "locked": "Already sent or in progress",
+                "fieldSettings": "Credential fields · {{count}}",
+                "noMatches": "No people match this view.",
+                "importHint": "You can correct recipient details after adding people.",
+                "importSetup": "Set up your import",
+                "previewPeople": "People preview",
+                "previewHint": "Showing {{count}} of {{total}} people.",
+                "additionalEvidence": "Additional evidence",
+                "additionalEvidenceFor": "Additional evidence for {{name}}",
+                "emailFormatGood": "Email format looks good",
+                "emptyImport": "No people found. Check the email column and header row.",
+                "reviewDeliveryIssues": "Review delivery issues · {{count}}",
+                "deliveryIssuesHint": "Review unconfirmed sends here; edit failed recipients in Review people.",
+                "viewDeliveryStatus": "View delivery status",
+                "deliveryStatus": "Delivery status",
+                "deliveryStatusHint": "Statuses update as this run sends.",
+                "searchDeliveryStatus": "Search recipients",
+                "statusFilter": "Status",
+                "allDeliveryStatuses": "All recipients · {{count}}",
+                "deliveryState": {
+                    "ready": "Not sent",
+                    "queued": "Queued",
+                    "sent": "Sent",
+                    "failed": "Failed",
+                    "confirming": "Unconfirmed"
+                },
+                "dateUtc": "UTC · changing the date keeps the time",
+                "originalDate": "Original value: {{value}}",
+                "mappingHint": "Match spreadsheet columns to the information on each credential.",
+                "mappingSummary": "{{mapped}} of {{total}} columns included",
+                "mapColumns": "Map columns",
+                "sourceColumn": "Spreadsheet column",
+                "credentialField": "Credential field",
+                "sample": "Example: {{value}}",
+                "include": "Include",
+                "included": "Included",
+                "includeColumn": "Include {{name}}",
+                "removeColumn": "Remove {{name}}",
+                "formatOptions": "Format options",
+                "openBadgesOnly": "Column mapping is available for Open Badges credentials.",
+                "columnsReadOnly": "This run’s columns are read-only."
+            },
+            "encoding": "Save this spreadsheet as CSV UTF-8 or XLSX, then import it again. Some characters could not be read safely.",
+            "bounds": "Remove the out-of-range cell {{cell}}, then import the workbook again.",
+            "resultField": "Result field",
+            "spreadsheet": "Spreadsheet",
+            "invalidNumber": "Use a number with a decimal point, without units.",
+            "invalidDate": "Use YYYY-MM-DD or a timestamp with a timezone.",
+            "invalidResult": "Check the result value and its scale.",
+            "columns": "Spreadsheet columns",
+            "columnsHint": "Choose which columns to include in this credential.",
+            "pickTypeForColumns": "Choose a credential type before adding columns.",
+            "mappingFor": "Use {{name}} as",
+            "numberFormat": "Spreadsheet decimal format",
+            "creditUnit": "Credit unit",
+            "creditUnitExample": "For example, semester credit hours",
+            "hoursHint": "Choose a credit unit to count hours as credits, or keep them in the description.",
+            "dateFormat": "Spreadsheet date format",
+            "dateIso": "YYYY-MM-DD or timestamp",
+            "dateDmy": "Day / month / year",
+            "dateMdy": "Month / day / year",
+            "target": {
+                "description": "Description",
+                "Percent": "Percent",
+                "RawScore": "Raw score",
+                "LetterGrade": "Letter grade",
+                "GradePointAverage": "Grade point average",
+                "credits": "Credits earned",
+                "evidence": "Evidence link",
+                "awardedDate": "Awarded date"
+            },
+            "numberFormatConflict": "This column mixes number formats. Choose the correct format or fix the spreadsheet.",
+            "reviewWorkspace": {
+                "characterCount": "{{count}} / {{limit}} characters",
+                "expand": "Expand",
+                "collapse": "Collapse",
+                "expandField": "Expand {{field}}",
+                "collapseField": "Collapse {{field}}",
+                "descriptionTooLong": "Use at most {{limit}} characters for this field.",
+                "sharedEvidence": "Evidence for everyone",
+                "sharedEvidenceHelp": "Included for every person. Edit these items in Evidence & media.",
+                "noSharedEvidence": "No evidence has been added for everyone.",
+                "personalEvidenceHelp": "Evidence added in a row is only sent to that person.",
+                "personalEvidence": "Extra evidence for this person",
+                "personalEvidenceFor": "Extra evidence link for {{name}}",
+                "personalAttachments": "Files & links for this person ({{count}})",
+                "evidenceFor": "Evidence for {{name}}",
+                "rowEvidenceHelp": "Only for this person; evidence for everyone is still included.",
+                "allSent": "All credentials sent",
+                "attention": "Delivery needs attention",
+                "completionCount": "{{sent}} of {{total}} sent successfully.",
+                "completionHelp": "Review delivery status or start another credential.",
+                "confirmationHelp": "Some deliveries are unconfirmed. Check their status before trying again.",
+                "failureHelp": "Review the failed deliveries, then retry only those that failed.",
+                "attentionToast": "{{sent}} of {{total}} sent. Review the remaining deliveries.",
+                "successToast": "Delivery complete: {{count}} sent."
+            }
+        },
+        "importOptions": {
+            "uploadTitle": "Upload a file",
+            "uploadHint": "A spreadsheet of people or an existing credential.",
+            "dropHint": "Drag a file here, or choose one below.",
+            "readingFile": "Reading file…",
+            "pasteTitle": "Paste a link or data",
+            "pasteHint": "Use content copied from another source.",
+            "contentLabel": "Content to import",
+            "pasteHelp": "Paste a credential link, JSON data, or spreadsheet rows with email addresses.",
+            "or": "or",
+            "examplesTitle": "What can I paste?",
+            "exampleLinkTitle": "Credential link",
+            "exampleLinkBody": "A direct link to a credential’s JSON data.",
+            "exampleRowsTitle": "Spreadsheet rows",
+            "exampleRowsBody": "Copy rows with an email column from Google Sheets or Excel.",
+            "exampleJsonTitle": "Credential data (JSON)",
+            "exampleJsonBody": "Copy the complete JSON text of an existing credential.",
+            "exampleRegistry": "Credential Engine links and record IDs also work here.",
+            "reviewNote": "You’ll review the content before adding it.",
+            "detectedJson": "Credential data",
+            "detectedRegistry": "Credential Engine record",
+            "detectedFramework": "Competency framework",
+            "detectedLink": "Credential link",
+            "unrecognized": "Add a credential link, JSON data, or rows with email addresses."
         }
     },
     "connectivity": {
@@ -9365,11 +10303,257 @@
         "unlocking": "Opening…",
         "viewNotificationsTitle": "Notify me when viewed",
         "viewNotificationsHint": "Get a private notification with the view count and time. Off by default.",
-        "saveToLearnCard": "Save to LearnCard",
-        "savingToLearnCard": "Saving…",
-        "savedToLearnCard": "Saved to LearnCard",
-        "saveError": "Could not save these credentials. Please try again.",
+        "saveToLearnCard": "Save collection",
+        "savingToLearnCard": "Saving collection…",
+        "savedCollectionStatus": "Collection saved.",
+        "savedCollectionDestination": "Find it in Data & Sharing under Shared with you.",
+        "viewSavedCollections": "View saved collections",
+        "saveError": "Could not save this collection. Please try again.",
         "signInToSave": "Sign in to save",
-        "saveHint": "Keep this signed collection with your received items."
+        "saveHint": "Keep someone else's collection for reference. It does not add credentials to your Passport or count as credentials you earned.",
+        "viewCredential": "View credential"
+    },
+    "resumePublishing": {
+        "aboutPublishing": "About publishing",
+        "linkReady": "Your private link is ready.",
+        "opening": "Opening your private link...",
+        "linkUnavailable": "This link is unavailable. Publish the resume again after checking its settings.",
+        "legacy": "Publish this resume again to create a managed link.",
+        "pending": "Publication is still being confirmed. Try again to check the same attempt.",
+        "size": "This resume is too large to publish. Turn off the QR code to download it.",
+        "inactive": "This link has stopped or expired. Check its settings before publishing again.",
+        "failed": "We could not publish this resume. Please try again.",
+        "account": "Your account changed. Please try again.",
+        "changed": "Your resume changed while preparing it. Please try again.",
+        "cleanup": "Your resume is published, but cleanup is incomplete. Please try again later.",
+        "limits": "Stopping this link prevents future access. Previously saved copies and older links cannot be taken back.",
+        "republishLimits": "Republishing does not retract older links or saved copies.",
+        "pdfHeading": "Published resume",
+        "previewError": "We could not open this resume.",
+        "downloadExact": "Download resume PDF",
+        "updated": "This resume has changed",
+        "updatedHint": "Open the link again to view the latest version.",
+        "recovered": "Your earlier publication is confirmed. Its saved resume is now loaded.",
+        "originalClaims": "Selected credentials keep their original signed details; hiding fields in this PDF does not remove them.",
+        "downloadToView": "Download to view",
+        "pdfSize": "PDF · {{size}} KB",
+        "pdfReady": "Download this resume to open the PDF on your device.",
+        "discard": "Clear interrupted setup",
+        "discarding": "Clearing interrupted setup...",
+        "discarded": "Interrupted setup cleared. You can publish again.",
+        "interrupted": "Publication setup was interrupted. Retry or clear this setup before starting a new resume.",
+        "discardFailed": "We could not clear this setup. Please try again.",
+        "manageContent": "Edit resume content in Resume Builder.",
+        "publishInBuilder": "Use Resume Builder to publish this resume."
+    },
+    "verifierSelection": {
+        "hint": "Choose the credentials you want to send to this application.",
+        "review": "Review"
+    },
+    "verifierHistory": {
+        "viewCredentials": "View credentials shared with {{verifier}}",
+        "credentialsCount": "Credentials ({{count}})",
+        "credentialsList": "Recorded credential names",
+        "viewAll": "View all {{count}}",
+        "preview": "Showing {{shown}} of {{total}} entries",
+        "page": "Page {{page}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next",
+        "saveFailed": "History could not be updated. You don’t need to send your information again.",
+        "title": "Shared with verifiers",
+        "description": "Private history of information you chose to send to other applications.",
+        "managedUnavailable": "History is unavailable for managed accounts.",
+        "loading": "Updating history…",
+        "open": "Open private history",
+        "record": "Keep private history",
+        "retention": "Keep up to 500 entries from the last 90 days. Older entries are removed when you connect.",
+        "limits": "Titles do not describe every claim sent. Deleting history cannot retract information already sent. Turning recording off keeps earlier history.",
+        "cleanupPending": "Some records could not be read or removed. Clear history to remove them.",
+        "refresh": "Refresh",
+        "clear": "Clear history",
+        "empty": "No recorded disclosures.",
+        "unknownVerifier": "Requesting application",
+        "sent": "Sent; acceptance unknown",
+        "handedOff": "Handed to the application; delivery unconfirmed",
+        "credential": "Credential",
+        "delete": "Delete entry",
+        "deleteLabel": "Delete entry for {{verifier}}",
+        "loadFailed": "History could not be loaded or updated. Check your connection and try again.",
+        "retry": "Retry history",
+        "clearTitle": "Clear private history?",
+        "clearBody": "This permanently deletes all private history entries. Your credentials and information already sent stay unchanged.",
+        "clearConsent": "Recording stays as set when settings can be read; otherwise it turns off.",
+        "clearRecovery": "Some history could not be loaded. Clearing also removes unreadable entries.",
+        "accountChanged": "Sending completed, but your account changed. Return to the requesting application to continue."
+    },
+    "contractRequests": {
+        "label": "Connect",
+        "referred": "{{referrer}} has referred you to {{owner}}.",
+        "invitation": "{{owner}} would like to connect.",
+        "accept": "Accept & Connect",
+        "details": "View Details",
+        "decline": "Decline",
+        "declineConfirm": "Decline this invitation?",
+        "declined": "Declined",
+        "connected": "Connected",
+        "cancelled": "Cancelled",
+        "notNow": "Not Now",
+        "dismiss": "Dismiss invitation",
+        "loading": "Loading invitation...",
+        "working": "Working...",
+        "unavailable": "This invitation is no longer available.",
+        "error": "Something went wrong. Please try again.",
+        "sharedWith": "Shared with",
+        "dataRequested": "Data requested",
+        "outcomes": "Credentials you may receive",
+        "none": "None",
+        "reviewFirst": "Review and choose your data before connecting.",
+        "pending": "Pending invitations",
+        "empty": "No pending invitations."
+    },
+    "clrRenderer": {
+        "military": "Military record",
+        "general": "Learning record",
+        "training": "Training",
+        "courses": "Courses",
+        "programs": "Programs",
+        "activities": "Activities",
+        "fieldwork": "Roles and fieldwork",
+        "assessments": "Assessments",
+        "competencies": "Competencies",
+        "qualifications": "Qualifications",
+        "awards": "Awards",
+        "other": "Other records",
+        "publishedBy": "Published by",
+        "partial": "Partial record — the publisher has included only some achievements.",
+        "empty": "No individual records were provided.",
+        "viewDetails": "View details",
+        "recordDetails": "Record Details",
+        "closeDetails": "Close record details",
+        "issuedBy": "Issued by",
+        "assessedBy": "Assessed by",
+        "createdBy": "Achievement created by",
+        "activityStart": "Activity started",
+        "activityEnd": "Activity ended",
+        "awarded": "Awarded",
+        "validFrom": "Valid from",
+        "validUntil": "Valid until",
+        "issued": "Issued",
+        "role": "Role",
+        "narrative": "Learner narrative",
+        "license": "License number",
+        "field": "Field of study",
+        "specialization": "Specialization",
+        "language": "Language",
+        "version": "Version",
+        "identifier": "Identifier",
+        "hashedIdentifier": "{{label}} (hashed)",
+        "criteria": "Criteria",
+        "viewCriteria": "View criteria",
+        "criteriaReference": "Criteria reference",
+        "additional": "Additional details",
+        "tags": "Tags",
+        "achievementId": "Achievement ID",
+        "learnerId": "Learner ID",
+        "achievementIdentifiers": "Achievement identifiers",
+        "learnerIdentifiers": "Learner identifiers",
+        "requiredValue": "Required value: {{value}}",
+        "requiredLevel": "Required level: {{value}}",
+        "verified": "Verified signed payload",
+        "signedUnverified": "Signed, not verified",
+        "verifying": "Verifying…",
+        "valid": "Valid",
+        "invalid": "Invalid",
+        "proof": "Proof",
+        "expiration": "Expiration",
+        "expired": "Expired {{date}}",
+        "expires": "Expires {{date}}",
+        "doesNotExpire": "Does not expire",
+        "numericScale": "Numeric scale from {{min}} to {{max}}; achieved {{value}}",
+        "numericScaleWithPassing": "Numeric scale from {{min}} to {{max}}; achieved {{value}}; passing {{required}}",
+        "unsigned": "Unsigned credential",
+        "evidenceAttached": "Evidence attached",
+        "status": "Status: {{status}}",
+        "revocationCheck": "Revocation check available",
+        "evidenceCount": "Evidence items: {{count}}",
+        "evidence": "Supporting evidence"
+    },
+    "schoolConnect": {
+        "signInFirst": "Sign in, then connect your school again.",
+        "connectFailed": "We couldn't connect your school account. Please try again.",
+        "connectedToast": "Your school account is connected.",
+        "tryAgain": "Try Again",
+        "notAvailable": "School Connect isn't available for your account yet.",
+        "yourSchool": "Your school",
+        "lastConnected": "Last connected {{date}}",
+        "connected": "Connected",
+        "refreshConnection": "Refresh Connection",
+        "connecting": "Connecting…",
+        "studentNote": "AI features, analytics, and bug reports are off, as your school requires.",
+        "warningTitle": "Before you connect",
+        "warningBody": "If you're a student, your school doesn't allow AI features, analytics, or bug reports for student accounts, so we'll turn them off.",
+        "connectWithClassLink": "Connect with ClassLink",
+        "notNow": "Not Now",
+        "heroTitle": "Your school records, in your hands",
+        "heroSubhead": "Connect your school account to access your official records.",
+        "benefit1": "Request your official transcript",
+        "benefit2": "Share it with colleges and employers",
+        "benefit3": "You decide who sees it",
+        "chooseProvider": "Choose how your school connects",
+        "dontSeeSchool": "Don't see your school?",
+        "moreComingSoon": "More schools are coming soon.",
+        "askToAdd": "Ask us to add your school",
+        "mailtoSubject": "Add my school to School Connect",
+        "mailtoBody": "School name:\nDistrict:\nState:\n",
+        "pageTitle": "School Connect",
+        "pageSubtitle": "Your school accounts and official records.",
+        "sectionSchools": "Your schools",
+        "sectionRecords": "Records",
+        "sectionPrivacy": "Privacy",
+        "refresh": "Refresh",
+        "moreSchools": "More schools are coming soon",
+        "privacyStudentTitle": "Set by your school",
+        "privacySharedTitle": "What we share with your school",
+        "privacySharedBody": "Only your student ID, and only when you request your transcript. Nothing else from your account.",
+        "notAvailableTitle": "Not available yet"
+    },
+    "announcements": {
+        "title": "Product announcements",
+        "email": "Email",
+        "push": "Push notifications",
+        "loading": "Loading preferences…",
+        "saving": "Saving preferences…",
+        "error": "Something went wrong. Please try again.",
+        "retry": "Try Again",
+        "unsubscribing": "Unsubscribing…",
+        "unsubscribed": "You’re unsubscribed from announcements."
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Digital credential",
+        "unavailableTitle": "Request unavailable",
+        "unavailableDescription": "Return to the requesting app and try again.",
+        "canceling": "Canceling…",
+        "preparing": "Preparing…",
+        "requiredFields": "These fields are required. You can cancel instead.",
+        "reviewTitle": "Share these details?",
+        "reviewDescription": "Check the requested details before sharing.",
+        "requestedBy": "Requested by",
+        "androidApp": "Android app",
+        "requestDetails": "Request details",
+        "requestIdentity": "App signing identity",
+        "selectedCredential": "Selected credential",
+        "requestedDetails": "Requested details",
+        "required": "Required",
+        "notShared": "Not shared",
+        "metadataIncluded": "The issuer and credential type are also included.",
+        "credentialDetails": "Credential details",
+        "issuer": "Issuer",
+        "credentialType": "Credential type",
+        "expires": "Expires",
+        "sharing": "Sharing…",
+        "shareDetails": "Share details",
+        "loadingTitle": "Preparing your request",
+        "loadingDescription": "Checking the details you can share.",
+        "returnToApp": "Return to app"
     }
 }

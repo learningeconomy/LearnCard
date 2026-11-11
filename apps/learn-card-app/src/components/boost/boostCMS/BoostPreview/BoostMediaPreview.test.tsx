@@ -43,6 +43,7 @@ vi.mock('learn-card-base', () => ({
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     // The preview renders a screen-reader-only heading from the credential
     // name, so the mock resolves the same fields the real helper prefers.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     getCredentialName: (credential: any): string =>
         credential?.name ?? credential?.credentialSubject?.achievement?.name ?? '',
     getExistingAttachmentsOrEvidence: (
@@ -85,6 +86,7 @@ vi.mock('learn-card-base/components/boost/boostFooter/BoostFooter', () => ({
 // The preview renders the accessible footer wrapper rather than the shared
 // base layout, so the stub has to stand in for that module.
 vi.mock('../../../accessibility/AccessibleBoostFooterLayout', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     default: ({ children, footerProps }: any) => (
         <div
             data-testid="footer-layout"

@@ -53,7 +53,7 @@ const decodeBatchInput = (entry: unknown): unknown => {
  * tRPC v11 over httpBatchLink at `/trpc` with an IDENTITY output transformer,
  * so a batch response is a plain JSON array positioned by op index, each shaped
  * `{ result: { data } }`. Procedure names arrive comma-joined in the URL path
- * (`/trpc/proc.a,proc.b`); inputs (unused here) arrive in the POST body.
+ * (`/trpc/proc.a,proc.b`); inputs arrive in the POST body or GET input parameter.
  */
 export const createTrpcMock = (page: Page) => {
     const handlers = new Map<string, Handler>();
@@ -64,6 +64,15 @@ export const createTrpcMock = (page: Page) => {
 
     const install = async (): Promise<void> => {
         await page.route('**/trpc/**', async route => {
+            const cors = {
+                'access-control-allow-origin': route.request().headers().origin ?? '*',
+                'access-control-allow-headers':
+                    route.request().headers()['access-control-request-headers'] ?? '*',
+                'access-control-allow-methods': 'GET, POST, OPTIONS',
+            };
+            if (route.request().method() === 'OPTIONS') {
+                return route.fulfill({ status: 204, headers: cors });
+            }
             const path = new URL(route.request().url()).pathname;
             const segment = decodeURIComponent(path.slice(path.indexOf('/trpc/') + 6));
             const procedures = segment.split(',').filter(Boolean);
@@ -76,7 +85,11 @@ export const createTrpcMock = (page: Page) => {
 
             let body: Record<string, unknown>;
             try {
-                body = JSON.parse(route.request().postData() ?? '{}');
+                const input =
+                    route.request().method() === 'GET'
+                        ? new URL(route.request().url()).searchParams.get('input')
+                        : route.request().postData();
+                body = JSON.parse(input ?? '{}');
             } catch {
                 body = {};
             }
@@ -84,13 +97,14 @@ export const createTrpcMock = (page: Page) => {
             const payload: Array<{ result: { data: unknown } }> = [];
             for (let i = 0; i < procedures.length; i++) {
                 const handler = handlers.get(procedures[i])!;
-                const out = handler(decodeBatchInput(body[String(i)]));
+                const out = await handler(decodeBatchInput(body[String(i)]));
                 if (out === ABORT) return route.abort('failed');
                 payload.push({ result: { data: out } });
             }
 
             await route.fulfill({
                 status: 200,
+                headers: cors,
                 contentType: 'application/json',
                 body: JSON.stringify(payload),
             });

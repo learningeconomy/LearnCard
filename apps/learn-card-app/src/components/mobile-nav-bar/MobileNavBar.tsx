@@ -32,6 +32,7 @@ import { ColorSetEnum } from '../../theme/colors';
 
 import * as m from '../../paraglide/messages.js';
 import { getNavBarLinkLabel } from './mobileNavBarI18n';
+import { NATIVE_CREDENTIAL_PATH } from '../../native-digital-credentials/types';
 
 export enum MobileNavBarLinks {
     dashboard = 'dashboard',
@@ -76,7 +77,7 @@ const MobileNavBar: React.FC = () => {
     // border) per the Figma "LearnCard Footer Nav - V3".
     // Strip only the trailing shade (`-500`) so multi-word families survive,
     // e.g. `baltic-blue-500` → `baltic-blue` (not `baltic`). Safelist the
-    // resulting `bg-{family}-200/50` in tailwind.config.js.
+    // resulting `bg-{family}-200/50` in src/tailwind.css's @source inline list.
     const pillFamily = theme?.colors?.defaults?.primaryColor?.replace(/-\d+$/, '') || 'indigo';
     const iconPillClass = (active: boolean): string =>
         `flex items-center justify-center p-[5px] rounded-[40px] ${
@@ -107,6 +108,7 @@ const MobileNavBar: React.FC = () => {
                     <Routes />
                 </IonRouterOutlet>
                 {isLoggedIn &&
+                activePathname !== NATIVE_CREDENTIAL_PATH &&
                 !/^\/s(?:\/|$)/.test(activePathname) &&
                 showNavBar(activePathname) ? (
                     <IonTabBar

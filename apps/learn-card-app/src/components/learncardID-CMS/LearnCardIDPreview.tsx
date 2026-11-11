@@ -16,11 +16,11 @@ export const LearnCardIDPreview: React.FC<{
         <IonPage>
             <LearnCardIDCMSLayout
                 learnCardID={learnCardID}
-                containerClassName="!justify-center"
-                layoutClassName="!max-w-[375px]"
+                containerClassName="justify-center!"
+                layoutClassName="max-w-[375px]!"
             >
                 <div className="rounded-t-[20px] shadow-box-bottom flex flex-col">
-                    <div className="w-full flex items-center justify-center flex-col bg-white bg-opacity-70 backdrop-blur-[10px] rounded-t-[20px]">
+                    <div className="w-full flex items-center justify-center flex-col bg-white/70  backdrop-blur-[10px] rounded-t-[20px]">
                         <div className="w-full py-4 max-w-[335px]">
                             <LearnCardID user={user} learnCardID={learnCardID} />
                         </div>
@@ -39,7 +39,7 @@ export const LearnCardIDPreview: React.FC<{
             </LearnCardIDCMSLayout>
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] absolute bottom-0 bg-white max-h-[100px]"
+                className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] absolute bottom-0 bg-white/60 max-h-[100px]"
             >
                 <IonToolbar color="transparent" mode="ios">
                     <div className="w-full flex items-center justify-center">

@@ -6,14 +6,17 @@ import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
+import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { TenantConfigProvider, renderConfigurationError } from 'learn-card-base';
 import { registerExternalUrlOpener } from 'learn-card-base/helpers/externalUrlOpener';
 // Registers the Firebase provider initializer before bootstrapTenantConfig() runs it.
 import './auth/firebaseProviderInit';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
+import { applyNativeViewportRestrictions } from './helpers/applyNativeViewportRestrictions';
 import { getLaunchDarklyConfig } from './constants/runtimeLaunchDarkly';
 import App from './App';
+import { markStartupPhase } from './helpers/startupDiagnostics';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
@@ -24,17 +27,27 @@ import * as Sentry from '@sentry/browser';
 const browserGlobals = window as Window & { Buffer: typeof Buffer };
 browserGlobals.Buffer = Buffer;
 
+applyNativeViewportRestrictions(Capacitor.isNativePlatform());
+
 // Dev-only: simulate device safe-area insets via ?insets so band bugs are
 // visible on desktop. Must run before React renders (sets CSS vars on <html>).
 installInsetSimulator();
 
+markStartupPhase('entry');
+
 (async () => {
+    // Native analytics can collect independently of React. On web this call
+    // would itself initialize analytics through getAnalytics().
+    if (Capacitor.isNativePlatform()) {
+        await FirebaseAnalytics.setEnabled({ enabled: false }).catch(() => undefined);
+    }
     // Route external links through Capacitor's in-app browser when running natively.
     registerExternalUrlOpener();
 
     // Resolve and bootstrap TenantConfig before anything else.
     // This sets up Firebase, auth config, network store, Sentry, and Userflow.
     const tenantConfig = await bootstrapTenantConfig();
+    markStartupPhase('tenant');
 
     // Seed the locale-detection cache so the LocaleProvider's sync initializer
     // can fall through to the tenant default when no localStorage entry exists
@@ -57,12 +70,19 @@ installInsetSimulator();
         }
     }
 
+    markStartupPhase('updater');
+
     // DEV access to assistant routes/debug tools is handled by their consumers.
     // An object bootstrap here makes the React SDK prefer those defaults over
     // already-fetched flags, losing flags on fast initialization/page reloads.
     const ldOptions = {
         options: {
             logger: basicLogger({ level: 'none' }),
+            diagnosticOptOut: true,
+            sendEvents: false,
+        },
+        reactOptions: {
+            sendEventsOnFlagRead: false,
         },
     };
 
@@ -82,9 +102,11 @@ installInsetSimulator();
         ...ldOptions,
     });
 
+    markStartupPhase('flags');
     const container = document.getElementById('root');
     if (container) {
         const root = createRoot(container);
+        markStartupPhase('react');
         root.render(
             <TenantConfigProvider config={tenantConfig}>
                 <LocaleProvider>

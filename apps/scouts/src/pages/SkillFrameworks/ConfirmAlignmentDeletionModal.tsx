@@ -1,4 +1,5 @@
 import React from 'react';
+import { withCompetencyAdmin } from './withCompetencyAdmin';
 
 import { useModal, useCountSkillsInFramework } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
@@ -87,4 +88,4 @@ const ConfirmAlignmentDeletionModal: React.FC<ConfirmAlignmentDeletionModalProps
     );
 };
 
-export default ConfirmAlignmentDeletionModal;
+export default withCompetencyAdmin(ConfirmAlignmentDeletionModal);

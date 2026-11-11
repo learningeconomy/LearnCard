@@ -52,7 +52,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
         return (
             <div
                 key={issueItem?.id}
-                className="profile-thumb-img border-[1px] border-white border-solid  vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden mx-[-5px]"
+                className="profile-thumb-img border border-white border-solid  vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden mx-[-5px]"
             >
                 <UserProfilePicture
                     customContainerClass={`h-full w-full object-cover ${

@@ -342,8 +342,8 @@ const AiAgentDebug: React.FC = () => {
             .join(' · ');
 
     return (
-        <div className="w-full text-left space-y-5">
-            <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-4">
+        <div className="w-full text-left space-y-v3-5">
+            <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-v3-4">
                 <div>
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">Agent Debug</h2>
                     <p className="text-sm text-grayscale-600 leading-relaxed">
@@ -351,7 +351,7 @@ const AiAgentDebug: React.FC = () => {
                     </p>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <label
                         htmlFor="agent-url"
                         className="block text-xs font-medium text-grayscale-700"
@@ -364,11 +364,11 @@ const AiAgentDebug: React.FC = () => {
                         value={agentUrl}
                         onChange={event => handleAgentUrlChange(event.target.value)}
                         placeholder={DEFAULT_AGENT_URL}
-                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                     />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <label
                         htmlFor="agent-debug-token"
                         className="block text-xs font-medium text-grayscale-700"
@@ -381,11 +381,11 @@ const AiAgentDebug: React.FC = () => {
                         value={debugToken}
                         onChange={event => setDebugToken(event.target.value)}
                         placeholder="Required when the agent protects debug endpoints"
-                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                     />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <span className="block text-xs font-medium text-grayscale-700">
                         Current DID
                     </span>
@@ -418,8 +418,8 @@ const AiAgentDebug: React.FC = () => {
                 )}
             </section>
 
-            <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-4">
-                <div className="min-h-[260px] max-h-[420px] overflow-y-auto border border-grayscale-200 rounded-2xl bg-grayscale-10 p-3 space-y-3">
+            <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-v3-4">
+                <div className="min-h-[260px] max-h-[420px] overflow-y-auto border border-grayscale-200 rounded-2xl bg-grayscale-10 p-3 space-y-v3-3">
                     {messages.length === 0 ? (
                         <div className="h-[220px] flex items-center justify-center text-sm text-grayscale-500 text-center">
                             Start a debug chat with the agent.
@@ -428,7 +428,7 @@ const AiAgentDebug: React.FC = () => {
                         messages.map((message, index) => (
                             <div
                                 key={`${message.role}-${index}`}
-                                className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                                className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap wrap-break-word ${
                                     message.role === 'user'
                                         ? 'ml-auto bg-grayscale-900 text-white'
                                         : 'mr-auto bg-white border border-grayscale-200 text-grayscale-800'
@@ -440,7 +440,7 @@ const AiAgentDebug: React.FC = () => {
                     )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <label
                         htmlFor="agent-message"
                         className="block text-xs font-medium text-grayscale-700"
@@ -453,7 +453,7 @@ const AiAgentDebug: React.FC = () => {
                         onChange={event => setMessageInput(event.target.value)}
                         placeholder="Ask the agent a question"
                         rows={3}
-                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-y"
+                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-y"
                     />
                 </div>
 
@@ -479,7 +479,7 @@ const AiAgentDebug: React.FC = () => {
                 )}
             </section>
 
-            <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-5">
+            <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-v3-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -530,9 +530,9 @@ const AiAgentDebug: React.FC = () => {
                     </div>
                 )}
 
-                <div className="border border-grayscale-200 rounded-2xl p-4 space-y-4">
+                <div className="border border-grayscale-200 rounded-2xl p-4 space-y-v3-4">
                     <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             <label
                                 htmlFor="memory-kind"
                                 className="block text-xs font-medium text-grayscale-700"
@@ -545,7 +545,7 @@ const AiAgentDebug: React.FC = () => {
                                 onChange={event =>
                                     setMemoryKind(event.target.value as AgentMemoryDoc['kind'])
                                 }
-                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                             >
                                 <option value="memory">Memory</option>
                                 <option value="user-profile">Profile</option>
@@ -554,7 +554,7 @@ const AiAgentDebug: React.FC = () => {
                             </select>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             <label
                                 htmlFor="memory-status"
                                 className="block text-xs font-medium text-grayscale-700"
@@ -567,7 +567,7 @@ const AiAgentDebug: React.FC = () => {
                                 onChange={event =>
                                     setMemoryStatus(event.target.value as 'active' | 'proposed')
                                 }
-                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                             >
                                 <option value="proposed">Needs Approval</option>
                                 <option value="active">Save Now</option>
@@ -575,7 +575,7 @@ const AiAgentDebug: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <label
                             htmlFor="memory-description"
                             className="block text-xs font-medium text-grayscale-700"
@@ -588,11 +588,11 @@ const AiAgentDebug: React.FC = () => {
                             value={memoryDescription}
                             onChange={event => setMemoryDescription(event.target.value)}
                             placeholder="Short memory label"
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                         />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <label
                             htmlFor="memory-content"
                             className="block text-xs font-medium text-grayscale-700"
@@ -605,7 +605,7 @@ const AiAgentDebug: React.FC = () => {
                             onChange={event => setMemoryContent(event.target.value)}
                             placeholder="Markdown content"
                             rows={4}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-y"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-y"
                         />
                     </div>
 
@@ -624,7 +624,7 @@ const AiAgentDebug: React.FC = () => {
                     </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {isFetchingMemory && sortedMemoryDocs.length === 0 ? (
                         <div className="border border-grayscale-200 rounded-2xl bg-grayscale-10 p-4 text-sm text-grayscale-500 text-center">
                             Loading memory...
@@ -637,12 +637,12 @@ const AiAgentDebug: React.FC = () => {
                         sortedMemoryDocs.map(doc => (
                             <div
                                 key={doc.name}
-                                className="border border-grayscale-200 rounded-2xl p-4 space-y-3"
+                                className="border border-grayscale-200 rounded-2xl p-4 space-y-v3-3"
                             >
                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <h3 className="text-sm font-semibold text-grayscale-900 break-words">
+                                            <h3 className="text-sm font-semibold text-grayscale-900 wrap-break-word">
                                                 {doc.description}
                                             </h3>
                                             <span
@@ -694,11 +694,11 @@ const AiAgentDebug: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="text-xs text-grayscale-500 break-words">
+                                <div className="text-xs text-grayscale-500 wrap-break-word">
                                     {getMemoryMeta(doc)}
                                 </div>
 
-                                <pre className="max-h-[220px] overflow-auto border border-grayscale-200 rounded-xl bg-grayscale-10 p-3 text-xs text-grayscale-800 whitespace-pre-wrap break-words">
+                                <pre className="max-h-[220px] overflow-auto border border-grayscale-200 rounded-xl bg-grayscale-10 p-3 text-xs text-grayscale-800 whitespace-pre-wrap wrap-break-word">
                                     {doc.content}
                                 </pre>
                             </div>

@@ -39,22 +39,24 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                 has_more = True,
                 records = [
                     openapi_client.models.contracts_get_consent_flow_contracts_200_response_records_inner.contracts_getConsentFlowContracts_200_response_records_inner(
-                        contract = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract.contracts_getConsentFlowContract_200_response_contract(
-                            read = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract_read.contracts_getConsentFlowContract_200_response_contract_read(
+                        contract = openapi_client.models.storage_resolve_200_response_any_of_any_of_1.storage_resolve_200_response_anyOf_anyOf_1(
+                            read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
                                 anonymize = True, 
-                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                                credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                                     categories = {
-                                        'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                                        'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                             required = True, 
-                                            default_enabled = True, )
+                                            default_enabled = True, 
+                                            reason = '', )
                                         }, ), 
                                 personal = {
-                                    'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                                    'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                         required = True, 
-                                        default_enabled = True, )
+                                        default_enabled = True, 
+                                        reason = '', )
                                     }, ), 
-                            write = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write.storage_resolve_200_response_anyOf_anyOf_1_write(
-                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                            write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write(
+                                credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                                     categories = {
                                         'key' : 
                                         }, ), 
@@ -77,21 +79,25 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                             ''
                             ], 
                         writers = [
-                            openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
+                            openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                                 profile_id = '012', 
                                 display_name = '', 
                                 short_bio = '', 
                                 bio = '', 
                                 did = '', 
                                 is_private = True, 
+                                profile_visibility = 'public', 
+                                show_email = True, 
+                                allow_connection_requests = 'anyone', 
                                 email = '', 
                                 image = '', 
                                 hero_image = '', 
+                                linked_in_organization_id = '4', 
                                 website_link = '', 
                                 is_service_profile = True, 
                                 type = '', 
                                 notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
-                                display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
+                                display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_1_display.boost_getBoostRecipients_200_response_inner_to_anyOf_1_display(
                                     background_color = '', 
                                     background_image = '', 
                                     fade_background_image = True, 
@@ -109,8 +115,68 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                                 role = '', 
                                 dob = '', 
                                 country = '', 
+                                locale = '', 
                                 approved = True, )
-                            ], )
+                            ], 
+                        recipients = [
+                            openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                                profile_id = '012', 
+                                display_name = '', 
+                                short_bio = '', 
+                                image = '', 
+                                hero_image = '', 
+                                linked_in_organization_id = '4', 
+                                type = '', 
+                                is_service_profile = True, 
+                                did = '', )
+                            ], 
+                        audience_version = 0, 
+                        version = 0, 
+                        status = 'active', 
+                        latest_update = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_cumulative_update.credential_getHolderExportMetadata_200_response_consentRecords_inner_cumulativeUpdate(
+                            from_version = 0, 
+                            to_version = 0, 
+                            kind = 'relaxed', 
+                            reason = '', 
+                            diff = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_cumulative_update_diff.credential_getHolderExportMetadata_200_response_consentRecords_inner_cumulativeUpdate_diff(
+                                added = [
+                                    openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_latest_update_diff_removed_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_latestUpdate_diff_removed_inner(
+                                        area = 'read', 
+                                        type = 'credential', 
+                                        key = '', 
+                                        required = True, 
+                                        reason = '', )
+                                    ], 
+                                removed = [
+                                    openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_latest_update_diff_removed_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_latestUpdate_diff_removed_inner(
+                                        area = 'read', 
+                                        type = 'credential', 
+                                        key = '', 
+                                        required = True, 
+                                        reason = '', )
+                                    ], 
+                                changed = [
+                                    
+                                    ], 
+                                details = [
+                                    openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_cumulative_update_diff_details_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_cumulativeUpdate_diff_details_inner(
+                                        field = 'name', 
+                                        before = null, 
+                                        after = null, )
+                                    ], ), 
+                            reconsent_deadline = '', 
+                            created_at = '', 
+                            preview = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_latest_update_preview.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_latestUpdate_preview(
+                                headline = '', 
+                                subhead = '', 
+                                rows = [
+                                    openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_latest_update_preview_rows_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_latestUpdate_preview_rows_inner(
+                                        scope = , 
+                                        change = 'added', 
+                                        label = '', 
+                                        subtitle = '', )
+                                    ], 
+                                primary_label = '', ), ), )
                     ]
             )
         else:
@@ -118,22 +184,24 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                 has_more = True,
                 records = [
                     openapi_client.models.contracts_get_consent_flow_contracts_200_response_records_inner.contracts_getConsentFlowContracts_200_response_records_inner(
-                        contract = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract.contracts_getConsentFlowContract_200_response_contract(
-                            read = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract_read.contracts_getConsentFlowContract_200_response_contract_read(
+                        contract = openapi_client.models.storage_resolve_200_response_any_of_any_of_1.storage_resolve_200_response_anyOf_anyOf_1(
+                            read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
                                 anonymize = True, 
-                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                                credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                                     categories = {
-                                        'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                                        'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                             required = True, 
-                                            default_enabled = True, )
+                                            default_enabled = True, 
+                                            reason = '', )
                                         }, ), 
                                 personal = {
-                                    'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                                    'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                         required = True, 
-                                        default_enabled = True, )
+                                        default_enabled = True, 
+                                        reason = '', )
                                     }, ), 
-                            write = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write.storage_resolve_200_response_anyOf_anyOf_1_write(
-                                credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                            write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write(
+                                credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                                     categories = {
                                         'key' : 
                                         }, ), 
@@ -156,21 +224,25 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                             ''
                             ], 
                         writers = [
-                            openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
+                            openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                                 profile_id = '012', 
                                 display_name = '', 
                                 short_bio = '', 
                                 bio = '', 
                                 did = '', 
                                 is_private = True, 
+                                profile_visibility = 'public', 
+                                show_email = True, 
+                                allow_connection_requests = 'anyone', 
                                 email = '', 
                                 image = '', 
                                 hero_image = '', 
+                                linked_in_organization_id = '4', 
                                 website_link = '', 
                                 is_service_profile = True, 
                                 type = '', 
                                 notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
-                                display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
+                                display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_1_display.boost_getBoostRecipients_200_response_inner_to_anyOf_1_display(
                                     background_color = '', 
                                     background_image = '', 
                                     fade_background_image = True, 
@@ -188,8 +260,68 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                                 role = '', 
                                 dob = '', 
                                 country = '', 
+                                locale = '', 
                                 approved = True, )
-                            ], )
+                            ], 
+                        recipients = [
+                            openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                                profile_id = '012', 
+                                display_name = '', 
+                                short_bio = '', 
+                                image = '', 
+                                hero_image = '', 
+                                linked_in_organization_id = '4', 
+                                type = '', 
+                                is_service_profile = True, 
+                                did = '', )
+                            ], 
+                        audience_version = 0, 
+                        version = 0, 
+                        status = 'active', 
+                        latest_update = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_cumulative_update.credential_getHolderExportMetadata_200_response_consentRecords_inner_cumulativeUpdate(
+                            from_version = 0, 
+                            to_version = 0, 
+                            kind = 'relaxed', 
+                            reason = '', 
+                            diff = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_cumulative_update_diff.credential_getHolderExportMetadata_200_response_consentRecords_inner_cumulativeUpdate_diff(
+                                added = [
+                                    openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_latest_update_diff_removed_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_latestUpdate_diff_removed_inner(
+                                        area = 'read', 
+                                        type = 'credential', 
+                                        key = '', 
+                                        required = True, 
+                                        reason = '', )
+                                    ], 
+                                removed = [
+                                    openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_latest_update_diff_removed_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_latestUpdate_diff_removed_inner(
+                                        area = 'read', 
+                                        type = 'credential', 
+                                        key = '', 
+                                        required = True, 
+                                        reason = '', )
+                                    ], 
+                                changed = [
+                                    
+                                    ], 
+                                details = [
+                                    openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_cumulative_update_diff_details_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_cumulativeUpdate_diff_details_inner(
+                                        field = 'name', 
+                                        before = null, 
+                                        after = null, )
+                                    ], ), 
+                            reconsent_deadline = '', 
+                            created_at = '', 
+                            preview = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_latest_update_preview.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_latestUpdate_preview(
+                                headline = '', 
+                                subhead = '', 
+                                rows = [
+                                    openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_latest_update_preview_rows_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_latestUpdate_preview_rows_inner(
+                                        scope = , 
+                                        change = 'added', 
+                                        label = '', 
+                                        subtitle = '', )
+                                    ], 
+                                primary_label = '', ), ), )
                     ],
         )
         """

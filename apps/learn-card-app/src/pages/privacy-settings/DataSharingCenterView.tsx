@@ -1,4 +1,5 @@
 import React from 'react';
+import { PendingContractRequests } from '../../components/contract-requests/ContractRequest';
 import * as m from '../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
@@ -15,11 +16,29 @@ import './dataSharingCenter.scss';
 
 type DataSharingCenterViewProps = {
     vm: DataSharingCenterViewModel;
+    verifierHistory?: React.ReactNode;
+    announcements?: React.ReactNode;
+    openSaved?: boolean;
+    onSavedOpened?: () => void;
+    showOwnerLinks?: boolean;
 };
 
-const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm }) => {
+const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({
+    vm,
+    verifierHistory,
+    announcements,
+    openSaved = false,
+    onSavedOpened,
+    showOwnerLinks = true,
+}) => {
     const { isLoading, isMinor, contracts, onContractsUpdate, ai, profile, diagnostics, shared } =
         vm;
+    const hasSharedSection = Boolean(
+        shared &&
+        (showOwnerLinks ||
+            shared.savedCollections.records.length > 0 ||
+            shared.savedCollections.error)
+    );
 
     return (
         <div className="ds-content-bg relative min-h-full w-full">
@@ -48,21 +67,34 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm }) => 
                     )}
 
                     <div className="flex flex-col gap-6">
+                        <PendingContractRequests />
                         <TrustSummaryCard contracts={contracts} />
 
-                        {shared && <SharedLinksSection vm={shared} delay={60} />}
+                        {shared && (
+                            <SharedLinksSection
+                                vm={shared}
+                                delay={60}
+                                openReceived={openSaved}
+                                onReceivedOpened={onSavedOpened}
+                                showOwnerLinks={showOwnerLinks}
+                            />
+                        )}
+                        {verifierHistory}
+                        {announcements}
 
                         <ConnectedAppsSection
                             contracts={contracts}
                             onUpdate={onContractsUpdate}
-                            delay={shared ? 120 : 60}
+                            delay={hasSharedSection ? 120 : 60}
                         />
 
-                        {ai && <AiPersonalizationCard {...ai} delay={shared ? 180 : 120} />}
+                        {ai && (
+                            <AiPersonalizationCard {...ai} delay={hasSharedSection ? 180 : 120} />
+                        )}
 
-                        <ProfileVisibilityCard {...profile} delay={shared ? 240 : 180} />
+                        <ProfileVisibilityCard {...profile} delay={hasSharedSection ? 240 : 180} />
 
-                        <AppDiagnosticsCard {...diagnostics} delay={shared ? 300 : 240} />
+                        <AppDiagnosticsCard {...diagnostics} delay={hasSharedSection ? 300 : 240} />
 
                         <p className="text-xs text-grayscale-600 text-center px-6 mt-1">
                             {m['dataSharing.centerFooter']()}

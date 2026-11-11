@@ -67,8 +67,24 @@ for (const name of ['swagger', 'didWeb']) {
     assert.equal(config.functions[name].role, undefined);
 }
 assert.equal(resources.SigningAuthorityExecutionRole.Type, 'AWS::IAM::Role');
-assert.deepEqual(config.provider.environment.SA_SEED_KMS_KEY_ARN, keyArn);
-assert.equal(config.provider.environment.SA_SEED_LOCAL_KEK, undefined);
+// provider.environment is a Serverless file variable; resolve it like Serverless does, in
+// both runtime-secrets modes, so the KMS ARN and the no-local-KEK invariant are still checked.
+assert.equal(config.provider.environment, '${file(./serverless.function-env.cjs):provider}');
+const functionEnv = require('../serverless.function-env.cjs');
+const savedEnv = { ...process.env };
+try {
+    for (const bundle of ['', 'lca-api/dev/runtime-secrets']) {
+        process.env.RUNTIME_SECRETS_ID = bundle;
+        process.env.SA_SEED_LOCAL_KEK = 'must-not-reach-lambda';
+        const provider = functionEnv.provider({ options: { stage: 'dev' } });
+        assert.deepEqual(provider.SA_SEED_KMS_KEY_ARN, keyArn);
+        // Deployed functions use KMS only; the local KEK is for offline development.
+        for (const env of [provider, functionEnv.api(), functionEnv.escrow()])
+            assert.equal(env.SA_SEED_LOCAL_KEK, undefined);
+    }
+} finally {
+    process.env = savedEnv;
+}
 if (packaged) {
     const lambda = resources.SeedMigrationLambdaFunction;
     assert.equal(lambda.Properties.Timeout, 900);

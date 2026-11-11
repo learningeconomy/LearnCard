@@ -67,7 +67,7 @@ export const Toast = () => {
                             backdropFilter: 'blur(20px) saturate(180%)',
                             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                         }}
-                        className={`w-[380px] max-w-[calc(100vw-2rem)] phone:w-full phone:max-w-[600px] phone:mx-auto rounded-[18px] border border-white/60 shadow-[0_8px_30px_0_rgba(0,_0,_0,_0.12)] py-2.5 px-4 pointer-events-auto relative transition-[background-color] ${
+                        className={`w-[380px] max-w-[calc(100vw-2rem)] phone:w-full phone:max-w-[600px] phone:mx-auto rounded-[18px] border border-white/60 shadow-[0_8px_30px_0_rgba(0,0,0,0.12)] py-2.5 px-4 pointer-events-auto relative transition-[background-color] ${
                             isError ? 'hover:bg-rose-600/90' : 'hover:bg-white/80'
                         }`}
                     >
@@ -103,14 +103,14 @@ export const Toast = () => {
                                         <div className="flex min-w-0 flex-1 flex-col">
                                             {options.title && (
                                                 <h4
-                                                    className={`text-sm font-semibold text-left whitespace-normal break-words [overflow-wrap:anywhere] ${toastTextColor}`}
+                                                    className={`text-sm font-semibold text-left whitespace-normal wrap-break-word wrap-anywhere ${toastTextColor}`}
                                                 >
                                                     {options.title}
                                                 </h4>
                                             )}
 
                                             <p
-                                                className={`text-sm text-left whitespace-normal break-words [overflow-wrap:anywhere] ${toastTextColor}`}
+                                                className={`text-sm text-left whitespace-normal wrap-break-word wrap-anywhere ${toastTextColor}`}
                                             >
                                                 {message}
                                             </p>

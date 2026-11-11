@@ -10,6 +10,7 @@ import {
     getPinValidator,
 } from './familyPin.helpers';
 import { currentUserStore, switchedProfileStore, useModal, useVerifyPin } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 
 export enum FamilyPinViewModeEnum {
     create = 'create',
@@ -25,6 +26,7 @@ type FamilyPinWrapperProps = {
     familyName?: string;
     titleOverride?: string;
     closeButtonText?: string;
+    onCancel?: () => void;
 };
 
 export const FamilyPinWrapper: React.FC<FamilyPinWrapperProps> = ({
@@ -35,8 +37,13 @@ export const FamilyPinWrapper: React.FC<FamilyPinWrapperProps> = ({
     familyName,
     titleOverride,
     closeButtonText,
+    onCancel,
 }) => {
     const { closeModal } = useModal();
+    const handleCloseModal = () => {
+        closeModal();
+        onCancel?.();
+    };
 
     const [pin, setPin] = useState<string[]>([]);
     const [confirmPin, setConfirmPin] = useState<string[]>([]);
@@ -101,7 +108,13 @@ export const FamilyPinWrapper: React.FC<FamilyPinWrapperProps> = ({
                 });
 
                 if (isVerified && hasParentSwitchedProfiles) {
-                    handleOnSubmit?.();
+                    setErrors({});
+                    try {
+                        await handleOnSubmit?.();
+                    } catch (error) {
+                        log.error('Verified PIN action failed', error);
+                        setErrors({ submission: [m['error.generic']()] });
+                    }
                     return;
                 }
 
@@ -138,7 +151,7 @@ export const FamilyPinWrapper: React.FC<FamilyPinWrapperProps> = ({
                 setErrors={setErrors}
                 pin={confirmPin}
                 setPin={setConfirmPin}
-                handleCloseModal={closeModal}
+                handleCloseModal={handleCloseModal}
                 viewMode={activeStep}
                 familyName={familyName}
                 isVerifying={isVerifying}
@@ -153,7 +166,7 @@ export const FamilyPinWrapper: React.FC<FamilyPinWrapperProps> = ({
                 setErrors={setErrors}
                 pin={_existingPin}
                 setPin={_setExistingPin}
-                handleCloseModal={closeModal}
+                handleCloseModal={handleCloseModal}
                 viewMode={activeStep}
                 familyName={familyName}
                 skipVerification={skipVerification}
@@ -170,7 +183,7 @@ export const FamilyPinWrapper: React.FC<FamilyPinWrapperProps> = ({
             setErrors={setErrors}
             pin={pin}
             setPin={setPin}
-            handleCloseModal={closeModal}
+            handleCloseModal={handleCloseModal}
             viewMode={activeStep}
             familyName={familyName}
             skipVerification={skipVerification}

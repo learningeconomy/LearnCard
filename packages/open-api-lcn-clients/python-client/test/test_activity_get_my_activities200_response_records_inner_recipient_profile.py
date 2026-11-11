@@ -36,7 +36,8 @@ class TestActivityGetMyActivities200ResponseRecordsInnerRecipientProfile(unittes
         if include_optional:
             return ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile(
                 profile_id = '',
-                display_name = ''
+                display_name = '',
+                image = ''
             )
         else:
             return ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile(

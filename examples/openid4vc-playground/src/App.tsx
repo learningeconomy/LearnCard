@@ -34,10 +34,7 @@ const App: React.FC = () => {
 
     const [lcaBaseUrl, setLcaBaseUrl] = useState<string>(() => {
         if (typeof window === 'undefined') return DEFAULT_LCA_BASE_URL;
-        return (
-            window.localStorage.getItem(LCA_BASE_URL_STORAGE_KEY)
-            ?? DEFAULT_LCA_BASE_URL
-        );
+        return window.localStorage.getItem(LCA_BASE_URL_STORAGE_KEY) ?? DEFAULT_LCA_BASE_URL;
     });
 
     useEffect(() => {
@@ -57,20 +54,17 @@ const App: React.FC = () => {
             setLaunchState({
                 kind: 'error',
                 scenarioId: scenario.id,
-                message:
-                    err instanceof Error
-                        ? err.message
-                        : 'Failed to launch scenario.',
+                message: err instanceof Error ? err.message : 'Failed to launch scenario.',
             });
         }
     };
 
     const visibleScenarios = filterScenarios(tab, providerId);
-    const allScenarios = SCENARIOS.filter((s) => s.kind === tab);
+    const allScenarios = SCENARIOS.filter(s => s.kind === tab);
 
     const launchedScenario =
         launchState.kind === 'launched'
-            ? allScenarios.find((s) => s.id === launchState.scenarioId)
+            ? allScenarios.find(s => s.id === launchState.scenarioId)
             : undefined;
 
     return (
@@ -81,14 +75,8 @@ const App: React.FC = () => {
                 <div className="flex flex-col lg:flex-row gap-6">
                     <div className="flex-1 min-w-0 space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <ProviderPicker
-                                providerId={providerId}
-                                onChange={setProviderId}
-                            />
-                            <LcaUrlSetting
-                                value={lcaBaseUrl}
-                                onChange={setLcaBaseUrl}
-                            />
+                            <ProviderPicker providerId={providerId} onChange={setProviderId} />
+                            <LcaUrlSetting value={lcaBaseUrl} onChange={setLcaBaseUrl} />
                         </div>
 
                         <Tabs tab={tab} onChange={setTab} />
@@ -100,19 +88,19 @@ const App: React.FC = () => {
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {allScenarios.map((s) => (
+                            {allScenarios.map(s => (
                                 <ScenarioCard
                                     key={s.id}
                                     scenario={s}
                                     selectedProvider={providerId}
                                     onLaunch={handleLaunch}
                                     isLaunching={
-                                        launchState.kind === 'launching'
-                                        && launchState.scenarioId === s.id
+                                        launchState.kind === 'launching' &&
+                                        launchState.scenarioId === s.id
                                     }
                                     isLaunched={
-                                        launchState.kind === 'launched'
-                                        && launchState.scenarioId === s.id
+                                        launchState.kind === 'launched' &&
+                                        launchState.scenarioId === s.id
                                     }
                                 />
                             ))}
@@ -146,9 +134,7 @@ const Header: React.FC = () => (
     <header className="border-b border-grayscale-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 py-5 flex items-center justify-between">
             <div>
-                <h1 className="text-xl font-semibold text-grayscale-900">
-                    OID4VC Playground
-                </h1>
+                <h1 className="text-xl font-semibold text-grayscale-900">OID4VC Playground</h1>
                 <p className="text-xs text-grayscale-500 mt-0.5">
                     Curated issuance &amp; verification scenarios for the LearnCard wallet
                 </p>
@@ -194,9 +180,7 @@ const TabButton: React.FC<{
     <button
         onClick={onClick}
         className={`inline-flex items-center gap-1.5 py-2 px-4 rounded-full text-sm font-medium transition-colors ${
-            active
-                ? 'bg-grayscale-900 text-white'
-                : 'text-grayscale-700 hover:bg-grayscale-200'
+            active ? 'bg-grayscale-900 text-white' : 'text-grayscale-700 hover:bg-grayscale-200'
         }`}
     >
         {icon}
@@ -219,9 +203,9 @@ const LcaUrlSetting: React.FC<{
             id="lca-base-url"
             type="url"
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={e => onChange(e.target.value)}
             placeholder={DEFAULT_LCA_BASE_URL}
-            className="w-full text-sm text-grayscale-900 bg-white border border-grayscale-300 rounded-xl px-3 py-2 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="w-full text-sm text-grayscale-900 bg-white border border-grayscale-300 rounded-xl px-3 py-2 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
         />
         <p className="text-xs text-grayscale-500 mt-1.5">
             Used by the &ldquo;Open in browser&rdquo; button. Defaults to {DEFAULT_LCA_BASE_URL}.
@@ -243,10 +227,10 @@ const ProviderPicker: React.FC<{
         <select
             id="provider-picker"
             value={providerId}
-            onChange={(e) => onChange(e.target.value as ProviderId)}
-            className="w-full text-sm text-grayscale-900 bg-white border border-grayscale-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            onChange={e => onChange(e.target.value as ProviderId)}
+            className="w-full text-sm text-grayscale-900 bg-white border border-grayscale-300 rounded-xl px-3 py-2 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
         >
-            {PROVIDERS.map((p) => (
+            {PROVIDERS.map(p => (
                 <option key={p.id} value={p.id} disabled={!p.enabled}>
                     {p.name}
                     {!p.enabled ? ' (coming soon)' : ''}
@@ -254,7 +238,7 @@ const ProviderPicker: React.FC<{
             ))}
         </select>
         <p className="text-xs text-grayscale-500 mt-1.5">
-            {PROVIDERS.find((p) => p.id === providerId)?.blurb}
+            {PROVIDERS.find(p => p.id === providerId)?.blurb}
         </p>
     </div>
 );

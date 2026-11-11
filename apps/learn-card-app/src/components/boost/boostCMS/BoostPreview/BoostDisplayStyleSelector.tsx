@@ -35,7 +35,7 @@ const BoostDisplayStyleSelector: React.FC<BoostDisplayStyleSelectorProps> = ({ c
     ] as const;
 
     return (
-        <section className="rounded-[20px] border border-grayscale-200 bg-white shadow-sm overflow-hidden">
+        <section className="rounded-[20px] border border-grayscale-200 bg-white shadow-xs overflow-hidden">
             <div className="px-5 pt-5 pb-4">
                 <h3 className="text-[17px] text-grayscale-900">Display Style</h3>
             </div>

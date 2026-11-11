@@ -1,14 +1,13 @@
 # BoostGenerateClaimLinkRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**boost_uri** | **str** |  | 
-**challenge** | **str** |  | [optional] 
-**claim_link_sa** | [**BoostGenerateClaimLinkRequestClaimLinkSA**](BoostGenerateClaimLinkRequestClaimLinkSA.md) |  | 
-**options** | [**BoostGenerateClaimLinkRequestOptions**](BoostGenerateClaimLinkRequestOptions.md) |  | [optional] 
+| Name              | Type                                                                                        | Description | Notes      |
+| ----------------- | ------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **boost_uri**     | **str**                                                                                     |             |
+| **challenge**     | **str**                                                                                     |             | [optional] |
+| **claim_link_sa** | [**BoostGenerateClaimLinkRequestClaimLinkSA**](BoostGenerateClaimLinkRequestClaimLinkSA.md) |             |
+| **options**       | [**BoostGenerateClaimLinkRequestOptions**](BoostGenerateClaimLinkRequestOptions.md)         |             | [optional] |
 
 ## Example
 
@@ -27,6 +26,5 @@ boost_generate_claim_link_request_dict = boost_generate_claim_link_request_insta
 # create an instance of BoostGenerateClaimLinkRequest from a dict
 boost_generate_claim_link_request_from_dict = BoostGenerateClaimLinkRequest.from_dict(boost_generate_claim_link_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

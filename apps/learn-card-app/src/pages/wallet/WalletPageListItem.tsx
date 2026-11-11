@@ -4,6 +4,7 @@ import { IonSpinner } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 
 import DotIcon from 'learn-card-base/svgs/DotIcon';
+import { QualificationsIconSolidColor } from 'learn-card-base/svgs/wallet/QualificationsIcon';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
@@ -22,6 +23,7 @@ const CATEGORY_TITLE: Partial<Record<CredentialCategoryEnum, () => string>> = {
     [CredentialCategoryEnum.skill]: m['wallet.categories.skills'],
     [CredentialCategoryEnum.socialBadge]: m['wallet.categories.socialBadges'],
     [CredentialCategoryEnum.achievement]: m['wallet.categories.achievements'],
+    [CredentialCategoryEnum.qualifications]: m['wallet.categories.qualifications'],
     [CredentialCategoryEnum.learningHistory]: m['wallet.categories.studies'],
     [CredentialCategoryEnum.accomplishment]: m['wallet.categories.portfolio'],
     [CredentialCategoryEnum.accommodation]: m['wallet.categories.assistance'],
@@ -36,7 +38,7 @@ type WalletPageListItemProps = {
         categoryId: CredentialCategoryEnum;
         labels: { singular: string; plural: string };
     };
-    count: number;
+    count: number | null;
     showNewItemIndicator?: boolean;
     loading?: boolean;
 };
@@ -49,9 +51,13 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
     loading,
 }) => {
     const { categoryId: categoryType } = walletPageItem;
-    const { getThemedCategory, colors: themeColors } = useTheme();
+    const { theme, getThemedCategory, colors: themeColors } = useTheme();
     const { icons, colors } = getThemedCategory(categoryType);
-    const { IconWithShape, Icon } = icons;
+    const { IconWithShape: themedIconWithShape, Icon } = icons;
+    const IconWithShape =
+        theme.id === 'formal' && categoryType === CredentialCategoryEnum.qualifications
+            ? QualificationsIconSolidColor
+            : themedIconWithShape;
     const { primaryColor, indicatorColor, borderColor } = colors;
 
     const passportCardBgColor = themeColors?.defaults?.passportCardBgColor;
@@ -59,7 +65,7 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
 
     let countDisplay: React.ReactNode | null = (
         <div
-            className={`font-poppins text-[14px] ${passportCardTextColor ?? 'text-grayscale-900'}`}
+            className={`break-words font-poppins text-[14px] ${passportCardTextColor ?? 'text-grayscale-900'}`}
         >
             {loading ? (
                 <div className="flex items-center gap-[5px]">
@@ -71,6 +77,8 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
                     />{' '}
                     {m['wallet.items']()}
                 </div>
+            ) : count === null ? (
+                m['credentialCollection.countUnavailable']()
             ) : count === 1 ? (
                 m['wallet.itemCountOne']({ count })
             ) : (
@@ -90,12 +98,12 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
         <button
             type="button"
             onClick={() => handleItemClick(categoryType)}
-            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                 !passportCardBgColor ? `bg-${primaryColor}` : ''
             }`}
             style={passportCardBgColor ? { backgroundColor: passportCardBgColor } : undefined}
         >
-            <div className="flex items-center justify-center relative">
+            <div className="flex shrink-0 items-center justify-center relative">
                 {IconWithShape ? (
                     <IconWithShape className="w-[40px] h-[40px]" />
                 ) : (
@@ -103,9 +111,9 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
                 )}
             </div>
 
-            <div className="flex flex-col items-start justify-center">
+            <div className="flex min-w-0 flex-1 flex-col items-start justify-center">
                 <p
-                    className={`font-poppins text-[17px] font-[600] leading-[130%] ${
+                    className={`break-words font-poppins text-[17px] font-[600] leading-[130%] ${
                         passportCardTextColor ?? 'text-grayscale-900'
                     }`}
                 >
@@ -114,7 +122,7 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
                 {countDisplay}
             </div>
 
-            <div className="ml-auto flex items-center gap-[5px]">
+            <div className="ml-auto flex shrink-0 items-center gap-[5px]">
                 {showNewItemIndicator && (
                     <div className={`border-2 rounded-full border-solid border-${borderColor}`}>
                         <DotIcon className={`text-${indicatorColor}`} />

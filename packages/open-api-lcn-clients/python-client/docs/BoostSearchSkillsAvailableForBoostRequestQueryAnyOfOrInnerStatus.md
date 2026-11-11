@@ -1,11 +1,10 @@
 # BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**var_in** | **List[str]** |  | 
+| Name       | Type          | Description | Notes |
+| ---------- | ------------- | ----------- | ----- |
+| **var_in** | **List[str]** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ boost_search_skills_available_for_boost_request_query_any_of_or_inner_status_dic
 # create an instance of BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus from a dict
 boost_search_skills_available_for_boost_request_query_any_of_or_inner_status_from_dict = BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus.from_dict(boost_search_skills_available_for_boost_request_query_any_of_or_inner_status_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

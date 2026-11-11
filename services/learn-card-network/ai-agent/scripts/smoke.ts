@@ -1,5 +1,16 @@
 import { initLearnCard } from '@learncard/init';
 
+import {
+    describeScheduleCreated,
+    describeScheduledCardFailure,
+    findScheduledCard,
+    getScheduledCardDeadline,
+    getScheduledCardWindowMs,
+    SCHEDULED_CARD_POLL_INTERVAL_MS,
+    type SmokeFeedItem,
+    type SmokeScheduleResponse,
+} from '../src/smoke/scheduledCard';
+
 interface ChallengeResponse {
     ok?: boolean;
     challenge?: string;
@@ -18,24 +29,19 @@ interface AgentRunResponse {
 }
 
 interface ScheduleResponse {
-    schedule?: {
-        id?: string;
-        nextRunAt?: string;
-    };
+    schedule?: SmokeScheduleResponse;
     error?: string;
 }
 
 interface AssistantFeedResponse {
-    items?: Array<{
-        origin?: string;
-        title?: string;
-        sourceRunId?: string;
-        createdAt?: string;
-    }>;
+    items?: SmokeFeedItem[];
 }
 
 const baseUrl = process.env.AI_AGENT_SMOKE_BASE_URL?.trim().replace(/\/+$/, '');
 const seed = process.env.AI_AGENT_SMOKE_SEED?.trim();
+const scheduledCardWindowMs = getScheduledCardWindowMs(
+    process.env.AI_AGENT_SMOKE_SCHEDULE_WINDOW_SECONDS
+);
 
 if (!baseUrl) throw new Error('AI_AGENT_SMOKE_BASE_URL must be set.');
 if (!seed) throw new Error('AI_AGENT_SMOKE_SEED must be set.');
@@ -159,36 +165,58 @@ const scheduleResult = await request<ScheduleResponse>(
 );
 const scheduleId = scheduleResult.schedule?.id;
 
+console.log(
+    JSON.stringify(
+        describeScheduleCreated(scheduleResult.schedule, scheduledAt, {
+            environment: process.env.TARGET_ENVIRONMENT?.trim() || undefined,
+            projectRef: process.env.AI_AGENT_SMOKE_TRIGGER_PROJECT_REF?.trim() || undefined,
+        })
+    )
+);
+
 if (!scheduleId || !scheduleResult.schedule?.nextRunAt) {
     throw new Error(scheduleResult.error ?? 'Could not create the scheduled smoke task.');
 }
 
 let scheduledRunId: string | undefined;
+let scheduledCardCreatedAt: string | undefined;
 
 try {
-    const deadline = scheduledAt.getTime() + 180_000;
+    const deadline = getScheduledCardDeadline(scheduledAt, scheduledCardWindowMs);
+    let latestItems: SmokeFeedItem[] = [];
+    let polls = 0;
 
-    while (Date.now() < deadline) {
+    while (Date.now() < deadline.getTime()) {
         const feed = await request<AssistantFeedResponse>(
             `/api/users/${encodeURIComponent(did)}/assistant-feed?limit=50`,
             { headers: { Authorization: await createAuthorization() } }
         );
-        const scheduledCard = feed.items?.find(
-            item =>
-                item.origin === 'autonomous' &&
-                item.title === scheduleName &&
-                Boolean(item.createdAt && item.createdAt >= scheduleCreatedAfter)
-        );
+        polls += 1;
+        latestItems = feed.items ?? [];
+        const scheduledCard = findScheduledCard(latestItems, scheduleName, scheduleCreatedAfter);
 
         if (scheduledCard) {
             scheduledRunId = scheduledCard.sourceRunId;
+            scheduledCardCreatedAt = scheduledCard.createdAt;
             break;
         }
 
-        await delay(10_000);
+        await delay(SCHEDULED_CARD_POLL_INTERVAL_MS);
     }
 
-    if (!scheduledRunId) throw new Error('Scheduled smoke task did not produce an Assistant card.');
+    if (!scheduledRunId) {
+        throw new Error(
+            describeScheduledCardFailure({
+                items: latestItems,
+                scheduleName,
+                scheduleId,
+                createdAfter: scheduleCreatedAfter,
+                scheduledAt,
+                deadline,
+                polls,
+            })
+        );
+    }
 } finally {
     await request<{ ok?: boolean }>(
         `/api/users/${encodeURIComponent(did)}/assistant-schedules/${encodeURIComponent(
@@ -207,5 +235,8 @@ console.log(
         runId: result.runId,
         toolNames: [...new Set(toolRuns.map(toolRun => toolRun.name).filter(Boolean))],
         scheduledRunId,
+        scheduledCardLatencySeconds: scheduledCardCreatedAt
+            ? Math.round((Date.parse(scheduledCardCreatedAt) - scheduledAt.getTime()) / 1_000)
+            : undefined,
     })
 );

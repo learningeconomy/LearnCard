@@ -385,10 +385,10 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.15 }}
-                        className="p-6 sm:p-8 space-y-5"
+                        className="p-6 sm:p-8 space-y-v3-5"
                     >
                         {/* Header */}
-                        <header className="space-y-1 pr-10">
+                        <header className="space-y-v3-1 pr-10">
                             <div className="flex items-center gap-2 text-grayscale-500 text-xs uppercase tracking-wide font-medium">
                                 <IonIcon icon={cloudDownloadOutline} className="text-base" />
                                 Build · Import
@@ -422,7 +422,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
                             best with their audience.
                         */}
                         {SHOWCASES.length > 0 && (
-                            <div className="space-y-2.5">
+                            <div className="space-y-v3-2.5">
                                 {SHOWCASES.map(showcase => (
                                     <ShowcaseCard
                                         key={showcase.id}
@@ -447,7 +447,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
                                 placeholder="Search by name, issuer, topic…"
                                 className="w-full py-3 pl-11 pr-4 border border-grayscale-300 rounded-xl text-sm
                                            text-grayscale-900 placeholder:text-grayscale-400 bg-white
-                                           focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                           focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                             />
                         </div>
 
@@ -488,7 +488,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
 
                         {/* Results grid — or empty state */}
                         {filtered.length > 0 ? (
-                            <div className="space-y-2.5">
+                            <div className="space-y-v3-2.5">
                                 {filtered.map(entry => (
                                     <CatalogCard
                                         key={entry.ctid}
@@ -523,7 +523,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
                             </button>
 
                             {showAdvanced && (
-                                <div className="mt-2 space-y-2">
+                                <div className="mt-2 space-y-v3-2">
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
@@ -537,7 +537,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
                                             placeholder="ce-3f9295b8-9c7d-4314-a06d-235ab8d0bfaf"
                                             className="flex-1 min-w-0 py-2.5 px-3 border border-grayscale-300 rounded-xl text-xs
                                                        text-grayscale-900 placeholder:text-grayscale-400 bg-white
-                                                       focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                                       focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                                         />
 
                                         <button
@@ -575,7 +575,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.15 }}
-                        className="p-6 sm:p-8 space-y-5"
+                        className="p-6 sm:p-8 space-y-v3-5"
                     >
                         {/* Back-to-browse anchor */}
                         <button
@@ -699,7 +699,7 @@ const CatalogCard: React.FC<{
         type="button"
         onClick={onClick}
         className="w-full text-left p-3 rounded-2xl border border-grayscale-200
-                   bg-white hover:border-grayscale-300 hover:shadow-sm
+                   bg-white hover:border-grayscale-300 hover:shadow-xs
                    transition-all duration-150 flex gap-3 items-start"
     >
         {entry.image ? (
@@ -722,7 +722,7 @@ const CatalogCard: React.FC<{
             </div>
         )}
 
-        <div className="flex-1 min-w-0 space-y-1">
+        <div className="flex-1 min-w-0 space-y-v3-1">
             <div className="text-sm font-semibold text-grayscale-900 leading-tight">
                 {entry.name}
             </div>
@@ -799,7 +799,7 @@ const EmptyState: React.FC<{
     hasQuery: boolean;
     onClear: () => void;
 }> = ({ hasQuery, onClear }) => (
-    <div className="p-6 rounded-2xl bg-grayscale-10 border border-grayscale-200 text-center space-y-2">
+    <div className="p-6 rounded-2xl bg-grayscale-10 border border-grayscale-200 text-center space-y-v3-2">
         <div className="text-sm text-grayscale-700">
             {hasQuery ? 'No pathways match your search yet.' : 'The catalog is empty right now.'}
         </div>
@@ -837,7 +837,7 @@ const PreviewCard: React.FC<{ pathway: Pathway; warnings: string[] }> = ({ pathw
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50 space-y-3"
+            className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50 space-y-v3-3"
         >
             <div className="flex items-start gap-2.5">
                 <IonIcon
@@ -856,7 +856,7 @@ const PreviewCard: React.FC<{ pathway: Pathway; warnings: string[] }> = ({ pathw
             </div>
 
             {/* Node summary — first 5 titles, then an ellipsis. */}
-            <ul className="space-y-1 pl-6">
+            <ul className="space-y-v3-1 pl-6">
                 {pathway.nodes.slice(0, 5).map(n => (
                     <li key={n.id} className="text-xs text-grayscale-700 flex items-center gap-1.5">
                         <span
@@ -888,7 +888,7 @@ const PreviewCard: React.FC<{ pathway: Pathway; warnings: string[] }> = ({ pathw
                         {warnings.length} note{warnings.length === 1 ? '' : 's'} about this import
                     </summary>
 
-                    <ul className="mt-2 space-y-1.5 pl-5 border-l-2 border-amber-200">
+                    <ul className="mt-2 space-y-v3-1.5 pl-5 border-l-2 border-amber-200">
                         {warnings.map((w, i) => (
                             <li key={i} className="text-xs text-amber-700 leading-relaxed">
                                 {w}

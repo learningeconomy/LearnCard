@@ -19,19 +19,21 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of1_or_inner import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseModel):
     """
     BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1
     """ # noqa: E501
-    var_or: List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner] = Field(alias="$or")
+    var_or: List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf] = Field(alias="$or")
     __properties: ClassVar[List[str]] = ["$or"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -43,8 +45,7 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -57,9 +58,8 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -73,8 +73,7 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
         _items = []
         if self.var_or:
             for _item_var_or in self.var_or:
-                if _item_var_or:
-                    _items.append(_item_var_or.to_dict())
+                _items.append(_item_var_or.to_dict() if _item_var_or is not None else None)
             _dict['$or'] = _items
         return _dict
 
@@ -87,9 +86,11 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
-            "$or": [BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner.from_dict(_item) for _item in obj["$or"]] if obj.get("$or") is not None else None
-        })
+        _values = {
+            "$or": [BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf.from_dict(_item) for _item in obj["$or"]] if obj.get("$or") is not None else None
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

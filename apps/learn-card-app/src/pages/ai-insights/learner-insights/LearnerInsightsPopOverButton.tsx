@@ -54,7 +54,7 @@ export const LearnerInsightsPopOverButton: React.FC<RequestInsightsPopOverButton
                     setSortBy={setSortBy}
                 />,
                 {
-                    sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+                    sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
                 },
                 {}
             );
@@ -70,7 +70,7 @@ export const LearnerInsightsPopOverButton: React.FC<RequestInsightsPopOverButton
                 onClick={handleSortMenu}
                 type="button"
                 ref={isMobile ? null : buttonRef}
-                className={`bg-white flex items-center justify-center p-2 rounded-[10px] shadow-sm border-solid border-[1px] ${
+                className={`bg-white flex items-center justify-center p-2 rounded-[10px] shadow-xs border-solid border ${
                     showSortPopover ? `border-${primaryColor}` : 'border-grayscale-200'
                 }`}
             >

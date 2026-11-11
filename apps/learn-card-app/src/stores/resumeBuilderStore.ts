@@ -49,6 +49,7 @@ export type ResumeBuilderActiveResume = {
     lerRecordId: string | null;
     generatedAt?: string | null;
     fileName?: string | null;
+    shareId?: string;
 };
 
 const stableSortObject = (value: unknown): unknown => {
@@ -95,7 +96,13 @@ const makeFieldId = () => uuidv4();
 const getEntries = (section: ResumeSectionKey): CredentialEntry[] =>
     resumeBuilderStore.get.credentialEntries()[section] ?? [];
 
-const setEntries = (set: any, section: ResumeSectionKey, entries: CredentialEntry[]) => {
+const setEntries = (
+    set: {
+        credentialEntries: (entries: Partial<Record<ResumeSectionKey, CredentialEntry[]>>) => void;
+    },
+    section: ResumeSectionKey,
+    entries: CredentialEntry[]
+) => {
     const prev = resumeBuilderStore.get.credentialEntries();
     set.credentialEntries({ ...prev, [section]: entries });
 };
@@ -147,7 +154,9 @@ export const resumeBuilderStore = createStore('resumeBuilderStore')<ResumeBuilde
                 ])
             ) as Partial<Record<ResumeSectionKey, CredentialEntry[]>>
         );
-        set.sectionOrder(snapshot.sectionOrder?.length ? snapshot.sectionOrder : defaultSectionOrder);
+        set.sectionOrder(
+            snapshot.sectionOrder?.length ? snapshot.sectionOrder : defaultSectionOrder
+        );
     },
     setPersonalDetails: (details: Partial<PersonalDetails>) => {
         const prev = resumeBuilderStore.get.personalDetails();

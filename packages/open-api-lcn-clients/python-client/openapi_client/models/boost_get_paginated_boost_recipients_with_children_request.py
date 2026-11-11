@@ -24,6 +24,7 @@ from openapi_client.models.boost_get_paginated_boost_recipients_request_query im
 from openapi_client.models.boost_get_paginated_boost_recipients_with_children_request_number_of_generations import BoostGetPaginatedBoostRecipientsWithChildrenRequestNumberOfGenerations
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetPaginatedBoostRecipientsWithChildrenRequest(BaseModel):
     """
@@ -32,7 +33,7 @@ class BoostGetPaginatedBoostRecipientsWithChildrenRequest(BaseModel):
     limit: Optional[Union[StrictFloat, StrictInt]] = 25
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
-    uri: Optional[StrictStr]
+    uri: StrictStr
     include_unaccepted_boosts: Optional[StrictBool] = Field(default=True, alias="includeUnacceptedBoosts")
     number_of_generations: Optional[BoostGetPaginatedBoostRecipientsWithChildrenRequestNumberOfGenerations] = Field(default=None, alias="numberOfGenerations")
     boost_query: Optional[BoostGetBoostsRequestQuery] = Field(default=None, alias="boostQuery")
@@ -40,7 +41,8 @@ class BoostGetPaginatedBoostRecipientsWithChildrenRequest(BaseModel):
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "uri", "includeUnacceptedBoosts", "numberOfGenerations", "boostQuery", "profileQuery"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -52,8 +54,7 @@ class BoostGetPaginatedBoostRecipientsWithChildrenRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -66,9 +67,8 @@ class BoostGetPaginatedBoostRecipientsWithChildrenRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -87,21 +87,6 @@ class BoostGetPaginatedBoostRecipientsWithChildrenRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of profile_query
         if self.profile_query:
             _dict['profileQuery'] = self.profile_query.to_dict()
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
-            _dict['cursor'] = None
-
-        # set to None if sort (nullable) is None
-        # and model_fields_set contains the field
-        if self.sort is None and "sort" in self.model_fields_set:
-            _dict['sort'] = None
-
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
-
         return _dict
 
     @classmethod
@@ -113,7 +98,7 @@ class BoostGetPaginatedBoostRecipientsWithChildrenRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "limit": obj.get("limit") if obj.get("limit") is not None else 25,
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
@@ -122,7 +107,9 @@ class BoostGetPaginatedBoostRecipientsWithChildrenRequest(BaseModel):
             "numberOfGenerations": BoostGetPaginatedBoostRecipientsWithChildrenRequestNumberOfGenerations.from_dict(obj["numberOfGenerations"]) if obj.get("numberOfGenerations") is not None else None,
             "boostQuery": BoostGetBoostsRequestQuery.from_dict(obj["boostQuery"]) if obj.get("boostQuery") is not None else None,
             "profileQuery": BoostGetPaginatedBoostRecipientsRequestQuery.from_dict(obj["profileQuery"]) if obj.get("profileQuery") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

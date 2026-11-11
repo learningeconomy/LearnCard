@@ -130,7 +130,7 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
     if (step === 'success') {
         return (
             <Overlay onDismiss={onComplete}>
-                <div className="p-8 text-center space-y-5">
+                <div className="p-8 text-center space-y-v3-5">
                     <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
                         <svg
                             className="w-7 h-7 text-emerald-500"
@@ -143,7 +143,7 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
                         </svg>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <h2 className="text-xl font-semibold text-grayscale-900">Email Added</h2>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
@@ -167,8 +167,8 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
     if (step === 'code') {
         return (
             <Overlay onDismiss={loading ? undefined : handleChangeEmail}>
-                <form onSubmit={handleVerifyCode} className="p-8 space-y-5">
-                    <div className="text-center space-y-2">
+                <form onSubmit={handleVerifyCode} className="p-8 space-y-v3-5">
+                    <div className="text-center space-y-v3-2">
                         <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
                             <svg
                                 className="w-7 h-7 text-emerald-500"
@@ -237,12 +237,12 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900
                                        text-center tracking-[0.3em] font-medium
                                        placeholder:text-grayscale-400 placeholder:tracking-[0.3em]
-                                       focus:outline-none focus:ring-2 focus:ring-emerald-500
+                                       focus:outline-hidden focus:ring-2 focus:ring-emerald-500
                                        focus:border-transparent bg-white disabled:opacity-50"
                         />
                     </div>
 
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-v3-3 pt-1">
                         <button
                             type="submit"
                             disabled={loading}
@@ -286,8 +286,8 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
 
     return (
         <Overlay onDismiss={loading ? undefined : onLogout}>
-            <form onSubmit={handleSendCode} className="p-8 space-y-5">
-                <div className="text-center space-y-2">
+            <form onSubmit={handleSendCode} className="p-8 space-y-v3-5">
+                <div className="text-center space-y-v3-2">
                     <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
                         <svg
                             className="w-7 h-7 text-emerald-500"
@@ -350,12 +350,12 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
                         autoComplete="email"
                         disabled={loading}
                         className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900
-                                   placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500
+                                   placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500
                                    focus:border-transparent bg-white disabled:opacity-50"
                     />
                 </div>
 
-                <div className="space-y-3 pt-1">
+                <div className="space-y-v3-3 pt-1">
                     <button
                         type="submit"
                         disabled={loading}

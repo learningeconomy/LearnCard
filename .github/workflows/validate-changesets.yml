@@ -9,6 +9,9 @@ on:
         paths:
             - '.changeset/**'
 
+permissions:
+    contents: read
+
 jobs:
     validate:
         name: Validate changesets

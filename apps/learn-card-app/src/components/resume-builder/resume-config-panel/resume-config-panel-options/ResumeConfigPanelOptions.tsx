@@ -13,7 +13,7 @@ export const ResumeConfigPanelOptions: React.FC<{
 }> = ({ focusSectionKey, focusRequestId }) => {
     return (
         <div className="flex flex-col h-full bg-grayscale-50">
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            <div className="flex-1 overflow-y-auto p-3 space-y-v3-3">
                 <ResumeConfigPanelDocumentSetup />
                 <ResumeConfigPanelUserInfo />
                 <div className="rounded-2xl border border-grayscale-200 bg-white p-4">

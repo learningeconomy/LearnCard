@@ -19,23 +19,25 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.storage_resolve200_response_any_of1_read import StorageResolve200ResponseAnyOf1Read
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_read import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead
 from openapi_client.models.storage_resolve200_response_any_of1_write import StorageResolve200ResponseAnyOf1Write
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class StorageResolve200ResponseAnyOf1(BaseModel):
     """
     StorageResolve200ResponseAnyOf1
     """ # noqa: E501
-    read: StorageResolve200ResponseAnyOf1Read
+    read: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead
     write: StorageResolve200ResponseAnyOf1Write
     denied_writers: Optional[List[StrictStr]] = Field(default=None, alias="deniedWriters")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["read", "write", "deniedWriters"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -47,8 +49,7 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -61,9 +62,8 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -97,11 +97,13 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
-            "read": StorageResolve200ResponseAnyOf1Read.from_dict(obj["read"]) if obj.get("read") is not None else None,
+        _values = {
+            "read": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": StorageResolve200ResponseAnyOf1Write.from_dict(obj["write"]) if obj.get("write") is not None else None,
             "deniedWriters": obj.get("deniedWriters")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

@@ -58,7 +58,7 @@ export class GameFlowPage {
 
         // background
         await expect(
-            this.page.locator(`div[style*='background-image: url(\"${gameFlowContract.image}\")']`)
+            this.page.locator(`div[style*='background-image: url("${gameFlowContract.image}")']`)
         ).toBeVisible({ timeout: 15000 });
 
         await expect(
@@ -296,13 +296,13 @@ export class GameFlowPage {
             // demo account
             //   We know the demo account's did, so we can be specific
             const urlRegex = new RegExp(
-                `${this.redirectUrl}\\?did=did\%3Aweb\%3Alocalhost\%253A4000\%3Ausers\%3Atest&vp=.*`
+                `${this.redirectUrl}\\?did=did%3Aweb%3Alocalhost%253A4000%3Ausers%3Atest&vp=.*`
             );
             await expect(this.page).toHaveURL(urlRegex);
         } else {
             // we don't know what the child's did is going to be, so we'll just use a regex
             const urlRegex = new RegExp(
-                `${this.redirectUrl}\\?did=did\%3Aweb\%3Alocalhost\%253A4000\%3Ausers\%3A.*&vp=.*`
+                `${this.redirectUrl}\\?did=did%3Aweb%3Alocalhost%253A4000%3Ausers%3A.*&vp=.*`
             );
             await expect(this.page).toHaveURL(urlRegex);
         }

@@ -2,13 +2,42 @@
  * LearnCard Partner Connect SDK - Type Definitions
  */
 
-// Re-export AppEvent types from shared types package
-export type {
-    AppEvent,
-    SendCredentialEvent,
+import type {
+    AppEvent as BaseAppEvent,
+    AppEventResponse as BaseAppEventResponse,
     CheckCredentialEvent,
-    AppEventResponse,
+    SendCredentialEvent as BaseSendCredentialEvent,
 } from '@learncard/types';
+import type {
+    CapturedAppManifest,
+    ConsentRequest,
+    InlineCredentialTemplate,
+    InlineTemplateValidationError,
+} from '@learncard/partner-connect-core';
+
+// Re-export AppEvent types from shared types package
+export type { CheckCredentialEvent };
+export type {
+    CapturedAppManifest,
+    CapturedConsentRecord,
+    CapturedTemplateRecord,
+    CompiledInlineTemplate,
+    ConsentRequest,
+    InlineCredentialTemplate,
+    InlineTemplateValidationError,
+    PersonalField,
+    RawInlineCredentialTemplate,
+    SimpleInlineCredentialTemplate,
+    VariableManifest,
+    WalletCategory,
+} from '@learncard/partner-connect-core';
+
+export interface PreviewCompiledTemplateResult {
+    valid: boolean;
+    errors: InlineTemplateValidationError[];
+    compiled?: Record<string, unknown>;
+    rendered?: Record<string, unknown>;
+}
 
 /**
  * Configuration options for initializing the SDK
@@ -112,15 +141,17 @@ export interface PartnerConnectOptions {
      * identically (real host) once embedded, with no code changes.
      *
      * - `'auto'` **(default)**: mock only when **no LearnCard host is present
-     *    AND the app is running on a local dev host** (`localhost`,
-     *    `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`). This covers local
-     *    dev and local Storybook, but deliberately never fabricates identity
-     *    or consent on a production or preview origin. Each mocked call
+     *    AND the app is running in local dev** (`localhost`, `127.0.0.1`,
+     *    `[::1]`, `*.localhost`, `*.local`) **or an AI app builder's editor
+     *    preview** (Lovable, Bolt, v0, Replit). This covers local dev, local
+     *    Storybook, and building in those tools, but deliberately never
+     *    fabricates identity or consent on a published or deploy-preview
+     *    origin. Each mocked call
      *    surfaces a labeled toast plus a console log so it's clear the host
      *    is simulated.
      * - `'standalone'`: mock whenever **no LearnCard host is present**, on
-     *    any origin — including remote deploy previews (Netlify, Lovable,
-     *    Vercel, …) — and use the real host when embedded in LearnCard. The
+     *    any origin — including remote deploy previews (Netlify, Vercel, …)
+     *    — and use the real host when embedded in LearnCard. The
      *    one-flag setting for apps that must demo standalone anywhere. Only
      *    choose it when a user opening your app's URL directly should see
      *    simulated data.
@@ -187,6 +218,21 @@ export interface MockHostOptions {
     persist?: boolean;
 
     /**
+     * Show the mock-mode "Publish to LearnCard" nudge once the captured app
+     * manifest becomes publishable.
+     *
+     * @default true
+     */
+    publishPrompt?: boolean;
+
+    /**
+     * LearnCard origin used to build the App Store submission URL.
+     *
+     * @default 'https://learncard.app'
+     */
+    publishOrigin?: string;
+
+    /**
      * The fake DID returned by `requestIdentity()` (and used as the mock
      * user's identity) while in mock mode.
      *
@@ -202,6 +248,13 @@ export interface MockHostOptions {
      * @default 'lc-mock'
      */
     namespace?: string;
+
+    /**
+     * Distinguishes your app from other apps served on the same origin
+     * (e.g. multiple projects on localhost:4321). Defaults to a fingerprint
+     * of the initial document.title.
+     */
+    appId?: string;
 
     /**
      * Seed the mock user's identity. Superseded per-field over the legacy
@@ -259,6 +312,16 @@ export interface MockCredentialSeed {
     status?: 'pending' | 'claimed' | 'revoked';
 }
 
+/** Public manifest snapshot getter, available only while mock mode is active. */
+export interface CapturedManifestReadable {
+    getCapturedManifest(): CapturedAppManifest | undefined;
+    getPublishUrl(): string | undefined;
+    /** Start fresh for the current practice app; no-op outside mock mode. */
+    resetPracticeMode(): void;
+    getActiveHostOrigin(): string | null;
+    getPublishOrigin(): string | null;
+}
+
 /**
  * Identity information returned from REQUEST_IDENTITY
  */
@@ -296,6 +359,56 @@ export interface TemplateCredentialInput {
 }
 
 /**
+ * Inline credential template input for sendCredential.
+ *
+ * This sends the full template definition to LearnCard at runtime, with no
+ * pre-configured host template required.
+ *
+ * @example
+ * ```typescript
+ * await learnCard.sendCredential({
+ *   alias: 'course-complete',
+ *   template: {
+ *     name: 'Completed {{courseName}}',
+ *     description: 'Awarded for finishing {{courseName}}.',
+ *     achievementType: 'Course',
+ *     criteria: { narrative: 'Finished all modules' }
+ *   },
+ *   templateData: { courseName: 'Intro to Baking' }
+ * });
+ * ```
+ */
+export interface InlineTemplateCredentialInput {
+    /** App-scoped alias used for duplicate checks and inline template versioning. */
+    alias: string;
+
+    /** Inline credential template definition compiled by LearnCard at issuance time. */
+    template: InlineCredentialTemplate;
+
+    /** Runtime values for the template variables. */
+    templateData?: Record<string, unknown>;
+
+    /**
+     * If true, the host will return an existing credential (if present) instead of issuing a duplicate.
+     */
+    preventDuplicateClaim?: boolean;
+}
+
+/** Inline `send-credential` app event for zero-config issuance. */
+export interface InlineTemplateSendCredentialEvent {
+    type: 'send-credential';
+    alias: string;
+    template: InlineCredentialTemplate;
+    templateData?: Record<string, unknown>;
+    preventDuplicateClaim?: boolean;
+}
+
+export type SendCredentialEvent = BaseSendCredentialEvent | InlineTemplateSendCredentialEvent;
+export type AppEvent = BaseAppEvent | InlineTemplateSendCredentialEvent;
+export type AppEventResponse = BaseAppEventResponse;
+export type SendCredentialInput = unknown | TemplateCredentialInput | InlineTemplateCredentialInput;
+
+/**
  * Response from template-based credential issuance
  */
 export interface TemplateCredentialResponse {
@@ -316,6 +429,9 @@ export interface TemplateCredentialResponse {
 
     /** The date the credential was received (when preventDuplicateClaim is true) */
     receivedDate?: string;
+
+    /** Version number for inline templates sharing the same alias. */
+    templateVersion?: number;
 
     [key: string]: unknown;
 }
@@ -382,6 +498,7 @@ export interface RequestConsentPayload {
      * to use the contract configured for the current app listing.
      */
     contractUri?: string;
+    scopes?: ConsentRequest;
     redirect?: boolean;
 }
 
@@ -724,6 +841,8 @@ export type ErrorCode =
     | 'CREDENTIAL_NOT_FOUND'
     | 'USER_REJECTED'
     | 'UNAUTHORIZED'
+    | 'TEMPLATE_INVALID'
+    | 'TEMPLATE_DATA_INVALID'
     | 'TEMPLATE_NOT_FOUND'
     | 'BOOST_NOT_FOUND'
     | 'INSUFFICIENT_PERMISSIONS'

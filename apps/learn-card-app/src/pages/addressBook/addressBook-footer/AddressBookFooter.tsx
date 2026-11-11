@@ -69,7 +69,7 @@ export const AddressBookFooter: React.FC<{
 
                                     history.push('/issue');
                                 }}
-                                className="bg-gradient-rainbow text-lg text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-1/2 border-solid border-white border-[2px] px-[18px] shadow-soft-bottom mb-[10px]"
+                                className="bg-gradient-rainbow text-lg text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-1/2 border-solid border-white border-2 px-[18px] shadow-soft-bottom mb-[10px]"
                             >
                                 Boost
                                 <GearPlusIcon className="ml-1 text-grayscale-800" />

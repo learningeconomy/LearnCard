@@ -41,6 +41,16 @@ const getStepFromUrl = (): number | null => {
     return null;
 };
 
+// guideState also holds data other features own (e.g. which app a project was
+// published from); saving guide progress must not erase it.
+const withOtherKeys = (
+    integration: LCNIntegration,
+    state: GuideState
+): Record<string, unknown> => ({
+    ...((integration.guideState as Record<string, unknown> | undefined) ?? {}),
+    ...state,
+});
+
 /**
  * Hook to manage guide state, synced with server-side integration.guideState
  */
@@ -63,7 +73,7 @@ export function useGuideState(
             if (pendingSaveRef.current && integration) {
                 updateIntegrationMutation.mutate({
                     id: integration.id,
-                    updates: { guideState: pendingSaveRef.current },
+                    updates: { guideState: withOtherKeys(integration, pendingSaveRef.current) },
                 });
             }
         };
@@ -78,9 +88,10 @@ export function useGuideState(
 
         if (serverState) {
             return {
-                currentStep: urlStep !== null && urlStep < totalSteps 
-                    ? urlStep 
-                    : (serverState.currentStep ?? 0),
+                currentStep:
+                    urlStep !== null && urlStep < totalSteps
+                        ? urlStep
+                        : (serverState.currentStep ?? 0),
                 completedSteps: serverState.completedSteps || [],
                 config: serverState.config || {},
             };
@@ -108,67 +119,82 @@ export function useGuideState(
     }, [integration?.id]);
 
     // Save state to server (debounced, fire-and-forget)
-    const saveState = useCallback((newState: GuideState) => {
-        if (!integration) return;
+    const saveState = useCallback(
+        (newState: GuideState) => {
+            if (!integration) return;
 
-        pendingSaveRef.current = newState;
+            pendingSaveRef.current = newState;
 
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
 
-        saveTimeoutRef.current = setTimeout(() => {
-            pendingSaveRef.current = null;
-            updateIntegrationMutation.mutate({
-                id: integration.id,
-                updates: {
-                    guideState: newState,
-                },
+            saveTimeoutRef.current = setTimeout(() => {
+                pendingSaveRef.current = null;
+                updateIntegrationMutation.mutate({
+                    id: integration.id,
+                    updates: {
+                        guideState: withOtherKeys(integration, newState),
+                    },
+                });
+            }, 500);
+        },
+        [integration, updateIntegrationMutation]
+    );
+
+    const isStepComplete = useCallback(
+        (stepId: string) => {
+            return state.completedSteps.includes(stepId);
+        },
+        [state.completedSteps]
+    );
+
+    const markStepComplete = useCallback(
+        (stepId: string) => {
+            setState(prev => {
+                if (prev.completedSteps.includes(stepId)) return prev;
+
+                const newState = {
+                    ...prev,
+                    completedSteps: [...prev.completedSteps, stepId],
+                };
+
+                saveState(newState);
+
+                return newState;
             });
-        }, 500);
-    }, [integration, updateIntegrationMutation]);
+        },
+        [saveState]
+    );
 
-    const isStepComplete = useCallback((stepId: string) => {
-        return state.completedSteps.includes(stepId);
-    }, [state.completedSteps]);
+    const markStepIncomplete = useCallback(
+        (stepId: string) => {
+            setState(prev => {
+                const newState = {
+                    ...prev,
+                    completedSteps: prev.completedSteps.filter(id => id !== stepId),
+                };
 
-    const markStepComplete = useCallback((stepId: string) => {
-        setState(prev => {
-            if (prev.completedSteps.includes(stepId)) return prev;
+                saveState(newState);
 
-            const newState = {
-                ...prev,
-                completedSteps: [...prev.completedSteps, stepId],
-            };
+                return newState;
+            });
+        },
+        [saveState]
+    );
 
-            saveState(newState);
+    const goToStep = useCallback(
+        (step: number) => {
+            if (step < 0 || step >= totalSteps) return;
 
-            return newState;
-        });
-    }, [saveState]);
-
-    const markStepIncomplete = useCallback((stepId: string) => {
-        setState(prev => {
-            const newState = {
-                ...prev,
-                completedSteps: prev.completedSteps.filter(id => id !== stepId),
-            };
-
-            saveState(newState);
-
-            return newState;
-        });
-    }, [saveState]);
-
-    const goToStep = useCallback((step: number) => {
-        if (step < 0 || step >= totalSteps) return;
-
-        setState(prev => {
-            const newState = { ...prev, currentStep: step };
-            saveState(newState);
-            return newState;
-        });
-    }, [totalSteps, saveState]);
+            setState(prev => {
+                const newState = { ...prev, currentStep: step };
+                saveState(newState);
+                return newState;
+            });
+        },
+        [totalSteps, saveState]
+    );
 
     const nextStep = useCallback(() => {
         goToStep(state.currentStep + 1);
@@ -178,22 +204,28 @@ export function useGuideState(
         goToStep(state.currentStep - 1);
     }, [state.currentStep, goToStep]);
 
-    const updateConfig = useCallback((key: string, value: unknown) => {
-        setState(prev => {
-            const newState = {
-                ...prev,
-                config: { ...prev.config, [key]: value },
-            };
+    const updateConfig = useCallback(
+        (key: string, value: unknown) => {
+            setState(prev => {
+                const newState = {
+                    ...prev,
+                    config: { ...prev.config, [key]: value },
+                };
 
-            saveState(newState);
+                saveState(newState);
 
-            return newState;
-        });
-    }, [saveState]);
+                return newState;
+            });
+        },
+        [saveState]
+    );
 
-    const getConfig = useCallback(<T,>(key: string, defaultValue?: T): T | undefined => {
-        return (state.config[key] as T) ?? defaultValue;
-    }, [state.config]);
+    const getConfig = useCallback(
+        <T>(key: string, defaultValue?: T): T | undefined => {
+            return (state.config[key] as T) ?? defaultValue;
+        },
+        [state.config]
+    );
 
     const resetGuide = useCallback(() => {
         const newState: GuideState = {
@@ -206,30 +238,33 @@ export function useGuideState(
         saveState(newState);
     }, [saveState]);
 
-    return useMemo(() => ({
-        state,
-        currentStep: state.currentStep,
-        totalSteps,
-        isStepComplete,
-        markStepComplete,
-        markStepIncomplete,
-        goToStep,
-        nextStep,
-        prevStep,
-        updateConfig,
-        getConfig,
-        resetGuide,
-    }), [
-        state,
-        totalSteps,
-        isStepComplete,
-        markStepComplete,
-        markStepIncomplete,
-        goToStep,
-        nextStep,
-        prevStep,
-        updateConfig,
-        getConfig,
-        resetGuide,
-    ]);
+    return useMemo(
+        () => ({
+            state,
+            currentStep: state.currentStep,
+            totalSteps,
+            isStepComplete,
+            markStepComplete,
+            markStepIncomplete,
+            goToStep,
+            nextStep,
+            prevStep,
+            updateConfig,
+            getConfig,
+            resetGuide,
+        }),
+        [
+            state,
+            totalSteps,
+            isStepComplete,
+            markStepComplete,
+            markStepIncomplete,
+            goToStep,
+            nextStep,
+            prevStep,
+            updateConfig,
+            getConfig,
+            resetGuide,
+        ]
+    );
 }

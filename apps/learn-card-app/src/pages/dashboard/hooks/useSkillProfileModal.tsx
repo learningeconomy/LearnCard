@@ -13,7 +13,7 @@ export const useSkillProfileModal = () => {
     const openSkillProfile = () => {
         newModal(<SkillProfileModal onClose={closeModal} />, {
             hideButton: true,
-            sectionClassName: '!max-w-[640px]',
+            sectionClassName: 'max-w-[640px]!',
         });
     };
 

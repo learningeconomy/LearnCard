@@ -75,7 +75,7 @@ jobs:
                       ~/.cargo/registry/cache/
                       ~/.cargo/git/db/
                       lib/didkit/target/
-                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
+                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('lib/didkit/Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
                   restore-keys: |
                       ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
 
@@ -136,9 +136,8 @@ jobs:
         runs-on: ubuntu-latest
         environment: didkit-wasm-publish
         permissions:
-            contents: write
+            contents: read
             id-token: write
-            pull-requests: write
         env:
             AWS_REGION: ${{ vars.DIDKIT_WASM_AWS_REGION || 'us-east-1' }}
             DIDKIT_REF: ${{ inputs.didkit_ref || github.event.client_payload.didkit_ref || 'main' }}
@@ -193,7 +192,7 @@ jobs:
                   fetch-depth: 0
                   ref: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || 'main' }}
                   submodules: recursive
-                  token: ${{ secrets.LEARNCARD_BOT_TOKEN || github.token }}
+                  persist-credentials: false
 
             - name: Update DIDKit and SSI submodules
               id: submodules
@@ -253,7 +252,7 @@ jobs:
                       ~/.cargo/registry/cache/
                       ~/.cargo/git/db/
                       lib/didkit/target/
-                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
+                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('lib/didkit/Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
                   restore-keys: |
                       ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
 
@@ -298,8 +297,6 @@ jobs:
 
             - name: Build DIDKit WASM
               if: steps.submodules.outputs.has_updates == 'true'
-              env:
-                  UPDATE_DIDKIT_WASM_LOCKFILE: '1'
               run: packages/plugins/didkit/scripts/build-wasm-from-submodules.sh
 
             - name: Verify generated bridge DIDKit integrity
@@ -363,7 +360,6 @@ jobs:
                   if git diff --quiet -- \
                       lib/didkit \
                       lib/ssi \
-                      packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock \
                       packages/learn-card-bridge-http/scripts/sync-didkit.ts \
                       packages/learn-card-bridge-http/src/didkit_wasm_bg.wasm \
                       packages/plugins/didkit/src/didkit; then
@@ -445,11 +441,27 @@ jobs:
                       echo "- Compressed transfer: ${downloaded_bytes} bytes"
                   } >> "${GITHUB_STEP_SUMMARY}"
 
+            # Rust/WASM builds and publication can take longer than an App token's
+            # one-hour lifetime. Mint only when ready to push the reviewed update.
+            # Reuse CI credentials, separate from deployed-service runtime secrets.
+            - name: Generate GitHub App Token
+              if: steps.changes.outputs.has_changes == 'true'
+              id: app-token
+              uses: actions/create-github-app-token@v3
+              with:
+                  app-id: ${{ secrets.E2E_RUNNER_APP_ID }}
+                  private-key: ${{ secrets.E2E_RUNNER_PRIVATE_KEY }}
+                  owner: ${{ github.repository_owner }}
+                  repositories: ${{ github.event.repository.name }}
+                  permission-contents: write
+                  permission-pull-requests: write
+                  skip-token-revoke: 'false'
+
             - name: Create pull request
               if: steps.changes.outputs.has_changes == 'true'
               uses: peter-evans/create-pull-request@v7
               with:
-                  token: ${{ secrets.LEARNCARD_BOT_TOKEN || github.token }}
+                  token: ${{ steps.app-token.outputs.token }}
                   commit-message: 'chore: update didkit wasm'
                   branch: automation/update-didkit-wasm
                   delete-branch: true
@@ -475,7 +487,6 @@ jobs:
                       .changeset/update-didkit-wasm.md
                       lib/didkit
                       lib/ssi
-                      packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock
                       packages/learn-card-bridge-http/scripts/sync-didkit.ts
                       packages/learn-card-bridge-http/src/didkit_wasm_bg.wasm
                       packages/plugins/didkit/src/didkit/index.ts

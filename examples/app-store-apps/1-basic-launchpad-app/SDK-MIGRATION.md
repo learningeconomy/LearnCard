@@ -6,21 +6,21 @@ This example app has been refactored to use the `@learncard/partner-connect` SDK
 
 ### Before: Manual postMessage Implementation
 
--   **Lines of code**: 467
--   **Manual setup**: ~80 lines of boilerplate
--   Required understanding of:
-    -   postMessage API
-    -   Request ID generation
-    -   Promise queue management
-    -   Message listener setup
-    -   Origin validation
-    -   Timeout handling
+- **Lines of code**: 467
+- **Manual setup**: ~80 lines of boilerplate
+- Required understanding of:
+    - postMessage API
+    - Request ID generation
+    - Promise queue management
+    - Message listener setup
+    - Origin validation
+    - Timeout handling
 
 ### After: SDK Implementation
 
--   **Lines of code**: 402 (-65 lines, 14% reduction)
--   **Setup**: 3 lines
--   Clean API with zero boilerplate
+- **Lines of code**: 402 (-65 lines, 14% reduction)
+- **Setup**: 3 lines
+- Clean API with zero boilerplate
 
 ## Code Comparison
 
@@ -90,42 +90,42 @@ const identity = await learnCard.requestIdentity();
 
 ## API Method Mappings
 
-| Manual postMessage                                                            | SDK Method                                                     |
-| ----------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `sendPostMessage('REQUEST_IDENTITY')`                                         | `learnCard.requestIdentity()`                                  |
-| `sendPostMessage('SEND_CREDENTIAL', { credential })`                          | `learnCard.sendCredential(credential)`                         |
-| `sendPostMessage('LAUNCH_FEATURE', { featurePath, initialPrompt })`           | `learnCard.launchFeature(featurePath, initialPrompt)`          |
-| `sendPostMessage('ASK_CREDENTIAL_SEARCH', { verifiablePresentationRequest })` | `learnCard.askCredentialSearch(vpr)`                           |
-| `sendPostMessage('ASK_CREDENTIAL_SPECIFIC', { credentialId })`                | `learnCard.askCredentialSpecific(credentialId)`                |
-| `sendPostMessage('REQUEST_CONSENT', { contractUri })`                         | `learnCard.requestConsent(contractUri)`                        |
-| `sendPostMessage('INITIATE_TEMPLATE_ISSUE', { templateId, draftRecipients })` | `learnCard.initiateTemplateIssue(templateId, draftRecipients)` |
+| Manual postMessage                                                            | SDK Method                                                                    |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `sendPostMessage('REQUEST_IDENTITY')`                                         | `learnCard.requestIdentity()`                                                 |
+| `sendPostMessage('SEND_CREDENTIAL', { credential })`                          | `learnCard.sendCredential(credential)`                                        |
+| `sendPostMessage('LAUNCH_FEATURE', { featurePath, initialPrompt })`           | `learnCard.launchFeature(featurePath, initialPrompt)`                         |
+| `sendPostMessage('ASK_CREDENTIAL_SEARCH', { verifiablePresentationRequest })` | `learnCard.askCredentialSearch(vpr)`                                          |
+| `sendPostMessage('ASK_CREDENTIAL_SPECIFIC', { credentialId })`                | `learnCard.askCredentialSpecific(credentialId)`                               |
+| `sendPostMessage('REQUEST_CONSENT', { contractUri })`                         | `learnCard.requestConsent(scopes)` or `learnCard.requestConsent(contractUri)` |
+| `sendPostMessage('INITIATE_TEMPLATE_ISSUE', { templateId, draftRecipients })` | `learnCard.initiateTemplateIssue(templateId, draftRecipients)`                |
 
 ## Benefits
 
 ### 1. **Reduced Complexity**
 
--   No manual Promise queue management
--   No manual timeout handling
--   No manual request ID generation
+- No manual Promise queue management
+- No manual timeout handling
+- No manual request ID generation
 
 ### 2. **Improved Security**
 
--   Automatic origin validation
--   Protocol verification built-in
--   Request ID tracking managed internally
+- Automatic origin validation
+- Protocol verification built-in
+- Request ID tracking managed internally
 
 ### 3. **Better Developer Experience**
 
--   Full TypeScript support with IntelliSense
--   Documented error codes
--   Consistent error handling
--   Self-documenting API
+- Full TypeScript support with IntelliSense
+- Documented error codes
+- Consistent error handling
+- Self-documenting API
 
 ### 4. **Maintainability**
 
--   Single source of truth for protocol
--   Easy to update when protocol changes
--   Testable in isolation
+- Single source of truth for protocol
+- Easy to update when protocol changes
+- Testable in isolation
 
 ### 5. **Type Safety**
 
@@ -134,7 +134,10 @@ All methods return properly typed responses:
 ```typescript
 const identity: IdentityResponse = await learnCard.requestIdentity();
 const response: SendCredentialResponse = await learnCard.sendCredential(credential);
-const consent: ConsentResponse = await learnCard.requestConsent(contractUri);
+const consent: ConsentResponse = await learnCard.requestConsent({
+    read: { credentialCategories: ['Achievement'], personalFields: ['name'] },
+    reason: 'Show off what LearnCard can share',
+});
 ```
 
 ## Migration Steps for Other Apps
@@ -184,8 +187,9 @@ The app will be available at `http://localhost:4321` (or similar).
 
 ## Notes
 
--   The SDK handles all cross-origin messaging internally
--   Origin validation is automatic and secure
--   Request timeouts default to 30 seconds (configurable)
--   All methods return Promises with proper error handling
--   The SDK is framework-agnostic and works with any JS framework
+- The SDK handles all cross-origin messaging internally
+- Origin validation is automatic and secure
+- Request timeouts default to 30 seconds (configurable)
+- All methods return Promises with proper error handling
+- The SDK is framework-agnostic and works with any JS framework
+- Zero-config flows now cover inline credential templates and scoped consent without hardcoded environment URIs

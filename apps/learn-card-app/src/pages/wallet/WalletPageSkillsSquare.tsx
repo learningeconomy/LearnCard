@@ -38,7 +38,7 @@ const WalletPageSkillsSquare: React.FC<{
             type="button"
             key={walletPageItem.id}
             aria-label={title}
-            className="w-full flex flex-1 items-center justify-center rounded-[25px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            className="w-full flex flex-1 items-center justify-center rounded-[25px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
             onClick={() => handleClickSquare(subtype)}
         >
             <div

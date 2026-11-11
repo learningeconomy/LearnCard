@@ -45,7 +45,12 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                     customContainerClass="h-[80px] w-[80px] shrink-0 text-[40px]"
                     customImageClass="h-[80px] w-[80px] shrink-0 text-[40px] object-cover"
                     customSize={120}
-                    user={user ?? currentLCNUser}
+                    user={
+                        user ?? {
+                            displayName: idName,
+                            image: currentLCNUser?.image || currentUser?.profileImage,
+                        }
+                    }
                 />
 
                 <div className="flex flex-col items-start pr-[10px] overflow-hidden text-white">
@@ -75,13 +80,13 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                 >
                     {/* <CredentialVerificationDisplay
                                 credential={credential}
-                                iconClassName="!h-[17px] !w-[17px]"
+                                iconClassName="h-[17px]! w-[17px]!"
                             /> */}
                     {brandingConfig?.name}
                 </span>
 
                 <div
-                    className="rounded-full h-[54px] w-[54px] shrink-0 -translate-y-[14px] flex items-center justify-center bg-white"
+                    className="rounded-full h-[54px] w-[54px] shrink-0 translate-y-[-14px] flex items-center justify-center bg-white"
                     // style={{ backgroundColor: credential?.boostID?.accentColor }}
                 >
                     <img

@@ -16,6 +16,7 @@ import { boostVCTypeOptions } from '../boost/boost-options/boostOptions';
 import { ProfilePicture } from 'learn-card-base';
 
 const MyDataSettings: React.FC<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     selectedItem: any;
     handleGoBack: () => void;
 }> = ({ selectedItem, handleGoBack }) => {
@@ -36,7 +37,7 @@ const MyDataSettings: React.FC<{
                                     </button>
 
                                     <div className="flex items-center justify-normal">
-                                        <div className="w-[40px] h-[40px] flex items-center justify-center rounded-[10px] overflow-hidden shadow-sm">
+                                        <div className="w-[40px] h-[40px] flex items-center justify-center rounded-[10px] overflow-hidden shadow-xs">
                                             <img
                                                 src={selectedItem?.image}
                                                 className="h-full w-full"
@@ -112,6 +113,7 @@ const MyDataSettings: React.FC<{
                                 } = option;
 
                                 return (
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     <div className="flex items-center justify-between pb-2 pt-2 border-b-2 border-solid border-grayscale-100">
                                         <div className="flex">
                                             <div
@@ -161,6 +163,7 @@ const MyDataSettings: React.FC<{
                                 } = option;
 
                                 return (
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     <div className="flex items-center justify-between pb-2 pt-2 border-b-2 border-solid border-grayscale-100">
                                         <div className="flex">
                                             <div
@@ -325,7 +328,7 @@ const MyDataSettings: React.FC<{
                                             Data shared with {selectedItem?.name}
                                         </h3>
                                     </div>
-                                    <CaretLeft className="rotate-[180deg] text-grayscale-500" />
+                                    <CaretLeft className="rotate-180 text-grayscale-500" />
                                 </button>
                             </IonCol>
                         </IonRow>
@@ -341,7 +344,7 @@ const MyDataSettings: React.FC<{
                                             Data usage by {selectedItem?.name}
                                         </h3>
                                     </div>
-                                    <CaretLeft className="rotate-[180deg] text-grayscale-500" />
+                                    <CaretLeft className="rotate-180 text-grayscale-500" />
                                 </button>
                             </IonCol>
                         </IonRow>

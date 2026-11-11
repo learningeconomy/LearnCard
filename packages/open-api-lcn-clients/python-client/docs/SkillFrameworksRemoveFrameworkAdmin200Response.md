@@ -1,11 +1,10 @@
 # SkillFrameworksRemoveFrameworkAdmin200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**success** | **bool** |  | 
+| Name        | Type     | Description | Notes |
+| ----------- | -------- | ----------- | ----- |
+| **success** | **bool** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ skill_frameworks_remove_framework_admin200_response_dict = skill_frameworks_remo
 # create an instance of SkillFrameworksRemoveFrameworkAdmin200Response from a dict
 skill_frameworks_remove_framework_admin200_response_from_dict = SkillFrameworksRemoveFrameworkAdmin200Response.from_dict(skill_frameworks_remove_framework_admin200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

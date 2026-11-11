@@ -1,13 +1,12 @@
 # ContractsGetConsentedDataForContractRequestQuery
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**anonymize** | **bool** |  | [optional] 
-**credentials** | [**ContractsGetConsentedDataForContractRequestQueryCredentials**](ContractsGetConsentedDataForContractRequestQueryCredentials.md) |  | [optional] 
-**personal** | **Dict[str, bool]** |  | [optional] 
+| Name            | Type                                                                                                                              | Description | Notes      |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **anonymize**   | **bool**                                                                                                                          |             | [optional] |
+| **credentials** | [**ContractsGetConsentedDataForContractRequestQueryCredentials**](ContractsGetConsentedDataForContractRequestQueryCredentials.md) |             | [optional] |
+| **personal**    | **Dict[str, bool]**                                                                                                               |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_get_consented_data_for_contract_request_query_dict = contracts_get_con
 # create an instance of ContractsGetConsentedDataForContractRequestQuery from a dict
 contracts_get_consented_data_for_contract_request_query_from_dict = ContractsGetConsentedDataForContractRequestQuery.from_dict(contracts_get_consented_data_for_contract_request_query_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

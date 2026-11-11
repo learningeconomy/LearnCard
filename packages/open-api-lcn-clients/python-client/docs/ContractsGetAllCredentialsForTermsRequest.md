@@ -1,14 +1,13 @@
 # ContractsGetAllCredentialsForTermsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**include_received** | **bool** |  | [optional] [default to False]
+| Name                 | Type      | Description | Notes                         |
+| -------------------- | --------- | ----------- | ----------------------------- |
+| **limit**            | **float** |             | [optional] [default to 25]    |
+| **cursor**           | **str**   |             | [optional]                    |
+| **sort**             | **str**   |             | [optional]                    |
+| **include_received** | **bool**  |             | [optional] [default to False] |
 
 ## Example
 
@@ -27,6 +26,5 @@ contracts_get_all_credentials_for_terms_request_dict = contracts_get_all_credent
 # create an instance of ContractsGetAllCredentialsForTermsRequest from a dict
 contracts_get_all_credentials_for_terms_request_from_dict = ContractsGetAllCredentialsForTermsRequest.from_dict(contracts_get_all_credentials_for_terms_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -212,7 +212,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 {/* Close button */}
                                 <button
                                     onClick={() => setShowPathwaySelection(false)}
-                                    className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                                    className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 focus:outline-hidden focus:ring-2 focus:ring-blue-500 rounded-sm"
                                     aria-label={m['common.close']()}
                                 >
                                     ×
@@ -238,7 +238,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                             <button
                                                 key={pathway.id || index}
                                                 onClick={() => handlePathwaySelect(pathway)}
-                                                className="w-full text-left p-4 border border-gray-200 border-l-4 border-l-blue-600 rounded-lg shadow-sm hover:shadow-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                                className="w-full text-left p-4 border border-gray-200 border-l-4 border-l-blue-600 rounded-lg shadow-xs hover:shadow-md hover:bg-blue-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition-all"
                                             >
                                                 <h4 className="font-medium text-gray-900 mb-2">
                                                     {pathway.learningPathway?.step?.title ||
@@ -294,14 +294,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
         <>
             <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[15px] sm:pb-0 bg-grayscale-50">
                 {showUserAvatar && (
-                    <div className="flex-shrink-0 pb-[6px]">
+                    <div className="shrink-0 pb-[6px]">
                         <ProfilePicture
                             customContainerClass="h-[40px] w-[40px] min-h-[40px] min-w-[40px]"
                             customImageClass="w-full h-full object-cover rounded-full"
                         />
                     </div>
                 )}
-                <div className="flex-1 min-w-0 flex rounded-[15px] overflow-hidden items-center border-[1px] border-grayscale-200 border-solid">
+                <div className="flex-1 min-w-0 flex rounded-[15px] overflow-hidden items-center border border-grayscale-200 border-solid">
                     <form
                         className="flex-1 min-w-0 flex items-center bg-white pr-[8px] sm:py-[15px] sm:px-[20px] sm:gap-[15px]"
                         // className="flex items-end gap-3 w-full p-5 bg-white rounded-2xl shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)]"
@@ -313,7 +313,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                     >
                         <textarea
                             rows={1}
-                            className="flex-1 min-w-0 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto phone:!pl-[12px]"
+                            className="flex-1 min-w-0 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-hidden disabled:opacity-60 resize-none overflow-y-auto phone:pl-[12px]!"
                             value={$input}
                             onChange={e => {
                                 chatInputText.set(e.target.value);
@@ -336,7 +336,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                         ></textarea>
                         <button
                             type="submit"
-                            className={`flex-shrink-0 bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-grayscale-400 p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-full`}
+                            className={`shrink-0 bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-grayscale-400 p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-full`}
                             disabled={disableSend}
                         >
                             <ArrowUp className="text-white" />
@@ -345,7 +345,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                     {/* <div className="h-full px-[15px] hidden sm:block">
                         <button
                             onClick={handleFinish}
-                            className="flex gap-[5px] items-center px-[15px] py-[10px] rounded-[15px] bg-grayscale-900 text-white font-poppins text-[18px] font-[600] leading-[24px] tracking-[0.25px]"
+                            className="flex gap-[5px] items-center px-[15px] py-[10px] rounded-[15px] bg-grayscale-900 text-white font-poppins text-[18px] font-semibold leading-[24px] tracking-[0.25px]"
                         >
                             Finish
                             <TickSquareIcon />
@@ -355,7 +355,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
 
                 {/* <button
                 onClick={handleFinish}
-                className="sm:hidden flex gap-[5px] justify-center items-center px-[15px] py-[10px] rounded-[15px] bg-grayscale-900 text-white font-poppins text-[18px] font-[600] leading-[24px] tracking-[0.25px]"
+                className="sm:hidden flex gap-[5px] justify-center items-center px-[15px] py-[10px] rounded-[15px] bg-grayscale-900 text-white font-poppins text-[18px] font-semibold leading-[24px] tracking-[0.25px]"
             >
                 Finish Session
                 <TickSquareIcon />

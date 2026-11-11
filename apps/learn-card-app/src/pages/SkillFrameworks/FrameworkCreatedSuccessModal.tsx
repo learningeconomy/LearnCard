@@ -60,7 +60,7 @@ const FrameworkCreatedSuccessModal: React.FC<FrameworkCreatedSuccessModalProps> 
                         setTimeout(() => {
                             newModal(
                                 <ManageSkills initialFrameworkId={framework.id} />,
-                                { className: '!bg-transparent' },
+                                { className: 'bg-transparent!' },
                                 { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
                             );
                         }, 300);

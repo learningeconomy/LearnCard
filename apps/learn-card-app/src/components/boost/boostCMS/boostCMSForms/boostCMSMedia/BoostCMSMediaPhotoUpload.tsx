@@ -104,7 +104,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
                     type="text"
                     value={state.photos?.[currentIndex]?.title}
                     onIonInput={e => {
-                        let stateCopy = structuredClone(state.photos);
+                        const stateCopy = structuredClone(state.photos);
                         if (stateCopy[currentIndex]) {
                             stateCopy[currentIndex].title = e.detail.value as string;
                             setState(stateCopy);
@@ -119,7 +119,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
             {sectionPortal &&
                 createPortal(
                     <div className="w-full flex flex-col items-center justify-center">
-                        <div className="flex justify-center gap-[10px] items-center relative !border-none w-full max-w-[500px]">
+                        <div className="flex justify-center gap-[10px] items-center relative border-none! w-full max-w-[500px]">
                             {!imageUploadLoading ? (
                                 <button
                                     onClick={() => {
@@ -147,7 +147,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
                             )}
                         </div>
 
-                        <div className="flex flex-col justify-center items-center relative !border-none w-full max-w-[500px]">
+                        <div className="flex flex-col justify-center items-center relative border-none! w-full max-w-[500px]">
                             <button
                                 onClick={() => {
                                     if (createMode) {

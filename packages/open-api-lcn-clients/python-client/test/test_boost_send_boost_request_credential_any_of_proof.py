@@ -47,7 +47,6 @@ class TestBoostSendBoostRequestCredentialAnyOfProof(unittest.TestCase):
         else:
             return BoostSendBoostRequestCredentialAnyOfProof(
                 type = '',
-                created = '',
                 proof_purpose = '',
                 verification_method = '',
         )

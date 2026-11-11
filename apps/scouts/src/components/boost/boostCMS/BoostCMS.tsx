@@ -784,7 +784,7 @@ const BoostCMS: React.FC<{
                 isEditMode={false}
                 isSaveLoading={isSaveLoading}
             />,
-            { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText }
+            { sectionClassName: 'max-w-[400px]!', cancelButtonTextOverride: buttonText }
         );
     };
 

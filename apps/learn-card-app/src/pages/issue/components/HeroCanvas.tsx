@@ -32,11 +32,11 @@ const useChangePulse = (value: string): boolean => {
 };
 
 const SkeletonCard: React.FC = () => (
-    <div className="w-[160px] h-[275px] rounded-[20px] bg-white border border-grayscale-200 shadow-sm overflow-hidden animate-fade-in-up flex flex-col">
+    <div className="w-[160px] h-[275px] rounded-[20px] bg-white border border-grayscale-200 shadow-xs overflow-hidden animate-fade-in-up flex flex-col">
         <div className="h-[110px] w-[110px] my-[10px] mx-auto rounded-full bg-grayscale-100 flex items-center justify-center shrink-0">
             <ImageIcon className="w-8 h-8 text-grayscale-300" />
         </div>
-        <div className="px-2 pb-5 flex-1 flex flex-col justify-end space-y-3">
+        <div className="px-2 pb-5 flex-1 flex flex-col justify-end space-y-v3-3">
             <div className="h-3 rounded-full bg-grayscale-100 w-3/4 mx-auto" />
             <div className="h-2 rounded-full bg-grayscale-100 w-1/2 mx-auto" />
         </div>
@@ -65,8 +65,10 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
                         className={hasImage ? 'motion-safe:animate-image-drop' : ''}
                     >
                         <BoostEarnedCard
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                             credential={credential as any}
                             categoryType={
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                 getDefaultCategoryForCredential(credential as any) ||
                                 BoostCategoryOptionsEnum.achievement
                             }

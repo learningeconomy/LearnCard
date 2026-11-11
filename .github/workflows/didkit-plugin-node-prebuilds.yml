@@ -23,6 +23,9 @@ env:
     # tests in this workflow.
     MONGOMS_DISABLE_POSTINSTALL: '1'
 
+permissions:
+    contents: read
+
 jobs:
     build:
         strategy:
@@ -32,10 +35,12 @@ jobs:
                     - host: ubuntu-latest
                       target: x86_64-unknown-linux-gnu
                       strip: strip -x
+                      docker: ''
                       node_file: index.linux-x64-gnu.node
                     - host: ubuntu-latest
                       target: aarch64-unknown-linux-gnu
                       strip: aarch64-linux-gnu-strip
+                      docker: ''
                       node_file: index.linux-arm64-gnu.node
                     # Skipping MUSL builds for now
                     # TODO: Don't do that
@@ -52,10 +57,12 @@ jobs:
                     - host: macos-latest
                       target: x86_64-apple-darwin
                       strip: strip -x
+                      docker: ''
                       node_file: index.darwin-x64.node
                     - host: macos-latest
                       target: aarch64-apple-darwin
                       strip: strip -x
+                      docker: ''
                       node_file: index.darwin-arm64.node
 
         name: Build ${{ matrix.settings.target }}
@@ -71,7 +78,7 @@ jobs:
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: 1.3.14
+                  bun-version: 1.4.4
 
             - name: Setup Bun cache
               uses: actions/cache@v6
@@ -195,12 +202,12 @@ jobs:
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: 1.3.14
+                  bun-version: 1.4.4
 
-            - name: Use Node.js 24.12.0 for npm trusted publishing
+            - name: Use Node.js from .nvmrc for npm trusted publishing
               uses: actions/setup-node@v6
               with:
-                  node-version: 24.12.0
+                  node-version-file: .nvmrc
                   package-manager-cache: false
 
             - name: Setup Bun cache
@@ -255,9 +262,15 @@ jobs:
               if: steps.published.outputs.exists != 'true'
               run: bunx nx run didkit-plugin-node:build
 
+            - name: Test publish dependency preparation
+              if: steps.published.outputs.exists != 'true'
+              run: node --test scripts/prepare-publish-workspace-deps.test.mjs
+
+            # This job builds only the native addon. Preparing every public
+            # package would require unrelated backend bundle/declaration evidence.
             - name: Prepare publish dependency versions
               if: steps.published.outputs.exists != 'true'
-              run: node scripts/prepare-publish-workspace-deps.mjs
+              run: node scripts/prepare-publish-workspace-deps.mjs --package=@learncard/didkit-plugin-node
 
             - name: Publish platform packages
               if: steps.published.outputs.exists != 'true'

@@ -17,37 +17,57 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
-from openapi_client.models.contracts_get_consent_flow_contract200_response_contract import ContractsGetConsentFlowContract200ResponseContract
+from typing_extensions import Annotated
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_recipients_inner import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_cumulative_update import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdate
+from openapi_client.models.storage_resolve200_response_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
     """
     ContractsGetConsentFlowContracts200ResponseRecordsInner
     """ # noqa: E501
-    contract: ContractsGetConsentFlowContract200ResponseContract
-    name: Optional[StrictStr]
+    contract: StorageResolve200ResponseAnyOfAnyOf1
+    name: StrictStr
     subtitle: Optional[StrictStr] = None
     description: Optional[StrictStr] = None
     reason_for_accessing: Optional[StrictStr] = Field(default=None, alias="reasonForAccessing")
     image: Optional[StrictStr] = None
-    uri: Optional[StrictStr]
+    uri: StrictStr
     needs_guardian_consent: Optional[StrictBool] = Field(default=None, alias="needsGuardianConsent")
     redirect_url: Optional[StrictStr] = Field(default=None, alias="redirectUrl")
     front_door_boost_uri: Optional[StrictStr] = Field(default=None, alias="frontDoorBoostUri")
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
-    updated_at: Optional[StrictStr] = Field(alias="updatedAt")
+    created_at: StrictStr = Field(alias="createdAt")
+    updated_at: StrictStr = Field(alias="updatedAt")
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     auto_boosts: Optional[List[StrictStr]] = Field(default=None, alias="autoBoosts")
-    writers: Optional[List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]] = None
+    writers: Optional[List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]] = None
+    recipients: Optional[List[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner]] = None
+    audience_version: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=0)]] = Field(default=None, alias="audienceVersion")
+    version: Annotated[int, Field(le=9007199254740991, strict=True, gt=0)]
+    status: Optional[StrictStr] = None
+    latest_update: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdate] = Field(default=None, alias="latestUpdate")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["contract", "name", "subtitle", "description", "reasonForAccessing", "image", "uri", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "createdAt", "updatedAt", "expiresAt", "autoBoosts", "writers"]
+    __properties: ClassVar[List[str]] = ["contract", "name", "subtitle", "description", "reasonForAccessing", "image", "uri", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "createdAt", "updatedAt", "expiresAt", "autoBoosts", "writers", "recipients", "audienceVersion", "version", "status", "latestUpdate"]
+
+    @field_validator('status')
+    def status_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['active', 'retired']):
+            raise ValueError("must be one of enum values ('active', 'retired')")
+        return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -59,8 +79,7 @@ class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -73,9 +92,8 @@ class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -94,68 +112,21 @@ class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
         _items = []
         if self.writers:
             for _item_writers in self.writers:
-                if _item_writers:
-                    _items.append(_item_writers.to_dict())
+                _items.append(_item_writers.to_dict() if _item_writers is not None else None)
             _dict['writers'] = _items
+        # override the default output from pydantic by calling `to_dict()` of each item in recipients (list)
+        _items = []
+        if self.recipients:
+            for _item_recipients in self.recipients:
+                _items.append(_item_recipients.to_dict() if _item_recipients is not None else None)
+            _dict['recipients'] = _items
+        # override the default output from pydantic by calling `to_dict()` of latest_update
+        if self.latest_update:
+            _dict['latestUpdate'] = self.latest_update.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if subtitle (nullable) is None
-        # and model_fields_set contains the field
-        if self.subtitle is None and "subtitle" in self.model_fields_set:
-            _dict['subtitle'] = None
-
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
-            _dict['description'] = None
-
-        # set to None if reason_for_accessing (nullable) is None
-        # and model_fields_set contains the field
-        if self.reason_for_accessing is None and "reason_for_accessing" in self.model_fields_set:
-            _dict['reasonForAccessing'] = None
-
-        # set to None if image (nullable) is None
-        # and model_fields_set contains the field
-        if self.image is None and "image" in self.model_fields_set:
-            _dict['image'] = None
-
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
-
-        # set to None if redirect_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.redirect_url is None and "redirect_url" in self.model_fields_set:
-            _dict['redirectUrl'] = None
-
-        # set to None if front_door_boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.front_door_boost_uri is None and "front_door_boost_uri" in self.model_fields_set:
-            _dict['frontDoorBoostUri'] = None
-
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
-            _dict['createdAt'] = None
-
-        # set to None if updated_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.updated_at is None and "updated_at" in self.model_fields_set:
-            _dict['updatedAt'] = None
-
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
-            _dict['expiresAt'] = None
 
         return _dict
 
@@ -168,8 +139,8 @@ class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
-            "contract": ContractsGetConsentFlowContract200ResponseContract.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
+        _values = {
+            "contract": StorageResolve200ResponseAnyOfAnyOf1.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
             "name": obj.get("name"),
             "subtitle": obj.get("subtitle"),
             "description": obj.get("description"),
@@ -183,8 +154,15 @@ class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
             "updatedAt": obj.get("updatedAt"),
             "expiresAt": obj.get("expiresAt"),
             "autoBoosts": obj.get("autoBoosts"),
-            "writers": [BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.from_dict(_item) for _item in obj["writers"]] if obj.get("writers") is not None else None
-        })
+            "writers": [BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(_item) for _item in obj["writers"]] if obj.get("writers") is not None else None,
+            "recipients": [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner.from_dict(_item) for _item in obj["recipients"]] if obj.get("recipients") is not None else None,
+            "audienceVersion": obj.get("audienceVersion"),
+            "version": obj.get("version"),
+            "status": obj.get("status"),
+            "latestUpdate": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdate.from_dict(obj["latestUpdate"]) if obj.get("latestUpdate") is not None else None
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

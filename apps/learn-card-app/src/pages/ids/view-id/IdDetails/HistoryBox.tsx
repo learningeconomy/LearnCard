@@ -38,7 +38,7 @@ const HistoryBox: React.FC<HistoryBoxProps> = ({ history }) => {
                         const { type, dateIsoString, idUri } = historyItem;
                         return (
                             <div
-                                className="flex flex-col py-[10px] border-b-[1px] border-grayscale-200 border-solid last:border-b-0 w-full items-start"
+                                className="flex flex-col py-[10px] border-b border-grayscale-200 border-solid last:border-b-0 w-full items-start"
                                 key={index}
                             >
                                 <span className="text-grayscale-700 font-notoSans text-[14px]">

@@ -166,9 +166,9 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
     const eyebrowColor = kind === 'route-swap' ? 'text-indigo-700' : 'text-emerald-700';
 
     return (
-        <article className="p-5 rounded-[24px] border border-grayscale-200 bg-white shadow-sm space-y-4 font-poppins">
+        <article className="p-5 rounded-[24px] border border-grayscale-200 bg-white shadow-xs space-y-v3-4 font-poppins">
             <header className="flex items-start justify-between gap-3">
-                <div className="min-w-0 space-y-1">
+                <div className="min-w-0 space-y-v3-1">
                     <p
                         className={`text-[10px] font-semibold uppercase tracking-wide ${eyebrowColor}`}
                     >
@@ -256,7 +256,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
                     )}
 
                     {routeImpact.routeNodesRemoved.length > 0 && (
-                        <ul className="mt-2 space-y-0.5">
+                        <ul className="mt-2 space-y-v3-0.5">
                             {routeImpact.routeNodesRemoved.map(id => {
                                 const n = pathway.nodes.find(x => x.id === id);
                                 return (
@@ -277,12 +277,12 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
             )}
 
             {proposal.tradeoffs && proposal.tradeoffs.length > 0 && (
-                <section className="space-y-1.5">
+                <section className="space-y-v3-1.5">
                     <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                         Tradeoffs
                     </p>
 
-                    <ul className="space-y-1">
+                    <ul className="space-y-v3-1">
                         {proposal.tradeoffs.map((t, i) => (
                             <li
                                 key={i}

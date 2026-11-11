@@ -129,7 +129,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 bg-grayscale-900/40 backdrop-blur-sm flex items-center justify-center p-4 font-poppins"
+                className="fixed inset-0 z-50 bg-grayscale-900/40 backdrop-blur-xs flex items-center justify-center p-4 font-poppins"
                 style={{
                     overscrollBehavior: 'contain',
                     paddingTop: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))',
@@ -197,14 +197,14 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                                     value={query}
                                     onChange={e => setQuery(e.target.value)}
                                     placeholder="Search pathways…"
-                                    className="w-full pl-9 pr-3 py-2.5 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                    className="w-full pl-9 pr-3 py-2.5 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                                 />
                             </div>
                         </div>
                     )}
 
                     {/* Body — scrollable list + actions. */}
-                    <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+                    <div className="flex-1 overflow-y-auto px-3 py-3 space-y-v3-2">
                         {/*
                             Create-new action. Always rendered when
                             the handler is supplied — at the top of
@@ -237,7 +237,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                                 blurb={m['pathways.noMatchesBlurb']({ query })}
                             />
                         ) : (
-                            <ul className="space-y-1.5">
+                            <ul className="space-y-v3-1.5">
                                 {filtered.map(p => (
                                     <li key={p.id}>
                                         <PickerRow

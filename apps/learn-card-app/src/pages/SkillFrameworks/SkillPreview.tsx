@@ -108,7 +108,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
         let truncatedSecondLast = secondLast;
         const lastItemWidth = getTextWidth(lastItem);
         const ellipsisWidth = getTextWidth('... > ');
-        let maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
+        const maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
 
         if (getTextWidth(secondLast) > maxSecondLastWidth) {
             // Binary search for optimal truncation
@@ -147,7 +147,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
 
     return (
         <div className="lc-content-owns-bottom h-full relative bg-grayscale-50 overflow-hidden">
-            <div className="px-[15px] py-[10px] bg-white mt-[var(--ion-safe-area-top,0px)] flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid">
+            <div className="px-[15px] py-[10px] bg-white mt-[var(--ion-safe-area-top,0px)] flex flex-col gap-[10px] z-20 relative border-b border-grayscale-200 border-solid">
                 <div className="flex items-center gap-[10px]">
                     {isTopLevel ? (
                         <FrameworkImage
@@ -195,7 +195,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                     >
                         <button onClick={() => setNavigationPath([])}>
                             <SkillsFrameworkIcon
-                                className="!flex-shrink-0 w-[25px] h-[25px] text-grayscale-600"
+                                className="shrink-0! w-[25px] h-[25px] text-grayscale-600"
                                 color="currentColor"
                                 version="outlined"
                             />
@@ -275,7 +275,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
 
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+                className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
                 <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                     {navigationPath.length > 0 && (

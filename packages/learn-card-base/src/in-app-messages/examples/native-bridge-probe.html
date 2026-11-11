@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Native campaign isolation probe</title>
+    </head>
+    <body>
+        <p id="status">This fixture must never load as a native campaign.</p>
+        <script>
+            // Read-only probe for an isolated test build: no permissions, writes, or account data.
+            if (window.parent !== window) {
+                const handler = window.webkit?.messageHandlers?.bridge;
+                if (handler) {
+                    handler.postMessage({
+                        type: 'message',
+                        pluginId: 'App',
+                        methodName: 'getState',
+                        callbackId: 'lc-campaign-isolation-probe',
+                        options: {},
+                    });
+                    document.getElementById('status').textContent =
+                        'FAIL: the campaign loaded and reached a native handler.';
+                } else {
+                    document.getElementById('status').textContent =
+                        'No iOS native handler exposed (expected in a web browser).';
+                }
+            }
+        </script>
+    </body>
+</html>

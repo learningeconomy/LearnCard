@@ -40,8 +40,10 @@ import { useAddCredentialToWallet } from '../../components/boost/mutations';
 import { sendBoostCredential } from '../../components/boost/boostHelpers';
 import { LCNBoostStatusEnum } from '../../components/boost/boost';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type CreateManagedProfileModalProps = {};
 
+// eslint-disable-next-line no-empty-pattern -- dropping the empty destructure removes the implicit non-null argument check
 const CreateManagedProfileModal: React.FC<CreateManagedProfileModalProps> = ({}) => {
     const { closeModal } = useModal();
     const { initWallet } = useWallet();
@@ -210,7 +212,7 @@ const CreateManagedProfileModal: React.FC<CreateManagedProfileModalProps> = ({})
     return (
         <>
             {isLoading && (
-                <div className="absolute w-full h-full bg-white bg-opacity-50 z-9999 flex items-center justify-center backdrop-blur-[1px]">
+                <div className="absolute w-full h-full bg-white/50  z-9999 flex items-center justify-center backdrop-blur-[1px]">
                     <IonSpinner color="dark" />
                 </div>
             )}

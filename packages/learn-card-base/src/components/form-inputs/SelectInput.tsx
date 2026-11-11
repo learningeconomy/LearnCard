@@ -70,7 +70,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
                         type="button"
                         role="option"
                         aria-selected={false}
-                        className={`text-grayscale-500 italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                        className={`text-grayscale-500 italic focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                             hasDescriptions
                                 ? 'py-[10px] px-[16px] text-left rounded-[12px] hover:bg-grayscale-10 transition-colors'
                                 : 'py-[10px]'
@@ -90,7 +90,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
                             type="button"
                             role="option"
                             aria-selected={o.value === value}
-                            className={`flex flex-col gap-[2px] text-left px-[16px] py-[12px] rounded-[12px] transition-colors hover:bg-grayscale-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                            className={`flex flex-col gap-[2px] text-left px-[16px] py-[12px] rounded-[12px] transition-colors hover:bg-grayscale-10 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                 o.value === value ? 'bg-grayscale-100' : ''
                             }`}
                             onClick={() => {
@@ -117,7 +117,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
                             type="button"
                             role="option"
                             aria-selected={o.value === value}
-                            className={`py-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                            className={`py-[10px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                 o.value === value ? 'font-[700]' : ''
                             }`}
                             onClick={() => {
@@ -131,7 +131,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
                 )}
             </div>,
             {
-                sectionClassName: hasDescriptions ? '!max-w-[400px] !w-[90%]' : '!max-w-[300px]',
+                sectionClassName: hasDescriptions ? 'max-w-[400px]! w-[90%]!' : 'max-w-[300px]!',
                 onClose: () => {
                     setIsOpen(false);
                 },
@@ -160,13 +160,13 @@ const SelectInput: React.FC<SelectInputProps> = ({
             aria-describedby={ariaDescribedBy}
             aria-haspopup="listbox"
             aria-expanded={isOpen}
-            className={`flex items-center justify-between bg-grayscale-100 rounded-[15px] px-[16px] py-[12px] min-h-[48px] w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
+            className={`flex items-center justify-between bg-grayscale-100 rounded-[15px] px-[16px] py-[12px] min-h-[48px] w-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500
                 ${isPlaceholder ? 'text-grayscale-500' : 'text-grayscale-900'}
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
                 ${className}`}
         >
             <span className="font-poppins text-[16px] leading-[130%]">{buttonText}</span>
-            <ChevronDown className="ml-[8px] flex-shrink-0 text-grayscale-800" />
+            <ChevronDown className="ml-[8px] shrink-0 text-grayscale-800" />
         </button>
     );
 };

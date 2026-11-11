@@ -1,10 +1,20 @@
 # syntax=docker/dockerfile:1.7
-FROM oven/bun:1.3.14 AS build
+# The build stage only emits a self-contained Bun bundle plus the DIDKit WASM,
+# both architecture-independent, so it runs on the builder's native platform.
+# Building it under QEMU for linux/arm64 made apt + `bun install` take ~4 min.
+# The arm64 runtime stage below still smoke-tests the bundle on the target arch.
+FROM --platform=$BUILDPLATFORM oven/bun:1.4.4 AS build
 
 ENV NODE_ENV=production \
     SKIP_DIDKIT_NAPI=1
 
 WORKDIR /app
+
+# Some dependencies can fall back to node-gyp during the frozen install.
+# Keep the compiler toolchain in this build stage, out of the runtime image.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 make g++ && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
@@ -17,7 +27,7 @@ RUN bun build services/learn-card-network/ai-agent/scripts/runtime-did-auth-smok
     --outfile=services/learn-card-network/ai-agent/dist/runtime-did-auth-smoke.js \
     --external='@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
 
-FROM oven/bun:1.3.14-alpine
+FROM oven/bun:1.4.4-alpine
 
 RUN apk upgrade --no-cache
 
@@ -38,8 +48,10 @@ COPY --chown=bun:bun --chmod=0444 --from=build /app/packages/plugins/didkit/src/
 EXPOSE 3000
 
 USER bun
-RUN --mount=from=build,source=/app/services/learn-card-network/ai-agent/dist/runtime-did-auth-smoke.js,target=/tmp/runtime-did-auth-smoke.js,ro \
-    bun --conditions=development /tmp/runtime-did-auth-smoke.js
+# Resolve the smoke's external WASM from the same node_modules as index.js.
+# A /tmp entrypoint can resolve a registry package instead of our copied artifact.
+RUN --mount=from=build,source=/app/services/learn-card-network/ai-agent/dist/runtime-did-auth-smoke.js,target=/app/runtime-did-auth-smoke.js,ro \
+    bun --no-install --conditions=development /app/runtime-did-auth-smoke.js
 
 
-CMD ["bun", "--conditions=development", "index.js"]
+CMD ["bun", "--no-install", "--conditions=development", "index.js"]

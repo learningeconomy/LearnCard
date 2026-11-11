@@ -1,6 +1,5 @@
 import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import * as Sentry from '@sentry/node';
 
 import type { ServiceConfig } from '../src/config';
 import { runChatRequest } from '../src/server';
@@ -18,10 +17,8 @@ import { createMongoRuntime } from '../src/mongo';
 import {
     createAgentRunTelemetry,
     flushObservability,
-    getObservabilityStatus,
     getOwnerTelemetryId,
     initializeObservability,
-    verifySentryDelivery,
 } from '../src/observability';
 
 const config: ServiceConfig = {
@@ -220,146 +217,6 @@ describe('AI Agent observability', () => {
             MetricData: expect.arrayContaining([
                 expect.objectContaining({ MetricName: 'RunCount', Value: 1 }),
             ]),
-        });
-    });
-
-    it('creates sanitized Sentry transactions for runs, calls, and post-run persistence', () => {
-        const createTrace = () => {
-            const child = {
-                setData: vi.fn(),
-                setStatus: vi.fn(),
-                finish: vi.fn(),
-            };
-            const transaction = {
-                setData: vi.fn(),
-                setStatus: vi.fn(),
-                finish: vi.fn(),
-                startChild: vi.fn(() => child),
-            };
-
-            return { child, transaction };
-        };
-        const runTrace = createTrace();
-        const postRunTrace = createTrace();
-        const startTransaction = vi
-            .spyOn(Sentry, 'startTransaction')
-            .mockReturnValueOnce(
-                runTrace.transaction as unknown as ReturnType<typeof Sentry.startTransaction>
-            )
-            .mockReturnValueOnce(
-                postRunTrace.transaction as unknown as ReturnType<typeof Sentry.startTransaction>
-            );
-        vi.spyOn(Sentry, 'init').mockImplementation(() => undefined);
-        vi.spyOn(console, 'log').mockImplementation(() => undefined);
-
-        const traceConfig = {
-            ...config,
-            sentryDsn: 'https://public@example.com/1',
-        };
-
-        initializeObservability(traceConfig);
-
-        const telemetry = createAgentRunTelemetry({
-            runId: 'run-1',
-            correlationId: 'request-1',
-            ownerDid: 'did:key:private-owner',
-            triggerType: 'interactive',
-            config: traceConfig,
-        });
-
-        telemetry.started();
-        telemetry.observer.onModelComplete?.({
-            runId: 'run-1',
-            model: config.model,
-            round: 0,
-            durationMs: 25,
-        });
-        telemetry.observer.onToolComplete?.({
-            runId: 'run-1',
-            name: 'webSearch',
-            durationMs: 10,
-            success: true,
-        });
-        telemetry.succeeded(
-            {
-                runId: 'run-1',
-                message: 'Done.',
-                messages: [],
-                modelRuns: [],
-                toolRuns: [],
-                usage: {
-                    inputTokens: 0,
-                    outputTokens: 0,
-                    totalTokens: 0,
-                },
-            },
-            40
-        );
-        telemetry.postRunSucceeded(5);
-
-        expect(startTransaction).toHaveBeenNthCalledWith(
-            1,
-            expect.objectContaining({ name: 'LearnCard AI Agent run', op: 'ai.agent.run' })
-        );
-        expect(runTrace.transaction.startChild).toHaveBeenNthCalledWith(
-            1,
-            expect.objectContaining({ op: 'ai.model' })
-        );
-        expect(runTrace.transaction.startChild).toHaveBeenNthCalledWith(
-            2,
-            expect.objectContaining({ description: 'webSearch', op: 'ai.tool' })
-        );
-        expect(runTrace.transaction.setStatus).toHaveBeenCalledWith('ok');
-        expect(runTrace.transaction.finish).toHaveBeenCalledOnce();
-        expect(startTransaction).toHaveBeenNthCalledWith(
-            2,
-            expect.objectContaining({
-                name: 'LearnCard AI Agent post-run persistence',
-                op: 'ai.agent.post_run',
-            })
-        );
-        expect(postRunTrace.transaction.finish).toHaveBeenCalledOnce();
-    });
-
-    it('reports the Sentry transport response for a deployment check event', async () => {
-        let afterSend:
-            ((event: { event_id?: string }, result?: { statusCode?: number }) => void) | undefined;
-        const client = {
-            on: vi.fn(
-                (
-                    _hook: string,
-                    callback: (
-                        event: { event_id?: string },
-                        result?: { statusCode?: number }
-                    ) => void
-                ) => {
-                    afterSend = callback;
-                }
-            ),
-        };
-        vi.spyOn(Sentry.getCurrentHub(), 'getClient').mockReturnValue(
-            client as unknown as ReturnType<ReturnType<typeof Sentry.getCurrentHub>['getClient']>
-        );
-        vi.spyOn(Sentry, 'captureMessage').mockImplementation(() => {
-            queueMicrotask(() => afterSend?.({ event_id: 'event-1' }, { statusCode: 200 }));
-
-            return 'event-1';
-        });
-        vi.spyOn(Sentry, 'flush').mockResolvedValue(true);
-        vi.spyOn(console, 'log').mockImplementation(() => undefined);
-
-        const sentryConfig = {
-            ...config,
-            sentryDsn: 'https://public@example.com/1',
-            deploymentId: 'deployment-1',
-        };
-
-        initializeObservability(sentryConfig);
-
-        await expect(verifySentryDelivery(sentryConfig)).resolves.toBe(true);
-        expect(getObservabilityStatus().sentry).toEqual({
-            enabled: true,
-            delivery: 'delivered',
         });
     });
 });

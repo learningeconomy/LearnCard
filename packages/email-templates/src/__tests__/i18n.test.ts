@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest';
 import { renderEmail } from '../render';
 import { renderSms } from '../sms';
 import { DEFAULT_BRANDING } from '../branding';
-import { resolveCatalogLocale, htmlDir } from '../i18n';
+import { resolveCatalogLocale, htmlDir, localeProp } from '../i18n';
 import type { NotificationLocale } from '../i18n';
 import type { TemplateId, TemplateDataMap } from '../render';
 
@@ -21,6 +21,13 @@ const LOCALES: NotificationLocale[] = ['en', 'es', 'fr', 'ar'];
 
 // Minimal valid data for every template ID.
 const FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
+    announcement: {
+        title: 'News',
+        body: 'New programs',
+        ctaLabel: 'View',
+        ctaUrl: 'https://learncard.app/m/news',
+        unsubscribeUrl: 'https://learncard.app/unsubscribe?token=test',
+    },
     'embed-email-verification': {
         verificationCode: '123456',
         verificationEmail: 'test@example.com',
@@ -92,6 +99,39 @@ const FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         recipient: { email: 'student@example.com' },
     },
     'account-sign-in-changed': {},
+
+    'escrow-hold-started': {
+        requestedAt: 'September 25, 2026, 3:00 PM',
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
+        deviceHint: 'Chrome on Windows',
+    },
+
+    'escrow-hold-reminder': {
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
+    },
+
+    'escrow-hold-released': {
+        completedAt: 'October 2, 2026, 3:00 PM',
+        supportUrl: 'https://learncard.app/support',
+    },
+
+    'escrow-hold-cancelled': {
+        cancelledAt: 'September 26, 2026, 9:15 AM',
+        reason: 'user',
+    },
+
+    'escrow-pin-locked': {
+        lockedAt: 'September 25, 2026, 3:00 PM',
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
+    },
+    'escrow-pin-sign-in': {
+        signedInAt: 'October 2, 2026, 3:00 PM',
+        secureUrl: 'https://learncard.app/account/secure',
+    },
+    'account-secured': { securedAt: 'October 2, 2026, 3:00 PM' },
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(FIXTURES) as TemplateId[];
@@ -132,6 +172,9 @@ describe('i18n — non-EN locales localize content', () => {
         'guardian-credential-approval',
         'guardian-email-otp',
         'credential-awaiting-guardian',
+        'escrow-hold-started',
+        'escrow-hold-cancelled',
+        'account-secured',
     ];
 
     for (const templateId of SAMPLES) {
@@ -332,5 +375,30 @@ describe('i18n — renderSms localizes', () => {
         expect(en).toContain('Your LearnCard verification code is:');
         expect(es).toContain('Tu código de verificación de LearnCard es:');
         expect(en).toContain('999222');
+    });
+
+    it('localeProp omits an absent locale instead of passing undefined', () => {
+        expect(localeProp(undefined)).toEqual({});
+        expect(localeProp(null)).toEqual({});
+        expect('locale' in localeProp(undefined)).toBe(false);
+        expect(localeProp('fr')).toEqual({ locale: 'fr' });
+    });
+
+    it('PIN sign-in and account-secured notices are unchanged for EN vs undefined', async () => {
+        for (const [id, data] of [
+            [
+                'escrow-pin-sign-in',
+                {
+                    signedInAt: 'October 2, 2026',
+                    secureUrl: 'https://learncard.app/account/secure',
+                },
+            ],
+            ['account-secured', { securedAt: 'October 2, 2026' }],
+        ] as const) {
+            const en = await renderEmail(id, DEFAULT_BRANDING, data, 'en');
+            const none = await renderEmail(id, DEFAULT_BRANDING, data);
+            expect(none.html).toBe(en.html);
+            expect(none.subject).toBe(en.subject);
+        }
     });
 });

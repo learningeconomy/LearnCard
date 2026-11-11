@@ -26,11 +26,17 @@ defineGlobalValue('TextDecoder', NodeTextDecoder as unknown as typeof TextDecode
 defineGlobalValue('mockLearnCardBaseLogger', createMockLogger);
 
 // Define global constants that are normally set by webpack DefinePlugin
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 (global as any).LCN_API_URL = 'http://localhost:4000/api';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 (global as any).LCN_URL = 'http://localhost:4000/trpc';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 (global as any).CLOUD_URL = 'http://localhost:4100/trpc';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 (global as any).LEARN_CLOUD_XAPI_URL = 'http://localhost:4100/xapi';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 (global as any).API_URL = 'http://localhost:5100/trpc';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 (global as any).IS_PRODUCTION = false;
 
 if (typeof window !== 'undefined') {

@@ -1,12 +1,11 @@
 # ContractsConsentToContract200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**terms_uri** | **str** |  | 
-**redirect_url** | **str** |  | [optional] 
+| Name             | Type    | Description | Notes      |
+| ---------------- | ------- | ----------- | ---------- |
+| **terms_uri**    | **str** |             |
+| **redirect_url** | **str** |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_consent_to_contract200_response_dict = contracts_consent_to_contract20
 # create an instance of ContractsConsentToContract200Response from a dict
 contracts_consent_to_contract200_response_from_dict = ContractsConsentToContract200Response.from_dict(contracts_consent_to_contract200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

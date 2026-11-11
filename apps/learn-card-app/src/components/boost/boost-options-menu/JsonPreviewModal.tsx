@@ -59,7 +59,7 @@ export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50  flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg w-11/12 max-w-2xl max-h-[90vh] flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">JSON View</h2>
@@ -77,7 +77,7 @@ export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
                         onClick={() => {
                             copyToClipBoard();
                         }}
-                        className="bg-blue-500 text-white px-4 py-2 rounded flex items-start text-left"
+                        className="bg-blue-500 text-white px-4 py-2 rounded-sm flex items-start text-left"
                     >
                         <CopyStack className="w-[24px] h-[24px] mr-2" />
                         Copy JSON
@@ -87,14 +87,14 @@ export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
                             onClick={() => {
                                 copyTemplateID();
                             }}
-                            className="bg-blue-500 text-white px-4 py-2 rounded flex items-start text-left ml-[10px]"
+                            className="bg-blue-500 text-white px-4 py-2 rounded-sm flex items-start text-left ml-[10px]"
                         >
                             <CopyStack className="w-[24px] h-[24px] mr-2" />
                             Copy Template ID
                         </button>
                     )}
                 </div>
-                <pre className="bg-gray-100 p-4 rounded overflow-auto flex-grow text-grayscale-900">
+                <pre className="bg-gray-100 p-4 rounded-sm overflow-auto grow text-grayscale-900">
                     {jsonPrettyPrint}
                 </pre>
             </div>

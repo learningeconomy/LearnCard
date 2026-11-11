@@ -55,7 +55,7 @@ export const ActivityFilterPopover: React.FC<Props> = ({
                             type="button"
                             aria-pressed={isSelected}
                             onClick={() => setDraft(filterId)}
-                            className={`flex items-center gap-[6px] rounded-full border px-[14px] py-[8px] font-poppins text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                            className={`flex items-center gap-[6px] rounded-full border px-[14px] py-[8px] font-poppins text-[14px] font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                 isSelected
                                     ? 'border-[#1C2444] bg-[#1C2444] text-white'
                                     : 'border-grayscale-200 bg-white text-grayscale-800'
@@ -74,7 +74,7 @@ export const ActivityFilterPopover: React.FC<Props> = ({
                         setDraft('all');
                         onReset();
                     }}
-                    className="flex-1 rounded-full py-[11px] font-poppins text-[15px] font-medium text-grayscale-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="flex-1 rounded-full py-[11px] font-poppins text-[15px] font-medium text-grayscale-600 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     {m['passport.activity.reset']()}
                 </button>
@@ -82,7 +82,7 @@ export const ActivityFilterPopover: React.FC<Props> = ({
                     type="button"
                     disabled={!dirty}
                     onClick={() => onApply(draft)}
-                    className={`flex-1 rounded-full py-[11px] font-poppins text-[15px] font-medium text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                    className={`flex-1 rounded-full py-[11px] font-poppins text-[15px] font-medium text-white transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                         dirty ? 'bg-[#1C2444]' : 'bg-grayscale-300'
                     }`}
                 >

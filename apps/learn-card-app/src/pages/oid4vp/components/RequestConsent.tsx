@@ -25,6 +25,10 @@ import type {
 import type { PooledCandidate } from '../candidatePool';
 
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
+import {
+    NativeConsentView,
+    type NativeRequesterIdentity,
+} from '../../../native-digital-credentials/NativeConsentView';
 
 interface ParsedSdJwtForConsent {
     disclosureKeys?: string[];
@@ -81,6 +85,12 @@ export interface RequestConsentProps {
     selection?: SelectionResult;
     /** DCQL selection \u2014 mutually exclusive with `selection`. */
     dcqlSelection?: DcqlSelectionResult;
+    /** Native transport: only these flat claims may be displayed/disclosed; all are required. */
+    disclosurePolicy?: Record<string, string[]>;
+    /** Android-established identity; enables the compact native consent presentation. */
+    nativeRequester?: NativeRequesterIdentity;
+    submitting?: boolean;
+    canceling?: boolean;
 
     /**
      * Called with the holder\u2019s per-row picks once they approve. Index
@@ -108,6 +118,10 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
     request,
     selection,
     dcqlSelection,
+    disclosurePolicy,
+    nativeRequester,
+    submitting = false,
+    canceling = false,
     onApprove,
     onCancel,
 }) => {
@@ -134,7 +148,10 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
      * out of the map; `Approve` is disabled in that case anyway.
      */
     const [picks, setPicks] = useState<ConsentPicks>(() => {
-        const initial: ConsentPicks = { row: {}, disclose: {} };
+        const initial: ConsentPicks = {
+            row: Object.create(null),
+            disclose: Object.create(null),
+        };
         for (const row of rows) {
             if (row.candidates.length > 0) initial.row[row.id] = 0;
         }
@@ -188,12 +205,21 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             const parsed = await invoke.parseSdJwtVc(compact);
                             if (cancelled) continue;
 
-                            setParsedSdJwts(prev => ({ ...prev, [cacheKey]: parsed }));
+                            const allowed = disclosurePolicy?.[rowId];
+                            const bounded = allowed
+                                ? {
+                                      ...parsed,
+                                      disclosureKeys: parsed.disclosureKeys?.filter(key =>
+                                          allowed.includes(key)
+                                      ),
+                                  }
+                                : parsed;
+                            setParsedSdJwts(prev => ({ ...prev, [cacheKey]: bounded }));
 
                             setPicks(prev => {
                                 if (prev.disclose[cacheKey]) return prev;
                                 const initialDisclose: Record<string, boolean> = {};
-                                parsed.disclosureKeys?.forEach((key: string) => {
+                                bounded.disclosureKeys?.forEach((key: string) => {
                                     initialDisclose[key] = true;
                                 });
                                 return {
@@ -236,7 +262,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [rows, picks.row, initWallet, presentToast]);
+    }, [rows, picks.row, initWallet, presentToast, disclosurePolicy]);
 
     const sdJwtStatuses = useMemo<Record<string, SdJwtConsentStatus>>(() => {
         return Object.fromEntries(
@@ -271,7 +297,19 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
     const pendingSdJwtRows = Object.values(sdJwtStatuses).filter(
         status => status.isSdJwt && !status.isReady
     ).length;
-    const canShare = allRowsHaveCandidate && pendingSdJwtRows === 0;
+    const requiredFieldsApproved =
+        !disclosurePolicy ||
+        rows.every(row => {
+            const candidate = row.candidates[picks.row[row.id] ?? 0]?.candidate;
+            const frame = picks.disclose[`${row.id}::${candidate?.id}`];
+            return (disclosurePolicy[row.id] ?? []).every(key => frame?.[key] === true);
+        });
+    const canShare =
+        allRowsHaveCandidate &&
+        pendingSdJwtRows === 0 &&
+        requiredFieldsApproved &&
+        !submitting &&
+        !canceling;
 
     const handlePickChange = (rowId: string, index: number) => {
         setPicks(prev => ({ ...prev, row: { ...prev.row, [rowId]: index } }));
@@ -293,6 +331,50 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
         });
     };
 
+    if (nativeRequester && disclosurePolicy) {
+        return (
+            <NativeConsentView
+                requester={nativeRequester}
+                credentials={rows.map(row => {
+                    const candidate = row.candidates[picks.row[row.id] ?? 0]?.candidate;
+                    const cacheKey = `${row.id}::${candidate?.id}`;
+                    const parsed = parsedSdJwts[cacheKey];
+                    return {
+                        cacheKey,
+                        title: candidate?.title?.trim() || humanizeClaimKey(row.title),
+                        issuer: parsed?.issuer,
+                        credentialType: parsed?.vct,
+                        expires: parsed?.expiresAt?.toLocaleDateString(),
+                        available: Boolean(candidate),
+                        loading: Boolean(
+                            sdJwtStatuses[row.id]?.isSdJwt && !sdJwtStatuses[row.id]?.isReady
+                        ),
+                        fields: (parsed?.disclosureKeys ?? []).map(key => {
+                            const value = parsed?.claims?.[key];
+                            return {
+                                key,
+                                label: humanizeClaimKey(key),
+                                value:
+                                    value !== null && typeof value === 'object'
+                                        ? (JSON.stringify(value) ?? '')
+                                        : String(value ?? ''),
+                                checked: picks.disclose[cacheKey]?.[key] === true,
+                            };
+                        }),
+                    };
+                })}
+                canShare={canShare}
+                requiredFieldsApproved={requiredFieldsApproved}
+                loading={pendingSdJwtRows > 0}
+                submitting={submitting}
+                canceling={canceling}
+                onFieldChange={handleClaimChange}
+                onApprove={() => onApprove(picks)}
+                onCancel={onCancel}
+            />
+        );
+    }
+
     return (
         <div
             className="min-h-full flex items-center justify-center font-poppins"
@@ -304,7 +386,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
             }}
         >
             <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden">
-                <div className="p-6 space-y-5">
+                <div className="p-6 space-y-v3-5">
                     <div>
                         <h1 className="text-xl font-semibold text-grayscale-900 mb-1">
                             Share credentials?
@@ -351,7 +433,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             Credentials to share
                         </p>
 
-                        <ul className="space-y-2">
+                        <ul className="space-y-v3-2">
                             {rows.map(row => {
                                 const pickedIndex = picks.row[row.id] ?? 0;
                                 const candidate = row.candidates[pickedIndex]?.candidate;
@@ -367,8 +449,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                                         isParsingSdJwt={status?.isParsing}
                                         discloseFrame={
                                             picks.disclose[cacheKey] as
-                                                | Record<string, boolean>
-                                                | undefined
+                                                Record<string, boolean> | undefined
                                         }
                                         onClaimChange={(key, checked) =>
                                             handleClaimChange(cacheKey, key, checked)
@@ -400,22 +481,30 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                         </div>
                     )}
 
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-v3-3 pt-1">
+                        {disclosurePolicy && !requiredFieldsApproved && (
+                            <p className="text-sm text-grayscale-600">
+                                {m['nativeCredentials.requiredFields']()}
+                            </p>
+                        )}
                         <button
                             onClick={() => onApprove(picks)}
                             disabled={!canShare}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            {pendingSdJwtRows > 0
-                                ? m['common.loadingClaims']()
-                                : m['common.share']()}
+                            {submitting
+                                ? m['nativeCredentials.preparing']()
+                                : pendingSdJwtRows > 0
+                                  ? m['common.loadingClaims']()
+                                  : m['common.share']()}
                         </button>
 
                         <button
                             onClick={onCancel}
+                            disabled={submitting || canceling}
                             className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                         >
-                            Cancel
+                            {canceling ? m['nativeCredentials.canceling']() : m['common.cancel']()}
                         </button>
                     </div>
                 </div>
@@ -476,7 +565,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
     const hasMultiple = row.candidates.length > 1;
 
     return (
-        <li className="rounded-xl border border-grayscale-200 bg-white p-4 space-y-3">
+        <li className="rounded-xl border border-grayscale-200 bg-white p-4 space-y-v3-3">
             <div>
                 <p className="text-sm font-semibold text-grayscale-900">{row.title}</p>
 
@@ -509,14 +598,14 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
                             boostPageViewMode={BoostPageViewMode.Card}
                             useWrapper={false}
                             hideOptionsMenu
-                            className="!mt-0 shadow-md"
+                            className="mt-0! shadow-md"
                         />
                     </div>
                 </div>
             )}
 
             {hasCandidate && hasMultiple && (
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     <p className="text-xs text-grayscale-500">
                         You have {row.candidates.length} that match — tap one to share.
                     </p>
@@ -530,7 +619,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
                                     type="button"
                                     onClick={() => onPick(i)}
                                     aria-pressed={isPicked}
-                                    className={`flex shrink-0 rounded-2xl transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                                    className={`flex shrink-0 rounded-2xl transition-all focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                         isPicked
                                             ? 'ring-2 ring-emerald-500'
                                             : 'opacity-60 hover:opacity-90'
@@ -547,7 +636,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
                                             boostPageViewMode={BoostPageViewMode.Card}
                                             useWrapper={false}
                                             hideOptionsMenu
-                                            className="!mt-0 shadow-md"
+                                            className="mt-0! shadow-md"
                                         />
                                     </div>
                                 </button>
@@ -567,7 +656,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
                         </p>
 
                         {(parsedSdJwt.issuer || parsedSdJwt.vct || parsedSdJwt.expiresAt) && (
-                            <ul className="space-y-1 mb-3">
+                            <ul className="space-y-v3-1 mb-3">
                                 {parsedSdJwt.issuer && (
                                     <RequiredClaimRow
                                         label="Issuer"
@@ -596,7 +685,7 @@ const ConsentRow: React.FC<ConsentRowProps> = ({
                                     {verifierName}.
                                 </p>
 
-                                <ul className="space-y-1">
+                                <ul className="space-y-v3-1">
                                     {(parsedSdJwt.disclosureKeys || []).map((key: string) => {
                                         const val = parsedSdJwt.claims?.[key];
                                         const isChecked = discloseFrame?.[key] ?? true;

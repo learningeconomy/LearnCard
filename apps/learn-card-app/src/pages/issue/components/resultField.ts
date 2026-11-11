@@ -1,3 +1,4 @@
+import { parseCredentialNumber } from '@learncard/helpers';
 import {
     staticField,
     type AlignmentTemplate,
@@ -94,9 +95,10 @@ const newResultDescriptionId = (): string =>
     }`;
 
 const findResultDescription = (
-    template: OBv3CredentialTemplate
+    template: OBv3CredentialTemplate,
+    index = 0
 ): ResultDescriptionTemplate | undefined => {
-    const result = template.credentialSubject.result?.[0];
+    const result = template.credentialSubject.result?.[index];
     const descriptions = template.credentialSubject.achievement.resultDescription;
     const descriptionId = result?.resultDescription?.value;
 
@@ -104,6 +106,7 @@ const findResultDescription = (
         ? descriptions?.find(description => description.id === descriptionId)
         : undefined;
 
+    if (index > 0) return linkedDescription;
     return (
         linkedDescription ??
         descriptions?.find(description => description.name?.value === DEFAULT_RESULT_NAME) ??
@@ -126,9 +129,9 @@ export interface ResultState {
     isLegacyUntyped: boolean;
 }
 
-export const readResultState = (template: OBv3CredentialTemplate): ResultState => {
-    const result = template.credentialSubject.result?.[0];
-    const desc = findResultDescription(template);
+export const readResultState = (template: OBv3CredentialTemplate, index = 0): ResultState => {
+    const result = template.credentialSubject.result?.[index];
+    const desc = findResultDescription(template, index);
 
     if (!result && !desc) {
         return {
@@ -208,13 +211,14 @@ const buildResult = (
     field?: TemplateFieldValue,
     achievedLevel?: TemplateFieldValue
 ): ResultTemplate => ({
-    id: 'result_0',
+    id: `result_${id}`,
     resultDescription: staticField(id),
     ...(field ? (resultType === 'Status' ? { status: field } : { value: field }) : {}),
     ...(resultType === 'RubricCriterionLevel' && achievedLevel ? { achievedLevel } : {}),
 });
 
 export interface ResultUpdate {
+    name?: TemplateFieldValue;
     resultType: ResultType;
     value: string | TemplateFieldValue;
     valueMin?: string | TemplateFieldValue;
@@ -226,12 +230,20 @@ export interface ResultUpdate {
 
 export const writeResult = (
     template: OBv3CredentialTemplate,
-    next: ResultUpdate
+    next: ResultUpdate,
+    index = 0
 ): OBv3CredentialTemplate => {
     const { resultType } = next;
     const field = toField(next.value) ?? staticField('');
     const achievement = template.credentialSubject.achievement;
-    const existingDescription = findResultDescription(template);
+    const existingDescription = findResultDescription(template, index);
+    const otherResults = (template.credentialSubject.result ?? []).filter(
+        (_, resultIndex) => resultIndex !== index
+    );
+    const sharedDescription = Boolean(
+        existingDescription &&
+        otherResults.some(result => result.resultDescription?.value === existingDescription.id)
+    );
     const sameType = existingDescription?.resultType?.value === resultType;
     const valueMin =
         toField(next.valueMin) ?? (sameType ? existingDescription?.valueMin : undefined);
@@ -257,13 +269,13 @@ export const writeResult = (
 
     if (!hasResult && !hasDescriptionConfiguration && !preserveEmptyRubricDescription) {
         const remainingDescriptions = achievement.resultDescription?.filter(
-            description => description !== existingDescription
+            description => description !== existingDescription || sharedDescription
         );
         return {
             ...template,
             credentialSubject: {
                 ...template.credentialSubject,
-                result: undefined,
+                result: otherResults.length ? otherResults : undefined,
                 achievement: {
                     ...achievement,
                     resultDescription:
@@ -275,10 +287,14 @@ export const writeResult = (
         };
     }
 
-    const id = existingDescription?.id ?? newResultDescriptionId();
+    const id =
+        existingDescription && !sharedDescription
+            ? existingDescription.id
+            : newResultDescriptionId();
     const otherDescriptions =
-        achievement.resultDescription?.filter(description => description !== existingDescription) ??
-        [];
+        achievement.resultDescription?.filter(
+            description => description !== existingDescription || sharedDescription
+        ) ?? [];
 
     return {
         ...template,
@@ -286,20 +302,24 @@ export const writeResult = (
             ...template.credentialSubject,
             result: hasResult
                 ? [
+                      ...(template.credentialSubject.result ?? []).slice(0, index),
                       buildResult(
                           id,
                           resultType,
                           hasValue ? field : undefined,
                           hasAchievedLevel ? achievedLevel : undefined
                       ),
+                      ...(template.credentialSubject.result ?? []).slice(index + 1),
                   ]
-                : undefined,
+                : otherResults.length
+                  ? otherResults
+                  : undefined,
             achievement: {
                 ...achievement,
                 resultDescription: [
                     ...otherDescriptions,
                     buildResultDescription(id, resultType, {
-                        name: existingDescription?.name,
+                        name: next.name ?? existingDescription?.name,
                         valueMin,
                         valueMax,
                         rubricCriterionLevel,
@@ -311,7 +331,12 @@ export const writeResult = (
     };
 };
 
-const PROFILE_RESULT_TYPES = new Set<ResultType>(['Percent', 'RawScore', 'RubricCriterionLevel']);
+const PROFILE_RESULT_TYPES = new Set<ResultType>([
+    'Percent',
+    'RawScore',
+    'RubricCriterionLevel',
+    'GradePointAverage',
+]);
 
 const resolveFieldValue = (
     field: TemplateFieldValue | undefined,
@@ -323,12 +348,14 @@ const resolveFieldValue = (
     return variableValues[field.variableName]?.trim() ?? '';
 };
 
-export const getResultValidationError = (
+const getSingleResultValidationError = (
     template: OBv3CredentialTemplate,
-    variableValues?: Record<string, string>
+    variableValues: Record<string, string> | undefined,
+    index: number,
+    reportField?: (field: TemplateFieldValue) => void
 ): string | null => {
-    const state = readResultState(template);
-    const result = template.credentialSubject.result?.[0];
+    const state = readResultState(template, index);
+    const result = template.credentialSubject.result?.[index];
     const description = state.resultDescription;
 
     if ((!result && !description) || state.isLegacyUntyped) return null;
@@ -338,12 +365,15 @@ export const getResultValidationError = (
         const targetUrl = resolveFieldValue(alignment.targetUrl, variableValues);
 
         if (targetName === '' || targetUrl === '') {
+            if (targetName === '') reportField?.(alignment.targetName);
+            if (targetUrl === '') reportField?.(alignment.targetUrl);
             return msg(
                 'issueFlow.result.validation.alignmentNameUrl',
                 'Add a name and URL for each result alignment.'
             );
         }
         if (targetUrl !== undefined && !/^https?:\/\//i.test(targetUrl)) {
+            reportField?.(alignment.targetUrl);
             return msg(
                 'issueFlow.result.validation.alignmentUrl',
                 'Enter a valid URL for each result alignment.'
@@ -366,6 +396,9 @@ export const getResultValidationError = (
             const points = resolveFieldValue(level.points, variableValues);
 
             if (!level.id.trim() || name === '' || rubricLevel === '' || points === '') {
+                if (name === '' && level.name) reportField?.(level.name);
+                if (rubricLevel === '' && level.level) reportField?.(level.level);
+                if (points === '' && level.points) reportField?.(level.points);
                 return msg(
                     'issueFlow.result.validation.completeRubricLevel',
                     'Complete the id, name, level, and points for each rubric level.'
@@ -379,6 +412,7 @@ export const getResultValidationError = (
             }
             ids.add(level.id);
             if (points !== undefined && !Number.isFinite(Number(points))) {
+                if (level.points) reportField?.(level.points);
                 return msg(
                     'issueFlow.result.validation.numericRubricPoints',
                     'Enter numeric points for each rubric level.'
@@ -387,12 +421,14 @@ export const getResultValidationError = (
         }
         const achievedLevel = resolveFieldValue(state.achievedLevelField, variableValues);
         if (result && achievedLevel === '') {
+            if (state.achievedLevelField) reportField?.(state.achievedLevelField);
             return msg(
                 'issueFlow.result.validation.chooseAchievedLevel',
                 'Choose an achieved rubric level.'
             );
         }
         if (achievedLevel !== undefined && achievedLevel && !ids.has(achievedLevel)) {
+            if (state.achievedLevelField) reportField?.(state.achievedLevelField);
             return msg(
                 'issueFlow.result.validation.chooseDeclaredRubricLevel',
                 'Choose one of the declared rubric levels.'
@@ -432,15 +468,18 @@ export const getResultValidationError = (
 
     const value = resolveFieldValue(state.valueField, variableValues);
     if (value === undefined) return null;
-    if (!value || !Number.isFinite(Number(value))) {
+    let numericValue: number;
+    try {
+        numericValue = parseCredentialNumber(value);
+    } catch {
+        if (state.valueField) reportField?.(state.valueField);
         return msg('issueFlow.result.validation.numericResult', 'Enter a numeric result.');
     }
-
-    const numericValue = Number(value);
     if (
         (minimum !== undefined && numericValue < minimum) ||
         (maximum !== undefined && numericValue > maximum)
     ) {
+        if (state.valueField) reportField?.(state.valueField);
         if (minimum !== undefined && maximum !== undefined) {
             return msg(
                 'issueFlow.result.validation.resultRange',
@@ -462,5 +501,25 @@ export const getResultValidationError = (
         );
     }
 
+    return null;
+};
+
+/** Validate every linked result, or a selected result; optionally identify its invalid fields. */
+export const getResultValidationError = (
+    template: OBv3CredentialTemplate,
+    values?: Record<string, string>,
+    index?: number,
+    reportField?: (field: TemplateFieldValue) => void
+): string | null => {
+    if (index !== undefined)
+        return getSingleResultValidationError(template, values, index, reportField);
+    for (
+        let current = 0;
+        current < Math.max(1, template.credentialSubject.result?.length ?? 0);
+        current++
+    ) {
+        const error = getSingleResultValidationError(template, values, current, reportField);
+        if (error) return error;
+    }
     return null;
 };

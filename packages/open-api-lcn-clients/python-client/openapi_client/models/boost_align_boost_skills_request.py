@@ -18,22 +18,24 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing_extensions import Annotated
 from openapi_client.models.boost_align_boost_skills_request_skills_inner import BoostAlignBoostSkillsRequestSkillsInner
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostAlignBoostSkillsRequest(BaseModel):
     """
     BoostAlignBoostSkillsRequest
     """ # noqa: E501
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
+    boost_uri: StrictStr = Field(alias="boostUri")
     skills: Annotated[List[BoostAlignBoostSkillsRequestSkillsInner], Field(min_length=1)]
     __properties: ClassVar[List[str]] = ["boostUri", "skills"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -45,8 +47,7 @@ class BoostAlignBoostSkillsRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -59,9 +60,8 @@ class BoostAlignBoostSkillsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -75,14 +75,8 @@ class BoostAlignBoostSkillsRequest(BaseModel):
         _items = []
         if self.skills:
             for _item_skills in self.skills:
-                if _item_skills:
-                    _items.append(_item_skills.to_dict())
+                _items.append(_item_skills.to_dict() if _item_skills is not None else None)
             _dict['skills'] = _items
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
         return _dict
 
     @classmethod
@@ -94,10 +88,12 @@ class BoostAlignBoostSkillsRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "boostUri": obj.get("boostUri"),
             "skills": [BoostAlignBoostSkillsRequestSkillsInner.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

@@ -23,6 +23,10 @@ import {
     getAuthConfig,
     getSSSConfig,
     useAuthStatus,
+    resumeAuthRedirect,
+    useFeatureConfig,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import { getLogger } from 'learn-card-base';
@@ -32,9 +36,14 @@ import { Capacitor } from '@capacitor/core';
 
 import { useFirebase } from '../../hooks/useFirebase';
 import useLogout from '../../hooks/useLogout';
+import { useClassLinkAuthorizeUrl } from 'learn-card-base/react-query/mutations/firebase';
+import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
+import ClassLinkIcon from 'learn-card-base/assets/images/classlink-logo.png';
 
-import { setPublicComputerMode, isPublicComputerMode } from '@learncard/sss-key-manager';
+import { changeSignInPersistence, useSignInPersistence } from '../../auth/signInPersistence';
+import { SignInPersistenceError } from './SignInPersistenceError';
 import { useSignInAdapter } from 'learn-card-base';
+import { readKeycloakReauth } from '../../auth/keycloakReauth';
 import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
 
 import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
@@ -93,7 +102,11 @@ export const LoginContent: React.FC = () => {
     const [qrApproved, setQrApproved] = useState(false);
     const [showLinkedBanner, setShowLinkedBanner] = useState(false);
     const [accountHint, setAccountHint] = useState<string | null>(null);
-    const [isPublicMode, setIsPublicMode] = useState(() => isPublicComputerMode());
+    const {
+        isPublicMode,
+        isUpdating: isUpdatingPersistence,
+        error: persistenceError,
+    } = useSignInPersistence();
 
     const installIntent = redirectStore.use.installIntent();
     const authConfig = getAuthConfig();
@@ -156,7 +169,7 @@ export const LoginContent: React.FC = () => {
                     />,
                     {
                         sectionClassName:
-                            '!bg-transparent !border-none !shadow-none !rounded-none !mx-auto',
+                            'bg-transparent! border-none! shadow-none! rounded-none! mx-auto!',
                     },
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
@@ -208,6 +221,8 @@ export const LoginContent: React.FC = () => {
 
     useEffect(() => {
         if (didRedirectRef.current) return;
+        // Reauth owns navigation until identity validation and recovery resumption finish.
+        if (adapter.providerType === 'keycloak' && readKeycloakReauth()) return;
         if (!currentUser && !isLoggedIn && coordinatorState.status !== 'needs_setup') return;
 
         // Onboarding owns navigation while it is open. Leave the pending
@@ -274,7 +289,7 @@ export const LoginContent: React.FC = () => {
                 redirectStore.set.lcnRedirect(null);
                 redirectStore.set.authRedirect(null);
                 chapiStore.set.isChapiInteraction(null);
-                history.push(redirectTo);
+                resumeAuthRedirect(history, redirectTo);
                 void handleGeneratePinUpdateToken();
                 if (canRepromptOnboarding) void handlePromptOnboarding();
             } else if (lcnRedirectTo) {
@@ -293,6 +308,7 @@ export const LoginContent: React.FC = () => {
             log.error(e);
         }
     }, [
+        adapter.providerType,
         authStatus,
         currentUser,
         isLoggedIn,
@@ -319,8 +335,39 @@ export const LoginContent: React.FC = () => {
     const isReturningUser =
         coordinatorState.status === 'ready' || coordinatorState.status === 'needs_recovery';
 
+    const features = useFeatureConfig();
+    const { mutateAsync: getClassLinkAuthorizeUrl } = useClassLinkAuthorizeUrl();
+
+    const { presentToast: presentClassLinkToast } = useToast();
+
+    /** Resolves `true` while navigating away, so the button keeps its loading state. */
+    const classLinkLogin = async (): Promise<boolean> => {
+        const outcome = await runClassLinkLogin(getClassLinkAuthorizeUrl, path =>
+            history.push(path)
+        );
+        // 'handled' (sheet closed / timed out) is reported by the callback route.
+        if (outcome === 'failed') {
+            presentClassLinkToast(m['login.classlink.failed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+        return outcome === 'started';
+    };
+
     // custom logins associated with the app
     const extraSocialLogins = [
+        ...(features.classlinkSso
+            ? [
+                  {
+                      id: 3,
+                      src: ClassLinkIcon,
+                      alt: 'Sign in with ClassLink',
+                      onClick: classLinkLogin,
+                      type: SocialLoginTypes.classlink,
+                  },
+              ]
+            : []),
         {
             id: 1,
             src: AppleIcon,
@@ -487,7 +534,7 @@ export const LoginContent: React.FC = () => {
 
                     {showLinkedBanner && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-xs rounded-[20px] flex items-center justify-center gap-2.5">
                                 <svg
                                     width="16"
                                     height="16"
@@ -534,7 +581,7 @@ export const LoginContent: React.FC = () => {
 
                     {installIntent?.listingId && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-xs rounded-[20px] flex items-center gap-3 justify-center">
                                 {installIntent.appIcon && (
                                     <img
                                         src={installIntent.appIcon}
@@ -560,7 +607,7 @@ export const LoginContent: React.FC = () => {
                     {((query.get('redirectTo') ?? '').includes('createFamily=true') ||
                         Boolean(query.get('underageFamily'))) && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-start gap-2.5">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-xs rounded-[20px] flex items-start gap-2.5">
                                 <svg
                                     viewBox="0 0 24 24"
                                     fill="none"
@@ -618,24 +665,21 @@ export const LoginContent: React.FC = () => {
                         </IonRow>
                     </IonRow>
 
+                    <div className="w-full max-w-[500px] px-4">
+                        {adapter.providerType === 'keycloak' && <SignInPersistenceError />}
+                    </div>
                     {isWeb && configCapabilities.localKeyPersistence && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
                             <button
-                                onClick={async () => {
-                                    const next = !isPublicMode;
-                                    setIsPublicMode(next);
-                                    setPublicComputerMode(next);
-
-                                    // Switch Firebase persistence: session-only in public
-                                    // mode so the auth session dies with the tab, or
-                                    // IndexedDB (default) when toggling back.
-                                    try {
-                                        await adapter.setSessionPersistence?.(next);
-                                    } catch (e) {
-                                        log.warn('Failed to set Firebase persistence', e);
-                                    }
-                                }}
-                                className="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                role="switch"
+                                aria-checked={isPublicMode}
+                                disabled={
+                                    isUpdatingPersistence ||
+                                    (adapter.providerType === 'keycloak' &&
+                                        Boolean(persistenceError))
+                                }
+                                onClick={() => changeSignInPersistence(adapter, !isPublicMode)}
+                                className="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200 select-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <div
                                     className={`
@@ -646,7 +690,7 @@ export const LoginContent: React.FC = () => {
                                     <div
                                         className={`
                                         absolute top-[2px] w-[14px] h-[14px] rounded-full
-                                        transition-all duration-200 shadow-sm
+                                        transition-all duration-200 shadow-xs
                                         ${
                                             isPublicMode
                                                 ? 'left-[15px] bg-emerald-600'
@@ -662,7 +706,14 @@ export const LoginContent: React.FC = () => {
                                     ${isPublicMode ? 'text-white font-medium' : 'text-white'}
                                 `}
                                 >
-                                    {m['login.sharedComputer']()}
+                                    {isUpdatingPersistence ? (
+                                        <span className="flex items-center gap-2">
+                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Setting up...
+                                        </span>
+                                    ) : (
+                                        m['login.sharedComputer']()
+                                    )}
                                 </span>
                             </button>
                         </IonRow>
@@ -735,13 +786,13 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
             )}
             <IonContent
                 fullscreen
-                className="flex flex-col flex-grow"
+                className="flex flex-col grow"
                 style={{ '--background': loginBgColor } as React.CSSProperties}
             >
                 {/* Pre-auth language switcher. Positioned over the login background
                     in the safe-area top-right; the side-menu LanguagePicker isn't
                     reachable until after sign-in. */}
-                <div className="absolute top-0 end-0 z-10 pe-4 pt-[max(env(safe-area-inset-top),12px)]">
+                <div className="absolute top-0 inset-e-0 z-10 pe-4 pt-[max(env(safe-area-inset-top),12px)]">
                     <LanguagePickerCompact />
                 </div>
                 <IonGrid

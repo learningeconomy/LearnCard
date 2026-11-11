@@ -21,7 +21,7 @@ const AddressBookContactCard: React.FC = () => {
                 handleQRCodeCardModal={() => closeModal()}
                 qrOnly
             />,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };

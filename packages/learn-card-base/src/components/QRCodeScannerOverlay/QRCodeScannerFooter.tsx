@@ -16,7 +16,7 @@ export const QRCodeScannerCloseButton: React.FC<QRCodeScannerCloseButtonProps> =
     return (
         <button
             type="button"
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-black/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${className}`}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white shadow-lg backdrop-blur-xs transition-colors hover:bg-black/60 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white ${className}`}
             onClick={() => QRCodeScannerStore.set.closeScanner()}
             aria-label={ariaLabel}
         >

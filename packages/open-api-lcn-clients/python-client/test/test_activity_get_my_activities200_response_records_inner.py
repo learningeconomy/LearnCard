@@ -40,6 +40,7 @@ class TestActivityGetMyActivities200ResponseRecordsInner(unittest.TestCase):
                 event_type = 'CREATED',
                 timestamp = '',
                 actor_profile_id = '',
+                on_behalf_of = '',
                 recipient_type = 'profile',
                 recipient_identifier = '',
                 boost_uri = '',
@@ -50,13 +51,15 @@ class TestActivityGetMyActivities200ResponseRecordsInner(unittest.TestCase):
                 metadata = {
                     'key' : null
                     },
+                status = 'active',
                 boost = openapi_client.models.activity_get_my_activities_200_response_records_inner_boost.activity_getMyActivities_200_response_records_inner_boost(
                     id = '', 
                     name = '', 
                     category = '', ),
                 recipient_profile = openapi_client.models.activity_get_my_activities_200_response_records_inner_recipient_profile.activity_getMyActivities_200_response_records_inner_recipientProfile(
                     profile_id = '', 
-                    display_name = '', )
+                    display_name = '', 
+                    image = '', )
             )
         else:
             return ActivityGetMyActivities200ResponseRecordsInner(
@@ -64,7 +67,6 @@ class TestActivityGetMyActivities200ResponseRecordsInner(unittest.TestCase):
                 activity_id = '',
                 event_type = 'CREATED',
                 timestamp = '',
-                actor_profile_id = '',
                 recipient_type = 'profile',
                 recipient_identifier = '',
                 source = 'send',

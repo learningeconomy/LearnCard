@@ -125,7 +125,7 @@ export const SentimentStrip: React.FC<SentimentStripProps> = ({
 
             if (sentiment !== 'positive') {
                 newModal(<FeedbackFollowUpSheet surface={surface} sentiment={sentiment} />, {
-                    sectionClassName: '!max-w-[440px]',
+                    sectionClassName: 'max-w-[440px]!',
                 });
             }
 

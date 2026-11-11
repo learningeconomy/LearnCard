@@ -32,14 +32,14 @@ export const IDDisplayCard: React.FC<{ credential: VC; backgroundColor?: string 
     }
 
     return (
-        <div className="w-full aspect-[335/180] relative">
+        <div className="w-full aspect-335/180 relative">
             {/* Header Image with generous rounding and hairline border */}
             <div
                 style={backgroundStyles}
                 className="absolute inset-0 rounded-t-[16px] bg-cover bg-center bg-no-repeat overflow-hidden border border-white/30"
             >
                 {/* Subtle frosted scrim at the bottom edge for depth to seat the photo/notch */}
-                <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-black/40 via-black/5 to-transparent pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-full h-2/3 bg-linear-to-t/srgb from-black/40 via-black/5 to-transparent pointer-events-none" />
             </div>
         </div>
     );
@@ -77,13 +77,13 @@ export const CredentialIDBadge: React.FC<{
                         }}
                     />
                     {/* Gradient to solid white to blend perfectly into the card body below */}
-                    <div className="absolute bottom-0 left-0 w-full h-[16px] bg-gradient-to-b from-white/0 to-white pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-full h-[16px] bg-linear-to-b/srgb from-white/0 to-white pointer-events-none" />
                 </div>
 
                 {/* 3) Prominent circular profile photo straddling the header/glass boundary */}
                 <div className="absolute bottom-[28px] left-[24px] transform translate-y-1/2 z-20">
                     <ProfilePicture
-                        customContainerClass="flex justify-center items-center h-[64px] w-[64px] rounded-full overflow-hidden text-white font-medium text-3xl bg-grayscale-100 border-[4px] border-white shadow-sm"
+                        customContainerClass="flex justify-center items-center h-[64px] w-[64px] rounded-full overflow-hidden text-white font-medium text-3xl bg-grayscale-100 border-4 border-white shadow-xs"
                         customImageClass="flex justify-center items-center h-full w-full rounded-full overflow-hidden object-cover"
                         customSize={500}
                     />

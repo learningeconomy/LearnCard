@@ -126,7 +126,7 @@ const RoleSection: React.FC<RoleSectionProps> = ({
 }) => {
     return (
         <section className="flex flex-col gap-[8px]">
-            <p className="text-[12px] font-[500] text-grayscale-500 leading-[16px] tracking-[0.72px] uppercase text-left">
+            <p className="text-[12px] font-medium text-grayscale-500 leading-[16px] tracking-[0.72px] uppercase text-left">
                 {title}
             </p>
 
@@ -192,9 +192,8 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
         [isSearchActive, searchedOccupations, suggestedOccupations]
     );
     const isLoadingSearchResults = isSearchActive && (searchLoading || searchFetching);
-    const { occupations: moreRoles, isLoading: moreRolesLoading } = useBrowseableRoles(
-        !isSearchActive
-    );
+    const { occupations: moreRoles, isLoading: moreRolesLoading } =
+        useBrowseableRoles(!isSearchActive);
 
     return (
         <div
@@ -205,7 +204,7 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
             }
         >
             <div className="min-h-0 overflow-y-auto hide-scrollbar">
-                <div className="sticky top-0 z-10 border-b border-grayscale-100 bg-white/95 px-[12px] py-[12px] backdrop-blur">
+                <div className="sticky top-0 z-10 border-b border-grayscale-100 bg-white/95 px-[12px] py-[12px] backdrop-blur-sm">
                     <SearchInput
                         placeholder={m['aiInsights.searchRoles']()}
                         value={search}

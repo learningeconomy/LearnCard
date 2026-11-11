@@ -18,21 +18,23 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1Data(BaseModel):
     """
     ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1Data
     """ # noqa: E501
-    claim_uri: Optional[StrictStr] = Field(alias="claimUri")
-    target_uri: Optional[StrictStr] = Field(alias="targetUri")
+    claim_uri: StrictStr = Field(alias="claimUri")
+    target_uri: StrictStr = Field(alias="targetUri")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["claimUri", "targetUri"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +46,7 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1Data(BaseM
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -58,9 +59,8 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1Data(BaseM
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -77,16 +77,6 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1Data(BaseM
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if claim_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.claim_uri is None and "claim_uri" in self.model_fields_set:
-            _dict['claimUri'] = None
-
-        # set to None if target_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.target_uri is None and "target_uri" in self.model_fields_set:
-            _dict['targetUri'] = None
-
         return _dict
 
     @classmethod
@@ -98,10 +88,12 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1Data(BaseM
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "claimUri": obj.get("claimUri"),
             "targetUri": obj.get("targetUri")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

@@ -87,7 +87,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({
                         >
                             <IconComponent className="h-[30px] w-[30px]" />
                             {(unreadCount ?? 0) >= 1 && (
-                                <div className="alert-indicator-dot absolute !right-[0px] !top-[-2px]">
+                                <div className="alert-indicator-dot absolute right-0! top-[-2px]!">
                                     {unreadCount}
                                 </div>
                             )}

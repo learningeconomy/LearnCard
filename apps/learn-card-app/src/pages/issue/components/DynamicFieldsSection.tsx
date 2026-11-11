@@ -6,7 +6,7 @@ import { RecipientMode, Recipient, recipientKey, recipientLabel } from './recipi
 import * as m from '../../../paraglide/messages.js';
 
 const INPUT_CLASS =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 const CARD_CLASS = 'bg-white border border-grayscale-200 rounded-[20px] p-5';
 
@@ -30,7 +30,7 @@ const VariableInputs: React.FC<{
     idPrefix: string;
     onChange: (name: string, value: string) => void;
 }> = ({ variables, values, idPrefix, onChange }) => (
-    <div className="space-y-4">
+    <div className="space-y-v3-4">
         {variables.map(name => {
             const type = inferVariableInputType(name);
             return (
@@ -70,7 +70,7 @@ export const DynamicFieldsSection: React.FC<DynamicFieldsSectionProps> = ({
     const perRecipient = canCustomizePerRecipient && scope === 'perRecipient';
 
     return (
-        <section className={`${CARD_CLASS} space-y-4 animate-fade-in-up`}>
+        <section className={`${CARD_CLASS} space-y-v3-4 animate-fade-in-up`}>
             <div className="flex items-start gap-2.5">
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50">
                     <Variable className="w-4 h-4 text-emerald-600" />
@@ -113,13 +113,13 @@ export const DynamicFieldsSection: React.FC<DynamicFieldsSectionProps> = ({
             )}
 
             {perRecipient ? (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     {recipients.map(recipient => {
                         const key = recipientKey(recipient);
                         return (
                             <div
                                 key={key}
-                                className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4 space-y-4"
+                                className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4 space-y-v3-4"
                             >
                                 <p className="text-sm font-semibold text-grayscale-900">
                                     {recipientLabel(recipient)}

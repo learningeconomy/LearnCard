@@ -35,6 +35,12 @@ import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { m } from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
+import {
+    getClassLinkProfileDefaults,
+    isClassLinkLogin,
+} from '../../auth/classlink/classlinkProfileDefaults';
+import { generateRandomSuffix } from '../onboarding/v2/handleGenerator';
+import { getClassLinkDisplayName } from '../../auth/classlink/classlinkDisplayName';
 
 const getStateValidator = () =>
     z.object({
@@ -75,11 +81,16 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
 
-    const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
+    const classlink = isClassLinkLogin();
+    const [name, setName] = useState<string | null | undefined>(() =>
+        classlink ? getClassLinkDisplayName() : (currentUser?.name ?? '')
+    );
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
 
     const [networkToggle, setNetworkToggle] = useState<boolean>(true);
-    const [profileId, setProfileId] = useState<string | null | undefined>('');
+    const [profileId, setProfileId] = useState<string | null | undefined>(() =>
+        classlink ? `learner-${generateRandomSuffix()}` : ''
+    );
 
     const [walletDid, setWalletDid] = useState<string>('');
 
@@ -97,7 +108,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     const primaryColor = colors?.defaults?.primaryColor;
 
     const presentLogoutErrorModal = () => {
-        newModal(<ErrorLogout />, { sectionClassName: '!max-w-[400px]' });
+        newModal(<ErrorLogout />, { sectionClassName: 'max-w-[400px]!' });
     };
 
     useEffect(() => {
@@ -185,6 +196,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     bio: '',
                     image: photo,
                     notificationsWebhook: getNotificationsEndpoint(),
+                    ...(await getClassLinkProfileDefaults()),
                 });
 
                 if (didWeb) {
@@ -323,7 +335,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     return (
         <>
             {createLoading && (
-                <div className="absolute top-0 w-full h-full z-[10000] flex flex-col gap-[5px] items-center justify-center bg-white bg-opacity-70 backdrop-blur-[3px]">
+                <div className="absolute top-0 w-full h-full z-[10000] flex flex-col gap-[5px] items-center justify-center bg-white/70  backdrop-blur-[3px]">
                     <IonSpinner color="dark" />
                     <span className="text-grayscale-900">Joining Network...</span>
                 </div>
@@ -342,7 +354,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 <br />
                                 <HeaderBranding
                                     branding={BrandingEnum.learncard}
-                                    className="!text-black !text-xl"
+                                    className="text-black! text-xl!"
                                     disableClick
                                 />
                             </h6>
@@ -452,6 +464,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                     }`}
                                     onIonInput={e => setProfileId(e.detail.value)}
                                     value={profileId}
+                                    readonly={classlink}
                                     placeholder="User ID"
                                     aria-label="User ID"
                                     type="text"

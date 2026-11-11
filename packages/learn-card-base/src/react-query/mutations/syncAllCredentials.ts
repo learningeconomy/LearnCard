@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { VC } from '@learncard/types';
+import { fetchResolvedCredential } from '../queries/credentialResolution';
 import { useWallet, getCategoryForCredential } from 'learn-card-base';
 import { CredentialCategory } from 'learn-card-base/types/credentials';
 import { CredentialMetadata } from 'learn-card-base/types/credential-records';
@@ -46,15 +46,19 @@ export const useSyncAllCredentialsToContractsMutation = () => {
                     const grouped = await Promise.all(
                         pageRecords.map(async record => {
                             try {
-                                const vc = (await wallet.read.get(record.uri)) as VC | undefined;
+                                const vc = await fetchResolvedCredential(
+                                    queryClient,
+                                    wallet,
+                                    record.uri
+                                );
                                 const isVerifiableDataCredential = Array.isArray(vc?.type)
                                     ? vc.type.includes('VerifiableData')
                                     : false;
                                 const category: CredentialCategory = isVerifiableDataCredential
                                     ? (record.category as CredentialCategory) || 'Achievement'
                                     : vc
-                                    ? await getCategoryForCredential(vc, wallet)
-                                    : (record.category as CredentialCategory) || 'Achievement';
+                                      ? await getCategoryForCredential(vc, wallet)
+                                      : (record.category as CredentialCategory) || 'Achievement';
 
                                 return { uri: record.uri, category } as const;
                             } catch {

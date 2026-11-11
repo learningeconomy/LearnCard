@@ -45,7 +45,7 @@ export const SharedBoostVerificationItem: React.FC<{
         return (
             <div
                 className={`w-full flex flex-col items-start justify-center border-grayscale-200 mb-2 pb-2 ${
-                    hideBorder ? 'border-none' : 'border-b-[1px]'
+                    hideBorder ? 'border-none' : 'border-b'
                 }`}
             >
                 <p
@@ -66,7 +66,7 @@ export const SharedBoostVerificationItem: React.FC<{
     return (
         <div
             className={`w-full flex flex-col items-start justify-center border-grayscale-200 mb-2 pb-2 ${
-                hideBorder ? 'border-none' : 'border-b-[1px]'
+                hideBorder ? 'border-none' : 'border-b'
             }`}
         >
             <p

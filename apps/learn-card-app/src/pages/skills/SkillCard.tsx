@@ -138,14 +138,14 @@ const SkillCard: React.FC<SkillCardProps> = ({
     return (
         <IonCol size="12" className="flex justify-center items-center relative">
             <div
-                className={`flex bg-white flex-col shadow-box-bottom relative p-0 w-[160px] rounded-[20px] overflow-hidden border-[1px] border-solid ${
+                className={`flex bg-white flex-col shadow-box-bottom relative p-0 w-[160px] rounded-[20px] overflow-hidden border border-solid ${
                     proficiencyLevel
-                        ? `border-solid border-[2px] ${SKILL_LEVEL_META[proficiencyLevel].cardOuterBorderClass}`
+                        ? `border-solid border-2 ${SKILL_LEVEL_META[proficiencyLevel].cardOuterBorderClass}`
                         : ''
                 } ${tallCard ? 'h-[310px]' : 'min-h-[240px]'}`}
             >
                 <div
-                    className={`border-b-[1px] border-solid flex items-center justify-center py-[15px] ${
+                    className={`border-b border-solid flex items-center justify-center py-[15px] ${
                         proficiencyLevel
                             ? SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderClass
                             : 'border-grayscale-50'
@@ -160,7 +160,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
 
                 {showSelfAssigned && (
                     <div
-                        className={`bg-white rounded-full p-[3px] border-[1px] border-solid absolute top-[3px] right-[3px] ${
+                        className={`bg-white rounded-full p-[3px] border border-solid absolute top-[3px] right-[3px] ${
                             proficiencyLevel
                                 ? SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderClass
                                 : ''
@@ -172,7 +172,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
 
                 {proficiencyLevel !== undefined && proficiencyLevel !== SkillLevel.Hidden && (
                     <div
-                        className={`absolute top-[108px] left-1/2 -translate-x-1/2 px-[12px] py-[2px] rounded-full bg-white border shadow-sm flex items-center justify-center ${
+                        className={`absolute top-[108px] left-1/2 -translate-x-1/2 px-[12px] py-[2px] rounded-full bg-white border shadow-xs flex items-center justify-center ${
                             proficiencyLevel
                                 ? SKILL_LEVEL_META[proficiencyLevel].cardInnerBorderClass
                                 : ''
@@ -213,7 +213,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
                                     {handleEditSkill && (
                                         <button
                                             type="button"
-                                            className="bg-grayscale-50 w-full p-[5px] rounded-full border-[1px] border-solid border-grayscale-200 flex justify-center"
+                                            className="bg-grayscale-50 w-full p-[5px] rounded-full border border-solid border-grayscale-200 flex justify-center"
                                             onClick={e => {
                                                 e.stopPropagation();
                                                 openEditSkillModal();
@@ -225,7 +225,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
                                     {handleRemoveSkill && (
                                         <button
                                             type="button"
-                                            className="bg-grayscale-900 w-full p-[5px] rounded-full border-[1px] border-solid border-grayscale-200 flex justify-center"
+                                            className="bg-grayscale-900 w-full p-[5px] rounded-full border border-solid border-grayscale-200 flex justify-center"
                                             onClick={e => {
                                                 e.stopPropagation();
                                                 handleRemoveSkill(skillId);
@@ -244,7 +244,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
                                 handleAddSkill && (
                                     <button
                                         type="button"
-                                        className="bg-grayscale-50 w-full p-[5px] rounded-full border-[1px] border-solid border-grayscale-200 flex justify-center"
+                                        className="bg-grayscale-50 w-full p-[5px] rounded-full border border-solid border-grayscale-200 flex justify-center"
                                         onClick={e => {
                                             e.stopPropagation();
                                             openAddSkillModal();

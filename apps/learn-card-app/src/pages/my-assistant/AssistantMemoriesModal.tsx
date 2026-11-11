@@ -79,7 +79,7 @@ export const AssistantMemoriesModal: React.FC<{
                     </button>
                 </div>
 
-                <div className="p-5 overflow-y-auto space-y-5">
+                <div className="p-5 overflow-y-auto space-y-v3-5">
                     {data?.manifest?.counts && (
                         <div className="grid grid-cols-3 gap-2">
                             <div className="rounded-2xl bg-grayscale-100 p-3 text-center">
@@ -104,11 +104,11 @@ export const AssistantMemoriesModal: React.FC<{
                     )}
 
                     {isLoading ? (
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             {[0, 1, 2].map(index => (
                                 <div
                                     key={index}
-                                    className="rounded-[20px] border border-grayscale-200 p-4 space-y-3 animate-pulse"
+                                    className="rounded-[20px] border border-grayscale-200 p-4 space-y-v3-3 animate-pulse"
                                 >
                                     <div className="h-4 w-28 bg-grayscale-100 rounded-full" />
                                     <div className="h-4 w-3/4 bg-grayscale-100 rounded-full" />
@@ -117,7 +117,7 @@ export const AssistantMemoriesModal: React.FC<{
                             ))}
                         </div>
                     ) : isError ? (
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
                                 <IonIcon
                                     icon={alertCircleOutline}
@@ -137,7 +137,7 @@ export const AssistantMemoriesModal: React.FC<{
                             </button>
                         </div>
                     ) : (data?.docs.length ?? 0) === 0 ? (
-                        <div className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-5 text-center space-y-1">
+                        <div className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-5 text-center space-y-v3-1">
                             <p className="text-base font-semibold text-grayscale-900">
                                 No memories yet.
                             </p>
@@ -151,7 +151,7 @@ export const AssistantMemoriesModal: React.FC<{
                             if (docs.length === 0) return null;
 
                             return (
-                                <section key={status} className="space-y-3">
+                                <section key={status} className="space-y-v3-3">
                                     <h3 className="text-xs font-medium text-grayscale-700 uppercase tracking-wide">
                                         {STATUS_LABELS[status]}
                                     </h3>
@@ -159,7 +159,7 @@ export const AssistantMemoriesModal: React.FC<{
                                     {docs.map(doc => (
                                         <article
                                             key={doc.name}
-                                            className="rounded-[20px] border border-grayscale-200 p-4 space-y-3"
+                                            className="rounded-[20px] border border-grayscale-200 p-4 space-y-v3-3"
                                         >
                                             <div className="flex items-start justify-between gap-3">
                                                 <div>

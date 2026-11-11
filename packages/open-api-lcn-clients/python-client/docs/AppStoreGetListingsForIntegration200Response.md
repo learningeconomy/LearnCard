@@ -1,13 +1,12 @@
 # AppStoreGetListingsForIntegration200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**has_more** | **bool** |  | 
-**cursor** | **str** |  | [optional] 
-**records** | [**List[AppStoreGetListingsForIntegration200ResponseRecordsInner]**](AppStoreGetListingsForIntegration200ResponseRecordsInner.md) |  | 
+| Name         | Type                                                                                                                              | Description | Notes      |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **has_more** | **bool**                                                                                                                          |             |
+| **cursor**   | **str**                                                                                                                           |             | [optional] |
+| **records**  | [**List[AppStoreGetListingsForIntegration200ResponseRecordsInner]**](AppStoreGetListingsForIntegration200ResponseRecordsInner.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ app_store_get_listings_for_integration200_response_dict = app_store_get_listings
 # create an instance of AppStoreGetListingsForIntegration200Response from a dict
 app_store_get_listings_for_integration200_response_from_dict = AppStoreGetListingsForIntegration200Response.from_dict(app_store_get_listings_for_integration200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

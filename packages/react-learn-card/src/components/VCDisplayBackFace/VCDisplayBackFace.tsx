@@ -42,7 +42,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
                 <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
                     Issuer
                 </h6>
-                <p className="max-w-[344px] line-clamp-1 subpixel-antialiased text-grayscale-600 text-[14px] block overflow-ellipsis break-all">
+                <p className="max-w-[344px] line-clamp-1 subpixel-antialiased text-grayscale-600 text-[14px] block text-ellipsis break-all">
                     {issuerName}
                 </p>
             </div>
@@ -59,10 +59,10 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
 
     return (
         <div
-            className={`z-[9] vc-display-main-card-back flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[1100px] min-h-[600px] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
+            className={`z-[9] vc-display-main-card-back flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-full max-h-[1100px] min-h-[600px] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
         >
             <section className="flex max-h-[150px] items-end bg-white rounded-bl-[50%] rounded-br-[50%] absolute top-0 w-[110%] h-[55%] min-h-[400px]"></section>
-            <section className="flex flex-col items-center justify-center w-full z-10 text-left credential-details-container max-w-[100%] relative">
+            <section className="flex flex-col items-center justify-center w-full z-10 text-left credential-details-container max-w-full relative">
                 <section className="flex flex-row items-start justify-start w-full line-clamp-2">
                     <h3
                         className="text-2xl line-clamp-2 tracking-wide leading-snug text-left text-emerald-700"
@@ -91,7 +91,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
                     </span>
                 </button>
 
-                <section className="flex-col items-center justify-center checklist-container justify-center w-[100%] width-full mt-[20px]">
+                <section className="flex-col items-center justify-center checklist-container justify-center w-full width-full mt-[20px]">
                     <VCVerificationCheckWithText loading={loading} />
                     <section>
                         {verification.map(item => (

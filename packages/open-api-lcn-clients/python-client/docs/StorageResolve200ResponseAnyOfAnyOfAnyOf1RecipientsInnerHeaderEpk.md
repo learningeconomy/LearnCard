@@ -1,16 +1,15 @@
 # StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeaderEpk
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**kty** | **str** |  | [optional] 
-**crv** | **str** |  | [optional] 
-**x** | **str** |  | [optional] 
-**y** | **str** |  | [optional] 
-**n** | **str** |  | [optional] 
-**d** | **str** |  | [optional] 
+| Name    | Type    | Description | Notes      |
+| ------- | ------- | ----------- | ---------- |
+| **kty** | **str** |             | [optional] |
+| **crv** | **str** |             | [optional] |
+| **x**   | **str** |             | [optional] |
+| **y**   | **str** |             | [optional] |
+| **n**   | **str** |             | [optional] |
+| **d**   | **str** |             | [optional] |
 
 ## Example
 
@@ -29,6 +28,5 @@ storage_resolve200_response_any_of_any_of_any_of1_recipients_inner_header_epk_di
 # create an instance of StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeaderEpk from a dict
 storage_resolve200_response_any_of_any_of_any_of1_recipients_inner_header_epk_from_dict = StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeaderEpk.from_dict(storage_resolve200_response_any_of_any_of_any_of1_recipients_inner_header_epk_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

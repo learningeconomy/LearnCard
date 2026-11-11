@@ -172,7 +172,7 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
     const warningCount = issues.filter(i => i.level === 'warning').length;
 
     return (
-        <aside className="space-y-3 font-poppins" aria-label="Pathway outline">
+        <aside className="space-y-v3-3 font-poppins" aria-label="Pathway outline-solid">
             {/*
                 Breadcrumb: only shown when this pathway is embedded
                 somewhere else. Clicking navigates back to the parent.
@@ -241,7 +241,7 @@ const OutlinePane: React.FC<OutlinePaneProps> = ({
                 />
             )}
 
-            <div className="space-y-1.5 pt-1">
+            <div className="space-y-v3-1.5 pt-1">
                 <button
                     type="button"
                     onClick={onAddNode}
@@ -366,7 +366,7 @@ const NodesList: React.FC<{
     // read-only review).
     if (!onReorder) {
         return (
-            <ul className="space-y-1.5">
+            <ul className="space-y-v3-1.5">
                 {pathway.nodes.map(n => (
                     <NodeListItem
                         key={n.id}
@@ -390,7 +390,7 @@ const NodesList: React.FC<{
             axis="y"
             values={pathway.nodes}
             onReorder={nodes => onReorder(nodes.map(n => n.id))}
-            className="space-y-1.5 list-none"
+            className="space-y-v3-1.5 list-none"
             /* framer-motion stamps an inline style; ensure the UL
                has no default padding/margin so the visual layout
                matches the static branch. */
@@ -529,7 +529,7 @@ const NestedSubtree: React.FC<{
     const grandchildren = buildNestedChildMap(childPathway, allPathways);
 
     return (
-        <ul className="ml-4 pl-3 mt-1 space-y-0.5 border-l-2 border-grayscale-200">
+        <ul className="ml-4 pl-3 mt-1 space-y-v3-0.5 border-l-2 border-grayscale-200">
             {childPathway.nodes.map((n: PathwayNode) => {
                 const grandchild = grandchildren.get(n.id);
                 const canRecurse = !!grandchild && depth < MAX_NESTED_DEPTH;

@@ -18,21 +18,23 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_add_auto_boosts_to_contract_request_autoboosts_inner import ContractsAddAutoBoostsToContractRequestAutoboostsInner
+from typing import Any, ClassVar, Dict, List
+from openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner import ContractsCreateConsentFlowContractRequestAutoboostsInner
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsAddAutoBoostsToContractRequest(BaseModel):
     """
     ContractsAddAutoBoostsToContractRequest
     """ # noqa: E501
-    contract_uri: Optional[StrictStr] = Field(alias="contractUri")
-    autoboosts: List[ContractsAddAutoBoostsToContractRequestAutoboostsInner]
+    contract_uri: StrictStr = Field(alias="contractUri")
+    autoboosts: List[ContractsCreateConsentFlowContractRequestAutoboostsInner]
     __properties: ClassVar[List[str]] = ["contractUri", "autoboosts"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +46,7 @@ class ContractsAddAutoBoostsToContractRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -58,9 +59,8 @@ class ContractsAddAutoBoostsToContractRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -74,14 +74,8 @@ class ContractsAddAutoBoostsToContractRequest(BaseModel):
         _items = []
         if self.autoboosts:
             for _item_autoboosts in self.autoboosts:
-                if _item_autoboosts:
-                    _items.append(_item_autoboosts.to_dict())
+                _items.append(_item_autoboosts.to_dict() if _item_autoboosts is not None else None)
             _dict['autoboosts'] = _items
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
-            _dict['contractUri'] = None
-
         return _dict
 
     @classmethod
@@ -93,10 +87,12 @@ class ContractsAddAutoBoostsToContractRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "contractUri": obj.get("contractUri"),
-            "autoboosts": [ContractsAddAutoBoostsToContractRequestAutoboostsInner.from_dict(_item) for _item in obj["autoboosts"]] if obj.get("autoboosts") is not None else None
-        })
+            "autoboosts": [ContractsCreateConsentFlowContractRequestAutoboostsInner.from_dict(_item) for _item in obj["autoboosts"]] if obj.get("autoboosts") is not None else None
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

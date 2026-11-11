@@ -18,21 +18,23 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.contact_methods_create_contact_method_session_request_contact_method import ContactMethodsCreateContactMethodSessionRequestContactMethod
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContactMethodsCreateContactMethodSessionRequest(BaseModel):
     """
     ContactMethodsCreateContactMethodSessionRequest
     """ # noqa: E501
     contact_method: ContactMethodsCreateContactMethodSessionRequestContactMethod = Field(alias="contactMethod")
-    otp_challenge: Optional[StrictStr] = Field(alias="otpChallenge")
+    otp_challenge: StrictStr = Field(alias="otpChallenge")
     __properties: ClassVar[List[str]] = ["contactMethod", "otpChallenge"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +46,7 @@ class ContactMethodsCreateContactMethodSessionRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -58,9 +59,8 @@ class ContactMethodsCreateContactMethodSessionRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -73,11 +73,6 @@ class ContactMethodsCreateContactMethodSessionRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of contact_method
         if self.contact_method:
             _dict['contactMethod'] = self.contact_method.to_dict()
-        # set to None if otp_challenge (nullable) is None
-        # and model_fields_set contains the field
-        if self.otp_challenge is None and "otp_challenge" in self.model_fields_set:
-            _dict['otpChallenge'] = None
-
         return _dict
 
     @classmethod
@@ -89,10 +84,12 @@ class ContactMethodsCreateContactMethodSessionRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "contactMethod": ContactMethodsCreateContactMethodSessionRequestContactMethod.from_dict(obj["contactMethod"]) if obj.get("contactMethod") is not None else None,
             "otpChallenge": obj.get("otpChallenge")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

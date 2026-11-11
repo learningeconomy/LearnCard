@@ -1,6 +1,6 @@
 {
     "name": "@learncard/helpers",
-    "version": "1.6.0",
+    "version": "1.8.0",
     "description": "Shared helpers for LearnCard packages",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -56,9 +56,10 @@
         "@sd-jwt/decode": "^0.19.0",
         "@learncard/types": "workspace:*",
         "@trpc/server": "11.8.0",
+        "moment": "^2.29.4",
         "immer": "^10.0.3",
         "use-immer": "^0.9.0",
-        "zod": "4.1.13"
+        "zod": "4.6.6"
     },
     "sideEffects": false
 }

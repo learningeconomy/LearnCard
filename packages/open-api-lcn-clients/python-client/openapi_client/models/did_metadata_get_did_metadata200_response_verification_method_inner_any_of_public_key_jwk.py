@@ -21,14 +21,15 @@ from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJwk(BaseModel):
     """
     DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJwk
     """ # noqa: E501
-    kty: Optional[StrictStr]
-    crv: Optional[StrictStr]
-    x: Optional[StrictStr]
+    kty: StrictStr
+    crv: StrictStr
+    x: StrictStr
     y: Optional[StrictStr] = None
     n: Optional[StrictStr] = None
     d: Optional[StrictStr] = None
@@ -36,7 +37,8 @@ class DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJ
     __properties: ClassVar[List[str]] = ["kty", "crv", "x", "y", "n", "d"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -48,8 +50,7 @@ class DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJ
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -62,9 +63,8 @@ class DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJ
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -81,36 +81,6 @@ class DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJ
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if kty (nullable) is None
-        # and model_fields_set contains the field
-        if self.kty is None and "kty" in self.model_fields_set:
-            _dict['kty'] = None
-
-        # set to None if crv (nullable) is None
-        # and model_fields_set contains the field
-        if self.crv is None and "crv" in self.model_fields_set:
-            _dict['crv'] = None
-
-        # set to None if x (nullable) is None
-        # and model_fields_set contains the field
-        if self.x is None and "x" in self.model_fields_set:
-            _dict['x'] = None
-
-        # set to None if y (nullable) is None
-        # and model_fields_set contains the field
-        if self.y is None and "y" in self.model_fields_set:
-            _dict['y'] = None
-
-        # set to None if n (nullable) is None
-        # and model_fields_set contains the field
-        if self.n is None and "n" in self.model_fields_set:
-            _dict['n'] = None
-
-        # set to None if d (nullable) is None
-        # and model_fields_set contains the field
-        if self.d is None and "d" in self.model_fields_set:
-            _dict['d'] = None
-
         return _dict
 
     @classmethod
@@ -122,14 +92,16 @@ class DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJ
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "kty": obj.get("kty"),
             "crv": obj.get("crv"),
             "x": obj.get("x"),
             "y": obj.get("y"),
             "n": obj.get("n"),
             "d": obj.get("d")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

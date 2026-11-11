@@ -19,30 +19,33 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
     """
     ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions
     """ # noqa: E501
-    role: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
+    role: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    can_view: Optional[StrictBool] = Field(default=None, alias="canView")
     can_edit: Optional[StrictBool] = Field(default=None, alias="canEdit")
     can_issue: Optional[StrictBool] = Field(default=None, alias="canIssue")
     can_revoke: Optional[StrictBool] = Field(default=None, alias="canRevoke")
     can_manage_permissions: Optional[StrictBool] = Field(default=None, alias="canManagePermissions")
-    can_issue_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="canIssueChildren")
-    can_create_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="canCreateChildren")
-    can_edit_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="canEditChildren")
-    can_revoke_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="canRevokeChildren")
-    can_manage_children_permissions: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="canManageChildrenPermissions")
+    can_issue_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="canIssueChildren")
+    can_create_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="canCreateChildren")
+    can_edit_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="canEditChildren")
+    can_revoke_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="canRevokeChildren")
+    can_manage_children_permissions: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="canManageChildrenPermissions")
     can_manage_children_profiles: Optional[StrictBool] = Field(default=None, alias="canManageChildrenProfiles")
     can_view_analytics: Optional[StrictBool] = Field(default=None, alias="canViewAnalytics")
-    __properties: ClassVar[List[str]] = ["role", "canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
+    __properties: ClassVar[List[str]] = ["role", "canView", "canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -54,8 +57,7 @@ class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -68,9 +70,8 @@ class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -109,20 +110,23 @@ class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
-            "role": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["role"]) if obj.get("role") is not None else None,
+        _values = {
+            "role": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["role"]) if obj.get("role") is not None else None,
+            "canView": obj.get("canView"),
             "canEdit": obj.get("canEdit"),
             "canIssue": obj.get("canIssue"),
             "canRevoke": obj.get("canRevoke"),
             "canManagePermissions": obj.get("canManagePermissions"),
-            "canIssueChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["canIssueChildren"]) if obj.get("canIssueChildren") is not None else None,
-            "canCreateChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["canCreateChildren"]) if obj.get("canCreateChildren") is not None else None,
-            "canEditChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["canEditChildren"]) if obj.get("canEditChildren") is not None else None,
-            "canRevokeChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["canRevokeChildren"]) if obj.get("canRevokeChildren") is not None else None,
-            "canManageChildrenPermissions": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["canManageChildrenPermissions"]) if obj.get("canManageChildrenPermissions") is not None else None,
+            "canIssueChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["canIssueChildren"]) if obj.get("canIssueChildren") is not None else None,
+            "canCreateChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["canCreateChildren"]) if obj.get("canCreateChildren") is not None else None,
+            "canEditChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["canEditChildren"]) if obj.get("canEditChildren") is not None else None,
+            "canRevokeChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["canRevokeChildren"]) if obj.get("canRevokeChildren") is not None else None,
+            "canManageChildrenPermissions": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["canManageChildrenPermissions"]) if obj.get("canManageChildrenPermissions") is not None else None,
             "canManageChildrenProfiles": obj.get("canManageChildrenProfiles"),
             "canViewAnalytics": obj.get("canViewAnalytics")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

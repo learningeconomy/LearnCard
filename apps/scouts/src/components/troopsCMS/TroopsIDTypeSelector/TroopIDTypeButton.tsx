@@ -134,7 +134,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
     if (isInTroopViewMode) {
         if (viewModeSubtype === TroopsCMSViewModeEnum.member) {
             return (
-                <div className="flex items-center justify-between w-full bg-white border-b-grayscale-100 border-b-solid border-b-[1px] py-[10px]">
+                <div className="flex items-center justify-between w-full bg-white border-b-grayscale-100 border-b-solid border-b py-[10px]">
                     <div className="flex items-center justify-start w-full">
                         <div className="bg-sp-green-leaf flex items-center justify-center h-[40px] w-[40px] object-cover rounded-full overflow-hidden mr-[10px]">
                             {scoutThumbnail ? (

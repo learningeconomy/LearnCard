@@ -16,7 +16,7 @@ const CardSkeleton: React.FC<{ size: 'responsive' | 'credential' }> = ({ size })
 
     return (
         <div
-            className={`overflow-hidden rounded-[20px] bg-white p-4 shadow-sm ${
+            className={`overflow-hidden rounded-[20px] bg-white p-4 shadow-xs ${
                 matchesCredentialCard ? 'h-[275px] w-[160px]' : 'w-full max-w-[280px]'
             }`}
         >
@@ -45,7 +45,7 @@ const CardSkeleton: React.FC<{ size: 'responsive' | 'credential' }> = ({ size })
 };
 
 const ListSkeleton: React.FC = () => (
-    <div className="flex w-full items-center gap-4 rounded-[20px] bg-white p-4 shadow-sm">
+    <div className="flex w-full items-center gap-4 rounded-[20px] bg-white p-4 shadow-xs">
         <div className="h-16 w-16 shrink-0 rounded-2xl bg-grayscale-200" />
         <div className="min-w-0 flex-1">
             <div className="mb-2 h-4 w-3/4 rounded-md bg-grayscale-200" />

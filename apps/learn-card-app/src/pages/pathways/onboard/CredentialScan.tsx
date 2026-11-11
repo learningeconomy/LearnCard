@@ -33,7 +33,7 @@ const CredentialScan: React.FC<CredentialScanProps> = ({ onContinue, onBack }) =
     const wallet: WalletSignal = { tags: [] };
 
     return (
-        <div className="max-w-md mx-auto px-4 py-10 font-poppins space-y-6">
+        <div className="max-w-md mx-auto px-4 py-10 font-poppins space-y-v3-6">
             <div>
                 <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide mb-1">
                     Step 2 of 3
@@ -61,7 +61,7 @@ const CredentialScan: React.FC<CredentialScanProps> = ({ onContinue, onBack }) =
                 )}
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 <button
                     type="button"
                     onClick={() => onContinue(wallet)}

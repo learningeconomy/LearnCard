@@ -1,3 +1,4 @@
+import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import React, { useEffect } from 'react';
 
 import { IonSkeletonText, useIonModal } from '@ionic/react';
@@ -39,7 +40,7 @@ export const FamilyMemberActionMenu: React.FC<{
     closeModal: () => void;
 }> = ({ credential, user, closeModal }) => {
     const history = useHistory();
-    const { newModal, closeAllModals } = useModal({
+    const { newModal, newModalWithToken, forceCloseModalByToken, closeAllModals } = useModal({
         mobile: ModalTypes.Cancel,
         desktop: ModalTypes.Cancel,
     });
@@ -67,9 +68,14 @@ export const FamilyMemberActionMenu: React.FC<{
     });
 
     const handleSwitchAccount = () => {
-        newModal(
-            <AccountSwitcherModal />,
-            { sectionClassName: '!max-w-[400px]' },
+        const modalRef: { token?: ModalInstanceToken } = {};
+        modalRef.token = newModalWithToken(
+            <AccountSwitcherModal
+                onSwitchComplete={() => {
+                    if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                }}
+            />,
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -233,7 +239,7 @@ export const FamilyMemberActionMenu: React.FC<{
                         <button
                             key={id}
                             onClick={() => onClick?.()}
-                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-[2px] last:border-0"
+                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-2 last:border-0"
                             disabled={isLoading}
                         >
                             <p

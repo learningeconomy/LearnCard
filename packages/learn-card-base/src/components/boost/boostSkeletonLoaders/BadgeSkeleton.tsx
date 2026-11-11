@@ -9,7 +9,7 @@ export const BadgeSkeleton: React.FC<{
             className={`relative flex items-center justify-center w-full mt-8 mb-8 select-none ${badgeContainerCustomClass} bg-none`}
         >
             <div
-                className={`absolute z-10 w-full h-full rounded-br-[100%] rounded-bl-[100%] !bg-none overflow-hidden top-[-10px]`}
+                className={`absolute z-10 w-full h-full rounded-br-[100%] rounded-bl-[100%] bg-none! overflow-hidden top-[-10px]`}
             >
                 <IonSkeletonText animated={true} style={{ width: '100%', height: '100%' }} />
             </div>

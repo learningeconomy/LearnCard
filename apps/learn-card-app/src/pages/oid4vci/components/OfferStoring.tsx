@@ -21,19 +21,15 @@ export interface OfferStoringProps {
  * from the issuer" case from the pre-auth "saving" case so the user
  * sees relevant copy at each transition.
  */
-const OfferStoring: React.FC<OfferStoringProps> = ({
-    message = 'Saving your credential...',
-}) => {
+const OfferStoring: React.FC<OfferStoringProps> = ({ message = 'Saving your credential...' }) => {
     // Tell apart the auth-code-return case so we can use a "Welcome
     // back" headline that acknowledges the redirect roundtrip rather
     // than a generic "Almost there".
     const isReturningFromIssuer =
-        message.toLowerCase().includes('finishing sign-in')
-        || message.toLowerCase().includes('signing in');
+        message.toLowerCase().includes('finishing sign-in') ||
+        message.toLowerCase().includes('signing in');
 
-    const headline = isReturningFromIssuer
-        ? 'Welcome back'
-        : 'Almost there';
+    const headline = isReturningFromIssuer ? 'Welcome back' : 'Almost there';
 
     const subhead = isReturningFromIssuer
         ? 'Finalizing your credential — this usually takes just a second.'
@@ -49,21 +45,17 @@ const OfferStoring: React.FC<OfferStoringProps> = ({
                 paddingRight: 'max(1.5rem, env(safe-area-inset-right))',
             }}
         >
-            <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full p-8 text-center space-y-5 animate-fade-in-up">
+            <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full p-8 text-center space-y-v3-5 animate-fade-in-up">
                 <FlowSteps current={2} />
 
                 <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-50 flex items-center justify-center">
                     <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
                 </div>
 
-                <div className="space-y-1">
-                    <h1 className="text-xl font-semibold text-grayscale-900">
-                        {headline}
-                    </h1>
+                <div className="space-y-v3-1">
+                    <h1 className="text-xl font-semibold text-grayscale-900">{headline}</h1>
 
-                    <p className="text-sm text-grayscale-600 leading-relaxed">
-                        {subhead}
-                    </p>
+                    <p className="text-sm text-grayscale-600 leading-relaxed">{subhead}</p>
                 </div>
             </div>
         </div>

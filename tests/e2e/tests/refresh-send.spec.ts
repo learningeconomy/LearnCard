@@ -2,6 +2,7 @@
 import { describe, test, expect, beforeAll, beforeEach } from 'vitest';
 import { randomUUID, randomBytes } from 'node:crypto';
 import type { ManagedCredentialRefreshReceipt, VC } from '@learncard/types';
+import { getManagedRefreshServices } from '@learncard/helpers';
 
 import {
     createApiTokenForUser,
@@ -46,9 +47,11 @@ const expectValidReceipt = (
 ): Receipt => {
     expect(receipt, 'refresh-enabled sends must return a receipt').toBeDefined();
     expect(receipt!.refreshId).toBeTruthy();
-    expect(receipt!.refreshService?.type).toBe('LearnCardCredentialRefresh2026');
-    expect(receipt!.refreshService?.id).toContain('/refresh/');
-    expect(receipt!.refreshService?.authorization?.type).toBe('LearnCardDIDAuth');
+    // The receipt carries the exact signed refreshService (object or list).
+    const [managedService] = getManagedRefreshServices(receipt!);
+    expect(managedService?.type).toBe('LearnCardCredentialRefresh2026');
+    expect(managedService?.id).toContain('/refresh/');
+    expect(managedService?.authorization?.type).toBe('LearnCardDIDAuth');
     expect(receipt!.credentialId).toMatch(/^urn:uuid:/);
     expect(receipt!.issuerDid).toMatch(/^did:/);
     expect(receipt!.holderDid).toMatch(/^did:/);
@@ -295,7 +298,7 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
 
         // The signed v1 carries the managed service and exactly one context fragment,
         // and verifies.
-        expect((held as any).refreshService?.id).toBe(receipt.refreshService.id);
+        expect((held as any).refreshService?.id).toBe(getManagedRefreshServices(receipt)[0]!.id);
         expect(managedContextFragments(held)).toHaveLength(1);
         const verification = await b.invoke.verifyCredential(held);
         expect(verification.errors).toEqual([]);
@@ -331,7 +334,9 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         expect(refreshed.managedVersion).toBe(2);
         expect((refreshed.credential as any).id).toBe(receipt.credentialId);
         expect((refreshed.credential as any).issuer).toBe(receipt.issuerDid);
-        expect((refreshed.credential as any).refreshService.id).toBe(receipt.refreshService.id);
+        expect((refreshed.credential as any).refreshService.id).toBe(
+            getManagedRefreshServices(receipt)[0]!.id
+        );
         expect((refreshed.credential as any).credentialStatus).toEqual(receipt.credentialStatus);
 
         // A recheck against the new current version reports no further change.
@@ -360,9 +365,11 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
 
         const receipt = expectValidReceipt(result.refresh);
 
-        // The boost was created from the same template — exactly one source of truth.
+        // Managed sends create a display-only anchor: the template's name stays private
+        // (generic label), while its category is kept for consent authorization.
         const boost = await a.invoke.getBoost(result.uri);
-        expect(boost.name).toBe('Inline Refresh Boost');
+        expect(boost.name).toBe('Credential');
+        expect(boost.category).toBe('Achievement');
         expect(await a.invoke.countBoosts()).toBe(boostsBefore + 1);
 
         await claimCredential(b, result.credentialUri);
@@ -653,7 +660,8 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         await delay(6_000);
 
         const notifications = await a.invoke.getNotifications({ limit: 50 });
-        const initial = (notifications?.notifications ?? []).filter(
+        if (!notifications) throw new Error('Could not read credential notifications');
+        const initial = notifications.notifications.filter(
             (notification: any) =>
                 notification.type === 'CREDENTIAL_RECEIVED' &&
                 (notification.data?.vcUris ?? []).includes(result.credentialUri)

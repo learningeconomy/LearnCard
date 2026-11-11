@@ -1,8 +1,8 @@
+import { appendConsentEvent, tryDispatchContractEvent } from '@helpers/contract-events.helpers';
 import {
     ConsentFlowTerms as ConsentFlowTermsType,
     ConsentFlowTransaction,
     ConsentFlowGuardianApproval,
-    LCNNotificationTypeEnumValidator,
     LCNProfile,
     UnsignedVC,
     VC,
@@ -19,11 +19,15 @@ import { DbContractType, FlatDbTermsType } from 'types/consentflowcontract';
 import { BoostType } from 'types/boost';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { reconsentTerms, upsertRequestedForRelationship } from './update';
-import { addNotificationToQueue } from '@helpers/notifications.helpers';
-import { getNotificationMessage } from '@helpers/notificationMessages';
-import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
-import { getBoostUri, sendBoost } from '@helpers/boost.helpers';
+import {
+    reconsentTerms,
+    claimAutoBoostTransaction,
+    completeAutoBoostTransaction,
+    releaseAutoBoostClaim,
+    isAutoBoostConsentCurrent,
+} from './update';
+import { getConsentFlowContractVersionRecord } from '@accesslayer/consentflowcontract/versions';
+import { getBoostUri, sendBoost, stampIssuanceDate } from '@helpers/boost.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
@@ -31,7 +35,13 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { getProfileByProfileId, getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { cloneDeep } from 'lodash';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
-import { constructUri } from '@helpers/uri.helpers';
+import {
+    lockContractAudience,
+    audienceVersionWhere,
+    consentMutationWhere,
+    assertAudienceMutation,
+    runAudienceMutation,
+} from './recipients';
 
 export const setCreatorForContract = async (contract: DbContractType, profile: LCNProfile) => {
     return ConsentFlowContract.relateTo({
@@ -78,15 +88,24 @@ export const consentToContract = async (
         expiresAt,
         oneTime,
         guardianApproval,
+        audienceVersion,
+        expectedRequestId,
+        smartResumeFingerprint,
+        acceptVersion,
     }: {
         terms: ConsentFlowTermsType;
         expiresAt?: string;
         liveSyncing?: boolean;
         oneTime?: boolean;
         guardianApproval?: ConsentFlowGuardianApproval;
+        audienceVersion?: number;
+        expectedRequestId?: string;
+        smartResumeFingerprint?: string;
+        acceptVersion?: number;
     },
     domain: string
 ) => {
+    const expectedContractVersion = Number(contract.currentVersion ?? 1);
     const terms = cloneDeep(_terms);
     const deniedWriters: string[] = terms.deniedWriters ?? [];
 
@@ -125,7 +144,16 @@ export const consentToContract = async (
     if (existing.length > 0) {
         return reconsentTerms(
             { terms: inflateObject(existing[0]!.terms), consenter, contract, contractOwner },
-            { terms, expiresAt, oneTime, guardianApproval },
+            {
+                terms,
+                expiresAt,
+                oneTime,
+                guardianApproval,
+                audienceVersion,
+                smartResumeFingerprint,
+                expectedRequestId,
+                acceptVersion,
+            },
             domain
         );
     }
@@ -140,73 +168,126 @@ export const consentToContract = async (
 
     const termsId = uuid();
 
-    const result = await new QueryBuilder(
-        new BindParam({
-            params: flattenObject({ terms, ...(guardianApproval ? { guardianApproval } : {}) }),
-        })
-    )
-        .match({
-            multiple: [
-                {
-                    model: Profile,
-                    where: { profileId: consenter.profileId },
-                    identifier: 'profile',
-                },
-                { model: ConsentFlowContract, where: { id: contract.id }, identifier: 'contract' },
-            ],
-        })
-        .create({
-            related: [
-                { identifier: 'profile' },
-                ConsentFlowTerms.getRelationshipByAlias('createdBy'),
-                {
-                    model: ConsentFlowTerms,
-                    properties: {
-                        id: termsId,
-                        status: oneTime ? 'stale' : 'live',
-                        createdAt: transaction.date,
-                        updatedAt: transaction.date,
-                        ...(expiresAt ? { expiresAt } : {}),
-                        ...(oneTime ? { oneTime } : {}),
-                    },
-                    identifier: 'terms',
-                },
-                ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
-                { identifier: 'contract' },
-            ],
-        })
-        .create({
-            related: [
-                {
-                    identifier: 'transaction',
-                    model: ConsentFlowTransactionModel,
-                    properties: transaction,
-                },
-                ConsentFlowTransactionModel.getRelationshipByAlias('isFor'),
-                { identifier: 'terms' },
-            ],
-        })
-        .set('terms += $params')
-        .set('transaction += $params')
-        .run();
+    const result = await runAudienceMutation(
+        appendConsentEvent(
+            lockContractAudience(
+                new QueryBuilder(
+                    new BindParam({
+                        params: flattenObject({
+                            terms,
+                            ...(smartResumeFingerprint
+                                ? {
+                                      smartResumeFingerprint,
+                                      smartResumePublicationStatus: 'pending',
+                                      smartResumeMutationVersion: 0,
+                                  }
+                                : {}),
+                            ...(guardianApproval ? { guardianApproval } : {}),
+                        }),
+                        expectedContractVersion,
+                        audienceVersion: audienceVersion ?? null,
+                        expectedRequestId: expectedRequestId ?? null,
+                        consenterProfileId: consenter.profileId,
+                    })
+                ),
+                contract.id
+            )
+                .where(
+                    `${audienceVersionWhere} AND ${consentMutationWhere} AND coalesce(contract.currentVersion, 1) = $expectedContractVersion AND coalesce(contract.status, 'active') <> 'retired'`
+                )
+                .set('contract.hasConsented = true')
+                .with('contract')
+                .match({
+                    multiple: [
+                        {
+                            model: Profile,
+                            where: { profileId: consenter.profileId },
+                            identifier: 'profile',
+                        },
+                        {
+                            model: ConsentFlowContract,
+                            where: { id: contract.id },
+                            identifier: 'contract',
+                        },
+                    ],
+                })
+                .where(
+                    'NOT EXISTS { MATCH (profile)-[:CREATED_BY]->(:ConsentFlowTerms)-[:CONSENTS_TO]->(contract) }'
+                )
+                .create({
+                    related: [
+                        { identifier: 'profile' },
+                        ConsentFlowTerms.getRelationshipByAlias('createdBy'),
+                        {
+                            model: ConsentFlowTerms,
+                            properties: {
+                                id: termsId,
+                                status: oneTime ? 'consumed' : 'live',
+                                consentedVersion: contract.currentVersion ?? 1,
+                                lastReviewedVersion: contract.currentVersion ?? 1,
+                                createdAt: transaction.date,
+                                updatedAt: transaction.date,
+                                ...(expiresAt ? { expiresAt } : {}),
+                                ...(oneTime ? { oneTime } : {}),
+                            },
+                            identifier: 'terms',
+                        },
+                        ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
+                        { identifier: 'contract' },
+                    ],
+                })
+                .create({
+                    related: [
+                        {
+                            identifier: 'transaction',
+                            model: ConsentFlowTransactionModel,
+                            properties: transaction,
+                        },
+                        ConsentFlowTransactionModel.getRelationshipByAlias('isFor'),
+                        { identifier: 'terms' },
+                    ],
+                })
+                .set('terms += $params')
+                .set('transaction += $params')
+                .with('terms, contract, transaction'),
+            {
+                consenterProfileId: consenter.profileId,
+                transaction,
+                domain,
+                messageKey:
+                    contract.name === 'AI Insights'
+                        ? 'consentFlowInsightsShared'
+                        : 'consentFlowTransactionCreated',
+            }
+        ).return('terms.id AS id')
+    );
+    assertAudienceMutation(result.records.length);
 
-    const autoBoosts = await ConsentFlowContract.findRelationships({
-        alias: 'autoReceive',
-        where: { source: { id: contract.id } },
-    });
+    const versionSnapshot = await getConsentFlowContractVersionRecord(
+        contract.id,
+        Number(contract.currentVersion ?? 1)
+    );
+    const configuredAutoBoosts = new Map(
+        (versionSnapshot?.autoboosts ?? []).map(config => [config.id, config])
+    );
+    const autoBoosts = (
+        await ConsentFlowContract.findRelationships({
+            alias: 'autoReceive',
+            where: { source: { id: contract.id } },
+        })
+    ).filter(boost => configuredAutoBoosts.has(boost.target.id));
 
     if (autoBoosts.length > 0) {
         await Promise.all(
             autoBoosts.map(async boost => {
+                let claimId: string | undefined;
+                let sendStarted = false;
                 try {
-                    const signingAuthorityEndpoint =
-                        boost.relationship?.signingAuthorityEndpoint || 'default';
-                    const signingAuthorityName =
-                        boost.relationship?.signingAuthorityName || 'default';
-
+                    const config = configuredAutoBoosts.get(boost.target.id)!;
+                    const signingAuthorityEndpoint = config.signingAuthorityEndpoint || 'default';
+                    const signingAuthorityName = config.signingAuthorityName || 'default';
                     const issuer =
-                        (boost.relationship?.issuer &&
-                            (await getProfileByProfileId(boost.relationship.issuer))) ||
+                        (config.issuer && (await getProfileByProfileId(config.issuer))) ||
                         contractOwner;
 
                     if (terms.deniedWriters?.includes(issuer.profileId)) return;
@@ -220,6 +301,14 @@ export const consentToContract = async (
 
                         if (categoryWritePermission !== true) return;
                     }
+                    claimId =
+                        (await claimAutoBoostTransaction(
+                            contract.id,
+                            termsId,
+                            String(boost.target.id),
+                            Boolean(oneTime)
+                        )) ?? undefined;
+                    if (!claimId) return;
 
                     const contractOwnerSigningAuthority = await getSigningAuthorityForUserByName(
                         issuer,
@@ -228,6 +317,8 @@ export const consentToContract = async (
                     );
 
                     if (!contractOwnerSigningAuthority) {
+                        await releaseAutoBoostClaim(claimId);
+                        claimId = undefined;
                         console.error(
                             `Signing authority "${signingAuthorityName}" at endpoint "${signingAuthorityEndpoint}" not found for contract owner`
                         );
@@ -237,6 +328,8 @@ export const consentToContract = async (
                     const boostCredential = JSON.parse(boost.target.boost) as UnsignedVC | VC;
 
                     boostCredential.issuer = { id: contractOwnerSigningAuthority.relationship.did };
+
+                    stampIssuanceDate(boostCredential);
 
                     if (boostCredential.type.includes('BoostCredential')) {
                         boostCredential.boostId = getBoostUri(boost.target.id, domain);
@@ -265,35 +358,24 @@ export const consentToContract = async (
                         [getDidWeb(domain, contractOwner.profileId)]
                     );
 
-                    const boostTransaction = {
-                        id: uuid(),
-                        action: 'write',
-                        date: new Date().toISOString(),
-                    } as const satisfies ConsentFlowTransaction;
-
                     const termsResult = await new QueryBuilder()
                         .match({
                             identifier: 'terms',
                             model: ConsentFlowTerms,
                             where: { id: termsId },
                         })
-                        .create({
-                            related: [
-                                {
-                                    identifier: 'boostTransaction',
-                                    model: ConsentFlowTransactionModel,
-                                    properties: boostTransaction,
-                                },
-                                ConsentFlowTransactionModel.getRelationshipByAlias('isFor'),
-                                { identifier: 'terms' },
-                            ],
-                        })
                         .return('terms')
                         .run();
-
                     const updatedTerms = termsResult.records[0]?.get('terms')
                         .properties as FlatDbTermsType;
-
+                    if (
+                        !(await isAutoBoostConsentCurrent(contract.id, termsId, Boolean(oneTime)))
+                    ) {
+                        await releaseAutoBoostClaim(claimId);
+                        claimId = undefined;
+                        return;
+                    }
+                    sendStarted = true;
                     await sendBoost({
                         from: { type: 'profile', profile: contractOwner },
                         to: consenter,
@@ -303,51 +385,28 @@ export const consentToContract = async (
                         skipNotification: true,
                         autoAcceptCredential: false,
                         contractTerms: inflateObject(updatedTerms),
+                        contractWriterProfileId: issuer.profileId,
+                        allowConsumedOneTime: Boolean(oneTime),
                     });
+                    await completeAutoBoostTransaction(claimId, termsId, String(boost.target.id));
+                    claimId = undefined;
                 } catch (error) {
-                    console.error('Error processing auto-boost:', error);
+                    if (claimId && sendStarted) {
+                        console.error(
+                            'Auto-boost claim send failed; delivery may be ambiguous',
+                            { claimId, termsId, boostId: String(boost.target.id) },
+                            error
+                        );
+                    } else {
+                        console.error('Error processing auto-boost:', error);
+                    }
+                    if (claimId && !sendStarted) await releaseAutoBoostClaim(claimId);
                 }
             })
         );
     }
 
-    // TODO: Improve notification handling for consent flow contracts
-    // TODO: Replace hardcoded string matching with contract type identification
-    // This should check a contract.type field instead of contract.name
-    const isAiInsights = contract.name === 'AI Insights';
-
-    const notificationMessage = getNotificationMessage(
-        isAiInsights ? 'consentFlowInsightsShared' : 'consentFlowTransactionCreated',
-        resolveRecipientLocale(contractOwner),
-        { consenter: consenter.displayName, contractName: contract.name }
-    );
-
-    const notificationMetadata = isAiInsights
-        ? {
-              type: 'AI Insight',
-              contractId: contract?.id,
-              contractUri: constructUri('contract', contract.id, domain),
-          }
-        : {};
-
-    await addNotificationToQueue({
-        type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
-        from: consenter,
-        to: contractOwner,
-        message: notificationMessage,
-        data: { transaction, metadata: notificationMetadata },
-    });
-
-    try {
-        await upsertRequestedForRelationship(
-            contract.id,
-            consenter.profileId,
-            'accepted',
-            'unseen'
-        );
-    } catch {
-        console.log('Unable to update contract request status');
-    }
+    await tryDispatchContractEvent(transaction.id);
 
     return result.summary.counters.containsUpdates();
 };

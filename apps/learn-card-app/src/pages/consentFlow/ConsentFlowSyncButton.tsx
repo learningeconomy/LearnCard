@@ -30,6 +30,7 @@ const ConsentFlowSyncButton: React.FC<ConsentFlowSyncButtonProps> = ({ preLogin,
     const location = useLocation();
     const history = useHistory();
     const { dataSource, ...otherParams } = queryString.parse(location.search);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const { token, login }: IAuthContext = useContext(AuthContext as any);
 
     useEffect(() => {
@@ -43,7 +44,7 @@ const ConsentFlowSyncButton: React.FC<ConsentFlowSyncButtonProps> = ({ preLogin,
     if (state === SYNC_STATE.hidden) {
         // Show a loader if there is ONE specific one being loaded. Otherwise, show nothing.
         if (dataSource) {
-            return <IonSkeletonText animated className="h-[45px] w-[100%] rounded-[25px]" />;
+            return <IonSkeletonText animated className="h-[45px] w-full rounded-[25px]" />;
         } else {
             return <></>;
         }
@@ -74,9 +75,9 @@ const ConsentFlowSyncButton: React.FC<ConsentFlowSyncButtonProps> = ({ preLogin,
     const handleSync = async () => {
         if (state === SYNC_STATE.synced) {
             return newModal(<DataSourceDisconnectModal id={id} />, {
-                className: '!gap-[5px]',
+                className: 'gap-[5px]!',
                 sectionClassName:
-                    '!bg-transparent !border-none !max-w-[350px] !shadow-none !px-[20px] !pb-[5px]',
+                    'bg-transparent! border-none! max-w-[350px]! shadow-none! px-[20px]! pb-[5px]!',
             });
         }
 
@@ -93,8 +94,9 @@ const ConsentFlowSyncButton: React.FC<ConsentFlowSyncButtonProps> = ({ preLogin,
     return (
         <button
             type="button"
-            className={`flex gap-[10px] rounded-[30px] p-[2px] items-center ${isSynced ? 'bg-emerald-700' : 'bg-grayscale-700'
-                }`}
+            className={`flex gap-[10px] rounded-[30px] p-[2px] items-center ${
+                isSynced ? 'bg-emerald-700' : 'bg-grayscale-700'
+            }`}
             onClick={handleSync}
             disabled={state === SYNC_STATE.syncing}
         >
@@ -106,8 +108,9 @@ const ConsentFlowSyncButton: React.FC<ConsentFlowSyncButtonProps> = ({ preLogin,
                 <span className="text-[17px] font-[600]">{state}</span>
             </div>
             <div
-                className={`h-[45px] w-[45px] rounded-full flex items-center justify-center shrink-0 ${isNotSynced ? 'bg-grayscale-900' : 'bg-white'
-                    }`}
+                className={`h-[45px] w-[45px] rounded-full flex items-center justify-center shrink-0 ${
+                    isNotSynced ? 'bg-grayscale-900' : 'bg-white'
+                }`}
             >
                 {syncIcon}
             </div>

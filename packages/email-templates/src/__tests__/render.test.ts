@@ -28,6 +28,13 @@ const VETPASS_BRANDING: Partial<TenantBranding> = {
  * produce output without throwing.
  */
 const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
+    announcement: {
+        title: 'New learning opportunities',
+        body: 'Explore the latest programs.',
+        ctaLabel: 'Explore',
+        ctaUrl: 'https://learncard.app/m/programs?utm_source=email',
+        unsubscribeUrl: 'https://learncard.app/unsubscribe?token=example',
+    },
     'embed-email-verification': {
         verificationCode: '123456',
         verificationEmail: 'test@example.com',
@@ -138,6 +145,41 @@ const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         credential: { name: 'Introduction to Biology' },
     },
     'account-sign-in-changed': {},
+
+    'escrow-hold-started': {
+        requestedAt: 'September 25, 2026, 3:00 PM',
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
+        deviceHint: 'Chrome on Windows',
+    },
+
+    'escrow-hold-reminder': {
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
+    },
+
+    'escrow-hold-released': {
+        completedAt: 'October 2, 2026, 3:00 PM',
+        supportUrl: 'https://learncard.app/support',
+    },
+
+    'escrow-hold-cancelled': {
+        cancelledAt: 'September 26, 2026, 9:15 AM',
+        reason: 'user',
+    },
+
+    'escrow-pin-locked': {
+        lockedAt: 'September 25, 2026, 3:00 PM',
+        releaseAfter: 'October 2, 2026, 3:00 PM',
+        cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
+    },
+    'escrow-pin-sign-in': {
+        signedInAt: 'October 2, 2026, 3:00 PM',
+        secureUrl: 'https://learncard.app/account/secure',
+    },
+    'account-secured': {
+        securedAt: 'October 2, 2026, 3:00 PM',
+    },
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(TEMPLATE_FIXTURES) as TemplateId[];
@@ -387,6 +429,277 @@ describe('renderEmail — credential-updated', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Escrow hold lifecycle (nitro-escrow-enclave, P5.1) — plain-language recovery
+// notifications. No user-facing jargon: never render "wallet", "DID",
+// "share", "enclave", "escrow", "SSS", or "key derivation".
+// ---------------------------------------------------------------------------
+
+describe('renderEmail — escrow hold lifecycle', () => {
+    const JARGON = ['wallet', 'DID', 'share', 'enclave', 'escrow', 'SSS', 'key derivation'];
+
+    const assertNoJargon = (text: string) => {
+        const lower = text.toLowerCase();
+        for (const word of JARGON) {
+            expect(lower).not.toContain(word.toLowerCase());
+        }
+    };
+
+    it('escrow-hold-started includes the cancel URL, both dates, and the device hint', async () => {
+        const data = TEMPLATE_FIXTURES['escrow-hold-started'];
+        const { html, text, subject } = await renderEmail(
+            'escrow-hold-started',
+            DEFAULT_BRANDING,
+            data
+        );
+
+        expect(html).toContain(data.cancelUrl);
+        expect(html).toContain(data.requestedAt);
+        expect(html).toContain(data.releaseAfter);
+        expect(html).toContain(data.deviceHint);
+        expect(subject).toBe('Account recovery started');
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+    });
+
+    it('escrow-hold-started renders without the optional device hint', async () => {
+        const { html } = await renderEmail('escrow-hold-started', DEFAULT_BRANDING, {
+            requestedAt: 'September 25, 2026, 3:00 PM',
+            releaseAfter: 'October 2, 2026, 3:00 PM',
+            cancelUrl: 'https://learncard.app/recovery/cancel?token=xyz',
+        });
+
+        expect(html).toContain('https://learncard.app/recovery/cancel?token=xyz');
+        expect(html).not.toContain('undefined');
+    });
+
+    it('escrow-hold-reminder includes the cancel URL and the release date', async () => {
+        const data = TEMPLATE_FIXTURES['escrow-hold-reminder'];
+        const { html, text, subject } = await renderEmail(
+            'escrow-hold-reminder',
+            DEFAULT_BRANDING,
+            data
+        );
+
+        expect(html).toContain(data.cancelUrl);
+        expect(html).toContain(data.releaseAfter);
+        expect(subject).toBe('Recovery completes tomorrow');
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+    });
+
+    it('escrow-hold-released includes the completion date and the support link when provided', async () => {
+        const data = TEMPLATE_FIXTURES['escrow-hold-released'];
+        const { html, text, subject } = await renderEmail(
+            'escrow-hold-released',
+            DEFAULT_BRANDING,
+            data
+        );
+
+        expect(html).toContain(data.completedAt);
+        expect(html).toContain(data.supportUrl);
+        expect(subject).toBe('Your account was recovered');
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+    });
+
+    it('escrow-hold-released renders without the optional support link', async () => {
+        const { html } = await renderEmail('escrow-hold-released', DEFAULT_BRANDING, {
+            completedAt: 'October 2, 2026, 3:00 PM',
+        });
+
+        expect(html).toContain('October 2, 2026, 3:00 PM');
+        expect(html).not.toContain('undefined');
+    });
+
+    it.each([
+        ['user', 'cancelled this request'],
+        ['superseded', 'newer recovery request'],
+        ['pin-locked', 'incorrect PIN attempts'],
+        ['release-failed', 'could not be completed'],
+    ] as const)('escrow-hold-cancelled renders reason "%s"', async (reason, expectedSnippet) => {
+        const { html, subject } = await renderEmail('escrow-hold-cancelled', DEFAULT_BRANDING, {
+            cancelledAt: 'September 26, 2026, 9:15 AM',
+            reason,
+        });
+
+        expect(html).toContain('September 26, 2026, 9:15 AM');
+        expect(html).toContain(expectedSnippet);
+        expect(subject).toBe('Recovery request cancelled');
+        assertNoJargon(html);
+    });
+
+    it('escrow-hold-cancelled renders a generic message when reason is omitted', async () => {
+        const { html } = await renderEmail('escrow-hold-cancelled', DEFAULT_BRANDING, {
+            cancelledAt: 'September 26, 2026, 9:15 AM',
+        });
+
+        expect(html).toContain('No further action is needed');
+    });
+
+    it('escrow-pin-locked includes the locked date, release date, and cancel URL when a hold is pending', async () => {
+        const data = TEMPLATE_FIXTURES['escrow-pin-locked'];
+        const { html, text, subject } = await renderEmail(
+            'escrow-pin-locked',
+            DEFAULT_BRANDING,
+            data
+        );
+
+        expect(html).toContain(data.lockedAt);
+        expect(html).toContain(data.releaseAfter);
+        expect(html).toContain(data.cancelUrl);
+        expect(subject).toBe('Recovery PIN locked');
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+    });
+
+    it('escrow-pin-locked renders generic fallback copy with no button when no hold is pending', async () => {
+        const { html } = await renderEmail('escrow-pin-locked', DEFAULT_BRANDING, {
+            lockedAt: 'September 25, 2026, 3:00 PM',
+        });
+
+        expect(html).toContain('September 25, 2026, 3:00 PM');
+        expect(html).toContain('waiting-period recovery is still available');
+        expect(html).not.toContain('undefined');
+    });
+
+    it('escrow-pin-sign-in includes the sign-in date and the secure-account link', async () => {
+        const data = TEMPLATE_FIXTURES['escrow-pin-sign-in'];
+        const { html, text, subject } = await renderEmail(
+            'escrow-pin-sign-in',
+            DEFAULT_BRANDING,
+            data
+        );
+
+        expect(html).toContain(data.signedInAt);
+        expect(html).toContain(data.secureUrl);
+        expect(text).toContain('Not you? Secure your account.');
+        expect(text).toContain('Secure my account');
+        expect(subject).toBe('New device signed in with your PIN');
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+    });
+
+    it('escrow-pin-sign-in formats the ISO timestamp lca-api sends, per locale', async () => {
+        const iso = '2026-11-02T15:04:05.123Z';
+        const en = await renderEmail('escrow-pin-sign-in', DEFAULT_BRANDING, {
+            signedInAt: iso,
+            secureUrl: 'https://learncard.app/account/secure',
+        });
+        const fr = await renderEmail(
+            'escrow-pin-sign-in',
+            DEFAULT_BRANDING,
+            { signedInAt: iso, secureUrl: 'https://learncard.app/account/secure' },
+            'fr'
+        );
+
+        expect(en.text).not.toContain(iso);
+        expect(en.text).toContain('November 2, 2026');
+        expect(en.text).toContain('UTC');
+        expect(fr.text).toContain('2 novembre 2026');
+    });
+
+    it('escrow-pin-sign-in carries tenant branding', async () => {
+        const { html } = await renderEmail('escrow-pin-sign-in', VETPASS_BRANDING, {
+            signedInAt: 'October 2, 2026, 3:00 PM',
+            secureUrl: 'https://vetpass.app/account/secure',
+        });
+
+        expect(html).toContain('VetPass');
+        expect(html).toContain('https://vetpass.app/account/secure');
+    });
+
+    it('account-secured works for an owner who did not do it (no secure link, support first)', async () => {
+        const data = TEMPLATE_FIXTURES['account-secured'];
+        const { html, text, subject } = await renderEmail(
+            'account-secured',
+            DEFAULT_BRANDING,
+            data
+        );
+
+        expect(html).toContain(data.securedAt);
+        expect(subject).toBe('Other devices were signed out of your account');
+        // The owner's login may be gone, so the notice must not depend on the in-app action.
+        expect(html).not.toContain('/account/secure');
+        expect(text).toContain('your own sign-in may have been removed');
+        // The revoke reset every recovery method and removed automatic recovery, so the
+        // lost-login path is not offered as the way back; support is.
+        expect(text).toContain('reset its recovery methods');
+        expect(text).not.toContain('I lost access to my school email or login');
+        expect(text).toContain(`Contact ${DEFAULT_BRANDING.supportEmail} right away`);
+        expect(html).toContain(`href="${DEFAULT_BRANDING.appUrl}"`);
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+    });
+
+    it('account-secured formats the ISO timestamp lca-api sends, per locale', async () => {
+        const iso = '2026-11-02T15:04:05.123Z';
+        const en = await renderEmail('account-secured', DEFAULT_BRANDING, { securedAt: iso });
+        const es = await renderEmail('account-secured', DEFAULT_BRANDING, { securedAt: iso }, 'es');
+
+        expect(en.text).not.toContain(iso);
+        expect(en.text).toContain('November 2, 2026');
+        expect(en.text).toContain('UTC');
+        expect(es.text).toContain('2 de noviembre de 2026');
+        expect(es.subject).not.toBe(en.subject);
+    });
+
+    it('account-secured carries tenant branding and the tenant support address', async () => {
+        const { html, text } = await renderEmail('account-secured', VETPASS_BRANDING, {
+            securedAt: 'October 2, 2026, 3:00 PM',
+        });
+
+        expect(html).toContain('VetPass');
+        expect(text).toContain(`Contact ${VETPASS_BRANDING.supportEmail} right away`);
+        expect(html).toContain(`href="${VETPASS_BRANDING.appUrl}"`);
+        expect(text).not.toContain(DEFAULT_BRANDING.supportEmail);
+    });
+
+    it('account-secured points to the organization when the tenant has no support address', async () => {
+        const { text } = await renderEmail(
+            'account-secured',
+            { ...DEFAULT_BRANDING, supportEmail: '' },
+            TEMPLATE_FIXTURES['account-secured']
+        );
+
+        expect(text).not.toContain('Contact  right away');
+        expect(text).toContain(
+            `Contact the organization that gave you access to ${DEFAULT_BRANDING.brandName} right away`
+        );
+        expect(text).not.toContain('I lost access to my school email or login');
+    });
+
+    it('all escrow hold templates include the "This wasn\'t me" cancel CTA when a cancel URL is present', async () => {
+        const started = await renderEmail(
+            'escrow-hold-started',
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES['escrow-hold-started']
+        );
+        const reminder = await renderEmail(
+            'escrow-hold-reminder',
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES['escrow-hold-reminder']
+        );
+        const pinLocked = await renderEmail(
+            'escrow-pin-locked',
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES['escrow-pin-locked']
+        );
+
+        // Plain text output has no HTML entity escaping, so the apostrophe is literal.
+        for (const { text } of [started, reminder, pinLocked]) {
+            expect(text).toContain("This wasn't me");
+            expect(text).toContain('Cancel recovery');
+        }
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Branding tests — custom branding flows through to rendered output
 // ---------------------------------------------------------------------------
 
@@ -553,5 +866,37 @@ describe('renderEmail — edge cases', () => {
         });
 
         expect(html).toContain('no-recipient-token');
+    });
+});
+
+describe('announcement', () => {
+    it('omits the button and fallback in HTML and text when no campaign destination exists', async () => {
+        const { ctaUrl, ...content } = TEMPLATE_FIXTURES.announcement;
+        const data = { ...content, ctaLabel: 'Unique campaign action' };
+        const { html, text } = await renderEmail('announcement', VETPASS_BRANDING, data);
+        for (const output of [html, text]) {
+            expect(output).not.toContain(ctaUrl);
+            expect(output).not.toContain(data.ctaLabel);
+            expect(output).not.toContain('/m/');
+            expect(output).toContain(data.body);
+            expect(output).toContain(data.unsubscribeUrl);
+        }
+    });
+
+    it('renders escaped authored copy, CTA and unsubscribe in HTML and text', async () => {
+        const data = {
+            ...TEMPLATE_FIXTURES.announcement,
+            body: '<script>alert(1)</script>\nSecond line',
+        };
+        const { html, text, subject } = await renderEmail('announcement', VETPASS_BRANDING, data);
+        expect(subject).toBe(data.title);
+        expect(html).toContain('VetPass');
+        expect(html).not.toContain('<script>alert');
+        expect(html).toContain('&lt;script&gt;');
+        for (const output of [html, text]) {
+            expect(output).toContain(data.ctaUrl);
+            expect(output).toContain(data.unsubscribeUrl);
+            expect(output).toContain('Second line');
+        }
     });
 });

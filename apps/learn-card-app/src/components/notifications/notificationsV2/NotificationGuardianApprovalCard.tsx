@@ -29,8 +29,8 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
         notification?.actionStatus === 'COMPLETED'
             ? 'approved'
             : notification?.actionStatus === 'REJECTED'
-            ? 'rejected'
-            : 'pending';
+              ? 'rejected'
+              : 'pending';
 
     const [actionState, setActionState] = useState<ActionState>(initialState);
 

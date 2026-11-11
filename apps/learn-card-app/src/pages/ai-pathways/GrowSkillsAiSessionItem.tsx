@@ -76,7 +76,7 @@ const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data 
         >
             <div className="px-[15px] py-[20px] flex flex-col gap-[5px] h-full">
                 <div className="flex items-start gap-[10px]">
-                    <AiSessionsIconWithShape className="w-[35px] h-[35px] flex-shrink-0" />
+                    <AiSessionsIconWithShape className="w-[35px] h-[35px] shrink-0" />
                     <div className="flex-1 min-w-0">
                         <h3 className="text-[17px] font-poppins font-[600] text-grayscale-900 leading-[24px] tracking-[0.25px] line-clamp-2 text-left">
                             {title}

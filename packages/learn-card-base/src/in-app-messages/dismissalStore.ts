@@ -1,8 +1,13 @@
 import type { InAppMessage, InAppMessageFrequency } from '@learncard/types';
 
+import { resetInAppMessageFatigue } from './fatigueStore';
+
 const STORAGE_KEY = 'lcb-in-app-messages-seen';
 
 const sessionSeen = new Set<string>();
+
+const accountMessageKey = (id: string, accountDid?: string): string =>
+    accountDid ? `${encodeURIComponent(accountDid)}:${id}` : id;
 
 const readSeenMap = (): Record<string, string> => {
     try {
@@ -33,12 +38,16 @@ const daysBetween = (fromIso: string, now: number): number => {
 export const shouldSuppressMessage = (
     id: string,
     frequency: InAppMessageFrequency,
-    now: number = Date.now()
+    now: number = Date.now(),
+    accountDid?: string
 ): boolean => {
-    if (frequency === 'always') return false;
-    if (frequency === 'session') return sessionSeen.has(id);
+    const key = accountMessageKey(id, accountDid);
 
-    const lastSeen = readSeenMap()[id];
+    if (frequency === 'always') return false;
+    if (frequency === 'session') return sessionSeen.has(key);
+
+    const seen = readSeenMap();
+    const lastSeen = seen[key] ?? seen[id];
 
     if (frequency === 'once') return Boolean(lastSeen);
 
@@ -54,22 +63,30 @@ export const shouldSuppressMessage = (
 export const markMessageSeen = (
     id: string,
     frequency: InAppMessageFrequency,
-    now: number = Date.now()
+    now: number = Date.now(),
+    accountDid?: string
 ): void => {
-    sessionSeen.add(id);
+    const key = accountMessageKey(id, accountDid);
+
+    sessionSeen.add(key);
 
     if (frequency === 'always' || frequency === 'session') return;
 
     const map = readSeenMap();
 
-    map[id] = new Date(now).toISOString();
+    map[key] = new Date(now).toISOString();
     writeSeenMap(map);
 };
 
+export const getMessageLastSeen = (id: string, accountDid?: string): string | undefined =>
+    readSeenMap()[accountMessageKey(id, accountDid)];
+
 export const filterSuppressed = (
     messages: InAppMessage[],
-    now: number = Date.now()
-): InAppMessage[] => messages.filter(m => !shouldSuppressMessage(m.id, m.frequency, now));
+    now: number = Date.now(),
+    accountDid?: string
+): InAppMessage[] =>
+    messages.filter(m => !shouldSuppressMessage(m.id, m.frequency, now, accountDid));
 
 const resetListeners = new Set<() => void>();
 
@@ -82,5 +99,6 @@ export const onDismissalsReset = (listener: () => void): (() => void) => {
 export const resetInAppMessageDismissals = (): void => {
     sessionSeen.clear();
     writeSeenMap({});
+    resetInAppMessageFatigue();
     resetListeners.forEach(listener => listener());
 };

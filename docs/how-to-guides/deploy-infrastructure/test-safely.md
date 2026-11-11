@@ -40,13 +40,14 @@ const learnCard = await initLearnCard({
 **`network` doesn't move storage.** `network` and `cloud.url` are independent options — `cloud.url` defaults to the **production** LearnCloud endpoint (`https://cloud.learncard.com/trpc`) no matter what you pass to `network`. If you only set `network` to staging, credential storage still goes through production LearnCloud. Set both to stay fully on staging.
 {% endhint %}
 
-If you are using the LearnCard CLI, you can specify the network using the `--network` flag:
+If you are using the LearnCard CLI, pick the network with `--network`. Use a separate folder for each network: the first command that creates the folder's identity saves the network to `.env` as `NETWORK_URL`, and later commands in that folder stay on it.
 
 ```bash
-learncard send --network https://staging.network.learncard.com/trpc
+mkdir my-issuer-staging && cd my-issuer-staging
+npx @learncard/cli send you@yourdomain.com --network staging
 ```
 
-The CLI's `send` command only exposes `--network`, not a `--cloud` equivalent — it moves where credentials are issued, not where they're stored.
+Unlike the SDK, the CLI's `--network staging` moves **all** services to staging: the network, LearnCloud storage, and the LearnCard app API. For any other network URL (a self-hosted or local deployment), set the matching service URLs yourself with the `CLOUD_URL` and `LCA_API_URL` environment variables, or as keys in the folder's `.env`. Values set in the environment take precedence over `.env`.
 
 ## Suppress delivery
 

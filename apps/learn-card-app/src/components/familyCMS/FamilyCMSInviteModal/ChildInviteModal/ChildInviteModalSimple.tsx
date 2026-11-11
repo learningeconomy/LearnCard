@@ -63,6 +63,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
 }) => {
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
+    const brandingConfig = useBrandingConfig();
 
     const { mutate: createChildAccount } = useCreateChildAccount();
 
@@ -169,7 +170,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
     return (
         <>
             <div className="w-full flex flex-col items-center justify-center ion-padding mt-8">
-                <div className="flex flex-col items-center justify-center w-full max-w-[400px] shadow-sm rounded-[15px] bg-white px-4 pt-6 pb-10">
+                <div className="flex flex-col items-center justify-center w-full max-w-[400px] shadow-xs rounded-[15px] bg-white px-4 pt-6 pb-10">
                     <div>
                         <p className="text-grayscale-900 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-xl">
                             {m['family.childInvite.title']()}
@@ -226,7 +227,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                                 setName(_name);
                                 setErrors?.({});
                             }}
-                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !pb-2 !pr-8 font-normal font-poppins text-sm w-full troops-cms-placeholder ${
+                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] px-4! pb-2! pr-8! font-normal font-poppins text-sm w-full troops-cms-placeholder ${
                                 errors?.name ? 'border-red-300 border-2' : ''
                             }`}
                             label={m['family.childInvite.nameLabel']()}
@@ -260,7 +261,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                                 setShortBio(_shortBio);
                                 setErrors?.({});
                             }}
-                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !pb-2 font-normal font-poppins text-sm w-full troops-cms-placeholder ${
+                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] px-4! pb-2! font-normal font-poppins text-sm w-full troops-cms-placeholder ${
                                 errors?.shortBio ? 'border-red-300 border-2' : ''
                             }`}
                             label={m['family.childInvite.taglineLabel']()}
@@ -302,7 +303,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                 <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 rounded-full bg-white text-grayscale-800 py-2 shadow-sm"
+                    className="flex-1 rounded-full bg-white text-grayscale-800 py-2 shadow-xs"
                 >
                     {m['common.close']()}
                 </button>
@@ -314,7 +315,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                     }}
                     onClick={handleCreateChildAccount}
                     disabled={isLoading}
-                    className="flex-1 rounded-full text-white py-2 shadow-sm bg-emerald-700"
+                    className="flex-1 rounded-full text-white py-2 shadow-xs bg-emerald-700"
                 >
                     {isLoading ? 'Creating...' : 'Create'}
                 </button>

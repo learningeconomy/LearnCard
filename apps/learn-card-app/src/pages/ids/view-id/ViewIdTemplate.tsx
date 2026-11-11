@@ -58,6 +58,7 @@ const ViewIdTemplate: React.FC<ViewIdTemplateProps> = ({
     isGeneralView = false,
     skipProofCheck,
 }) => {
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     boostUri = boostUri ?? credential?.boostId;
 
     // const network = useGetTroopNetwork(credential, boostUri);
@@ -104,7 +105,7 @@ const ViewIdTemplate: React.FC<ViewIdTemplateProps> = ({
     return (
         <div className="h-full flex items-center justify-center">
             <div className="rounded-[20px] shadow-box-bottom overflow-hidden flex flex-col max-w-[335px]">
-                <div className="flex flex-col bg-white bg-opacity-70 backdrop-blur-[10px]">
+                <div className="flex flex-col bg-white/70  backdrop-blur-[10px]">
                     <div className="p-[15px]">
                         <IdDisplay
                             credential={credential}
@@ -132,7 +133,7 @@ const ViewIdTemplate: React.FC<ViewIdTemplateProps> = ({
                             <span className="flex font-notoSans text-[22px] text-grayscale-900 gap-[3px] items-center leading-[130%] tracking-[-0.25px] pt-[10px]">
                                 <CredentialVerificationDisplay
                                     credential={credential}
-                                    iconClassName="!h-[15px] !w-[15px]"
+                                    iconClassName="h-[15px]! w-[15px]!"
                                 />
                                 {credential?.name}
                             </span>
@@ -169,12 +170,12 @@ const ViewIdTemplate: React.FC<ViewIdTemplateProps> = ({
                         )}
                     </div>
 
-                    <div className="pt-[10px] border-t-[1px] border-solid border-grayscale-200 flex justify-center">
+                    <div className="pt-[10px] border-t border-solid border-grayscale-200 flex justify-center">
                         <CredentialVerificationDisplay
                             credential={credential}
                             showText
-                            className="!text-[12px] font-poppins font-[500]"
-                            iconClassName="!h-[18px] !w-[18px]"
+                            className="text-[12px]! font-poppins font-[500]"
+                            iconClassName="h-[18px]! w-[18px]!"
                         />
                     </div>
                 </div>

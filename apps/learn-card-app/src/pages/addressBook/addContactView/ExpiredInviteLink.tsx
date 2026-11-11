@@ -49,7 +49,7 @@ export const ExpiredInviteLink: React.FC<{
                 <ExpiredInviteLinkFooter
                     buttonText="Send Request"
                     buttonAction={e => handleRequestButton(e)}
-                    buttonClassName="!bg-emerald-700"
+                    buttonClassName="bg-emerald-700!"
                 />
             </div>
         </section>

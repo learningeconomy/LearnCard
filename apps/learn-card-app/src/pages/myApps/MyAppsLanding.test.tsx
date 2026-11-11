@@ -8,7 +8,7 @@ const replace = vi.fn();
 let mockLocation = { search: '' };
 
 vi.mock('react-router-dom', async orig => {
-    const actual = (await orig()) as any;
+    const actual = await orig<typeof import('react-router-dom')>();
     return { ...actual, useHistory: () => ({ push, replace }), useLocation: () => mockLocation };
 });
 
@@ -57,5 +57,19 @@ describe('MyAppsLanding', () => {
         expect(replace).toHaveBeenCalledWith(
             expect.stringContaining('/launchpad/browse?uri=spark%3A%2F%2Fx&foo=1')
         );
+    });
+
+    it('renders an accessible prominent Browse More action that opens the full catalog', () => {
+        renderPage();
+
+        const browseMore = screen.getByRole('button', { name: 'Browse More' });
+
+        expect(browseMore).toHaveClass('min-h-11', 'rounded-[20px]', 'bg-grayscale-900');
+        expect(browseMore).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-emerald-500');
+        expect(browseMore).toHaveTextContent('Browse More +');
+
+        browseMore.click();
+
+        expect(push).toHaveBeenCalledWith('/launchpad/browse?tab=All');
     });
 });

@@ -1,3 +1,7 @@
+import './config/applyDockerStageConfig';
+
+import { dispatchContractEvents } from '@helpers/contract-events.helpers';
+import { suspendExpiredConsentFlowTerms } from '@helpers/consentflow-deadline.helpers';
 import { configureInboxBatchBodyLimit } from '@helpers/inbox-batch-http.helpers';
 import { environment } from '@environment';
 import Fastify from 'fastify';
@@ -13,6 +17,7 @@ import {
     DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
 
+import { migrateLegacyConsentFlowContracts } from '@helpers/consentflow-legacy-migration.helpers';
 import { neogma } from '@instance';
 import { appRouter, type AppRouter, createContext } from './app';
 import { publicShareLinkCacheControlHeaders } from './routes';
@@ -22,6 +27,7 @@ import { inboxBatchResponseMeta } from './helpers/inbox-batch-http.helpers';
 import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
 import { statusListsFastifyPlugin } from './status-lists';
+import { campaignUnsubscribeFastifyPlugin } from './campaign-unsubscribe';
 import { credentialRefreshFastifyPlugin } from './credential-refresh';
 import { deliverQueuedNotification } from '@helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from '@helpers/skill-embedding.helpers';
@@ -41,9 +47,46 @@ const server = Fastify({ routerOptions: { maxParamLength: 5000 } });
  * graph/remote/signing dependency is initialized at all.
  */
 let shareLinkMaintenanceScheduler: ShareLinkMaintenanceScheduler | null = null;
+let contractEventTimer: ReturnType<typeof setTimeout> | null = null;
+let contractEventPass: Promise<unknown> | null = null;
+let contractEventsStopped = false;
+let consentDeadlineTimer: NodeJS.Timeout | undefined;
+let consentDeadlinePass: Promise<unknown> | null = null;
+let consentDeadlineStopped = false;
+
+const runContractEventPass = (): void => {
+    if (contractEventsStopped) return;
+    contractEventPass = dispatchContractEvents()
+        .catch(() => {
+            console.warn('contract_events: recovery_pending');
+        })
+        .finally(() => {
+            contractEventPass = null;
+            if (!contractEventsStopped)
+                contractEventTimer = setTimeout(runContractEventPass, 60_000);
+        });
+};
+const runConsentDeadlinePass = (): void => {
+    if (consentDeadlineStopped) return;
+    consentDeadlinePass = suspendExpiredConsentFlowTerms()
+        .catch(() => {
+            console.warn('consent_deadline: recovery_pending');
+        })
+        .finally(() => {
+            consentDeadlinePass = null;
+            if (!consentDeadlineStopped)
+                consentDeadlineTimer = setTimeout(runConsentDeadlinePass, 60_000);
+        });
+};
 
 server.addHook('onClose', async () => {
+    contractEventsStopped = true;
+    if (contractEventTimer) clearTimeout(contractEventTimer);
+    await contractEventPass;
     await shareLinkMaintenanceScheduler?.stop();
+    consentDeadlineStopped = true;
+    clearTimeout(consentDeadlineTimer);
+    await consentDeadlinePass;
 });
 // Register before either OpenAPI or tRPC registers its wildcard route. The hook raises the
 // parser ceiling for those shared routes, then narrows it back to 4 MiB only for batch issuance.
@@ -147,10 +190,13 @@ server.register(didFastifyPlugin);
 server.register(skillsViewerFastifyPlugin);
 server.register(statusListsFastifyPlugin);
 server.register(credentialRefreshFastifyPlugin);
+server.register(campaignUnsubscribeFastifyPlugin);
 
 (async () => {
     try {
-        console.log('Server starting on port ', environment.PORT || 3000);
+        // Complete the idempotent legacy backfill before accepting traffic. Every
+        // replica can safely run it; Neo4j node locks serialize first-time writes.
+        await migrateLegacyConsentFlowContracts();
         await server.listen({ host: '0.0.0.0', port: Number(environment.PORT || 3000) });
 
         try {
@@ -166,6 +212,9 @@ server.register(credentialRefreshFastifyPlugin);
         } catch (error) {
             console.error('Skill embedding backfill failed', error);
         }
+
+        contractEventTimer = setTimeout(runContractEventPass, 60_000);
+        consentDeadlineTimer = setTimeout(runConsentDeadlinePass, 60_000);
 
         // Explicit startup after readiness. Disabled/invalid config stays inert.
         const maintenanceRuntime = createShareLinkMaintenanceRuntime();

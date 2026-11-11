@@ -35,6 +35,15 @@ class TestInboxIssue200Response(unittest.TestCase):
         model = InboxIssue200Response()
         if include_optional:
             return InboxIssue200Response(
+                refresh = openapi_client.models.inbox_issue_200_response_refresh.inbox_issue_200_response_refresh(
+                    refresh_id = '0', 
+                    refresh_service = {
+                        'key' : null
+                        }, 
+                    credential_id = '0', 
+                    issuer_did = '0', 
+                    credential_status = null, 
+                    holder_did = '0', ),
                 issuance_id = '',
                 status = 'PENDING',
                 recipient = openapi_client.models.inbox_issue_200_response_recipient.inbox_issue_200_response_recipient(),

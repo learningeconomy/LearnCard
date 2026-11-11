@@ -71,7 +71,7 @@ export const NotificationUserAcceptedBoostCard: React.FC<
                     <div className="flex items-center justify-end w-full mt-3">
                         <button
                             onClick={handleCancelClick}
-                            className={`rounded-[24px] flex items-center justify-center  h-[42px] w-[42px] shadow-bottom bg-white font-semibold mr-2 p-[0px] tracking-wide ${viewButtonStyles}`}
+                            className={`rounded-[24px] flex items-center justify-center  h-[42px] w-[42px] shadow-bottom bg-white font-semibold mr-2 p-0 tracking-wide ${viewButtonStyles}`}
                             role="button"
                             name="notification-view-button"
                         >

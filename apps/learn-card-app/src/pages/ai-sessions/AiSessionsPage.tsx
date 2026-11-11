@@ -46,7 +46,9 @@ type ViewMode = 'topics' | 'sessions' | 'topicDetail';
 type TopicGroup = {
     key: string;
     groupTitle: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     topics: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     sessions: any[];
     providerNames: string[];
     providerLogos: string[];
@@ -192,8 +194,8 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
             view === 'sessions'
                 ? allSessions
                 : selectedGroupedTopic
-                ? selectedGroupedTopic.sessions
-                : selectedTopicData?.sessions ?? [];
+                  ? selectedGroupedTopic.sessions
+                  : (selectedTopicData?.sessions ?? []);
 
         const lower = searchInput.toLowerCase();
 
@@ -209,9 +211,11 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
         if (filterBy === AiSessionsFilterOptionsEnum.unfinished) {
             items = items.filter(session => {
                 const isFinished = Boolean(
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     (session as any)?.completed ||
-                        (session as any)?.hasAssessment ||
-                        session?.vc?.completed
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
+                    (session as any)?.hasAssessment ||
+                    session?.vc?.completed
                 );
                 return !isFinished;
             });
@@ -254,14 +258,14 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
 
     const selectedTopicTitle = selectedGroupedTopic
         ? selectedGroupedTopic.groupTitle
-        : selectedTopicData?.topicVc?.boostCredential?.topicInfo?.title ?? 'Topic';
+        : (selectedTopicData?.topicVc?.boostCredential?.topicInfo?.title ?? 'Topic');
     const selectedTopicUnfinished = selectedGroupedTopic
         ? selectedGroupedTopic.unfinishedSessionsCount
-        : selectedTopicData?.sessions?.filter(session => !session?.vc?.completed).length ?? 0;
+        : (selectedTopicData?.sessions?.filter(session => !session?.vc?.completed).length ?? 0);
 
     const selectedTopicSessionCount = selectedGroupedTopic
         ? selectedGroupedTopic.sessions.length
-        : selectedTopicData?.sessions?.length ?? 0;
+        : (selectedTopicData?.sessions?.length ?? 0);
 
     // For grouped (multi-provider) topics fall through to the first topic in
     // the group. We don't have a story yet for which provider's pathways to
@@ -314,7 +318,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                         category={CredentialCategoryEnum.aiTopic}
                         subheaderType={SubheaderTypeEnum.AiSessions}
                         hidePlusBtn={true}
-                        customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
+                        customClassName="bg-linear-to-b/srgb from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
                     />
 
                     <AiFeatureGate>
@@ -386,7 +390,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
 
                                     <NewAiSessionButton
                                         type={NewAiSessionButtonEnum.icon}
-                                        className="!mt-0 !justify-center"
+                                        className="mt-0! justify-center!"
                                     />
                                 </div>
 
@@ -435,7 +439,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                             : AiFilteringTypes.sessions
                                     }
                                     placeholder={searchPlaceholder}
-                                    className="!bg-grayscale-200 !w-full"
+                                    className="bg-grayscale-200! w-full!"
                                 />
 
                                 {view === 'topicDetail' && (
@@ -444,7 +448,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                             type={NewAiSessionButtonEnum.mobile}
                                             text={m['ai.newSession']()}
                                             onClick={handleNewSessionForSelectedTopic}
-                                            className="!bg-white !border-grayscale-200 shadow-soft-bottom !mt-0"
+                                            className="bg-white! border-grayscale-200! shadow-soft-bottom mt-0!"
                                         />
                                     </div>
                                 )}
@@ -521,6 +525,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                                 filteredSessions.map((session, index) => (
                                                     <AiSessionItem
                                                         key={index}
+                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                                         app={undefined as any}
                                                         session={session}
                                                         topicRecord={selectedTopicData?.topicRecord}

@@ -17,13 +17,13 @@ import json
 import pprint
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import Any, List, Optional
-from openapi_client.models.inbox_get_my_issued_credentials_request_recipient_one_of import InboxGetMyIssuedCredentialsRequestRecipientOneOf
 from openapi_client.models.inbox_issue_request_recipient_one_of import InboxIssueRequestRecipientOneOf
-from pydantic import StrictStr, Field
+from openapi_client.models.inbox_issue_request_recipient_one_of1 import InboxIssueRequestRecipientOneOf1
+from pydantic import StrictStr, Field, model_validator
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
-INBOXGETMYISSUEDCREDENTIALSREQUESTRECIPIENT_ONE_OF_SCHEMAS = ["InboxGetMyIssuedCredentialsRequestRecipientOneOf", "InboxIssueRequestRecipientOneOf"]
+INBOXGETMYISSUEDCREDENTIALSREQUESTRECIPIENT_ONE_OF_SCHEMAS = ["InboxIssueRequestRecipientOneOf", "InboxIssueRequestRecipientOneOf1"]
 
 class InboxGetMyIssuedCredentialsRequestRecipient(BaseModel):
     """
@@ -31,15 +31,23 @@ class InboxGetMyIssuedCredentialsRequestRecipient(BaseModel):
     """
     # data type: InboxIssueRequestRecipientOneOf
     oneof_schema_1_validator: Optional[InboxIssueRequestRecipientOneOf] = None
-    # data type: InboxGetMyIssuedCredentialsRequestRecipientOneOf
-    oneof_schema_2_validator: Optional[InboxGetMyIssuedCredentialsRequestRecipientOneOf] = None
-    actual_instance: Optional[Union[InboxGetMyIssuedCredentialsRequestRecipientOneOf, InboxIssueRequestRecipientOneOf]] = None
-    one_of_schemas: Set[str] = { "InboxGetMyIssuedCredentialsRequestRecipientOneOf", "InboxIssueRequestRecipientOneOf" }
+    # data type: InboxIssueRequestRecipientOneOf1
+    oneof_schema_2_validator: Optional[InboxIssueRequestRecipientOneOf1] = None
+    actual_instance: Optional[Union[InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1]] = None
+    one_of_schemas: Set[str] = { "InboxIssueRequestRecipientOneOf", "InboxIssueRequestRecipientOneOf1" }
 
     model_config = ConfigDict(
         validate_assignment=True,
         protected_namespaces=(),
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_raw_oneof(cls, value):
+        """Accept the wire shape as well as explicit actual_instance construction."""
+        if isinstance(value, dict) and "actual_instance" not in value:
+            return {"actual_instance": cls.from_dict(value).actual_instance}
+        return value
 
 
     def __init__(self, *args, **kwargs) -> None:
@@ -62,17 +70,17 @@ class InboxGetMyIssuedCredentialsRequestRecipient(BaseModel):
             error_messages.append(f"Error! Input type `{type(v)}` is not `InboxIssueRequestRecipientOneOf`")
         else:
             match += 1
-        # validate data type: InboxGetMyIssuedCredentialsRequestRecipientOneOf
-        if not isinstance(v, InboxGetMyIssuedCredentialsRequestRecipientOneOf):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `InboxGetMyIssuedCredentialsRequestRecipientOneOf`")
+        # validate data type: InboxIssueRequestRecipientOneOf1
+        if not isinstance(v, InboxIssueRequestRecipientOneOf1):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `InboxIssueRequestRecipientOneOf1`")
         else:
             match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in InboxGetMyIssuedCredentialsRequestRecipient with oneOf schemas: InboxGetMyIssuedCredentialsRequestRecipientOneOf, InboxIssueRequestRecipientOneOf. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in InboxGetMyIssuedCredentialsRequestRecipient with oneOf schemas: InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in InboxGetMyIssuedCredentialsRequestRecipient with oneOf schemas: InboxGetMyIssuedCredentialsRequestRecipientOneOf, InboxIssueRequestRecipientOneOf. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in InboxGetMyIssuedCredentialsRequestRecipient with oneOf schemas: InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -93,19 +101,19 @@ class InboxGetMyIssuedCredentialsRequestRecipient(BaseModel):
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
-        # deserialize data into InboxGetMyIssuedCredentialsRequestRecipientOneOf
+        # deserialize data into InboxIssueRequestRecipientOneOf1
         try:
-            instance.actual_instance = InboxGetMyIssuedCredentialsRequestRecipientOneOf.from_json(json_str)
+            instance.actual_instance = InboxIssueRequestRecipientOneOf1.from_json(json_str)
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into InboxGetMyIssuedCredentialsRequestRecipient with oneOf schemas: InboxGetMyIssuedCredentialsRequestRecipientOneOf, InboxIssueRequestRecipientOneOf. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into InboxGetMyIssuedCredentialsRequestRecipient with oneOf schemas: InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into InboxGetMyIssuedCredentialsRequestRecipient with oneOf schemas: InboxGetMyIssuedCredentialsRequestRecipientOneOf, InboxIssueRequestRecipientOneOf. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into InboxGetMyIssuedCredentialsRequestRecipient with oneOf schemas: InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -119,7 +127,7 @@ class InboxGetMyIssuedCredentialsRequestRecipient(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], InboxGetMyIssuedCredentialsRequestRecipientOneOf, InboxIssueRequestRecipientOneOf]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], InboxIssueRequestRecipientOneOf, InboxIssueRequestRecipientOneOf1]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

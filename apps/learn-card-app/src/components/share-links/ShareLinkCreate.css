@@ -1,8 +1,8 @@
 /* The composite search field owns its focus ring. Reset the native input's
    global focus-visible ring, including the white ring offset. */
-#share-credential-search,
-#share-credential-search:focus,
-#share-credential-search:focus-visible {
+.share-credential-search,
+.share-credential-search:focus,
+.share-credential-search:focus-visible {
     outline: none !important;
     border: 0 !important;
     box-shadow: none !important;
@@ -10,4 +10,10 @@
     --tw-ring-offset-width: 0px !important;
     --tw-ring-offset-shadow: 0 0 #0000 !important;
     --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+/* Only centered review surfaces need a bounded height; fullscreen owns its viewport. */
+#center-modal > .verifier-review-modal {
+    height: 75%;
+    overflow: hidden;
 }

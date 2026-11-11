@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.profile_get_available_profiles200_response_records_inner import ProfileGetAvailableProfiles200ResponseRecordsInner
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ProfileGetAvailableProfiles200Response(BaseModel):
     """
@@ -34,7 +35,8 @@ class ProfileGetAvailableProfiles200Response(BaseModel):
     __properties: ClassVar[List[str]] = ["cursor", "hasMore", "records"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class ProfileGetAvailableProfiles200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -60,9 +61,8 @@ class ProfileGetAvailableProfiles200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -78,18 +78,12 @@ class ProfileGetAvailableProfiles200Response(BaseModel):
         _items = []
         if self.records:
             for _item_records in self.records:
-                if _item_records:
-                    _items.append(_item_records.to_dict())
+                _items.append(_item_records.to_dict() if _item_records is not None else None)
             _dict['records'] = _items
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
-            _dict['cursor'] = None
 
         return _dict
 
@@ -102,11 +96,13 @@ class ProfileGetAvailableProfiles200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "cursor": obj.get("cursor"),
             "hasMore": obj.get("hasMore"),
             "records": [ProfileGetAvailableProfiles200ResponseRecordsInner.from_dict(_item) for _item in obj["records"]] if obj.get("records") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

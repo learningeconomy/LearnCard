@@ -36,12 +36,13 @@ class TestSkillFrameworksCreateManagedBatchRequest(unittest.TestCase):
         if include_optional:
             return SkillFrameworksCreateManagedBatchRequest(
                 frameworks = [
-                    openapi_client.models.skill_frameworks_create_managed_batch_request_frameworks_inner.skillFrameworks_createManagedBatch_request_frameworks_inner(
+                    openapi_client.models.skill_frameworks_create_managed_request.skillFrameworks_createManaged_request(
                         id = '', 
                         name = '0', 
                         description = '', 
                         image = '', 
                         source_uri = '', 
+                        is_public = True, 
                         status = 'active', 
                         skills = [
                             openapi_client.models.__schema0.__schema0(
@@ -71,12 +72,13 @@ class TestSkillFrameworksCreateManagedBatchRequest(unittest.TestCase):
         else:
             return SkillFrameworksCreateManagedBatchRequest(
                 frameworks = [
-                    openapi_client.models.skill_frameworks_create_managed_batch_request_frameworks_inner.skillFrameworks_createManagedBatch_request_frameworks_inner(
+                    openapi_client.models.skill_frameworks_create_managed_request.skillFrameworks_createManaged_request(
                         id = '', 
                         name = '0', 
                         description = '', 
                         image = '', 
                         source_uri = '', 
+                        is_public = True, 
                         status = 'active', 
                         skills = [
                             openapi_client.models.__schema0.__schema0(

@@ -1,6 +1,8 @@
 import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { bookmarkOutline, chevronForward } from 'ionicons/icons';
+import { useGetProfile } from 'learn-card-base';
+import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 
 import * as m from '../../../../paraglide/messages.js';
 import type { SavedCredentialCollection } from '../../DataSharingCenter.types';
@@ -10,6 +12,18 @@ import './sharedLinks.css';
 
 const SenderAvatar: React.FC<{ collection: SavedCredentialCollection }> = ({ collection }) => {
     const sharer = collection.sharer;
+    const { data: profile } = useGetProfile(sharer?.profileId, Boolean(sharer?.profileId));
+
+    if (profile?.image?.trim())
+        return (
+            <UserProfilePicture
+                user={profile}
+                customContainerClass="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-semibold"
+                customImageClass="h-full w-full object-cover"
+                customSize={96}
+            />
+        );
+
     if (sharer?.displayName)
         return (
             <span
@@ -42,7 +56,7 @@ const ReceivedCollectionRow: React.FC<{
         <button
             type="button"
             onClick={() => onOpen(collection)}
-            className="flex w-full items-center gap-3 py-3 pe-2 ps-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 group-first:rounded-t-[20px] group-last:rounded-b-[20px]"
+            className="flex w-full items-center gap-3 py-3 pe-2 ps-4 text-start focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 group-first:rounded-t-[20px] group-last:rounded-b-[20px]"
         >
             <SenderAvatar collection={collection} />
             <span className="min-w-0 flex-1">
@@ -69,7 +83,7 @@ const ReceivedCollectionRow: React.FC<{
             <IonIcon
                 icon={chevronForward}
                 aria-hidden="true"
-                className="me-2 shrink-0 text-grayscale-400 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"
+                className="me-2 shrink-0 text-grayscale-400 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 group-hover:rtl:-translate-x-0.5"
             />
         </button>
     </li>

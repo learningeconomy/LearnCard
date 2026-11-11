@@ -41,7 +41,7 @@ export const TroopIDPreviewFrontFace: React.FC<{
 
     return (
         <div className="rounded-t-[20px] rounded-b-[20px] shadow-box-bottom overflow-hidden flex flex-col text-grayscale-900">
-            <div className="w-full flex items-center justify-center flex-col bg-white bg-opacity-70 backdrop-blur-[10px] rounded-t-[20px]">
+            <div className="w-full flex items-center justify-center flex-col bg-white/70  backdrop-blur-[10px] rounded-t-[20px]">
                 <div className="w-full py-4 max-w-[335px]">
                     <TroopID
                         idState={idState}
@@ -52,13 +52,13 @@ export const TroopIDPreviewFrontFace: React.FC<{
                 </div>
 
                 <div className="w-full flex items-center justify-center relative pt-4">
-                    <button className="flex items-center justify-center absolute rounded-full bg-white p-2 top-[-0px]">
+                    <button className="flex items-center justify-center absolute rounded-full bg-white p-2 top-0">
                         <QRCodeScanner className="h-auto w-8" />
                     </button>
 
                     <IDSleeve className="h-auto w-full" />
 
-                    <button className="rounded-[20px] py-[5px] px-[14px] bg-grayscale-900 absolute top-[27px] right-[10px] text-[12px] font-notoSans font-[600] text-white">
+                    <button className="rounded-[20px] py-[5px] px-[14px] bg-grayscale-900 absolute top-[27px] right-[10px] text-[12px] font-notoSans font-semibold text-white">
                         {m['troops.draft']()}
                     </button>
                 </div>
@@ -84,7 +84,7 @@ export const TroopIDPreviewFrontFace: React.FC<{
                                 id: 'did:example:123',
                             },
                         }}
-                        iconClassName="!h-[17px] !w-[17px]"
+                        iconClassName="h-[17px]! w-[17px]!"
                         showText
                     />
                 </div> */}

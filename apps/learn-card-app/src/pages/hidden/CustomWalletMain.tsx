@@ -20,12 +20,12 @@ const CustomWalletMain: React.FC<CustomWalletMainProps> = ({ wallet }) => {
 
                 <section className="w-full flex-1 flex flex-col items-center p-8 gap-8">
                     <header className="text-lg">What would you like to do?</header>
-                    <ul className="grid gap-8 border rounded w-full flex-1 grid-cols-2 p-4">
+                    <ul className="grid gap-8 border rounded-sm w-full flex-1 grid-cols-2 p-4">
                         <li>
                             <button
                                 type="button"
                                 onClick={() => setPage('Manage LCN Account')}
-                                className="transition-colors h-full w-full rounded border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600"
+                                className="transition-colors h-full w-full rounded-sm border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600"
                             >
                                 Manage LCN Account
                             </button>
@@ -34,7 +34,7 @@ const CustomWalletMain: React.FC<CustomWalletMainProps> = ({ wallet }) => {
                             <button
                                 type="button"
                                 onClick={() => setPage('Create a Contract')}
-                                className="transition-colors h-full w-full rounded border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600"
+                                className="transition-colors h-full w-full rounded-sm border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600"
                             >
                                 Create a Contract
                             </button>
@@ -43,7 +43,7 @@ const CustomWalletMain: React.FC<CustomWalletMainProps> = ({ wallet }) => {
                             <button
                                 type="button"
                                 onClick={() => setPage('View Contracts')}
-                                className="transition-colors h-full w-full rounded border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600"
+                                className="transition-colors h-full w-full rounded-sm border border-solid py-2 border-emerald-600 hover:text-white hover:bg-emerald-600"
                             >
                                 View Contracts
                             </button>

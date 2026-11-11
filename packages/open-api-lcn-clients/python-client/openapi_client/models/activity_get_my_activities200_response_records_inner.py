@@ -23,28 +23,31 @@ from openapi_client.models.activity_get_my_activities200_response_records_inner_
 from openapi_client.models.activity_get_my_activities200_response_records_inner_recipient_profile import ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
     """
     ActivityGetMyActivities200ResponseRecordsInner
     """ # noqa: E501
-    id: Optional[StrictStr]
-    activity_id: Optional[StrictStr] = Field(alias="activityId")
+    id: StrictStr
+    activity_id: StrictStr = Field(alias="activityId")
     event_type: StrictStr = Field(alias="eventType")
-    timestamp: Optional[StrictStr]
-    actor_profile_id: Optional[StrictStr] = Field(alias="actorProfileId")
+    timestamp: StrictStr
+    actor_profile_id: Optional[StrictStr] = Field(default=None, alias="actorProfileId")
+    on_behalf_of: Optional[StrictStr] = Field(default=None, alias="onBehalfOf")
     recipient_type: StrictStr = Field(alias="recipientType")
-    recipient_identifier: Optional[StrictStr] = Field(alias="recipientIdentifier")
+    recipient_identifier: StrictStr = Field(alias="recipientIdentifier")
     boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
     credential_uri: Optional[StrictStr] = Field(default=None, alias="credentialUri")
     inbox_credential_id: Optional[StrictStr] = Field(default=None, alias="inboxCredentialId")
     integration_id: Optional[StrictStr] = Field(default=None, alias="integrationId")
     source: StrictStr
     metadata: Optional[Dict[str, Any]] = None
+    status: Optional[StrictStr] = None
     boost: Optional[ActivityGetMyActivities200ResponseRecordsInnerBoost] = None
     recipient_profile: Optional[ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile] = Field(default=None, alias="recipientProfile")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["id", "activityId", "eventType", "timestamp", "actorProfileId", "recipientType", "recipientIdentifier", "boostUri", "credentialUri", "inboxCredentialId", "integrationId", "source", "metadata", "boost", "recipientProfile"]
+    __properties: ClassVar[List[str]] = ["id", "activityId", "eventType", "timestamp", "actorProfileId", "onBehalfOf", "recipientType", "recipientIdentifier", "boostUri", "credentialUri", "inboxCredentialId", "integrationId", "source", "metadata", "status", "boost", "recipientProfile"]
 
     @field_validator('event_type')
     def event_type_validate_enum(cls, value):
@@ -63,12 +66,23 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
     @field_validator('source')
     def source_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential']):
-            raise ValueError("must be one of enum values ('send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential')")
+        if value not in set(['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential', 'appEvent']):
+            raise ValueError("must be one of enum values ('send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential', 'appEvent')")
+        return value
+
+    @field_validator('status')
+    def status_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['active', 'revoked', 'suspended']):
+            raise ValueError("must be one of enum values ('active', 'revoked', 'suspended')")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -80,8 +94,7 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -94,9 +107,8 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -119,51 +131,6 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if activity_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.activity_id is None and "activity_id" in self.model_fields_set:
-            _dict['activityId'] = None
-
-        # set to None if timestamp (nullable) is None
-        # and model_fields_set contains the field
-        if self.timestamp is None and "timestamp" in self.model_fields_set:
-            _dict['timestamp'] = None
-
-        # set to None if actor_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.actor_profile_id is None and "actor_profile_id" in self.model_fields_set:
-            _dict['actorProfileId'] = None
-
-        # set to None if recipient_identifier (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient_identifier is None and "recipient_identifier" in self.model_fields_set:
-            _dict['recipientIdentifier'] = None
-
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
-        # set to None if credential_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_uri is None and "credential_uri" in self.model_fields_set:
-            _dict['credentialUri'] = None
-
-        # set to None if inbox_credential_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.inbox_credential_id is None and "inbox_credential_id" in self.model_fields_set:
-            _dict['inboxCredentialId'] = None
-
-        # set to None if integration_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.integration_id is None and "integration_id" in self.model_fields_set:
-            _dict['integrationId'] = None
-
         return _dict
 
     @classmethod
@@ -175,12 +142,13 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "id": obj.get("id"),
             "activityId": obj.get("activityId"),
             "eventType": obj.get("eventType"),
             "timestamp": obj.get("timestamp"),
             "actorProfileId": obj.get("actorProfileId"),
+            "onBehalfOf": obj.get("onBehalfOf"),
             "recipientType": obj.get("recipientType"),
             "recipientIdentifier": obj.get("recipientIdentifier"),
             "boostUri": obj.get("boostUri"),
@@ -189,9 +157,12 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
             "integrationId": obj.get("integrationId"),
             "source": obj.get("source"),
             "metadata": obj.get("metadata"),
+            "status": obj.get("status"),
             "boost": ActivityGetMyActivities200ResponseRecordsInnerBoost.from_dict(obj["boost"]) if obj.get("boost") is not None else None,
             "recipientProfile": ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile.from_dict(obj["recipientProfile"]) if obj.get("recipientProfile") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

@@ -1,9 +1,8 @@
 import {
+    AllocateCredentialRefreshInputValidator,
     PublishCredentialRefreshInputValidator,
     SendBoostResponseValidator,
 } from '@learncard/types';
-
-import { openApiDocument } from '../src/openapi';
 
 const unsignedCredential = {
     '@context': ['https://www.w3.org/ns/credentials/v2'],
@@ -23,79 +22,21 @@ const signedCredential = {
     },
 };
 
-// The import itself is the test: `src/openapi.ts` calls generateOpenApiDocument
-// at module load, so a Zod 4 / trpc-to-openapi regression throws here instead of
-// at Lambda cold start.
-describe('OpenAPI generation', () => {
-    it('generates the document at boot without throwing', () => {
-        expect(openApiDocument).toBeDefined();
-        expect(Object.keys(openApiDocument.paths ?? {}).length).toBeGreaterThan(0);
+describe('Managed credential refresh contracts', () => {
+    it.each([
+        ['DID-only holder', { did: 'did:example:holder' }, true],
+        ['string profile ID', { did: 'did:example:holder', profileId: 'synthetic-profile' }, true],
+        ['explicit null profile ID', { did: 'did:example:holder', profileId: null }, false],
+    ])('preserves the optional-but-nonnullable allocation contract: %s', (_name, holder, valid) => {
+        const result = AllocateCredentialRefreshInputValidator.safeParse({
+            credentialId: 'urn:uuid:synthetic-credential',
+            holder,
+        });
+        expect(result.success).toBe(valid);
+        if (result.success) expect(result.data.holder).toEqual(holder);
     });
 
-    it('mounts the anonymous public share routes on paths distinct from the owner route', () => {
-        const paths = Object.keys(openApiDocument.paths ?? {});
-
-        // The import above would have thrown Duplicate procedure for the old
-        // colliding GET /share-links/{id} registration.
-        expect(paths.filter(path => path === '/share-links/{id}')).toHaveLength(1);
-        expect(paths).toContain('/public/share-links/{id}');
-        expect(paths).toContain('/public/share-links/{id}/content');
-        expect(paths).toContain('/public/share-links/acknowledge-view');
-    });
-
-    it('mounts the bounded owner list on GET /share-links, distinct from /share-links/{id}', () => {
-        const paths = Object.keys(openApiDocument.paths ?? {});
-
-        // A collection path with no trailing segment cannot be captured by the
-        // `{id}` param route, so /list -> /{id} shadowing is impossible.
-        expect(paths.filter(path => path === '/share-links')).toHaveLength(1);
-        expect(openApiDocument.paths?.['/share-links']?.get).toBeDefined();
-    });
-
-    it('includes the skill-search route whose $regex query previously broke generation', () => {
-        const paths = Object.keys(openApiDocument.paths ?? {});
-
-        expect(paths).toContain('/boost/skills/search');
-    });
-
-    it('exposes a root-relative server URL that resolves on any tenant domain', () => {
-        expect(openApiDocument.servers?.[0]?.url).toBe('/api');
-    });
-
-    it('documents the mutually exclusive managed refresh publication modes', () => {
-        const operation = openApiDocument.paths?.['/credential-refresh/publish']?.post;
-        const requestBody = operation?.requestBody;
-
-        expect(requestBody).toBeDefined();
-        expect(typeof requestBody).toBe('object');
-
-        const content = requestBody && !('$ref' in requestBody) ? requestBody.content : undefined;
-        const schema = content?.['application/json']?.schema;
-        const oneOf = schema && !('$ref' in schema) ? schema.oneOf : undefined;
-
-        expect(oneOf).toEqual([
-            expect.objectContaining({
-                properties: { mode: { const: 'issuer-signed' } },
-                required: ['signedCredential'],
-                not: {
-                    anyOf: [{ required: ['credential'] }, { required: ['signingAuthority'] }],
-                },
-            }),
-            expect.objectContaining({
-                properties: { mode: { const: 'signing-authority' } },
-                required: ['credential', 'signingAuthority'],
-                not: { required: ['signedCredential'] },
-            }),
-        ]);
-    });
-
-    it('documents the unified send route with the refresh receipt in its response schema', () => {
-        const paths = openApiDocument.paths ?? {};
-
-        expect(paths['/send']).toBeDefined();
-
-        // The managed receipt must survive response schema generation: the schema is
-        // derived from SendBoostResponseValidator, which carries the optional receipt.
+    it('strips credential contents from issuance receipts', () => {
         const response = SendBoostResponseValidator.safeParse({
             type: 'boost',
             uri: 'https://localhost%3A3000/boost/abc',

@@ -81,8 +81,8 @@ const CompositeEditor: React.FC<PolicyEditorProps<'composite'>> = ({
     };
 
     return (
-        <div className="space-y-4">
-            <div className="space-y-1.5">
+        <div className="space-y-v3-4">
+            <div className="space-y-v3-1.5">
                 <p className={LABEL}>Nested pathway</p>
 
                 {selected ? (
@@ -107,10 +107,10 @@ const CompositeEditor: React.FC<PolicyEditorProps<'composite'>> = ({
                 )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 <p className={LABEL}>How it shows up</p>
 
-                <div className="space-y-2">
+                <div className="space-y-v3-2">
                     {(Object.keys(RENDER_STYLE_LABELS) as CompositeRenderStyle[]).map(
                         style => {
                             const meta = RENDER_STYLE_LABELS[style];

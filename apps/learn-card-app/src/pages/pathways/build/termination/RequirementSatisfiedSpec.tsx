@@ -104,12 +104,12 @@ const RequirementSatisfiedEditor: React.FC<{
         onChange({ ...value, minTrustTier });
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-v3-4">
             <SummaryCard requirement={value.requirement} minTrustTier={value.minTrustTier} />
 
             <RequirementEditor value={value.requirement} onChange={handleRequirementChange} />
 
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="req-trust">
                     Minimum trust level
                 </label>

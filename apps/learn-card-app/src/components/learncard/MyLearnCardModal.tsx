@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { getLogger } from 'learn-card-base';
@@ -67,6 +68,7 @@ type MyLearnCardModalProps = {
     hideLogout?: boolean;
     hideEdit?: boolean;
     hideShare?: boolean;
+    resumeRecovery?: boolean;
 };
 
 const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
@@ -76,8 +78,10 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     hideLogout = false,
     hideEdit = false,
     hideShare = false,
+    resumeRecovery = false,
 }) => {
     const flags = useFlags();
+    const resumedRecovery = useRef(false);
     const [user, setUser] = useState(_user);
 
     const { initWallet } = useWallet();
@@ -87,7 +91,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { gate } = useLCNGatedAction();
 
-    const { newModal, newModalWithToken, closeModal, forceCloseModalByToken } = useModal();
+    const { newModal, newModalWithToken, closeModal, forceCloseModalByToken, closeAllModals } =
+        useModal();
     const { handleLogout, isLoggingOut } = useLogout();
 
     const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
@@ -105,6 +110,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         getEscrowEnrollmentState,
         setEscrowPin,
         clearEscrowPin,
+        openSecureAccount,
         runRecoverySetup,
         resetRecoverySetup,
         needsActivation,
@@ -173,6 +179,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     };
 
     const rows: {
+        id?: string;
         Icon: React.FC;
         title: string;
         iconVersion?: string;
@@ -306,6 +313,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
         if (capabilities.recovery) {
             rows.push({
+                id: 'account-recovery',
                 title: m['profile.menu.accountRecovery'](),
                 Icon: ShieldCheck,
                 caretText: '',
@@ -317,8 +325,12 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                     const showReAuth = () => {
                         newModal(
-                            <ReAuthOverlay onSuccess={closeModal} onCancel={closeModal} />,
-                            { sectionClassName: '!max-w-[480px]' },
+                            <ReAuthOverlay
+                                resumeAction="account-recovery"
+                                onSuccess={closeModal}
+                                onCancel={closeModal}
+                            />,
+                            { sectionClassName: 'max-w-[480px]!' },
                             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                         );
                     };
@@ -523,6 +535,13 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onEnableEscrowRecovery={enableEscrowRecovery}
                             onSetEscrowPin={setEscrowPin}
                             onClearEscrowPin={clearEscrowPin}
+                            onSignOutOtherDevices={() => {
+                                // The secure flow is a provider-level Overlay that sits below
+                                // the shared modal stack, so close the whole stack (this
+                                // profile sheet included) or it would render underneath.
+                                closeAllModals();
+                                openSecureAccount();
+                            }}
                             existingMethods={existingMethods.map(m => ({
                                 type: m.type,
                                 createdAt:
@@ -654,7 +673,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             onClose={closeRecoveryModal}
                         />,
                         {
-                            sectionClassName: '!max-w-[480px]',
+                            sectionClassName: 'max-w-[480px]!',
                             // Backdrop/Escape: let the modal guard an unfinished check.
                             onClose: () => {
                                 if (!requestClose) return true;
@@ -682,14 +701,18 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     }
 
     const handleSwitchAccountsClick = () => {
-        newModal(
+        const modalRef: { token?: ModalInstanceToken } = {};
+        modalRef.token = newModalWithToken(
             <AccountSwitcherModal
                 showServiceProfiles
                 containerClassName="max-h-[65vh]"
                 showStepsFooter
+                onSwitchComplete={() => {
+                    if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                }}
             />,
             {
-                sectionClassName: '!bg-transparent !border-none !shadow-none !max-w-[400px]',
+                sectionClassName: 'bg-transparent! border-none! shadow-none! max-w-[400px]!',
                 hideButton: true,
             }
         );
@@ -748,6 +771,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         backgroundStyles.backgroundColor = wallpaperBackgroundColor;
     }
 
+    useEffect(() => {
+        if (!resumeRecovery || resumedRecovery.current || !currentUser?.privateKey) return;
+        const recoveryRow = rows.find(row => row.id === 'account-recovery');
+        if (!recoveryRow?.onClick) return;
+        resumedRecovery.current = true;
+        void Promise.resolve(recoveryRow.onClick()).catch(() => {
+            log.warn('Unable to reopen account recovery');
+        });
+    }, [resumeRecovery, currentUser?.privateKey, rows]);
+
     if (isLoggingOut) {
         return <LogoutLoadingPage />;
     }
@@ -769,7 +802,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 style={{ paddingTop: '20px' }}
             >
                 <div className="max-w-[335px] mx-auto rounded-[15px] overflow-hidden shadow-box-bottom">
-                    <div className="bg-white bg-opacity-70 backdrop-blur-[10px]">
+                    <div className="bg-white/70  backdrop-blur-[10px]">
                         <div className="p-[15px] flex flex-col gap-[10px]">
                             <LearnCardIdView user={user} />
 

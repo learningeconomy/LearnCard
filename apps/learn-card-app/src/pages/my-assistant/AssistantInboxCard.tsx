@@ -114,7 +114,7 @@ export const AssistantInboxCard: React.FC<{
                     )}
                 </div>
 
-                <div className="min-w-0 space-y-3">
+                <div className="min-w-0 space-y-v3-3">
                     <div className="flex items-start justify-between gap-3">
                         <div className="flex flex-wrap items-center gap-2 min-w-0">
                             <span
@@ -133,7 +133,7 @@ export const AssistantInboxCard: React.FC<{
                         </div>
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-v3-1">
                         <h3 className="text-base font-semibold text-grayscale-900">{card.title}</h3>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">

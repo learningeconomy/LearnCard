@@ -10,11 +10,16 @@ import admin from 'firebase-admin';
 import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import type { TenantBranding } from '@learncard/email-templates';
 
-import { t, openRoute, didRoute, didAndChallengeRoute } from '@routes';
+import { t, openRoute, didRoute, didAndChallengeRoute, type Context } from '@routes';
 import { getDeliveryService, getFrom } from '../services/delivery';
+import { getEscrowBlobStaleReason, notifyEscrowHoldEvent } from '../services/escrow-enclave';
+import { cancelHoldInEnclave } from '../services/escrow-enclave/cancellation';
 import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
 import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import { maskEmail } from '@helpers/maskEmail';
+import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
+import { deleteClassLinkDataForAccount } from '@helpers/classlinkDeletion.helpers';
+import { pinClassLinkIdentitiesToAccount } from '@helpers/classlinkContext.helpers';
 import cache from '@cache';
 import { setValidChallengeForDid } from '@cache/challenges';
 import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
@@ -23,8 +28,10 @@ import {
     claimRecoveryOtpSendWindow,
     consumeRecoverySession,
     createRecoverySession,
+    peekRecoverySession,
     storeRecoveryOtp,
     verifyRecoveryOtp,
+    type RecoverySessionRecord,
 } from '@cache/recoverySessions';
 import {
     findUserKeyByAuthProvider,
@@ -38,6 +45,7 @@ import {
     setRecoveryEmailByAuthProvider,
     markUserKeyMigrationProvisionalByAuthProvider,
     activateUserKeyByAuthProvider,
+    isWeb3AuthLogin,
     purgeExpiredProvisionalMigrationByAuthProvider,
     getSssActivationState,
     hasActivatableRecoveryMethod,
@@ -45,6 +53,11 @@ import {
     upgradeContactMethodByAuthProvider,
     deleteUserKeyByAuthProvider,
     completeIdentityRebind,
+    getSecurityEpoch,
+    linkAuthProviderKeepingShares,
+    revokeOtherDeviceShares,
+    findPendingEscrowHoldByAuthProvider,
+    cancelEscrowHold,
     ServerEncryptedShareValidator,
     EscrowPinStatusValidator,
     getEscrowPinStatus,
@@ -230,10 +243,11 @@ const serializeConfirmedRecoveryMethods = (userKey: MongoUserKeyType) =>
             ...(method.shareVersion != null ? { shareVersion: method.shareVersion } : {}),
         }));
 
-export const requireRecoverySession = async (
+/** Consume a recovery token and return its whole record (origin, released version). */
+export const requireRecoverySessionRecord = async (
     token: string,
     scope: 'recover' | 'rebind'
-): Promise<AuthProviderMapping> => {
+): Promise<RecoverySessionRecord & { authProvider: AuthProviderMapping }> => {
     const session = await consumeRecoverySession(token, scope);
 
     if (!session || !AuthProviderTypeValidator.safeParse(session.authProvider.type).success) {
@@ -243,7 +257,33 @@ export const requireRecoverySession = async (
         });
     }
 
-    return session.authProvider as AuthProviderMapping;
+    return session as RecoverySessionRecord & { authProvider: AuthProviderMapping };
+};
+
+export const requireRecoverySession = async (
+    token: string,
+    scope: 'recover' | 'rebind'
+): Promise<AuthProviderMapping> => (await requireRecoverySessionRecord(token, scope)).authProvider;
+
+/** The security epoch a recovery token was minted at (0 for tokens minted before the field). */
+export const getRecoverySessionEpoch = (session: Pick<RecoverySessionRecord, 'securityEpoch'>) =>
+    session.securityEpoch ?? 0;
+
+export const STALE_RECOVERY_SESSION_MESSAGE =
+    'Your account security changed during recovery. Start again.';
+
+/**
+ * Reject a recovery token minted before the account's last revoke or wiping rebind.
+ * A read-side check for routes that only release material; the routes that write
+ * (`/rebind`, `/pin-sign-in`) also enforce the epoch inside the update filter.
+ */
+export const assertRecoverySessionEpoch = (
+    session: Pick<RecoverySessionRecord, 'securityEpoch'>,
+    userKey: MongoUserKeyType
+): void => {
+    if (getRecoverySessionEpoch(session) !== getSecurityEpoch(userKey)) {
+        throw new TRPCError({ code: 'CONFLICT', message: STALE_RECOVERY_SESSION_MESSAGE });
+    }
 };
 
 const notifyIdentityRebind = async (
@@ -256,6 +296,10 @@ const notifyIdentityRebind = async (
     if (userKey.contactMethod.type === 'email') recipients.add(userKey.contactMethod.value);
     if (userKey.recoveryEmail) recipients.add(userKey.recoveryEmail);
     if (newContactMethod.type === 'email') recipients.add(newContactMethod.value);
+    // Synthetic ClassLink account addresses are undeliverable; never mail them.
+    for (const recipient of recipients) {
+        if (isSyntheticEmail(recipient)) recipients.delete(recipient);
+    }
 
     const results = await Promise.allSettled(
         [...recipients].map(to =>
@@ -277,6 +321,107 @@ const notifyIdentityRebind = async (
             );
         }
     });
+};
+
+/** Delivery budget for the "Secure my account" notice, so a slow provider never stalls the route. */
+export const ACCOUNT_SECURED_NOTICE_TIMEOUT_MS = 3_000;
+
+/**
+ * The account's established contact address and its verified recovery email,
+ * deduped case-insensitively. Read from the record as it was before the revoke: the
+ * revoke never changes either, and the owner's login may be the one just unlinked.
+ */
+const getAccountSecuredRecipients = (userKey: MongoUserKeyType): string[] => {
+    const candidates = [
+        userKey.contactMethod.type === 'email' ? userKey.contactMethod.value : undefined,
+        userKey.recoveryEmail && userKey.recoveryEmailVerifiedAt
+            ? userKey.recoveryEmail
+            : undefined,
+    ];
+    const recipients = new Set<string>();
+
+    for (const candidate of candidates) {
+        const normalized = candidate?.trim().toLowerCase();
+        // Synthetic ClassLink account addresses are undeliverable; never mail them.
+        if (normalized && !isSyntheticEmail(normalized)) recipients.add(normalized);
+    }
+
+    return [...recipients];
+};
+
+/**
+ * Tell the owner that "Secure my account" ran. If someone with the owner's login and
+ * PIN ran it first, the owner's own login was just unlinked, so this notice is their
+ * only signal (the PIN sign-in notice's secure link no longer helps them). Awaited
+ * within a bounded budget so it is not lost when the request ends; fail-open, never
+ * throws, and never logs addresses.
+ */
+const notifyAccountSecured = async (
+    userKey: MongoUserKeyType,
+    branding: Partial<TenantBranding> | undefined,
+    securedAt: Date
+): Promise<void> => {
+    const recipients = getAccountSecuredRecipients(userKey);
+    if (recipients.length === 0) return;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const send = Promise.allSettled(
+        recipients.map(to =>
+            getDeliveryService().send({
+                to,
+                templateAlias: 'account-secured',
+                templateModel: { securedAt: securedAt.toISOString() },
+                branding,
+                from: getFrom({ mailbox: 'recovery', branding }),
+            })
+        )
+    ).then(results => {
+        const failed = results.filter(result => result.status === 'rejected').length;
+        if (failed > 0) {
+            console.error('[revokeOtherDevices] Account-secured notice failed', {
+                failed,
+                total: results.length,
+            });
+        }
+    });
+
+    try {
+        await Promise.race([
+            send,
+            new Promise<void>(resolve => {
+                timer = setTimeout(() => {
+                    console.error('[revokeOtherDevices] Account-secured notice timed out');
+                    resolve();
+                }, ACCOUNT_SECURED_NOTICE_TIMEOUT_MS);
+            }),
+        ]);
+    } catch {
+        console.error('[revokeOtherDevices] Account-secured notice failed');
+    } finally {
+        clearTimeout(timer);
+    }
+};
+
+/** Cancel every pending escrow hold on the account (any linked login, either policy). */
+const cancelPendingEscrowHolds = async (
+    userKey: MongoUserKeyType,
+    tenant: Context['tenant']
+): Promise<void> => {
+    for (const authProvider of userKey.authProviders ?? []) {
+        for (const policy of ['hold', 'pin'] as const) {
+            const pending = await findPendingEscrowHoldByAuthProvider(authProvider, policy);
+            const cancelled = pending && (await cancelEscrowHold(pending._id, 'did'));
+            if (cancelled) {
+                await cancelHoldInEnclave(cancelled, userKey);
+                await notifyEscrowHoldEvent({
+                    kind: 'cancelled',
+                    hold: cancelled,
+                    userKey,
+                    tenant,
+                });
+            }
+        }
+    }
 };
 
 export const keysRouter = t.router({
@@ -348,6 +493,10 @@ export const keysRouter = t.router({
                 recoverySessionToken: RecoverySessionTokenValidator,
                 recoveryMethods: z.array(RecoveryMethodResponseValidator),
                 escrowPin: EscrowPinStatusValidator,
+                // Same source as the key-status `primaryDid` (getAuthShare): lets
+                // the client bind a no-provider Nitro escrow hold start/restart to
+                // the verified account without a signed-in identity proof.
+                primaryDid: z.string().nullable(),
             })
         )
         .mutation(async ({ input }) => {
@@ -400,12 +549,14 @@ export const keysRouter = t.router({
             const recoverySessionToken = await createRecoverySession({
                 scope: 'recover',
                 authProvider: verification.record.authProvider,
+                securityEpoch: getSecurityEpoch(userKey),
             });
 
             return {
                 recoverySessionToken,
                 recoveryMethods,
                 escrowPin: getEscrowPinStatus(userKey),
+                primaryDid: userKey.primaryDid ?? null,
             };
         }),
 
@@ -435,10 +586,11 @@ export const keysRouter = t.router({
             })
         )
         .mutation(async ({ input }) => {
-            const authProvider = await requireRecoverySession(
+            const recoverSession = await requireRecoverySessionRecord(
                 input.recoverySessionToken,
                 'recover'
             );
+            const { authProvider } = recoverSession;
             if (input.type === 'escrow') {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
@@ -446,6 +598,7 @@ export const keysRouter = t.router({
                 });
             }
             const userKey = await requireUserKey(authProvider, 'Recovery account not found.');
+            assertRecoverySessionEpoch(recoverSession, userKey);
             const recoveryMethod = (userKey.recoveryMethods ?? []).find(method => {
                 if (method.type !== input.type || !isRecoveryMethodConfirmed(userKey, method)) {
                     return false;
@@ -475,6 +628,9 @@ export const keysRouter = t.router({
             const rebindSessionToken = await createRecoverySession({
                 scope: 'rebind',
                 authProvider,
+                // Inherit the recovery session's epoch, so a revoke at any point after
+                // the OTP still invalidates the whole chain at `/rebind`.
+                securityEpoch: getRecoverySessionEpoch(recoverSession),
             });
 
             return {
@@ -512,10 +668,31 @@ export const keysRouter = t.router({
             })
         )
         .mutation(async ({ input, ctx }) => {
-            const oldAuthProvider = await requireRecoverySession(
+            // Record the account's DID on its ClassLink identities before the token is spent
+            // and before the old login is removed, so a wallet later created with that uid
+            // cannot claim them. A failed pin throws here, leaving the token usable for a
+            // retry; it only fills an unset DID on the account's own identities.
+            const peeked = await peekRecoverySession(input.recoverySessionToken, 'rebind');
+            if (peeked && AuthProviderTypeValidator.safeParse(peeked.authProvider?.type).success) {
+                const peekedUserKey = await findUserKeyByAuthProvider(
+                    peeked.authProvider.type,
+                    peeked.authProvider.id
+                );
+                // Same ownership rule as assertDidOwner below; a mismatch is rejected there.
+                if (
+                    peekedUserKey?.primaryDid &&
+                    peekedUserKey.primaryDid === ctx.user.did &&
+                    input.primaryDid === ctx.user.did
+                ) {
+                    await pinClassLinkIdentitiesToAccount(peekedUserKey);
+                }
+            }
+
+            const session = await requireRecoverySessionRecord(
                 input.recoverySessionToken,
                 'rebind'
             );
+            const oldAuthProvider = session.authProvider;
             const oldUserKey = await requireUserKey(oldAuthProvider, 'Recovery account not found.');
 
             assertDidOwner(oldUserKey, ctx.user.did);
@@ -553,6 +730,17 @@ export const keysRouter = t.router({
                 newContactMethod,
                 primaryDid: input.primaryDid,
                 authShare: encryptAuthShare(input.authShare, seed),
+                // A PIN-release token is no longer used up by the PIN sign-in itself (keep
+                // mode never calls this route), so it may still be live here. Pin it to the
+                // version the PIN released: once "Secure my account" (or any rotation)
+                // moves the account on, the token can no longer wipe and rebind.
+                ...(session.origin === 'pin-release'
+                    ? { expectedShareVersion: session.shareVersion ?? -1 }
+                    : {}),
+                // Every token origin (phrase, passkey, backup, waiting-period hold, PIN)
+                // is bound to the epoch it was minted at, enforced in the update filter:
+                // after a revoke or another wiping rebind, no older token can rebind.
+                expectedSecurityEpoch: getRecoverySessionEpoch(session),
             });
 
             if (!result) {
@@ -561,6 +749,9 @@ export const keysRouter = t.router({
                     message: 'The new sign-in is already linked or recovery state changed.',
                 });
             }
+            // Fill-only re-pin for a ClassLink identity created on the old uid between the
+            // pin above and the commit. Best effort: the pin before the commit is the guarantee.
+            await pinClassLinkIdentitiesToAccount(oldUserKey).catch(() => undefined);
 
             // Notification is intentionally fail-open after the security update commits.
             void notifyIdentityRebind(
@@ -568,6 +759,254 @@ export const keysRouter = t.router({
                 newContactMethod,
                 ctx.tenant?.emailBranding
             ).catch(error => console.error('[completeRecoveryRebind] Notification failed:', error));
+
+            return {
+                success: true as const,
+                shareVersion: result.shareVersion,
+                recoveryMethodsRequireConfirmation: result.methodsRequiringConfirmation,
+            };
+        }),
+
+    /**
+     * PIN sign-in with a different login (keep mode). Links the new login to the
+     * account WITHOUT rotating: shares, history, recovery methods and escrow stay as
+     * they are, so other devices and the user's other recovery methods keep working.
+     * Only tokens minted by a successful PIN release are accepted; the waiting-period
+     * hold and `useRecoverySession` tokens must still use the wiping rebind. The
+     * owner was already emailed at the PIN release (`escrow-pin-sign-in`).
+     */
+    completePinSignIn: didAndChallengeRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/keys/recovery-session/pin-sign-in',
+                tags: ['Keys'],
+                summary: 'Link a new login after a PIN release without rotating shares',
+            },
+        })
+        .input(
+            z.object({
+                recoverySessionToken: RecoverySessionTokenValidator,
+                newAuthToken: z.string().min(1).optional(),
+                providerType: AuthProviderTypeValidator,
+                primaryDid: z.string(),
+            })
+        )
+        .output(
+            z.object({
+                success: z.literal(true),
+                shareVersion: z.number(),
+                linked: z.boolean(),
+            })
+        )
+        .mutation(async ({ input, ctx }) => {
+            // Validate before consuming: a waiting-period or phrase token sent here by
+            // mistake must stay usable at `/rebind`, and a DID mismatch must not burn
+            // the owner's token. Whatever is consumed is re-checked below.
+            const isPinSession = (
+                record: RecoverySessionRecord | null
+            ): record is RecoverySessionRecord & { primaryDid: string; shareVersion: number } =>
+                !!record &&
+                record.origin === 'pin-release' &&
+                !!record.primaryDid &&
+                record.shareVersion !== undefined;
+            const peeked = await peekRecoverySession(input.recoverySessionToken, 'rebind');
+
+            if (peeked && !isPinSession(peeked)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'This recovery session cannot sign in without a reset.',
+                });
+            }
+            if (
+                peeked &&
+                (input.primaryDid !== ctx.user.did || input.primaryDid !== peeked.primaryDid)
+            ) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Recovered DID does not match.',
+                });
+            }
+
+            const session = await requireRecoverySessionRecord(
+                input.recoverySessionToken,
+                'rebind'
+            );
+
+            if (!isPinSession(session)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'This recovery session cannot sign in without a reset.',
+                });
+            }
+
+            const oldAuthProvider = session.authProvider;
+            const userKey = await requireUserKey(oldAuthProvider, 'Recovery account not found.');
+
+            assertDidOwner(userKey, ctx.user.did);
+            if (input.primaryDid !== ctx.user.did || input.primaryDid !== session.primaryDid) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Recovered DID does not match.',
+                });
+            }
+
+            const newUser = await verifyAuthToken(
+                input.newAuthToken || ctx.providerToken || '',
+                input.providerType
+            );
+            const newContactMethod = getContactMethodFromUser(newUser);
+
+            if (!newContactMethod) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'New sign-in needs an email or phone.',
+                });
+            }
+
+            const newAuthProvider: AuthProviderMapping = {
+                type: input.providerType,
+                id: newUser.id,
+            };
+            const alreadyLinked = (userKey.authProviders ?? []).some(
+                provider =>
+                    provider.type === newAuthProvider.type && provider.id === newAuthProvider.id
+            );
+
+            if (alreadyLinked) {
+                if (
+                    (userKey.shareVersion ?? 1) !== session.shareVersion ||
+                    getSecurityEpoch(userKey) !== getRecoverySessionEpoch(session)
+                ) {
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message: 'Your account changed while signing in. Try again.',
+                    });
+                }
+
+                return {
+                    success: true as const,
+                    shareVersion: session.shareVersion,
+                    linked: false,
+                };
+            }
+
+            const result = await linkAuthProviderKeepingShares({
+                oldAuthProvider,
+                newAuthProvider,
+                primaryDid: input.primaryDid,
+                shareVersion: session.shareVersion,
+                securityEpoch: getRecoverySessionEpoch(session),
+            });
+
+            if (!result) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message:
+                        'The sign-in is already linked elsewhere or your account changed. Try again.',
+                });
+            }
+
+            // Notification is intentionally fail-open after the link commits.
+            void notifyIdentityRebind(userKey, newContactMethod, ctx.tenant?.emailBranding).catch(
+                error => console.error('[completePinSignIn] Notification failed:', error)
+            );
+
+            return { success: true as const, shareVersion: result.shareVersion, linked: true };
+        }),
+
+    /**
+     * "Secure my account" / "Sign out of all other devices". The signed-in owner
+     * commits a fresh split: every older auth share is purged (other devices and the
+     * old phrase, backup file, passkey and email key stop working), recovery methods
+     * go back to pending, escrow is cleared for the client to re-enroll, and every
+     * login except the caller's is unlinked. One atomic CAS on `expectedShareVersion`;
+     * a concurrent rotation gets CONFLICT. The private key is unchanged, so a device
+     * that already holds it is not evicted (SECURITY.md D19). The security epoch
+     * advances, so every recovery token minted before the revoke is dead. After the
+     * commit the contact and verified recovery addresses get the `account-secured`
+     * notice (fail-open): the caller may not be the owner.
+     */
+    revokeOtherDevices: didAndChallengeRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/keys/revoke-other-devices',
+                tags: ['Keys'],
+                summary: 'Rotate shares, purge older versions and unlink other logins',
+            },
+        })
+        .input(
+            z.object({
+                /** Login token; falls back to the `X-Auth-Token` header like the rebind route. */
+                authToken: z.string().min(1).optional(),
+                providerType: AuthProviderTypeValidator,
+                primaryDid: z.string(),
+                authShare: ServerEncryptedShareValidator,
+                expectedShareVersion: z.number().int().positive(),
+            })
+        )
+        .output(
+            z.object({
+                success: z.literal(true),
+                shareVersion: z.number(),
+                recoveryMethodsRequireConfirmation: z.array(RecoveryMethodTypeValidator),
+            })
+        )
+        .mutation(async ({ input, ctx }) => {
+            const user = await verifyAuthToken(
+                input.authToken || ctx.providerToken || '',
+                input.providerType
+            );
+            const authProvider: AuthProviderMapping = { type: input.providerType, id: user.id };
+            const userKey = await requireUserKey(authProvider);
+
+            assertDidOwner(userKey, ctx.user.did);
+            if (input.primaryDid !== ctx.user.did) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'The authenticated DID does not match primaryDid.',
+                });
+            }
+
+            const seed = environment.SEED;
+            if (!seed) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Server configuration error.',
+                });
+            }
+
+            // Same as the rebind: pin ClassLink identities before other logins are unlinked
+            // (a failure throws and stops the revoke before anything is removed).
+            await pinClassLinkIdentitiesToAccount(userKey);
+            const result = await revokeOtherDeviceShares({
+                authProvider,
+                primaryDid: input.primaryDid,
+                expectedShareVersion: input.expectedShareVersion,
+                authShare: encryptAuthShare(input.authShare, seed),
+                // Only unlink the logins whose ClassLink identities were just pinned.
+                expectedAuthProviders: userKey.authProviders,
+            });
+
+            if (!result) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: `Key material changed; please retry (current version ${userKey.shareVersion ?? 1}).`,
+                });
+            }
+            // Fill-only re-pin for a ClassLink identity created on a removed uid between the pin
+            // above and the commit. Best effort: the pin before the commit is the guarantee.
+            await pinClassLinkIdentitiesToAccount(userKey).catch(() => undefined);
+
+            // Clean-up only: pending holds already cannot release once the commit lands
+            // (`/complete` needs a confirmed escrow at the hold's version, and escrow is
+            // cleared). Best-effort, so a failure never reports the committed revoke as failed.
+            await cancelPendingEscrowHolds(userKey, ctx.tenant).catch(() =>
+                console.error('[revokeOtherDevices] Pending escrow hold clean-up failed')
+            );
+            // Fail-open after the commit: the owner may not be the one who ran this.
+            await notifyAccountSecured(userKey, ctx.tenant?.emailBranding, new Date());
 
             return {
                 success: true as const,
@@ -636,7 +1075,35 @@ export const keysRouter = t.router({
                     maskedRecoveryEmail: z.string().nullable(),
                     escrowOptedOut: z.boolean(),
                     escrowPin: EscrowPinStatusValidator,
+                    escrowStale: z.enum(['mode-mismatch', 'key-rotated']).optional(),
+                    /**
+                     * Identity (blob hash) of the escrow copy lca-api holds. Authority-mode
+                     * clients compare it with the authority's envelope and repair a
+                     * mismatch instead of trusting a stale copy.
+                     */
+                    escrowBlobIdentity: z
+                        .string()
+                        .regex(/^[0-9a-f]{64}$/)
+                        .optional(),
+                    /**
+                     * A PIN operation holds the account's lease: lca-api's copy may trail
+                     * the authority until it settles, so a mismatch is not yet stale.
+                     */
+                    escrowUpdating: z.boolean().optional(),
+                    /**
+                     * The account has an escrow recovery method (any confirmation state)
+                     * but none confirmed at the current share version, e.g. `pending`
+                     * after an identity-recovery rebind. A hint only; the client still
+                     * proves prior enrollment against the signed escrow authority.
+                     */
+                    priorEscrowEnrollment: z.boolean(),
                     sssActivationState: z.enum(['provisional', 'active']),
+                    /**
+                     * Web3Auth, signing in through this login, derives this account's
+                     * key (see `isWeb3AuthLogin`). Web3Auth-mode clients stop any
+                     * existing account where this is false.
+                     */
+                    isWeb3AuthLogin: z.boolean(),
                 })
                 .nullable()
         )
@@ -695,6 +1162,10 @@ export const keysRouter = t.router({
                           }
                         : {}),
                 }));
+            const currentVersion = userKey.shareVersion ?? 1;
+            const escrowMethods = (userKey.recoveryMethods ?? []).filter(
+                rm => rm?.type === 'escrow'
+            );
 
             return {
                 authShare,
@@ -708,8 +1179,21 @@ export const keysRouter = t.router({
                     ? maskEmail(userKey.recoveryEmail)
                     : null,
                 sssActivationState: getSssActivationState(userKey),
+                isWeb3AuthLogin: isWeb3AuthLogin(userKey, authProvider),
                 escrowOptedOut: Boolean(userKey.escrowOptedOutAt),
                 escrowPin: getEscrowPinStatus(userKey),
+                escrowStale: userKey.escrowBlob
+                    ? await getEscrowBlobStaleReason(userKey.escrowBlob)
+                    : undefined,
+                ...(userKey.escrowBlob ? { escrowBlobIdentity: userKey.escrowBlob.blobHash } : {}),
+                ...(userKey.escrowEnrollmentLease ? { escrowUpdating: true } : {}),
+                priorEscrowEnrollment:
+                    escrowMethods.length > 0 &&
+                    !escrowMethods.some(
+                        rm =>
+                            rm.shareVersion === currentVersion &&
+                            isRecoveryMethodConfirmed(userKey, rm)
+                    ),
             };
         }),
 
@@ -1553,6 +2037,12 @@ export const keysRouter = t.router({
 
             assertDidOwner(userKey, ctx.user.did);
             await deleteUserKeyByAuthProvider(authProvider);
+
+            // Cascade the account's ClassLink data. Best effort: the key is already gone, and
+            // classlink.deleteMyData (idempotent, DID-keyed) can finish the job later.
+            await deleteClassLinkDataForAccount(userKey, { clearPrivacyLock: true }).catch(() =>
+                console.error('classlink.account_deletion.cascade_failed')
+            );
 
             return { success: true };
         }),

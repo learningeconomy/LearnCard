@@ -2,6 +2,13 @@ import { TRPCError } from '@trpc/server';
 
 import { neogma } from '@instance';
 import type { FlatSkillType } from 'types/skill';
+import {
+    LEGACY_GOOGLE_SKILL_EMBEDDING_DIMENSION,
+    buildSkillEmbeddingUpdateParams,
+    buildSkillEmbeddingUpdateQuery,
+    type SkillEmbeddingGeneration,
+    type SkillEmbeddingSource,
+} from '../../config/skillEmbedding';
 
 export type UpdateSkillInput = Partial<
     Omit<FlatSkillType, 'id' | 'frameworkId' | 'createdAt' | 'updatedAt' | 'parentId'>
@@ -154,11 +161,46 @@ export const deleteSkill = async (
     }
 };
 
-export const updateSkillEmbedding = async (
+export type SkillEmbeddingUpdate = {
+    skillId: string;
+    frameworkId?: string;
+    embedding: number[];
+    /** sha256(identity + text); lets the backfill skip skills already embedded with this generation. */
+    embeddingKey: string;
+    generation: SkillEmbeddingGeneration;
+    /** Statement/description the vector was computed from; the write is skipped if they changed. */
+    source: SkillEmbeddingSource;
+};
+
+/** Returns false when the skill is gone or its source changed since it was embedded. */
+export const updateSkillEmbedding = async (update: SkillEmbeddingUpdate): Promise<boolean> => {
+    const { frameworkId, embedding, generation } = update;
+
+    if (embedding.length !== generation.dimension) {
+        throw new Error('Skill embedding does not match the configured dimension');
+    }
+
+    const result = await neogma.queryRunner.run(
+        buildSkillEmbeddingUpdateQuery(generation, Boolean(frameworkId)),
+        buildSkillEmbeddingUpdateParams(update)
+    );
+
+    return Number(result.records[0]?.get('count') ?? 0) > 0;
+};
+
+/**
+ * LC-2206 legacy write: the pre-Nova `s.embedding` (Google gemini-embedding-001, 768-d) exactly
+ * as main writes it, so the legacy index stays current while semantic search still reads it.
+ */
+export const updateLegacySkillEmbedding = async (
     skillId: string,
     embedding: number[],
     frameworkId?: string
 ): Promise<boolean> => {
+    if (embedding.length !== LEGACY_GOOGLE_SKILL_EMBEDDING_DIMENSION) {
+        throw new Error('Legacy skill embedding does not match the legacy dimension');
+    }
+
     if (frameworkId) {
         const result = await neogma.queryRunner.run(
             `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})

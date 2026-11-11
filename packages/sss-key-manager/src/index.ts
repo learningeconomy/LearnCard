@@ -68,6 +68,9 @@ export {
     parseEscrowEnvelope,
     parseEscrowBlobPlaintext,
     parseEscrowReleasePlaintext,
+    canonicalEscrowEmailBrand,
+    MAX_ESCROW_EMAIL_BRAND_LENGTH,
+    MAX_ESCROW_EMAIL_BRAND_DIGITS,
     generateEscrowKeyPair,
     encryptEscrowBlob,
     decryptEscrowBlob,
@@ -76,15 +79,61 @@ export {
 } from './escrow-crypto';
 
 export type { EscrowEnvelope, EscrowBlobPlaintext, EscrowReleasePlaintext } from './escrow-crypto';
+export {
+    encodeEscrowEnrollmentIntent,
+    signEscrowEnrollmentIntent,
+    getEscrowBlobIdentity,
+    ESCROW_ENROLLMENT_INTENT_DOMAIN,
+} from './escrow-enrollment-intent';
+export type {
+    EscrowEnrollmentIntent,
+    SignedEscrowEnrollmentIntent,
+} from './escrow-enrollment-intent.types';
 export { verifyEnclaveAttestation } from './escrow-attestation';
-export type { EscrowAttestationPolicy, EscrowHoldStatus, EscrowRecoveryStart } from './types';
-export type { EscrowEnrollmentOptions, EscrowEnrollmentState, EscrowPinStatus } from './types';
+export {
+    EscrowEvidenceError,
+    EscrowAuthorityTenantMismatchError,
+    ESCROW_AUTHORITY_TENANT_PATTERN,
+} from './escrow-authority.types';
+export type { HistoricalEscrowEvidence } from './escrow-authority.types';
+export type { EscrowRecoveryExpectations } from '@learncard/types';
+export {
+    verifyEscrowAuthorityState,
+    verifyEscrowHoldState,
+    verifyEscrowCodeDelivery,
+    verifyEscrowEnrollmentCommit,
+    createEscrowEnrollmentIntent,
+    resolveEscrowEnrollmentAction,
+    violatesCarryContactRule,
+} from './escrow-authority';
+export type { EscrowEnrollmentActionInput } from './escrow-authority';
+export type {
+    VerifiedEnclaveIdentity,
+    EscrowAuthorityRecord,
+    EscrowAuthorityState,
+    VerifiedEscrowMutation,
+} from './escrow-authority.types';
+export { verifyNitroAttestationDocument, NitroAttestationError } from './escrow-nitro-attestation';
+export type { NitroAttestationReason } from './escrow-nitro-attestation';
+export type {
+    EscrowAttestationPolicy,
+    EscrowHoldStatus,
+    EscrowPinAttemptContext,
+    EscrowRecoveryStart,
+} from './types';
+export type {
+    EscrowEnrollmentOptions,
+    EscrowEnrollmentState,
+    EscrowBlobStaleReason,
+    EscrowPinStatus,
+} from './types';
 export {
     EscrowPinMismatchError,
     EscrowPinLockedError,
     EscrowPinThrottledError,
     EscrowHoldRestartThrottledError,
     EscrowPinUnavailableError,
+    PinSignInStaleError,
 } from './types';
 export {
     PIN_MIN_LENGTH,
@@ -137,11 +186,16 @@ export type {
 
 export {
     createSSSStrategy,
+    DuplicateShareCoordinateError,
     IdentityRecoverySessionConsumedError,
     EscrowRequestError,
 } from './sss-strategy';
 
-export type { SSSStorageFunctions, SSSStrategyConfig } from './sss-strategy';
+export type {
+    EscrowPinAutoClearedEvent,
+    SSSStorageFunctions,
+    SSSStrategyConfig,
+} from './sss-strategy';
 
 export {
     generateEphemeralKeypair,
@@ -193,6 +247,7 @@ export type {
     RecoveryMethodInfo,
     RecoveryInput,
     RecoveryResult,
+    RevokeOtherDevicesResult,
     RecoverySetupInput,
     RecoverySetupResult,
     RecoveryConfirmationInput,

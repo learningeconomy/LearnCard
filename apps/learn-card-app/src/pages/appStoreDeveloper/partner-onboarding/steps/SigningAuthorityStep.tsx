@@ -89,7 +89,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
     const hasSigningAuthority = primarySA !== null;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.onboarding.signingAuthority.title']()}
@@ -106,8 +106,8 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
                     loading
                         ? 'bg-gray-50 border-gray-200'
                         : hasSigningAuthority
-                        ? 'bg-emerald-50 border-emerald-200'
-                        : 'bg-amber-50 border-amber-200'
+                          ? 'bg-emerald-50 border-emerald-200'
+                          : 'bg-amber-50 border-amber-200'
                 }`}
             >
                 {loading ? (
@@ -124,15 +124,15 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
                             loading
                                 ? 'text-gray-700'
                                 : hasSigningAuthority
-                                ? 'text-emerald-800'
-                                : 'text-amber-800'
+                                  ? 'text-emerald-800'
+                                  : 'text-amber-800'
                         }`}
                     >
                         {loading
                             ? 'Checking...'
                             : hasSigningAuthority
-                            ? 'Signing authority configured'
-                            : 'No signing authority found'}
+                              ? 'Signing authority configured'
+                              : 'No signing authority found'}
                     </p>
 
                     <p
@@ -140,8 +140,8 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
                             loading
                                 ? 'text-gray-500'
                                 : hasSigningAuthority
-                                ? 'text-emerald-700'
-                                : 'text-amber-700'
+                                  ? 'text-emerald-700'
+                                  : 'text-amber-700'
                         }`}
                     >
                         {hasSigningAuthority
@@ -178,7 +178,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
                     {m['developerPortal.onboarding.signingAuthority.whatDoesThisDo']()}
                 </h4>
 
-                <ul className="text-sm text-blue-700 space-y-1">
+                <ul className="text-sm text-blue-700 space-y-v3-1">
                     <li>
                         {'• '}
                         {m['developerPortal.onboarding.signingAuthority.benefit1']()}

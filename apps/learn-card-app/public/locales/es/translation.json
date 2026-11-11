@@ -1,4 +1,395 @@
 {
+    "classlinkPersonalEmail": {
+        "title": "Añade un correo personal",
+        "body": "Para conservar tu cuenta cuando dejes la escuela.",
+        "email": "Correo personal",
+        "code": "Código de 6 dígitos",
+        "send": "Enviar código",
+        "sending": "Enviando…",
+        "verify": "Verificar",
+        "verifying": "Verificando…",
+        "skip": "Omitir por ahora",
+        "success": "Correo personal añadido.",
+        "schoolError": "Usa un correo personal, no el de tu escuela",
+        "conflictError": "Este correo ya está asociado a otra cuenta.",
+        "codeError": "El código no es válido o ha caducado. Inténtalo de nuevo.",
+        "limitError": "Has solicitado demasiados códigos. Inténtalo más tarde.",
+        "error": "Algo salió mal. Inténtalo de nuevo."
+    },
+    "transcriptOptIn": {
+        "title": "Obtén tu expediente académico de {{state}}",
+        "body": "Le pediremos a los registros escolares que envíen tu expediente académico aquí.",
+        "consent": "Acepto compartir mi identificación de estudiante con los registros escolares de {{state}}, y agregar mi expediente académico a mi cuenta cuando llegue.",
+        "submit": "Obtener Mi Expediente",
+        "requesting": "Solicitando…",
+        "requested": "Tu expediente académico está en camino. Te avisaremos cuando llegue.",
+        "noneYet": "Todavía no hay un expediente académico para ti. Vuelve a consultar más tarde.",
+        "reauthRequired": "Vuelve a conectar tu cuenta escolar para continuar",
+        "reauthButton": "Volver a conectar",
+        "reauthing": "Conectando…",
+        "noStateId": "No pudimos encontrar tu registro de estudiante. Pide a tu escuela que revise tu cuenta de ClassLink.",
+        "error": "No pudimos comunicarnos con los registros de tu escuela en este momento. Inténtalo de nuevo más tarde.",
+        "tryAgain": "Intentar de Nuevo",
+        "requestingFrom": "Solicitando a los registros escolares de {{state}}…",
+        "takingAWhile": "Esto puede tardar un poco. Te avisaremos cuando esté aquí.",
+        "addedToAccount": "Agregado a tu cuenta",
+        "updated": "Actualizado el {{date}}",
+        "viewTranscript": "Ver Expediente",
+        "arrivedTitle": "Tu expediente académico llegó",
+        "transcript": "Expediente Académico",
+        "gradYear": "Generación {{year}}",
+        "gpa": "Promedio: {{gpa}}",
+        "receivedLoading": "Recibimos tu expediente académico. Aparecerá aquí en un momento.",
+        "checkManually": "Es posible que ya esté esperando en tus notificaciones. Ábrelo allí para agregarlo a tu cuenta, o vuelve a comprobar.",
+        "checkAgain": "Comprobar de Nuevo",
+        "openNotifications": "Abrir Notificaciones",
+        "autoAcceptFailed": "No pudimos agregar tu expediente académico automáticamente. Puedes aceptarlo aquí."
+    },
+    "consentUpdate": {
+        "summary": {
+            "requestDetails": "Detalles de la solicitud",
+            "before": "Actual",
+            "after": "Después de la actualización",
+            "notRequested": "No solicitado"
+        },
+        "details": {
+            "frontDoorBoostUri": "Credencial de acceso directo",
+            "frontDoorCurrent": "Credencial actual",
+            "frontDoorUpdated": "Credencial actualizada",
+            "expiresAt": "Caducidad del acceso",
+            "writers": "Personas que pueden escribir",
+            "autoboosts": "Entregas automáticas de credenciales",
+            "personCountOne": "{{count}} persona",
+            "peopleCount": "{{count}} personas",
+            "credentialCountOne": "{{count}} credencial",
+            "credentialsCount": "{{count}} credenciales",
+            "set": "Configurado"
+        },
+        "editor": {
+            "accessSettings": "Ajustes de {{label}}",
+            "title": "Actualizar solicitud",
+            "close": "Cerrar el editor de la solicitud",
+            "description": "Edita la solicitud actual, revisa los cambios y publícalos cuando estén listos.",
+            "noContract": "Crea o selecciona una solicitud de consentimiento antes de editarla.",
+            "loading": "Cargando solicitud…",
+            "loadError": "No pudimos cargar la solicitud actual. Inténtalo de nuevo.",
+            "unsupportedNetwork": "Las actualizaciones de solicitudes aún no están disponibles en esta red. Conéctate al servicio actualizado e inténtalo de nuevo.",
+            "retry": "Intentar de nuevo",
+            "currentVersion": "Versión actual: {{version}}",
+            "customField": "Campo personalizado para {{area}}",
+            "addField": "Añadir campo",
+            "removeAccess": "Quitar {{label}}",
+            "selectImage": "Elegir imagen de la solicitud",
+            "removeImage": "Quitar imagen de la solicitud",
+            "image": "Imagen",
+            "reason": "¿Por qué haces esta actualización?",
+            "reasonPlaceholder": "Explica qué cambia para quienes usan tu aplicación",
+            "reasonRequired": "Añade una explicación breve antes de previsualizar o publicar esta actualización (máximo 140 caracteres).",
+            "reasonHint": "Las personas verán esta explicación al revisar la actualización (máximo 140 caracteres).",
+            "summary": "Tus cambios",
+            "noChanges": "Cambia un campo para preparar una actualización.",
+            "approvalNeeded": "Las personas deben aprobar esta actualización antes de que la aplicación pueda volver a guardar datos.",
+            "optionalNotice": "El nuevo acceso opcional queda desactivado hasta que las personas lo activen.",
+            "quietNotice": "Esta actualización no necesita otra aprobación.",
+            "updated": "Actualizado",
+            "notSet": "Sin definir",
+            "cleared": "Eliminado",
+            "enabled": "Activado",
+            "disabled": "Desactivado",
+            "optionalOn": "Opcional · activado para nuevas conexiones",
+            "optionalOff": "Opcional · desactivado por defecto",
+            "retired": "Esta solicitud se ha retirado y no se puede actualizar.",
+            "published": "Actualización publicada · versión {{version}}",
+            "preview": "Previsualizar actualización",
+            "previewing": "Preparando vista previa…",
+            "consumerNotification": "Se notificará a todas las personas conectadas a este contrato y se les pedirá que revisen los cambios.",
+            "publish": "Publicar actualización",
+            "publishing": "Publicando actualización…",
+            "reload": "Recargar solicitud actual",
+            "reloading": "Recargando solicitud…",
+            "conflict": "Esta solicitud cambió en otro lugar. Recarga la solicitud actual antes de publicar.",
+            "previewError": "No pudimos preparar la vista previa. Tus cambios siguen aquí; inténtalo de nuevo.",
+            "publishError": "No pudimos publicar la actualización. Tus cambios siguen aquí; inténtalo de nuevo.",
+            "publishedReloadError": "La actualización se publicó, pero no pudimos recargar la solicitud actual. Recárgala antes de hacer otra actualización.",
+            "createError": "No pudimos crear la solicitud. Inténtalo de nuevo."
+        },
+        "dismissing": "Descartando…",
+        "dismissError": "No pudimos descartar esta actualización. Inténtalo de nuevo.",
+        "approvedUpdate": "Actualización aprobada",
+        "approvedUpdateDescription": "Aprobaste la solicitud actualizada de {{appName}}.",
+        "headline": {
+            "paused": "El acceso de {{name}} está en pausa",
+            "read": "{{name}} solicita ver tus {{label}}",
+            "write": "{{name}} solicita añadir {{label}} a tu cuenta",
+            "multiple": "{{name}} solicita más acceso",
+            "changed": "{{name}} cambió su solicitud",
+            "optional": "{{name}} tiene una nueva opción",
+            "removed": "{{name}} ahora ve menos información"
+        },
+        "subhead": {
+            "reconnect": "Aprueba la actualización para volver a conectar.",
+            "newItems": "{{count}} elementos nuevos",
+            "review": "Revisa lo que cambió.",
+            "optional": "Actívala si quieres. Nada cambia a menos que lo hagas.",
+            "removed": "Ya no solicita {{label}}.",
+            "changed": "Su solicitud ha cambiado."
+        },
+        "action": {
+            "reconnect": "Volver a conectar",
+            "allow": "Permitir",
+            "allowAccess": "Permitir acceso",
+            "continue": "Continuar",
+            "done": "Listo",
+            "saveChoices": "Guardar opciones"
+        },
+        "ui": {
+            "close": "Cerrar",
+            "saving": "Guardando…",
+            "stopSharing": "Dejar de compartir",
+            "askParent": "Pedir a un adulto responsable",
+            "saveError": "Algo salió mal. Inténtalo de nuevo.",
+            "new": "Nuevo",
+            "removed": "Eliminado",
+            "updated": "Actualizado",
+            "turnOnOption": "Activar esta opción",
+            "required": "Obligatorio",
+            "whySeeing": "¿Por qué veo esto?",
+            "appContext": "{{name}} es una aplicación que conectaste a {{brand}}. Tú decides qué puede ver y qué puede añadir a tu cuenta. Puedes cambiarlo en cualquier momento.",
+            "parentNeeded": "Se necesita un adulto responsable para continuar.",
+            "stopSharingWarning": "{{name}} perderá el acceso a todo lo que has compartido. Puedes volver a conectar más tarde.",
+            "keepSharing": "Seguir compartiendo",
+            "stopSharingWith": "Dejar de compartir con {{name}}",
+            "respondBy": "Responde antes del {{date}} para seguir compartiendo",
+            "loadError": "No pudimos cargar esta actualización. Inténtalo de nuevo.",
+            "tryAgain": "Intentar de nuevo",
+            "noLongerAvailable": "Esta actualización ya no está disponible.",
+            "unchangedRead": "{{name}} ya puede ver {{items}}. Eso no cambia.",
+            "unchangedWrite": "{{name}} ya puede añadir {{items}}. Eso no cambia.",
+            "unchangedDefault": "Tus opciones actuales siguen igual.",
+            "noExistingAccess": "No hay ningún acceso activado para esta aplicación.",
+            "noDefaultAccess": "Ningún acceso predeterminado permanece sin cambios.",
+            "allAccessChanged": "Tu acceso existente está incluido en los cambios anteriores.",
+            "defaultAccess": "Acceso predeterminado de la solicitud actual",
+            "defaultAccessDescription": "Esta vista previa muestra las opciones predeterminadas, no los permisos guardados de una persona.",
+            "readAccess": "Acceso de lectura",
+            "writeAccess": "Acceso de escritura",
+            "saved": "Guardado",
+            "changes": "Cambios"
+        },
+        "review": "Revisar esta actualización",
+        "dismiss": "Descartar",
+        "needsReview": "Necesita tu revisión",
+        "newOption": "Nueva opción · añadida en los últimos 14 días",
+        "appUpdatedTerms": "Actualización de la aplicación",
+        "appUpdatedTermsDescription": "{{appName}} actualizó su solicitud de acceso.",
+        "notification": {
+            "relaxedWithItem": "{{appName}} ya no solicita tus {{removed}}",
+            "changed": "{{appName}} cambió su solicitud",
+            "review": "{{appName}} necesita tu revisión",
+            "option": "{{appName}} tiene una nueva opción"
+        },
+        "scope": {
+            "transcripts": {
+                "label": "Expedientes académicos",
+                "description": "Registros de cursos y aprendizajes completados."
+            },
+            "certificates": {
+                "label": "Certificados",
+                "description": "Credenciales que reconocen cualificaciones o aprendizajes completados."
+            },
+            "achievements": {
+                "label": "Logros",
+                "description": "Hitos alcanzados mediante el esfuerzo, las habilidades o la perseverancia."
+            },
+            "skills": {
+                "label": "Habilidades",
+                "description": "Capacidades desarrolladas mediante formación, práctica o experiencia."
+            },
+            "workHistory": {
+                "label": "Historial laboral",
+                "description": "Funciones y actividades profesionales a lo largo del tiempo."
+            },
+            "learningHistory": {
+                "label": "Historial de aprendizaje",
+                "description": "Programas de aprendizaje estructurados."
+            },
+            "ids": {
+                "label": "Identificaciones",
+                "description": "Credenciales utilizadas para verificar la identidad."
+            },
+            "socialBadges": {
+                "label": "Insignias sociales",
+                "description": "Distintivos digitales que reconocen la participación o pertenencia a un grupo."
+            },
+            "memberships": {
+                "label": "Membresías",
+                "description": "Registros de pertenencia a organizaciones."
+            },
+            "accomplishments": {
+                "label": "Resultados",
+                "description": "Conjuntos de trabajos que muestran habilidades y experiencia."
+            },
+            "experiences": {
+                "label": "Experiencias",
+                "description": "Conocimientos y habilidades adquiridos en funciones y actividades profesionales."
+            },
+            "accommodations": {
+                "label": "Adaptaciones",
+                "description": "Ajustes para facilitar la accesibilidad."
+            },
+            "family": {
+                "label": "Familia",
+                "description": "Perfiles familiares conectados mediante experiencias de aprendizaje compartidas."
+            },
+            "name": {
+                "label": "Nombre",
+                "description": "Tu nombre."
+            },
+            "email": {
+                "label": "Correo electrónico",
+                "description": "Tu dirección de correo electrónico."
+            },
+            "profilePhoto": {
+                "label": "Foto de perfil",
+                "description": "Tu foto de perfil."
+            },
+            "qualifications": {
+                "label": "Cualificaciones",
+                "description": "Estudios, formación y cualificaciones profesionales."
+            },
+            "goals": {
+                "label": "Objetivos",
+                "description": "Objetivos de aprendizaje y profesionales que quieres alcanzar."
+            },
+            "professionalTitle": {
+                "label": "Título profesional",
+                "description": "El título que describe tu función profesional."
+            },
+            "roleExperience": {
+                "label": "Experiencia en el puesto",
+                "description": "Experiencia adquirida en una función profesional concreta."
+            },
+            "workExperience": {
+                "label": "Experiencia laboral",
+                "description": "Tus actividades, responsabilidades y experiencia de trabajo."
+            },
+            "payRate": {
+                "label": "Remuneración",
+                "description": "El importe de tu remuneración y el período de pago."
+            },
+            "workLifeBalance": {
+                "label": "Equilibrio entre trabajo y vida personal",
+                "description": "Tus preferencias para equilibrar el trabajo y la vida personal."
+            },
+            "jobStability": {
+                "label": "Estabilidad laboral",
+                "description": "Tus preferencias sobre seguridad y estabilidad en el empleo."
+            },
+            "selfAssignedSkills": {
+                "label": "Habilidades autoasignadas",
+                "description": "Habilidades que has añadido a tu propio perfil."
+            },
+            "aiSummaries": {
+                "label": "Resúmenes de IA",
+                "description": "Resúmenes de tus sesiones de aprendizaje con IA."
+            },
+            "aiTopics": {
+                "label": "Temas de IA",
+                "description": "Temas explorados en tu aprendizaje con IA."
+            },
+            "aiAssessments": {
+                "label": "Evaluaciones de IA",
+                "description": "Evaluaciones de tu aprendizaje con IA."
+            },
+            "aiInsights": {
+                "label": "Observaciones de IA",
+                "description": "Observaciones sobre tu progreso de aprendizaje y tus habilidades."
+            },
+            "learningPathways": {
+                "label": "Itinerarios de aprendizaje",
+                "description": "Planes y pasos para alcanzar tus objetivos de aprendizaje."
+            }
+        }
+    },
+    "credentialCollection": {
+        "searchIncomplete": "Búsqueda incompleta. Resultados hasta ahora: {{count}}.",
+        "searching": "Buscando… Resultados hasta ahora: {{count}}.",
+        "loadError": "Credenciales cargadas: {{count}}. La colección está incompleta.",
+        "loadErrorEmpty": "No se pudieron cargar las credenciales. La colección está incompleta.",
+        "retrying": "Reintentando…",
+        "retry": "Reintentar la carga de credenciales",
+        "loadingEarned": "Cargando credenciales obtenidas",
+        "initialError": "No se pudieron cargar las credenciales. Inténtalo de nuevo.",
+        "loadingCredentials": "Cargando credenciales…",
+        "recentIncomplete": "No se pudieron cargar algunas credenciales recientes. Estos resultados están incompletos.",
+        "recentError": "No se pudieron cargar las credenciales recientes.",
+        "loadingRecent": "Cargando credenciales recientes…",
+        "retryRecent": "Reintentar la carga de credenciales recientes",
+        "totalsAria": "Totales de credenciales",
+        "totals": "Credenciales: {{credentials}} · Habilidades: {{skills}}",
+        "totalsError": "No se pudieron cargar los totales de credenciales.",
+        "countUnavailable": "Cantidad no disponible",
+        "counting": "Contando credenciales…",
+        "retryTotals": "Reintentar los totales de credenciales"
+    },
+    "clrTranscript": {
+        "credits": {
+            "earnedNotSuppliedAria": "No se han proporcionado los créditos obtenidos",
+            "earnedNotSupplied": "Obtenidos —",
+            "earnedQuantity": "{{value}} obtenidos",
+            "availableQuantity": "{{value}} disponibles",
+            "inferredQuantity": "{{value}} según la descripción"
+        },
+        "relationships": {
+            "targetAmbiguous": "Destino ambiguo",
+            "targetUnresolved": "Destino sin resolver",
+            "parent": "Parte de {{name}}",
+            "child": "Incluye {{name}}",
+            "prerequisite": "Requiere {{name}}",
+            "unlock": "Habilita {{name}}",
+            "peer": "Realizado junto con {{name}}",
+            "equivalent": "Equivalente a {{name}}",
+            "supersededBy": "Sustituido por {{name}}",
+            "replacement": "Sustituye a {{name}}",
+            "related": "Relacionado con {{name}}",
+            "openRecord": "Abrir {{name}}: {{label}}",
+            "relatedRecords": "Registros relacionados"
+        },
+        "details": {
+            "issuedBy": "Emitido por",
+            "assessedBy": "Evaluado por",
+            "createdBy": "Logro creado por",
+            "activityStarted": "Inicio de la actividad",
+            "activityEnded": "Fin de la actividad",
+            "awarded": "Otorgado",
+            "validFrom": "Válido desde",
+            "validUntil": "Válido hasta",
+            "fieldOfStudy": "Campo de estudio",
+            "specialization": "Especialización",
+            "language": "Idioma",
+            "version": "Versión",
+            "role": "Función",
+            "narrative": "Relato del estudiante",
+            "licenseNumber": "Número de licencia",
+            "criteria": "Criterios",
+            "viewCriteria": "Ver criterios",
+            "criteriaReference": "Referencia de criterios",
+            "additionalDetails": "Detalles adicionales",
+            "tags": "Etiquetas",
+            "achievementId": "ID del logro",
+            "learnerId": "ID del estudiante",
+            "achievementIdentifiers": "Identificadores del logro",
+            "learnerIdentifiers": "Identificadores del estudiante",
+            "identifier": "Identificador",
+            "hashedIdentifier": "{{label}} (con hash)",
+            "otherRecords": "Otros registros",
+            "itemCountOne": "{{count}} elemento",
+            "itemCountOther": "{{count}} elementos",
+            "record": "Registro",
+            "recordDetails": "Detalles del registro",
+            "closeRecordDetails": "Cerrar detalles del registro"
+        }
+    },
     "inboxClaimSetup": {
         "setup": "Termina de configurar tu cuenta para reclamar tu credencial.",
         "continue": "Continuar configurando la cuenta",
@@ -62,6 +453,7 @@
         "membersCount": "{{count}} miembros",
         "socialBoosts": "Reconocimientos sociales",
         "newChildOrOrganization": "Nuevo menor u organización",
+        "newOrganization": "Nueva organización",
         "selectProfileType": "Selecciona un tipo de perfil",
         "organizationProfile": "Perfil de organización",
         "organization": "Organización",
@@ -133,6 +525,7 @@
         "continue": "Continuar",
         "loading": "Cargando...",
         "add": "Añadir",
+        "publishing": "Publicando…",
         "saving": "Guardando...",
         "searchResults": {
             "noResults": "No se encontraron resultados",
@@ -195,6 +588,7 @@
             "skills": "Habilidades",
             "socialBadges": "Insignias",
             "achievements": "Logros",
+            "qualifications": "Cualificaciones",
             "studies": "Estudios",
             "portfolio": "Portafolio",
             "assistance": "Asistencia",
@@ -331,6 +725,32 @@
                     "toastAddedBody": "Tu trayectoria ahora se refleja en credenciales portátiles y confiables.",
                     "toastParseFailed": "No se pudo analizar la VC JSON."
                 },
+                "credentialAdded": "1 credencial añadida",
+                "credentialsAdded": "{{count}} credenciales añadidas",
+                "openFile": "Abrir archivo",
+                "openingFile": "Abriendo...",
+                "retryExtraction": "Intentar de nuevo",
+                "retrySave": "Reintentar guardado",
+                "retrying": "Intentando de nuevo...",
+                "documentNoCredentials": "No se extrajeron credenciales. Prueba con otro archivo.",
+                "credentialsReady": "Credenciales listas para revisar: {{count}}.",
+                "originalDocumentSaved": "El documento original está guardado.",
+                "extractionFailedSavingOriginal": "No se pudieron extraer credenciales. Guardando el documento original...",
+                "saveOutcomeError": "No pudimos guardar tu archivo. Puedes volver a intentarlo.",
+                "credentialSaveOutcomeError": "Tu archivo está guardado. No se pudieron guardar algunas credenciales seleccionadas.",
+                "extractionRetryError": "No pudimos extraer credenciales. Puedes volver a intentarlo.",
+                "errorNoReadableText": "No encontramos texto legible en este archivo.",
+                "errorInputInvalid": "No pudimos leer el archivo. Selecciónalo de nuevo.",
+                "errorFileTooLarge": "El archivo es demasiado grande. Elige uno de menos de 4 MB.",
+                "errorReadFailed": "No pudimos leer este archivo. Prueba con otro.",
+                "errorContentRejected": "No pudimos identificar un documento compatible en este archivo.",
+                "errorUploadBusy": "Las cargas siguen ocupadas. Inténtalo de nuevo en breve.",
+                "errorProcessingFailed": "No pudimos procesar este archivo ahora. Inténtalo de nuevo.",
+                "errorConsentDenied": "El procesamiento con IA no está disponible para esta cuenta.",
+                "errorResponseInvalid": "Recibimos un resultado incompleto. Inténtalo de nuevo.",
+                "errorNetworkFailed": "Problema de conexión. Comprueba tu internet e inténtalo de nuevo.",
+                "errorAiGateLoading": "Estamos cargando tus ajustes de IA. Vuelve a intentarlo en unos instantes.",
+                "documentUnavailable": "Este documento no está disponible.",
                 "addButton": "Añadir",
                 "schools": {
                     "title": "Escuelas",
@@ -390,6 +810,7 @@
                 "noMatches": "No se encontraron tipos coincidentes"
             },
             "loader": {
+                "waitingForCapacity": "Hay muchas cargas en curso. Esperando un turno…",
                 "notifyWhenReady": "Avísame cuando esté listo",
                 "quotes": {
                     "resume": {
@@ -677,6 +1098,7 @@
                 "all": "Todo",
                 "socialBadge": "Insignia",
                 "achievement": "Logro",
+                "qualifications": "Cualificación",
                 "learningHistory": "Curso",
                 "accomplishment": "Elemento de portafolio",
                 "accommodation": "Asistencia",
@@ -688,6 +1110,7 @@
                 "all": "Todo",
                 "socialBadge": "Insignias",
                 "achievement": "Logros",
+                "qualifications": "Cualificaciones",
                 "learningHistory": "Cursos",
                 "accomplishment": "Portafolio",
                 "accommodation": "Asistencia",
@@ -708,6 +1131,7 @@
             "article": {
                 "socialBadge": "una",
                 "achievement": "un",
+                "qualifications": "una",
                 "learningHistory": "un",
                 "accomplishment": "un",
                 "accommodation": "una",
@@ -878,6 +1302,7 @@
             "skills": "Habilidades",
             "socialBadges": "Insignias",
             "achievements": "Logros",
+            "qualifications": "Cualificaciones",
             "studies": "Estudios",
             "portfolio": "Portafolio",
             "assistance": "Asistencia",
@@ -885,6 +1310,7 @@
             "families": "Familias",
             "ids": "Identificaciones"
         },
+        "newQualification": "Nueva cualificación",
         "emptyState": "Aún no hay credenciales",
         "credentialCount": "{{count}} credencial(es)",
         "viewMode": "Vista",
@@ -895,6 +1321,7 @@
         "noManaged": "Sin credenciales gestionadas",
         "search": "Buscar credenciales...",
         "expired": "Expirada",
+        "expires": "Caduca",
         "invalid": "Identificación inválida",
         "expiredId": "Identificación expirada",
         "noTitle": "Sin título",
@@ -925,6 +1352,7 @@
             "skills": "Habilidad",
             "socialBadges": "Insignia",
             "achievements": "Logro",
+            "qualifications": "Cualificación",
             "studies": "Estudio",
             "portfolio": "Portafolio",
             "assistance": "Asistencia",
@@ -944,6 +1372,10 @@
             "achievement": {
                 "lead": "Tus",
                 "link": "momentos de orgullo"
+            },
+            "qualifications": {
+                "lead": "Tus",
+                "link": "cualificaciones profesionales"
             },
             "accomplishment": {
                 "lead": "Tus",
@@ -989,6 +1421,7 @@
                 "assistance": "Las adaptaciones son ajustes realizados en el entorno o los procesos para que los estudiantes, empleados o participantes con discapacidad puedan participar plenamente. Algunos ejemplos son dar tiempo adicional en los exámenes a estudiantes con dificultades de aprendizaje, ofrecer intérpretes de lengua de señas a personas sordas, ajustar los horarios laborales para quienes tienen necesidades médicas o modificar un espacio de trabajo para mejorar la accesibilidad.",
                 "socialBadges": "Las insignias sociales son íconos o etiquetas digitales que se usan en plataformas en línea para señalar logros, estados, roles o hitos de los usuarios. Sirven para reconocer logros, indicar roles de los miembros, fomentar la participación y promover la implicación de la comunidad. Estas insignias pueden representar desde completar tareas y participar en eventos hasta pertenecer a grupos específicos.",
                 "achievements": "Los logros son hitos o realizaciones que se obtienen con esfuerzo, habilidad o perseverancia. Representan el cumplimiento de objetivos, la superación de retos o el reconocimiento de la excelencia en distintos ámbitos de la vida, ya sean personales, profesionales, educativos o recreativos. Los logros pueden ir desde títulos académicos, avances profesionales e hitos personales hasta proyectos creativos o victorias en competiciones.",
+                "qualifications": "Las cualificaciones son credenciales profesionales, como licencias, certificaciones y certificados de aprendiz, oficial o maestro artesano.",
                 "portfolio": "Un portafolio es una colección curada del trabajo, los proyectos o los logros de una persona que muestran sus habilidades, experiencia y crecimiento a lo largo del tiempo. Sirve como prueba tangible de capacidad y creatividad, a menudo abarcando ámbitos profesionales, académicos o personales, y se utiliza para demostrar el valor ante posibles colaboradores, empleadores o audiencias.",
                 "skills": "Las habilidades son capacidades o competencias desarrolladas mediante la formación, la práctica o la experiencia que permiten a una persona realizar tareas de forma eficaz. Pueden clasificarse en habilidades técnicas, que son capacidades específicas, enseñables y a menudo cuantificables relacionadas con una tarea o un trabajo concreto, como programar, soldar o dominar un idioma extranjero. Las habilidades blandas, en cambio, son capacidades interpersonales y cognitivas que facilitan las interacciones humanas, como la comunicación, la resolución de problemas y el trabajo en equipo.",
                 "experiences": "Las experiencias son los conocimientos y las habilidades adquiridos al participar en diversos roles y actividades profesionales a lo largo del tiempo. Abarcan la amplitud de tareas, proyectos y responsabilidades laborales que una persona ha asumido en distintas organizaciones o como trabajador independiente. Las experiencias profesionales contribuyen significativamente a la pericia, las capacidades y la comprensión de los estándares y las prácticas del sector.",
@@ -1024,6 +1457,13 @@
         "korean": "한국어"
     },
     "login": {
+        "classlink": {
+            "cancelled": "El inicio de sesión con ClassLink fue cancelado.",
+            "expired": "Ese enlace de inicio de sesión expiró. Por favor, inténtalo de nuevo.",
+            "failed": "No pudimos iniciar sesión con ClassLink. Por favor, inténtalo de nuevo.",
+            "timedOut": "El inicio de sesión con ClassLink tardó demasiado. Por favor, inténtalo de nuevo.",
+            "unavailable": "El inicio de sesión escolar no está disponible temporalmente. Por favor, inténtalo de nuevo en unos minutos."
+        },
         "welcome": {
             "heading": "Bienvenido a {{brand}}",
             "subtitle": "Inicia sesión para acceder a tus credenciales, logros y más.",
@@ -1064,7 +1504,8 @@
                 "error": "No se pudo verificar el código. Intenta de nuevo."
             },
             "error": {
-                "invalidEmail": "Correo faltante o inválido"
+                "invalidEmail": "Correo faltante o inválido",
+                "sendFailed": "No se pudo enviar el código. Inténtalo de nuevo."
             },
             "label": "Correo electrónico"
         },
@@ -1073,7 +1514,14 @@
             "button": "Iniciar sesión con SMS",
             "smsSent": "Se ha enviado un código de verificación",
             "error": {
-                "invalidPhone": "¡Se requiere teléfono!"
+                "invalidPhone": "¡Se requiere teléfono!",
+                "invalidPhoneNumber": "Introduce un número de teléfono válido.",
+                "invalidCode": "Código no válido o caducado.",
+                "tooManyAttempts": "Demasiados intentos. Vuelve a enviar el código.",
+                "tooManyRequests": "Demasiados intentos desde este número de teléfono. Por tu seguridad, espera de 10 a 15 minutos antes de volver a intentarlo o inicia sesión con tu correo electrónico.",
+                "quotaExceeded": "No podemos enviar un mensaje de texto en este momento. Inténtalo más tarde o inicia sesión con tu correo electrónico.",
+                "network": "Problema de conexión. Comprueba tu conexión a internet e inténtalo de nuevo.",
+                "generic": "Algo salió mal. Inténtalo de nuevo."
             }
         },
         "social": {
@@ -1127,7 +1575,9 @@
             "notDeveloper": "¿No eres desarrollador? ",
             "signInNormally": "Iniciar sesión normalmente",
             "securityWarning": "Mantén tu semilla en privado. Cualquiera que la tenga controla esta cuenta.",
-            "pasteHint": "Pégala en el campo de abajo."
+            "pasteHint": "Pégala en el campo de abajo.",
+            "showSeed": "Mostrar semilla",
+            "hideSeed": "Ocultar semilla"
         },
         "loader": {
             "messages": {
@@ -1164,6 +1614,7 @@
             "imA": "Soy ",
             "selectRole": "Seleccionar rol",
             "fullName": "Nombre completo",
+            "fullNameOptional": "Nombre completo (opcional)",
             "dateOfBirth": "Fecha de nacimiento",
             "age": "Edad: {{age}}",
             "countryOfResidence": "País de residencia",
@@ -1251,7 +1702,22 @@
                 },
                 "error": {
                     "invalidEmail": "Ingresa un correo válido.",
-                    "sendFailed": "No se pudo enviar la solicitud. Intenta de nuevo."
+                    "sendFailed": "No se pudo enviar la solicitud. Intenta de nuevo.",
+                    "cooldown": "Puedes enviar otra solicitud a las {{time}}.",
+                    "inProgress": "Ya se está enviando una solicitud. Espera un momento."
+                },
+                "status": {
+                    "accepted": "Tu solicitud de aprobación se envió a <0>{{email}}</0>. Si tu tutor no la ve, pídele que revise su carpeta de spam.",
+                    "failed": "No pudimos enviar la solicitud de aprobación a <0>{{email}}</0>. Intenta enviarla de nuevo.",
+                    "sending": "Enviando la solicitud de aprobación…",
+                    "unknown": "Tu cuenta está pendiente de la aprobación de tu tutor. Si tu tutor no ha recibido una solicitud de aprobación, puedes enviar otra a continuación.",
+                    "expired": "El enlace de aprobación enviado a <0>{{email}}</0> ha caducado. Envía uno nuevo."
+                },
+                "resendRequest": "Reenviar solicitud",
+                "banner": {
+                    "title": "Pendiente de aprobación del tutor",
+                    "limited": "Algunas funciones seguirán limitadas hasta que tu padre, madre o tutor apruebe tu cuenta.",
+                    "manage": "Reenviar o cambiar correo"
                 }
             },
             "us": {
@@ -1409,26 +1875,36 @@
             "privacyDesc": "Cámbialo cuando quieras en Ajustes.",
             "brandAi": "IA de {{brand}}",
             "aiMinorNote": "Las funciones de IA están desactivadas para menores.",
+            "schoolLockedNote": "Tu escuela desactiva las funciones de IA, las analíticas y los informes de errores en las cuentas de estudiantes.",
             "analytics": "Analíticas",
             "bugReports": "Informes de errores",
             "createMy": "Crear mi {{brand}}",
             "almostThere": "¡Ya casi!",
             "youreIn": "¡Ya estás dentro!",
             "guardianEmailed": "Enviamos un correo a tu tutor para que apruebe tu cuenta. Ya puedes empezar a explorar — algunas funciones se desbloquean cuando lo confirme.",
+            "guardianEmailFailed": "No pudimos enviar la solicitud de aprobación a <0>{{email}}</0>. Ya puedes empezar a explorar y volver a enviarla desde tu panel.",
             "ready": "Tu {{brand}} está listo.",
             "whoAreYou": "¿Quién eres? (Opcional)",
             "explore": "Explorar {{brand}}",
             "pin": {
-                "title": "Añadir un PIN de recuperación",
-                "body": "Si alguna vez pierdes este dispositivo, un PIN de 6 dígitos te permitirá volver a entrar en segundos.",
+                "title": "Crea tu PIN",
+                "body": "Lo usarás para iniciar sesión en dispositivos nuevos.",
                 "confirmTitle": "Confirma tu PIN",
                 "confirmBody": "Introduce los mismos 6 dígitos de nuevo.",
                 "saving": "Guardando tu PIN…",
                 "success": "Estás protegido",
                 "skip": "Omitir por ahora",
                 "startOver": "Empezar de nuevo",
+                "saveFailedSkip": "No se pudo guardar tu PIN. Inténtalo de nuevo u omítelo por ahora y configúralo más tarde.",
                 "hint": "Puedes cambiarlo o eliminarlo en cualquier momento en Configuración."
             }
+        },
+        "transcript": {
+            "title": "Tu expediente académico oficial, en tu bolsillo.",
+            "desc": "Recibe tus registros escolares directamente en tu cuenta.",
+            "get": "Obtener Mi Expediente",
+            "notNow": "Ahora No",
+            "onItsWay": "Tu expediente académico está en camino."
         }
     },
     "profile": {
@@ -1465,7 +1941,8 @@
             "loading": "Cargando...",
             "deleting": "Eliminando cuenta...",
             "recentLoginRequired": "¡Se requiere un inicio de sesión reciente!",
-            "reauthenticateHere": "Volver a autenticarse aquí"
+            "reauthenticateHere": "Volver a autenticarse aquí",
+            "fallbackPhrase": "ELIMINAR"
         },
         "export": {
             "title": "Exportar frase inicial",
@@ -1478,7 +1955,8 @@
             "button": "Exportar frase inicial",
             "revealPrompt": "Entiendo - Revela Mi Semilla",
             "confirm": "Confirmar",
-            "cancel": "Cancelar"
+            "cancel": "Cancelar",
+            "fallbackPhrase": "EXPORTAR"
         },
         "email": {
             "header": "Direcciones de correo electrónico",
@@ -1755,6 +2233,8 @@
         "previewCredentials": "Vista previa de {{count}} credenciales"
     },
     "consentFlow": {
+        "aiPassportReauthenticationRequired": "Vuelve a AI Passport e inicia sesión de nuevo.",
+        "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "guardianApprovalRequired": "Pide a un administrador actual de la cuenta que apruebe esta conexión y vuelve a intentarlo.",
         "title": "Consentimiento",
         "acceptAndSync": "Aceptar y sincronizar",
@@ -1874,10 +2354,13 @@
             "name": "nombre",
             "email": "correo electrónico",
             "profilePicture": "foto de perfil"
-        }
+        },
+        "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas."
     },
     "recovery": {
         "pin": {
+            "setPin": "Configura un PIN de recuperación",
+            "setPinDesc": "Configura un PIN de 6 dígitos para la recuperación instantánea.",
             "throttled": "Demasiados intentos. Por favor, inténtalo de nuevo más tarde.",
             "title": "PIN de recuperación",
             "instantRecoveryOn": "Recuperación instantánea: activada",
@@ -1885,10 +2368,63 @@
             "change": "Cambiar",
             "afterRecovery": {
                 "title": "Configura un nuevo PIN de recuperación",
-                "body": "El PIN que acabas de usar ha sido retirado: cada PIN funciona una sola vez para mantener tu cuenta protegida. Elige uno nuevo para tener lista la recuperación instantánea.",
+                "body": "Tu PIN de recuperación ya no está activo. Elige uno nuevo para tener lista la recuperación instantánea.",
                 "hint": "Las mismas reglas: 6 dígitos, nada obvio."
             },
-            "useInstead": "Usar mi PIN de recuperación"
+            "afterHoldRecovery": {
+                "title": "Evita la espera la próxima vez",
+                "body": "Ya has vuelto a entrar. Configura un PIN de 6 dígitos para recuperar tu cuenta al instante la próxima vez, sin esperar 7 días."
+            },
+            "pinResetRequired": {
+                "title": "Configura un nuevo PIN de recuperación",
+                "body": "Tu PIN de recuperación anterior ya no se puede usar desde que se recuperó tu cuenta. Configura un nuevo PIN de 6 dígitos para restaurar la recuperación automática."
+            },
+            "useInstead": "Usar mi PIN de recuperación",
+            "incorrect": "PIN incorrecto. Te quedan {{attempts}} intentos.",
+            "locked": "Demasiados intentos. Aún puedes recuperar tu cuenta esperando 7 días.",
+            "confirmPin": "Confirma tu PIN",
+            "confirmPinDesc": "Introduce tu PIN de nuevo para confirmarlo.",
+            "saving": "Guardando PIN...",
+            "success": "PIN configurado correctamente",
+            "trivial": "Elige un PIN más difícil de adivinar.",
+            "mismatch": "Los PIN no coinciden.",
+            "saveFailed": "No se pudo guardar el PIN. Inténtalo de nuevo.",
+            "enterPin": "Introduce un PIN de 6 dígitos",
+            "removeConfirm": "¿Seguro que quieres eliminar tu PIN de recuperación? Solo podrás recuperar tu cuenta esperando 7 días.",
+            "removing": "Eliminando...",
+            "remove": "Eliminar PIN",
+            "resetBanner": "Tu PIN de recuperación se restableció — ",
+            "setAgain": "vuelve a configurarlo",
+            "doYouHave": "¿Tienes un PIN de recuperación?",
+            "enterForInstant": "Introduce tu PIN de 6 dígitos para la recuperación instantánea.",
+            "dontHave": "No tengo un PIN",
+            "samePin": "Elige un PIN diferente del que acabas de usar.",
+            "newPinRequired": {
+                "title": "Elige un nuevo PIN de recuperación",
+                "body": "Tu PIN de recuperación se introdujo incorrectamente antes, así que le quedan menos intentos. Elige un PIN diferente de 6 dígitos para recuperar todos tus intentos.",
+                "skipNote": "Si omites este paso, tu PIN actual seguirá funcionando con menos intentos. Puedes elegir uno nuevo más tarde en Recuperación de cuenta."
+            },
+            "escrowNotice": "Una parte cifrada de la clave de tu cuenta se guarda en un servicio seguro. Tu PIN la desbloquea de inmediato, sin esperar 7 días. <0>Más información</0>"
+        },
+        "confirmCode": {
+            "mismatch": "Ese código no es correcto. Inténtalo de nuevo.",
+            "expired": "Ese código ha caducado. Envía uno nuevo.",
+            "locked": "Demasiados intentos. Envía un código nuevo.",
+            "notSent": "No pudimos enviar tu código. Espera un minuto antes de reenviarlo.",
+            "title": "Revisa tu correo",
+            "description": "Ingresa el código que enviamos para confirmar esta solicitud.",
+            "confirming": "Confirmando...",
+            "error": "Ese código no funcionó o ha expirado. Revísalo e inténtalo de nuevo, o toca Reenviar código para obtener uno nuevo.",
+            "failed": "Algo salió mal. Comprueba tu conexión e inténtalo de nuevo.",
+            "resend": "Reenviar código",
+            "resending": "Reenviando...",
+            "resent": "Enviamos un código nuevo.",
+            "resendError": "Has solicitado varios códigos recientemente. Por favor, espera un momento e inténtalo de nuevo.",
+            "resendFailed": "No pudimos enviar un código nuevo. Comprueba tu conexión e inténtalo de nuevo."
+        },
+        "invalidRequest": "Esta solicitud de recuperación ya no es válida. Inicia una nueva.",
+        "status": {
+            "failed": "No pudimos comprobar tu solicitud en este momento."
         },
         "error.invalidPhrase": "Esas palabras no coinciden con tu frase de recuperación. Revísalas e inténtalo de nuevo.",
         "error.invalidPassword": "Contraseña incorrecta o no se pudo leer el archivo. Por favor, inténtalo de nuevo.",
@@ -2139,15 +2675,67 @@
             "successDescription": "Tu cuenta está conectada a tu nuevo acceso. Configura de nuevo la recuperación para mantenerla protegida.",
             "tooManyAttempts": "Demasiados intentos incorrectos. Inténtalo más tarde.",
             "invalidCode": "El código es incorrecto o venció. Solicita uno nuevo e inténtalo otra vez.",
-            "invalidRecoveryMethod": "Ese método no pudo verificar tu cuenta. Prueba otro método."
+            "invalidRecoveryMethod": "Ese método no pudo verificar tu cuenta. Prueba otro método.",
+            "successDescriptionKept": "Tu cuenta está conectada a tu nuevo inicio de sesión. Tus otros dispositivos y métodos de recuperación siguen funcionando."
+        },
+        "cancel": {
+            "invalidLink": {
+                "title": "Este enlace no es válido",
+                "body": "Abre el último correo que te enviamos o inicia sesión para revisar tu cuenta.",
+                "signIn": "Iniciar sesión"
+            },
+            "confirm": {
+                "title": "¿Cancelar la recuperación de tu cuenta?",
+                "body": "Alguien solicitó recuperar tu cuenta. Si no fuiste tú, cancela la solicitud ahora.",
+                "cancelBtn": "Cancelar recuperación",
+                "notNowBtn": "Ahora no",
+                "cancelling": "Cancelando..."
+            },
+            "success": {
+                "title": "Recuperación cancelada. Tu cuenta está a salvo.",
+                "body": "Te recomendamos iniciar sesión y revisar tus opciones de recuperación.",
+                "doneBtn": "Abrir LearnCard"
+            },
+            "expired": {
+                "title": "El enlace ha caducado",
+                "body": "Este enlace ha caducado o ya se ha usado. Si aún hay una recuperación en curso, inicia sesión para cancelarla.",
+                "signInBtn": "Iniciar sesión"
+            },
+            "error": {
+                "network": "Hay un problema de conexión. Revisa tu conexión a internet e inténtalo de nuevo.",
+                "tooMany": "Demasiados intentos. Espera un minuto e inténtalo de nuevo.",
+                "generic": "Algo salió mal. Inténtalo de nuevo.",
+                "tryAgainBtn": "Intentar de nuevo"
+            }
         },
         "automatic": {
+            "title": "Recuperación automática",
+            "on": "Activada — tu cuenta se puede restaurar tras un período de espera de 7 días.",
+            "off": "Desactivada",
+            "notOn": "No activada",
+            "turningOn": "Activando...",
+            "turningOff": "Desactivando...",
+            "updating": "Actualizando...",
+            "turnOn": "Activar",
+            "turnOff": "Desactivar",
+            "warning": "Sin la recuperación automática, si pierdes todos tus dispositivos y todos tus métodos de recuperación, perderás tu cuenta.",
+            "precondition": "Primero configura otro método de recuperación.",
             "restoreWait": "Restaurar tras una espera de 7 días"
         },
         "addWayBackIn": "Añade una forma de volver a entrar",
         "addAnotherMethod": "Añadir otro método",
         "fullyProtected": "Tu cuenta está totalmente protegida.",
         "added": "Añadido",
+        "escrowHold": {
+            "title": "¿Fuiste tú?",
+            "body": "Alguien empezó a recuperar tu cuenta {{timeAgo}}.",
+            "finishesIn": "La recuperación finalizará {{when}} a menos que la detengas.",
+            "finishingSoon": "La recuperación puede finalizar en cualquier momento a menos que la detengas.",
+            "stop": "Detener la recuperación",
+            "stopping": "Deteniendo…",
+            "success": "Recuperación detenida. Tu cuenta está a salvo.",
+            "dismiss": "Fui yo"
+        },
         "whichWordIs": "¿Cuál es la palabra n.º {{number}}?",
         "tapTheWord": "Toca la palabra de tu frase de recuperación.",
         "wrongWord": "Esa no es la palabra n.º {{number}}. Revisa tu frase guardada e inténtalo de nuevo.",
@@ -2190,9 +2778,90 @@
             "discardEmail": "Descartar",
             "discardNote": "El que guardaste no funcionará. Puedes crear uno nuevo en cualquier momento."
         },
-        "notFinished": "Sin terminar"
+        "notFinished": "Sin terminar",
+        "pinHero": {
+            "title": "Confirma que eres tú",
+            "description": "Introduce tu PIN de 6 dígitos para terminar de iniciar sesión.",
+            "otherWays": "Otras formas de confirmar",
+            "device": "Aprobar desde otro dispositivo",
+            "deviceDesc": "Escanea un código con un dispositivo en el que hayas iniciado sesión",
+            "showMore": "Mostrar {{count}} más",
+            "showLess": "Mostrar menos",
+            "trouble": "¿Problemas para iniciar sesión?"
+        },
+        "pinSignIn": {
+            "verifying": "Comprobando tu PIN...",
+            "incorrectOne": "PIN incorrecto. Te queda 1 intento.",
+            "unavailable": "El inicio de sesión con PIN no está disponible para esta cuenta. Usa otra forma de iniciar sesión.",
+            "failed": "Algo salió mal. Inténtalo de nuevo.",
+            "newCodeNeeded": "Por tu seguridad, cada intento con el PIN necesita un nuevo código por correo. Envía un nuevo código para volver a intentarlo."
+        },
+        "pinSignInReview": {
+            "title": "Has iniciado sesión",
+            "body": "Tus otros dispositivos también siguen con la sesión iniciada.",
+            "secureLink": "¿Perdiste un dispositivo? Protege tu cuenta",
+            "warnTitle": "Es posible que alguien haya probado tu PIN",
+            "warnBodyOne": "Se introdujo incorrectamente 1 vez antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "warnBodyTwo": "Se introdujo incorrectamente 2 veces antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "warnBody": "Se introdujo incorrectamente {{count}} veces antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "warnBodyUnknown": "Es posible que tu PIN se haya introducido incorrectamente antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "choosePin": "Elegir un nuevo PIN",
+            "notNow": "Ahora no"
+        },
+        "secureAccount": {
+            "title": "Protege tu cuenta",
+            "intro": "Usa esta opción si crees que otra persona entró en tu cuenta. Esto:",
+            "signOut": "Impedirá que tus otros dispositivos y otros inicios de sesión vuelvan a entrar",
+            "turnOff": "Desactivará tu frase de recuperación, archivo de respaldo, clave de acceso y clave de recuperación por correo anteriores",
+            "stayHere": "Mantendrá tu sesión iniciada en este dispositivo",
+            "openDevices": "Un dispositivo que esté abierto ahora puede seguir funcionando hasta que cierre sesión. Esto no puede deshacer lo que otra persona ya haya hecho con tu cuenta.",
+            "afterwards": "Después, añadirás nuevas formas de volver a entrar.",
+            "continue": "Proteger mi cuenta",
+            "pinTitle": "Conserva un PIN de recuperación",
+            "pinDesc": "Elige un PIN de 6 dígitos. Si otra persona podría conocer tu PIN actual, elige uno nuevo. Para conservar tu PIN actual, introdúcelo aquí.",
+            "skipPin": "Continuar sin PIN",
+            "skipPinNote": "Puedes configurar un nuevo PIN más tarde en Recuperación de cuenta.",
+            "working": "Protegiendo tu cuenta...",
+            "workingHint": "Mantén esta página abierta hasta que termine.",
+            "doneTitle": "Tu cuenta está protegida",
+            "doneBody": "Los demás dispositivos e inicios de sesión ya no pueden volver a entrar, y tus métodos de recuperación anteriores están desactivados.",
+            "pinKept": "Tu PIN de recuperación está activado.",
+            "pinNotKept": "Tu PIN de recuperación está desactivado. Puedes volver a configurarlo en Recuperación de cuenta.",
+            "nextStep": "Añade una nueva forma de volver a entrar para no quedarte sin acceso.",
+            "setUpPasskey": "Configurar una clave de acceso",
+            "setUpRecovery": "Añadir un método de recuperación",
+            "conflict": "Tu cuenta cambió mientras la protegíamos. Inténtalo de nuevo.",
+            "failed": "No pudimos terminar de proteger tu cuenta. Inténtalo de nuevo.",
+            "sessionExpired": "Tu sesión expiró. Vuelve a iniciar sesión para proteger tu cuenta.",
+            "opening": "Abriendo la seguridad de la cuenta...",
+            "pinDescNewPin": "Elige un nuevo PIN de 6 dígitos, diferente del actual."
+        },
+        "signOutOtherDevices": {
+            "section": "Seguridad",
+            "label": "Cerrar sesión en otros dispositivos",
+            "caption": "¿Perdiste un dispositivo o ves algo desconocido?",
+            "attention": "Tu PIN se introdujo incorrectamente."
+        },
+        "inProgress": "La recuperación ya está en curso. Espera a que termine y vuelve a intentarlo.",
+        "emailSender": {
+            "code": "Te enviaremos por correo un código de {{sender}}, el servicio que protege tu cuenta de {{brand}}.",
+            "updates": "Algunos correos sobre esta solicitud llegan de {{sender}}, el servicio que protege tu cuenta de {{brand}}.",
+            "codeMixed": "Tu código puede llegar de {{brand}} o de {{sender}}, el servicio que protege tu cuenta de {{brand}}.",
+            "updatesMixed": "Algunos correos sobre esta solicitud pueden llegar de {{brand}} o de {{sender}}, el servicio que protege tu cuenta de {{brand}}.",
+            "codeShared": "Si también usas {{sender}} con esta cuenta, tu código puede llegar de {{sender}} en lugar de {{brand}}.",
+            "updatesShared": "Si también usas {{sender}} con esta cuenta, algunos correos sobre esta solicitud pueden llegar de {{sender}} en lugar de {{brand}}."
+        }
     },
     "alerts": {
+        "announcement": "Anuncio",
+        "newAlert": "Nuevo",
+        "markRead": "Marcar como leído",
+        "read": "Leído",
+        "markingRead": "Marcando como leído…",
+        "archiving": "Archivando…",
+        "restore": "Restaurar",
+        "restoring": "Restaurando…",
+        "updateFailed": "No se pudo actualizar esta alerta. Inténtalo de nuevo.",
         "title": "Alertas",
         "notifications": "Notificaciones",
         "markAllRead": "Marcar todo como leído",
@@ -2299,6 +2968,8 @@
     "error": {
         "generic": "Algo salió mal. Inténtalo de nuevo.",
         "network": "Problema de conexión. Verifica tu internet e inténtalo de nuevo.",
+        "updateRequired": "Tu cuenta usa una forma más nueva de iniciar sesión. Actualiza la aplicación a la última versión (a menudo basta con cerrarla y volver a abrirla) y vuelve a iniciar sesión.",
+        "updateRequiredTitle": "Actualización necesaria",
         "notFound": "Página no encontrada.",
         "unauthorized": "No tienes permiso para hacer esto.",
         "sessionExpired": "Tu sesión ha expirado. Inicia sesión de nuevo.",
@@ -2644,7 +3315,8 @@
             "preview": {
                 "criteria": "Criterios",
                 "certificate": "Certificado",
-                "id": "ID"
+                "id": "ID",
+                "awardedOn": "Otorgada el {{date}}"
             },
             "loading": {
                 "issuing": "Emitiendo Boost...",
@@ -2806,6 +3478,7 @@
         "modal": {
             "earnedTitle": "¡Has obtenido una credencial!",
             "claimedTitle": "¡Credencial reclamada!",
+            "verificationFailed": "No pudimos verificar esto",
             "claimedBody": "La credencial se ha añadido a tu cartera.",
             "loadingCredential": "Cargando credencial...",
             "loadErrorTitle": "No se pudo cargar la credencial",
@@ -2891,7 +3564,35 @@
         "readMore": "Leer más",
         "connectHandler": "Conectar gestor",
         "connected": "Manejador de credenciales conectado",
-        "connFail": "No se pudo conectar el manejador de credenciales. Tu navegador puede haberlo bloqueado — revisa los permisos e inténtalo de nuevo."
+        "connFail": "No se pudo conectar el manejador de credenciales. Tu navegador puede haberlo bloqueado — revisa los permisos e inténtalo de nuevo.",
+        "receive": {
+            "title": "Añadir al Pasaporte",
+            "description": "Revisa las credenciales antes de guardarlas en tu cuenta.",
+            "from": "Solicitado por {{origin}}",
+            "loading": "Obteniendo credenciales...",
+            "saved": "Guardado en tu Pasaporte. Puedes volver al sitio emisor.",
+            "credential": "Credencial",
+            "issuerUnavailable": "Nombre del emisor no disponible",
+            "details": "Detalles",
+            "progress": "Guardadas {{saved}} de {{total}} credenciales",
+            "cancel": "Cancelar",
+            "saving": "Guardando...",
+            "retry": "Intentar de nuevo",
+            "accept": "Guardar en el Pasaporte",
+            "error": {
+                "invalid": "Esta oferta no es compatible o contiene una credencial inválida. Vuelve al sitio emisor e inicia una nueva solicitud.",
+                "request": "No pudimos obtener las credenciales. Vuelve al sitio emisor e inténtalo de nuevo.",
+                "save": "No pudimos terminar de guardar. Inténtalo de nuevo para continuar desde donde quedaste.",
+                "response": "Tus credenciales se guardaron, pero no pudimos notificar al sitio emisor.",
+                "account": "Tu cuenta ha cambiado. Vuelve al sitio emisor e inicia una nueva solicitud.",
+                "cancel": "No pudimos notificar al sitio emisor que cancelaste. Vuelve a ese sitio e inicia una nueva solicitud."
+            },
+            "cancelled": "Solicitud cancelada. Vuelve al sitio emisor.",
+            "connectTitle": "Conectando tu cuenta",
+            "connectDescription": "Preparando la solicitud de este sitio.",
+            "connecting": "Conectando...",
+            "savedBeforeCancel": "Las credenciales ya guardadas permanecen en tu Pasaporte ({{saved}})."
+        }
     },
     "legal": {
         "connectionsEncrypted": "Todas las conexiones están cifradas.",
@@ -3033,7 +3734,9 @@
             "verifying": "Verificando...",
             "forUser": "para {{name}}",
             "requiresFiveDigits": "El PIN debe tener 5 dígitos",
-            "invalidPin": "PIN no válido. Inténtalo de nuevo"
+            "invalidPin": "PIN no válido. Inténtalo de nuevo",
+            "approvalRequiresPin": "Necesitas el PIN de un padre o tutor para esta acción. Cambia a su cuenta para configurarlo.",
+            "parentIdentityUnavailable": "Falta la información de tu cuenta. Vuelve a iniciar sesión."
         },
         "guardianInvite": {
             "shareTitle": "Invitación de tutor",
@@ -3536,6 +4239,20 @@
         "skillsHub": "Centro de habilidades"
     },
     "base": {
+        "inAppMessages": {
+            "next": "Siguiente",
+            "previous": "Anterior",
+            "done": "Listo",
+            "progress": "Progreso de la historia",
+            "error": "Algo salió mal. Inténtalo de nuevo.",
+            "retry": "Intentar de nuevo",
+            "loading": "Cargando…",
+            "opening": "Abriendo…",
+            "checking": "Comprobando…",
+            "downloading": "Descargando… {{progress}}%",
+            "installing": "Instalando…",
+            "upToDate": "Tienes la última versión."
+        },
         "verification": {
             "selfIssued": "Autoemitido",
             "trustedIssuer": "Emisor de confianza",
@@ -3556,6 +4273,7 @@
         },
         "credential": {
             "category": {
+                "qualifications": "Cualificación",
                 "badge": "Insignia",
                 "family": "Familia",
                 "achievement": "Logro",
@@ -3568,9 +4286,17 @@
                 "assistance": "Asistencia"
             },
             "lifecycle": {
+                "expired": "Expirada",
                 "revoked": "Revocada",
                 "suspended": "Suspendida"
-            }
+            },
+            "expires": "Caduca"
+        },
+        "consentAudience": {
+            "title": "Revisa quién recibe tus datos",
+            "description": "La información que elijas estará disponible para todas las personas que aparecen a continuación.",
+            "confirm": "Confirmar uso compartido",
+            "cancel": "Cancelar"
         }
     },
     "sdk": {
@@ -3608,7 +4334,9 @@
             "lifecycle": {
                 "revoked": "Revocada",
                 "suspended": "Suspendida"
-            }
+            },
+            "awardedOn": "Otorgada el {{date}}",
+            "awardedOnBy": "Otorgada el {{date}} por"
         }
     },
     "skills": {
@@ -4418,6 +5146,7 @@
         }
     },
     "notifications": {
+        "viewCampaign": "Ver",
         "contract": "tu contrato",
         "loadErr": "No se pudo cargar la actividad",
         "updates": "Actualizaciones",
@@ -4495,6 +5224,19 @@
             "maxClaims": "Máximo de reclamos (opcional)",
             "unlimited": "Ilimitado"
         }
+    },
+    "credentialShare": {
+        "copyLink": "Copiar enlace",
+        "publicPreviewPersistent": "La vista previa pública está publicada y puede seguir disponible. Las redes sociales pueden conservar copias, aunque cambies la configuración de uso compartido.",
+        "publicPreviewPrivate": "La vista previa pública muestra el nombre, la entidad emisora y la imagen de la credencial. Puede seguir disponible tras publicarse, y las redes sociales pueden conservar copias. El resto permanece cifrado.",
+        "issuerUnavailable": "No hay datos de la entidad emisora. Aún puedes compartir el enlace cifrado.",
+        "enablePreview": "Activar vista previa pública",
+        "publishingPreview": "Publicando vista previa...",
+        "addToLinkedIn": "Añadir a LinkedIn",
+        "postToLinkedIn": "Publicar en LinkedIn",
+        "linkedInOrgId": "ID de organización de LinkedIn (opcional)",
+        "linkedInOrgIdHelp": "Busca el ID numérico en la URL de administración de LinkedIn. Introduce el número, no el nombre de la página. Déjalo en blanco para eliminarlo.",
+        "linkedInOrgIdError": "Introduce solo dígitos."
     },
     "developerPortal": {
         "shell": {
@@ -8031,9 +8773,9 @@
                     "description": "Configura un flujo de consentimiento para enviar y acceder a datos de usuario y credenciales con su permiso."
                 },
                 "courseCatalog": {
-                    "title": "Conectar catálogo de cursos",
-                    "subtitle": "Integración LMS empresarial",
-                    "description": "Configuración guiada completa para socios LMS. Configura webhooks, crea plantillas de credenciales, mapea tus datos y publica con emisión automática de credenciales."
+                    "title": "Emitir desde un catálogo de cursos",
+                    "subtitle": "Convierte una hoja de cursos en credenciales",
+                    "description": "Sube tu lista de cursos, obtén un diseño de credencial para cada uno y otórgalos a los estudiantes cuando terminen."
                 },
                 "verifyCredentials": {
                     "title": "Verificar credenciales",
@@ -8195,7 +8937,8 @@
             "filterAll": "Todas",
             "filterListed": "Publicadas",
             "filterDraft": "Borrador",
-            "filterArchived": "Archivadas"
+            "filterArchived": "Archivadas",
+            "filterUpdates": "Actualizaciones"
         },
         "listing": {
             "submittedBy": "Enviado por:",
@@ -8262,6 +9005,23 @@
                 "standardDesc": "Visibilidad normal en búsqueda y navegación",
                 "demoted": "Degradado",
                 "demotedDesc": "Visibilidad reducida en los listados"
+            },
+            "update": {
+                "title": "Actualización pendiente de revisión",
+                "description": "Estos cambios solo se publican si los apruebas.",
+                "draftNote": "El desarrollador todavía está editando una actualización.",
+                "capabilities": "También cambia lo que puede hacer la app (versión {{version}}).",
+                "approve": "Aprobar actualización",
+                "reject": "Rechazar actualización",
+                "fieldName": "Nombre",
+                "fieldTagline": "Eslogan",
+                "fieldDescription": "Descripción",
+                "fieldIcon": "Icono",
+                "fieldScreenshots": "Capturas de pantalla",
+                "fieldHighlights": "Destacados",
+                "fieldLinks": "Enlaces y contacto",
+                "fieldLaunch": "Dónde se ejecuta la app",
+                "fieldOther": "Otros detalles"
             }
         }
     },
@@ -8284,7 +9044,8 @@
         "manyResults": "{{count}} resultados para \"{{query}}\"",
         "shortcuts": {
             "skillInsights": "Perspectivas de habilidades",
-            "boostAFriend": "Impulsa a un amigo"
+            "boostAFriend": "Impulsa a un amigo",
+            "schoolConnect": "Conexión Escolar"
         }
     },
     "addToPassport": {
@@ -8799,16 +9560,16 @@
         "addByHint": "Añade por nombre, @usuario o correo",
         "linkOnIssue": "Crearemos un enlace para compartir cuando emitas.",
         "alreadyHave": "¿Ya tienes algo?",
-        "startFromLink": "Empieza desde un enlace, archivo o ID",
+        "startFromLink": "Importar una credencial o una hoja de cálculo",
         "sendExisting": "Envía una que hayas creado",
-        "startFromSomething": "Empieza desde algo",
-        "importIntro": "Pega un enlace, un ID de Credential Engine o los datos de una credencial — nosotros nos encargamos del resto.",
-        "importPlaceholder": "Pega una URL, un ID ce- o el JSON de la credencial…",
-        "importSupports": "Admitimos enlaces, IDs y archivos",
-        "uploadFile": "Subir archivo",
+        "startFromSomething": "Importar una credencial o una hoja de cálculo",
+        "importIntro": "Elige un archivo o pega contenido que ya tengas.",
+        "importPlaceholder": "Pega aquí tu enlace o los datos copiados…",
+        "importSupports": "JSON · CSV · TSV · XLSX",
+        "uploadFile": "Elegir archivo",
         "pasteInstead": "Abre la fuente, copia su JSON y pégalo arriba.",
-        "bringingIn": "Importándola…",
-        "bringItIn": "Importarla",
+        "bringingIn": "Revisando contenido…",
+        "bringItIn": "Revisar contenido",
         "foundIt": "La encontramos",
         "fromCredEngine": "De Credential Engine",
         "useThis": "Usar esta",
@@ -9159,7 +9920,8 @@
         },
         "preview": {
             "willLook": "Así se verá tu credencial.",
-            "pickToStart": "Elige un tipo para empezar a diseñar tu credencial."
+            "pickToStart": "Elige un tipo para empezar a diseñar tu credencial.",
+            "verificationPending": "La verificación se realiza después de emitirla."
         },
         "err": {
             "network": "Problema de conexión. Revisa tu conexión a internet e inténtalo de nuevo.",
@@ -9171,6 +9933,197 @@
             "recipient": "No pudimos contactar a uno de tus destinatarios. Revisa los nombres o correos e inténtalo de nuevo.",
             "invalid": "Algunos datos de esta credencial aún no son válidos. Revísalos e inténtalo de nuevo.",
             "generic": "Algo salió mal al emitir tu credencial. Inténtalo de nuevo."
+        },
+        "sheet": {
+            "invalidEmail": "Introduce una dirección de correo válida.",
+            "duplicateEmail": "Este destinatario aparece más de una vez.",
+            "required": "Completa los campos obligatorios.",
+            "invalidEvidence": "Introduce un enlace de evidencia completo con http o https.",
+            "formula": "Recalcula esta fórmula en la hoja y vuelve a subirla.",
+            "tooLarge": "Usa un archivo de menos de 10 MB con un máximo de 10.000 personas y 200 columnas.",
+            "tooComplex": "Este libro es demasiado complejo para importar. Elimina las hojas que no uses o divídelo en archivos más pequeños.",
+            "storage": "No se pudo guardar la recuperación. Libera espacio e inténtalo de nuevo.",
+            "corrupt": "No se pudo leer el envío guardado. Conserva la hoja y revisa los resultados antes de empezar de nuevo.",
+            "contextChanged": "Tu cuenta o red ha cambiado. Vuelve a la cuenta original para continuar.",
+            "expired": "Esta solicitud es demasiado antigua para reenviarla con seguridad. Contacta con soporte para revisar estas entregas. Puedes seguir emitiendo credenciales a otras personas.",
+            "busy": "Este envío está activo o ha cambiado. Recarga para ver sus últimos resultados.",
+            "chooseEmail": "Elige la columna de correos de los destinatarios.",
+            "mappedColumnMissing": "Falta una columna incluida. Restáurala en la hoja de cálculo o elimínala de Asignar columnas antes de volver a importar.",
+            "mapping": "Revisa los nombres de las columnas y corrige las filas marcadas.",
+            "wrongRun": "Este archivo pertenece a otro envío. Ábrelo en la cuenta y el dispositivo originales.",
+            "fileType": "Elige un archivo CSV, TSV o XLSX.",
+            "malformed": "No se pudo leer esta hoja. Revisa el archivo e inténtalo de nuevo.",
+            "review": "Revisar hoja",
+            "worksheet": "Hoja",
+            "emailColumn": "Columna de correo del destinatario",
+            "headerRow": "Fila de nombres de columnas",
+            "noHeader": "Sin nombres de columnas",
+            "importSummary": "Personas encontradas: {{count}} · Filas omitidas: {{skipped}}",
+            "importing": "Leyendo hoja...",
+            "addPeople": "Añadir personas",
+            "upload": "Subir hoja",
+            "getTemplate": "Obtener plantilla CSV",
+            "emailFor": "Correo de {{name}}",
+            "evidenceFor": "Evidencia de {{name}}",
+            "skip": "Omitir",
+            "details": "Personas y campos",
+            "download": "Descargar tabla",
+            "recipient": "Destinatario",
+            "evidence": "Enlace de evidencia",
+            "sending": "Enviando {{count}} de {{total}}...",
+            "savedDraft": "Borrador guardado en este dispositivo",
+            "results": "{{sent}} enviados · {{failed}} fallidos",
+            "confirming": "{{count}} necesitan confirmación",
+            "waiting": "{{count}} en espera",
+            "resume": "Continuar",
+            "retryFailed": "Reintentar fallidos",
+            "downloadFailed": "Descargar {{count}} filas fallidas",
+            "newRun": "Iniciar otro envío",
+            "confirmingHelp": "Comprueba la entrega por correo sin volver a enviar. Si sigue sin confirmarse, contacta con soporte antes de emitir de nuevo. Los envíos a perfiles requieren confirmación manual.",
+            "recoverable": "Hay un envío guardado disponible en este dispositivo.",
+            "restore": "Restaurar envío guardado",
+            "lockedRows": "No se pueden cambiar las filas enviadas o presentadas. Edita solo las pendientes o fallidas.",
+            "saving": "Guardando…",
+            "viewSaved": "Ver envío guardado",
+            "dismissRecovery": "Omitir por ahora",
+            "checking": "Comprobando el estado de entrega…",
+            "checkStatus": "Comprobar de nuevo",
+            "previous": "Persona anterior",
+            "next": "Persona siguiente",
+            "previewPosition": "{{index}} de {{total}} · {{name}}",
+            "peopleSummary": "{{count}} personas",
+            "viewAll": "Ver todas",
+            "searchPeople": "Buscar personas",
+            "pageRows": "Filas {{first}}–{{last}} de {{total}}",
+            "needsConfirmation": "Necesita confirmación",
+            "design": {
+                "peopleHint": "Revisa los destinatarios, corrige errores y personaliza sus credenciales.",
+                "issueCount": "Necesitan revisión · {{count}}",
+                "noIssues": "Sin problemas detectados",
+                "reviewPeople": "Revisar personas",
+                "editorHint": "Los cambios se guardan en el borrador mientras editas.",
+                "locked": "Ya enviado o en curso",
+                "fieldSettings": "Campos de la credencial · {{count}}",
+                "noMatches": "No hay personas que coincidan con esta vista.",
+                "importHint": "Puedes corregir los datos después de añadir a las personas.",
+                "importSetup": "Configura la importación",
+                "previewPeople": "Vista previa de personas",
+                "previewHint": "Mostrando {{count}} de {{total}} personas.",
+                "additionalEvidence": "Evidencia adicional",
+                "additionalEvidenceFor": "Evidencia adicional para {{name}}",
+                "emailFormatGood": "El formato del correo es correcto",
+                "emptyImport": "No se encontraron personas. Revisa la columna de correo y la fila de encabezados.",
+                "reviewDeliveryIssues": "Revisar problemas de entrega · {{count}}",
+                "deliveryIssuesHint": "Revisa aquí los envíos sin confirmar; edita los destinatarios fallidos en Revisar personas.",
+                "viewDeliveryStatus": "Ver estado de envío",
+                "deliveryStatus": "Estado de envío",
+                "deliveryStatusHint": "Los estados se actualizan durante el envío.",
+                "searchDeliveryStatus": "Buscar destinatarios",
+                "statusFilter": "Estado",
+                "allDeliveryStatuses": "Todos los destinatarios · {{count}}",
+                "deliveryState": {
+                    "ready": "Sin enviar",
+                    "queued": "En cola",
+                    "sent": "Enviado",
+                    "failed": "Fallido",
+                    "confirming": "Sin confirmar"
+                },
+                "dateUtc": "UTC · cambiar la fecha conserva la hora",
+                "originalDate": "Valor original: {{value}}",
+                "mappingHint": "Relaciona las columnas con la información de cada credencial.",
+                "mappingSummary": "{{mapped}} de {{total}} columnas incluidas",
+                "mapColumns": "Relacionar columnas",
+                "sourceColumn": "Columna de la hoja",
+                "credentialField": "Campo de la credencial",
+                "sample": "Ejemplo: {{value}}",
+                "include": "Incluir",
+                "included": "Incluida",
+                "includeColumn": "Incluir {{name}}",
+                "removeColumn": "Quitar {{name}}",
+                "formatOptions": "Opciones de formato",
+                "openBadgesOnly": "La asignación de columnas está disponible para credenciales Open Badges.",
+                "columnsReadOnly": "Las columnas de este envío son de solo lectura."
+            },
+            "encoding": "Guarda esta hoja como CSV UTF-8 o XLSX y vuelve a importarla. No se pudieron leer algunos caracteres de forma segura.",
+            "bounds": "Elimina la celda fuera de rango {{cell}} y vuelve a importar el libro.",
+            "resultField": "Campo de resultado",
+            "spreadsheet": "Hoja de cálculo",
+            "invalidNumber": "Usa un número con punto decimal, sin unidades.",
+            "invalidDate": "Usa AAAA-MM-DD o una fecha y hora con zona horaria.",
+            "invalidResult": "Revisa el resultado y su escala.",
+            "columns": "Columnas de la hoja de cálculo",
+            "columnsHint": "Elige qué columnas incluir en esta credencial.",
+            "pickTypeForColumns": "Elige un tipo de credencial antes de añadir columnas.",
+            "mappingFor": "Usar {{name}} como",
+            "numberFormat": "Formato decimal de la hoja",
+            "creditUnit": "Unidad de crédito",
+            "creditUnitExample": "Por ejemplo, horas de crédito semestrales",
+            "hoursHint": "Elige una unidad para contar horas como créditos o consérvalas en la descripción.",
+            "dateFormat": "Formato de fecha de la hoja",
+            "dateIso": "AAAA-MM-DD o fecha y hora",
+            "dateDmy": "Día / mes / año",
+            "dateMdy": "Mes / día / año",
+            "target": {
+                "description": "Descripción",
+                "Percent": "Porcentaje",
+                "RawScore": "Puntuación",
+                "LetterGrade": "Nota con letras",
+                "GradePointAverage": "Promedio de notas",
+                "credits": "Créditos obtenidos",
+                "evidence": "Enlace de evidencia",
+                "awardedDate": "Fecha de concesión"
+            },
+            "numberFormatConflict": "Esta columna mezcla formatos numéricos. Elige el formato correcto o corrige la hoja.",
+            "reviewWorkspace": {
+                "characterCount": "{{count}} / {{limit}} caracteres",
+                "expand": "Ampliar",
+                "collapse": "Contraer",
+                "expandField": "Ampliar {{field}}",
+                "collapseField": "Contraer {{field}}",
+                "descriptionTooLong": "Usa un máximo de {{limit}} caracteres en este campo.",
+                "sharedEvidence": "Evidencias para todos",
+                "sharedEvidenceHelp": "Se incluyen para todas las personas. Edita estos elementos en Evidencias y archivos.",
+                "noSharedEvidence": "No se han añadido evidencias para todos.",
+                "personalEvidenceHelp": "Las evidencias de una fila solo se envían a esa persona.",
+                "personalEvidence": "Evidencias adicionales para esta persona",
+                "personalEvidenceFor": "Enlace de evidencia adicional para {{name}}",
+                "personalAttachments": "Archivos y enlaces para esta persona ({{count}})",
+                "evidenceFor": "Evidencias para {{name}}",
+                "rowEvidenceHelp": "Solo para esta persona; las evidencias para todos también se incluyen.",
+                "allSent": "Todas las credenciales enviadas",
+                "attention": "El envío requiere atención",
+                "completionCount": "{{sent}} de {{total}} enviados correctamente.",
+                "completionHelp": "Revisa el estado de los envíos o inicia otra credencial.",
+                "confirmationHelp": "Algunos envíos no están confirmados. Comprueba su estado antes de volver a intentarlo.",
+                "failureHelp": "Revisa los envíos fallidos y vuelve a intentar solo esos envíos.",
+                "attentionToast": "{{sent}} de {{total}} enviados. Revisa los envíos restantes.",
+                "successToast": "Envío completado: {{count}} enviados."
+            }
+        },
+        "importOptions": {
+            "uploadTitle": "Subir un archivo",
+            "uploadHint": "Una hoja de cálculo de personas o una credencial existente.",
+            "dropHint": "Arrastra un archivo aquí o elige uno abajo.",
+            "readingFile": "Leyendo archivo…",
+            "pasteTitle": "Pegar un enlace o datos",
+            "pasteHint": "Usa contenido copiado de otra fuente.",
+            "contentLabel": "Contenido para importar",
+            "pasteHelp": "Pega un enlace a una credencial, datos JSON o filas de una hoja de cálculo con direcciones de correo.",
+            "or": "o",
+            "examplesTitle": "¿Qué puedo pegar?",
+            "exampleLinkTitle": "Enlace a una credencial",
+            "exampleLinkBody": "Un enlace directo a los datos JSON de una credencial.",
+            "exampleRowsTitle": "Filas de una hoja de cálculo",
+            "exampleRowsBody": "Copia filas con una columna de correo electrónico desde Google Sheets o Excel.",
+            "exampleJsonTitle": "Datos de una credencial (JSON)",
+            "exampleJsonBody": "Copia el texto JSON completo de una credencial existente.",
+            "exampleRegistry": "También puedes usar enlaces e identificadores de registros de Credential Engine.",
+            "reviewNote": "Revisarás el contenido antes de añadirlo.",
+            "detectedJson": "Datos de una credencial",
+            "detectedRegistry": "Registro de Credential Engine",
+            "detectedFramework": "Marco de competencias",
+            "detectedLink": "Enlace a una credencial",
+            "unrecognized": "Añade un enlace a una credencial, datos JSON o filas con direcciones de correo."
         }
     },
     "connectivity": {
@@ -9314,11 +10267,246 @@
         "unlocking": "Abriendo…",
         "viewNotificationsTitle": "Avisarme cuando se vea",
         "viewNotificationsHint": "Recibe una notificación privada con el recuento y la hora. Desactivado por defecto.",
-        "saveToLearnCard": "Guardar en LearnCard",
-        "savingToLearnCard": "Guardando…",
-        "savedToLearnCard": "Guardado en LearnCard",
-        "saveError": "No se pudieron guardar estas credenciales. Inténtalo de nuevo.",
+        "saveToLearnCard": "Guardar colección",
+        "savingToLearnCard": "Guardando colección…",
+        "savedCollectionStatus": "Colección guardada como referencia.",
+        "savedCollectionDestination": "Encuéntrala en Datos y uso compartido, en Compartido contigo.",
+        "viewSavedCollections": "Ver colecciones guardadas",
+        "saveError": "No se pudo guardar esta colección. Inténtalo de nuevo.",
         "signInToSave": "Inicia sesión para guardar",
-        "saveHint": "Guarda esta colección firmada con tus elementos recibidos."
+        "saveHint": "Guarda la colección de otra persona como referencia. No añade credenciales a tu Passport ni cuenta como credenciales obtenidas por ti.",
+        "viewCredential": "Ver credencial"
+    },
+    "resumePublishing": {
+        "aboutPublishing": "Acerca de la publicación",
+        "linkReady": "Tu enlace privado está listo.",
+        "opening": "Abriendo tu enlace privado...",
+        "linkUnavailable": "Este enlace no está disponible. Revisa sus ajustes y vuelve a publicar el currículum.",
+        "legacy": "Vuelve a publicar este currículum para crear un enlace administrado.",
+        "pending": "La publicación aún se está confirmando. Inténtalo de nuevo para comprobar el mismo intento.",
+        "size": "Este currículum es demasiado grande para publicarlo. Desactiva el código QR para descargarlo.",
+        "inactive": "Este enlace se ha detenido o ha caducado. Revisa sus ajustes antes de publicar de nuevo.",
+        "failed": "No pudimos publicar este currículum. Inténtalo de nuevo.",
+        "account": "Tu cuenta ha cambiado. Inténtalo de nuevo.",
+        "changed": "Tu currículum cambió mientras se preparaba. Inténtalo de nuevo.",
+        "cleanup": "Tu currículum está publicado, pero la limpieza no se completó. Inténtalo más tarde.",
+        "limits": "Detener este enlace impide el acceso futuro. No se pueden retirar copias guardadas ni enlaces anteriores.",
+        "republishLimits": "Volver a publicar no retira enlaces anteriores ni copias guardadas.",
+        "pdfHeading": "Currículum publicado",
+        "previewError": "No pudimos abrir este currículum.",
+        "downloadExact": "Descargar PDF del currículum",
+        "updated": "Este currículum ha cambiado",
+        "updatedHint": "Abre el enlace de nuevo para ver la versión más reciente.",
+        "recovered": "Tu publicación anterior está confirmada. Se ha cargado el currículum guardado.",
+        "originalClaims": "Las credenciales seleccionadas conservan sus detalles firmados originales; ocultar campos en este PDF no los elimina.",
+        "downloadToView": "Descargar para ver",
+        "pdfSize": "PDF · Tamaño: {{size}} KB",
+        "pdfReady": "Descarga este currículum para abrir el PDF en tu dispositivo.",
+        "discard": "Borrar la preparación interrumpida",
+        "discarding": "Borrando la preparación interrumpida...",
+        "discarded": "Se ha borrado la preparación interrumpida. Puedes publicar de nuevo.",
+        "interrupted": "La preparación de la publicación se interrumpió. Reintenta o bórrala antes de empezar un nuevo currículum.",
+        "discardFailed": "No pudimos borrar esta preparación. Inténtalo de nuevo.",
+        "manageContent": "Edita el contenido del currículum en Resume Builder.",
+        "publishInBuilder": "Usa Resume Builder para publicar este currículum."
+    },
+    "verifierSelection": {
+        "hint": "Elige las credenciales que quieres enviar a esta aplicación.",
+        "review": "Revisar"
+    },
+    "verifierHistory": {
+        "viewCredentials": "Ver credenciales compartidas con {{verifier}}",
+        "credentialsCount": "Credenciales ({{count}})",
+        "credentialsList": "Nombres de credenciales registrados",
+        "viewAll": "Ver los {{count}}",
+        "preview": "Se muestran {{shown}} de {{total}} entradas",
+        "page": "Página {{page}} de {{total}}",
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "saveFailed": "No se pudo actualizar el historial. No necesitas enviar tu información de nuevo.",
+        "title": "Compartido con verificadores",
+        "description": "Historial privado de la información que decidiste enviar a otras aplicaciones.",
+        "managedUnavailable": "El historial no está disponible para cuentas administradas.",
+        "loading": "Actualizando el historial…",
+        "open": "Abrir historial privado",
+        "record": "Guardar historial privado",
+        "retention": "Guarda hasta 500 entradas de los últimos 90 días. Las entradas antiguas se eliminan al conectarte.",
+        "limits": "Los títulos no describen todos los datos enviados. Eliminar el historial no retira la información enviada. Desactivar el registro conserva el historial anterior.",
+        "cleanupPending": "No se pudieron leer o eliminar algunos registros. Borra el historial para eliminarlos.",
+        "refresh": "Actualizar",
+        "clear": "Borrar historial",
+        "empty": "No hay envíos registrados.",
+        "unknownVerifier": "Aplicación solicitante",
+        "sent": "Enviado; aceptación desconocida",
+        "handedOff": "Entregado a la aplicación; recepción sin confirmar",
+        "credential": "Credencial",
+        "delete": "Eliminar entrada",
+        "deleteLabel": "Eliminar entrada de {{verifier}}",
+        "loadFailed": "No se pudo cargar o actualizar el historial. Comprueba tu conexión e inténtalo de nuevo.",
+        "retry": "Reintentar historial",
+        "clearTitle": "¿Borrar el historial privado?",
+        "clearBody": "Se eliminarán permanentemente todas las entradas del historial privado. Tus credenciales y la información ya enviada no cambian.",
+        "clearConsent": "La opción de registro se mantiene si se puede leer la configuración; de lo contrario, se desactiva.",
+        "clearRecovery": "No se pudo cargar parte del historial. Al borrarlo, también se eliminan las entradas ilegibles.",
+        "accountChanged": "El envío terminó, pero cambiaste de cuenta. Vuelve a la aplicación que lo solicitó para continuar."
+    },
+    "contractRequests": {
+        "label": "Conectar",
+        "referred": "{{referrer}} te ha referido a {{owner}}.",
+        "invitation": "{{owner}} quiere conectar contigo.",
+        "accept": "Aceptar y conectar",
+        "details": "Ver detalles",
+        "decline": "Rechazar",
+        "declineConfirm": "¿Rechazar esta invitación?",
+        "declined": "Rechazada",
+        "connected": "Conectado",
+        "cancelled": "Cancelada",
+        "notNow": "Ahora no",
+        "dismiss": "Ocultar invitación",
+        "loading": "Cargando invitación...",
+        "working": "Procesando...",
+        "unavailable": "Esta invitación ya no está disponible.",
+        "error": "Algo salió mal. Inténtalo de nuevo.",
+        "sharedWith": "Compartido con",
+        "dataRequested": "Datos solicitados",
+        "outcomes": "Credenciales que puedes recibir",
+        "none": "Ninguno",
+        "reviewFirst": "Revisa y elige tus datos antes de conectar.",
+        "pending": "Invitaciones pendientes",
+        "empty": "No hay invitaciones pendientes."
+    },
+    "clrRenderer": {
+        "military": "Registro militar",
+        "general": "Registro de aprendizaje",
+        "training": "Formación",
+        "courses": "Cursos",
+        "programs": "Programas",
+        "activities": "Actividades",
+        "fieldwork": "Funciones y trabajo de campo",
+        "assessments": "Evaluaciones",
+        "competencies": "Competencias",
+        "qualifications": "Cualificaciones",
+        "awards": "Reconocimientos",
+        "other": "Otros registros",
+        "publishedBy": "Publicado por",
+        "partial": "Registro parcial: incluye solo algunos logros.",
+        "empty": "No se proporcionaron registros individuales.",
+        "viewDetails": "Ver detalles",
+        "recordDetails": "Detalles del registro",
+        "closeDetails": "Cerrar detalles del registro",
+        "issuedBy": "Emitido por",
+        "assessedBy": "Evaluado por",
+        "createdBy": "Logro creado por",
+        "activityStart": "Inicio de la actividad",
+        "activityEnd": "Fin de la actividad",
+        "awarded": "Otorgado",
+        "validFrom": "Válido desde",
+        "validUntil": "Válido hasta",
+        "issued": "Emitido",
+        "role": "Función",
+        "narrative": "Relato del estudiante",
+        "license": "Número de licencia",
+        "field": "Área de estudio",
+        "specialization": "Especialización",
+        "language": "Idioma",
+        "version": "Versión",
+        "identifier": "Identificador",
+        "hashedIdentifier": "{{label}} (hash)",
+        "criteria": "Criterios",
+        "viewCriteria": "Ver criterios",
+        "criteriaReference": "Referencia de criterios",
+        "additional": "Detalles adicionales",
+        "tags": "Etiquetas",
+        "achievementId": "Identificador del logro",
+        "learnerId": "Identificador del estudiante",
+        "achievementIdentifiers": "Identificadores del logro",
+        "learnerIdentifiers": "Identificadores del estudiante",
+        "requiredValue": "Valor requerido: {{value}}",
+        "requiredLevel": "Nivel requerido: {{value}}",
+        "verified": "Contenido firmado verificado",
+        "signedUnverified": "Firmado, sin verificar",
+        "verifying": "Verificando…",
+        "valid": "Válido",
+        "invalid": "Inválido",
+        "proof": "Prueba",
+        "expiration": "Vencimiento",
+        "expired": "Venció el {{date}}",
+        "expires": "Vence el {{date}}",
+        "doesNotExpire": "No vence",
+        "numericScale": "Escala numérica de {{min}} a {{max}}; resultado {{value}}",
+        "numericScaleWithPassing": "Escala numérica de {{min}} a {{max}}; resultado {{value}}; mínimo para aprobar {{required}}",
+        "unsigned": "Credencial sin firma",
+        "evidenceAttached": "Evidencia adjunta",
+        "status": "Estado: {{status}}",
+        "revocationCheck": "Comprobación de revocación disponible",
+        "evidenceCount": "Elementos de evidencia: {{count}}",
+        "evidence": "Evidencia de apoyo"
+    },
+    "schoolConnect": {
+        "signInFirst": "Inicia sesión y vuelve a conectar tu escuela.",
+        "connectFailed": "No pudimos conectar tu cuenta escolar. Por favor, inténtalo de nuevo.",
+        "connectedToast": "Tu cuenta escolar está conectada.",
+        "tryAgain": "Intentar de nuevo",
+        "notAvailable": "La Conexión Escolar aún no está disponible para tu cuenta.",
+        "yourSchool": "Tu escuela",
+        "lastConnected": "Última conexión {{date}}",
+        "connected": "Conectado",
+        "refreshConnection": "Actualizar conexión",
+        "connecting": "Conectando...",
+        "studentNote": "Las funciones de IA, análisis y reportes de errores están desactivados, como lo requiere tu escuela.",
+        "warningTitle": "Antes de conectar",
+        "warningBody": "Si eres estudiante, tu escuela no permite funciones de IA, análisis ni reportes de errores para cuentas de estudiantes, así que los desactivaremos.",
+        "connectWithClassLink": "Conectar con ClassLink",
+        "notNow": "Ahora no",
+        "heroTitle": "Tus registros escolares, en tus manos",
+        "heroSubhead": "Conecta tu cuenta escolar para acceder a tus registros oficiales.",
+        "benefit1": "Solicita tu expediente académico oficial",
+        "benefit2": "Compártelo con universidades y empleadores",
+        "benefit3": "Tú decides quién lo ve",
+        "chooseProvider": "Elige cómo se conecta tu escuela",
+        "dontSeeSchool": "¿No ves tu escuela?",
+        "moreComingSoon": "Pronto habrá más escuelas.",
+        "askToAdd": "Pídenos que agreguemos tu escuela",
+        "mailtoSubject": "Agregar mi escuela a Conexión Escolar",
+        "mailtoBody": "Nombre de la escuela:\nDistrito:\nEstado:\n"
+    },
+    "announcements": {
+        "title": "Anuncios del producto",
+        "email": "Correo electrónico",
+        "push": "Notificaciones push",
+        "loading": "Cargando preferencias…",
+        "saving": "Guardando preferencias…",
+        "error": "Algo salió mal. Inténtalo de nuevo.",
+        "retry": "Reintentar",
+        "unsubscribing": "Cancelando la suscripción…",
+        "unsubscribed": "Ya no recibirás anuncios."
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Credencial digital",
+        "unavailableTitle": "Solicitud no disponible",
+        "unavailableDescription": "Vuelve a la aplicación que hizo la solicitud e inténtalo de nuevo.",
+        "canceling": "Cancelando…",
+        "preparing": "Preparando…",
+        "requiredFields": "Estos campos son obligatorios. Puedes cancelar si lo prefieres.",
+        "reviewTitle": "¿Compartir estos datos?",
+        "reviewDescription": "Revisa los datos solicitados antes de compartirlos.",
+        "requestedBy": "Solicitado por",
+        "androidApp": "Aplicación de Android",
+        "requestDetails": "Detalles de la solicitud",
+        "requestIdentity": "Identidad de firma de la aplicación",
+        "selectedCredential": "Credencial seleccionada",
+        "requestedDetails": "Datos solicitados",
+        "required": "Obligatorio",
+        "notShared": "No se comparte",
+        "metadataIncluded": "También se incluyen el emisor y el tipo de credencial.",
+        "credentialDetails": "Detalles de la credencial",
+        "issuer": "Emisor",
+        "credentialType": "Tipo de credencial",
+        "expires": "Vence",
+        "sharing": "Compartiendo…",
+        "shareDetails": "Compartir datos",
+        "loadingTitle": "Preparando tu solicitud",
+        "loadingDescription": "Comprobando los datos que puedes compartir.",
+        "returnToApp": "Volver a la aplicación"
     }
 }

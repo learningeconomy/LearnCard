@@ -24,6 +24,7 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import {
     AlertTriangle,
     Eye,
@@ -37,14 +38,20 @@ import {
 import { inAppMessageValidator, type InAppMessage } from '@learncard/types';
 import {
     getLastInAppMessages,
+    getMessageLastSeen,
+    getInAppMessageFatigueState,
     isInAppMessagesDebug,
+    clearInAppMessageEvents,
+    emitInAppMessageEvent,
     messageMatches,
+    resetInAppMessageFatigue,
     resetInAppMessageDismissals,
     setInAppMessageOverride,
     setInAppMessagesDebug,
     useInAppMessagePresentationGate,
     useInAppMessageOverride,
     useInAppMessages,
+    useInAppMessageRequest,
     type InAppMessageDiagnostic,
     type InAppMessageRuntimeContext,
     type PredicateTrace,
@@ -56,18 +63,13 @@ import {
     IN_APP_MESSAGE_TEMPLATE_CATEGORIES,
 } from './inAppMessageTemplates';
 import { InAppMessageBuilder, debugFieldInputStyle } from './InAppMessageBuilder';
-
-const SEEN_STORAGE_KEY = 'lcb-in-app-messages-seen';
-
-const readSeenMap = (): Record<string, string> => {
-    try {
-        const raw = globalThis.localStorage?.getItem(SEEN_STORAGE_KEY);
-
-        return raw ? (JSON.parse(raw) as Record<string, string>) : {};
-    } catch {
-        return {};
-    }
-};
+import {
+    CREDENTIAL_LIBRARY_CLR_ISSUER,
+    CREDENTIAL_PRESETS,
+    buildCredentialDryRunContext,
+    explainDryRunFailure,
+    summarizeCredentialLibraryClr,
+} from './inAppMessageDryRun';
 
 const frequencyLabel = (message: InAppMessage | undefined): string => {
     if (!message) return '—';
@@ -86,7 +88,9 @@ const TraceNode: React.FC<{ trace: PredicateTrace; depth?: number }> = ({ trace,
                 }`}
             />
 
-            <span className="text-[9px] text-gray-400 font-mono break-words">{trace.label}</span>
+            <span className="text-[9px] text-gray-400 font-mono wrap-break-word">
+                {trace.label}
+            </span>
         </div>
 
         {trace.children?.map((child, i) => (
@@ -105,7 +109,10 @@ const diagnosticDot = (d: InAppMessageDiagnostic): string => {
 
 const diagnosticStatus = (d: InAppMessageDiagnostic): string => {
     if (!d.enabled) return 'disabled';
+    if (!d.presentationSupported) return 'unsupported on this platform';
     if (d.willShow) return 'will show';
+    if (!d.triggerSatisfied) return 'trigger waiting';
+    if (d.fatigueSuppressed) return 'fatigue suppressed';
     if (d.matched && d.suppressed) return 'suppressed';
 
     return 'no match';
@@ -120,9 +127,10 @@ const MessageRow: React.FC<{
     onForceShow: (message: InAppMessage) => void;
 }> = ({ diagnostic, message, lastSeen, copied, onCopy, onForceShow }) => {
     const [expanded, setExpanded] = useState(false);
+    const history = useHistory();
 
     return (
-        <div className="bg-gray-900/60 rounded overflow-hidden">
+        <div className="bg-gray-900/60 rounded-sm overflow-hidden">
             <button
                 type="button"
                 onClick={() => setExpanded(e => !e)}
@@ -146,7 +154,7 @@ const MessageRow: React.FC<{
             </button>
 
             {expanded && (
-                <div className="px-2 pb-2 space-y-1.5">
+                <div className="px-2 pb-2 space-y-v3-1.5">
                     <div className="grid grid-cols-2 gap-x-2 text-[9px] text-gray-500">
                         <span>
                             presentation:{' '}
@@ -189,7 +197,7 @@ const MessageRow: React.FC<{
                                 Targeting trace
                             </p>
 
-                            <div className="bg-gray-950 rounded p-1.5 mt-0.5">
+                            <div className="bg-gray-950 rounded-sm p-1.5 mt-0.5">
                                 <TraceNode trace={diagnostic.trace} />
                             </div>
                         </div>
@@ -200,11 +208,32 @@ const MessageRow: React.FC<{
                     )}
 
                     <div className="flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            className="text-xs text-emerald-400"
+                            onClick={() =>
+                                onCopy(
+                                    `link-${diagnostic.id}`,
+                                    `${window.location.origin}/m/${encodeURIComponent(diagnostic.id)}`
+                                )
+                            }
+                        >
+                            {copied === `link-${diagnostic.id}` ? 'Copied!' : 'Copy /m/ link'}
+                        </button>
+                        <button
+                            type="button"
+                            className="text-xs text-emerald-400"
+                            onClick={() =>
+                                history.push(encodeURI(`/m/${encodeURIComponent(diagnostic.id)}`))
+                            }
+                        >
+                            Test deep link
+                        </button>
                         {message && (
                             <button
                                 type="button"
                                 onClick={() => onForceShow(message)}
-                                className="flex items-center gap-1 text-[10px] bg-sky-700 hover:bg-sky-600 text-white px-2 py-0.5 rounded transition-colors"
+                                className="flex items-center gap-1 text-[10px] bg-sky-700 hover:bg-sky-600 text-white px-2 py-0.5 rounded-sm transition-colors"
                             >
                                 <Eye className="w-2.5 h-2.5" />
                                 Force show
@@ -235,7 +264,7 @@ const NEW_VERSION = '999.0.0';
 
 interface DryRunScenario {
     label: string;
-    context: Omit<InAppMessageRuntimeContext, 'role'>;
+    context: Pick<InAppMessageRuntimeContext, 'platform' | 'versions'>;
 }
 
 const DRY_RUN_SCENARIOS: DryRunScenario[] = [
@@ -273,17 +302,21 @@ const DRY_RUN_SCENARIOS: DryRunScenario[] = [
 
 const DRAFT_OPTION = '__builder_draft__';
 
-const DryRunRow: React.FC<{ label: string; matches: boolean; highlight?: boolean }> = ({
-    label,
-    matches,
-    highlight = false,
-}) => (
+const DryRunRow: React.FC<{
+    label: string;
+    matches: boolean;
+    highlight?: boolean;
+    failure?: string | null;
+}> = ({ label, matches, highlight = false, failure }) => (
     <div
         className={`flex items-center justify-between px-2 py-1 rounded text-[10px] ${
             highlight ? 'bg-gray-900/90 border border-gray-800' : 'bg-gray-900/50'
         }`}
     >
-        <span className={highlight ? 'text-gray-200' : 'text-gray-400'}>{label}</span>
+        <span className={highlight ? 'text-gray-200' : 'text-gray-400'}>
+            {label}
+            {failure && <span className="block text-[9px] text-red-400 break-all">{failure}</span>}
+        </span>
 
         <span className={matches ? 'text-emerald-400' : 'text-red-400'}>
             {matches ? '✓ matches' : '✗ no match'}
@@ -298,6 +331,8 @@ const TargetingDryRun: React.FC<{
 }> = ({ flagMessages, draft, currentContext }) => {
     const [selectedId, setSelectedId] = useState<string>('');
     const [role, setRole] = useState<string>('learner');
+    const [simulateClaim, setSimulateClaim] = useState(false);
+    const [fixtureIssuer, setFixtureIssuer] = useState(CREDENTIAL_LIBRARY_CLR_ISSUER);
 
     const selected = useMemo(() => {
         if (selectedId === DRAFT_OPTION) return draft;
@@ -306,10 +341,10 @@ const TargetingDryRun: React.FC<{
     }, [selectedId, draft, flagMessages]);
 
     const fieldSelectClass =
-        'text-[10px] !bg-gray-950 border !border-gray-600 rounded px-1 py-1 !text-gray-100 focus:outline-none focus:!border-sky-500';
+        'text-[10px] bg-gray-950! border border-gray-600! rounded-sm px-1 py-1 text-gray-100! focus:outline-hidden focus:border-sky-500!';
 
     return (
-        <div className="space-y-1.5">
+        <div className="space-y-v3-1.5">
             <div className="flex items-center gap-1.5">
                 <select
                     value={selectedId}
@@ -334,7 +369,7 @@ const TargetingDryRun: React.FC<{
                     value={role}
                     onChange={e => setRole(e.target.value)}
                     style={debugFieldInputStyle}
-                    className="w-16 text-[10px] font-mono rounded px-1.5 py-1 placeholder:!text-gray-500 caret-sky-400 focus:outline-none focus:!border-sky-500 focus:ring-1 focus:ring-sky-500/40"
+                    className="w-16 text-[10px] font-mono rounded-sm px-1.5 py-1 placeholder:text-gray-500! caret-sky-400 focus:outline-hidden focus:border-sky-500! focus:ring-1 focus:ring-sky-500/40"
                 />
             </div>
 
@@ -346,15 +381,47 @@ const TargetingDryRun: React.FC<{
             )}
 
             {selected && (
-                <div className="space-y-0.5">
-                    {currentContext && (
-                        <DryRunRow
-                            label="This device"
-                            matches={messageMatches(selected, currentContext)}
-                            highlight
+                <div className="space-y-v3-0.5">
+                    <div className="p-3 bg-white rounded-xl space-y-2 font-poppins">
+                        <label
+                            className="block text-xs text-grayscale-700"
+                            htmlFor="iam-fixture-issuer"
+                        >
+                            Fixture issuer
+                        </label>
+                        <input
+                            id="iam-fixture-issuer"
+                            value={fixtureIssuer}
+                            onChange={e => setFixtureIssuer(e.target.value)}
+                            className="w-full p-2 bg-white text-grayscale-900 border border-grayscale-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500"
                         />
-                    )}
-
+                        <label className="flex items-center gap-2 text-xs text-grayscale-700">
+                            <input
+                                type="checkbox"
+                                checked={simulateClaim}
+                                onChange={e => setSimulateClaim(e.target.checked)}
+                            />
+                            Simulate recent claim
+                        </label>
+                    </div>
+                    {currentContext &&
+                        CREDENTIAL_PRESETS.map(preset => {
+                            const simulated = buildCredentialDryRunContext(
+                                currentContext,
+                                preset,
+                                simulateClaim,
+                                fixtureIssuer
+                            );
+                            return (
+                                <DryRunRow
+                                    key={preset}
+                                    label={preset}
+                                    highlight={preset === 'This device'}
+                                    matches={messageMatches(selected, simulated)}
+                                    failure={explainDryRunFailure(selected, simulated)}
+                                />
+                            );
+                        })}
                     {DRY_RUN_SCENARIOS.map(scenario => (
                         <DryRunRow
                             key={scenario.label}
@@ -362,6 +429,10 @@ const TargetingDryRun: React.FC<{
                             matches={messageMatches(selected, {
                                 ...scenario.context,
                                 role: role.trim() || null,
+                                now: Date.now(),
+                                credentials: [],
+                                credentialsComplete: true,
+                                recentEvents: [],
                             })}
                         />
                     ))}
@@ -382,9 +453,12 @@ const TargetingDryRun: React.FC<{
 };
 
 export const InAppMessagesDebugTab: React.FC = () => {
+    const pendingRequest = useInAppMessageRequest();
     const [copied, copyToClipboard] = useCopyToClipboard();
 
-    const { report, ready, context } = useInAppMessages();
+    const { report, ready, context, credentialFacts } = useInAppMessages(undefined, {
+        forceCredentialFacts: true,
+    });
     const gate = useInAppMessagePresentationGate();
     const override = useInAppMessageOverride();
 
@@ -393,10 +467,29 @@ export const InAppMessagesDebugTab: React.FC = () => {
     const [jsonInput, setJsonInput] = useState('');
     const [jsonError, setJsonError] = useState<string | null>(null);
     const [draft, setDraft] = useState<InAppMessage | null>(null);
+    const [factsBusy, setFactsBusy] = useState<'backfill' | 'clear' | null>(null);
+    const [factsFeedback, setFactsFeedback] = useState<{
+        type: 'success' | 'error';
+        message: string;
+    } | null>(null);
+    const [credentialFilter, setCredentialFilter] = useState('');
+    const [simulatedIssuer, setSimulatedIssuer] = useState(CREDENTIAL_LIBRARY_CLR_ISSUER);
+    const [simulatedType, setSimulatedType] = useState('ClrCredential');
 
-    const [resetCount, setResetCount] = useState(0);
+    const [, setResetCount] = useState(0);
     const flagMessages = getLastInAppMessages();
-    const seenMap = useMemo(() => readSeenMap(), [report, resetCount]);
+    const fatigueState = getInAppMessageFatigueState(credentialFacts.accountDid ?? undefined);
+    const visibleSummaries = useMemo(() => {
+        const needle = credentialFilter.trim().toLowerCase();
+
+        if (!needle) return credentialFacts.summaries ?? [];
+
+        return (credentialFacts.summaries ?? []).filter(summary =>
+            [summary.name, summary.issuer, ...summary.types, ...summary.nestedIssuers]
+                .filter(Boolean)
+                .some(value => value?.toLowerCase().includes(needle))
+        );
+    }, [credentialFacts.summaries, credentialFilter]);
 
     const handleToggleTracing = useCallback(() => {
         setTracing(prev => {
@@ -446,8 +539,47 @@ export const InAppMessagesDebugTab: React.FC = () => {
         setInAppMessageOverride(result.data);
     }, [jsonInput]);
 
+    const handleFactsAction = useCallback(
+        async (action: 'backfill' | 'clear') => {
+            setFactsFeedback(null);
+            setFactsBusy(action);
+
+            try {
+                if (!credentialFacts.accountDid) {
+                    setFactsFeedback({
+                        type: 'error',
+                        message: 'Sign in to refresh credential facts.',
+                    });
+
+                    return;
+                }
+
+                if (action === 'backfill') await credentialFacts.backfillNow();
+                else await credentialFacts.clearFacts();
+                setFactsFeedback({
+                    type: 'success',
+                    message:
+                        action === 'backfill'
+                            ? 'Backfill complete. Credential facts refreshed.'
+                            : 'Credential facts cleared.',
+                });
+            } catch {
+                setFactsFeedback({
+                    type: 'error',
+                    message:
+                        action === 'backfill'
+                            ? 'Backfill failed. Check your connection and try again.'
+                            : 'Could not clear credential facts. Please try again.',
+                });
+            } finally {
+                setFactsBusy(null);
+            }
+        },
+        [credentialFacts]
+    );
+
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <Section
                 title="Status"
                 icon={<Radio className="w-3 h-3 text-gray-500" />}
@@ -464,7 +596,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                     </span>
                 }
             >
-                <div className="space-y-0.5">
+                <div className="space-y-v3-0.5">
                     <KVRow
                         label="Gate"
                         value={`${gate.canPresent ? 'open' : 'closed'} (${gate.reason})`}
@@ -520,6 +652,38 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         onCopy={copyToClipboard}
                     />
                     <KVRow
+                        label="Credential facts"
+                        value={`${credentialFacts.summaries?.length ?? 0}/${credentialFacts.total} (${
+                            credentialFacts.complete ? 'complete' : 'incomplete'
+                        })`}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="Decrypt reads"
+                        value={`${credentialFacts.readsUsed}/200`}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="Recent events"
+                        value={context?.recentEvents.length ?? 0}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="Blocking shown"
+                        value={fatigueState.blockingShownThisSession}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="Last blocking shown"
+                        value={fatigueState.lastBlockingShown}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
                         label="Override active"
                         value={override ? override.id : false}
                         copied={copied}
@@ -542,8 +706,37 @@ export const InAppMessagesDebugTab: React.FC = () => {
 
                     <button
                         type="button"
+                        onClick={() => void handleFactsAction('backfill')}
+                        disabled={factsBusy !== null}
+                        className="text-xs bg-grayscale-800 hover:bg-grayscale-700 disabled:opacity-40 text-white px-3 py-2 rounded-[20px] transition-colors"
+                    >
+                        {factsBusy === 'backfill' ? 'Backfilling…' : 'Backfill now'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => void handleFactsAction('clear')}
+                        disabled={factsBusy !== null}
+                        className="text-xs bg-grayscale-800 hover:bg-grayscale-700 disabled:opacity-40 text-white px-3 py-2 rounded-[20px] transition-colors"
+                    >
+                        {factsBusy === 'clear' ? 'Clearing…' : 'Clear facts'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            resetInAppMessageFatigue();
+                            setResetCount(count => count + 1);
+                        }}
+                        className="text-xs bg-grayscale-800 hover:bg-grayscale-700 text-white px-3 py-2 rounded-[20px] transition-colors"
+                    >
+                        Reset cap
+                    </button>
+
+                    <button
+                        type="button"
                         onClick={handleReset}
-                        className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded transition-colors"
+                        className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded-sm transition-colors"
                     >
                         {resetFeedback ? 'Cleared!' : 'Reset seen state'}
                     </button>
@@ -552,7 +745,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setInAppMessageOverride(null)}
-                            className="text-[10px] bg-yellow-800/70 hover:bg-yellow-700/70 text-yellow-200 px-2 py-0.5 rounded transition-colors"
+                            className="text-[10px] bg-yellow-800/70 hover:bg-yellow-700/70 text-yellow-200 px-2 py-0.5 rounded-sm transition-colors"
                         >
                             Clear override
                         </button>
@@ -563,13 +756,188 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         onClick={() =>
                             copyToClipboard('full-report', JSON.stringify(report, null, 2))
                         }
-                        className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded transition-colors"
+                        className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded-sm transition-colors"
                     >
                         {copied === 'full-report' ? 'Copied!' : 'Copy report'}
                     </button>
                 </div>
+
+                {factsFeedback && (
+                    <div
+                        role={factsFeedback.type === 'error' ? 'alert' : 'status'}
+                        className={`mt-2 p-3 rounded-2xl border text-xs leading-relaxed ${
+                            factsFeedback.type === 'success'
+                                ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                                : 'bg-red-50 border-red-100 text-red-700'
+                        }`}
+                    >
+                        {factsFeedback.message}
+                    </div>
+                )}
             </Section>
 
+            <Section
+                title="Credential facts & events"
+                icon={<FlaskConical className="w-3 h-3 text-grayscale-400" />}
+            >
+                <p className="text-xs text-grayscale-400 leading-relaxed">
+                    Credential data shown here never leaves this device.
+                </p>
+
+                <input
+                    aria-label="Filter credential facts by name, issuer, or type"
+                    type="text"
+                    value={credentialFilter}
+                    onChange={event => setCredentialFilter(event.target.value)}
+                    placeholder="Filter by name, issuer, or type"
+                    className="w-full text-xs rounded-xl px-3 py-2 bg-white text-grayscale-900 placeholder:text-grayscale-400 border border-grayscale-300 focus:ring-2 focus:ring-emerald-500"
+                />
+
+                <div className="space-y-1 max-h-36 overflow-y-auto">
+                    <p className="text-xs text-grayscale-400">
+                        {visibleSummaries.length} matching summaries
+                    </p>
+                    {visibleSummaries.map(summary => (
+                        <div key={summary.uri} className="bg-white rounded-xl p-3 font-poppins">
+                            {summary.name && (
+                                <p className="text-xs font-medium text-grayscale-900 truncate">
+                                    {summary.name}
+                                </p>
+                            )}
+                            <p className="text-xs text-grayscale-900 font-mono truncate">
+                                {summary.uri}
+                            </p>
+                            <p className="text-xs text-grayscale-600 truncate">
+                                {summary.issuer ?? 'unknown issuer'} ·{' '}
+                                {summary.types.join(', ') || 'unknown type'}
+                            </p>
+                            <div className="flex gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        copyToClipboard('credential-rule', {
+                                            credential: {
+                                                ...(summary.issuer
+                                                    ? { issuers: [summary.issuer] }
+                                                    : {}),
+                                                ...(summary.types.length > 0
+                                                    ? { vcTypes: [summary.types.at(-1)] }
+                                                    : {}),
+                                            },
+                                        })
+                                    }
+                                    className="text-xs text-grayscale-700 hover:bg-grayscale-100 rounded-[20px] px-2 py-1"
+                                >
+                                    {copied === 'credential-rule' ? 'Copied!' : 'Copy as rule'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        emitInAppMessageEvent('credential.claimed', {
+                                            credential: summary,
+                                            ...(credentialFacts.accountDid
+                                                ? { accountDid: credentialFacts.accountDid }
+                                                : {}),
+                                        })
+                                    }
+                                    className="text-xs text-grayscale-700 hover:bg-grayscale-100 rounded-[20px] px-2 py-1"
+                                >
+                                    Simulate claim
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() =>
+                            emitInAppMessageEvent('app.opened', {
+                                ...(credentialFacts.accountDid
+                                    ? { accountDid: credentialFacts.accountDid }
+                                    : {}),
+                            })
+                        }
+                        className="text-xs bg-grayscale-800 hover:bg-grayscale-700 text-white px-3 py-2 rounded-[20px]"
+                    >
+                        Emit app.opened
+                    </button>
+                    <button
+                        type="button"
+                        onClick={clearInAppMessageEvents}
+                        className="text-xs bg-grayscale-800 hover:bg-grayscale-700 text-white px-3 py-2 rounded-[20px]"
+                    >
+                        Clear events
+                    </button>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl space-y-3 font-poppins">
+                    <p className="text-xs text-grayscale-700">
+                        Simulate a claim without adding a credential.
+                    </p>
+                    <label className="block text-xs text-grayscale-700" htmlFor="iam-event-issuer">
+                        Issuer
+                    </label>
+                    <input
+                        id="iam-event-issuer"
+                        value={simulatedIssuer}
+                        onChange={e => setSimulatedIssuer(e.target.value)}
+                        className="w-full p-2 rounded-xl bg-white text-grayscale-900 border border-grayscale-300 focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <label className="block text-xs text-grayscale-700" htmlFor="iam-event-type">
+                        Credential type
+                    </label>
+                    <input
+                        id="iam-event-type"
+                        value={simulatedType}
+                        onChange={e => setSimulatedType(e.target.value)}
+                        className="w-full p-2 rounded-xl bg-white text-grayscale-900 border border-grayscale-300 focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <button
+                        type="button"
+                        onClick={() =>
+                            emitInAppMessageEvent('credential.claimed', {
+                                accountDid: credentialFacts.accountDid ?? undefined,
+                                credential: summarizeCredentialLibraryClr(
+                                    'debug:claim',
+                                    simulatedIssuer,
+                                    simulatedType,
+                                    new Date().toISOString()
+                                ),
+                            })
+                        }
+                        className="py-2 px-3 rounded-[20px] text-xs bg-grayscale-900 text-white hover:opacity-90"
+                    >
+                        Emit credential.claimed
+                    </button>
+                </div>
+
+                {(context?.recentEvents ?? []).slice(-10).map((event, index) => (
+                    <p
+                        key={`${event.occurredAt}-${index}`}
+                        className="text-xs text-grayscale-400 font-mono"
+                    >
+                        {event.event} · {new Date(event.occurredAt).toLocaleTimeString()}
+                    </p>
+                ))}
+
+                {report.invalid.map((invalid, index) => (
+                    <p
+                        key={`${invalid.id ?? 'unknown'}-${index}`}
+                        className="text-[9px] text-red-400"
+                    >
+                        Invalid {invalid.id ?? 'message'}: {invalid.error}
+                    </p>
+                ))}
+            </Section>
+
+            <KVRow
+                label="Pending deep link"
+                value={pendingRequest?.messageId ?? '—'}
+                copied={copied}
+                onCopy={copyToClipboard}
+            />
             <Section
                 title="Flag messages"
                 icon={<ListChecks className="w-3 h-3 text-gray-500" />}
@@ -585,17 +953,20 @@ export const InAppMessagesDebugTab: React.FC = () => {
                 {report.diagnostics.length === 0 ? (
                     <p className="text-[10px] text-gray-600 italic py-2">
                         {'No messages in the '}
-                        <code className="text-cyan-400">inAppMessages</code>
+                        <code className="text-cyan-400">inAppMessagesV2</code>
                         {' LaunchDarkly flag (or context not ready yet).'}
                     </p>
                 ) : (
-                    <div className="space-y-0.5">
+                    <div className="space-y-v3-0.5">
                         {report.diagnostics.map(d => (
                             <MessageRow
                                 key={d.id}
                                 diagnostic={d}
                                 message={flagMessages.find(m => m.id === d.id)}
-                                lastSeen={seenMap[d.id]}
+                                lastSeen={getMessageLastSeen(
+                                    d.id,
+                                    credentialFacts.accountDid ?? undefined
+                                )}
                                 copied={copied}
                                 onCopy={copyToClipboard}
                                 onForceShow={m => setInAppMessageOverride(m)}
@@ -606,8 +977,8 @@ export const InAppMessagesDebugTab: React.FC = () => {
             </Section>
 
             <Section title="Preview" icon={<Eye className="w-3 h-3 text-gray-500" />}>
-                <div className="space-y-2">
-                    <div className="space-y-1.5">
+                <div className="space-y-v3-2">
+                    <div className="space-y-v3-1.5">
                         {IN_APP_MESSAGE_TEMPLATE_CATEGORIES.map(category => (
                             <div key={category}>
                                 <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5">
@@ -623,7 +994,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                                             type="button"
                                             onClick={() => handlePreviewTemplate(t.json)}
                                             title={t.description}
-                                            className="flex items-center gap-1.5 text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-200 px-2 py-1 rounded transition-colors text-left"
+                                            className="flex items-center gap-1.5 text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-200 px-2 py-1 rounded-sm transition-colors text-left"
                                         >
                                             <MessageSquare className="w-3 h-3 shrink-0 text-gray-500" />
                                             {t.label}
@@ -634,20 +1005,20 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         ))}
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-v3-1">
                         <textarea
                             value={jsonInput}
                             onChange={e => setJsonInput(e.target.value)}
                             placeholder='{ "title": "Test", "actions": [{ "label": "OK", "style": "primary", "action": { "type": "dismiss" } }] }'
                             rows={3}
                             style={debugFieldInputStyle}
-                            className="w-full text-[10px] font-mono rounded px-1.5 py-1 placeholder:!text-gray-500 caret-sky-400 focus:outline-none focus:!border-sky-500 focus:ring-1 focus:ring-sky-500/40 resize-y"
+                            className="w-full text-[10px] font-mono rounded-sm px-1.5 py-1 placeholder:text-gray-500! caret-sky-400 focus:outline-hidden focus:border-sky-500! focus:ring-1 focus:ring-sky-500/40 resize-y"
                         />
 
                         {jsonError && (
                             <p className="text-[9px] text-red-400 flex items-start gap-1">
                                 <AlertTriangle className="w-2.5 h-2.5 shrink-0 mt-0.5" />
-                                <span className="break-words">{jsonError}</span>
+                                <span className="wrap-break-word">{jsonError}</span>
                             </p>
                         )}
 
@@ -655,7 +1026,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
                             type="button"
                             onClick={handlePreviewJson}
                             disabled={!jsonInput.trim()}
-                            className="text-[10px] bg-sky-700 hover:bg-sky-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white px-2 py-0.5 rounded transition-colors"
+                            className="text-[10px] bg-sky-700 hover:bg-sky-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white px-2 py-0.5 rounded-sm transition-colors"
                         >
                             Preview JSON
                         </button>

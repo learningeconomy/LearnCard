@@ -1,12 +1,12 @@
 import React from 'react';
 
-import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const CredentialSummaryView: React.FC<{ model: ClrTranscriptDisplayModel }> = ({ model }) => {
     return (
-        <div className="bg-white border border-grayscale-200 rounded-[20px] p-6 space-y-4">
-            <div className="space-y-1">
+        <div className="bg-white border border-grayscale-200 rounded-[20px] p-6 space-y-v3-4">
+            <div className="space-y-v3-1">
                 <p className="text-sm font-semibold text-grayscale-900">
                     {model.header.title.value}
                 </p>
@@ -18,6 +18,16 @@ const CredentialSummaryView: React.FC<{ model: ClrTranscriptDisplayModel }> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs">
+                {model.header.validFrom?.value && (
+                    <div>
+                        <p className="font-medium text-grayscale-500 uppercase tracking-wide text-[10px] mb-0.5">
+                            Valid from
+                        </p>
+                        <p className="text-grayscale-900">
+                            {formatClrDate(model.header.validFrom.value)}
+                        </p>
+                    </div>
+                )}
                 {model.header.issuerName?.value && (
                     <div>
                         <p className="font-medium text-grayscale-500 uppercase tracking-wide text-[10px] mb-0.5">

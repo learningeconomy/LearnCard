@@ -76,7 +76,7 @@ const SeedPhraseModal: React.FC = () => {
                 value={seed}
                 aria-invalid={Boolean(errorMessage)}
                 aria-describedby={errorMessage ? 'seed-phrase-error' : undefined}
-                className="w-full bg-grayscale-100 text-grayscale-900 rounded-[15px] px-4 py-3 font-normal text-[14px] placeholder:text-grayscale-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent"
+                className="w-full bg-grayscale-100 text-grayscale-900 rounded-[15px] px-4 py-3 font-normal text-[14px] placeholder:text-grayscale-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent"
                 onChange={e => setSeed(e.target.value)}
                 type="password"
             />
@@ -106,7 +106,7 @@ const SeedPhraseModal: React.FC = () => {
                 <button
                     type="button"
                     onClick={closeModal}
-                    className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full max-w-[170px] h-full mt-[20px] mr-[10px] border-grayscale-200 border-solid border-[1px] shadow-[0px_3px_4px_0px_rgba(0,0,0,0.25)]"
+                    className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full max-w-[170px] h-full mt-[20px] mr-[10px] border-grayscale-200 border-solid border shadow-[0px_3px_4px_0px_rgba(0,0,0,0.25)]"
                 >
                     {m['login.seedPhrase.back']()}
                 </button>

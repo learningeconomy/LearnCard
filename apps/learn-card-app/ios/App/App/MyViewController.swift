@@ -10,6 +10,7 @@ import Capacitor
  */
 class MyViewController: CAPBridgeViewController {
     private let shakeObserverPlugin = ShakeObserverPlugin()
+    private let webAuthSessionPlugin = WebAuthSessionPlugin()
 
     override var canBecomeFirstResponder: Bool {
         true
@@ -18,6 +19,7 @@ class MyViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(ScreenshotObserverPlugin())
         bridge?.registerPluginInstance(shakeObserverPlugin)
+        bridge?.registerPluginInstance(webAuthSessionPlugin)
     }
 
     override func viewDidAppear(_ animated: Bool) {

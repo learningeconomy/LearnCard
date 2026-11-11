@@ -1,22 +1,31 @@
 # InboxGetMyIssuedCredentials200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**credential** | **str** |  | 
-**is_signed** | **bool** |  | 
-**current_status** | **str** |  | 
-**is_accepted** | **bool** |  | [optional] 
-**expires_at** | **str** |  | 
-**created_at** | **str** |  | 
-**issuer_did** | **str** |  | 
-**webhook_url** | **str** |  | [optional] 
-**boost_uri** | **str** |  | [optional] 
-**activity_id** | **str** |  | [optional] 
-**signing_authority** | [**InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority**](InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority.md) |  | [optional] 
+| Name                         | Type                                                                                                                                            | Description | Notes      |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **refresh**                  | [**InboxIssue200ResponseRefresh**](InboxIssue200ResponseRefresh.md)                                                                             |             | [optional] |
+| **refresh_id**               | **str**                                                                                                                                         |             | [optional] |
+| **id**                       | **str**                                                                                                                                         |             |
+| **is_signed**                | **bool**                                                                                                                                        |             |
+| **current_status**           | **str**                                                                                                                                         |             |
+| **is_accepted**              | **bool**                                                                                                                                        |             | [optional] |
+| **expires_at**               | **str**                                                                                                                                         |             |
+| **created_at**               | **str**                                                                                                                                         |             |
+| **finalized_at**             | **str**                                                                                                                                         |             | [optional] |
+| **expired_at**               | **str**                                                                                                                                         |             | [optional] |
+| **credential_name**          | **str**                                                                                                                                         |             | [optional] |
+| **achievement_type**         | **str**                                                                                                                                         |             | [optional] |
+| **issuer_did**               | **str**                                                                                                                                         |             |
+| **webhook_url**              | **str**                                                                                                                                         |             | [optional] |
+| **boost_uri**                | **str**                                                                                                                                         |             | [optional] |
+| **activity_id**              | **str**                                                                                                                                         |             | [optional] |
+| **integration_id**           | **str**                                                                                                                                         |             | [optional] |
+| **signing_authority**        | [**InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority**](InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority.md) |             | [optional] |
+| **guardian_email**           | **str**                                                                                                                                         |             | [optional] |
+| **guardian_status**          | **str**                                                                                                                                         |             | [optional] |
+| **guardian_approved_at**     | **str**                                                                                                                                         |             | [optional] |
+| **guardian_approved_by_did** | **str**                                                                                                                                         |             | [optional] |
 
 ## Example
 
@@ -35,6 +44,5 @@ inbox_get_my_issued_credentials200_response_records_inner_dict = inbox_get_my_is
 # create an instance of InboxGetMyIssuedCredentials200ResponseRecordsInner from a dict
 inbox_get_my_issued_credentials200_response_records_inner_from_dict = InboxGetMyIssuedCredentials200ResponseRecordsInner.from_dict(inbox_get_my_issued_credentials200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

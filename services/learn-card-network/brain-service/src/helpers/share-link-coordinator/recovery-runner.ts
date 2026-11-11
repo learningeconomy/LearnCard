@@ -7,6 +7,7 @@ import type { ShareLinkRecord } from '../../models/ShareLink';
 import { isTransientShareContentError } from '../share-content-client/types';
 import { budgetAllows, budgetHasUnitReserve, boundTransactionTimeout } from './budget-helpers';
 import { verifyShareContentActiveStat } from './stat';
+import { verifyShareAttachmentStats } from './attachment-stat';
 import {
     ShareLinkCoordinatorError,
     type RecoveryRunnerDependencies,
@@ -102,7 +103,21 @@ const finalizeClaimedReservation = async (
     dependencies: RecoveryRunnerDependencies
 ): Promise<RecoveryDriveOutcome> => {
     try {
+        if (
+            !(await verifyShareAttachmentStats(
+                dependencies.client,
+                reservation,
+                dependencies.budget,
+                recoveryRemoteCostMs(dependencies)
+            ))
+        ) {
+            return { kind: 'deferred', category: 'deferred_stat_mismatch' };
+        }
         const finalized = await dependencies.repository.finalizeReservation({
+            verifiedAttachmentId:
+                reservation.contentVersion !== null
+                    ? (reservation.attachmentId ?? undefined)
+                    : undefined,
             namespace: reservation.namespace,
             ownerProfileId: reservation.ownerProfileId,
             shareId: reservation.shareId,

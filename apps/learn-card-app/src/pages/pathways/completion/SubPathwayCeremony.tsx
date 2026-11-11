@@ -133,7 +133,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.18 }}
                 className="fixed inset-0 z-50 font-poppins
-                       bg-grayscale-900/40 backdrop-blur-sm
+                       bg-grayscale-900/40 backdrop-blur-xs
                        flex items-end sm:items-center justify-center
                        p-3 sm:p-6"
                 role="dialog"
@@ -161,7 +161,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
                     <div
                         aria-hidden
                         className="absolute inset-x-0 top-0 h-1
-                               bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-300"
+                               bg-linear-to-r/srgb from-emerald-300 via-emerald-500 to-emerald-300"
                     />
 
                     <button
@@ -178,7 +178,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
                     </button>
 
                     <div
-                        className="p-6 pt-7 space-y-5 overflow-y-auto"
+                        className="p-6 pt-7 space-y-v3-5 overflow-y-auto"
                         style={{ overscrollBehavior: 'contain' }}
                     >
                         {/* Eyebrow */}
@@ -190,7 +190,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
                         </p>
 
                         {/* Title + becoming */}
-                        <div className="space-y-1.5">
+                        <div className="space-y-v3-1.5">
                             <h2
                                 id="subpathway-ceremony-title"
                                 className="text-xl font-semibold text-grayscale-900 leading-snug"
@@ -222,7 +222,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
 
                             <div className="min-w-0 flex-1">
                                 <p
-                                    className="text-[10px] font-semibold tracking-[0.1em]
+                                    className="text-[10px] font-semibold tracking-widest
                                           uppercase text-emerald-700/80"
                                 >
                                     In {parent.title}

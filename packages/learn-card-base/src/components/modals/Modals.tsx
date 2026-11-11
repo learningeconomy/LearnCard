@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 
 import { useModalsContext } from './ModalsContext';
+import { ModalInstanceContextProvider } from './ModalInstanceContext';
 
 import { MODALS } from './modals.helpers';
 
@@ -22,12 +23,13 @@ export const Modals = () => {
             const Component = MODALS[type];
 
             return (
-                <Component
-                    component={modal.component}
-                    options={modal.options}
-                    open={modal.open}
-                    key={modal.id}
-                />
+                <ModalInstanceContextProvider value={modal} key={modal.id}>
+                    <Component
+                        component={modal.component}
+                        options={modal.options}
+                        open={modal.open}
+                    />
+                </ModalInstanceContextProvider>
             );
         }),
         document.getElementById('modal-mid-root') as HTMLElement

@@ -59,13 +59,13 @@ const ViewJsonModal: React.FC<ViewJsonModalProps> = ({ boost }) => {
                     onClick={() => {
                         copyToClipBoard();
                     }}
-                    className="bg-blue-500 text-white px-4 py-2 rounded flex items-center"
+                    className="bg-blue-500 text-white px-4 py-2 rounded-sm flex items-center"
                 >
                     <CopyStack className="w-[24px] h-[24px] mr-2" />
                     {m['boost.copyJson']()}
                 </button>
             </div>
-            <pre className="bg-gray-100 p-4 rounded overflow-auto flex-grow text-grayscale-900">
+            <pre className="bg-gray-100 p-4 rounded-sm overflow-auto grow text-grayscale-900">
                 {jsonPrettyPrint}
             </pre>
         </div>

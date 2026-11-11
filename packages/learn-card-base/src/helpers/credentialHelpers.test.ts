@@ -25,7 +25,18 @@ import {
     getEndorsementsForVC,
     getEndorsementTargetId,
     resolveSharedCredential,
+    getDefaultCategoryForCredential,
+    getAllSortedCredentials,
+    formatCredentialAwardedDate,
+    getEvidenceAttachmentType,
+    getEvidenceAttachments,
+    getCredentialName,
 } from './credentialHelpers';
+import {
+    getNotificationType,
+    NotificationTypeEnum,
+} from '../components/notifications/notifications';
+import * as uploadMetadata from '../filestack/images/images.helpers';
 
 const createWallet = () => {
     const get = vi.fn();
@@ -356,5 +367,279 @@ describe('getEndorsementsForVC', () => {
         read.mockResolvedValue(endorsement);
 
         await expect(getEndorsementsForVC(wallet, credential)).resolves.toEqual([endorsement]);
+    });
+});
+
+describe('Qualifications classification', () => {
+    const qualification = (achievementType: string, tags?: string[]) => ({
+        '@context': [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ],
+        id: 'urn:uuid:qualification',
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: 'did:example:issuer',
+        validFrom: '2025-01-01T00:00:00Z',
+        credentialSubject: {
+            id: 'did:example:holder',
+            type: ['AchievementSubject'],
+            achievement: {
+                id: 'urn:uuid:achievement',
+                type: ['Achievement'],
+                name: 'Professional qualification',
+                description: 'Qualification awarded by the issuer.',
+                criteria: { narrative: 'Complete the requirements.' },
+                achievementType,
+                ...(tags ? { tag: tags } : {}),
+            },
+        },
+    });
+
+    it.each([
+        'License',
+        'Certification',
+        'JourneymanCertificate',
+        'MasterCertificate',
+        'ApprenticeshipCertificate',
+    ])('places %s in Qualifications without changing the credential', achievementType => {
+        const credential = qualification(achievementType);
+        const original = structuredClone(credential);
+        expect(getDefaultCategoryForCredential(credential as never)).toBe('Qualifications');
+        expect(credential).toEqual(original);
+    });
+
+    it.each(['expirationDate', 'validUntil'])(
+        'keeps expired credentials in Qualifications with %s',
+        expirationField => {
+            const credential = {
+                ...qualification('License'),
+                [expirationField]: '2025-02-01T00:00:00Z',
+            };
+            expect(getDefaultCategoryForCredential(credential as never)).toBe('Qualifications');
+        }
+    );
+
+    it('preserves an explicit issuer category override', () => {
+        expect(
+            getDefaultCategoryForCredential(qualification('License', ['lc:category:ID']) as never)
+        ).toBe('ID');
+    });
+
+    it('allows an explicit Qualifications category on another achievement type', () => {
+        expect(
+            getDefaultCategoryForCredential(
+                qualification('Certificate', ['lc:category:Qualifications']) as never
+            )
+        ).toBe('Qualifications');
+    });
+
+    it('classifies a wrapped qualification using the inner credential', () => {
+        expect(
+            getDefaultCategoryForCredential({
+                type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+                boostCredential: qualification('JourneymanCertificate'),
+            } as never)
+        ).toBe('Qualifications');
+    });
+
+    it('preserves custom category overrides', () => {
+        expect(
+            getDefaultCategoryForCredential(qualification('ext:LCA_CUSTOM:ID:License') as never)
+        ).toBe('ID');
+    });
+
+    it.each([
+        ['Certificate', 'Achievement'],
+        ['CertificateOfCompletion', 'Learning History'],
+        ['ext:DriversLicense', 'ID'],
+        ['ext:Passport', 'ID'],
+    ])('does not reclassify %s as a professional qualification', (achievementType, category) => {
+        expect(getDefaultCategoryForCredential(qualification(achievementType) as never)).toBe(
+            category
+        );
+    });
+});
+
+describe('Qualifications share-picker grouping', () => {
+    it('makes Qualifications credentials available in their own share category', async () => {
+        const credential = {
+            type: ['VerifiableCredential'],
+            credentialSubject: {
+                achievement: { achievementType: 'License' },
+            },
+        } as never;
+
+        const sorted = await getAllSortedCredentials([credential]);
+
+        expect(sorted.qualifications).toEqual([credential]);
+        expect(sorted.achievements).toEqual([]);
+    });
+});
+
+describe('Qualifications notifications', () => {
+    it('classifies standard and custom Qualifications notifications separately', () => {
+        expect(getNotificationType('License')).toBe(NotificationTypeEnum.Qualifications);
+        expect(getNotificationType('ext:LCA_CUSTOM:Qualifications:Continuing_Education')).toBe(
+            NotificationTypeEnum.Qualifications
+        );
+    });
+});
+
+describe('credential award date display', () => {
+    it.each(['20271001', '2027-10-01T00:00', '2027-10-01T00:00:00', '2027-10-01T20:00:00'])(
+        'shows a consistent calendar award day for %s',
+        awardedDate => {
+            expect(formatCredentialAwardedDate({ awardedDate } as never)).toBe('October 01, 2027');
+        }
+    );
+    it('prefers the standard top-level awardedDate without changing the credential', () => {
+        const credential = {
+            awardedDate: '2027-10-01T00:00:00.000Z',
+            validFrom: '2026-10-26T12:00:00.000Z',
+            credentialSubject: { id: 'did:example:learner' },
+        } as never;
+        expect(formatCredentialAwardedDate(credential)).toBe('October 01, 2027');
+        expect(credential).toHaveProperty('validFrom', '2026-10-26T12:00:00.000Z');
+    });
+
+    it.each([
+        [{ issuanceDate: '2026-10-26' }, 'October 26, 2026'],
+        [{ validFrom: '2026-10-26' }, 'October 26, 2026'],
+        [{ awardedDate: 'invalid', validFrom: '2026-10-26' }, 'October 26, 2026'],
+        [{ awardedDate: '' }, ''],
+        [{}, ''],
+        [{ validFrom: 'invalid' }, ''],
+        [{ issuanceDate: 'October 26, 2026' }, ''],
+        [undefined, ''],
+        [
+            { boostCredential: { awardedDate: '2027-10-01', validFrom: '2026-10-26' } },
+            'October 01, 2027',
+        ],
+    ])('handles legacy, wrapped, missing and invalid dates: %j', (credential, expected) => {
+        expect(formatCredentialAwardedDate(credential as never)).toBe(expected);
+    });
+
+    it('keeps the award day aligned with UTC spreadsheet editing across timezones', () => {
+        expect(formatCredentialAwardedDate({ awardedDate: '2027-10-01T00:00:00Z' } as never)).toBe(
+            'October 01, 2027'
+        );
+        expect(
+            formatCredentialAwardedDate({ awardedDate: '2027-10-01T23:30:00-02:00' } as never)
+        ).toBe('October 02, 2027');
+    });
+});
+
+describe('evidence attachment classification', () => {
+    it.each(['mp4', 'mov', 'webm'])(
+        'classifies an uploaded %s using file metadata without an explicit genre',
+        async extension => {
+            const metadata = vi.spyOn(uploadMetadata, 'getMetadata').mockResolvedValue({
+                filename: `recorded-work.${extension}`,
+                size: 12345,
+            } as Awaited<ReturnType<typeof uploadMetadata.getMetadata>>);
+            try {
+                const attachments = await getEvidenceAttachments([
+                    {
+                        id: 'https://cdn.filestackcontent.com/exampleHandle',
+                        type: ['Evidence'],
+                        name: 'Recorded work',
+                    },
+                ] as never);
+                expect(attachments).toEqual([
+                    expect.objectContaining({ type: 'video', title: 'Recorded work' }),
+                ]);
+            } finally {
+                metadata.mockRestore();
+            }
+        }
+    );
+    it.each([
+        ['https://evidence.example.test/course/12', 'link'],
+        ['https://portfolio.example.test/ada', 'link'],
+        ['https://cdn.example.test/clip.mp4', 'video'],
+        ['https://cdn.example.test/clip.WEBM?download=1#preview', 'video'],
+        ['https://cdn.example.test/clip.mov', 'video'],
+        ['https://cdn.example.test/page?attachment=clip.mp4', 'link'],
+        ['https://cdn.example.test/clip.mp4.html', 'link'],
+        ['ftp://cdn.example.test/clip.mp4', 'text'],
+        ['https://youtube.com.example.test/watch?v=abc123', 'link'],
+        ['https://notyoutube.com/watch?v=abc123', 'link'],
+        ['https://notvimeo.com/12345', 'link'],
+        ['https://drive.google.com/file/d/example/view', 'link'],
+        ['https://docs.google.com/document/d/example/edit', 'link'],
+        ['https://example.test/report.pdf?download=1', 'document'],
+        ['https://example.test/photo.PNG?download=1', 'photo'],
+        ['data:application/pdf;base64,AAAA', 'document'],
+        ['An explanation with no link', 'text'],
+        ['', 'text'],
+    ])('classifies %s as %s', async (url, expected) => {
+        const fetch = vi
+            .spyOn(globalThis, 'fetch')
+            .mockRejectedValue(new Error('No network in test'));
+        try {
+            expect(await getEvidenceAttachmentType(url)).toBe(expected);
+            expect(fetch).not.toHaveBeenCalled();
+        } finally {
+            fetch.mockRestore();
+        }
+    });
+
+    it('still recognizes known video hosts even if optional metadata is unavailable', async () => {
+        const fetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Offline'));
+        try {
+            for (const url of [
+                'https://youtu.be/abc123',
+                'https://vimeo.com/12345',
+                'https://www.loom.com/share/abc123',
+            ]) {
+                expect(await getEvidenceAttachmentType(url)).toBe('video');
+            }
+        } finally {
+            fetch.mockRestore();
+        }
+    });
+
+    it('keeps two independently mapped plain evidence URLs as clickable links', async () => {
+        const attachments = await getEvidenceAttachments([
+            { id: 'https://evidence.example.test/course', type: ['Evidence'], name: 'Evidence' },
+            { id: 'https://portfolio.example.test/ada', type: ['Evidence'], name: 'Portfolio' },
+        ] as never);
+        expect(attachments).toEqual([
+            expect.objectContaining({
+                title: 'Evidence',
+                type: 'link',
+                url: 'https://evidence.example.test/course',
+            }),
+            expect.objectContaining({
+                title: 'Portfolio',
+                type: 'link',
+                url: 'https://portfolio.example.test/ada',
+            }),
+        ]);
+    });
+});
+
+it('preserves explicit media genres when URLs cannot identify the uploaded type', async () => {
+    const attachments = await getEvidenceAttachments([
+        {
+            id: 'https://files.example.test/opaque',
+            type: ['Evidence'],
+            genre: 'video',
+            name: 'Recorded work',
+        },
+        {
+            id: 'https://files.example.test/opaque2',
+            type: ['EvidenceFile'],
+            genre: 'document',
+            name: 'Report',
+        },
+    ] as never);
+    expect(attachments?.map(item => item.type)).toEqual(['video', 'document']);
+});
+
+describe('getCredentialName', () => {
+    it('returns an empty string when no name source or specific type exists', () => {
+        expect(getCredentialName({ type: ['VerifiableCredential'] } as never)).toBe('');
+        expect(getCredentialName({} as never)).toBe('');
     });
 });

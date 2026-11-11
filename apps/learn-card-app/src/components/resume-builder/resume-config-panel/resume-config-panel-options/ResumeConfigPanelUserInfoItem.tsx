@@ -40,7 +40,7 @@ const ResumeConfigPanelUserInfoItem: React.FC<ResumeConfigPanelUserInfoItemProps
     const plainInput = (
         <input
             type="text"
-            className="resume-builder-input-bg w-full text-sm bg-grayscale-100 border border-grayscale-200 rounded-lg px-3 py-2 text-grayscale-800 placeholder-grayscale-400 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+            className="resume-builder-input-bg w-full text-sm bg-grayscale-100 border border-grayscale-200 rounded-lg px-3 py-2 text-grayscale-800 placeholder-grayscale-400 focus:outline-hidden focus:ring-1 focus:ring-indigo-300"
             placeholder={placeholder}
             value={value}
             onChange={e => onChange(e.target.value)}
@@ -52,7 +52,7 @@ const ResumeConfigPanelUserInfoItem: React.FC<ResumeConfigPanelUserInfoItemProps
             {isLinkedIn && icon}
             <input
                 type="text"
-                className="w-full text-sm bg-transparent text-grayscale-800 placeholder-grayscale-400 focus:outline-none"
+                className="w-full text-sm bg-transparent text-grayscale-800 placeholder-grayscale-400 focus:outline-hidden"
                 placeholder={placeholder}
                 value={value}
                 onChange={e => onChange(e.target.value)}
@@ -66,7 +66,7 @@ const ResumeConfigPanelUserInfoItem: React.FC<ResumeConfigPanelUserInfoItemProps
     const multilineInput = (
         <textarea
             rows={4}
-            className="resume-builder-input-bg w-full text-sm bg-grayscale-100 border border-grayscale-200 rounded-lg px-3 py-2 text-grayscale-800 placeholder-grayscale-400 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+            className="resume-builder-input-bg w-full text-sm bg-grayscale-100 border border-grayscale-200 rounded-lg px-3 py-2 text-grayscale-800 placeholder-grayscale-400 focus:outline-hidden focus:ring-1 focus:ring-indigo-300"
             placeholder={placeholder}
             value={value}
             onChange={e => onChange(e.target.value)}
@@ -81,9 +81,7 @@ const ResumeConfigPanelUserInfoItem: React.FC<ResumeConfigPanelUserInfoItemProps
                 {multiline && multilineInput}
                 {(isLinkedIn || isLocation) && decoratedInput}
                 {!(multiline || isLinkedIn || isLocation) && plainInput}
-                {showToggle && (
-                    <ResumeBuilderToggle checked={checked} onChange={onToggle} />
-                )}
+                {showToggle && <ResumeBuilderToggle checked={checked} onChange={onToggle} />}
             </div>
         </div>
     );

@@ -5,12 +5,16 @@ import { CheckCircle2, FileText, Settings, Link2, ExternalLink, Smartphone } fro
 
 import type { AppStoreListingCreate } from '../types';
 import { LAUNCH_TYPE_INFO, CATEGORY_OPTIONS } from '../types';
+import type { CapturedAppManifest } from '@learncard/partner-connect-core';
+import { IonIcon } from '@ionic/react';
+import { shieldCheckmarkOutline } from 'ionicons/icons';
 
 interface ReviewStepProps {
     data: Partial<AppStoreListingCreate>;
+    capturedManifest?: CapturedAppManifest;
 }
 
-export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
+export const ReviewStep: React.FC<ReviewStepProps> = ({ data, capturedManifest }) => {
     const getCategoryLabel = (value?: string) => {
         const cat = CATEGORY_OPTIONS.find(c => c.value === value);
         return cat
@@ -29,7 +33,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="text-center mb-6">
                 <div className="w-14 h-14 mx-auto mb-3 bg-emerald-100 rounded-full flex items-center justify-center">
                     <CheckCircle2 className="w-7 h-7 text-emerald-600" />
@@ -47,7 +51,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
             {/* App Preview Card */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
+                    <div className="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden shrink-0">
                         {data.icon_url ? (
                             <img
                                 src={data.icon_url}
@@ -92,7 +96,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
             </div>
 
             {/* Details Sections */}
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 {/* Description */}
                 <div className="bg-white rounded-xl border border-gray-200 p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -116,7 +120,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                             {m['developerPortal.components.reviewStep.highlights']()}
                         </h4>
 
-                        <ul className="space-y-1">
+                        <ul className="space-y-v3-1">
                             {data.highlights
                                 .filter(h => h.trim())
                                 .map((highlight, index) => (
@@ -142,7 +146,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         </h4>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <div className="flex justify-between py-1.5 border-b border-gray-100">
                             <span className="text-sm text-gray-500">
                                 {m['developerPortal.components.reviewStep.launchType']()}
@@ -169,6 +173,85 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         ))}
                     </div>
                 </div>
+
+                {capturedManifest && (
+                    <div className="bg-white rounded-xl border border-gray-200 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            <h4 className="font-medium text-gray-600 text-sm">
+                                Captured Integrations
+                            </h4>
+                        </div>
+
+                        <div className="space-y-v3-4">
+                            {capturedManifest.templates.length > 0 && (
+                                <div>
+                                    <h5 className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
+                                        Credential Templates
+                                    </h5>
+                                    <div className="space-y-v3-2">
+                                        {capturedManifest.templates.map(t => (
+                                            <div
+                                                key={t.alias}
+                                                className="p-2 bg-gray-50 rounded-lg border border-gray-100 text-sm"
+                                            >
+                                                <div className="font-medium text-gray-700">
+                                                    {t.template.name || t.alias}
+                                                </div>
+                                                <div className="text-xs text-gray-500 mt-0.5">
+                                                    Alias: {t.alias}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {capturedManifest.consentRequests.length > 0 && (
+                                <div>
+                                    <h5 className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
+                                        Consent Requests
+                                    </h5>
+                                    <div className="space-y-v3-2">
+                                        {capturedManifest.consentRequests.map((c, i) => (
+                                            <div
+                                                key={i}
+                                                className="p-2 bg-gray-50 rounded-lg border border-gray-100 text-sm"
+                                            >
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {c.scopes.read.personalFields.map(f => (
+                                                        <span
+                                                            key={`read-pf-${f}`}
+                                                            className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-sm text-xs flex items-center gap-1"
+                                                        >
+                                                            <IonIcon
+                                                                icon={shieldCheckmarkOutline}
+                                                                className="w-3 h-3"
+                                                            />{' '}
+                                                            Read: {f}
+                                                        </span>
+                                                    ))}
+                                                    {c.scopes.read.credentialCategories.map(cat => (
+                                                        <span
+                                                            key={`read-cat-${cat}`}
+                                                            className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-sm text-xs flex items-center gap-1"
+                                                        >
+                                                            <IonIcon
+                                                                icon={shieldCheckmarkOutline}
+                                                                className="w-3 h-3"
+                                                            />{' '}
+                                                            Read: {cat}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {data.min_age && (
                     <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -199,7 +282,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                             </h4>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-v3-1.5">
                             {data.privacy_policy_url && (
                                 <a
                                     href={data.privacy_policy_url}
@@ -236,7 +319,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                             </h4>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             {data.ios_app_store_id && (
                                 <a
                                     href={`https://apps.apple.com/us/app/id${data.ios_app_store_id}`}

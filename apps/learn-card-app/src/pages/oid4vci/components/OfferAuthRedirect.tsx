@@ -69,10 +69,10 @@ const OfferAuthRedirect: React.FC<OfferAuthRedirectProps> = ({
                 paddingRight: 'max(1rem, env(safe-area-inset-right))',
             }}
         >
-            <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full p-6 space-y-5 animate-fade-in-up">
+            <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full p-6 space-y-v3-5 animate-fade-in-up">
                 <FlowSteps current={2} />
 
-                <div className="text-center space-y-1">
+                <div className="text-center space-y-v3-1">
                     <h1 className="text-xl font-semibold text-grayscale-900">
                         Sign in with the issuer
                     </h1>
@@ -93,7 +93,7 @@ const OfferAuthRedirect: React.FC<OfferAuthRedirectProps> = ({
                     We&apos;ll bring you back when they&apos;re done.
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <button
                         onClick={doRedirect}
                         disabled={redirecting}

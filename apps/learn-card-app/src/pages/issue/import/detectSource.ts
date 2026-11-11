@@ -1,3 +1,5 @@
+import { looksLikeSpreadsheet } from '../spreadsheet/parseSpreadsheet';
+
 /**
  * Classifies an arbitrary user-pasted string (or dropped file text) into an
  * import source kind, so the UI can show a live recognition chip and route to
@@ -5,6 +7,7 @@
  */
 
 export type ImportSourceKind =
+    | 'spreadsheet'
     | 'empty'
     | 'json'
     | 'ctid'
@@ -45,6 +48,7 @@ const isParseableJson = (text: string): boolean => {
 };
 
 const safeUrl = (text: string): URL | null => {
+    if (/\s/.test(text)) return null;
     try {
         return new URL(text);
     } catch {
@@ -66,14 +70,13 @@ export const detectSource = (raw: string): DetectedSource => {
         };
     }
 
-    if (text.startsWith('{') || text.startsWith('[')) {
-        return {
-            kind: 'json',
-            confidence: isParseableJson(text) ? 1 : 0.4,
-            label: 'Credential data',
-            extracted: text,
-        };
-    }
+    const hasJsonPrefix = text.startsWith('{') || text.startsWith('[');
+    if (hasJsonPrefix && isParseableJson(text))
+        return { kind: 'json', confidence: 1, label: 'Credential data', extracted: text };
+    if (looksLikeSpreadsheet(text))
+        return { kind: 'spreadsheet', confidence: 0.9, label: 'Spreadsheet', extracted: text };
+    if (hasJsonPrefix)
+        return { kind: 'json', confidence: 0.4, label: 'Credential data', extracted: text };
 
     const url = safeUrl(text);
     if (url && (url.protocol === 'http:' || url.protocol === 'https:')) {

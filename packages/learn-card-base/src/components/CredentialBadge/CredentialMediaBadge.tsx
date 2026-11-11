@@ -60,7 +60,7 @@ export const CredentialMediaBadge: React.FC<CredentialBadgeProps> = ({
 }) => {
     const defaultCategory = category ?? getDefaultCategoryForCredential(credential);
 
-    const displayTypeBackgroundStyles = `min-h-[120px] max-h-[120px] !rounded-none ${backgroundImageStyles}`;
+    const displayTypeBackgroundStyles = `min-h-[120px] max-h-[120px] rounded-none! ${backgroundImageStyles}`;
     const { color, SolidIconComponent, IconComponent } =
         categoryMetadata[boostType ?? defaultCategory];
     const [videoMetaData, setVideoMetaData] = useState<VideoMetadata | null>(null);
@@ -118,7 +118,7 @@ export const CredentialMediaBadge: React.FC<CredentialBadgeProps> = ({
                         <div key={i} className={`relative ${spanBoth}`}>
                             <div
                                 className={`absolute inset-0 ${
-                                    isOverlaySlot ? 'filter blur-sm' : ''
+                                    isOverlaySlot ? 'filter blur-xs' : ''
                                 }`}
                                 style={{
                                     backgroundImage: `url(${imgUrl})`,

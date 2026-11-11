@@ -66,16 +66,16 @@ A theme can extend another theme by setting `"extends": "<parentId>"`. This perf
     "extends": "formal",
     "colors": {
         "categoryBase": {
-            "primaryColor": "teal-600"
+            "primaryColor": "teal-600",
             // All other categoryBase colors inherited from formal
-        }
-    }
+        },
+    },
 }
 ```
 
--   Circular extends are detected and will throw an error.
--   The `id` and `displayName` of the child always win (never inherited).
--   Multi-level inheritance works: A → B → C.
+- Circular extends are detected and will throw an error.
+- The `id` and `displayName` of the child always win (never inherited).
+- Multi-level inheritance works: A → B → C.
 
 ## Colors
 
@@ -132,7 +132,7 @@ Theme JSON uses several color value formats depending on the context:
 
 | Format               | Example               | Usage                                                   |
 | -------------------- | --------------------- | ------------------------------------------------------- |
-| **Tailwind token**   | `"cyan-301"`          | Custom palette tokens defined in `tailwind.config.js`   |
+| **Tailwind token**   | `"cyan-301"`          | Custom palette tokens defined in `src/tailwind.css`     |
 | **Tailwind utility** | `"!bg-cyan-400"`      | Full Tailwind class (the `!` prefix means `!important`) |
 | **Hex color**        | `"#18224E"`           | Direct hex values for non-Tailwind contexts             |
 | **Platform string**  | `"light"` or `"dark"` | Status bar style (iOS/Android)                          |
@@ -236,10 +236,10 @@ Override icon colors for specific credential categories. Keys match the palette 
 
 **Palette fields:**
 
--   `primary` — Main icon color
--   `primaryLight` — Lighter variant (backgrounds, fills)
--   `accent` — Secondary highlight color
--   `stroke` — Outline/stroke color
+- `primary` — Main icon color
+- `primaryLight` — Lighter variant (backgrounds, fills)
+- `accent` — Secondary highlight color
+- `stroke` — Outline/stroke color
 
 Palettes are merged onto compiled defaults — you only need to specify the fields you're changing.
 
@@ -282,11 +282,11 @@ npx tsx scripts/validate-theme-schemas.ts
 
 This checks:
 
--   JSON structure validity
--   `id` matches directory name
--   `extends` references exist (no dangling/circular references)
--   `iconSet` references a known icon set
--   Required assets exist
+- JSON structure validity
+- `id` matches directory name
+- `extends` references exist (no dangling/circular references)
+- `iconSet` references a known icon set
+- Required assets exist
 
 The full runtime validation (`ThemeSchema.parse()`) happens at app boot when themes are loaded via `loadAllJsonThemes()`.
 

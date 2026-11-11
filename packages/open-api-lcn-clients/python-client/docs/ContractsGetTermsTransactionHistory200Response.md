@@ -1,13 +1,12 @@
 # ContractsGetTermsTransactionHistory200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**cursor** | **str** |  | [optional] 
-**has_more** | **bool** |  | 
-**records** | [**List[ContractsGetTermsTransactionHistory200ResponseRecordsInner]**](ContractsGetTermsTransactionHistory200ResponseRecordsInner.md) |  | 
+| Name         | Type                                                                                                                                  | Description | Notes      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **cursor**   | **str**                                                                                                                               |             | [optional] |
+| **has_more** | **bool**                                                                                                                              |             |
+| **records**  | [**List[ContractsGetTermsTransactionHistory200ResponseRecordsInner]**](ContractsGetTermsTransactionHistory200ResponseRecordsInner.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_get_terms_transaction_history200_response_dict = contracts_get_terms_t
 # create an instance of ContractsGetTermsTransactionHistory200Response from a dict
 contracts_get_terms_transaction_history200_response_from_dict = ContractsGetTermsTransactionHistory200Response.from_dict(contracts_get_terms_transaction_history200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

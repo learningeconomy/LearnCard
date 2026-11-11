@@ -51,7 +51,7 @@ const AiSessionsNavbar: React.FC = () => {
     const handlePersonalizationForm = () => {
         newModal(
             <AiPassportPersonalizationContainer />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };

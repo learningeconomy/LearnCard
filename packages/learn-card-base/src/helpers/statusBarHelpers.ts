@@ -2,7 +2,11 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import type { TenantBrandingConfig } from '../config/tenantConfig';
 import { getStatusBarColorOverride } from '../config/brandingHelpers';
 
-export const getStatusBarColor = (path?: string, branding?: BrandingEnum, tenantBranding?: TenantBrandingConfig): string => {
+export const getStatusBarColor = (
+    path?: string,
+    branding?: BrandingEnum,
+    tenantBranding?: TenantBrandingConfig
+): string => {
     // Data-driven path: if tenant branding config provides a statusBarColors override, use it
     if (tenantBranding && path) {
         const override = getStatusBarColorOverride(tenantBranding, path);
@@ -28,6 +32,8 @@ export const getStatusBarColor = (path?: string, branding?: BrandingEnum, tenant
         return 'light';
     } else if (path === '/achievements') {
         return 'pink-400';
+    } else if (path === '/qualifications') {
+        return 'orange-400';
     } else if (path === '/currencies' || path === '/socialBadges') {
         return 'blue-400';
     } else if (path === '/ids') {

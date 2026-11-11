@@ -20,6 +20,7 @@ import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 
 import { SideNavIcons } from 'learn-card-base/svgs/SideNav/SideNavIcons';
 import PassportIcon from 'learn-card-base/svgs/PassportIcon';
+import { QualificationsIconGrayscale1 } from 'learn-card-base/svgs/wallet/QualificationsIcon';
 const {
     SkillsTwoTonedIcon,
     BoostsTwoTonedIcon,
@@ -52,6 +53,7 @@ export enum SideMenuLinksEnum {
     skills = CredentialCategoryEnum.skill,
     socialBadges = CredentialCategoryEnum.socialBadge,
     achievements = CredentialCategoryEnum.achievement,
+    qualifications = CredentialCategoryEnum.qualifications,
     studies = CredentialCategoryEnum.learningHistory,
     portfolio = CredentialCategoryEnum.accomplishment,
     assistance = CredentialCategoryEnum.accommodation,
@@ -284,6 +286,13 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
             path: '/ids',
             type: SideMenuLinksEnum.ids,
         },
+        {
+            id: 12,
+            name: 'Qualifications',
+            IconComponent: QualificationsIconGrayscale1,
+            path: '/qualifications',
+            type: SideMenuLinksEnum.qualifications,
+        },
         // {
         //     id: 9,
         //     name: 'Memberships',
@@ -384,7 +393,7 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
 
 export const sideMenuLearnCardBrandingStyles = {
     mainBg: 'grayscale-100',
-    brandingTextColor: '!text-emerald-700',
+    brandingTextColor: 'text-emerald-700!',
     bradingSpanColor: '',
     defaultListStyles: 'learn-card-side-menu-list',
     defaultLinkStyles: 'learn-card-side-menu-list-item-link',
@@ -396,8 +405,8 @@ export const sideMenuLearnCardBrandingStyles = {
 
 export const sideMenuMetaversityBrandingStyles = {
     mainBg: 'metaversity-primary-blue',
-    brandingTextColor: '!text-white',
-    bradingSpanColor: '!text-white',
+    brandingTextColor: 'text-white!',
+    bradingSpanColor: 'text-white!',
     defaultListStyles: 'mv-side-menu-list',
     defaultLinkStyles: 'mv-side-menu-list-item-link',
     activeLinkStyles: 'mv-side-menu-list-item-link-active',
@@ -406,7 +415,7 @@ export const sideMenuMetaversityBrandingStyles = {
 
 export const sideMenuScoutPassStyles = {
     mainBg: 'grayscale-100',
-    brandingTextColor: '!text-white',
+    brandingTextColor: 'text-white!',
     bradingSpanColor: '',
     defaultListStyles: 'scout-pass-side-menu-list',
     defaultLinkStyles: 'scout-pass-side-menu-list-item-link',

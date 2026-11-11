@@ -89,8 +89,8 @@ const SessionCompletedEditor: React.FC<{
     };
 
     return (
-        <div className="space-y-3">
-            <div className="space-y-1.5">
+        <div className="space-y-v3-3">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="session-topic-uri">
                     Topic URI
                 </label>
@@ -111,7 +111,7 @@ const SessionCompletedEditor: React.FC<{
                 </p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-v3-1.5">
                 <label className={LABEL} htmlFor="session-min-minutes">
                     Minimum duration{' '}
                     <span className="text-grayscale-400 font-normal">

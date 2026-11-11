@@ -190,7 +190,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
             }`}
         >
             <button
-                className="w-full flex items-center justify-between px-4 py-4 text-left border-b border-solid border-[1px] border-grayscale-200"
+                className="w-full flex items-center justify-between px-4 py-4 text-left border-b border-solid border border-grayscale-200"
                 onClick={() => setOpen(!open)}
             >
                 <div className="flex flex-col items-center">
@@ -236,7 +236,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
                                     placeholder={label}
-                                    className="w-full bg-transparent text-sm text-grayscale-800 placeholder:text-grayscale-500 outline-none"
+                                    className="w-full bg-transparent text-sm text-grayscale-800 placeholder:text-grayscale-500 outline-hidden"
                                 />
                             </div>
                         </div>
@@ -302,7 +302,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                                     }
                                                     isInSkillsModal
                                                     hideOptionsMenu
-                                                    className="!min-h-[310px]"
+                                                    className="min-h-[310px]!"
                                                 />
                                             </SwiperSlide>
                                         );

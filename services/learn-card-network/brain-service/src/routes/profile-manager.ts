@@ -29,6 +29,7 @@ import {
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { updateProfileManager } from '@accesslayer/profile-manager/update';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
+import { ProfileManager } from '@models';
 
 export const profileManagersRouter = t.router({
     createProfileManager: profileRoute
@@ -126,6 +127,24 @@ export const profileManagersRouter = t.router({
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
+            // Org onboarding also uses this API. Only the persisted Family parent
+            // (or an explicit child type), not a client service flag, defines a child path.
+            if (input.isServiceProfile) {
+                const parents = await ProfileManager.findRelationships({
+                    alias: 'childOf',
+                    where: { source: { id: ctx.user.manager.id } },
+                });
+                if (
+                    input.type === 'child' ||
+                    parents.some(({ target }) => target.category === 'Family')
+                ) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'Child profiles cannot be service profiles.',
+                    });
+                }
+            }
+
             const profileExists = await checkIfProfileExists(input);
 
             if (profileExists) {

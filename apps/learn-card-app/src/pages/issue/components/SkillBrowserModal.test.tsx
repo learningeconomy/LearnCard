@@ -203,7 +203,7 @@ describe('issuer skill browser', () => {
             expect.anything(),
             {
                 sectionClassName:
-                    'desktop:!h-[85vh] desktop:!max-h-[85vh] desktop:!overflow-hidden',
+                    'desktop:h-[85vh]! desktop:max-h-[85vh]! desktop:overflow-hidden!',
             },
             {
                 mobile: 'bottom-sheet',

@@ -1,0 +1,54 @@
+{
+    "realm": "fake-google",
+    "enabled": true,
+    "sslRequired": "none",
+    "registrationAllowed": false,
+    "clients": [
+        {
+            "clientId": "learncard-broker",
+            "protocol": "openid-connect",
+            "enabled": true,
+            "publicClient": false,
+            "secret": "fake-google-test-only-secret",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "redirectUris": ["http://localhost:8081/realms/learncard/broker/fake-google/endpoint"],
+            "defaultClientScopes": ["profile", "email", "basic"]
+        }
+    ],
+    "users": [
+        {
+            "username": "new-social",
+            "email": "alice@example.com",
+            "emailVerified": true,
+            "enabled": true,
+            "firstName": "New",
+            "lastName": "Social",
+            "credentials": [
+                { "type": "password", "value": "test-only-password", "temporary": false }
+            ]
+        },
+        {
+            "username": "existing-social",
+            "email": "existing-social@example.com",
+            "emailVerified": true,
+            "enabled": true,
+            "firstName": "Existing",
+            "lastName": "Social",
+            "credentials": [
+                { "type": "password", "value": "test-only-password", "temporary": false }
+            ]
+        },
+        {
+            "username": "unverified-social",
+            "email": "unverified-social@example.com",
+            "emailVerified": false,
+            "enabled": true,
+            "firstName": "Unverified",
+            "lastName": "Social",
+            "credentials": [
+                { "type": "password", "value": "test-only-password", "temporary": false }
+            ]
+        }
+    ]
+}

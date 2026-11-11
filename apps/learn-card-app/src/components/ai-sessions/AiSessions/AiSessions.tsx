@@ -130,7 +130,7 @@ export const AiSessions: React.FC<{
                         })}
                         {sortedSessions.length === 0 && (
                             <div className="w-full flex items-center justify-center z-10 mt-4">
-                                <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
+                                <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t border-solid border-grayscale-200 pt-2">
                                     <p className="text-grayscale-800 text-base font-normal font-notoSans">
                                         {m['ai.noResultsFor']()}{' '}
                                         <span className="text-black italic">{searchInput}</span>

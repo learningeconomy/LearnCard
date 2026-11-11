@@ -9,7 +9,7 @@ import {
 import * as m from '../../../paraglide/messages.js';
 
 const INPUT_CLASS =
-    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
+    'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 
 interface TemplatableFieldProps {
     label: string;
@@ -89,7 +89,7 @@ export const TemplatableField: React.FC<TemplatableFieldProps> = ({
                     onBlur={onBlur}
                     placeholder={placeholder}
                     className={`${INPUT_CLASS} ${
-                        errorText ? '!border-red-400 focus:!ring-red-500' : ''
+                        errorText ? 'border-red-400! focus:ring-red-500!' : ''
                     }`}
                 />
             )}

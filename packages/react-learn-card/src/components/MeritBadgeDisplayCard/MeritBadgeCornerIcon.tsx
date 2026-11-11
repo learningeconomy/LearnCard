@@ -16,20 +16,20 @@ const MeritBadgeCornerIcon: React.FC<MeritBadgeCornerIconProps> = ({ categoryTyp
     switch (position) {
         case 'top-left':
             iconPositionClassName = 'top-[3px] left-[3px] pb-[10px] pr-[10px] pl-[4px] pt-[4px]';
-            cornerPositionClassName = 'bottom-[-1px] right-0';
+            cornerPositionClassName = '-bottom-px right-0';
             break;
         case 'top-right':
             iconPositionClassName = 'top-[3px] right-[3px] pl-[10px] pb-[10px] pr-[4px] pt-[4px]';
-            cornerPositionClassName = 'bottom-[-1px] left-0 rotate-90';
+            cornerPositionClassName = '-bottom-px left-0 rotate-90';
             break;
         case 'bottom-left':
             iconPositionClassName = 'bottom-[3px] left-[3px] pr-[10px] pt-[10px] pl-[4px] pb-[4px]';
-            cornerPositionClassName = 'top-0 right-0 rotate-[270deg]';
+            cornerPositionClassName = 'top-0 right-0 rotate-270';
             break;
         case 'bottom-right':
             iconPositionClassName =
                 'bottom-[3px] right-[3px] pl-[10px] pt-[10px] pr-[4px] pb-[4px]';
-            cornerPositionClassName = 'top-[-1px] left-0 rotate-180';
+            cornerPositionClassName = '-top-px left-0 rotate-180';
             break;
     }
 

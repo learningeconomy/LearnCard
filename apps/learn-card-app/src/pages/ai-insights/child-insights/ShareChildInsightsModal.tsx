@@ -69,7 +69,7 @@ export const ShareChildInsightsModal: React.FC<{
                                 image,
                             }}
                             customContainerClass="flex w-[45px] min-w-[45px] h-[45px] min-h-[45px] items-center justify-center rounded-full overflow-hidden object-cover text-white"
-                            customImageClass="w-full h-full object-cover flex-shrink-0"
+                            customImageClass="w-full h-full object-cover shrink-0"
                             customSize={120}
                         />
 

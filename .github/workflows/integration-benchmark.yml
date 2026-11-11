@@ -1,0 +1,72 @@
+name: Integration runner benchmark
+
+# Opt-in only. Adding this label starts one controlled ABBA comparison on the
+# PR's exact head. Manual dispatch becomes available after the workflow merges.
+on:
+    pull_request:
+        types: [labeled]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    separate-before:
+        if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'benchmark-integrations'
+        name: Separate before (${{ matrix.group }})
+        strategy:
+            fail-fast: false
+            matrix:
+                group: [share-links, profile-search, boost-recipients, inbox, campaigns]
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            group: ${{ matrix.group }}
+            ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+    grouped-first:
+        name: Grouped first (${{ matrix.group }})
+        needs: separate-before
+        strategy:
+            fail-fast: false
+            matrix:
+                group: [graph, delivery]
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            group: ${{ matrix.group }}
+            ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+    grouped-repeat:
+        name: Grouped repeat (${{ matrix.group }})
+        needs: grouped-first
+        strategy:
+            fail-fast: false
+            matrix:
+                group: [graph, delivery]
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            group: ${{ matrix.group }}
+            ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
+    separate-after:
+        name: Separate after (${{ matrix.group }})
+        needs: grouped-repeat
+        strategy:
+            fail-fast: false
+            matrix:
+                group: [share-links, profile-search, boost-recipients, inbox, campaigns]
+        uses: ./.github/workflows/brain-integration.yml
+        with:
+            group: ${{ matrix.group }}
+            ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        secrets:
+            DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+            DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}

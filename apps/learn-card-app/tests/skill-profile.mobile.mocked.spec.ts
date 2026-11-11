@@ -9,6 +9,7 @@ test.describe('My Skill Profile mobile form @mocked', () => {
         await installNetwork(page);
         await waitForAuthenticatedState(page, {
             path: '/ai/pathways',
+            nextPath: '/ai/pathways',
             profileId: TEST_USER_PROFILE_ID,
         });
 

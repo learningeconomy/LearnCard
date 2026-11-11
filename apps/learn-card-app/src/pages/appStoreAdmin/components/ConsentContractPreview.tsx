@@ -90,7 +90,7 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                     </span>
                 </div>
             ) : selectedContract ? (
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {/* Contract Header */}
                     <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
                         {selectedContract.image ? (

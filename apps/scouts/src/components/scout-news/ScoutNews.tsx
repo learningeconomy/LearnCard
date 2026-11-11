@@ -1,16 +1,17 @@
 //query for getting scouts data from their api
 import * as m from '../../paraglide/messages.js';
-import React, { useState, useEffect } from 'react';
-import { useQuery, useQueries } from '@tanstack/react-query';
+import React from 'react';
+import { Capacitor } from '@capacitor/core';
+import { useQuery } from '@tanstack/react-query';
 import { formatLocaleDate } from '../../i18n/formatters';
 import ExternalLink from 'learn-card-base/svgs/ExternalLink';
 import { openExternalLink } from '../../helpers/externalLinkHelpers';
 
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import ScoutNewsDefaultData from './scoutnewsdefault.json';
+import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
+import { getScoutNewsEndpoint, scoutNewsQueryOptions, type ScoutNewsItem } from './scoutNewsApi';
 
-const SCOUTS_NEWS_API_ENDPOINT =
-    'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.scout.org/api/news');
 const BASE_URL = 'https://scout.org';
 
 const formatDate = (dateString: string) => {
@@ -31,56 +32,18 @@ const formatDate = (dateString: string) => {
     }
 };
 
-type ScoutNewsItem = {
-    author: string;
-    last_update_date: string;
-    node_id: string;
-    path: string;
-    preview_image: string;
-    preview_text: string;
-    publish_date: string;
-    tags: string;
-    title: string;
-};
 type ScoutNewsListItemProps = {
     data: ScoutNewsItem;
 };
 
-type ScoutsPaginationObject = {
-    pages: number;
-    current_page: number;
-};
-
-type ScoutNewsQueryResult = {
-    data: ScoutNewsItem[];
-    pager: ScoutsPaginationObject;
-};
-
-// Returns the credential count for a category of credential eg Achievement
 export const useFetchScoutNews = () => {
-    return useQuery<ScoutNewsQueryResult>({
-        queryKey: ['useFetchScoutNews'],
-        queryFn: async () => {
-            try {
-                const res = await fetch(SCOUTS_NEWS_API_ENDPOINT);
-                const json = await res?.json();
-
-                // allorigins returns the response in a 'contents' field as a string
-                return JSON.parse(json.contents);
-            } catch (error) {
-                return Promise.reject(new Error(String(error)));
-            }
-        },
-        initialData: () => {
-            return {
-                data: ScoutNewsDefaultData.data,
-                pager: {
-                    pages: 35,
-                    current_page: 0,
-                },
-            };
-        },
-    });
+    // Native origins are capacitor://localhost / https://localhost. Always use
+    // the resolved tenant's HTTPS domain, including staging.pass.scout.org.
+    const endpoint = getScoutNewsEndpoint(
+        Capacitor.isNativePlatform(),
+        getResolvedTenantConfig().domain
+    );
+    return useQuery(scoutNewsQueryOptions(endpoint));
 };
 
 export const ScoutsNewsList: React.FC = () => {
@@ -92,7 +55,7 @@ export const ScoutsNewsList: React.FC = () => {
         return <ScoutNewsListItem key={node.node_id} data={node} />;
     });
     const bgClassName = isLoading && !data ? 'bg-white' : 'bg-[#EFF0F5]';
-    const sectionClassName = `${bgClassName} w-full flex items-center justify-start  bg-repeat p-[10px] flex justify-center h-full pb-[50px]`;
+    const sectionClassName = `${bgClassName} w-full flex items-center bg-repeat p-[10px] justify-center h-full pb-[50px]`;
 
     return (
         <section className={sectionClassName}>
@@ -110,7 +73,7 @@ export const ScoutsNewsList: React.FC = () => {
 };
 
 const decodeHtml = (html: string) => {
-    var txt = document.createElement('textarea');
+    const txt = document.createElement('textarea');
     txt.innerHTML = html;
     return txt.value;
 };
@@ -178,7 +141,7 @@ export const ScoutNewsListItem: React.FC<ScoutNewsListItemProps> = ({ data }) =>
                 </div>
             </div>
 
-            <div className="news-link width-[110px] h-full flex-shrink-0">
+            <div className="news-link width-[110px] h-full shrink-0">
                 <div className="link-icon-display flex flex-col h-full justify-between items-end"></div>
             </div>
         </div>

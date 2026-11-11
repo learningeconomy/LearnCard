@@ -1,16 +1,16 @@
 # ProfileManagerCreateProfileManagerRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**display_name** | **str** |  | [optional] [default to '']
-**short_bio** | **str** |  | [optional] [default to '']
-**bio** | **str** |  | [optional] [default to '']
-**email** | **str** |  | [optional] 
-**image** | **str** |  | [optional] 
-**hero_image** | **str** |  | [optional] 
+| Name             | Type    | Description | Notes                      |
+| ---------------- | ------- | ----------- | -------------------------- |
+| **display_name** | **str** |             | [optional] [default to ''] |
+| **short_bio**    | **str** |             | [optional] [default to ''] |
+| **bio**          | **str** |             | [optional] [default to ''] |
+| **email**        | **str** |             | [optional]                 |
+| **image**        | **str** |             | [optional]                 |
+| **hero_image**   | **str** |             | [optional]                 |
+| **manager_type** | **str** |             | [optional]                 |
 
 ## Example
 
@@ -29,6 +29,5 @@ profile_manager_create_profile_manager_request_dict = profile_manager_create_pro
 # create an instance of ProfileManagerCreateProfileManagerRequest from a dict
 profile_manager_create_profile_manager_request_from_dict = ProfileManagerCreateProfileManagerRequest.from_dict(profile_manager_create_profile_manager_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

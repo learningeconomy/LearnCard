@@ -111,7 +111,7 @@ const CreateAPITokenModal: React.FC<{
                 </IonButtons>
             </IonDatetime>,
             {
-                sectionClassName: '!max-w-[300px]',
+                sectionClassName: 'max-w-[300px]!',
                 hideButton: true,
             }
         );
@@ -224,7 +224,7 @@ const CreateAPITokenModal: React.FC<{
                                 <IonItem
                                     button
                                     style={{ '--border-color': 'transparent' }}
-                                    className="!border-b-grayscale-100 !border-b-solid !border-b-[1px] last:!border-0 p-1"
+                                    className="border-b-grayscale-100! !border-b-solid border-b! last:border-0! p-1"
                                     key={option.displayName}
                                     onClick={() => {
                                         setScopeDisplayValue(option.displayName);
@@ -236,7 +236,7 @@ const CreateAPITokenModal: React.FC<{
                                 </IonItem>
                             ))}
                         </IonList>,
-                        { sectionClassName: '!max-w-[400px]' }
+                        { sectionClassName: 'max-w-[400px]!' }
                     )
                 }
             >
@@ -270,7 +270,7 @@ const CreateAPITokenModal: React.FC<{
             {errorMessage && <p className="text-red-500 text-md mt-2">{errorMessage}</p>}
             {sectionPortal &&
                 createPortal(
-                    <div className="flex flex-col justify-center items-center relative !border-none max-w-[500px]">
+                    <div className="flex flex-col justify-center items-center relative border-none! max-w-[500px]">
                         <button
                             disabled={
                                 name === '' ||

@@ -24,14 +24,21 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
 
     const isOnAdminPage = location.pathname.includes('/app-store/admin');
 
-    // Apps page: /app-store/developer or /integrations/:id/apps
+    // Apps: the "Your Apps" home, one app's status page, and the editor
     const isOnAppsPage =
-        location.pathname === '/app-store/developer' || location.pathname.includes('/apps');
+        location.pathname === '/app-store/developer' ||
+        location.pathname.startsWith('/app-store/developer/apps/') ||
+        location.pathname.startsWith('/app-store/developer/submit') ||
+        location.pathname.endsWith('/listing');
 
-    // Build page: /integrations/:id (dashboard) or /integrations/:id/guides or /guides
+    // Build: projects and their dashboards, guides, and power-user listing tools
     const isOnBuildPage =
-        (location.pathname.includes('/integrations') && !location.pathname.includes('/apps')) ||
-        location.pathname.includes('/guides');
+        !isOnAppsPage &&
+        (location.pathname.startsWith('/app-store/developer/build') ||
+            location.pathname.includes('/integrations') ||
+            location.pathname.includes('/guides'));
+
+    const goToMyApps = () => history.push('/app-store/developer');
 
     const handlePortalToggle = () => {
         if (isOnAdminPage) {
@@ -42,8 +49,8 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
     };
 
     return (
-        <IonHeader className="ion-no-border !overflow-visible">
-            <IonToolbar className="!shadow-none border-b border-gray-200 !overflow-visible [&>.toolbar-container]:!overflow-visible">
+        <IonHeader className="ion-no-border overflow-visible!">
+            <IonToolbar className="shadow-none! border-b border-gray-200 overflow-visible! [&>.toolbar-container]:overflow-visible!">
                 <div className="flex items-center justify-between px-2 sm:px-4 py-2 overflow-visible">
                     <button
                         onClick={() => history.push('/launchpad')}
@@ -70,19 +77,10 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                         {/* Navigation tabs */}
                         <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-0.5">
                             <button
-                                onClick={() => {
-                                    // Retain integration context when switching to Apps
-                                    if (currentIntegrationId) {
-                                        history.push(
-                                            `/app-store/developer/integrations/${currentIntegrationId}/apps`
-                                        );
-                                    } else {
-                                        history.push('/app-store/developer');
-                                    }
-                                }}
+                                onClick={goToMyApps}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                     isOnAppsPage
-                                        ? 'bg-white text-gray-800 shadow-sm'
+                                        ? 'bg-white text-gray-800 shadow-xs'
                                         : 'text-gray-500 hover:text-gray-700'
                                 }`}
                             >
@@ -94,7 +92,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                                 onClick={goToIntegrationHub}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                     isOnBuildPage
-                                        ? 'bg-white text-gray-800 shadow-sm'
+                                        ? 'bg-white text-gray-800 shadow-xs'
                                         : 'text-gray-500 hover:text-gray-700'
                                 }`}
                             >
@@ -107,14 +105,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                         <button
                             onClick={() => {
                                 if (isOnBuildPage) {
-                                    // Retain integration context when switching to Apps
-                                    if (currentIntegrationId) {
-                                        history.push(
-                                            `/app-store/developer/integrations/${currentIntegrationId}/apps`
-                                        );
-                                    } else {
-                                        history.push('/app-store/developer');
-                                    }
+                                    goToMyApps();
                                 } else {
                                     goToIntegrationHub();
                                 }

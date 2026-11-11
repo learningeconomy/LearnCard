@@ -241,7 +241,7 @@ export const BoostMediaPreview: React.FC<{
                         onSlideChange={swiper => {
                             setCurrentSlide(swiper.activeIndex);
                         }}
-                        className="w-full h-[100vh]"
+                        className="w-full h-screen"
                     >
                         {attachments.map((img, index) => (
                             <SwiperSlide key={index}>

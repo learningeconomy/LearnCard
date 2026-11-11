@@ -96,6 +96,16 @@ describe('createFirebaseAuthProvider', () => {
             });
         });
 
+        it('reads late Apple enrichment without recreating the provider', async () => {
+            const auth = { currentUser: createMockCurrentUser({ displayName: null }) };
+            const provider = createFirebaseAuthProvider(createConfig({ getAuth: () => auth }));
+            expect((await provider.getCurrentUser())?.displayName).toBeUndefined();
+
+            auth.currentUser = createMockCurrentUser({ displayName: 'Apple Name' });
+            expect((await provider.getCurrentUser())?.displayName).toBe('Apple Name');
+            await expect(provider.getIdToken()).resolves.toBe('mock-id-token');
+        });
+
         it('returns null when Firebase SDK session is stale (no currentUser in SDK)', async () => {
             const provider = createFirebaseAuthProvider(
                 createConfig({
@@ -106,6 +116,23 @@ describe('createFirebaseAuthProvider', () => {
             const user = await provider.getCurrentUser();
 
             expect(user).toBeNull();
+        });
+
+        it('exposes a synthetic ClassLink placeholder email as no email', async () => {
+            const provider = createFirebaseAuthProvider(
+                createConfig({
+                    getAuth: () => ({
+                        currentUser: createMockCurrentUser({
+                            email: 'user-1@users.classlink.invalid',
+                        }),
+                    }),
+                })
+            );
+
+            const user = await provider.getCurrentUser();
+
+            expect(user?.id).toBe('user-1');
+            expect(user?.email).toBeUndefined();
         });
 
         it('omits email and phone when not present', async () => {
@@ -165,9 +192,7 @@ describe('createFirebaseAuthProvider', () => {
         });
 
         it('does nothing when onSignOut is not provided', async () => {
-            const provider = createFirebaseAuthProvider(
-                createConfig({ onSignOut: undefined })
-            );
+            const provider = createFirebaseAuthProvider(createConfig({ onSignOut: undefined }));
 
             // Should not throw
             await expect(provider.signOut()).resolves.toBeUndefined();

@@ -60,8 +60,7 @@ const RouteStep: React.FC<{
     const palette = {
         kept: 'bg-emerald-50 text-emerald-800 border border-emerald-100',
         added: 'bg-indigo-50 text-indigo-800 border border-indigo-100',
-        removed:
-            'bg-grayscale-100 text-grayscale-500 border border-grayscale-200 line-through',
+        removed: 'bg-grayscale-100 text-grayscale-500 border border-grayscale-200 line-through',
     }[status];
 
     return (
@@ -71,7 +70,7 @@ const RouteStep: React.FC<{
                     {position}/{total}
                 </span>
             )}
-            <span className="truncate max-w-[9rem]">{title}</span>
+            <span className="truncate max-w-36">{title}</span>
         </span>
     );
 };
@@ -89,7 +88,7 @@ const StepStrip: React.FC<{
     variant: 'proposed' | 'removed';
 }> = ({ steps, total, pathway, variant }) => {
     const visible = steps.filter(s =>
-        variant === 'proposed' ? s.status !== 'removed' : s.status === 'removed',
+        variant === 'proposed' ? s.status !== 'removed' : s.status === 'removed'
     );
 
     if (visible.length === 0) return null;
@@ -101,18 +100,14 @@ const StepStrip: React.FC<{
                     <RouteStep
                         title={titleOf(pathway, step.id)}
                         status={step.status}
-                        position={
-                            variant === 'proposed' ? step.index + 1 : undefined
-                        }
+                        position={variant === 'proposed' ? step.index + 1 : undefined}
                         total={variant === 'proposed' ? total : undefined}
                     />
 
                     {i < visible.length - 1 && (
                         <span
                             className={`text-xs ${
-                                variant === 'proposed'
-                                    ? 'text-grayscale-400'
-                                    : 'text-grayscale-300'
+                                variant === 'proposed' ? 'text-grayscale-400' : 'text-grayscale-300'
                             }`}
                             aria-hidden
                         >
@@ -125,38 +120,26 @@ const StepStrip: React.FC<{
     );
 };
 
-const RouteDiffSummary: React.FC<RouteDiffSummaryProps> = ({
-    current,
-    proposed,
-    pathway,
-}) => {
+const RouteDiffSummary: React.FC<RouteDiffSummaryProps> = ({ current, proposed, pathway }) => {
     const diff = diffRoutes(current, proposed);
 
     if (!diff.hasChanges && (proposed?.length ?? 0) === 0) {
         return (
-            <p className="text-xs text-grayscale-500 italic">
-                This proposal clears your route.
-            </p>
+            <p className="text-xs text-grayscale-500 italic">This proposal clears your route.</p>
         );
     }
 
     if (!diff.hasChanges) {
-        return (
-            <p className="text-xs text-grayscale-500 italic">
-                No route changes.
-            </p>
-        );
+        return <p className="text-xs text-grayscale-500 italic">No route changes.</p>;
     }
 
-    const proposedCount =
-        diff.kept.length + diff.added.length ||
-        (proposed?.length ?? 0);
+    const proposedCount = diff.kept.length + diff.added.length || (proposed?.length ?? 0);
 
     const isBrandNewRoute = (current?.length ?? 0) === 0;
 
     return (
-        <div className="space-y-3">
-            <section className="space-y-1.5">
+        <div className="space-y-v3-3">
+            <section className="space-y-v3-1.5">
                 <SectionLabel>
                     {isBrandNewRoute
                         ? 'New route'
@@ -172,7 +155,7 @@ const RouteDiffSummary: React.FC<RouteDiffSummaryProps> = ({
             </section>
 
             {diff.removed.length > 0 && (
-                <section className="space-y-1.5">
+                <section className="space-y-v3-1.5">
                     <SectionLabel>
                         Dropping from your walk · {diff.removed.length} step
                         {diff.removed.length === 1 ? '' : 's'}
@@ -186,8 +169,7 @@ const RouteDiffSummary: React.FC<RouteDiffSummaryProps> = ({
                     />
 
                     <p className="text-[11px] text-grayscale-500 leading-relaxed">
-                        These steps stay in your pathway, but fall off your
-                        committed walk.
+                        These steps stay in your pathway, but fall off your committed walk.
                     </p>
                 </section>
             )}

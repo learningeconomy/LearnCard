@@ -1,13 +1,12 @@
 # BoostSearchSkillsAvailableForBoost200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**records** | [**List[BoostSearchSkillsAvailableForBoost200ResponseRecordsInner]**](BoostSearchSkillsAvailableForBoost200ResponseRecordsInner.md) |  | 
-**has_more** | **bool** |  | 
-**cursor** | **str** |  | 
+| Name         | Type                                                                                                                                | Description | Notes |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **records**  | [**List[BoostSearchSkillsAvailableForBoost200ResponseRecordsInner]**](BoostSearchSkillsAvailableForBoost200ResponseRecordsInner.md) |             |
+| **has_more** | **bool**                                                                                                                            |             |
+| **cursor**   | **str**                                                                                                                             |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_search_skills_available_for_boost200_response_dict = boost_search_skills_a
 # create an instance of BoostSearchSkillsAvailableForBoost200Response from a dict
 boost_search_skills_available_for_boost200_response_from_dict = BoostSearchSkillsAvailableForBoost200Response.from_dict(boost_search_skills_available_for_boost200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

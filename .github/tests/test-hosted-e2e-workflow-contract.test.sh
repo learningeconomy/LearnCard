@@ -8,6 +8,7 @@ require 'yaml'
 require 'tempfile'
 require 'tmpdir'
 require 'open3'
+require 'fileutils'
 
 e2e_path, legacy_path = ARGV
 abort 'E2E workflow missing' unless File.file?(e2e_path)
@@ -37,14 +38,66 @@ permissions = workflow.fetch('permissions')
 abort 'workflow must use read-only contents permission' unless permissions == { 'contents' => 'read' }
 
 jobs = workflow.fetch('jobs')
-expected_jobs = %w[eligibility playwright_e2e tests_e2e e2e]
+expected_jobs = %w[eligibility playwright_e2e tests_e2e e2e sdk_cache_probe]
 abort 'E2E workflow job set changed' unless jobs.keys.sort == expected_jobs.sort
+probe = jobs.fetch('sdk_cache_probe')
+abort 'producer probe must require explicit manual opt-in' unless probe.fetch('if') == "${{ github.event_name == 'workflow_dispatch' && inputs.verify_sdk_producer }}"
+abort 'producer probe must use the same-revision reusable workflow' unless probe.fetch('uses') == './.github/workflows/sdk-build-cache.yml'
+probe_input = triggers.fetch('workflow_dispatch').fetch('inputs').fetch('verify_sdk_producer')
+abort 'producer probe must default off' unless probe_input.fetch('type') == 'boolean' && probe_input.fetch('default') == false
 
 eligibility = jobs.fetch('eligibility')
 abort 'eligibility name must not retain hosted shadow terminology' unless eligibility.fetch('name') == 'Determine E2E eligibility'
 outputs = eligibility.fetch('outputs')
 abort 'run_e2e output missing' unless outputs.key?('run_e2e')
 abort 'eligibility reason output missing' unless outputs.key?('reason')
+
+eligibility_steps = eligibility.fetch('steps')
+policy_checkout = eligibility_steps.find { |step| step['uses']&.start_with?('actions/checkout@') }
+abort 'PR deferral must not require a checkout' unless policy_checkout.fetch('if') == "${{ github.event_name == 'merge_group' }}"
+policy = eligibility_steps.find { |step| step['id'] == 'policy' }
+abort 'policy must receive the event name' unless policy.dig('env', 'EVENT_NAME') == '${{ github.event_name }}'
+abort 'queue change detection must use the merge-group base' unless policy.dig('env', 'BASE_SHA') == '${{ github.event.merge_group.base_sha }}'
+
+observer = eligibility_steps.find { |step| step['run'] == 'node scripts/e2e-hosted/observe-queue-batch.mjs' }
+abort 'queue observation must run only on merge-group events' unless observer && observer.fetch('if') == "${{ github.event_name == 'merge_group' }}"
+abort 'queue observation must be best-effort and bounded' unless observer.fetch('continue-on-error') == true && observer.fetch('timeout-minutes') == 1
+abort 'queue observation may only read repository and pull requests' unless eligibility.fetch('permissions') == { 'contents' => 'read', 'pull-requests' => 'read' }
+abort 'queue observation must run after the E2E policy' unless eligibility_steps.index(observer) > eligibility_steps.index(policy)
+abort 'E2E policy outputs must not depend on the queue observation' unless outputs == { 'run_e2e' => '${{ steps.policy.outputs.run_e2e }}', 'reason' => '${{ steps.policy.outputs.reason }}' }
+
+# Execute the actual inline policy, stubbing only documentation classification.
+# PR and manual decisions must work without touching the repository at all.
+[
+  ['pull_request', 0, 'false', 'merge-queue-only', true],
+  ['pull_request', 1, 'false', 'merge-queue-only', true],
+  ['merge_group', 0, 'false', 'docs-only', true],
+  ['merge_group', 1, 'true', 'merge_group', true],
+  ['merge_group', 2, 'true', 'merge_group', true],
+  ['workflow_dispatch', 0, 'true', 'manual-dispatch', true],
+  ['workflow_dispatch', 1, 'true', 'manual-dispatch', true],
+  ['push', 0, nil, nil, false]
+].each do |event, docs_exit, run_e2e, reason, expected_success|
+  Dir.mktmpdir('e2e-policy') do |dir|
+    if event == 'merge_group'
+      scripts = File.join(dir, 'scripts', 'e2e-hosted')
+      FileUtils.mkdir_p(scripts)
+      File.write(File.join(scripts, 'changes-are-docs-only.sh'),
+        "[[ \"$1\" == queue-base && \"$2\" == HEAD ]] || exit 99\necho called > docs-called\nexit #{docs_exit}\n")
+    end
+    output = File.join(dir, 'output')
+    File.write(output, '')
+    stdout, status = Open3.capture2e({
+      'EVENT_NAME' => event, 'BASE_SHA' => 'queue-base', 'GITHUB_OUTPUT' => output
+    }, 'bash', '-euo', 'pipefail', '-c', policy.fetch('run'), chdir: dir)
+    abort "policy failed for #{event}/#{docs_exit}: #{stdout}" unless status.success? == expected_success
+    expected = expected_success ? ["run_e2e=#{run_e2e}", "reason=#{reason}"] : []
+    abort "unexpected policy output for #{event}/#{docs_exit}" unless File.readlines(output, chomp: true) == expected
+    abort 'queue policy must inspect the combined diff' if event == 'merge_group' && !File.exist?(File.join(dir, 'docs-called'))
+    abort 'PR/manual policy must not attempt change detection' if event != 'merge_group' && stdout.include?('changes-are-docs-only')
+  end
+end
+puts 'E2E event policy passed (PR deferral, queue changes, manual override, unsupported event)'
 
 browser = jobs.fetch('playwright_e2e')
 service = jobs.fetch('tests_e2e')
@@ -65,6 +118,20 @@ abort 'shard total must derive from the matrix, not a hardcoded literal' unless 
 abort 'shard artifacts must not collide' unless service.fetch('steps').any? { |step|
   step.dig('with', 'name').to_s.include?('matrix.shard')
 }
+[browser, service].each do |job|
+  buildx = job.fetch('steps').find { |step| step['name'] == 'Setup Docker Buildx' }
+  abort 'Buildx cleanup must remain enabled for persistent runners' unless buildx.dig('with', 'cleanup') == "${{ runner.environment != 'github-hosted' }}"
+end
+browser_setup = browser.fetch('steps').find { |step| step['uses'] == './.github/actions/setup' }
+service_setup = service.fetch('steps').find { |step| step['uses'] == './.github/actions/setup' }
+abort 'browser must be a cache consumer' unless browser_setup.dig('with', 'save-cache') == 'false'
+abort 'exactly the first service shard must write the cache' unless service_setup.dig('with', 'save-cache') == '${{ matrix.shard == 1 }}'
+setup = YAML.load_file(File.join(File.dirname(ARGV[0]), '../actions/setup/action.yml'))
+abort 'other setup consumers must retain cache saving by default' unless setup.dig('inputs', 'save-cache', 'default') == 'true'
+restore = setup.fetch('runs').fetch('steps').find { |step| step['uses'] == 'actions/cache/restore@v6' }
+save = setup.fetch('runs').fetch('steps').find { |step| step['uses'] == 'actions/cache@v6' }
+abort 'cache reader/writer paths and keys must match' unless restore.fetch('with') == save.fetch('with')
+abort 'cache modes must be mutually exclusive' unless restore.fetch('if') == "${{ inputs.save-cache != 'true' }}" && save.fetch('if') == "${{ inputs.save-cache == 'true' }}"
 abort 'aggregate required-gate name must be stable' unless aggregate.fetch('name') == 'E2E'
 
 expected_browser_specs = 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts'
@@ -83,7 +150,7 @@ abort 'runner label must remain configurable' unless browser.fetch('runs-on').in
   'vars.E2E_HOSTED_RUNNER'
 )
 
-abort 'aggregate must inspect all job results' unless aggregate.fetch('needs') == [
+abort 'aggregate must inspect all required suite results' unless aggregate.fetch('needs') == [
   'eligibility', 'playwright_e2e', 'tests_e2e'
 ]
 abort 'aggregate must run after failures/skips' unless aggregate.fetch('if').include?('always()')
@@ -128,20 +195,24 @@ end
 aggregate_step = aggregate.fetch('steps').fetch(0)
 aggregate_env = aggregate_step.fetch('env')
 abort 'aggregate must inspect eligibility job result' unless aggregate_env.fetch('ELIGIBILITY_RESULT') == '${{ needs.eligibility.result }}'
+abort 'aggregate must validate skip reasons against the event' unless aggregate_env.fetch('EVENT_NAME') == '${{ github.event_name }}'
 aggregate_run = aggregate_step.fetch('run')
 
 def aggregate_succeeds?(run, env)
   Tempfile.create(['hosted-e2e-aggregate', '.sh']) do |script|
     script.write("#!/usr/bin/env bash\nset -euo pipefail\n#{run}\n")
     script.flush
-    system(env, 'bash', script.path, out: File::NULL, err: File::NULL)
+    Tempfile.create('e2e-summary') do |summary|
+      system(env.merge('GITHUB_STEP_SUMMARY' => summary.path), 'bash', script.path, out: File::NULL, err: File::NULL)
+    end
   end
 end
 
 aggregate_defaults = {
+  'EVENT_NAME' => 'merge_group',
   'ELIGIBILITY_RESULT' => 'success',
   'ELIGIBLE' => 'true',
-  'ELIGIBILITY_REASON' => 'non-draft-pr',
+  'ELIGIBILITY_REASON' => 'merge_group',
   'BROWSER_RESULT' => 'success',
   'SERVICE_RESULT' => 'success'
 }
@@ -155,22 +226,36 @@ aggregate_defaults = {
   ))
   abort "aggregate browser outcome #{browser_result}: expected #{expected}" unless actual == expected
 end
-%w[success failure cancelled skipped].product(%w[success failure cancelled skipped]).each do |browser_result, service_result|
+%w[merge_group workflow_dispatch].product(%w[success failure cancelled skipped], %w[success failure cancelled skipped]).each do |event, browser_result, service_result|
   expected = browser_result == 'success' && service_result == 'success'
   actual = aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
-    'BROWSER_RESULT' => browser_result, 'SERVICE_RESULT' => service_result
+    'EVENT_NAME' => event, 'BROWSER_RESULT' => browser_result, 'SERVICE_RESULT' => service_result
   ))
   abort "aggregate outcomes #{browser_result}/#{service_result}" unless actual == expected
 end
 abort 'service must run independently after eligibility' unless service.fetch('needs') == 'eligibility'
-abort 'service must honor draft eligibility' unless service.fetch('if') == browser.fetch('if')
+abort 'service must honor E2E eligibility' unless service.fetch('if') == browser.fetch('if')
 abort 'service storage preparation missing' unless service.fetch('steps').any? { |step| step['run'] == 'bash scripts/e2e-hosted/prepare-storage.sh' }
-puts 'Aggregate child outcome table passed (16 combinations)'
+puts 'Aggregate child outcome table passed (32 queue/manual combinations)'
 
-abort 'explicit draft skip must succeed' unless aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+abort 'explicit PR deferral must succeed' unless aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+  'EVENT_NAME' => 'pull_request',
   'ELIGIBLE' => 'false',
-  'ELIGIBILITY_REASON' => 'draft-pr',
-  'BROWSER_RESULT' => 'skipped'
+  'ELIGIBILITY_REASON' => 'merge-queue-only',
+  'BROWSER_RESULT' => 'skipped',
+  'SERVICE_RESULT' => 'skipped'
+))
+%w[merge_group workflow_dispatch].each do |event|
+  %w[merge-queue-only draft-pr unknown].each do |reason|
+    abort "#{event} must reject #{reason} exemption" if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+      'EVENT_NAME' => event, 'ELIGIBLE' => 'false', 'ELIGIBILITY_REASON' => reason,
+      'BROWSER_RESULT' => 'skipped', 'SERVICE_RESULT' => 'skipped'
+    ))
+  end
+end
+abort 'manual run must not accept docs-only exemption' if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+  'EVENT_NAME' => 'workflow_dispatch', 'ELIGIBLE' => 'false', 'ELIGIBILITY_REASON' => 'docs-only',
+  'BROWSER_RESULT' => 'skipped', 'SERVICE_RESULT' => 'skipped'
 ))
 abort 'absent eligibility output must fail aggregate result' if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
   'ELIGIBLE' => '',
@@ -186,7 +271,7 @@ abort 'malformed ineligible output must fail aggregate result' if aggregate_succ
   'ELIGIBLE' => 'false',
   'ELIGIBILITY_REASON' => 'manual-dispatch'
 ))
-%w[failure cancelled].each do |result|
+%w[failure cancelled skipped].each do |result|
   abort "#{result} eligibility must fail aggregate result" if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
     'ELIGIBILITY_RESULT' => result,
     'ELIGIBLE' => '',

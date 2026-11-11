@@ -17,13 +17,15 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.boost_send_request_options import BoostSendRequestOptions
 from openapi_client.models.boost_send_request_template import BoostSendRequestTemplate
 from openapi_client.models.boost_send_request_template_credential_any_of import BoostSendRequestTemplateCredentialAnyOf
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostSendRequest(BaseModel):
     """
@@ -38,7 +40,9 @@ class BoostSendRequest(BaseModel):
     options: Optional[BoostSendRequestOptions] = None
     template_data: Optional[Dict[str, Any]] = Field(default=None, alias="templateData")
     integration_id: Optional[StrictStr] = Field(default=None, description="Integration ID for activity tracking", alias="integrationId")
-    __properties: ClassVar[List[str]] = ["type", "recipient", "contractUri", "templateUri", "template", "signedCredential", "options", "templateData", "integrationId"]
+    refresh: Optional[StrictBool] = Field(default=None, description="Request managed credential refresh for this send. Profile/DID recipients use immediate issuance; email/phone recipients use deferred Universal Inbox signing and bind the holder at claim.")
+    idempotency_key: Optional[Annotated[str, Field(min_length=1, strict=True, max_length=200)]] = Field(default=None, description="Caller-chosen key that makes a managed refresh send (refresh: true) safe to retry as a whole: retries with the same key reuse the same boost, refresh allocation and result. Reusing a key for a different request is rejected. With signedCredential, requires prior tRPC prepareRefreshableSend; direct REST callers omit the key and retry the exact signed credential and templateUri.", alias="idempotencyKey")
+    __properties: ClassVar[List[str]] = ["type", "recipient", "contractUri", "templateUri", "template", "signedCredential", "options", "templateData", "integrationId", "refresh", "idempotencyKey"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
@@ -48,7 +52,8 @@ class BoostSendRequest(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -60,8 +65,7 @@ class BoostSendRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -74,9 +78,8 @@ class BoostSendRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -95,16 +98,6 @@ class BoostSendRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
-            _dict['contractUri'] = None
-
-        # set to None if template_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.template_uri is None and "template_uri" in self.model_fields_set:
-            _dict['templateUri'] = None
-
         return _dict
 
     @classmethod
@@ -116,7 +109,7 @@ class BoostSendRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "type": obj.get("type"),
             "recipient": obj.get("recipient"),
             "contractUri": obj.get("contractUri"),
@@ -125,8 +118,12 @@ class BoostSendRequest(BaseModel):
             "signedCredential": BoostSendRequestTemplateCredentialAnyOf.from_dict(obj["signedCredential"]) if obj.get("signedCredential") is not None else None,
             "options": BoostSendRequestOptions.from_dict(obj["options"]) if obj.get("options") is not None else None,
             "templateData": obj.get("templateData"),
-            "integrationId": obj.get("integrationId")
-        })
+            "integrationId": obj.get("integrationId"),
+            "refresh": obj.get("refresh"),
+            "idempotencyKey": obj.get("idempotencyKey")
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

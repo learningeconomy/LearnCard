@@ -76,7 +76,7 @@ export const CancelModal: ModalContainer = ({ component, options, open }) => {
                     {usePortal && (
                         <section
                             id="section-cancel-portal"
-                            className={`${portalClass} !bg-transparent !shadow-none`}
+                            className={`${portalClass} bg-transparent! shadow-none!`}
                         ></section>
                     )}
                 </>

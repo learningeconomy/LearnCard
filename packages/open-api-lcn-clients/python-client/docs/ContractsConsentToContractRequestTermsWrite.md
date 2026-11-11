@@ -1,12 +1,11 @@
 # ContractsConsentToContractRequestTermsWrite
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**credentials** | [**ContractsConsentToContractRequestTermsWriteCredentials**](ContractsConsentToContractRequestTermsWriteCredentials.md) |  | [optional] 
-**personal** | **Dict[str, bool]** |  | [optional] 
+| Name            | Type                                                                                                                    | Description | Notes      |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **credentials** | [**ContractsConsentToContractRequestTermsWriteCredentials**](ContractsConsentToContractRequestTermsWriteCredentials.md) |             | [optional] |
+| **personal**    | **Dict[str, bool]**                                                                                                     |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_consent_to_contract_request_terms_write_dict = contracts_consent_to_co
 # create an instance of ContractsConsentToContractRequestTermsWrite from a dict
 contracts_consent_to_contract_request_terms_write_from_dict = ContractsConsentToContractRequestTermsWrite.from_dict(contracts_consent_to_contract_request_terms_write_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

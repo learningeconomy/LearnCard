@@ -19,21 +19,28 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+from typing_extensions import Annotated
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.models.contracts_get_all_contract_requests_for_profile200_response_inner_contract import ContractsGetAllContractRequestsForProfile200ResponseInnerContract
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
     """
     ContractsGetAllContractRequestsForProfile200ResponseInner
     """ # noqa: E501
+    request_id: Optional[StrictStr] = Field(default=None, alias="requestId")
+    requested_by: Optional[StrictStr] = Field(default=None, alias="requestedBy")
+    external_reference_id: Optional[Annotated[str, Field(strict=True, max_length=256)]] = Field(default=None, alias="externalReferenceId")
+    requested_at: Optional[StrictStr] = Field(default=None, alias="requestedAt")
+    message: Optional[Annotated[str, Field(strict=True, max_length=500)]] = None
     contract: ContractsGetAllContractRequestsForProfile200ResponseInnerContract
-    profile: BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+    profile: BoostGetBoostRecipients200ResponseInnerToAnyOf3
     status: Optional[StrictStr]
     read_status: Optional[StrictStr] = Field(default=None, alias="readStatus")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["contract", "profile", "status", "readStatus"]
+    __properties: ClassVar[List[str]] = ["requestId", "requestedBy", "externalReferenceId", "requestedAt", "message", "contract", "profile", "status", "readStatus"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -41,8 +48,8 @@ class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['pending', 'accepted', 'denied']):
-            raise ValueError("must be one of enum values ('pending', 'accepted', 'denied')")
+        if value not in set(['pending', 'accepted', 'denied', 'cancelled']):
+            raise ValueError("must be one of enum values ('pending', 'accepted', 'denied', 'cancelled')")
         return value
 
     @field_validator('read_status')
@@ -56,7 +63,8 @@ class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -68,8 +76,7 @@ class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -82,9 +89,8 @@ class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -107,14 +113,16 @@ class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if status (nullable) is None
-        # and model_fields_set contains the field
-        if self.status is None and "status" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.message is None and "message" in self.model_fields_set and "message" not in excluded_fields:
+            _dict['message'] = None
+
+        # Preserve a supplied nullable value.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
             _dict['status'] = None
 
-        # set to None if read_status (nullable) is None
-        # and model_fields_set contains the field
-        if self.read_status is None and "read_status" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.read_status is None and "read_status" in self.model_fields_set and "read_status" not in excluded_fields:
             _dict['readStatus'] = None
 
         return _dict
@@ -128,12 +136,19 @@ class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
+            "requestId": obj.get("requestId"),
+            "requestedBy": obj.get("requestedBy"),
+            "externalReferenceId": obj.get("externalReferenceId"),
+            "requestedAt": obj.get("requestedAt"),
+            "message": obj.get("message"),
             "contract": ContractsGetAllContractRequestsForProfile200ResponseInnerContract.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
-            "profile": BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.from_dict(obj["profile"]) if obj.get("profile") is not None else None,
+            "profile": BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(obj["profile"]) if obj.get("profile") is not None else None,
             "status": obj.get("status"),
             "readStatus": obj.get("readStatus")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

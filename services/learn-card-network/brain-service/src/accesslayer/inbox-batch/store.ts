@@ -6,49 +6,13 @@ import { neogma } from '@instance';
 import { encryptInboxCredential, decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 import type { BatchItem, BatchJob, BatchReplayStore, InboxDispatchLease } from 'types/inbox-batch';
 import { getInboxBatchState } from '@helpers/inbox-batch-status.helpers';
+import { ensureInboxBatchConstraints } from './schema';
 
 export const DAY = 86_400_000;
 export const LEASE_MS = 360_000;
 const CLEANUP_MARGIN_MS = 5_000;
 
-let readiness: Promise<void> | undefined;
-export const ensureInboxBatchConstraints = (): Promise<void> => {
-    if (!readiness) {
-        readiness = (async () => {
-            for (const label of [
-                'InboxBatch',
-                'InboxBatchItem',
-                'InboxBatchIssuer',
-                'InboxBatchReplay',
-            ]) {
-                try {
-                    await neogma.queryRunner.run(
-                        `CREATE CONSTRAINT ${label.toLowerCase()}_id IF NOT EXISTS FOR (n:${label}) REQUIRE n.id IS UNIQUE`
-                    );
-                } catch (error) {
-                    if (
-                        (error as { code?: string }).code !==
-                        'Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists'
-                    )
-                        throw error;
-                }
-            }
-            for (const query of [
-                'CREATE INDEX inbox_batch_request IF NOT EXISTS FOR (b:InboxBatch) ON (b.issuer, b.requestId)',
-                'CREATE INDEX inbox_batch_dispatch IF NOT EXISTS FOR (i:InboxBatchItem) ON (i.state, i.dispatchAt)',
-                'CREATE INDEX inbox_batch_recovery IF NOT EXISTS FOR (i:InboxBatchItem) ON (i.state, i.leaseUntil)',
-                'CREATE INDEX inbox_batch_replay_owner IF NOT EXISTS FOR (r:InboxBatchReplay) ON (r.itemId)',
-                'CREATE INDEX inbox_batch_completed IF NOT EXISTS FOR (b:InboxBatch) ON (b.completedAt)',
-                'CREATE INDEX inbox_batch_replay_expiry IF NOT EXISTS FOR (r:InboxBatchReplay) ON (r.expiresAt)',
-            ])
-                await neogma.queryRunner.run(query);
-        })();
-        void readiness.catch(() => {
-            readiness = undefined;
-        });
-    }
-    return readiness;
-};
+export { ensureInboxBatchConstraints } from './schema';
 
 const transaction = async <T>(fn: (tx: ManagedTransaction) => Promise<T>): Promise<T> => {
     await ensureInboxBatchConstraints();

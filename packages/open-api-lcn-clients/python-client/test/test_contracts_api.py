@@ -29,7 +29,14 @@ class TestContractsApi(unittest.TestCase):
     def test_contracts_add_auto_boosts_to_contract(self) -> None:
         """Test case for contracts_add_auto_boosts_to_contract
 
-        Add autoboosts to a contract
+        Deprecated: add autoboosts to a contract
+        """
+        pass
+
+    def test_contracts_add_contract_recipient(self) -> None:
+        """Test case for contracts_add_contract_recipient
+
+        Add a data recipient before first consent
         """
         pass
 
@@ -61,6 +68,20 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_delete_credential_from_all_contracts(self) -> None:
+        """Test case for contracts_delete_credential_from_all_contracts
+
+        Delete credential references from all consent terms
+        """
+        pass
+
+    def test_contracts_deny_contract_request(self) -> None:
+        """Test case for contracts_deny_contract_request
+
+        Deny a pending contract request as its target
+        """
+        pass
+
     def test_contracts_forward_contract_request_to_profile(self) -> None:
         """Test case for contracts_forward_contract_request_to_profile
 
@@ -85,7 +106,7 @@ class TestContractsApi(unittest.TestCase):
     def test_contracts_get_consent_flow_contract(self) -> None:
         """Test case for contracts_get_consent_flow_contract
 
-        Get Consent Flow Contracts
+        Get Consent Flow Contract
         """
         pass
 
@@ -145,6 +166,13 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_get_shared_insights_requests_for_profile(self) -> None:
+        """Test case for contracts_get_shared_insights_requests_for_profile
+
+        Get profiles a user has shared insights with
+        """
+        pass
+
     def test_contracts_get_terms_transaction_history(self) -> None:
         """Test case for contracts_get_terms_transaction_history
 
@@ -166,6 +194,13 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_remove_contract_recipient(self) -> None:
+        """Test case for contracts_remove_contract_recipient
+
+        Remove a data recipient
+        """
+        pass
+
     def test_contracts_send_ai_insight_share_request(self) -> None:
         """Test case for contracts_send_ai_insight_share_request
 
@@ -180,10 +215,24 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_send_contract_request(self) -> None:
+        """Test case for contracts_send_contract_request
+
+        Send an attributed contract request
+        """
+        pass
+
     def test_contracts_sync_credentials_to_contract(self) -> None:
         """Test case for contracts_sync_credentials_to_contract
 
         Sync credentials to a contract
+        """
+        pass
+
+    def test_contracts_update_consent_flow_contract(self) -> None:
+        """Test case for contracts_update_consent_flow_contract
+
+        Update Consent Flow Contract
         """
         pass
 

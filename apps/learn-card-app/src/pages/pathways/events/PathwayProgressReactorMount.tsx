@@ -39,10 +39,7 @@ import React, { useEffect, useRef } from 'react';
 import { useModal, ModalTypes } from 'learn-card-base';
 
 import CredentialClaimedPathwayCta from './CredentialClaimedPathwayCta';
-import {
-    pathwayProgressReactor,
-    type ProgressDispatchRecord,
-} from './pathwayProgressReactor';
+import { pathwayProgressReactor, type ProgressDispatchRecord } from './pathwayProgressReactor';
 
 /**
  * Does this dispatch have learner-visible progress to celebrate?
@@ -54,8 +51,7 @@ const shouldPresentForDispatch = (record: ProgressDispatchRecord): boolean => {
     if (record.eventKind !== 'credential-ingested') return false;
 
     const hasAnyProgress =
-        record.nodeCompletions.length > 0
-        || (record.outcomeBindings?.length ?? 0) > 0;
+        record.nodeCompletions.length > 0 || (record.outcomeBindings?.length ?? 0) > 0;
 
     return hasAnyProgress;
 };
@@ -109,7 +105,7 @@ const PathwayProgressReactorMount: React.FC = () => {
                         className="w-full"
                     />,
                     {
-                        sectionClassName: '!max-w-[500px] !bg-transparent !shadow-none',
+                        sectionClassName: 'max-w-[500px]! bg-transparent! shadow-none!',
                         // `hideButton: true` suppresses the modal-chrome
                         // X. The CTA component has its own primary
                         // action + "Later" dismiss + auto-dismiss path,
@@ -120,7 +116,7 @@ const PathwayProgressReactorMount: React.FC = () => {
                         hideButton: true,
                         usePortal: true,
                     },
-                    { desktop: ModalTypes.Center, mobile: ModalTypes.Center },
+                    { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                 );
             }, 150);
 

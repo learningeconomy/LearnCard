@@ -1,14 +1,13 @@
 # IntegrationsAddIntegrationRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** |  | 
-**description** | **str** |  | [optional] 
-**whitelisted_domains** | [**List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]**](IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md) |  | [optional] [default to []]
-**guide_type** | **str** |  | [optional] 
+| Name                    | Type                                                                                                                              | Description | Notes                      |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **name**                | **str**                                                                                                                           |             |
+| **description**         | **str**                                                                                                                           |             | [optional]                 |
+| **whitelisted_domains** | [**List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]**](IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md) |             | [optional] [default to []] |
+| **guide_type**          | **str**                                                                                                                           |             | [optional]                 |
 
 ## Example
 
@@ -27,6 +26,5 @@ integrations_add_integration_request_dict = integrations_add_integration_request
 # create an instance of IntegrationsAddIntegrationRequest from a dict
 integrations_add_integration_request_from_dict = IntegrationsAddIntegrationRequest.from_dict(integrations_add_integration_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

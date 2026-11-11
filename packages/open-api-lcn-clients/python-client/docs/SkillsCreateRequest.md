@@ -1,13 +1,12 @@
 # SkillsCreateRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**framework_id** | **str** |  | 
-**skill** | [**Schema0**](Schema0.md) |  | 
-**parent_id** | **str** |  | [optional] 
+| Name             | Type                      | Description | Notes      |
+| ---------------- | ------------------------- | ----------- | ---------- |
+| **framework_id** | **str**                   |             |
+| **skill**        | [**Schema0**](Schema0.md) |             |
+| **parent_id**    | **str**                   |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ skills_create_request_dict = skills_create_request_instance.to_dict()
 # create an instance of SkillsCreateRequest from a dict
 skills_create_request_from_dict = SkillsCreateRequest.from_dict(skills_create_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

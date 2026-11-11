@@ -28,6 +28,7 @@ CHANGELOG.md
 
 # Legacy Markdown formatting
 packages/credential-library/README.md
+CLAUDE.md
 
 # Changesets (tool-generated; @changesets/cli emits double quotes that conflict with our config)
 .changeset/*.md

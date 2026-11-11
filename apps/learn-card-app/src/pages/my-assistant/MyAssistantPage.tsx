@@ -41,11 +41,11 @@ import {
 } from './assistantAvatarOptions';
 
 const AssistantCardsSkeleton: React.FC = () => (
-    <div className="space-y-3">
+    <div className="space-y-v3-3">
         {[0, 1, 2].map(index => (
             <div
                 key={index}
-                className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-3 shadow-bottom-2-4 animate-pulse"
+                className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-v3-3 shadow-bottom-2-4 animate-pulse"
             >
                 <div className="h-4 w-28 bg-grayscale-100 rounded-full" />
                 <div className="h-5 w-3/4 bg-grayscale-100 rounded-full" />
@@ -57,7 +57,7 @@ const AssistantCardsSkeleton: React.FC = () => (
 );
 
 const EmptyState: React.FC<{ title: string; description: string }> = ({ title, description }) => (
-    <div className="rounded-[20px] border border-grayscale-200 bg-white p-8 text-center space-y-1 shadow-bottom-2-4">
+    <div className="rounded-[20px] border border-grayscale-200 bg-white p-8 text-center space-y-v3-1 shadow-bottom-2-4">
         <p className="text-base font-semibold text-grayscale-900">{title}</p>
         <p className="text-sm text-grayscale-600 leading-relaxed">{description}</p>
     </div>
@@ -304,7 +304,7 @@ const MyAssistantPageContent: React.FC = () => {
 
     return (
         <>
-            <div className="w-full max-w-[864px] mx-auto px-4 pt-4 pb-10 font-poppins space-y-7">
+            <div className="w-full max-w-[864px] mx-auto px-4 pt-4 pb-10 font-poppins space-y-v3-7">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
                         <AssistantPageMark />
@@ -363,7 +363,7 @@ const MyAssistantPageContent: React.FC = () => {
                     autonomyEnabled={flags.aiAgentAutonomyEnabled === true}
                 />
 
-                <section className="space-y-5">
+                <section className="space-y-v3-5">
                     <div className="flex items-end justify-between gap-4">
                         <div>
                             <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -398,7 +398,7 @@ const MyAssistantPageContent: React.FC = () => {
                                 }}
                                 className="assistant-filter-popover"
                             >
-                                <div className="w-[280px] rounded-[20px] border border-grayscale-200 bg-white p-4 shadow-bottom-2-4 space-y-4 font-poppins">
+                                <div className="w-[280px] rounded-[20px] border border-grayscale-200 bg-white p-4 shadow-bottom-2-4 space-y-v3-4 font-poppins">
                                     <div>
                                         <p className="text-xs font-medium text-grayscale-700 mb-2">
                                             Show
@@ -459,7 +459,7 @@ const MyAssistantPageContent: React.FC = () => {
                                                         'all' | LearnCardAssistantCardType
                                                 )
                                             }
-                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                         >
                                             {CARD_TYPE_FILTERS.map(option => (
                                                 <option key={option.value} value={option.value}>
@@ -476,7 +476,7 @@ const MyAssistantPageContent: React.FC = () => {
                     {cardsLoading ? (
                         <AssistantCardsSkeleton />
                     ) : cardsError ? (
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
                                 <IonIcon
                                     icon={alertCircleOutline}
@@ -508,7 +508,7 @@ const MyAssistantPageContent: React.FC = () => {
                             />
                         )
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             {activeCards.map(card => (
                                 <AssistantInboxCard
                                     key={card.id}

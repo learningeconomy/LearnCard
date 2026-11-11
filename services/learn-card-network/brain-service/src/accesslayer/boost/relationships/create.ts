@@ -1,4 +1,5 @@
 import { getAdminRole, getEmptyRole } from '@accesslayer/role/read';
+import type { Transaction } from 'neo4j-driver';
 import { CredentialInstance, BoostInstance, AppStoreListingInstance } from '@models';
 import { neogma } from '@instance';
 import { ProfileType } from 'types/profile';
@@ -6,9 +7,14 @@ import { clearDidWebCacheForChildProfileManagers } from './update';
 
 export const createBoostInstanceOfRelationship = async (
     credential: CredentialInstance,
-    boost: BoostInstance
+    boost: BoostInstance,
+    transaction?: Transaction
 ): Promise<void> => {
-    await credential.relateTo({ alias: 'instanceOf', where: { id: boost.id } });
+    await credential.relateTo({
+        alias: 'instanceOf',
+        where: { id: boost.id },
+        session: transaction,
+    });
 };
 
 export const createReceivedCredentialRelationship = async (

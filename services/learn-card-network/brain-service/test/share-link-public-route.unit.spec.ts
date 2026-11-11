@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TRPCError } from '@trpc/server';
+
 import type { ShareLinkPolicyResolver } from '@helpers/share-link-policy/types';
 import type { ShareLinkRecord } from '../src/models/ShareLink';
 import { SharePasscodeCapacityError } from '../src/helpers/share-link-passcode';
@@ -214,6 +216,283 @@ const makeCaller = (
 beforeEach(() => {
     rateLimits.enforceRateLimits.mockReset();
     rateLimits.enforceRateLimits.mockResolvedValue(undefined);
+});
+
+describe('guarded managed attachment chunks', () => {
+    const attachmentId = '5d02e240-7cae-499d-9b18-d477e6b9ebd2';
+    const request = { id: SHARE_ID, contentVersion: 2, attachmentId, chunkIndex: 0 };
+    const setup = (overrides: Partial<ShareLinkRecord> = {}) => {
+        let record = shareRecord({ attachmentId, attachmentChunkCount: 16, ...overrides });
+        // This fixture deliberately changes password/clock dependencies between
+        // requests to exercise invalidation; production dependencies stay readonly.
+        const dependencies: {
+            -readonly [
+                Key in keyof PublicShareLinkRouterDependencies
+            ]: PublicShareLinkRouterDependencies[Key];
+        } = { ...makeDependencies({ getShareLink: vi.fn(async () => record) }) };
+        const fetch = vi.fn(
+            async (tuple: {
+                namespace: string;
+                ownerProfileId: string;
+                shareId: string;
+                contentVersion: number;
+                objectId: string;
+                operationId: string;
+            }) => ({ ok: true as const, value: { ...contentProjection(record), ...tuple } })
+        );
+        dependencies.repository.fetchAttachmentChunk = fetch;
+        return {
+            dependencies,
+            fetch,
+            setRecord: (next: ShareLinkRecord) => {
+                record = next;
+            },
+            getRecord: () => record,
+        };
+    };
+
+    it('derives storage tuple from committed state without accepting caller capabilities', async () => {
+        const { dependencies, fetch } = setup();
+        await expect(makeCaller(dependencies).attachmentChunk(request)).resolves.toEqual({
+            ...request,
+            envelope,
+        });
+        expect(fetch).toHaveBeenCalledWith({
+            namespace: NAME,
+            ownerProfileId: 'owner-1',
+            shareId: SHARE_ID,
+            contentVersion: 2,
+            objectId: `resume-pdf-${attachmentId}-0`,
+            operationId: attachmentId,
+        });
+        await expect(
+            makeCaller(dependencies).attachmentChunk({
+                ...request,
+                ownerProfileId: 'someone-else',
+            } as never)
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect(fetch).toHaveBeenCalledOnce();
+        expect(dependencies.receipts.persist).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        { status: 'stopped' },
+        { status: 'pending' },
+        { contentState: 'content_missing' },
+        { expiresAt: '2026-09-20T00:00:00.000Z' },
+        { contentVersion: 3 },
+        { attachmentId: OPERATION_ID },
+        { attachmentChunkCount: 0 },
+        { namespace: 'other-deployment' },
+    ] as Partial<ShareLinkRecord>[])(
+        'withholds chunks for inactive/mismatched state %#',
+        async override => {
+            const { dependencies, fetch } = setup(override);
+            await expect(makeCaller(dependencies).attachmentChunk(request)).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+            expect(fetch).not.toHaveBeenCalled();
+        }
+    );
+
+    it.each(['stop', 'replace', 'expire', 'passcode'])(
+        'denies state change during remote fetch: %s',
+        async change => {
+            const state = setup();
+            state.fetch.mockImplementationOnce(async tuple => {
+                const original = state.getRecord();
+                const value = { ...contentProjection(original), ...tuple };
+                state.setRecord({
+                    ...original,
+                    ...(change === 'stop'
+                        ? { status: 'stopped' }
+                        : change === 'replace'
+                          ? { contentVersion: 3, version: 4 }
+                          : change === 'expire'
+                            ? { expiresAt: '2026-09-20T00:00:00.000Z' }
+                            : { passcodeHash: 'changed-verifier', version: 4 }),
+                });
+                return { ok: true as const, value };
+            });
+            await expect(
+                makeCaller(state.dependencies).attachmentChunk(request)
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        }
+    );
+
+    it('enforces passcode attempts once and uses a current-state bound grant for all 16 chunks', async () => {
+        const state = setup({ passcodeHash: 'secret-password-verifier' });
+        state.dependencies.verifyPasscode = vi.fn(
+            async (_hash, password) => password === 'correct-password'
+        );
+        const caller = makeCaller(state.dependencies);
+        await expect(
+            caller.attachmentChunk({ ...request, passcode: 'wrong-password' })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        const first = await caller.attachmentChunk({ ...request, passcode: 'correct-password' });
+        expect(first.accessToken).toBeDefined();
+        expect(first.accessToken).not.toContain('secret-password-verifier');
+        for (let chunkIndex = 1; chunkIndex < 16; chunkIndex++) {
+            await expect(
+                caller.attachmentChunk({ ...request, chunkIndex, accessToken: first.accessToken })
+            ).resolves.toMatchObject({ chunkIndex, envelope });
+        }
+        expect(state.dependencies.verifyPasscode).toHaveBeenCalledTimes(2);
+        expect(state.dependencies.passcodeAttempts?.reserve).toHaveBeenCalledTimes(2);
+        // Grant is bound to source IP and cannot replace a current password check from another source.
+        await expect(
+            makeCaller(state.dependencies, { sourceIp: '203.0.113.8' }).attachmentChunk({
+                ...request,
+                accessToken: first.accessToken,
+            })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        state.dependencies.now = () => new Date('2026-09-21T00:01:00.000Z');
+        await expect(
+            caller.attachmentChunk({ ...request, accessToken: first.accessToken })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+    });
+
+    it('renews grants across a five-minute download without repeating passcode work', async () => {
+        const state = setup({ passcodeHash: 'secret-password-verifier' });
+        state.dependencies.verifyPasscode = vi.fn(async () => true);
+        let elapsed = 0;
+        state.dependencies.now = () => new Date(Date.parse('2026-09-21T00:00:00Z') + elapsed);
+        const caller = makeCaller(state.dependencies);
+        const first = await caller.attachmentChunk({ ...request, passcode: 'correct-password' });
+        let accessToken = first.accessToken;
+        for (let chunkIndex = 1; chunkIndex < 16; chunkIndex++) {
+            elapsed += 20_000;
+            const next = await caller.attachmentChunk({ ...request, chunkIndex, accessToken });
+            expect(next.envelope).toEqual(envelope);
+            expect(next.accessToken).not.toBe(accessToken);
+            accessToken = next.accessToken;
+        }
+        expect(elapsed).toBe(300_000);
+        expect(state.dependencies.verifyPasscode).toHaveBeenCalledOnce();
+        expect(state.dependencies.passcodeAttempts?.reserve).toHaveBeenCalledOnce();
+        await expect(
+            makeCaller(state.dependencies, { sourceIp: '203.0.113.8' }).attachmentChunk({
+                ...request,
+                accessToken,
+                passcode: 'correct-password',
+            })
+        ).resolves.toMatchObject({ accessToken: expect.any(String) });
+        expect(state.dependencies.verifyPasscode).toHaveBeenCalledTimes(2);
+        await expect(
+            caller.attachmentChunk({ ...request, accessToken: first.accessToken })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+    });
+
+    it('withholds a grant that expires during retrieval and permits fresh passcode authorization', async () => {
+        const state = setup({ passcodeHash: 'verifier' });
+        state.dependencies.verifyPasscode = vi.fn(async () => true);
+        const caller = makeCaller(state.dependencies);
+        const first = await caller.attachmentChunk({ ...request, passcode: 'correct-password' });
+        state.fetch.mockImplementationOnce(async tuple => {
+            state.dependencies.now = () => new Date('2026-09-21T00:01:01Z');
+            return {
+                ok: true as const,
+                value: { ...contentProjection(state.getRecord()), ...tuple },
+            };
+        });
+        await expect(
+            caller.attachmentChunk({ ...request, chunkIndex: 1, accessToken: first.accessToken })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(
+            caller.attachmentChunk({ ...request, chunkIndex: 1, passcode: 'correct-password' })
+        ).resolves.toMatchObject({ chunkIndex: 1, accessToken: expect.any(String) });
+        // Reauthentication still observes owner policy and never revives a stopped link.
+        state.setRecord({ ...state.getRecord(), status: 'stopped' });
+        await expect(
+            caller.attachmentChunk({ ...request, passcode: 'correct-password' })
+        ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    });
+
+    it('allows several full downloads behind one IP without exhausting content reads', async () => {
+        const state = setup();
+        const counts = new Map<string, number>();
+        state.dependencies.enforceRateLimit = vi.fn(async ({ key, limit }) => {
+            const count = (counts.get(key) ?? 0) + 1;
+            counts.set(key, count);
+            if (count > limit) throw new TRPCError({ code: 'TOO_MANY_REQUESTS' });
+        });
+        const caller = makeCaller(state.dependencies);
+        // Five recipients share one NAT address; each resolves metadata and downloads 16 chunks.
+        for (let person = 0; person < 5; person++) {
+            await caller.resolve({ id: SHARE_ID });
+            await caller.content({ id: SHARE_ID });
+            for (let chunkIndex = 0; chunkIndex < 16; chunkIndex++)
+                await caller.attachmentChunk({ ...request, chunkIndex });
+        }
+        expect(state.fetch).toHaveBeenCalledTimes(80);
+        expect(Array.from(counts.values()).sort((a, b) => a - b)).toEqual([5, 5, 80]);
+        // The attachment budget remains finite and independent of the password budget.
+        for (let index = 80; index < 240; index++) await caller.attachmentChunk(request);
+        await expect(caller.attachmentChunk(request)).rejects.toMatchObject({
+            code: 'TOO_MANY_REQUESTS',
+        });
+        expect(state.fetch).toHaveBeenCalledTimes(240);
+    });
+
+    it.each([
+        [
+            new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'private detail' }),
+            'TOO_MANY_REQUESTS',
+        ],
+        [new Error('private backend detail'), 'SERVICE_UNAVAILABLE'],
+    ])(
+        'keeps rate-limit and backend failures distinct and fail-closed: %#',
+        async (error, code) => {
+            const state = setup();
+            state.dependencies.enforceRateLimit = vi.fn().mockRejectedValue(error);
+            await expect(
+                makeCaller(state.dependencies).attachmentChunk(request)
+            ).rejects.toMatchObject({ code });
+            expect(state.fetch).not.toHaveBeenCalled();
+        }
+    );
+
+    it('rejects an oversized immutable attachment response', async () => {
+        const { dependencies, fetch, getRecord } = setup();
+        fetch.mockImplementationOnce(async tuple => ({
+            ok: true as const,
+            value: {
+                ...contentProjection(getRecord()),
+                ...tuple,
+                envelope: { ...envelope, ct: Buffer.alloc(256 * 1024 + 17).toString('base64url') },
+            },
+        }));
+        await expect(makeCaller(dependencies).attachmentChunk(request)).rejects.toMatchObject({
+            code: 'NOT_FOUND',
+        });
+    });
+
+    it('rejects tampered grants and foreign immutable response tuples', async () => {
+        const state = setup({ passcodeHash: 'verifier' });
+        state.dependencies.verifyPasscode = vi.fn(async () => true);
+        const first = await makeCaller(state.dependencies).attachmentChunk({
+            ...request,
+            passcode: 'correct-password',
+        });
+        await expect(
+            makeCaller(state.dependencies).attachmentChunk({
+                ...request,
+                accessToken: `${first.accessToken}x`,
+            })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        state.setRecord({ ...state.getRecord(), passcodeHash: null });
+        state.fetch.mockImplementationOnce(async tuple => ({
+            ok: true as const,
+            value: {
+                ...contentProjection(state.getRecord()),
+                ...tuple,
+                ownerProfileId: 'wrong-owner',
+            },
+        }));
+        await expect(makeCaller(state.dependencies).attachmentChunk(request)).rejects.toMatchObject(
+            { code: 'NOT_FOUND' }
+        );
+    });
 });
 
 describe('public share-link resolve', () => {

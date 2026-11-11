@@ -12,7 +12,7 @@ export const AiPathwayContentListItemSkeleton: React.FC = () => {
             {/* Thumbnail skeleton */}
             <div
                 className="w-[80px] relative overflow-hidden rounded-[20px] shadow-3xl
-                            min-h-[80px] max-h-[80px] flex-shrink-0"
+                            min-h-[80px] max-h-[80px] shrink-0"
             >
                 <IonSkeletonText animated className="w-full h-full" />
             </div>
@@ -23,10 +23,10 @@ export const AiPathwayContentListItemSkeleton: React.FC = () => {
                            flex-col justify-between z-10 mr-[30px]"
             >
                 {/* Title */}
-                <IonSkeletonText animated className="w-[85%] h-[14px] rounded" />
+                <IonSkeletonText animated className="w-[85%] h-[14px] rounded-sm" />
 
                 {/* Source */}
-                <IonSkeletonText animated className="w-[40%] h-[12px] rounded" />
+                <IonSkeletonText animated className="w-[40%] h-[12px] rounded-sm" />
             </div>
         </div>
     );

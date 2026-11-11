@@ -1,11 +1,10 @@
 # SkillsCountSkills200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**count** | **int** |  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **count** | **int** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ skills_count_skills200_response_dict = skills_count_skills200_response_instance.
 # create an instance of SkillsCountSkills200Response from a dict
 skills_count_skills200_response_from_dict = SkillsCountSkills200Response.from_dict(skills_count_skills200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

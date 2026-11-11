@@ -1,0 +1,13 @@
+{
+    "name": "@workspace/lc-2226-labs",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "@learncard/init": "workspace:*",
+        "@learncard/lca-api-plugin": "workspace:*",
+        "@learncard/types": "workspace:*",
+        "@learncard/didkit-plugin": "workspace:*",
+        "jose": "^5.9.6",
+        "bs58": "^5.0.0"
+    }
+}

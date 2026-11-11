@@ -1,6 +1,6 @@
 import React from 'react';
-import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
-import { formatClrGpa } from './clr.helpers';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { formatClrGpa } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 const ClrTranscriptSummaryStats: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -8,7 +8,7 @@ const ClrTranscriptSummaryStats: React.FC<{
     const hasAny =
         model.summary.gpa ||
         model.summary.courseCount > 0 ||
-        model.summary.totalCreditsAvailable !== undefined ||
+        model.summary.creditTotals.length > 0 ||
         model.summary.explicitCompetencyCount > 0 ||
         model.summary.evidenceCount > 0;
 
@@ -29,9 +29,13 @@ const ClrTranscriptSummaryStats: React.FC<{
             {model.summary.courseCount > 0 && (
                 <Card title="Courses" value={model.summary.courseCount} />
             )}
-            {model.summary.totalCreditsAvailable !== undefined && (
-                <Card title="Credits" value={model.summary.totalCreditsAvailable} />
-            )}
+            {model.summary.creditTotals.map(total => (
+                <Card
+                    key={`${total.kind}-${total.unit ?? ''}`}
+                    title={`${total.unit ? `${total.unit} credits` : 'Credits'} ${total.kind === 'inferred' ? 'from description' : total.kind}`}
+                    value={total.amount}
+                />
+            ))}
             {model.summary.explicitCompetencyCount > 0 && (
                 <Card title="Competencies" value={model.summary.explicitCompetencyCount} />
             )}

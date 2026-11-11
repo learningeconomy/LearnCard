@@ -22,15 +22,17 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_get_boost200_response_claim_permissions import BoostGetBoost200ResponseClaimPermissions
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
     """
     BoostGetPaginatedBoosts200ResponseRecordsInner
     """ # noqa: E501
-    uri: Optional[StrictStr]
+    uri: StrictStr
     name: Optional[StrictStr] = None
     type: Optional[StrictStr] = None
     category: Optional[StrictStr] = None
+    created: Optional[StrictStr] = None
     status: Optional[StrictStr] = None
     auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
     meta: Optional[Dict[str, Any]] = None
@@ -38,7 +40,7 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
     default_permissions: Optional[BoostGetBoost200ResponseClaimPermissions] = Field(default=None, alias="defaultPermissions")
     allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["uri", "name", "type", "category", "status", "autoConnectRecipients", "meta", "claimPermissions", "defaultPermissions", "allowAnyoneToCreateChildren"]
+    __properties: ClassVar[List[str]] = ["uri", "name", "type", "category", "created", "status", "autoConnectRecipients", "meta", "claimPermissions", "defaultPermissions", "allowAnyoneToCreateChildren"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -51,7 +53,8 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -63,8 +66,7 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -77,9 +79,8 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -102,26 +103,6 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
-
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if type (nullable) is None
-        # and model_fields_set contains the field
-        if self.type is None and "type" in self.model_fields_set:
-            _dict['type'] = None
-
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
-            _dict['category'] = None
-
         return _dict
 
     @classmethod
@@ -133,18 +114,21 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "uri": obj.get("uri"),
             "name": obj.get("name"),
             "type": obj.get("type"),
             "category": obj.get("category"),
+            "created": obj.get("created"),
             "status": obj.get("status"),
             "autoConnectRecipients": obj.get("autoConnectRecipients"),
             "meta": obj.get("meta"),
             "claimPermissions": BoostGetBoost200ResponseClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
             "defaultPermissions": BoostGetBoost200ResponseClaimPermissions.from_dict(obj["defaultPermissions"]) if obj.get("defaultPermissions") is not None else None,
             "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

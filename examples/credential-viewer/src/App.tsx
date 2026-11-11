@@ -200,7 +200,7 @@ const AppInner: React.FC = () => {
                                 onChange={e =>
                                     setFilters(prev => ({ ...prev, search: e.target.value }))
                                 }
-                                className="w-full pl-9 pr-4 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                className="w-full pl-9 pr-4 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-xs text-gray-200 placeholder-gray-500 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                             />
                         </div>
 

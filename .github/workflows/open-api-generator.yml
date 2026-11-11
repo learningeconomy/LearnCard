@@ -6,6 +6,16 @@ on:
             affected:
                 required: true
                 type: string
+        secrets:
+            E2E_RUNNER_APP_ID:
+                description: 'Existing GitHub App used by release automation'
+                required: true
+            E2E_RUNNER_PRIVATE_KEY:
+                description: 'Private key for the existing release automation App'
+                required: true
+
+permissions:
+    contents: read
 
 env:
     working-directory: packages/open-api-lcn-clients
@@ -33,29 +43,18 @@ jobs:
                   git config --local user.name "github-actions[bot]"
                   git config --local user.email "github-actions[bot]@users.noreply.github.com"
 
-            - name: Cleanup old client
-              run: rm -rf ${{ env.working-directory }}/${{ matrix.generator-name }}-client/
-
-            - name: Generate new client
-              uses: openapi-generators/openapitools-generator-action@v1
-
-              with:
-                  generator: ${{ matrix.generator-name }}
-                  # Keep template changes explicit and covered by the security-floor contracts.
-                  generator-tag: v7.25.0
-                  openapi-url: https://network.learncard.com/docs/openapi.json
-                  command-args: -o ${{ env.working-directory }}/${{ matrix.generator-name }}-client/ --skip-validate-spec
-            - name: Remove generated GitHub metadata
-              run: rm -rf ${{ env.working-directory }}/${{ matrix.generator-name }}-client/.github
-
-            - name: Re-apply security dependency floors
-              if: matrix.generator-name == 'python'
-              run: bash ${{ env.working-directory }}/apply-security-floors.sh
-
             - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
+              uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
               with:
-                  bun-version: 1.3.14
+                  bun-version: 1.4.4
+
+            - name: Install pinned dependencies without service initialization
+              run: bun install --frozen-lockfile --ignore-scripts
+
+            - name: Export local schema and regenerate with pinned tools
+              # The script uses network-disabled containers, custom Python templates,
+              # and applies security floors before removing generated .github metadata.
+              run: bash ${{ env.working-directory }}/generate-python.sh
 
             - name: Get version from package.json
               id: package-version
@@ -63,9 +62,24 @@ jobs:
                   PACKAGE_VERSION="$(bun -e "console.log(require('./services/learn-card-network/brain-service/package.json').version)")"
                   echo "version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
 
+            # Mint after generation so the one-hour token is fresh for PR writes.
+            # These are CI credentials, separate from deployed-service runtime bundles.
+            - name: Generate GitHub App Token
+              id: app-token
+              uses: actions/create-github-app-token@v3
+              with:
+                  app-id: ${{ secrets.E2E_RUNNER_APP_ID }}
+                  private-key: ${{ secrets.E2E_RUNNER_PRIVATE_KEY }}
+                  owner: ${{ github.repository_owner }}
+                  repositories: ${{ github.event.repository.name }}
+                  permission-contents: write
+                  permission-pull-requests: write
+                  skip-token-revoke: 'false'
+
             - name: Create or update PR
               uses: peter-evans/create-pull-request@v7
               with:
+                  token: ${{ steps.app-token.outputs.token }}
                   commit-message: Update ${{ matrix.generator-name }}-client SDK to version ${{ steps.package-version.outputs.version }}
                   title: Update Open API Client SDKs to version ${{ steps.package-version.outputs.version }}
                   body: Generated OpenAPI client SDK for clients.

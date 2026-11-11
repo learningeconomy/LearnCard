@@ -12,6 +12,7 @@ interface MarkdownRendererProps {
 const codePlugin = createCodePlugin({ themes: ['dracula', 'dracula'] });
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ children }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     return <Streamdown plugins={{ code: codePlugin as any, math }}>{children ?? ''}</Streamdown>;
 };
 

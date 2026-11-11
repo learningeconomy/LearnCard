@@ -20,9 +20,10 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.profile_create_service_profile_request_display import ProfileCreateServiceProfileRequestDisplay
+from openapi_client.models.profile_create_profile_request_display import ProfileCreateProfileRequestDisplay
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ProfileManagerCreateManagedProfileRequest(BaseModel):
     """
@@ -33,33 +34,69 @@ class ProfileManagerCreateManagedProfileRequest(BaseModel):
     short_bio: Optional[StrictStr] = Field(default='', description="Short bio for the profile.", alias="shortBio")
     bio: Optional[StrictStr] = Field(default='', description="Longer bio for the profile.")
     is_private: Optional[StrictBool] = Field(default=None, description="Whether the profile is private or not and shows up in search results.", alias="isPrivate")
+    profile_visibility: Optional[StrictStr] = Field(default='public', description="Profile visibility: 'public', 'connections_only', or 'private'.", alias="profileVisibility")
+    show_email: Optional[StrictBool] = Field(default=False, description="Whether to show email to connections.", alias="showEmail")
+    allow_connection_requests: Optional[StrictStr] = Field(default='anyone', description="Who can send connection requests: 'anyone' or 'invite_only'.", alias="allowConnectionRequests")
     email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
     image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
     hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
+    linked_in_organization_id: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="Numeric LinkedIn organization ID.", alias="linkedInOrganizationId")
     website_link: Optional[StrictStr] = Field(default=None, description="Website link for the profile.", alias="websiteLink")
     is_service_profile: Optional[StrictBool] = Field(default=False, description="Whether the profile is a service profile or not.", alias="isServiceProfile")
     type: Optional[StrictStr] = Field(default=None, description="Profile type: e.g. \"person\", \"organization\", \"service\".")
     notifications_webhook: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="URL to send notifications to.", alias="notificationsWebhook")
-    display: Optional[ProfileCreateServiceProfileRequestDisplay] = None
+    display: Optional[ProfileCreateProfileRequestDisplay] = None
     highlighted_credentials: Optional[Annotated[List[StrictStr], Field(max_length=5)]] = Field(default=None, description="Up to 5 unique boost URIs to highlight on the profile.", alias="highlightedCredentials")
     role: Optional[StrictStr] = Field(default='', description="Role of the profile: e.g. \"teacher\", \"student\".")
     dob: Optional[StrictStr] = Field(default='', description="Date of birth of the profile: e.g. \"1990-01-01\".")
     country: Optional[StrictStr] = Field(default=None, description="Country for the profile.")
+    locale: Optional[StrictStr] = Field(default=None, description="BCP-47 language tag (e.g. 'es', 'fr', 'ar') — the user's preferred language for server-sent notifications and emails.")
     approved: Optional[StrictBool] = Field(default=None, description="Approval status for the profile.")
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "email", "image", "heroImage", "websiteLink", "isServiceProfile", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "approved"]
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "email", "image", "heroImage", "linkedInOrganizationId", "websiteLink", "isServiceProfile", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "locale", "approved"]
 
-    @field_validator('notifications_webhook')
+    @field_validator('profile_visibility')
+    def profile_visibility_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['public', 'connections_only', 'private']):
+            raise ValueError("must be one of enum values ('public', 'connections_only', 'private')")
+        return value
+
+    @field_validator('allow_connection_requests')
+    def allow_connection_requests_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['anyone', 'invite_only']):
+            raise ValueError("must be one of enum values ('anyone', 'invite_only')")
+        return value
+
+    @field_validator('linked_in_organization_id', mode="before")
+    def linked_in_organization_id_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^\d+$", value):
+            raise ValueError(r"must validate the regular expression /^\d+$/")
+        return value
+
+    @field_validator('notifications_webhook', mode="before")
     def notifications_webhook_validate_regular_expression(cls, value):
         """Validates the regular expression"""
         if value is None:
             return value
 
-        if not re.match(r"^http.*", value):
+        if isinstance(value, str) and not re.match(r"^http.*", value):
             raise ValueError(r"must validate the regular expression /^http.*/")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -71,8 +108,7 @@ class ProfileManagerCreateManagedProfileRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -85,9 +121,8 @@ class ProfileManagerCreateManagedProfileRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -111,26 +146,33 @@ class ProfileManagerCreateManagedProfileRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "profileId": obj.get("profileId"),
             "displayName": obj.get("displayName") if obj.get("displayName") is not None else '',
             "shortBio": obj.get("shortBio") if obj.get("shortBio") is not None else '',
             "bio": obj.get("bio") if obj.get("bio") is not None else '',
             "isPrivate": obj.get("isPrivate"),
+            "profileVisibility": obj.get("profileVisibility") if obj.get("profileVisibility") is not None else 'public',
+            "showEmail": obj.get("showEmail") if obj.get("showEmail") is not None else False,
+            "allowConnectionRequests": obj.get("allowConnectionRequests") if obj.get("allowConnectionRequests") is not None else 'anyone',
             "email": obj.get("email"),
             "image": obj.get("image"),
             "heroImage": obj.get("heroImage"),
+            "linkedInOrganizationId": obj.get("linkedInOrganizationId"),
             "websiteLink": obj.get("websiteLink"),
             "isServiceProfile": obj.get("isServiceProfile") if obj.get("isServiceProfile") is not None else False,
             "type": obj.get("type"),
             "notificationsWebhook": obj.get("notificationsWebhook"),
-            "display": ProfileCreateServiceProfileRequestDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
+            "display": ProfileCreateProfileRequestDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
             "highlightedCredentials": obj.get("highlightedCredentials"),
             "role": obj.get("role") if obj.get("role") is not None else '',
             "dob": obj.get("dob") if obj.get("dob") is not None else '',
             "country": obj.get("country"),
+            "locale": obj.get("locale"),
             "approved": obj.get("approved")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

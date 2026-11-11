@@ -12,6 +12,7 @@ import {
 const BulkBoostPreviewModal: React.FC<{
     csvData: BadgeDataRow[];
     imageTracking: ImageTrackingType;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     handlePreview: (csvRow: any) => void;
     handleDeleteRow: (rowIndex: number) => void;
 }> = ({ csvData, imageTracking, handlePreview, handleDeleteRow }) => {
@@ -53,11 +54,11 @@ const BulkBoostPreviewModal: React.FC<{
                 </div>
             </section>
 
-            <footer className="absolute bottom-0 p-[20px] bg-white bg-opacity-70 backdrop-blur-[5px] border-t-[1px] border-solid border-white w-full z-20">
+            <footer className="absolute bottom-0 p-[20px] bg-white/70  backdrop-blur-[5px] border-t border-solid border-white w-full z-20">
                 <div className="max-w-[600px] flex items-center justify-between mx-auto w-full gap-[10px]">
                     <button
                         onClick={closeModal}
-                        className="bg-white flex-1 p-[7px] text-grayscale-900 font-poppins text-[17px] rounded-[30px] border-[1px] border-solid border-grayscale-200 shadow-button-bottom h-[44px]"
+                        className="bg-white flex-1 p-[7px] text-grayscale-900 font-poppins text-[17px] rounded-[30px] border border-solid border-grayscale-200 shadow-button-bottom h-[44px]"
                     >
                         Close
                     </button>

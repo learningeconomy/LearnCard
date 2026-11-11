@@ -1,0 +1,97 @@
+name: OpenAPI Python contracts
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+        paths:
+            - 'packages/open-api-lcn-clients/**'
+            - '.github/workflows/open-api*.yml'
+            - '.github/tests/test-sdk-security-floors.test.sh'
+            - 'services/learn-card-network/brain-service/src/openapi.ts'
+            - 'services/learn-card-network/brain-service/src/routes/**'
+            - 'services/learn-card-network/brain-service/scripts/export-openapi.ts'
+            - 'services/learn-card-network/brain-service/scripts/offline-schema-environment.ts'
+            - 'services/learn-card-network/brain-service/scripts/verify-python-contracts.ts'
+            - 'packages/learn-card-types/src/**'
+    merge_group:
+        types: [checks_requested]
+
+permissions:
+    contents: read
+
+jobs:
+    python-dependency-resolution:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version: ['3.11', '3.12']
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+                  persist-credentials: false
+            - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: Test regeneration security floors
+              run: bash .github/tests/test-sdk-security-floors.test.sh
+            - name: Resolve runtime and test dependencies together (including transitives)
+              run: |
+                  python -m pip install --dry-run --ignore-installed --report "$RUNNER_TEMP/python-resolution.json" \
+                    ./packages/open-api-lcn-clients/python-client \
+                    -r packages/open-api-lcn-clients/python-client/test-requirements.txt
+                  python - "$RUNNER_TEMP/python-resolution.json" <<'PYTHON'
+                  import json
+                  import sys
+                  from pip._vendor.packaging.version import Version
+                  report = json.load(open(sys.argv[1]))
+                  versions = {item['metadata']['name'].lower(): item['metadata']['version'] for item in report['install']}
+                  for name, floor in [('filelock', '4.2.1'), ('virtualenv', '21.14.13')]:
+                      assert Version(versions[name]) >= Version(floor), (name, versions[name])
+                      print(f"Python {sys.version.split()[0]}: {name}=={versions[name]}")
+                  PYTHON
+
+    python-contracts:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - name: Checkout exact head
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+                  persist-credentials: false
+            - name: Setup pinned Bun
+              uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+              with:
+                  bun-version: 1.4.4
+            - name: Setup pinned Python
+              uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+              with:
+                  python-version: 3.14.7
+            - name: Install pinned dependencies without service initialization
+              run: |
+                  bun install --frozen-lockfile --ignore-scripts
+                  python -m pip install --no-deps -r packages/open-api-lcn-clients/verification-requirements.txt
+            - name: Export checked-out source without network or credentials
+              run: |
+                  docker run --rm --network none --user "$(id -u):$(id -g)" \
+                    -v "$GITHUB_WORKSPACE:/workspace:ro" -v "$RUNNER_TEMP:/artifacts" \
+                    -w /workspace/services/learn-card-network/brain-service \
+                    oven/bun@sha256:1d22548f177f4ff38e0c15baa3c2c46c6c2060ba2d1bc573bb4720b407548f1d \
+                    bun --conditions=development scripts/export-openapi.ts /artifacts/openapi.json
+            - name: Exercise public APIs through loopback-only HTTP transport
+              env:
+                  OPENAPI_SCHEMA: ${{ runner.temp }}/openapi.json
+                  CLIENT_CONTRACT_CAPTURE: ${{ runner.temp }}/client-capture.json
+              run: python -m unittest discover -s packages/open-api-lcn-clients/tests -v
+            - name: Validate prepared requests against actual source Zod contracts
+              run: |
+                  docker run --rm --network none --user "$(id -u):$(id -g)" \
+                    -v "$GITHUB_WORKSPACE:/workspace:ro" -v "$RUNNER_TEMP:/artifacts:ro" \
+                    -w /workspace/services/learn-card-network/brain-service \
+                    oven/bun@sha256:1d22548f177f4ff38e0c15baa3c2c46c6c2060ba2d1bc573bb4720b407548f1d \
+                    bun --conditions=development scripts/verify-python-contracts.ts /artifacts/client-capture.json
+            - name: Verify all generated Python syntax and imports
+              run: python packages/open-api-lcn-clients/tests/check_integrity.py

@@ -1,7 +1,7 @@
 {
     "name": "@learncard/didkit-plugin",
-    "version": "1.10.1",
-    "description": "",
+    "version": "1.10.10",
+    "description": "DIDKit (WASM) plugin for signing and verifying credentials and resolving DIDs.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/didkit-plugin.esm.js",

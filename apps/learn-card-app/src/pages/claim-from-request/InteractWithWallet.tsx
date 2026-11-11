@@ -157,7 +157,7 @@ const InteractWithWallet: React.FC<{
                         <img
                             src={brandMark}
                             alt="Brand mark"
-                            className="rounded-2xl h-16 w-16 shadow-sm border border-grayscale-200"
+                            className="rounded-2xl h-16 w-16 shadow-xs border border-grayscale-200"
                         />
                     </div>
 

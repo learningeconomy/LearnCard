@@ -52,7 +52,7 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                     Update Successful
                 </div>
 
-                <div className="text-center text-[22px] font-poppins text-grayscale-900 space-y-[4px]">
+                <div className="text-center text-[22px] font-poppins text-grayscale-900 space-y-v3-[4px]">
                     {(skillsCreated > 0 || tiersCreated > 0) && (
                         <p>
                             {skillsCreated > 0 && (

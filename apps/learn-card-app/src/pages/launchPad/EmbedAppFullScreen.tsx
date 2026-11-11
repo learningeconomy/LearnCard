@@ -10,9 +10,11 @@ import {
     IonTitle,
 } from '@ionic/react';
 
-import { getLogger, useIsOffline, connectivityStore, appendQueryParams } from 'learn-card-base';
+import { getLogger, useIsOffline, connectivityStore } from 'learn-card-base';
 import { Network } from '@capacitor/network';
 import { AppEmbedOfflineState } from './AppEmbedOfflineState';
+import { buildEmbedUrlWithPath } from './buildEmbedUrlWithPath';
+import type { VC, VP } from '@learncard/types';
 const log = getLogger('embed-app-full-screen');
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
@@ -46,6 +48,7 @@ export const EmbedAppFullScreen: React.FC = () => {
         appName?: string;
         launchConfig?: LaunchConfig;
         isInstalled?: boolean;
+        path?: string;
     }>();
     const { appId } = useParams<EmbedAppParams>();
     const [isLoading, setIsLoading] = useState(true);
@@ -79,11 +82,11 @@ export const EmbedAppFullScreen: React.FC = () => {
     const [pendingCredential, setPendingCredential] = useState<{
         credentialUri: string;
         boostUri?: string;
-        credential?: any; // LC-1644: pre-resolved VC/VP from APP_EVENT, avoids redundant wallet.read.get()
+        credential?: VC | VP; // LC-1644: pre-resolved VC/VP from APP_EVENT, avoids redundant wallet.read.get()
     } | null>(null);
 
     const handleCredentialIssued = useCallback(
-        (credentialUri: string, boostUri?: string, credential?: any) => {
+        (credentialUri: string, boostUri?: string, credential?: VC | VP) => {
             setPendingCredential({ credentialUri, boostUri, credential });
         },
         []
@@ -101,6 +104,7 @@ export const EmbedAppFullScreen: React.FC = () => {
 
     const embedUrl = queryParams.get('embedUrl') || history.location.state?.embedUrl;
     const appName = queryParams.get('appName') || history.location.state?.appName || 'Partner App';
+    const initialPath = queryParams.get('path') ?? history.location.state?.path;
 
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -108,24 +112,8 @@ export const EmbedAppFullScreen: React.FC = () => {
         (actionPath: string) => {
             if (!iframeRef.current || !embedUrl) return;
 
-            // Only allow relative paths — reject anything with a protocol (e.g. javascript:, data:)
-            if (/^[a-z][a-z0-9+.-]*:/i.test(actionPath)) return;
-
-            try {
-                const base = new URL(embedUrl);
-                const expectedOrigin = base.origin;
-                const safePath = actionPath.startsWith('/') ? actionPath : `/${actionPath}`;
-                base.pathname = base.pathname.replace(/\/$/, '') + safePath;
-
-                // Verify the constructed URL hasn't escaped to a different origin
-                if (base.origin !== expectedOrigin) return;
-
-                iframeRef.current.src = appendQueryParams(base.toString(), {
-                    lc_host_override: window.location.origin,
-                });
-            } catch {
-                // embedUrl is invalid — do not navigate
-            }
+            const next = buildEmbedUrlWithPath(embedUrl, actionPath, window.location.origin);
+            if (next) iframeRef.current.src = next;
         },
         [embedUrl]
     );
@@ -178,9 +166,8 @@ export const EmbedAppFullScreen: React.FC = () => {
         return null; // Will redirect via useEffect
     }
 
-    const embedUrlWithOverride = appendQueryParams(embedUrl, {
-        lc_host_override: window.location.origin,
-    });
+    const embedUrlWithOverride =
+        buildEmbedUrlWithPath(embedUrl, initialPath, window.location.origin) ?? undefined;
     return (
         <IonPage>
             <IonHeader>
@@ -221,7 +208,7 @@ export const EmbedAppFullScreen: React.FC = () => {
                     ) : (
                         <>
                             {isLoading && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 z-10">
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-linear-to-br/srgb from-indigo-50 to-blue-50 z-10">
                                     <div className="flex flex-col items-center gap-4">
                                         {/* Animated spinner */}
                                         <div className="relative">

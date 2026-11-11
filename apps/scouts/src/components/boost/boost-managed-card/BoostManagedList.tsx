@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useMemo } from 'react';
+import { useLocale } from '../../../i18n';
 
 import { useHistory } from 'react-router-dom';
 import { useLoadingLine } from '../../../stores/loadingStore';
@@ -45,6 +46,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     defaultImg,
     enableCreateButton = false,
 }) => {
+    useLocale();
     const history = useHistory();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -71,7 +73,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     const noSearchResults = searchResults?.length === 0;
     const searchResultsCount = searchResults?.length ?? 0;
 
-    const managedBoostsOnScreen = useOnScreen(managedBoostInfiniteScrollRef as any, '-100px', [
+    const managedBoostsOnScreen = useOnScreen(managedBoostInfiniteScrollRef, '-100px', [
         managedBoosts?.pages?.[0]?.records?.length,
     ]);
 
@@ -137,7 +139,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
         try {
             await managedBoostsRefetch?.();
         } catch (e) {
-            throw new Error('There was an error, please try again.');
+            throw new Error('There was an error, please try again.', { cause: e });
         }
     };
 
@@ -148,16 +150,16 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                 ? m['common.searchResults.managedCountOne']({ count: searchResultsCount })
                 : m['common.searchResults.managedCountOther']({ count: searchResultsCount })
             : noSearchResults
-            ? m['common.searchResults.noManaged']({ query: searchString })
-            : searchResultsCount === 1
-            ? m['common.searchResults.foundOne']({
-                  count: searchResultsCount,
-                  query: searchString,
-              })
-            : m['common.searchResults.foundOther']({
-                  count: searchResultsCount,
-                  query: searchString,
-              });
+              ? m['common.searchResults.noManaged']({ query: searchString })
+              : searchResultsCount === 1
+                ? m['common.searchResults.foundOne']({
+                      count: searchResultsCount,
+                      query: searchString,
+                  })
+                : m['common.searchResults.foundOther']({
+                      count: searchResultsCount,
+                      query: searchString,
+                  });
 
     const searchResultsElement = (
         <div className={`flex flex-col gap-[10px] mt-[6px] ${isCardView ? 'px-[12px]' : ''}`}>
@@ -243,7 +245,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                             </div>
                         )}
                         <div
-                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] z-[-50] ${bgFillerColor}`}
+                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] -z-50 ${bgFillerColor}`}
                         />
                     </IonCol>
                 </>

@@ -85,7 +85,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
 
     const handleActivityItemClick = (item: CredentialActivityRecord) => {
         newModal(<IssuanceDetailModal item={item} surface={surface} />, {
-            sectionClassName: '!max-w-[450px]',
+            sectionClassName: 'max-w-[450px]!',
         });
     };
 
@@ -116,7 +116,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                     {showExport && (
                         <button
                             onClick={() => setShowExportDialog(true)}
-                            className="flex items-center text-sm font-medium text-gray-600 p-[5px] border !border-solid border-gray-200 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors xs:mb-[5px]"
+                            className="flex items-center text-sm font-medium text-gray-600 p-[5px] border border-solid! border-gray-200 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors xs:mb-[5px]"
                         >
                             <Download className="w-4 h-4 mr-[5px]" />
                             Download CSV
@@ -135,7 +135,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                                     )
                                 }
                                 className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-8 py-[5px] text-sm
-                                           text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
+                                           text-gray-700 hover:bg-gray-100 focus:outline-hidden focus:ring-2 focus:ring-cyan-500
                                            focus:border-transparent cursor-pointer transition-colors"
                             >
                                 {getEventTypeFilterOptions().map(option => (
@@ -178,7 +178,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         {activity.map(item => {
                             const { eventType } = item;
                             const isInbox = isInboxActivity(item);
@@ -233,7 +233,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                                     className="w-full flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-left"
                                 >
                                     <div
-                                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bgColor}`}
+                                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${bgColor}`}
                                     >
                                         <Icon className={`w-4 h-4 ${textColor}`} />
                                     </div>
@@ -245,7 +245,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                                             </span>
 
                                             <span
-                                                className={`text-xs px-1.5 py-0.5 rounded ${badgeBg} ${badgeText}`}
+                                                className={`text-xs px-1.5 py-0.5 rounded-sm ${badgeBg} ${badgeText}`}
                                             >
                                                 {statusLabel}
                                             </span>
@@ -266,7 +266,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                                             )}
 
                                             {isInbox && (
-                                                <span className="text-xs px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">
+                                                <span className="text-xs px-1.5 py-0.5 rounded-sm bg-violet-100 text-violet-700">
                                                     Email
                                                 </span>
                                             )}
@@ -277,7 +277,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                                         </p>
                                     </div>
 
-                                    <div className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0">
+                                    <div className="text-xs text-gray-400 flex items-center gap-1 shrink-0">
                                         <Clock className="w-3 h-3" />
                                         {formatRelativeTime(item.timestamp)}
                                     </div>

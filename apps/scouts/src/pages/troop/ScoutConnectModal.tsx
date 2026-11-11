@@ -258,7 +258,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
 
                 {/* Copy to Clipboard */}
                 <IonItem lines="none" className="mt-2">
-                    <div className="flex flex-row items-center p-5 gap-[10px] w-full h-[70px] bg-[#EFF0F5] rounded-[15px] flex-none order-0 flex-grow-0">
+                    <div className="flex flex-row items-center p-5 gap-[10px] w-full h-[70px] bg-[#EFF0F5] rounded-[15px] flex-none order-0 grow-0">
                         <div className="flex flex-row items-center gap-[15px] h-[19px] flex-1 min-w-0 order-0">
                             {linkLoading ? (
                                 <p className="w-full min-w-0 h-[19px] font-['Noto_Sans'] font-normal text-[14px] leading-[19px] flex items-center text-[#6F7590] flex-none order-0 self-stretch truncate">
@@ -273,7 +273,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
 
                         <div
                             onClick={copyTroopLinkToClipBoard}
-                            className="w-[30px] h-[30px] flex-shrink-0 cursor-pointer"
+                            className="w-[30px] h-[30px] shrink-0 cursor-pointer"
                         >
                             <CopyStack className="w-full h-full text-[#18224E]" />
                         </div>
@@ -293,7 +293,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                                     copyTroopLinkToClipBoard={copyTroopLinkToClipBoard}
                                 />,
                                 {
-                                    sectionClassName: '!bg-transparent !shadow-none !max-w-[355px]',
+                                    sectionClassName: 'bg-transparent! shadow-none! max-w-[355px]!',
                                 },
                                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                             );
@@ -339,8 +339,8 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                                 />,
 
                                 {
-                                    className: '!p-0',
-                                    sectionClassName: '!p-0 !max-w-[450px]',
+                                    className: 'p-0!',
+                                    sectionClassName: 'p-0! max-w-[450px]!',
                                 },
                                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                             );

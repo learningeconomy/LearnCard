@@ -11,9 +11,10 @@ import {
     ToastTypeEnum,
     BoostPageViewMode,
     BoostCategoryOptionsEnum,
-    connectionPromptKeys,
+    resolveCredentialForClaim,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { claimIncomingCredential } from 'learn-card-base/helpers/claimIncomingCredential';
 
 import { VC, VP } from '@learncard/types';
 
@@ -90,6 +91,24 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             try {
                 setIsLoading(true);
                 setError(null);
+                setCredential(null);
+                setWalletReady(false);
+
+                // Classify using authenticated delivery metadata, not the pre-resolved payload.
+                if (
+                    credentialUri.startsWith('lc:network:') &&
+                    credentialUri.includes(':credential:')
+                ) {
+                    const wallet = await initWallet();
+                    const resolved = await resolveCredentialForClaim(wallet, credentialUri);
+                    if (!cancelled) {
+                        walletRef.current = wallet;
+                        setWalletReady(true);
+                        setCredential(resolved.credential);
+                        markCredentialResolved({ fastPath: false });
+                    }
+                    return;
+                }
 
                 if (preResolvedCredential) {
                     // Fast path — render immediately with what we have
@@ -142,7 +161,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 }
             } catch (err) {
                 log.error('Failed to resolve credential:', err);
-                if (!cancelled) setError(m['claim.modal.loadError']());
+                if (!cancelled) setError(m['claim.modal.verificationFailed']());
                 void flushSendCredentialFlowOnError({
                     phase: 'credential_resolve',
                     message: err instanceof Error ? err.message : String(err),
@@ -165,6 +184,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
         markClaimStarted();
 
         try {
+            if (error || !credential) return;
             // Belt-and-braces: if the fast path raced and walletRef hasn't been
             // populated yet, await initWallet here before the parallel block so
             // acceptCredential / queryNotifications can't silently no-op.
@@ -174,68 +194,17 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 if (wallet) setWalletReady(true);
             }
 
-            // LC-1644 Phase 2 perf: parallelize the local wallet write with the server-side
-            // accept + notification query. All three are independent:
-            //   - addVCtoWallet → local IndexedDB / wallet write
-            //   - acceptCredential → server-side state update via tRPC
-            //   - queryNotifications → server-side read for the matching notification record
-            // Previously these ran sequentially, costing ~500–1500ms per JIRA estimates. Running
-            // in parallel cuts the claim phase to roughly the slowest individual call.
-            //
-            // We use Promise.allSettled so a server-side hiccup on accept/query doesn't fail
-            // the whole claim — we already treated those as best-effort below.
-            const wallet = walletRef.current;
-
-            const [addResult, acceptResult, queryResult] = await Promise.allSettled([
-                addVCtoWallet({ uri: credentialUri }),
-                wallet ? wallet.invoke.acceptCredential(credentialUri) : Promise.resolve(),
-                wallet
-                    ? wallet.invoke.queryNotifications(
-                          { 'data.vcUris': credentialUri, archived: false },
-                          { limit: 1 }
-                      )
-                    : Promise.resolve(undefined),
-            ]);
-
-            // The local wallet write is the user-perceived "credential claimed" event — if it
-            // fails we have to surface the error. Server-side issues we just log.
-            if (addResult.status === 'rejected') throw addResult.reason;
-
-            if (acceptResult.status === 'rejected') {
-                log.warn('Failed to accept credential server-side:', acceptResult.reason);
-            } else if (
-                wallet &&
-                addResult.status === 'fulfilled' &&
-                addResult.value === true &&
-                acceptResult.value === true
-            ) {
-                // Prompt visibility depends on both the network acceptance and the
-                // credential being present locally. Invalidate only after both have
-                // succeeded so a fast local write cannot dismiss the prompt early.
-                await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
-            }
-
-            // Fire-and-forget the notification metadata update. The user already sees claim
-            // success — bookkeeping shouldn't block the UI.
-            if (
-                wallet &&
-                queryResult.status === 'fulfilled' &&
-                queryResult.value &&
-                typeof queryResult.value !== 'boolean' &&
-                queryResult.value.notifications?.[0]?._id
-            ) {
-                const notifId = queryResult.value.notifications[0]._id;
-                void wallet.invoke
-                    .updateNotificationMeta(notifId, {
-                        actionStatus: 'COMPLETED',
-                        read: true,
-                    })
-                    .catch((notifErr: unknown) => {
-                        log.warn('Failed to update notification:', notifErr);
-                    });
-            } else if (queryResult.status === 'rejected') {
-                log.warn('Failed to query notification:', queryResult.reason);
-            }
+            // LC-1644 Phase 2 perf: `claimIncomingCredential` parallelizes the local
+            // wallet write with the server-side accept + notification query, so the
+            // claim phase costs roughly the slowest individual call rather than their
+            // sum. Shared with guarded auto-accept flows (e.g. transcript arrival) so
+            // behaviour cannot drift between them.
+            await claimIncomingCredential({
+                uri: credentialUri,
+                wallet: walletRef.current,
+                addVCtoWallet,
+                queryClient,
+            });
 
             setClaimed(true);
             void markClaimCompleted();
@@ -246,6 +215,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             });
         } catch (err) {
             log.error('Failed to claim credential:', err);
+            if (credentialUri.startsWith('lc:network:')) {
+                setError(m['claim.modal.verificationFailed']());
+                setCredential(null);
+            }
             void flushSendCredentialFlowOnError({
                 phase: 'claim',
                 message: err instanceof Error ? err.message : String(err),
@@ -263,7 +236,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     // Success state
     if (claimed) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
                     <div className="text-center">
                         <div className="w-16 h-16 mx-auto mb-4 bg-emerald-100 rounded-full flex items-center justify-center">
@@ -293,7 +266,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     // Loading state
     if (isLoading) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8">
                     <div className="flex flex-col items-center justify-center">
                         <IonSpinner name="crescent" className="w-12 h-12 text-cyan-500" />
@@ -310,7 +283,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     // Error state
     if (error || !credential) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
                     <div className="text-center">
                         <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
@@ -354,7 +327,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     const credentialName = resolvedCredentialName || m['claim.modal.credentialFallback']();
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden max-h-[90vh] flex flex-col relative">
                 {/* Close button */}
                 <button
@@ -366,13 +339,13 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 </button>
 
                 {/* Header */}
-                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-white text-center flex-shrink-0">
+                <div className="bg-linear-to-br/srgb from-indigo-500 to-purple-600 p-4 text-white text-center shrink-0">
                     <h3 className="text-lg font-semibold">{m['claim.modal.earnedTitle']()}</h3>
 
                     <p className="text-white/80 text-sm mt-1 min-h-[20px]">
                         {showCredentialNameShimmer ? (
                             <span
-                                className="inline-block h-[14px] w-32 bg-white/30 rounded animate-pulse align-middle"
+                                className="inline-block h-[14px] w-32 bg-white/30 rounded-sm animate-pulse align-middle"
                                 aria-label={m['claim.modal.loadingNameAria']()}
                             />
                         ) : (
@@ -406,7 +379,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="p-4 border-t border-gray-200 flex-shrink-0 space-y-2">
+                <div className="p-4 border-t border-gray-200 shrink-0 space-y-v3-2">
                     <button
                         onClick={handleClaim}
                         disabled={isClaiming || claimed || !walletReady}

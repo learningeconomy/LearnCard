@@ -35,21 +35,30 @@ class TestContractsGetRequestStatusForProfile200Response(unittest.TestCase):
         model = ContractsGetRequestStatusForProfile200Response()
         if include_optional:
             return ContractsGetRequestStatusForProfile200Response(
-                profile = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
+                request_id = '',
+                requested_by = '',
+                external_reference_id = '',
+                requested_at = '',
+                message = '',
+                profile = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                     profile_id = '012', 
                     display_name = '', 
                     short_bio = '', 
                     bio = '', 
                     did = '', 
                     is_private = True, 
+                    profile_visibility = 'public', 
+                    show_email = True, 
+                    allow_connection_requests = 'anyone', 
                     email = '', 
                     image = '', 
                     hero_image = '', 
+                    linked_in_organization_id = '4', 
                     website_link = '', 
                     is_service_profile = True, 
                     type = '', 
                     notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
-                    display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
+                    display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_1_display.boost_getBoostRecipients_200_response_inner_to_anyOf_1_display(
                         background_color = '', 
                         background_image = '', 
                         fade_background_image = True, 
@@ -67,27 +76,32 @@ class TestContractsGetRequestStatusForProfile200Response(unittest.TestCase):
                     role = '', 
                     dob = '', 
                     country = '', 
+                    locale = '', 
                     approved = True, ),
                 status = 'pending',
                 read_status = 'unseen'
             )
         else:
             return ContractsGetRequestStatusForProfile200Response(
-                profile = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
+                profile = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                     profile_id = '012', 
                     display_name = '', 
                     short_bio = '', 
                     bio = '', 
                     did = '', 
                     is_private = True, 
+                    profile_visibility = 'public', 
+                    show_email = True, 
+                    allow_connection_requests = 'anyone', 
                     email = '', 
                     image = '', 
                     hero_image = '', 
+                    linked_in_organization_id = '4', 
                     website_link = '', 
                     is_service_profile = True, 
                     type = '', 
                     notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
-                    display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
+                    display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_1_display.boost_getBoostRecipients_200_response_inner_to_anyOf_1_display(
                         background_color = '', 
                         background_image = '', 
                         fade_background_image = True, 
@@ -105,6 +119,7 @@ class TestContractsGetRequestStatusForProfile200Response(unittest.TestCase):
                     role = '', 
                     dob = '', 
                     country = '', 
+                    locale = '', 
                     approved = True, ),
                 status = 'pending',
         )

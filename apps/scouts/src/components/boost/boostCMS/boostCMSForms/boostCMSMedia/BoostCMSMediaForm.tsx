@@ -79,7 +79,7 @@ export const BoostCMSMediaForm: React.FC<{
     const documents = getAttachments(BoostMediaOptionsEnum.document);
     const links = getAttachments(BoostMediaOptionsEnum.link);
     const noAttachments = state?.mediaAttachments?.length === 0;
-    const removePadding = noAttachments ? '!p-0' : '';
+    const removePadding = noAttachments ? 'p-0!' : '';
 
     const handleDeleteonClick = (attachment: BoostCMSMediaAttachment) => {
         setState(state => ({

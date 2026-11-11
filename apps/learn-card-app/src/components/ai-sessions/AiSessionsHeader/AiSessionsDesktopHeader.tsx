@@ -29,7 +29,7 @@ export const AiSessionsDesktopHeader: React.FC<{
 
     return (
         <div className="flex flex-col items-center justify-center absolute bg-white backdrop-blur-[5px] w-full top-0 left-0 z-[100]">
-            <div className="w-full flex flex-col max-w-[600px] relative ion-padding !pt-6">
+            <div className="w-full flex flex-col max-w-[600px] relative ion-padding pt-6!">
                 <div className="w-full flex items-center justify-between px-2">
                     <IonMenuToggle
                         onClick={() => {

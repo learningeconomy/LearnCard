@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGenerateClaimLinkRequestOptions(BaseModel):
     """
@@ -31,7 +32,8 @@ class BoostGenerateClaimLinkRequestOptions(BaseModel):
     __properties: ClassVar[List[str]] = ["ttlSeconds", "totalUses"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -43,8 +45,7 @@ class BoostGenerateClaimLinkRequestOptions(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -57,9 +58,8 @@ class BoostGenerateClaimLinkRequestOptions(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -69,14 +69,12 @@ class BoostGenerateClaimLinkRequestOptions(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if ttl_seconds (nullable) is None
-        # and model_fields_set contains the field
-        if self.ttl_seconds is None and "ttl_seconds" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.ttl_seconds is None and "ttl_seconds" in self.model_fields_set and "ttl_seconds" not in excluded_fields:
             _dict['ttlSeconds'] = None
 
-        # set to None if total_uses (nullable) is None
-        # and model_fields_set contains the field
-        if self.total_uses is None and "total_uses" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.total_uses is None and "total_uses" in self.model_fields_set and "total_uses" not in excluded_fields:
             _dict['totalUses'] = None
 
         return _dict
@@ -90,10 +88,12 @@ class BoostGenerateClaimLinkRequestOptions(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "ttlSeconds": obj.get("ttlSeconds"),
             "totalUses": obj.get("totalUses")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

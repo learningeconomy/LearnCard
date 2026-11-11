@@ -364,7 +364,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
 
     return (
         // <IonGrid className="flex flex-col items-center justify-center py-5 px-5">
-        <IonGrid className="relative flex flex-col items-center justify-center h-[100%] w-full">
+        <IonGrid className="relative flex flex-col items-center justify-center h-full w-full">
             <IonRow className={`max-w-[375px] py-[75px] ${customContainerClass}`}>
                 <IonRow className="flex items-center justify-center w-full">
                     <IonCol

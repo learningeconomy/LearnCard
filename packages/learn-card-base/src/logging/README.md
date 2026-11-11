@@ -15,6 +15,8 @@ const log = getLogger('my-feature');
 > ```ts
 > import { getLogger } from 'learn-card-base/src/logging/logger';
 > ```
+>
+> Logger initialization must not require built SDK artifacts. Operational extraction schemas live in `types/file-extraction.ts`; SDK-backed credential validators live in `types/file-extraction-credentials.ts` and are not runtime logging dependencies.
 
 ```ts
 const log = getLogger('my-feature');
@@ -174,6 +176,33 @@ log.warn('debug identity', { seed: '...', allowPii: true });
 ## Privacy gate
 
 When `bugReportsEnabled` is `false` (user opted out), **no events reach Sentry**. Console output is unaffected. The gate is wired automatically — `useSentryIdentify` calls `configureLoggerContext({ bugReportsEnabled })` whenever user preferences change.
+
+### File extraction diagnostics (LC-2202)
+
+`helpers/fileExtraction.ts` validates `/credentials/parse-file` responses before treating a result
+as empty or successful. Processing failures use application-owned codes and friendly copy, never
+the server's arbitrary error text. Extraction and persistence are separate operational events.
+
+These events require both bug-report opt-in and the authenticated-adult diagnostic collection gate.
+They capture the active profile at operation start and suppress settlement events after a profile
+switch or opt-out. Requests explicitly send that eligibility signal to AI Passport; a retry keeps
+its random operation ID and receives a fresh attempt ID.
+
+The feedback buffer accepts only the dedicated `file.extraction.completed` and
+`file.persistence.completed` schemas: bounded stage/outcome/code, counts, duration, file-kind/size
+bucket, operational UUIDs and audited version/model identifiers. It never retains filenames, file
+bytes, credentials, extracted text, provider messages or arbitrary fields. Unrecognized model
+identifiers become `unknown` in diagnostics. Other event sanitization stays unchanged.
+
+Client info events remain breadcrumbs plus the memory-only feedback buffer, not a new analytics
+store. AI Passport emits gated terminal operational logs; configure access and retention in the
+deployment's existing logging service. Nothing attaches an uploaded source artifact to feedback
+or authorizes its collection for investigation.
+
+Document persistence and attachment-opening catches log fixed events, not credentials, raw
+SDK errors or filenames. A bounded, memory-only attempt cache keeps correlation through manager
+close/reopen; a new app session starts a new operation. If an earlier operation's diagnostic
+owner is unknown or evicted, its retry stays opted out rather than rebinding to another profile.
 
 ---
 

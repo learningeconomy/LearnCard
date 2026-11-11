@@ -145,7 +145,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                 {m['aiInsights.averageSalaries']()}
             </h2>
 
-            <div className="rounded-[10px] border-[1px] border-solid border-grayscale-200 bg-grayscale-50 p-[10px] flex flex-col gap-[10px] items-start">
+            <div className="rounded-[10px] border border-solid border-grayscale-200 bg-grayscale-50 p-[10px] flex flex-col gap-[10px] items-start">
                 <div className="relative flex items-start gap-[10px] w-full" ref={roleMenuRef}>
                     <p className="min-w-0 text-[17px] font-bold text-grayscale-800 font-poppins truncate">
                         {title}

@@ -105,7 +105,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const handlePersonalizeMyAi = () => {
         newModal(
             <AiPassportPersonalizationContainer />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
@@ -235,7 +235,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                         />
                         {Number(unreadCount) >= 1 && (
                             <div
-                                className={`absolute !right-[-5px] !top-[-8px] text-xs font-bold ${colors.indicatorColor}`}
+                                className={`absolute right-[-5px]! top-[-8px]! text-xs font-bold ${colors.indicatorColor}`}
                             >
                                 {unreadCount}
                             </div>

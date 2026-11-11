@@ -252,8 +252,8 @@ const AvatarFallbackMatrix: React.FC<{ matrixType: AvatarFallbackMatrixType }> =
 
     return (
         <div className="bg-grayscale-100 min-h-screen p-8">
-            <div className="mx-auto max-w-[1200px] space-y-8">
-                <div className="space-y-2">
+            <div className="mx-auto max-w-[1200px] space-y-v3-8">
+                <div className="space-y-v3-2">
                     <h1 className="text-xl font-semibold text-grayscale-900 font-poppins">
                         {heading}
                     </h1>
@@ -267,9 +267,9 @@ const AvatarFallbackMatrix: React.FC<{ matrixType: AvatarFallbackMatrixType }> =
                     {matrixCases.map(testCase => (
                         <section
                             key={testCase.title}
-                            className="rounded-[28px] bg-white p-6 shadow-[0_18px_50px_rgba(24,34,78,0.12)] space-y-4"
+                            className="rounded-[28px] bg-white p-6 shadow-[0_18px_50px_rgba(24,34,78,0.12)] space-y-v3-4"
                         >
-                            <div className="space-y-1">
+                            <div className="space-y-v3-1">
                                 <h2 className="text-lg font-semibold text-grayscale-900 font-poppins">
                                     {testCase.title}
                                 </h2>

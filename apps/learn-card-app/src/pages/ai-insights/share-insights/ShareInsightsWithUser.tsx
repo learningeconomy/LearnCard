@@ -51,7 +51,7 @@ export const ShareInsightsWithUser: React.FC<{
             closeModal();
             newModal(
                 <AiInsightsParentConsent targetProfile={_targetProfile} />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
             return;
@@ -93,7 +93,9 @@ export const ShareInsightsWithUser: React.FC<{
                         targetName: _targetProfile?.displayName ?? '',
                     }}
                     components={[
+                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                         <span className="font-semibold" />,
+                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                         <span className="font-semibold" />,
                     ]}
                 />
@@ -133,7 +135,7 @@ export const ShareInsightsWithUser: React.FC<{
 
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-grayscale-50 !max-h-[100px]"
+                className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-grayscale-50/60 max-h-[100px]!"
             >
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex items-center gap-2 justify-between max-w-[600px] ion-padding">

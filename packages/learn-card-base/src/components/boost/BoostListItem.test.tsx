@@ -138,3 +138,20 @@ describe('BoostListItem', () => {
         expect(onClick).not.toHaveBeenCalled();
     });
 });
+
+describe('expired credential visibility', () => {
+    it.each(['expirationDate', 'validUntil'])(
+        'keeps the row readable and marks %s expiry in regular and compact lists',
+        expirationField => {
+            const expired = { ...credential, [expirationField]: '2000-01-01T00:00:00Z' };
+            const { rerender } = render(
+                <BoostListItem credential={expired} title="Professional license" />
+            );
+            expect(screen.getByText('Professional license')).toBeTruthy();
+            expect(screen.getByText(/credential.lifecycle.expired/)).toBeTruthy();
+            rerender(<BoostListItem credential={expired} title="Professional license" compact />);
+            expect(screen.getByText('Professional license')).toBeTruthy();
+            expect(screen.getByText(/credential.lifecycle.expired/)).toBeTruthy();
+        }
+    );
+});

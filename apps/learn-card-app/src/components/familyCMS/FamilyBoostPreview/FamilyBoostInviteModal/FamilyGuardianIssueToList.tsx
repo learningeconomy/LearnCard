@@ -49,7 +49,7 @@ const FamilyGuardianIssueToList: React.FC<{
                 contact={contact}
                 key={index}
                 mode={BoostAddressBookEditMode.delete}
-                customListItemStyles="border-b-solid border-b-grayscale-100 border-b-2 !py-4"
+                customListItemStyles="border-b-solid border-b-grayscale-100 border-b-2 py-4!"
             />
         );
     });
@@ -98,11 +98,8 @@ const FamilyGuardianIssueToList: React.FC<{
                         <p className="boost-issue-to-text font-poppins text-2xl text-grayscale-900">
                             {m['family.guardianInvite.inviteGuardians']()}
                         </p>
-                        <div
-                            className="flex-shrink-0 cursor-pointer"
-                            onClick={() => handleOpenSearch()}
-                        >
-                            <Plus className="text-grayscale-900 round-bottom-shadow-btn w-[50px] h-[50px] flex-shrink-0 p-[8px] flex justify-center items-center" />
+                        <div className="shrink-0 cursor-pointer" onClick={() => handleOpenSearch()}>
+                            <Plus className="text-grayscale-900 round-bottom-shadow-btn w-[50px] h-[50px] shrink-0 p-[8px] flex justify-center items-center" />
                         </div>
                     </div>
                 </IonCol>
@@ -120,14 +117,14 @@ const FamilyGuardianIssueToList: React.FC<{
                         <div className="boost-issue-container w-full flex items-center justify-center max-w-[600px]">
                             <button
                                 onClick={handleCancel}
-                                className="flex flex-1 items-center font-medium justify-center bg-grayscale-200 rounded-full my-[20px] px-[18px] py-[12px] text-grayscale-900 font-poppins text-xl w-full shadow-lg normal tracking-wide disabled:opacity-[50%] mr-2"
+                                className="flex flex-1 items-center font-medium justify-center bg-grayscale-200 rounded-full my-[20px] px-[18px] py-[12px] text-grayscale-900 font-poppins text-xl w-full shadow-lg normal tracking-wide disabled:opacity-50 mr-2"
                             >
                                 {m['common.cancel']()}
                             </button>
                             <button
                                 onClick={handleInviteGuardians}
-                                className={`flex flex-1 items-center font-medium justify-center bg-${primaryColor} rounded-full my-[20px] px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide disabled:opacity-[50%] ${
-                                    isLoading ? 'opacity-[50%]' : ''
+                                className={`flex flex-1 items-center font-medium justify-center bg-${primaryColor} rounded-full my-[20px] px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide disabled:opacity-50 ${
+                                    isLoading ? 'opacity-50' : ''
                                 }`}
                                 disabled={state?.issueTo?.length === 0}
                             >

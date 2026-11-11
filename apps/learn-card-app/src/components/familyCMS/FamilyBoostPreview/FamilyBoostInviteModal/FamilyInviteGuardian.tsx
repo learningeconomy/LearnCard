@@ -267,10 +267,10 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
 
     return (
         <IonPage>
-            <ModalLayout handleOnClick={handleCloseModal} containerClass="!pt-6">
+            <ModalLayout handleOnClick={handleCloseModal} containerClass="pt-6!">
                 <div className="w-full">
                     <FamilyCrest
-                        containerClassName="z-9999 !mt-[65px]"
+                        containerClassName="z-9999 mt-[65px]!"
                         imageClassName="w-[90px]"
                         familyName={familyName}
                         thumbnail={thumbnail}
@@ -300,7 +300,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                                     presentClaimQRCode();
                                 }}
                                 disabled={isLinkLoading}
-                                className="w-full flex items-center justify-between px-2 border-b-grayscale-200 py-4 border-solid border-b-[1px]"
+                                className="w-full flex items-center justify-between px-2 border-b-grayscale-200 py-4 border-solid border-b"
                             >
                                 <div className="flex flex-col items-start justify-center">
                                     <p
@@ -327,7 +327,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                                     handleShare();
                                 }}
                                 disabled={isLinkLoading}
-                                className="w-full flex items-center justify-between px-2 border-b-grayscale-200 border-solid border-b-[1px] py-4"
+                                className="w-full flex items-center justify-between px-2 border-b-grayscale-200 border-solid border-b py-4"
                             >
                                 <div className="flex flex-col items-start justify-center">
                                     <p

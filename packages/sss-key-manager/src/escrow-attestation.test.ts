@@ -22,7 +22,12 @@ describe('verifyEnclaveAttestation', () => {
                 { ...attestation(), publicKey: ` ${publicKey}\n` },
                 { mode: 'software', pinnedPublicKeys: [`\n${publicKey} `] }
             )
-        ).resolves.toEqual({ mode: 'software', keyId: 'test-key', publicKey });
+        ).resolves.toEqual({
+            mode: 'software',
+            keyId: 'test-key',
+            previousKeyIds: [],
+            publicKey,
+        });
     });
     it('rejects an unknown key', async () => {
         await expect(
@@ -48,7 +53,7 @@ describe('verifyEnclaveAttestation', () => {
                     { ...attestation(), mode },
                     { mode: 'nitro', pinnedMeasurements: [] }
                 )
-            ).rejects.toThrow('Nitro attestation verification is not implemented yet');
+            ).rejects.toThrow(mode === 'software' ? 'mode mismatch' : 'nonce');
         }
     );
     it.each([

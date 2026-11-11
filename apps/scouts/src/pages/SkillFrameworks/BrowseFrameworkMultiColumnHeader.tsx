@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useCanManageCompetencies } from '../../hooks/useCanManageCompetencies';
 
 import * as m from '../../paraglide/messages.js';
 import { IonInput, IonSpinner } from '@ionic/react';
@@ -56,7 +57,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
     changesExist,
     useShortText,
     openManageJsonModal,
-    isEdit,
+    isEdit: editRequested,
     setIsEdit,
     handleDisableEdit,
     frameworkInfo,
@@ -69,6 +70,8 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
     handleSaveSkills,
     disableSave,
 }) => {
+    const canManageCompetencies = useCanManageCompetencies();
+    const isEdit = canManageCompetencies && editRequested;
     const inputRef = useRef<HTMLIonInputElement>(null);
     const [showResults, setShowResults] = useState(false);
 
@@ -80,8 +83,8 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
     }, [search, showResults]);
 
     return (
-        <header className="flex items-center gap-[20px] p-[20px] border-b-[1px] border-grayscale-200 border-solid">
-            <div className="flex items-center gap-[15px] pl-[10px] pr-[20px] border-r-[1px] border-grayscale-200 border-solid">
+        <header className="flex items-center gap-[20px] p-[20px] border-b border-grayscale-200 border-solid">
+            <div className="flex items-center gap-[15px] pl-[10px] pr-[20px] border-r border-grayscale-200 border-solid">
                 <button
                     onClick={handleBack}
                     disabled={backDisabled}
@@ -111,7 +114,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                     <div className="relative">
                         <IonInput
                             ref={inputRef}
-                            className="bg-grayscale-100 text-grayscale-800 rounded-[10px] ion-padding font-poppins text-[14px] w-full !pr-[24px]"
+                            className="bg-grayscale-100 text-grayscale-800 rounded-[10px] ion-padding font-poppins text-[14px] w-full pr-[24px]!"
                             placeholder={m['skillFrameworks.searchPlh']()}
                             value={search}
                             onIonInput={e => {
@@ -182,7 +185,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                     {!isApproveFlow && (
                                         <button
                                             onClick={handleDisableEdit}
-                                            className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border-[1px] border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
+                                            className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
                                         >
                                             {m['common.cancel']()}
                                         </button>
@@ -220,11 +223,11 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                     </button>
                                 </>
                             )}
-                            {!isEdit && !isSelectSkillsFlow && (
+                            {canManageCompetencies && !isEdit && !isSelectSkillsFlow && (
                                 <>
                                     <button
                                         onClick={() => setIsEdit(true)}
-                                        className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border-[1px] border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
+                                        className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
                                     >
                                         <Pencil
                                             version={3}
@@ -236,7 +239,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                     </button>
                                     <button
                                         onClick={openManageJsonModal}
-                                        className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border-[1px] border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
+                                        className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
                                     >
                                         <CodeIcon
                                             className="w-[25px] h-[25px] shrink-0"

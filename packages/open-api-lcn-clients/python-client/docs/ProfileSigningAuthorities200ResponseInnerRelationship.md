@@ -1,13 +1,12 @@
 # ProfileSigningAuthorities200ResponseInnerRelationship
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** |  | 
-**did** | **str** |  | 
-**is_primary** | **bool** |  | [optional] 
+| Name           | Type     | Description | Notes      |
+| -------------- | -------- | ----------- | ---------- |
+| **name**       | **str**  |             |
+| **did**        | **str**  |             |
+| **is_primary** | **bool** |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ profile_signing_authorities200_response_inner_relationship_dict = profile_signin
 # create an instance of ProfileSigningAuthorities200ResponseInnerRelationship from a dict
 profile_signing_authorities200_response_inner_relationship_from_dict = ProfileSigningAuthorities200ResponseInnerRelationship.from_dict(profile_signing_authorities200_response_inner_relationship_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

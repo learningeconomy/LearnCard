@@ -16,23 +16,14 @@ export const FamilyBoostFooter: React.FC<{
     isFront?: boolean;
     setIsFront?: React.Dispatch<React.SetStateAction<boolean>>;
     handleShareBoostLink: () => void;
-    handleInviteModal: () => void;
     handleCloseModal: () => void;
-}> = ({
-    credential,
-    boostUri,
-    isFront,
-    setIsFront,
-    handleShareBoostLink,
-    handleInviteModal,
-    handleCloseModal,
-}) => {
+}> = ({ credential, boostUri, isFront, setIsFront, handleShareBoostLink, handleCloseModal }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
 
     return (
         <IonFooter
             mode="ios"
-            className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px]"
+            className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]!"
         >
             <IonToolbar color="transparent" mode="ios">
                 <div className="w-full flex items-center justify-center">
@@ -71,7 +62,6 @@ export const FamilyBoostFooter: React.FC<{
                                     <FamilyActionMenu
                                         credential={credential}
                                         boostUri={boostUri}
-                                        handleInviteModal={handleInviteModal}
                                         handleShareBoostLink={handleShareBoostLink}
                                     />
                                 );

@@ -41,7 +41,7 @@ const UnderstandStep: React.FC<{
     onComplete: () => void;
 }> = ({ onComplete }) => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.verifyCredentials.understandStep.title']()}
@@ -60,7 +60,7 @@ const UnderstandStep: React.FC<{
                         ]()}
                     </h4>
 
-                    <ul className="text-sm text-blue-700 space-y-1">
+                    <ul className="text-sm text-blue-700 space-y-v3-1">
                         <li>
                             {m[
                                 'developerPortal.guides.verifyCredentials.understandStep.verifyBullet1'
@@ -91,7 +91,7 @@ const UnderstandStep: React.FC<{
                         ]()}
                     </h4>
 
-                    <ul className="text-sm text-emerald-700 space-y-1">
+                    <ul className="text-sm text-emerald-700 space-y-v3-1">
                         <li>
                             {m[
                                 'developerPortal.guides.verifyCredentials.understandStep.useCaseBullet1'
@@ -159,7 +159,7 @@ const RequestStep: React.FC<{
     onBack: () => void;
 }> = ({ onComplete, onBack }) => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.verifyCredentials.requestStep.title']()}
@@ -170,7 +170,7 @@ const RequestStep: React.FC<{
                 </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-v3-4">
                 <div className="p-4 border border-gray-200 rounded-xl">
                     <h4 className="font-medium text-gray-800 mb-2">
                         {m[
@@ -299,7 +299,7 @@ if (result.valid) {
 }`;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.verifyCredentials.verifyStep.title']()}
@@ -416,7 +416,7 @@ const TestStep: React.FC<{
 }`;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                     {m['developerPortal.guides.verifyCredentials.testStep.title']()}
@@ -448,7 +448,7 @@ const TestStep: React.FC<{
                         'developerPortal.guides.verifyCredentials.testStep.credentialPlaceholder'
                     ]()}
                     rows={8}
-                    className="w-full p-4 bg-gray-900 text-gray-100 font-mono text-sm focus:outline-none resize-none"
+                    className="w-full p-4 bg-gray-900 text-gray-100 font-mono text-sm focus:outline-hidden resize-none"
                 />
 
                 <div className="p-4 border-t border-gray-200">
@@ -545,7 +545,7 @@ const TestStep: React.FC<{
             )}
 
             {/* Success state */}
-            <div className="p-6 bg-gradient-to-br from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl text-center">
+            <div className="p-6 bg-linear-to-br/srgb from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl text-center">
                 <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <Rocket className="w-8 h-8 text-emerald-600" />
                 </div>

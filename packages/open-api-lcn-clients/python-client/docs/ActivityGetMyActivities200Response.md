@@ -1,13 +1,12 @@
 # ActivityGetMyActivities200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**records** | [**List[ActivityGetMyActivities200ResponseRecordsInner]**](ActivityGetMyActivities200ResponseRecordsInner.md) |  | 
-**has_more** | **bool** |  | 
-**cursor** | **str** |  | [optional] 
+| Name         | Type                                                                                                          | Description | Notes      |
+| ------------ | ------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **records**  | [**List[ActivityGetMyActivities200ResponseRecordsInner]**](ActivityGetMyActivities200ResponseRecordsInner.md) |             |
+| **has_more** | **bool**                                                                                                      |             |
+| **cursor**   | **str**                                                                                                       |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ activity_get_my_activities200_response_dict = activity_get_my_activities200_resp
 # create an instance of ActivityGetMyActivities200Response from a dict
 activity_get_my_activities200_response_from_dict = ActivityGetMyActivities200Response.from_dict(activity_get_my_activities200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

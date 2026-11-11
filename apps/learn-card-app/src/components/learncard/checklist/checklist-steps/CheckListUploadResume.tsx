@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('check-list-upload-resume');
 
-import TrashBin from '../../../svgs/TrashBin';
-import DocIcon from 'learn-card-base/svgs/DocIcon';
 import ChecklistLoader from '../loader/ChecklistLoader';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import RefreshIcon from 'learn-card-base/svgs/RefreshIcon';
@@ -11,8 +9,12 @@ import CheckListItemSkeleton from './CheckListItemSkeleton';
 import CheckListManagerFooter from '../CheckListManager/CheckListManagerFooter';
 import CheckListCredentialReviewStep from './CheckListCredentialReviewStep';
 import { getWalletCategory } from './AchievementTypeSelectorModal';
+import { getField } from './credentialEditFields';
 
 import { useUploadFile } from '../../../../hooks/useUploadFile';
+import { FileUploadPersistenceError } from '../../../../hooks/uploadFile.types';
+import { readUploadedDocument } from './uploadedDocument.helpers';
+import type { UnsignedVC } from '@learncard/types';
 import {
     useWallet,
     useDeleteCredentialRecord,
@@ -24,16 +26,22 @@ import {
     UploadTypesEnum,
 } from 'learn-card-base';
 
-import { useTheme } from '../../../../theme/hooks/useTheme';
+import { UploadFileOutcomePanel } from './UploadFileOutcomePanel';
+import { UploadedOriginalDocument } from './UploadedOriginalDocument';
+import { UploadFileOutcomeList } from './UploadFileOutcomeList';
 import * as m from '../../../../paraglide/messages.js';
 import type { LCR } from 'learn-card-base/types/credential-records';
 
 export type ResumeType = {
     id: string;
+    uri: string;
+    artifactId: string;
     fileName: string;
     fileSize: string;
     fileType: string;
     type: string;
+    data: string;
+    unavailable?: boolean;
 };
 
 export const CheckListUploadResume: React.FC = () => {
@@ -50,6 +58,13 @@ export const CheckListUploadResume: React.FC = () => {
         setParsedCredentials,
         base64Data,
         rawArtifactCredential,
+        fileUploadOutcomes,
+        clearFileUploadOutcome,
+        retryFileExtraction,
+        retryFileSave,
+        isParsing,
+        isWaitingForCapacity,
+        cancelCapacityWait,
     } = useUploadFile(UploadTypesEnum.Resume);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
@@ -59,28 +74,29 @@ export const CheckListUploadResume: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [showReview, setShowReview] = useState<boolean>(false);
     const [isSavingSelected, setIsSavingSelected] = useState<boolean>(false);
-    const [savedCredentialCount, setSavedCredentialCount] = useState<number>(0);
     const [loaderDismissed, setLoaderDismissed] = useState<boolean>(false);
 
     const [resume, setResume] = useState<ResumeType | null>(null);
+    const [uploadOutcome, setUploadOutcome] = useState<{
+        message: string;
+        retryKind: 'extraction' | 'save';
+    } | null>(null);
 
-    const { colors } = useTheme();
-    const primaryColor = colors?.defaults?.primaryColor;
-
-    // Restore pending review from store on mount
+    const pendingReview = checklistStore.useTracked.pendingReview().resume;
     useEffect(() => {
-        const pending = checklistStore.get.pendingReview().resume;
-        if (pending && pending.credentials.length > 0) {
-            setParsedCredentials(pending.credentials);
+        if (pendingReview?.credentials.length) {
+            setParsedCredentials(pendingReview.credentials);
             setShowReview(true);
         }
-        handleSetResume();
+    }, [pendingReview]);
+    useEffect(() => {
+        void handleSetResume();
     }, []);
 
     useEffect(() => {
         if (base64Data && rawArtifactCredential) {
             fetchParsedCredentials(UploadTypesEnum.Resume)
-                .then(vcs => {
+                .then(async vcs => {
                     if (vcs.length > 0) {
                         // Persist to store so it survives unmount
                         checklistStore.set.setPendingReview('resume', {
@@ -89,33 +105,15 @@ export const CheckListUploadResume: React.FC = () => {
                         });
                         setShowReview(true);
                     } else {
-                        storeSelectedCredentials(
-                            [],
-                            rawArtifactCredential,
-                            UploadTypesEnum.Resume
-                        ).finally(() => handleSetResume());
+                        await handleSetResume();
                     }
                 })
-                .catch(error => {
-                    const msg =
-                        error?.message ||
-                        m['passport.buildMyLearnCard.managers.toastGenericError']();
-                    // Strip nested "Error: Error:" prefixes from the AI service
-                    const cleanMsg = msg.replace(/^(Error:\s*)+/i, '');
-                    presentToast(cleanMsg, {
-                        title: m['passport.buildMyLearnCard.managers.toastExtractFailed'](),
-                        hasDismissButton: true,
-                        type: ToastTypeEnum.Error,
-                        hasX: true,
-                        duration: 7000,
-                    });
-                    // Still store the raw artifact so the file isn't lost
-                    storeSelectedCredentials(
-                        [],
-                        rawArtifactCredential,
-                        UploadTypesEnum.Resume
-                    ).finally(() => handleSetResume());
-                });
+                .catch(() =>
+                    setUploadOutcome({
+                        message: m['passport.buildMyLearnCard.managers.toastGenericError'](),
+                        retryKind: 'extraction',
+                    })
+                );
         }
     }, [base64Data, rawArtifactCredential]);
 
@@ -124,7 +122,10 @@ export const CheckListUploadResume: React.FC = () => {
             setIsLoading(true);
             const wallet = await initWallet();
 
-            const record = await wallet.index.LearnCloud.get({ category: UploadTypesEnum.Resume });
+            const record = await wallet.index.LearnCloud.get(
+                { category: UploadTypesEnum.Resume },
+                { cache: 'skip-cache' }
+            );
 
             const recordUri = record?.[0]?.uri as string;
 
@@ -134,15 +135,13 @@ export const CheckListUploadResume: React.FC = () => {
                 return;
             }
 
-            const resumeCredential = await wallet.read.get(recordUri);
-
-            setResume({
-                id: record?.[0]?.id as string,
-                fileName: resumeCredential?.rawArtifact?.fileName,
-                fileSize: resumeCredential?.rawArtifact?.fileSize,
-                fileType: resumeCredential?.rawArtifact?.fileType,
-                type: UploadTypesEnum.Resume,
-            });
+            setResume(
+                await readUploadedDocument(
+                    { id: record[0].id, uri: recordUri },
+                    uri => wallet.read.get(uri),
+                    UploadTypesEnum.Resume
+                )
+            );
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
@@ -155,22 +154,28 @@ export const CheckListUploadResume: React.FC = () => {
         if (!previous) return;
 
         setResume(null);
+        const restoreOutcome = clearFileUploadOutcome(previous.artifactId);
 
         void (async () => {
             try {
                 const wallet = await initWallet();
-                const record = await wallet.index.LearnCloud.get({
-                    category: UploadTypesEnum.Resume,
-                });
+                const record = await wallet.index.LearnCloud.get(
+                    { id: previous.id },
+                    { cache: 'skip-cache' }
+                );
                 const targetRecord = record?.[0] as unknown as LCR | undefined;
 
-                if (!targetRecord) return;
+                if (!targetRecord || targetRecord.uri !== previous.uri) {
+                    await handleSetResume();
+                    return;
+                }
 
                 await deleteCredentialRecord(targetRecord);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteResume::error', error);
-                setResume(previous);
+                setResume(current => current ?? previous);
+                restoreOutcome();
                 presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
                     title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
                     hasDismissButton: true,
@@ -198,37 +203,50 @@ export const CheckListUploadResume: React.FC = () => {
 
     const triggerFileInput = () => fileInputRef.current?.click();
 
-    const handleReviewConfirm = async (selectedVcs: any[]) => {
+    const handleReviewConfirm = async (selectedVcs: UnsignedVC[]) => {
         setIsSavingSelected(true);
-        // Use rawArtifact from store if component was remounted
         const pending = checklistStore.get.pendingReview().resume;
-        const artifact = rawArtifactCredential || pending?.rawArtifact;
-        await storeSelectedCredentials(selectedVcs, artifact, UploadTypesEnum.Resume);
-        checklistStore.set.setPendingReview('resume', null);
-        setSavedCredentialCount(selectedVcs.length);
-        setShowReview(false);
-        await handleSetResume();
-        setIsSavingSelected(false);
+        const artifact = pending?.rawArtifact ?? rawArtifactCredential;
+        try {
+            if (!artifact) throw new Error('Document unavailable');
+            await storeSelectedCredentials(selectedVcs, artifact, UploadTypesEnum.Resume);
+            checklistStore.set.setPendingReview('resume', null);
+            setUploadOutcome(null);
+            setShowReview(false);
+            await handleSetResume();
+        } catch (error) {
+            setUploadOutcome({
+                message:
+                    error instanceof FileUploadPersistenceError
+                        ? error.message
+                        : m['passport.buildMyLearnCard.managers.saveOutcomeError'](),
+                retryKind: 'save',
+            });
+        } finally {
+            setIsSavingSelected(false);
+        }
     };
 
     const handleReviewBack = () => {
+        setUploadOutcome(null);
         // Keep pending review in store so user can return to it via the checklist
         setShowReview(false);
     };
 
-    const handleEditCredential = (index: number, editedVc: any) => {
+    const handleEditCredential = (index: number, editedVc: UnsignedVC) => {
         setParsedCredentials(prev => {
             const updated = prev.map((cred, i) => {
                 if (i !== index) return cred;
-                const achievementType = editedVc?.credentialSubject?.achievement?.achievementType;
-                const type = Array.isArray(achievementType) ? achievementType[0] : achievementType;
+                const type = getField(editedVc, 'credentialSubject.achievement.achievementType');
                 const category = type ? getWalletCategory(type) || undefined : undefined;
                 return {
                     ...cred,
                     vc: editedVc,
                     metadata: {
                         ...cred.metadata,
-                        name: editedVc?.credentialSubject?.achievement?.name || cred.metadata?.name,
+                        name:
+                            getField(editedVc, 'credentialSubject.achievement.name') ||
+                            cred.metadata?.name,
                         ...(category ? { category } : {}),
                     },
                 };
@@ -247,63 +265,63 @@ export const CheckListUploadResume: React.FC = () => {
         : m['passport.buildMyLearnCard.managers.addButton']();
     buttonText = isUploading ? m['passport.buildMyLearnCard.managers.uploading']() : buttonText;
     const buttonIcon = resume ? (
-        <RefreshIcon className={`w-[25px] h-[26px] text-${primaryColor} mr-2`} />
+        <RefreshIcon className="w-[25px] h-[26px] text-grayscale-700 mr-2" />
     ) : (
         <UploadIcon className="w-[25px] h-[26px] text-white mr-2" />
     );
 
     return (
         <>
-            {showReview ? (
-                <CheckListCredentialReviewStep
-                    credentials={parsedCredentials}
-                    fileType={UploadTypesEnum.Resume}
-                    onConfirm={handleReviewConfirm}
-                    onBack={handleReviewBack}
-                    onEditCredential={handleEditCredential}
-                    isLoading={isSavingSelected}
+            {uploadOutcome && (
+                <UploadFileOutcomePanel
+                    message={uploadOutcome.message}
+                    retryKind={uploadOutcome.retryKind}
                 />
+            )}
+            {showReview ? (
+                <>
+                    <CheckListCredentialReviewStep
+                        credentials={parsedCredentials}
+                        fileType={UploadTypesEnum.Resume}
+                        onConfirm={handleReviewConfirm}
+                        onBack={handleReviewBack}
+                        onEditCredential={handleEditCredential}
+                        isLoading={isSavingSelected}
+                    />
+                </>
             ) : (
                 <>
-                    {(isSaving || checklistStore.get.isParsing().resume) && !loaderDismissed && (
+                    {isParsing && !isSaving && !loaderDismissed && (
                         <ChecklistLoader
+                            waitingForCapacity={isWaitingForCapacity}
+                            onCancelWait={cancelCapacityWait}
                             fileType={UploadTypesEnum.Resume}
                             onDismiss={() => setLoaderDismissed(true)}
                         />
                     )}
-                    <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
+                    <div className="w-full rounded-[20px] bg-white p-6 mt-4 font-poppins shadow-button-bottom">
                         <div className="flex flex-col items-start justify-center py-2 w-full">
-                            <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
+                            <h4 className="text-xl font-semibold text-grayscale-900 text-left mb-2">
                                 {m['passport.buildMyLearnCard.managers.resume.title']()}
                             </h4>
-                            <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
+                            <p className="text-sm text-grayscale-600 text-left mb-4">
                                 {m['passport.buildMyLearnCard.managers.resume.description']()}
                             </p>
 
-                            {savedCredentialCount > 0 && (
-                                <div className="w-full flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 mb-4">
-                                    <svg
-                                        className="w-4 h-4 text-emerald-600 shrink-0"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        strokeWidth={2.5}
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M5 13l4 4L19 7"
-                                        />
-                                    </svg>
-                                    <p className="text-xs text-emerald-700 font-medium">
-                                        {m['passport.buildMyLearnCard.managers.credentialsSaved']({
-                                            count: savedCredentialCount,
-                                        })}
-                                    </p>
-                                </div>
-                            )}
+                            <UploadFileOutcomeList
+                                outcomes={fileUploadOutcomes}
+                                fileType={UploadTypesEnum.Resume}
+                                retryExtraction={retryFileExtraction}
+                                retrySave={retryFileSave}
+                                onExtracted={credentials => {
+                                    setParsedCredentials(credentials);
+                                    setShowReview(true);
+                                }}
+                                onSettled={() => void handleSetResume()}
+                                disabled={isParsing || isSavingSelected || isSaving}
+                            />
 
-                            {loaderDismissed && checklistStore.get.isParsing().resume && (
+                            {loaderDismissed && isParsing && !isSaving && (
                                 <div className="w-full flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2.5 mb-4">
                                     <svg
                                         className="w-4 h-4 text-indigo-500 shrink-0 animate-spin"
@@ -325,10 +343,23 @@ export const CheckListUploadResume: React.FC = () => {
                                         />
                                     </svg>
                                     <p className="text-xs text-indigo-700 font-medium">
-                                        {m[
-                                            'passport.buildMyLearnCard.managers.resume.processingBg'
-                                        ]()}
+                                        {isWaitingForCapacity
+                                            ? m[
+                                                  'passport.buildMyLearnCard.loader.waitingForCapacity'
+                                              ]()
+                                            : m[
+                                                  'passport.buildMyLearnCard.managers.resume.processingBg'
+                                              ]()}
                                     </p>
+                                    {isWaitingForCapacity && (
+                                        <button
+                                            type="button"
+                                            onClick={cancelCapacityWait}
+                                            className="ml-auto text-xs text-grayscale-700 hover:text-grayscale-900"
+                                        >
+                                            {m['common.cancel']()}
+                                        </button>
+                                    )}
                                 </div>
                             )}
 
@@ -336,55 +367,58 @@ export const CheckListUploadResume: React.FC = () => {
                                 type="file"
                                 accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg,image/webp"
                                 onChange={async e => {
+                                    setUploadOutcome(null);
                                     setLoaderDismissed(false);
                                     await getFile(e, UploadTypesEnum.Resume);
                                 }}
                                 ref={fileInputRef}
                                 style={{ display: 'none' }}
                             />
-
-                            <button
-                                disabled={isUploading || isLoading}
-                                onClick={triggerFileInput}
-                                className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] ${
-                                    resume
-                                        ? `bg-grayscale-100 text-${primaryColor}`
-                                        : `bg-${primaryColor} text-white`
-                                }`}
-                            >
-                                {buttonIcon}
-                                {buttonText}
-                            </button>
                         </div>
 
                         {isLoading && <CheckListItemSkeleton />}
 
                         {resume && !isLoading && (
-                            <div className="flex items-center justify-between w-full mt-4 relative pb-4">
-                                <div className="flex items-center justify-start overflow-hidden">
-                                    <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />
-                                    <div className="flex flex-col overflow-hidden min-w-0 pr-4">
-                                        <p className="text-grayscale-800 text-sm font-semibold truncate">
-                                            {resume.fileName}
-                                        </p>
-                                        <p className="text-xs text-grayscale-600">
-                                            {resume.fileType} • {resume.fileSize}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={confirmDelete}
-                                    className="bg-white overflow-hidden flex items-center justify-center rounded-full shadow-bottom p-2 min-h-[45px] min-w-[45px] h-[45px] w-[45px]"
-                                >
-                                    <TrashBin className="text-blue-950 h-[25px] w-[25px]" />
-                                </button>
-                            </div>
+                            <UploadedOriginalDocument
+                                fileName={resume.fileName}
+                                fileType={resume.fileType}
+                                fileSize={resume.fileSize}
+                                data={resume.data}
+                                unavailable={resume.unavailable}
+                                addedCredentialCount={
+                                    fileUploadOutcomes.find(
+                                        item =>
+                                            item.artifact.id === resume.artifactId &&
+                                            item.status === 'stored'
+                                    )?.storedCount
+                                }
+                                onDelete={confirmDelete}
+                                disabled={isParsing || isSaving || isSavingSelected}
+                            />
                         )}
+                        <button
+                            type="button"
+                            disabled={
+                                isUploading ||
+                                isLoading ||
+                                isSaving ||
+                                isSavingSelected ||
+                                isParsing
+                            }
+                            onClick={triggerFileInput}
+                            className={`${resume ? 'mt-6' : 'mt-0'} w-full flex min-h-[48px] rounded-[20px] items-center justify-center py-3 px-4 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                resume
+                                    ? 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
+                                    : 'bg-grayscale-900 text-white hover:opacity-90'
+                            }`}
+                        >
+                            {buttonIcon}
+                            {buttonText}
+                        </button>
                     </div>
                     <CheckListManagerFooter
                         // handleSave={handleSaveResume}
-                        loading={isSaving || checklistStore.get.isParsing().resume}
+                        loading={isSaving || isParsing}
                     />
                 </>
             )}

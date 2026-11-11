@@ -21,23 +21,28 @@ from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ActivityGetActivityStats200Response(BaseModel):
     """
     ActivityGetActivityStats200Response
     """ # noqa: E501
+    total_events: Optional[Union[StrictFloat, StrictInt]] = Field(alias="totalEvents")
     total: Optional[Union[StrictFloat, StrictInt]]
     created: Optional[Union[StrictFloat, StrictInt]]
     delivered: Optional[Union[StrictFloat, StrictInt]]
     claimed: Optional[Union[StrictFloat, StrictInt]]
     expired: Optional[Union[StrictFloat, StrictInt]]
     failed: Optional[Union[StrictFloat, StrictInt]]
+    revoked: Optional[Union[StrictFloat, StrictInt]]
+    suspended: Optional[Union[StrictFloat, StrictInt]]
     claim_rate: Optional[Union[StrictFloat, StrictInt]] = Field(alias="claimRate")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["total", "created", "delivered", "claimed", "expired", "failed", "claimRate"]
+    __properties: ClassVar[List[str]] = ["totalEvents", "total", "created", "delivered", "claimed", "expired", "failed", "revoked", "suspended", "claimRate"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -49,8 +54,7 @@ class ActivityGetActivityStats200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -63,9 +67,8 @@ class ActivityGetActivityStats200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -82,39 +85,44 @@ class ActivityGetActivityStats200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if total (nullable) is None
-        # and model_fields_set contains the field
-        if self.total is None and "total" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.total_events is None and "total_events" in self.model_fields_set and "total_events" not in excluded_fields:
+            _dict['totalEvents'] = None
+
+        # Preserve a supplied nullable value.
+        if self.total is None and "total" in self.model_fields_set and "total" not in excluded_fields:
             _dict['total'] = None
 
-        # set to None if created (nullable) is None
-        # and model_fields_set contains the field
-        if self.created is None and "created" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.created is None and "created" in self.model_fields_set and "created" not in excluded_fields:
             _dict['created'] = None
 
-        # set to None if delivered (nullable) is None
-        # and model_fields_set contains the field
-        if self.delivered is None and "delivered" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.delivered is None and "delivered" in self.model_fields_set and "delivered" not in excluded_fields:
             _dict['delivered'] = None
 
-        # set to None if claimed (nullable) is None
-        # and model_fields_set contains the field
-        if self.claimed is None and "claimed" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.claimed is None and "claimed" in self.model_fields_set and "claimed" not in excluded_fields:
             _dict['claimed'] = None
 
-        # set to None if expired (nullable) is None
-        # and model_fields_set contains the field
-        if self.expired is None and "expired" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.expired is None and "expired" in self.model_fields_set and "expired" not in excluded_fields:
             _dict['expired'] = None
 
-        # set to None if failed (nullable) is None
-        # and model_fields_set contains the field
-        if self.failed is None and "failed" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.failed is None and "failed" in self.model_fields_set and "failed" not in excluded_fields:
             _dict['failed'] = None
 
-        # set to None if claim_rate (nullable) is None
-        # and model_fields_set contains the field
-        if self.claim_rate is None and "claim_rate" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.revoked is None and "revoked" in self.model_fields_set and "revoked" not in excluded_fields:
+            _dict['revoked'] = None
+
+        # Preserve a supplied nullable value.
+        if self.suspended is None and "suspended" in self.model_fields_set and "suspended" not in excluded_fields:
+            _dict['suspended'] = None
+
+        # Preserve a supplied nullable value.
+        if self.claim_rate is None and "claim_rate" in self.model_fields_set and "claim_rate" not in excluded_fields:
             _dict['claimRate'] = None
 
         return _dict
@@ -128,15 +136,20 @@ class ActivityGetActivityStats200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
+            "totalEvents": obj.get("totalEvents"),
             "total": obj.get("total"),
             "created": obj.get("created"),
             "delivered": obj.get("delivered"),
             "claimed": obj.get("claimed"),
             "expired": obj.get("expired"),
             "failed": obj.get("failed"),
+            "revoked": obj.get("revoked"),
+            "suspended": obj.get("suspended"),
             "claimRate": obj.get("claimRate")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

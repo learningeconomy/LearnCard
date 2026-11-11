@@ -1,17 +1,16 @@
 # BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**alg** | **str** |  | 
-**iv** | **str** |  | 
-**tag** | **str** |  | 
-**epk** | [**BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeaderEpk**](BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeaderEpk.md) |  | [optional] 
-**kid** | **str** |  | [optional] 
-**apv** | **str** |  | [optional] 
-**apu** | **str** |  | [optional] 
+| Name    | Type                                                                                                                                  | Description | Notes      |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **alg** | **str**                                                                                                                               |             |
+| **iv**  | **str**                                                                                                                               |             |
+| **tag** | **str**                                                                                                                               |             |
+| **epk** | [**BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeaderEpk**](BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeaderEpk.md) |             | [optional] |
+| **kid** | **str**                                                                                                                               |             | [optional] |
+| **apv** | **str**                                                                                                                               |             | [optional] |
+| **apu** | **str**                                                                                                                               |             | [optional] |
 
 ## Example
 
@@ -30,6 +29,5 @@ boost_send_boost_request_credential_any_of1_recipients_inner_header_dict = boost
 # create an instance of BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader from a dict
 boost_send_boost_request_credential_any_of1_recipients_inner_header_from_dict = BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader.from_dict(boost_send_boost_request_credential_any_of1_recipients_inner_header_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

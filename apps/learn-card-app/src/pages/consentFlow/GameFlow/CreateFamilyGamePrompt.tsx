@@ -33,7 +33,7 @@ export const CreateFamilyGamePrompt: React.FC<CreateFamilyGamePromptProps> = ({
                 onFamilyCreationSuccess={onFamilyCreationSuccess}
             />,
             {
-                sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+                sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
                 hideButton: true,
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }

@@ -14,7 +14,7 @@ const ConsentFlowSelectiveSharingWarning: React.FC<ConsentFlowSelectiveSharingWa
         <section className="max-h-full py-[5px] overflow-y-auto disable-scrollbars mt-[var(--ion-safe-area-top,0px)]">
             <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px]">
                 <header className="flex flex-col gap-[10px] items-center">
-                    <h3 className="text-grayscale-900 text-xl font-poppins font-[400] ">
+                    <h3 className="text-grayscale-900 text-xl font-poppins font-normal ">
                         {m['arabicFixes.switchSelectiveTitle']()}
                     </h3>
 

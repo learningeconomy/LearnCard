@@ -17,12 +17,13 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.schema0 import Schema0
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class SkillFrameworksCreateManagedRequest(BaseModel):
     """
@@ -33,10 +34,11 @@ class SkillFrameworksCreateManagedRequest(BaseModel):
     description: Optional[StrictStr] = None
     image: Optional[StrictStr] = None
     source_uri: Optional[StrictStr] = Field(default=None, alias="sourceURI")
+    is_public: Optional[StrictBool] = Field(default=None, alias="isPublic")
     status: Optional[StrictStr] = None
     skills: Optional[List[Schema0]] = None
     boost_uris: Optional[List[StrictStr]] = Field(default=None, alias="boostUris")
-    __properties: ClassVar[List[str]] = ["id", "name", "description", "image", "sourceURI", "status", "skills", "boostUris"]
+    __properties: ClassVar[List[str]] = ["id", "name", "description", "image", "sourceURI", "isPublic", "status", "skills", "boostUris"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -49,7 +51,8 @@ class SkillFrameworksCreateManagedRequest(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -61,8 +64,7 @@ class SkillFrameworksCreateManagedRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -75,9 +77,8 @@ class SkillFrameworksCreateManagedRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -91,24 +92,8 @@ class SkillFrameworksCreateManagedRequest(BaseModel):
         _items = []
         if self.skills:
             for _item_skills in self.skills:
-                if _item_skills:
-                    _items.append(_item_skills.to_dict())
+                _items.append(_item_skills.to_dict() if _item_skills is not None else None)
             _dict['skills'] = _items
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
-            _dict['description'] = None
-
-        # set to None if image (nullable) is None
-        # and model_fields_set contains the field
-        if self.image is None and "image" in self.model_fields_set:
-            _dict['image'] = None
-
         return _dict
 
     @classmethod
@@ -120,16 +105,19 @@ class SkillFrameworksCreateManagedRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "id": obj.get("id"),
             "name": obj.get("name"),
             "description": obj.get("description"),
             "image": obj.get("image"),
             "sourceURI": obj.get("sourceURI"),
+            "isPublic": obj.get("isPublic"),
             "status": obj.get("status"),
             "skills": [Schema0.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None,
             "boostUris": obj.get("boostUris")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

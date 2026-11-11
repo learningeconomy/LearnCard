@@ -121,20 +121,20 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                 ? m['common.searchResults.managedCountOne']({ count: searchResultsCount })
                 : m['common.searchResults.managedCountOther']({ count: searchResultsCount })
             : noSearchResults
-            ? m['common.searchResults.noManaged']({ query: searchString })
-            : searchResultsCount === 1
-            ? m['common.searchResults.foundOne']({
-                  count: searchResultsCount,
-                  query: searchString,
-              })
-            : m['common.searchResults.foundOther']({
-                  count: searchResultsCount,
-                  query: searchString,
-              });
+              ? m['common.searchResults.noManaged']({ query: searchString })
+              : searchResultsCount === 1
+                ? m['common.searchResults.foundOne']({
+                      count: searchResultsCount,
+                      query: searchString,
+                  })
+                : m['common.searchResults.foundOther']({
+                      count: searchResultsCount,
+                      query: searchString,
+                  });
 
     const searchResultsElement = (
         <div className={`flex flex-col gap-[10px] mt-[6px] ${isCardView ? 'px-[12px]' : ''}`}>
-            <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
+            <span className="font-notoSans text-grayscale-900 text-[14px] font-bold">
                 {searchResultsText}
             </span>
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
@@ -158,7 +158,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                         {isCardView && (
                             <section className="relative flex flex-wrap gap-[10px] text-center justify-center items-center max-w-[800px]">
                                 <div
-                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] z-[-10] ${bgFillerColor}`}
+                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                                 />
                                 {managedBoostsList}
                                 <div role="presentation" ref={managedBoostInfiniteScrollRef} />
@@ -176,7 +176,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                         {!isCardView && (
                             <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
                                 <div
-                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] z-[-10] ${bgFillerColor}`}
+                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                                 />
                                 <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px]">
                                     {managedBoostsList}

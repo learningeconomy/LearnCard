@@ -17,6 +17,7 @@ import {
     MembershipCategoryTypes,
     SkillCategroyTypes,
     SocialBadgesCategoryTypes,
+    QualificationsCategoryTypes,
     WorkHistoryCategoryTypes,
 } from 'learn-card-base/components/IssueVC/constants';
 import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
@@ -78,6 +79,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     handleSaveAppearance = () => {},
 }) => {
     const { closeModal } = useModal();
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let formTitle: string = '';
 
     const isCategoryAndTypeSaveDisabled = (
@@ -115,6 +117,11 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
         )
             return true;
         if (
+            categoryType === BoostCategoryOptionsEnum.qualifications &&
+            !QualificationsCategoryTypes.includes(achievementType)
+        )
+            return true;
+        if (
             categoryType === BoostCategoryOptionsEnum.socialBadge &&
             !SocialBadgesCategoryTypes.includes(achievementType)
         )
@@ -142,6 +149,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     };
 
     const saveDisabled = isCategoryAndTypeSaveDisabled(activeCategoryType, activeType);
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let headerContainerStyles = '';
     let headerBackButtonStyles = '';
     let titleStyles = 'flex-1';

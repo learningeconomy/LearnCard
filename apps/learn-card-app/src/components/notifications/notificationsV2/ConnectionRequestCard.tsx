@@ -49,6 +49,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
     const [isRead, setisRead] = useState<boolean>(notification?.read);
 
     // Ref for the element that we want to detect whether on screen
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const ref: any = useRef<HTMLDivElement>();
 
     const onScreen: boolean = useOnScreen<HTMLDivElement>(ref, '-130px');

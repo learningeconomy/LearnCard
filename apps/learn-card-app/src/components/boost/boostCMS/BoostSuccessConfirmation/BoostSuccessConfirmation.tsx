@@ -76,7 +76,7 @@ export const BoostSuccessConfirmation: React.FC<{
                             return (
                                 <div
                                     key={index}
-                                    className="profile-thumb-img border-[2px] border-white border-solid  vc-issuee-image h-[50px] w-[50px] rounded-full overflow-hidden mx-[-5px]"
+                                    className="profile-thumb-img border-2 border-white border-solid  vc-issuee-image h-[50px] w-[50px] rounded-full overflow-hidden mx-[-5px]"
                                 >
                                     <UserProfilePicture
                                         customContainerClass="flex justify-center items-center w-full h-full rounded-full overflow-hidden text-white font-medium text-4xl mr-3"

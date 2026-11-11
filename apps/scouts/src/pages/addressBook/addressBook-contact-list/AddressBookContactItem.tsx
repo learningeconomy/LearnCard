@@ -293,10 +293,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 history={history}
             />,
             {
-                sectionClassName: '!max-w-[400px]',
+                sectionClassName: 'max-w-[400px]!',
                 hideButton: shouldHideButton,
                 usePortal: shouldUsePortal,
-                portalClassName: '!max-w-[400px]',
+                portalClassName: 'max-w-[400px]!',
             },
             {
                 mobile: ModalTypes.Cancel,

@@ -16,6 +16,7 @@ const EndorsementFormFooter: React.FC<{
 }> = ({ isDisabled, isLoading, className, showDeclineButton = false, handleEndorsementSubmit }) => {
     const { closeModal } = useModal();
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let iconStyles = '';
     if (isDisabled) iconStyles = 'text-grayscale-300';
     else iconStyles = 'text-teal-400';
@@ -23,7 +24,7 @@ const EndorsementFormFooter: React.FC<{
     return (
         <IonFooter
             mode="ios"
-            className={`lc-content-owns-bottom w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white ${className}`}
+            className={`lc-content-owns-bottom w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white/60 ${className}`}
             style={{
                 bottom: 0,
                 paddingBottom: 'var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px))',

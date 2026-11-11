@@ -146,7 +146,7 @@ vi.mock('../../../theme/hooks/useTheme', () => ({
 }));
 vi.mock('src/hooks/useCredentialStatus', () => ({ useCredentialStatus: () => undefined }));
 vi.mock('../../boost/boostHelpers', () => ({ getDefaultDisplayType: () => 'badge' }));
-vi.mock('../../boost/clr-transcript', () => ({
+vi.mock('learn-card-base/helpers/credentials/clr/kind', () => ({
     getClrTranscriptKind: () => 'unknown',
     getClrTranscriptIssuerInfo: () => ({}),
 }));

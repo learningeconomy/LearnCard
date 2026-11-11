@@ -39,7 +39,15 @@ export type {
     GuardianRejectedCredentialData,
     CredentialUpdatedData,
     AccountSignInChangedData,
+    EscrowHoldStartedData,
+    EscrowHoldReminderData,
+    EscrowHoldReleasedData,
+    EscrowHoldCancelledData,
+    EscrowPinLockedData,
+    EscrowPinSignInData,
+    AccountSecuredData,
 } from './render';
+export type { EscrowHoldCancelledReason } from './templates/escrow-hold-cancelled';
 
 // SMS rendering
 export { renderSms } from './sms';
@@ -63,3 +71,5 @@ export type { ResolvedTenant, RequestHeaders } from './tenant-registry';
 // configure `jsx` in their tsconfig. Use renderEmail() / renderSms() instead.
 // For direct component access (testing / preview), import from
 // '@learncard/email-templates/src/templates' explicitly.
+
+export type { AnnouncementData } from './render';

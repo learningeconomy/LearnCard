@@ -1,0 +1,97 @@
+import React, { useState } from 'react';
+import { Redirect, useHistory } from 'react-router-dom';
+import { IonPage, IonContent } from '@ionic/react';
+import { Capacitor } from '@capacitor/core';
+
+import {
+    useFeatureConfig,
+    useLinksConfig,
+    useGetPreferencesForDid,
+    useSchoolConnection,
+    useClassLinkAuthorizeUrl,
+} from 'learn-card-base';
+
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
+import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
+import { TranscriptOptInCard } from '../../components/classlink/TranscriptOptInCard';
+import MainHeader from '../../components/main-header/MainHeader';
+import { useLocale } from '../../i18n';
+import * as m from '../../paraglide/messages.js';
+import { SchoolConnectView } from './SchoolConnectView';
+
+/** Holds every lca-api query, so it only mounts once the School Connect flags are on. */
+const SchoolConnectPageContent: React.FC = () => {
+    const history = useHistory();
+    const links = useLinksConfig();
+    const { state: coordinatorState } = useAppAuth();
+    const isReady = coordinatorState.status === 'ready';
+
+    const { data: preferences } = useGetPreferencesForDid();
+    const isLocked = preferences?.isMinor === true;
+
+    const { data: connection, isLoading, isError, refetch } = useSchoolConnection(isReady);
+
+    const { mutateAsync: getClassLinkAuthorizeUrl } = useClassLinkAuthorizeUrl();
+
+    const [connecting, setConnecting] = useState(false);
+    const [connectError, setConnectError] = useState('');
+    const locale = useLocale();
+
+    const formatDate = (iso: string): string => {
+        const date = new Date(iso);
+        return Number.isNaN(date.getTime())
+            ? ''
+            : new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date);
+    };
+
+    const handleConnect = async () => {
+        if (connecting) return;
+        setConnecting(true);
+        setConnectError('');
+        const outcome = await runClassLinkLogin(
+            getClassLinkAuthorizeUrl,
+            path => history.push(path),
+            '/school-connect',
+            'connect'
+        );
+        // 'handled' (sheet closed / timed out): the callback route already shows the message.
+        if (outcome === 'failed') setConnectError(m['schoolConnect.connectFailed']());
+        // Web 'started' is leaving the page; keep the button disabled until it unloads.
+        if (outcome !== 'started' || Capacitor.isNativePlatform()) setConnecting(false);
+    };
+
+    return (
+        <IonPage className="bg-grayscale-100 font-poppins">
+            <MainHeader showBackButton customClassName="bg-grayscale-100" />
+            <IonContent fullscreen className="bg-grayscale-100" color="grayscale-100">
+                <div className="animate-fade-in-up pb-10">
+                    <SchoolConnectView
+                        connection={connection}
+                        isLoading={isLoading || !isReady}
+                        isError={isError}
+                        isLocked={isLocked}
+                        supportEmail={links.supportEmail}
+                        connecting={connecting}
+                        connectError={connectError}
+                        onConnect={() => void handleConnect()}
+                        onRetry={() => void refetch()}
+                        formatDate={formatDate}
+                        transcriptSlot={<TranscriptOptInCard source="school_connect" />}
+                    />
+                </div>
+            </IonContent>
+        </IonPage>
+    );
+};
+
+/**
+ * School Connect page. Checks the tenant flags before mounting any query hook, so tenants
+ * without School Connect make no ClassLink calls (same pattern as TranscriptOptInCard).
+ */
+const SchoolConnectPage: React.FC = () => {
+    const features = useFeatureConfig();
+    if (!features.schoolConnect || !features.classlinkSso) return <Redirect to="/launchpad" />;
+    return <SchoolConnectPageContent />;
+};
+
+export default SchoolConnectPage;

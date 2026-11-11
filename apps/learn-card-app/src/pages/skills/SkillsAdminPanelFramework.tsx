@@ -48,7 +48,7 @@ const SkillsAdminPanelFramework: React.FC<SkillsAdminPanelFrameworkProps> = ({
                     frameworkId={framework.id}
                     sourceURI={sourceURI}
                     includeSkillWord
-                    className="text-[12px] !text-grayscale-700"
+                    className="text-[12px] text-grayscale-700!"
                 />
             </div>
 

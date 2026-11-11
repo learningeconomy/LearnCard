@@ -1,3 +1,5 @@
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { build } from 'esbuild';
 import plugins from './esbuildPlugins.cjs';
 
@@ -9,6 +11,7 @@ const finalBuildObj = {
     entryPoints: ['src/index.ts'],
     platform: 'node',
     bundle: true,
+    metafile: true,
     format: 'cjs',
     outdir: 'dist',
     target: 'node18',
@@ -22,6 +25,11 @@ if (process.env.NODE_ENV !== 'production') {
     finalBuildObj.minify = false;
 }
 
-await build(finalBuildObj).then(() => {
+await build(finalBuildObj).then(result => {
+    // Publish preparation verifies private helpers are not external runtime imports.
+    writeFileSync(
+        join(finalBuildObj.outdir, 'publish-metafile.json'),
+        JSON.stringify(result.metafile)
+    );
     console.log(`🎁 Done building main bundle! (${Date.now() - startTime}ms)`);
 });

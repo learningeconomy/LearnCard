@@ -302,7 +302,7 @@ export const EndorsementRequestOptions: React.FC<{
                         placeholder={m['endorsement.request.options.emailPlaceholder']()}
                         type="text"
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
-                            errors?.email ? 'border-rose-500 border-[1px] border-solid' : ''
+                            errors?.email ? 'border-rose-500 border border-solid' : ''
                         }`}
                     />
                     {errors?.email && (

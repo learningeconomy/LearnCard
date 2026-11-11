@@ -18,22 +18,24 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.contact_methods_verify_with_credential200_response_contact_method import ContactMethodsVerifyWithCredential200ResponseContactMethod
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContactMethodsVerifyWithCredential200Response(BaseModel):
     """
     ContactMethodsVerifyWithCredential200Response
     """ # noqa: E501
-    message: Optional[StrictStr]
+    message: StrictStr
     contact_method: ContactMethodsVerifyWithCredential200ResponseContactMethod = Field(alias="contactMethod")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["message", "contactMethod"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -45,8 +47,7 @@ class ContactMethodsVerifyWithCredential200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -59,9 +60,8 @@ class ContactMethodsVerifyWithCredential200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -81,11 +81,6 @@ class ContactMethodsVerifyWithCredential200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if message (nullable) is None
-        # and model_fields_set contains the field
-        if self.message is None and "message" in self.model_fields_set:
-            _dict['message'] = None
-
         return _dict
 
     @classmethod
@@ -97,10 +92,12 @@ class ContactMethodsVerifyWithCredential200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "message": obj.get("message"),
             "contactMethod": ContactMethodsVerifyWithCredential200ResponseContactMethod.from_dict(obj["contactMethod"]) if obj.get("contactMethod") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

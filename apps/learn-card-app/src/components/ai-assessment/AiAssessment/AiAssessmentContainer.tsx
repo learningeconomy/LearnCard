@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { IonIcon } from '@ionic/react';
+import { alertCircleOutline } from 'ionicons/icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('ai-assessment-container');
@@ -11,7 +13,6 @@ import AiAssessmentLayout from './helpers/AiAssessmentLayout';
 import AiSessionLoader from '../../new-ai-session/AiSessionLoader';
 import AssessmentAnswerInput from './helpers/AssessmentAnswerInput';
 import StartAssessmentButton from './helpers/StartAssessmentButton';
-import ViewAssessmentBadgeButton from './helpers/ViewAssessmentBadgeButton';
 import FinishedAiSessionAssessmentPreview from '../FinishedAiSessionAssessmentPreview';
 import AssessmentMultipleChoiceAnswers from './helpers/AssessmentMultipleChoiceAnswers';
 import UnfinishedAiSessionAssessmentPreviewSimple from '../UnFinishedAiSessionAssessmentPreviewSimple';
@@ -42,6 +43,33 @@ import { AiSession } from 'learn-card-base';
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { aiLoadingStore } from 'learn-card-base/stores/aiLoadingStore';
 import GenericNetworkError from '../../generic/GenericNetworkError';
+import { AiServiceError } from 'learn-card-base/helpers/aiErrors';
+import { getAiErrorCopy } from '../../../helpers/aiError.helpers';
+import * as m from '../../../paraglide/messages.js';
+
+const hasAssessmentQuestions = (value: unknown): value is AiAssessmentQuestion[] =>
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+        question =>
+            question &&
+            typeof question.question === 'string' &&
+            question.question.trim() &&
+            (question.type === undefined ||
+                question.type === AiAssesmentQuestionTypeEnum.text ||
+                (question.type === AiAssesmentQuestionTypeEnum.multipleChoice &&
+                    Array.isArray(question.choices) &&
+                    question.choices.length >= 2 &&
+                    question.choices.every(
+                        (choice: unknown) => typeof choice === 'string' && choice.trim()
+                    )))
+    );
+
+const normalizeQuestionTypes = (questions: AiAssessmentQuestion[]): AiAssessmentQuestion[] =>
+    questions.map(question => ({
+        ...question,
+        type: question.type ?? AiAssesmentQuestionTypeEnum.text,
+    }));
 
 export enum AiAssessmentStepEnum {
     assessmentIntro = 'assessmentIntro',
@@ -65,10 +93,14 @@ export const AiAssessmentContainer: React.FC<{
         AiAssessmentStepEnum.assessmentIntro
     );
     const [assessmentQA, setAssessmentQA] = useState<AiAssessmentQuestion[]>(
-        (assessment || []).map(q => ({ ...q, answer: '' }))
+        normalizeQuestionTypes(assessment || []).map(q => ({ ...q, answer: '' }))
     );
     const [isPreLoadingAssessment, setIsPreLoadingAssessment] = useState(false);
+    const [preloadError, setPreloadError] = useState<Error | null>(null);
+    const preloadInFlight = useRef(false);
     const [allPrefilled, setAllPrefilled] = useState(false);
+    const [assessmentCompleted, setAssessmentCompleted] = useState(false);
+    const finishInFlight = useRef(false);
 
     const { refetch: refetchEnrichedSession } = useGetEnrichedSession(
         query.get('topicBoostUri') as string
@@ -115,41 +147,43 @@ export const AiAssessmentContainer: React.FC<{
             enriched?.data?.summaryVc?.completed || Boolean(enriched?.data?.assessmentVc);
 
         if (alreadyCompleted) {
-            await fetchNewContractCredentials();
-            await refetchEnrichedSession();
-            closeModal();
-            aiLoadingStore.set.isFinishingAssessment(false);
+            setAssessmentCompleted(true);
             return true;
         }
 
         return false;
     };
 
-    const handleFinishAssessment = async () => {
-        const learnCard = await initWallet();
+    const handleFinishAssessment = async (answers = assessmentQA) => {
+        if (finishInFlight.current) return;
+        finishInFlight.current = true;
         aiLoadingStore.set.isFinishingAssessment(true);
 
         try {
+            const learnCard = await initWallet();
             const _isAlreadyCompleted = await isAlreadyCompleted();
             if (_isAlreadyCompleted) return;
 
-            await finishAssessment(
-                {
-                    did: learnCard.id.did(),
-                    assessmentQA,
-                    session: session.vc,
-                    sessionUri: session.boost.uri,
-                },
-                {
-                    onSettled: () => {
-                        aiLoadingStore.set.isFinishingAssessment(false);
-                    },
-                }
-            );
+            await finishAssessment({
+                did: learnCard.id.did(),
+                assessmentQA: answers,
+                session: session.vc?.boostCredential ?? session.vc,
+                sessionUri: session.boost.uri,
+                summaryCredentialUri: session.record?.uri,
+            });
+            setAssessmentCompleted(true);
+            // The backend has saved the assessment. Refresh the surrounding lists
+            // without making a delayed index sync look like a failed submission.
+            void Promise.all([
+                fetchNewContractCredentials(),
+                refetchSummaryInfo(),
+                refetchEnrichedSession(),
+                queryClient.invalidateQueries({ queryKey: ['useGetEnrichedTopicsList'] }),
+            ]).catch(() => log.error('Could not refresh the completed assessment'));
         } catch (error) {
             log.error('[Assessment] Finish failed:', error);
-            aiLoadingStore.set.isFinishingAssessment(false);
         } finally {
+            finishInFlight.current = false;
             aiLoadingStore.set.isFinishingAssessment(false);
         }
     };
@@ -164,17 +198,21 @@ export const AiAssessmentContainer: React.FC<{
         }
 
         if (index === lastQuestionIndex && answer.trim()) {
-            await handleFinishAssessment();
+            await handleFinishAssessment(updatedQA);
         }
     };
 
     const preLoadAssessment = async () => {
+        if (preloadInFlight.current) return;
+        preloadInFlight.current = true;
         try {
             setIsPreLoadingAssessment(true);
+            setPreloadError(null);
             aiLoadingStore.set.isFinishingAssessment(false);
 
             const learnCard = await initWallet();
-            const summaryCredential = session?.vc?.boostCredential;
+            const summaryCredential = session?.vc?.boostCredential ?? session?.vc;
+            if (!summaryCredential) throw new Error('Session summary is unavailable');
             const boostId = summaryCredential?.boostId;
 
             const cached = queryClient.getQueryData<AiAssessmentQuestion[]>([
@@ -182,8 +220,8 @@ export const AiAssessmentContainer: React.FC<{
                 boostId,
             ]);
 
-            if (cached) {
-                setAssessmentQA(cached);
+            if (hasAssessmentQuestions(cached)) {
+                setAssessmentQA(normalizeQuestionTypes(cached));
 
                 const allAnswered = cached.every(q => q.answer?.trim());
                 if (allAnswered) {
@@ -200,17 +238,29 @@ export const AiAssessmentContainer: React.FC<{
                 const { assessment } = await preloadAssessment({
                     did: learnCard.id.did(),
                     summaryCredential,
+                    summaryCredentialUri: session.record?.uri,
                 });
 
-                if (assessment) setAssessmentQA(assessment);
-                setAllPrefilled(false);
+                if (!hasAssessmentQuestions(assessment)) {
+                    throw new Error('Assessment response contains no usable questions');
+                }
+                setAssessmentQA(normalizeQuestionTypes(assessment));
+                const firstUnansweredIndex = assessment.findIndex(q => !q.answer?.trim());
+                setCurrentQuestionIndex(
+                    firstUnansweredIndex === -1 ? assessment.length - 1 : firstUnansweredIndex
+                );
+                setAllPrefilled(firstUnansweredIndex === -1);
             }
-
-            setIsPreLoadingAssessment(false);
         } catch (error) {
             log.error('Error preloading assessment:', error);
-            setIsPreLoadingAssessment(false);
+            setPreloadError(
+                error instanceof Error ? error : new Error('Assessment could not be loaded')
+            );
+            setAssessmentQA([]);
             setAllPrefilled(false);
+        } finally {
+            preloadInFlight.current = false;
+            setIsPreLoadingAssessment(false);
         }
     };
 
@@ -236,19 +286,22 @@ export const AiAssessmentContainer: React.FC<{
         }, timeout || 0);
     };
 
-    const handleViewBadge = () => {
-        newModal(
+    if (assessmentCompleted) {
+        return (
             <FinishedAiSessionAssessmentPreview
                 topicRecord={topicRecord}
                 topicVc={topicVc}
                 session={session}
-            />,
-            {},
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                isCompleted
+            />
         );
-    };
+    }
 
     let assessmentEl = null;
+    const preloadErrorCopy =
+        preloadError instanceof AiServiceError
+            ? getAiErrorCopy(preloadError.payload.code).body
+            : m['error.generic']();
 
     if (activeStep === AiAssessmentStepEnum.assessmentIntro) {
         assessmentEl = (
@@ -264,14 +317,50 @@ export const AiAssessmentContainer: React.FC<{
     } else if (activeStep === AiAssessmentStepEnum.assessmentQA) {
         assessmentEl = (
             <AiAssessmentLayout>
-                <AiAssessmentIntro session={session.vc} />
-                {isPreLoadingAssessment ? (
+                {session.vc && <AiAssessmentIntro session={session.vc} />}
+                {isFinishingAssessment && isDesktop ? (
+                    <AiSessionLoader
+                        topicRecord={session?.record || topicRecord}
+                        overrideText={finishedAssessmentText}
+                        isInline
+                    />
+                ) : isPreLoadingAssessment ? (
                     <div ref={qaItemsRef}>
                         <AiSessionLoader
                             topicRecord={session?.record || topicRecord}
                             overrideText={preLoadingAssessmentText}
                             isInline
                         />
+                    </div>
+                ) : preloadError ? (
+                    <div className="w-full mt-6 font-poppins">
+                        <div
+                            role="alert"
+                            className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
+                        >
+                            <IonIcon
+                                icon={alertCircleOutline}
+                                className="text-red-400 text-lg mt-0.5 shrink-0"
+                                aria-hidden="true"
+                            />
+                            <span className="text-sm text-red-700 leading-relaxed">
+                                {preloadErrorCopy}
+                            </span>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={closeModal}
+                                className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                            >
+                                {m['common.close']()}
+                            </button>
+                            <button
+                                onClick={preLoadAssessment}
+                                className="flex-1 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                            >
+                                {m['common.tryAgain']()}
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <div ref={qaItemsRef}>
@@ -296,7 +385,7 @@ export const AiAssessmentContainer: React.FC<{
                 />
             )}
             <div
-                className={`h-[100vh] bg-transparent relative flex items-center flex-col justify-end ${
+                className={`h-screen bg-transparent relative flex items-center flex-col justify-end ${
                     isDesktop ? 'pb-[30px]' : ''
                 }`}
             >

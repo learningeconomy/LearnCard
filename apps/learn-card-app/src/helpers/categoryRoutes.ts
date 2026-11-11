@@ -12,6 +12,7 @@ export const CATEGORY_TO_ROUTE: Partial<Record<CredentialCategoryEnum, string>> 
     [CredentialCategoryEnum.skill]: '/skills',
     [CredentialCategoryEnum.selfAssignedSkills]: '/skills',
     [CredentialCategoryEnum.socialBadge]: '/socialBadges',
+    [CredentialCategoryEnum.qualifications]: '/qualifications',
     [CredentialCategoryEnum.achievement]: '/achievements',
     [CredentialCategoryEnum.learningHistory]: '/learninghistory',
     [CredentialCategoryEnum.accomplishment]: '/accomplishments',

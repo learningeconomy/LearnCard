@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useCanManageCompetencies } from '../../hooks/useCanManageCompetencies';
 import { ModalTypes, useDeviceTypeByWidth, useGetSkillChildren, useModal } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
@@ -92,7 +93,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
     isTopLevel,
     columnNode,
     isNodeInSelectedPath,
-    isEdit = false,
+    isEdit: editRequested = false,
     selectedPath = [],
     handleAdd,
     handleEdit,
@@ -124,6 +125,8 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
     handleSaveSkills,
     disableSave,
 }) => {
+    const canManageCompetencies = useCanManageCompetencies();
+    const isEdit = canManageCompetencies && editRequested;
     const { newModal, closeModal } = useModal();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
     const inputRef = useRef<HTMLIonInputElement>(null);
@@ -235,7 +238,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
         let truncatedSecondLast = secondLast;
         const lastItemWidth = getTextWidth(lastItem);
         const ellipsisWidth = getTextWidth('... > ');
-        let maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
+        const maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
 
         if (getTextWidth(secondLast) > maxSecondLastWidth) {
             // Binary search for optimal truncation
@@ -272,7 +275,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
 
     const navPathTitle = selectedPath.map(n => n.targetName).join(' > ');
     let countOverride = undefined;
-    let countAdjustment = countAdjustments?.[columnNode?.id ?? 'root'] || 0;
+    const countAdjustment = countAdjustments?.[columnNode?.id ?? 'root'] || 0;
     if (isFullSkillFramework) {
         if (columnNode) {
             countOverride = countCompetenciesInNode(columnNode);
@@ -283,11 +286,11 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
 
     return (
         <section
-            className="h-full flex flex-col z-0 border-[1px] border-grayscale-200 border-solid relative safe-area-inset-top overflow-hidden"
+            className="h-full flex flex-col z-0 border border-grayscale-200 border-solid relative safe-area-inset-top overflow-hidden"
             style={{ width: `${100 / maxColumns}%` }}
         >
             {isSelectSkillsFlow && isSingleColumnView && (
-                <div className="flex items-center gap-[10px] px-[20px] pt-[20px] pb-[10px] border-b-[1px] border-grayscale-200 border-solid">
+                <div className="flex items-center gap-[10px] px-[20px] pt-[20px] pb-[10px] border-b border-grayscale-200 border-solid">
                     <PuzzlePiece
                         version="filled"
                         className="w-[40px] h-[40px] shrink-0 text-grayscale-800"
@@ -302,7 +305,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
             )}
 
             <div
-                className={`px-[15px] flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid ${
+                className={`px-[15px] flex flex-col gap-[10px] border-b border-grayscale-200 border-solid ${
                     isSingleColumnView ? 'py-[10px]' : 'h-[125px] py-[30px]'
                 }`}
                 role={columnNode ? 'button' : undefined}
@@ -332,7 +335,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                                 frameworkId={frameworkInfo?.id}
                                 skillId={columnNode?.id}
                                 includeSkillWord
-                                className="!text-grayscale-800"
+                                className="text-grayscale-800!"
                                 countOverride={countOverride}
                                 countAdjustment={countAdjustment}
                             />
@@ -343,20 +346,24 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                         <InfoIcon className="ml-auto w-[24px] h-[24px] text-grayscale-600" />
                     )}
 
-                    {isTopLevel && !isApproveFlow && !isEdit && !isSelectSkillsFlow && (
-                        <button
-                            onClick={() =>
-                                newModal(
-                                    <FrameworkOptionsModal frameworkInfo={frameworkInfo} />,
-                                    undefined,
-                                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
-                                )
-                            }
-                            className="ml-auto"
-                        >
-                            <ThreeDots className="w-[24px] h-[24px] text-grayscale-500" />
-                        </button>
-                    )}
+                    {canManageCompetencies &&
+                        isTopLevel &&
+                        !isApproveFlow &&
+                        !isEdit &&
+                        !isSelectSkillsFlow && (
+                            <button
+                                onClick={() =>
+                                    newModal(
+                                        <FrameworkOptionsModal frameworkInfo={frameworkInfo} />,
+                                        undefined,
+                                        { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                                    )
+                                }
+                                className="ml-auto"
+                            >
+                                <ThreeDots className="w-[24px] h-[24px] text-grayscale-500" />
+                            </button>
+                        )}
                 </div>
 
                 {isSingleColumnView && selectedPath.length > 0 && (
@@ -371,7 +378,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             }}
                         >
                             <SkillsFrameworkIcon
-                                className="!flex-shrink-0 w-[25px] h-[25px] text-grayscale-600"
+                                className="shrink-0! w-[25px] h-[25px] text-grayscale-600"
                                 color="currentColor"
                                 version="outlined"
                             />
@@ -465,7 +472,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                         <FrameworkSearchResults
                             searchResults={searchResults}
                             frameworkInfo={frameworkInfo}
-                            resultTextClassName="!text-[12px]"
+                            resultTextClassName="text-[12px]!"
                             onClick={onSearchResultItemClick}
                             isSelectSkillsFlow={isSelectSkillsFlow}
                             selectedSkills={selectedSkills}
@@ -517,7 +524,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             {isEdit && isMobile && (
                                 <button
                                     onClick={openAddModal}
-                                    className="p-[20px] bg-white rounded-[10px] flex gap-[10px] items-center border-[1px] border-grayscale-200 border-solid"
+                                    className="p-[20px] bg-white rounded-[10px] flex gap-[10px] items-center border border-grayscale-200 border-solid"
                                 >
                                     <Plus className="w-[25px] h-[25px] text-grayscale-900" />
                                     <span className="text-[17px] text-grayscale-900 font-poppins">
@@ -546,7 +553,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
             {isSingleColumnView && (
                 <IonFooter
                     mode="ios"
-                    className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+                    className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
                 >
                     <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                         {showBackInFooter && (
@@ -562,7 +569,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                                 {!isApproveFlow && (
                                     <button
                                         onClick={handleDisableEdit}
-                                        className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border-[1px] border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
+                                        className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
                                     >
                                         {m['common.cancel']()}
                                     </button>
@@ -581,7 +588,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             <>
                                 <button
                                     onClick={handleClose}
-                                    className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border-[1px] border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
+                                    className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
                                 >
                                     {m['common.close']()}
                                 </button>
@@ -595,18 +602,18 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             </>
                         )}
 
-                        {!isEdit && !isSelectSkillsFlow && (
+                        {canManageCompetencies && !isEdit && !isSelectSkillsFlow && (
                             <>
                                 <button
                                     onClick={() => setIsEdit?.(true)}
-                                    className="py-[7px] px-[25px] flex gap-[5px] items-center justify-center bg-white rounded-[30px] text-grayscale-800 shadow-button-bottom flex-1 font-poppins text-[17px] border-[2px] border-grayscale-200 border-solid"
+                                    className="py-[7px] px-[25px] flex gap-[5px] items-center justify-center bg-white rounded-[30px] text-grayscale-800 shadow-button-bottom flex-1 font-poppins text-[17px] border-2 border-grayscale-200 border-solid"
                                 >
                                     <Pencil version={3} className="w-[25px] h-[25px] shrink-0" />
                                     {m['common.edit']()}
                                 </button>
                                 <button
                                     onClick={openManageJsonModal}
-                                    className="py-[7px] px-[25px] flex gap-[5px] items-center justify-center bg-white rounded-[30px] text-grayscale-800 shadow-button-bottom flex-1 font-poppins text-[17px] border-[2px] border-grayscale-200 border-solid"
+                                    className="py-[7px] px-[25px] flex gap-[5px] items-center justify-center bg-white rounded-[30px] text-grayscale-800 shadow-button-bottom flex-1 font-poppins text-[17px] border-2 border-grayscale-200 border-solid"
                                 >
                                     <CodeIcon
                                         version="with-slash"

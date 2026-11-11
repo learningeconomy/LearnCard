@@ -60,8 +60,8 @@ export const deriveConnectionPromptNotificationState = ({
         serverStatus && serverStatus !== 'PENDING'
             ? serverStatus
             : resolvedStatus && resolvedStatus !== 'PENDING'
-            ? resolvedStatus
-            : serverStatus ?? resolvedStatus;
+              ? resolvedStatus
+              : (serverStatus ?? resolvedStatus);
 
     return {
         effectiveStatus,
@@ -159,11 +159,11 @@ export const ConnectionPromptNotificationCard: React.FC<ConnectionPromptNotifica
         effectiveStatus === 'CONNECTED'
             ? copy.connected
             : effectiveStatus === 'SKIPPED' || effectiveStatus === 'STALE'
-            ? copy.skipped
-            : null;
+              ? copy.skipped
+              : null;
 
     return (
-        <article className="font-poppins flex justify-start items-start relative w-full max-w-[600px] rounded-[20px] border border-grayscale-200 bg-white p-4 my-3 shadow-sm">
+        <article className="font-poppins flex justify-start items-start relative w-full max-w-[600px] rounded-[20px] border border-grayscale-200 bg-white p-4 my-3 shadow-xs">
             <div className="shrink-0 w-16 h-16">
                 <UserProfilePicture
                     user={counterpart}

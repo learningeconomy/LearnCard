@@ -1,13 +1,12 @@
 # BoostGenerateClaimLinkRequestClaimLinkSA
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**endpoint** | **str** |  | 
-**name** | **str** |  | 
-**did** | **str** |  | [optional] 
+| Name         | Type    | Description | Notes      |
+| ------------ | ------- | ----------- | ---------- |
+| **endpoint** | **str** |             |
+| **name**     | **str** |             |
+| **did**      | **str** |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_generate_claim_link_request_claim_link_sa_dict = boost_generate_claim_link
 # create an instance of BoostGenerateClaimLinkRequestClaimLinkSA from a dict
 boost_generate_claim_link_request_claim_link_sa_from_dict = BoostGenerateClaimLinkRequestClaimLinkSA.from_dict(boost_generate_claim_link_request_claim_link_sa_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

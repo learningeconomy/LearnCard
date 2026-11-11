@@ -37,12 +37,12 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
 }) => {
     const currentUser = useCurrentUser();
 
-    let _recipients = filterBoostRecipients(recipients);
+    const _recipients = filterBoostRecipients(recipients);
 
-    let count =
+    const count =
         typeof recipientCountOverride === 'number'
             ? recipientCountOverride
-            : _recipients?.length ?? 0;
+            : (_recipients?.length ?? 0);
 
     const recipientsEl = (
         <section
@@ -54,7 +54,7 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
                 return (
                     <div
                         key={index}
-                        className="profile-thumb-img border-[2px] border-white border-solid  vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden mx-[-5px]"
+                        className="profile-thumb-img border-2 border-white border-solid  vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden mx-[-5px]"
                     >
                         <UserProfilePicture
                             customContainerClass="flex justify-center items-center w-full h-full rounded-full overflow-hidden text-white font-medium text-2xl mr-3"

@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>LC-2006 · Before and after</title>
+        <style>
+            :root {
+                color-scheme: light dark;
+                font:
+                    15px system-ui,
+                    sans-serif;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: light-dark(#f4f5f7, #15171b);
+                color: light-dark(#18224e, #eff0f5);
+            }
+            header {
+                padding: 16px 20px;
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 16px;
+            }
+            h1 {
+                font-size: 18px;
+                margin: 0;
+                font-weight: 600;
+            }
+            label {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            select,
+            button {
+                font: inherit;
+                padding: 7px 10px;
+            }
+            main {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                gap: 12px;
+                padding: 0 20px 20px;
+            }
+            section {
+                min-width: 0;
+            }
+            h2 {
+                font-size: 15px;
+                font-weight: 600;
+                margin: 0 0 10px;
+            }
+            .pane {
+                height: calc(100dvh - 155px);
+                min-height: 350px;
+                overflow: auto;
+                background: light-dark(#e2e3e9, #252830);
+            }
+            img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+            main.actual img {
+                width: auto;
+                max-width: none;
+            }
+            footer {
+                padding: 0 20px 12px;
+                font-size: 13px;
+            }
+            a {
+                color: inherit;
+            }
+            @media (max-width: 600px) {
+                header {
+                    gap: 10px;
+                    padding: 12px;
+                }
+                main {
+                    gap: 8px;
+                    padding: 0 12px 12px;
+                }
+                h1 {
+                    width: 100%;
+                }
+                h2 {
+                    font-size: 13px;
+                }
+                .pane {
+                    height: calc(100dvh - 225px);
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>LC-2006 · Before and after</h1>
+            <label
+                >Browser
+                <select id="browser">
+                    <option value="chromium-mobile">Chromium · mobile</option>
+                    <option value="chromium-desktop">Chromium · desktop</option>
+                    <option value="webkit-mobile">WebKit · mobile</option>
+                </select></label
+            >
+            <label
+                >Screen
+                <select id="screen">
+                    <option value="active">Populated dashboard</option>
+                    <option value="pending">Pending dashboard</option>
+                    <option value="empty">Empty dashboard</option>
+                    <option value="shared">Shared card and form</option>
+                    <option value="credential">Credential preview</option>
+                    <option value="credential-details">Credential details</option>
+                    <option value="issue">Issue credential form</option>
+                    <option value="issue-json">Issue credential JSON</option>
+                    <option value="my-apps">My Apps launchpad</option>
+                    <option value="my-apps-signed-in">My Apps · signed-in shell</option>
+                    <option value="app-details">App listing details</option>
+                </select></label
+            >
+            <label><input id="actual" type="checkbox" /> Actual size</label>
+        </header>
+        <main>
+            <section>
+                <h2>Before · Tailwind 3</h2>
+                <div class="pane" id="before-pane">
+                    <img id="before" alt="Tailwind 3 reference screenshot" />
+                </div>
+            </section>
+            <section>
+                <h2>After · Tailwind 4.3.3</h2>
+                <div class="pane" id="after-pane">
+                    <img id="after" alt="Tailwind 4 screenshot from the passing regression run" />
+                </div>
+            </section>
+        </main>
+        <footer>
+            Scrolling is linked.
+            <a id="before-link" target="_blank" rel="noopener">Open before</a> ·
+            <a id="after-link" target="_blank" rel="noopener">Open after</a> ·
+            <a href="native/ios-tailwind4.mp4" target="_blank" rel="noopener"
+                >Native iOS recording</a
+            >
+        </footer>
+        <script>
+            const browser = document.getElementById('browser');
+            const screen = document.getElementById('screen');
+            const main = document.querySelector('main');
+            const beforePane = document.getElementById('before-pane');
+            const afterPane = document.getElementById('after-pane');
+            const browserNames = ['chromium-mobile', 'chromium-desktop', 'webkit-mobile'];
+            const screenNames = [
+                'active',
+                'pending',
+                'empty',
+                'shared',
+                'credential',
+                'credential-details',
+                'issue',
+                'issue-json',
+                'my-apps',
+                'my-apps-signed-in',
+                'app-details',
+            ];
+            // Build paths from trusted names rather than URL parameters or DOM values.
+            const selectName = (names, value) => names.find(name => name === value) ?? names[0];
+            const params = new URLSearchParams(location.search);
+            browser.value = selectName(browserNames, params.get('browser'));
+            screen.value = selectName(screenNames, params.get('screen'));
+            function update() {
+                const browserName = selectName(browserNames, browser.value);
+                const screenName = selectName(screenNames, screen.value);
+                const before = `../baselines/${browserName}/${screenName}-darwin.png`;
+                const after = `${browserName}/${screenName}-tailwind4.png`;
+                document.getElementById('before').src = before;
+                document.getElementById('after').src = after;
+                document.getElementById('before-link').href = before;
+                document.getElementById('after-link').href = after;
+                beforePane.scrollTo(0, 0);
+                afterPane.scrollTo(0, 0);
+                history.replaceState(null, '', `?browser=${browserName}&screen=${screenName}`);
+            }
+            browser.addEventListener('change', update);
+            screen.addEventListener('change', update);
+            document
+                .getElementById('actual')
+                .addEventListener('change', event =>
+                    main.classList.toggle('actual', event.target.checked)
+                );
+            let syncing = false;
+            for (const [from, to] of [
+                [beforePane, afterPane],
+                [afterPane, beforePane],
+            ]) {
+                from.addEventListener('scroll', () => {
+                    if (syncing) return;
+                    syncing = true;
+                    to.scrollTop = from.scrollTop;
+                    to.scrollLeft = from.scrollLeft;
+                    requestAnimationFrame(() => {
+                        syncing = false;
+                    });
+                });
+            }
+            update();
+        </script>
+    </body>
+</html>

@@ -1,5 +1,23 @@
-import { describe, expect, it } from 'vitest';
-import { parseLcaApiEnvironment } from './environment';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ESCROW_AUTHORITY_TENANT_PATTERN } from '@learncard/sss-key-manager';
+import {
+    ESCROW_AUTHORITY_TENANT_LABEL,
+    isEscrowReleaseKillSwitchEnabled,
+    parseLcaApiEnvironment,
+} from './environment';
+
+afterEach(() => vi.unstubAllEnvs());
+
+describe('live escrow release kill switch', () => {
+    it.each(['1', 'true'])('blocks releases for %s', value => {
+        vi.stubEnv('ESCROW_RELEASE_KILL_SWITCH', value);
+        expect(isEscrowReleaseKillSwitchEnabled()).toBe(true);
+    });
+    it.each(['0', 'false', ''])('allows releases for %s', value => {
+        vi.stubEnv('ESCROW_RELEASE_KILL_SWITCH', value);
+        expect(isEscrowReleaseKillSwitchEnabled()).toBe(false);
+    });
+});
 
 const production = {
     NODE_ENV: 'production',
@@ -112,5 +130,56 @@ describe('signing-authority seed environment', () => {
                 SA_SEED_ALLOW_LEGACY_READ: 'true',
             })
         ).not.toThrow();
+    });
+});
+
+describe('Keycloak startup configuration', () => {
+    it.each([undefined, '', '   ', ' , , '])('rejects missing audiences: %s', audiences => {
+        expect(() =>
+            parseLcaApiEnvironment({
+                NODE_ENV: 'test',
+                IS_OFFLINE: 'true',
+                KEYCLOAK_ISSUERS: 'https://identity.example/realms/learncard',
+                KEYCLOAK_AUDIENCES: audiences,
+            })
+        ).toThrow(/KEYCLOAK_AUDIENCES/);
+    });
+    it('allows disabled Keycloak and valid issuer/audience configuration', () => {
+        expect(() =>
+            parseLcaApiEnvironment({
+                NODE_ENV: 'test',
+                IS_OFFLINE: 'true',
+                KEYCLOAK_ISSUERS: ' , ',
+            })
+        ).not.toThrow();
+        expect(() =>
+            parseLcaApiEnvironment({
+                NODE_ENV: 'test',
+                IS_OFFLINE: 'true',
+                KEYCLOAK_ISSUERS: 'https://identity.example/realms/learncard',
+                KEYCLOAK_AUDIENCES: ' , learncard-app, ',
+            })
+        ).not.toThrow();
+    });
+});
+
+describe('escrow authority tenant', () => {
+    it('validates the label exactly like the SDK', () => {
+        expect(ESCROW_AUTHORITY_TENANT_LABEL.source).toBe(ESCROW_AUTHORITY_TENANT_PATTERN.source);
+        expect(ESCROW_AUTHORITY_TENANT_LABEL.flags).toBe(ESCROW_AUTHORITY_TENANT_PATTERN.flags);
+    });
+
+    const offline = { ...production, IS_OFFLINE: 'true' };
+    it('defaults to the learncard enclave label (no infra change)', () => {
+        expect(parseLcaApiEnvironment(offline).ESCROW_AUTHORITY_TENANT).toBe('learncard');
+    });
+    it('accepts an explicit label and rejects a malformed one', () => {
+        expect(
+            parseLcaApiEnvironment({ ...offline, ESCROW_AUTHORITY_TENANT: 'scouts' })
+                .ESCROW_AUTHORITY_TENANT
+        ).toBe('scouts');
+        expect(() =>
+            parseLcaApiEnvironment({ ...offline, ESCROW_AUTHORITY_TENANT: 'learn card' })
+        ).toThrow();
     });
 });

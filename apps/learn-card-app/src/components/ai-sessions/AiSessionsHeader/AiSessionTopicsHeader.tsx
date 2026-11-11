@@ -52,7 +52,7 @@ export const AiSessionTopicsHeader: React.FC<{
                 ) : (
                     <div className="h-[75px] w-[75px] mr-2">
                         <img
-                            className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid"
+                            className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border border-solid"
                             alt={`${app?.name} logo`}
                             src={app?.img}
                         />

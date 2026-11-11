@@ -144,7 +144,7 @@ const ScoutSlide1: React.FC<ScoutSlideProps> = ({
     return (
         <>
             <section className="base-gradient flex flex-col items-center justify-center">
-                <img src={ScoutPassLogo} alt="" className="!w-[55px]" />
+                <img src={ScoutPassLogo} alt="" className="w-[55px]!" />
                 <img src={ScoutPassTextLogo} alt="" className="mt-4" />
             </section>
             <section className="absolute bottom-[50px]">
@@ -235,7 +235,7 @@ const ScoutSlide4: React.FC<ScoutSlideProps> = ({ handleNextSlide, handlePrevSli
     return (
         <>
             <section className="font-medium font-rubik flex flex-col items-center justify-center base-gradient">
-                <img src={ScoutPassLogo} alt="" className="!w-[55px]" />
+                <img src={ScoutPassLogo} alt="" className="w-[55px]!" />
                 <img src={ScoutPassTextLogo} alt="" className="mt-4" />
                 <IonSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
             </section>

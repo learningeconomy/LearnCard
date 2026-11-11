@@ -207,7 +207,7 @@ const IntegrationHub: React.FC = () => {
                     {showSetupPrompt && (
                         <div className="max-w-lg mx-auto py-12">
                             <div className="text-center mb-8">
-                                <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-200">
+                                <div className="w-16 h-16 bg-linear-to-br/srgb from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-200">
                                     <Rocket className="w-8 h-8 text-white" />
                                 </div>
 
@@ -234,7 +234,7 @@ const IntegrationHub: React.FC = () => {
                                             e.key === 'Enter' && handleCreateFirstProject()
                                         }
                                         placeholder="e.g. My Awesome App"
-                                        className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-sm"
+                                        className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-xs"
                                         disabled={isCreatingIntegration}
                                     />
 
@@ -287,7 +287,7 @@ const IntegrationHub: React.FC = () => {
                                             className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl"
                                         >
                                             <div
-                                                className={`w-10 h-10 ${useCase.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}
+                                                className={`w-10 h-10 ${useCase.bgColor} rounded-lg flex items-center justify-center shrink-0`}
                                             >
                                                 <IconComponent
                                                     className={`w-5 h-5 ${useCase.color}`}
@@ -307,9 +307,9 @@ const IntegrationHub: React.FC = () => {
                                 })}
                             </div>
 
-                            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl p-6 shadow-lg shadow-cyan-100">
+                            <div className="bg-linear-to-br/srgb from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl p-6 shadow-lg shadow-cyan-100">
                                 <div className="flex items-start gap-4 mb-5">
-                                    <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-200 flex-shrink-0">
+                                    <div className="w-14 h-14 bg-linear-to-br/srgb from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-200 shrink-0">
                                         <Rocket className="w-7 h-7 text-white" />
                                     </div>
                                     <div className="flex-1">
@@ -324,14 +324,14 @@ const IntegrationHub: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
+                                <div className="space-y-v3-2">
                                     {integrations.map(integration => (
                                         <button
                                             key={integration.id}
                                             onClick={() => selectIntegration(integration.id)}
                                             className="w-full flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-xl hover:border-cyan-400 hover:shadow-md hover:shadow-cyan-50 transition-all group text-left"
                                         >
-                                            <div className="w-10 h-10 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <div className="w-10 h-10 bg-linear-to-br/srgb from-cyan-100 to-blue-100 rounded-lg flex items-center justify-center shrink-0">
                                                 <Layout className="w-5 h-5 text-cyan-600" />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -357,7 +357,7 @@ const IntegrationHub: React.FC = () => {
                                                           ]()}
                                                 </p>
                                             </div>
-                                            <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                                            <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all shrink-0" />
                                         </button>
                                     ))}
                                 </div>
@@ -411,7 +411,7 @@ const IntegrationHub: React.FC = () => {
                                     onClick={() => openExternalLink('https://docs.learncard.com')}
                                     className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
                                 >
-                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-xs">
                                         <BookOpen className="w-5 h-5 text-gray-600" />
                                     </div>
 
@@ -439,7 +439,7 @@ const IntegrationHub: React.FC = () => {
                                     }
                                     className="flex items-start gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
                                 >
-                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-xs">
                                         <svg
                                             className="w-5 h-5 text-gray-600"
                                             viewBox="0 0 24 24"
@@ -469,7 +469,7 @@ const IntegrationHub: React.FC = () => {
                                     onClick={() => history.push('/app-store/developer')}
                                     className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group text-left"
                                 >
-                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-xs">
                                         <Layout className="w-5 h-5 text-gray-600" />
                                     </div>
 

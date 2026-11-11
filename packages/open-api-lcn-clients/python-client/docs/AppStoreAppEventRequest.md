@@ -1,12 +1,11 @@
 # AppStoreAppEventRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**listing_id** | **str** |  | 
-**event** | **Dict[str, object]** |  | 
+| Name           | Type                                                                | Description | Notes |
+| -------------- | ------------------------------------------------------------------- | ----------- | ----- |
+| **listing_id** | **str**                                                             |             |
+| **event**      | [**AppStoreAppEventRequestEvent**](AppStoreAppEventRequestEvent.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ app_store_app_event_request_dict = app_store_app_event_request_instance.to_dict(
 # create an instance of AppStoreAppEventRequest from a dict
 app_store_app_event_request_from_dict = AppStoreAppEventRequest.from_dict(app_store_app_event_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

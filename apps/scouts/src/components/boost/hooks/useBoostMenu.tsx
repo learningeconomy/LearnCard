@@ -22,6 +22,35 @@ export enum BoostMenuType {
     earned = 'EARNED',
 }
 
+type BoostOptionsMenuProps = React.ComponentProps<typeof BoostOptionsMenu>;
+
+/**
+ * Troop IDs can only be deleted once they're revoked or still pending, which takes two
+ * getBoostRecipients calls to find out. Rendered inside the menu modal so those calls only
+ * happen once someone actually opens the menu, and so the Delete option shows up as soon as
+ * the status resolves (newModal snapshots its props, so a status computed outside the modal
+ * would stay frozen at whatever it was when the menu opened).
+ */
+const TroopIDBoostOptionsMenu: React.FC<
+    Omit<BoostOptionsMenuProps, 'showDeleteButton'>
+> = props => {
+    const { boost } = props;
+    const { isLoading } = useGetBoost(boost?.boostId);
+    const credentialStatus = useTroopIDStatus(boost, undefined, boost?.boostId);
+    const isRevokedOrPending = credentialStatus === 'revoked' || credentialStatus === 'pending';
+
+    return <BoostOptionsMenu {...props} showDeleteButton={!isLoading && isRevokedOrPending} />;
+};
+
+export const BoostMenuContent: React.FC<
+    Omit<BoostOptionsMenuProps, 'showDeleteButton'> & { isTroopID: boolean }
+> = ({ isTroopID, ...props }) => {
+    // Non-troop-ID boosts can always be deleted, so there's nothing to look up.
+    if (!isTroopID) return <BoostOptionsMenu {...props} showDeleteButton />;
+
+    return <TroopIDBoostOptionsMenu {...props} />;
+};
+
 const useBoostMenu = (
     boostCredential: VC | UnsignedVC,
     boostUri: string,
@@ -31,12 +60,7 @@ const useBoostMenu = (
     onCloseModal?: () => void,
     onDelete?: () => void
 ) => {
-    const { isLoading } = useGetBoost(boost?.boostId);
-    const credentialStatus = useTroopIDStatus(boost, undefined, boost?.boostId);
-    const isRevokedOrPending = credentialStatus === 'revoked' || credentialStatus === 'pending';
     const isTroopID = isTroopCategory(categoryType as BoostCategoryOptionsEnum);
-
-    const showDeleteButton = (!isLoading && isRevokedOrPending && isTroopID) || !isTroopID;
 
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
@@ -57,7 +81,7 @@ const useBoostMenu = (
             });
             return res;
         } catch (e) {
-            throw new Error(e);
+            throw new Error(String(e), { cause: e });
         }
     };
 
@@ -72,7 +96,8 @@ const useBoostMenu = (
 
     const handlePresentBoostMenuModal = () => {
         newModal(
-            <BoostOptionsMenu
+            <BoostMenuContent
+                isTroopID={isTroopID}
                 handleCloseModal={() => {
                     closeModal();
                     onCloseModal?.();
@@ -81,13 +106,12 @@ const useBoostMenu = (
                 boost={boost}
                 boostUri={boostUri}
                 showCloseButton={true}
-                showDeleteButton={showDeleteButton}
                 handleDeleteBoost={handleDeleteBoost}
                 handleShareBoost={handleShareBoost}
                 menuType={menuType}
                 categoryType={categoryType}
             />,
-            { sectionClassName: '!max-w-[400px]' }
+            { sectionClassName: 'max-w-[400px]!' }
         );
     };
 

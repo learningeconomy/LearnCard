@@ -38,10 +38,14 @@ class TestInboxFinalize200Response(unittest.TestCase):
                 processed = 1.337,
                 claimed = 1.337,
                 errors = 1.337,
+                guardian_pending = 1.337,
                 verifiable_credentials = [
-                    {
-                        'key' : null
-                        }
+                    null
+                    ],
+                deliveries = [
+                    openapi_client.models.inbox_finalize_200_response_deliveries_inner.inbox_finalize_200_response_deliveries_inner(
+                        id = '', 
+                        credential = null, )
                     ]
             )
         else:
@@ -49,10 +53,14 @@ class TestInboxFinalize200Response(unittest.TestCase):
                 processed = 1.337,
                 claimed = 1.337,
                 errors = 1.337,
+                guardian_pending = 1.337,
                 verifiable_credentials = [
-                    {
-                        'key' : null
-                        }
+                    null
+                    ],
+                deliveries = [
+                    openapi_client.models.inbox_finalize_200_response_deliveries_inner.inbox_finalize_200_response_deliveries_inner(
+                        id = '', 
+                        credential = null, )
                     ],
         )
         """

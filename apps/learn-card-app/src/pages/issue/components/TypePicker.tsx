@@ -69,7 +69,7 @@ export const TypePicker: React.FC<TypePickerProps> = ({ selectedObv3Type, onSele
     };
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             <div className="grid grid-cols-2 sm:grid-cols-3 [@media(min-width:992px)_and_(max-width:1155px)]:grid-cols-2 gap-2">
                 {COMMON_TYPES.map(entry => (
                     <TypePill

@@ -1,4 +1,24 @@
 {
+    "credentialCollection": {
+        "searchIncomplete": "Recherche incomplète. Résultats trouvés : {{count}}.",
+        "searching": "Recherche… Résultats trouvés : {{count}}.",
+        "loadError": "Justificatifs chargés : {{count}}. La collection est incomplète.",
+        "loadErrorEmpty": "Impossible de charger les justificatifs. La collection est incomplète.",
+        "retrying": "Nouvelle tentative…",
+        "retry": "Réessayer de charger les justificatifs",
+        "loadingEarned": "Chargement des justificatifs obtenus",
+        "initialError": "Impossible de charger les justificatifs. Réessayez.",
+        "loadingCredentials": "Chargement des justificatifs…",
+        "recentIncomplete": "Certains justificatifs récents n’ont pas pu être chargés. Ces résultats sont incomplets.",
+        "recentError": "Impossible de charger les justificatifs récents.",
+        "loadingRecent": "Chargement des justificatifs récents…",
+        "retryRecent": "Réessayer de charger les justificatifs récents",
+        "totalsAria": "Totaux des justificatifs",
+        "totals": "Justificatifs : {{credentials}} · Compétences : {{skills}}",
+        "totalsError": "Impossible de charger les totaux des justificatifs.",
+        "counting": "Comptage des justificatifs…",
+        "retryTotals": "Réessayer de charger les totaux"
+    },
     "common": {
         "share": "Partager",
         "open": "Ouvrir",
@@ -137,6 +157,8 @@
         "neutralMode": "Mode neutre"
     },
     "scanner": {
+        "incompatibleTitle": "Code QR non pris en charge",
+        "incompatible": "Le code QR que vous avez scanné n’est pas compatible.",
         "title": "Scanner le code QR",
         "description": "Dirigez votre caméra vers un code QR",
         "frameLabel": "Placez le QR dans le cadre",
@@ -218,6 +240,20 @@
         }
     },
     "base": {
+        "inAppMessages": {
+            "next": "Suivant",
+            "previous": "Précédent",
+            "done": "Terminé",
+            "progress": "Progression de la présentation",
+            "error": "Une erreur est survenue. Réessayez.",
+            "retry": "Réessayer",
+            "loading": "Chargement…",
+            "opening": "Ouverture…",
+            "checking": "Vérification…",
+            "downloading": "Téléchargement… {{progress}}%",
+            "installing": "Installation…",
+            "upToDate": "Vous utilisez la dernière version."
+        },
         "verification": {
             "selfIssued": "Auto-émis",
             "trustedIssuer": "Émetteur de confiance",
@@ -406,6 +442,7 @@
         "deletingAccount": "Suppression du compte...",
         "deleteForever": "Supprimer définitivement",
         "fullName": "Nom complet",
+        "fullNameOptional": "Nom complet (facultatif)",
         "emailAddress": "Adresse e-mail",
         "phoneNumber": "Numéro de téléphone",
         "userID": "Identifiant utilisateur",
@@ -629,6 +666,7 @@
         }
     },
     "networkPrompts": {
+        "profileSaveFailed": "Nous n’avons pas pu enregistrer votre profil. Vérifiez votre connexion et réessayez.",
         "welcomeTo": "Bienvenue sur",
         "setupProf": "Configurez votre profil pour commencer !",
         "dataOwn": "Vous possédez vos propres données.",
@@ -1589,6 +1627,7 @@
         "createBtn": "Créer un nouveau badge de mérite"
     },
     "consentFlow": {
+        "reviewChanged": "Les modalités de partage ont changé. Vérifiez-les avant de vous reconnecter.",
         "yes": "Oui",
         "no": "Non",
         "useDataTo": "utilisera les données pour :",

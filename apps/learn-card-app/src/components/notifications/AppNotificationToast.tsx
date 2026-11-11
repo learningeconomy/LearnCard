@@ -87,14 +87,14 @@ const AppNotificationToast: React.FC<AppNotificationToastProps> = ({
         >
             <div
                 onClick={handleTap}
-                className={`pointer-events-auto max-w-[420px] w-full rounded-2xl bg-gradient-to-r ${bgGradient} p-[1px] shadow-2xl ring-1 ${ringColor} ${
+                className={`pointer-events-auto max-w-[420px] w-full rounded-2xl bg-linear-to-r/srgb ${bgGradient} p-[1px] shadow-2xl ring-1 ${ringColor} ${
                     isTappable ? 'cursor-pointer' : ''
                 }`}
             >
                 <div className="flex items-start gap-3 rounded-2xl bg-white/95 backdrop-blur-xl px-4 py-3">
                     {/* App icon or bell */}
                     <div
-                        className={`flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br ${bgGradient} shadow-sm`}
+                        className={`shrink-0 w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-linear-to-br/srgb ${bgGradient} shadow-xs`}
                     >
                         {notification.appIcon && !iconFailed ? (
                             <img
@@ -140,7 +140,7 @@ const AppNotificationToast: React.FC<AppNotificationToastProps> = ({
                     {/* Dismiss */}
                     <button
                         onClick={handleDismiss}
-                        className="flex-shrink-0 mt-0.5 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                        className="shrink-0 mt-0.5 p-1 rounded-full hover:bg-gray-100 transition-colors"
                     >
                         <X className="w-4 h-4 text-gray-400" />
                     </button>

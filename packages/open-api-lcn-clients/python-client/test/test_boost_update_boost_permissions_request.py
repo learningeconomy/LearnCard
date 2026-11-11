@@ -37,6 +37,7 @@ class TestBoostUpdateBoostPermissionsRequest(unittest.TestCase):
             return BoostUpdateBoostPermissionsRequest(
                 uri = '',
                 updates = openapi_client.models.boost_update_boost_permissions_request_updates.boost_updateBoostPermissions_request_updates(
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 
@@ -53,6 +54,7 @@ class TestBoostUpdateBoostPermissionsRequest(unittest.TestCase):
             return BoostUpdateBoostPermissionsRequest(
                 uri = '',
                 updates = openapi_client.models.boost_update_boost_permissions_request_updates.boost_updateBoostPermissions_request_updates(
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 

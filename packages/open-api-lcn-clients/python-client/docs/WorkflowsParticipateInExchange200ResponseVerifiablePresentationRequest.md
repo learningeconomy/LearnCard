@@ -1,13 +1,12 @@
 # WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**query** | [**List[WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner]**](WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner.md) |  | 
-**challenge** | **str** |  | 
-**domain** | **str** |  | 
+| Name          | Type                                                                                                                                                                              | Description | Notes |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **query**     | [**List[WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner]**](WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner.md) |             |
+| **challenge** | **str**                                                                                                                                                                           |             |
+| **domain**    | **str**                                                                                                                                                                           |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ workflows_participate_in_exchange200_response_verifiable_presentation_request_di
 # create an instance of WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest from a dict
 workflows_participate_in_exchange200_response_verifiable_presentation_request_from_dict = WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest.from_dict(workflows_participate_in_exchange200_response_verifiable_presentation_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

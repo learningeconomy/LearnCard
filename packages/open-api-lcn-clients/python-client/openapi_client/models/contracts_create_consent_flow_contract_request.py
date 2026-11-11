@@ -19,17 +19,19 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner import ContractsCreateConsentFlowContractRequestAutoboostsInner
 from openapi_client.models.contracts_create_consent_flow_contract_request_contract import ContractsCreateConsentFlowContractRequestContract
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsCreateConsentFlowContractRequest(BaseModel):
     """
     ContractsCreateConsentFlowContractRequest
     """ # noqa: E501
     contract: ContractsCreateConsentFlowContractRequestContract
-    name: Optional[StrictStr]
+    name: StrictStr
     subtitle: Optional[StrictStr] = None
     description: Optional[StrictStr] = None
     reason_for_accessing: Optional[StrictStr] = Field(default=None, alias="reasonForAccessing")
@@ -40,10 +42,12 @@ class ContractsCreateConsentFlowContractRequest(BaseModel):
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     autoboosts: Optional[List[ContractsCreateConsentFlowContractRequestAutoboostsInner]] = None
     writers: Optional[List[StrictStr]] = None
-    __properties: ClassVar[List[str]] = ["contract", "name", "subtitle", "description", "reasonForAccessing", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "image", "expiresAt", "autoboosts", "writers"]
+    recipients: Optional[Annotated[List[StrictStr], Field(max_length=50)]] = None
+    __properties: ClassVar[List[str]] = ["contract", "name", "subtitle", "description", "reasonForAccessing", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "image", "expiresAt", "autoboosts", "writers", "recipients"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -55,8 +59,7 @@ class ContractsCreateConsentFlowContractRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -69,9 +72,8 @@ class ContractsCreateConsentFlowContractRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -88,49 +90,8 @@ class ContractsCreateConsentFlowContractRequest(BaseModel):
         _items = []
         if self.autoboosts:
             for _item_autoboosts in self.autoboosts:
-                if _item_autoboosts:
-                    _items.append(_item_autoboosts.to_dict())
+                _items.append(_item_autoboosts.to_dict() if _item_autoboosts is not None else None)
             _dict['autoboosts'] = _items
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if subtitle (nullable) is None
-        # and model_fields_set contains the field
-        if self.subtitle is None and "subtitle" in self.model_fields_set:
-            _dict['subtitle'] = None
-
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
-            _dict['description'] = None
-
-        # set to None if reason_for_accessing (nullable) is None
-        # and model_fields_set contains the field
-        if self.reason_for_accessing is None and "reason_for_accessing" in self.model_fields_set:
-            _dict['reasonForAccessing'] = None
-
-        # set to None if redirect_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.redirect_url is None and "redirect_url" in self.model_fields_set:
-            _dict['redirectUrl'] = None
-
-        # set to None if front_door_boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.front_door_boost_uri is None and "front_door_boost_uri" in self.model_fields_set:
-            _dict['frontDoorBoostUri'] = None
-
-        # set to None if image (nullable) is None
-        # and model_fields_set contains the field
-        if self.image is None and "image" in self.model_fields_set:
-            _dict['image'] = None
-
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
-            _dict['expiresAt'] = None
-
         return _dict
 
     @classmethod
@@ -142,7 +103,7 @@ class ContractsCreateConsentFlowContractRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "contract": ContractsCreateConsentFlowContractRequestContract.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
             "name": obj.get("name"),
             "subtitle": obj.get("subtitle"),
@@ -154,8 +115,11 @@ class ContractsCreateConsentFlowContractRequest(BaseModel):
             "image": obj.get("image"),
             "expiresAt": obj.get("expiresAt"),
             "autoboosts": [ContractsCreateConsentFlowContractRequestAutoboostsInner.from_dict(_item) for _item in obj["autoboosts"]] if obj.get("autoboosts") is not None else None,
-            "writers": obj.get("writers")
-        })
+            "writers": obj.get("writers"),
+            "recipients": obj.get("recipients")
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

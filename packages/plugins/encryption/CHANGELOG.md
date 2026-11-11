@@ -1,5 +1,114 @@
 # learn-card-core
 
+## 1.2.0
+
+### Minor Changes
+
+- [#1962](https://github.com/learningeconomy/LearnCard/pull/1962) [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48) Thanks [@Custard7](https://github.com/Custard7)! - Add holder-authorized pre-accept managed delivery receipts and shared binding validation.
+  Allow refresh callers to pin the original public status and refresh service, and reject
+  changed managed versions without a strictly newer signed validFrom. Verify managed
+  deliveries before claim previews, acceptance and local indexing, and retain their
+  validated binding with the local index record.
+
+    Add a strict ciphertext-only holder handoff contract, an explicit-recipient DAG JWE
+    primitive that does not add the caller, and a shared exact recipient-key-set check.
+
+    Enable server-side holder-mode (student-only encrypted) managed sends and publishes.
+    `boost.prepareRefreshableSend({ encryption: 'holder' })` returns the exact
+    key-agreement recipient set (holder + current managers) to encrypt to and pins the
+    refresh aggregate to holder mode. New issuer routes
+    `credentialRefresh.sendHolderEncryptedRefreshable`,
+    `credentialRefresh.publishHolderEncryptedRefreshable` and
+    `credentialRefresh.getEncryptionRecipients` accept and deliver an already-encrypted
+    handoff without ever decrypting it; a manager-set change since prepare fails with
+    `CONFLICT`/`RECIPIENTS_CHANGED` instead of silently narrowing who can decrypt. A
+    holder-mode aggregate rejects inbox recipients, signed-credential-only sends, mixed
+    network/holder sends on the same aggregate, and signing-authority publication.
+
+    SDK support: `send({ refresh: true, encryption: 'holder' })` builds and signs the
+    credential locally exactly as the network-mode path does, then encrypts it to the
+    prepared recipient set with `createDagJweExact`, checks the resulting JWE's recipient
+    set and the signed credential's binding before ever calling the network, and sends
+    only the ciphertext handoff via `credentialRefresh.sendHolderEncryptedRefreshable`. A
+    `RECIPIENTS_CHANGED` conflict is retried once after re-fetching
+    `credentialRefresh.getEncryptionRecipients`. The new `publishHolderEncryptedRefreshable`
+    method does the same for later versions with an explicit `notify` flag. Both reject
+    client-side for inbox recipients, a caller-supplied `signedCredential`, and wallets
+    without local signing or the Encryption plugin; an old server response missing
+    `recipientKeyIds` is rejected rather than silently sent in network mode.
+
+    Recover authenticated absent-status bindings lazily for legacy deliveries, using the
+    stored JSON string `null` to distinguish verified absence from a missing binding.
+    Allow explicit null status repair only when it matches the original status digest.
+    Legacy receipts without a stored refresh descriptor explicitly bind only the unique
+    allocated managed entry; exact receipts continue to bind the entire signed shape.
+    Holder publishing preserves a supplied original refresh descriptor in legacy mode,
+    and fails with repair/reissue guidance when that descriptor is unavailable.
+    Holder sends also preserve template-supplied external status entries instead of
+    forcing new server status allocation.
+
+### Patch Changes
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+    - @learncard/core@9.4.44
+
+## 1.1.43
+
+### Patch Changes
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/types@5.24.2
+    - @learncard/core@9.4.43
+
+## 1.1.42
+
+### Patch Changes
+
+- Updated dependencies [[`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0)]:
+    - @learncard/types@5.24.1
+    - @learncard/core@9.4.42
+
+## 1.1.41
+
+### Patch Changes
+
+- Updated dependencies [[`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762)]:
+    - @learncard/types@5.24.0
+    - @learncard/core@9.4.41
+
+## 1.1.40
+
+### Patch Changes
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+    - @learncard/core@9.4.40
+
+## 1.1.39
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/core@9.4.39
+
+## 1.1.38
+
+### Patch Changes
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012)]:
+    - @learncard/types@5.23.0
+    - @learncard/core@9.4.38
+
+## 1.1.37
+
+### Patch Changes
+
+- Updated dependencies [[`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd), [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993), [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f)]:
+    - @learncard/types@5.22.0
+    - @learncard/core@9.4.37
+
 ## 1.1.36
 
 ### Patch Changes

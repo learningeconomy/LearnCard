@@ -1,16 +1,18 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { isVC2Format } from '@learncard/helpers';
+import { getIDsQueryKey } from '../queries/idCredentials';
+import { getPaginatedManagedBoostsKey } from '../queries/vcQueries';
 import {
     BoostCategoryOptionsEnum,
     // oxlint-disable-next-line no-unused-vars
     CredentialCategoryEnum,
-    getBaseUrl,
     getCategoryForCredential,
     queueAiInsightCredentialRefresh,
     switchedProfileStore,
     useDeleteCredentialRecord,
     useGetProfile,
+    useTenantBaseUrl,
     useWallet,
     VC_WITH_URI,
 } from 'learn-card-base';
@@ -23,6 +25,7 @@ import {
     BoostPermissions,
     UnsignedVC,
     LCNBoostStatusEnum,
+    type PaginatedBoostsType,
 } from '@learncard/types';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { BoostCMSState } from 'learn-card-base/components/boost/boost';
@@ -32,9 +35,11 @@ import {
     getEndorsementsForVC,
 } from 'learn-card-base/helpers/credentialHelpers';
 import {
+    buildCredentialShareUrl,
     findMatchingSharedCredentialIndex,
     getSharedCredentialIndexQueries,
     insertItem,
+    publishSharePreview,
 } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
@@ -45,6 +50,7 @@ import { getLogger } from '../../logging/logger';
 const log = getLogger('boosts');
 
 type SharedCredentialsIndex = {
+    _id?: string;
     type: 'shared-credentials';
     sharedCredentialUri: string;
     sharedCredentialKey?: string;
@@ -52,6 +58,7 @@ type SharedCredentialsIndex = {
     pin: string;
     randomSeed: string;
     uri: string;
+    publicPreviewId?: string;
 };
 
 export const baseBoostShareRouteName = 'share-boost';
@@ -59,6 +66,7 @@ export const baseBoostShareRouteName = 'share-boost';
 /* creates a VP that wraps a boost, returns a published vp and a sharable link*/
 export const useShareBoostMutation = () => {
     const { initWallet } = useWallet();
+    const tenantBaseUrl = useTenantBaseUrl();
 
     return useMutation({
         mutationFn: async ({
@@ -66,13 +74,15 @@ export const useShareBoostMutation = () => {
             credentialId: requestedCredentialId,
             credentialUri,
             shareRouteName = baseBoostShareRouteName,
+            publicPreview,
         }: {
             credential: VC | UnsignedVC;
             credentialUri: string;
             credentialId?: string;
             shareRouteName?: string;
+            publicPreview?: { name: string; issuer: string; image?: string };
         }) => {
-            const baseUrl = getBaseUrl();
+            const baseUrl = new URL(tenantBaseUrl).host;
 
             // get current index data stored on ceramic for user
             // currentUser's wallet
@@ -104,12 +114,52 @@ export const useShareBoostMutation = () => {
             }
 
             const endorsementVCs: VC[] = await getEndorsementsForVC(myWallet, credential, 'public');
+            const withPublicPreview = async (
+                link: string,
+                index: SharedCredentialsIndex
+            ): Promise<string> => {
+                if (!publicPreview) return link;
+
+                return publishSharePreview(
+                    link,
+                    publicPreview,
+                    index.publicPreviewId,
+                    input => myWallet.invoke.publishCredentialSharePreview(input),
+                    async previewId => {
+                        const storedIndex = index._id
+                            ? index
+                            : (
+                                  await myWallet.invoke.learnCloudRead<SharedCredentialsIndex>({
+                                      randomSeed: index.randomSeed,
+                                  })
+                              ).find(
+                                  record =>
+                                      record.uri === index.uri &&
+                                      record.sharedCredentialUri === index.sharedCredentialUri &&
+                                      record.credentialId === index.credentialId
+                              );
+                        if (!storedIndex?._id) {
+                            throw new Error('Unable to find the shared credential index');
+                        }
+                        // Multi-field encrypted filters match alternatives; only _id isolates a row.
+                        return myWallet.invoke.learnCloudUpdate<SharedCredentialsIndex>(
+                            { _id: storedIndex._id },
+                            { publicPreviewId: previewId }
+                        );
+                    },
+                    previewId => myWallet.invoke.deleteCredentialSharePreview(previewId)
+                );
+            };
 
             //If it already exists than we don't have to do it all again....
             if (extantCredentialIndex && endorsementVCs.length === 0) {
-                const link = `https://${baseUrl}/${shareRouteName}?uri=${extantCredentialIndex?.uri}&seed=${extantCredentialIndex?.randomSeed}&pin=${extantCredentialIndex?.pin}`;
+                const link = buildCredentialShareUrl(baseUrl, shareRouteName, {
+                    uri: extantCredentialIndex.uri,
+                    seed: extantCredentialIndex.randomSeed,
+                    pin: extantCredentialIndex.pin,
+                });
                 return {
-                    link,
+                    link: await withPublicPreview(link, extantCredentialIndex),
                 };
             }
 
@@ -157,7 +207,7 @@ export const useShareBoostMutation = () => {
 
             if (!publishedVpUri) throw new Error('Unable to publish VP');
 
-            await myWallet.invoke.learnCloudCreate<SharedCredentialsIndex>({
+            const newIndex: SharedCredentialsIndex = {
                 sharedCredentialUri: credentialUri,
                 ...(credentialId ? { credentialId } : {}),
                 ...sharedCredentialIndexQueries[0],
@@ -165,11 +215,16 @@ export const useShareBoostMutation = () => {
                 randomSeed: randomKey,
                 uri: publishedVpUri,
                 type: 'shared-credentials',
+            };
+            await myWallet.invoke.learnCloudCreate<SharedCredentialsIndex>(newIndex);
+            const link = buildCredentialShareUrl(baseUrl, shareRouteName, {
+                uri: publishedVpUri,
+                seed: randomKey,
+                pin,
             });
-            const link = `https://${baseUrl}/${shareRouteName}?uri=${publishedVpUri}&seed=${randomKey}&pin=${pin}`;
 
             return {
-                link,
+                link: await withPublicPreview(link, newIndex),
             };
         },
     });
@@ -200,6 +255,8 @@ export const useCreateBoost = () => {
             meta?: Record<string, unknown>;
             autoConnectRecipients?: boolean;
         }) => {
+            // Pin the managed list before wallet/network work can yield to a profile switch.
+            const managedBoostsKey = getPaginatedManagedBoostsKey(state.basicInfo.type);
             const wallet = await initWallet();
 
             const walletDid = wallet?.id?.did();
@@ -344,6 +401,7 @@ export const useCreateBoost = () => {
             }
 
             return {
+                managedBoostsKey,
                 boostUri,
                 name: state.basicInfo.name,
                 type: state.basicInfo.achievementType ?? '',
@@ -351,14 +409,14 @@ export const useCreateBoost = () => {
                 status,
             };
         },
-        onSuccess: async ({ boostUri, name, type, category, status }) => {
+        onSuccess: async ({ managedBoostsKey, boostUri, name, type, category, status }) => {
             await queryClient.cancelQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
+                queryKey: managedBoostsKey,
             });
             const wallet = await initWallet();
 
             // update cache optimistically
-            insertItem(queryClient, ['useGetPaginatedManagedBoosts', category], {
+            insertItem(queryClient, managedBoostsKey, {
                 uri: boostUri,
                 name,
                 type,
@@ -368,7 +426,14 @@ export const useCreateBoost = () => {
 
             // Intentionally don't await these to keep this mutation fast!
 
-            queryClient.refetchQueries({ queryKey: ['useGetPaginatedManagedBoosts', category] });
+            // The queryFn reads the live wallet, so never refetch another profile's list.
+            queryClient.invalidateQueries({
+                queryKey: managedBoostsKey,
+                refetchType:
+                    managedBoostsKey[1] === (switchedProfileStore.get.switchedDid() ?? '')
+                        ? 'all'
+                        : 'none',
+            });
             queryClient.invalidateQueries({ queryKey: ['useGetPaginatedFamilialBoosts'] });
             queryClient.invalidateQueries({ queryKey: ['useGetBoostChildren'] });
             queryClient.invalidateQueries({ queryKey: ['useCountBoostChildren'] });
@@ -412,6 +477,8 @@ export const useCreateChildBoost = () => {
             meta?: Record<string, unknown>;
             autoConnectRecipients?: boolean;
         }) => {
+            // Pin the managed list before wallet/network work can yield to a profile switch.
+            const managedBoostsKey = getPaginatedManagedBoostsKey(state.basicInfo.type);
             const wallet = await initWallet();
 
             const walletDid = wallet?.id?.did();
@@ -492,6 +559,7 @@ export const useCreateChildBoost = () => {
             });
 
             return {
+                managedBoostsKey,
                 boostUri,
                 name: state.basicInfo.name,
                 type: state.basicInfo.achievementType ?? '',
@@ -499,7 +567,7 @@ export const useCreateChildBoost = () => {
                 status,
             };
         },
-        onSuccess: async ({ boostUri, name, type, category, status }) => {
+        onSuccess: async ({ managedBoostsKey, boostUri, name, type, category, status }) => {
             await queryClient.invalidateQueries({
                 queryKey: ['useGetBoostChildren'],
             });
@@ -519,12 +587,12 @@ export const useCreateChildBoost = () => {
             });
 
             await queryClient.cancelQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
+                queryKey: managedBoostsKey,
             });
             const wallet = await initWallet();
 
             // update cache optimistically
-            insertItem(queryClient, ['useGetPaginatedManagedBoosts', category], {
+            insertItem(queryClient, managedBoostsKey, {
                 uri: boostUri,
                 name,
                 type,
@@ -533,7 +601,14 @@ export const useCreateChildBoost = () => {
             });
 
             // Intentionally don't await these to keep this mutation fast!
-            queryClient.refetchQueries({ queryKey: ['useGetPaginatedManagedBoosts', category] });
+            // The queryFn reads the live wallet, so never refetch another profile's list.
+            queryClient.invalidateQueries({
+                queryKey: managedBoostsKey,
+                refetchType:
+                    managedBoostsKey[1] === (switchedProfileStore.get.switchedDid() ?? '')
+                        ? 'all'
+                        : 'none',
+            });
             wallet.invoke.resolveFromLCN(boostUri).then(async boost => {
                 const validationResult = await VCValidator.spa(boost);
 
@@ -713,6 +788,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 category,
                 title: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                 boostUri: boostUri,
+                networkUri: sentCredentialUri,
             });
 
             return {
@@ -895,77 +971,53 @@ export const useDeleteManagedBoostMutation = () => {
 
             return { boostUri, category };
         },
-        onMutate: async update => {
-            const { boostUri, category } = update;
-            // get cached query useGetResolvedBoostsFromCategory
-            await queryClient.cancelQueries({
-                queryKey: ['useGetResolvedBoostsFromCategory', category],
-            });
+        onMutate: async ({ boostUri, category }) => {
+            const managedBoostsKey = getPaginatedManagedBoostsKey(category);
+            const resolvedBoostsKey = ['useGetResolvedBoostsFromCategory', category];
+            await queryClient.cancelQueries({ queryKey: resolvedBoostsKey });
+            await queryClient.cancelQueries({ queryKey: managedBoostsKey });
 
-            const currentQuery = queryClient.getQueryData([
-                'useGetResolvedBoostsFromCategory',
-                category,
-            ]);
+            const currentQuery =
+                queryClient.getQueryData<Array<{ boost: Boost }>>(resolvedBoostsKey);
+            const previousManagedBoosts =
+                queryClient.getQueryData<InfiniteData<PaginatedBoostsType>>(managedBoostsKey);
 
-            // update cache optimistically
-            // remove from useGetCredentials cache
             if (currentQuery) {
-                // construct updated payload
-                const updatedQuery = currentQuery?.filter(boost => {
-                    return boost?.boost?.uri !== boostUri;
-                });
-
-                // write to cache
                 queryClient.setQueryData(
-                    ['useGetResolvedBoostsFromCategory', category],
-                    updatedQuery
+                    resolvedBoostsKey,
+                    currentQuery.filter(boost => boost?.boost?.uri !== boostUri)
                 );
             }
 
-            /*
-                clean up paginatedManagedBoosts
-            */
-            await queryClient.cancelQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
-            });
-
-            queryClient.setQueryData<{
-                pages: Array<{
-                    cursor: string;
-                    hasMore: boolean;
-                    records: Array<any>;
-                }>;
-                pageParams: Array<string | null>;
-            }>(['useGetPaginatedManagedBoosts', category], old => {
-                if (!old) return old;
-
-                const newPages = old.pages.map(page => ({
-                    ...page,
-                    records: page.records.filter(record => record.uri !== boostUri),
-                }));
+            queryClient.setQueryData<InfiniteData<PaginatedBoostsType>>(managedBoostsKey, old => {
+                if (!Array.isArray(old?.pages)) return old;
 
                 return {
                     ...old,
-                    pages: newPages,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        records: page.records.filter(record => record.uri !== boostUri),
+                    })),
                 };
             });
-            /*
-                clean up paginatedManagedBoosts
-            */
 
-            return { currentQuery }; //use in OnError
+            return { currentQuery, previousManagedBoosts, managedBoostsKey, resolvedBoostsKey };
         },
-        // oxlint-disable-next-line no-unused-vars
-        onSuccess: (res, variables) => {
-            // oxlint-disable-next-line no-unused-vars
-            const { boostUri, category } = res;
-            queryClient.invalidateQueries({
-                queryKey: ['useGetResolvedBoostsFromCategory', category],
-            });
-            queryClient.invalidateQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
-            });
-            queryClient.invalidateQueries({ queryKey: ['boosts'] });
+        onError: (_error, _variables, context) => {
+            if (context?.currentQuery !== undefined) {
+                queryClient.setQueryData(context.resolvedBoostsKey, context.currentQuery);
+            }
+            if (context?.previousManagedBoosts !== undefined) {
+                queryClient.setQueryData(context.managedBoostsKey, context.previousManagedBoosts);
+            }
+        },
+        onSettled: (_data, _error, _variables, context) => {
+            if (!context) return;
+            return Promise.all([
+                queryClient.invalidateQueries({ queryKey: context.resolvedBoostsKey }),
+                queryClient.invalidateQueries({ queryKey: context.managedBoostsKey }),
+                queryClient.invalidateQueries({ queryKey: ['boosts'] }),
+            ]);
         },
     });
 };
@@ -1029,6 +1081,7 @@ export const useDeleteEarnedBoostMutation = () => {
         onMutate: async update => {
             const { boostUri, category } = update;
             const didWeb = switchedProfileStore.get.switchedDid();
+            const readerDid = (await initWallet()).id.did();
 
             await queryClient.cancelQueries({
                 queryKey: ['useGetCredentials', didWeb ?? '', category],
@@ -1040,7 +1093,7 @@ export const useDeleteEarnedBoostMutation = () => {
                 queryKey: ['boosts'],
             });
             await queryClient.cancelQueries({
-                queryKey: ['useGetIDs', didWeb],
+                queryKey: getIDsQueryKey(didWeb),
             });
 
             const currentQuery = queryClient.getQueryData([
@@ -1053,8 +1106,9 @@ export const useDeleteEarnedBoostMutation = () => {
                 'useGetCredentialList',
                 didWeb ?? '',
                 category,
+                readerDid,
             ]);
-            const currentIDQueryList = queryClient.getQueryData(['useGetIDs', didWeb ?? '']);
+            const currentIDQueryList = queryClient.getQueryData(getIDsQueryKey(didWeb));
 
             // update cache optimistically
             // remove from useGetCredentials cache
@@ -1098,14 +1152,12 @@ export const useDeleteEarnedBoostMutation = () => {
                     updatedQuery
                 );
                 queryClient.setQueryData(
-                    ['useGetCredentialList', didWeb ?? '', category],
+                    ['useGetCredentialList', didWeb ?? '', category, readerDid],
                     updatedQueryList
                 );
 
-                queryClient.setQueryData(
-                    ['useGetIDs', didWeb ?? ''],
-                    (oldData: (VC | VC_WITH_URI)[] = []) =>
-                        oldData.filter(credential => credential.uri !== boostUri)
+                queryClient.setQueryData(getIDsQueryKey(didWeb), (oldData: VC_WITH_URI[] = []) =>
+                    oldData.filter(credential => credential.uri !== boostUri)
                 );
 
                 return { currentQuery, oldStaleTime, oldListStaleTime }; //use in OnError
@@ -1123,11 +1175,12 @@ export const useDeleteEarnedBoostMutation = () => {
             });
             queryClient.invalidateQueries({ queryKey: ['boosts'] });
             queryClient.invalidateQueries({
-                queryKey: ['useGetCredentialList', didWeb ?? '', category],
+                queryKey: ['useGetCredentialList', didWeb ?? ''],
             });
             queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialCount', didWeb ?? '', category],
             });
+            // Invalidate both the current records key and any persisted legacy ID entries.
             queryClient.invalidateQueries({
                 queryKey: ['useGetIDs', didWeb ?? ''],
             });

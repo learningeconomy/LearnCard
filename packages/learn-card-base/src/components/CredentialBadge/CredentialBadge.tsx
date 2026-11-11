@@ -132,7 +132,7 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
     let displayTypeBackgroundStyles = 'min-h-[120px] max-h-[120px] top-[-10px]';
     if (isCertDisplayType) displayTypeBackgroundStyles = 'min-h-[120px] max-h-[120px] top-[-35px]';
     if (isMediaDisplayType)
-        displayTypeBackgroundStyles = 'min-h-[120px] max-h-[120px] !rounded-none';
+        displayTypeBackgroundStyles = 'min-h-[120px] max-h-[120px] rounded-none!';
 
     let badgeBackground = null;
 

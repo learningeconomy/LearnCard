@@ -1,6 +1,7 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useWallet } from 'learn-card-base';
+import { dropMalformedInfiniteCacheEntry } from 'learn-card-base/react-query/infiniteQueryGuard';
 import * as m from '../../../../paraglide/messages.js';
 
 import type { CredentialTemplate } from '../types';
@@ -229,12 +230,19 @@ export function useIntegrationActivity(
     const { initWallet } = useWallet();
     const boostUris = templates.map(t => t.boostUri).filter(Boolean) as string[];
     const boostUrisKey = boostUris.join(',');
+    const queryClient = useQueryClient();
+    const activityQueryKey = [
+        'getMyActivities',
+        { limit, integrationId, listingId, eventType, boostUri },
+    ] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, activityQueryKey, 'getMyActivities');
 
     const activityQuery = useInfiniteQuery({
-        queryKey: ['getMyActivities', { limit, integrationId, listingId, eventType, boostUri }],
+        queryKey: activityQueryKey,
         initialPageParam: undefined as string | undefined,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const result = await (wallet.invoke as any).getMyActivities?.({
                 limit,
                 cursor: pageParam,
@@ -259,12 +267,13 @@ export function useIntegrationActivity(
         ],
         queryFn: async () => {
             const wallet = await initWallet();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const result = await (wallet.invoke as any).getActivityStats?.({
                 boostUris: boostUri
                     ? [boostUri]
                     : !integrationId && !listingId && boostUris.length > 0
-                    ? boostUris
-                    : undefined,
+                      ? boostUris
+                      : undefined,
                 integrationId,
                 listingId,
                 boostUri,

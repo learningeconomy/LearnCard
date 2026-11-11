@@ -17,26 +17,39 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetPaginatedBoostRecipientsWithChildren200ResponseRecordsInner(BaseModel):
     """
     BoostGetPaginatedBoostRecipientsWithChildren200ResponseRecordsInner
     """ # noqa: E501
     to: BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
-    var_from: Optional[StrictStr] = Field(alias="from")
+    var_from: StrictStr = Field(alias="from")
     received: Optional[StrictStr] = None
     boost_uris: List[StrictStr] = Field(alias="boostUris")
     credential_uris: Optional[List[StrictStr]] = Field(default=None, alias="credentialUris")
+    status: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["to", "from", "received", "boostUris", "credentialUris"]
+    __properties: ClassVar[List[str]] = ["to", "from", "received", "boostUris", "credentialUris", "status"]
+
+    @field_validator('status')
+    def status_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['active', 'revoked', 'suspended']):
+            raise ValueError("must be one of enum values ('active', 'revoked', 'suspended')")
+        return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -48,8 +61,7 @@ class BoostGetPaginatedBoostRecipientsWithChildren200ResponseRecordsInner(BaseMo
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -62,9 +74,8 @@ class BoostGetPaginatedBoostRecipientsWithChildren200ResponseRecordsInner(BaseMo
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -84,16 +95,6 @@ class BoostGetPaginatedBoostRecipientsWithChildren200ResponseRecordsInner(BaseMo
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if var_from (nullable) is None
-        # and model_fields_set contains the field
-        if self.var_from is None and "var_from" in self.model_fields_set:
-            _dict['from'] = None
-
-        # set to None if received (nullable) is None
-        # and model_fields_set contains the field
-        if self.received is None and "received" in self.model_fields_set:
-            _dict['received'] = None
-
         return _dict
 
     @classmethod
@@ -105,13 +106,16 @@ class BoostGetPaginatedBoostRecipientsWithChildren200ResponseRecordsInner(BaseMo
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "to": BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.from_dict(obj["to"]) if obj.get("to") is not None else None,
             "from": obj.get("from"),
             "received": obj.get("received"),
             "boostUris": obj.get("boostUris"),
-            "credentialUris": obj.get("credentialUris")
-        })
+            "credentialUris": obj.get("credentialUris"),
+            "status": obj.get("status")
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

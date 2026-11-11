@@ -1385,7 +1385,7 @@ const MapModeInner: React.FC = () => {
                     <span
                         className={`flex items-center gap-1.5 py-1 px-2.5 rounded-full
                                     bg-white/70 backdrop-blur-md border border-white
-                                    shadow-sm text-[10px] font-semibold uppercase tracking-wide ${
+                                    shadow-xs text-[10px] font-semibold uppercase tracking-wide ${
                                         effectiveLayout === 'navigate'
                                             ? 'text-indigo-700'
                                             : 'text-grayscale-600'
@@ -1409,7 +1409,7 @@ const MapModeInner: React.FC = () => {
                         }
                         className="py-1.5 px-3 rounded-full
                                    bg-white/80 backdrop-blur-md border border-white/60
-                                   shadow-sm hover:bg-white transition-colors
+                                   shadow-xs hover:bg-white transition-colors
                                    text-[11px] sm:text-xs font-medium text-grayscale-700
                                    whitespace-nowrap"
                         aria-label={
@@ -1426,7 +1426,7 @@ const MapModeInner: React.FC = () => {
                         onClick={clearRoute}
                         className="py-1.5 px-3 rounded-full
                                    bg-white/80 backdrop-blur-md border border-white/60
-                                   shadow-sm hover:bg-white transition-colors
+                                   shadow-xs hover:bg-white transition-colors
                                    text-[11px] sm:text-xs font-medium text-grayscale-500
                                    hover:text-grayscale-900
                                    whitespace-nowrap"
@@ -1548,7 +1548,7 @@ const MapModeInner: React.FC = () => {
 
                 <Controls
                     showInteractive={false}
-                    className="!shadow-sm !bg-white/80 !backdrop-blur-md !border !border-white/50 !rounded-xl"
+                    className="shadow-xs! bg-white/80! backdrop-blur-md! border! border-white/50! rounded-xl!"
                 />
 
                 {/*
@@ -1564,7 +1564,7 @@ const MapModeInner: React.FC = () => {
                     <MiniMap
                         pannable
                         zoomable
-                        className="!border !border-white/50 !rounded-xl !bg-white/60 !backdrop-blur-md"
+                        className="border! border-white/50! rounded-xl! bg-white/60! backdrop-blur-md!"
                         maskColor="rgba(236, 253, 245, 0.4)"
                         nodeColor={minimapNodeColor}
                     />

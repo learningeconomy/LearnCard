@@ -100,7 +100,7 @@ export const FeedbackDebugTab: React.FC = () => {
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <Section
                 title="Advocacy decision"
                 icon={<Gauge className="w-3 h-3" />}
@@ -111,7 +111,7 @@ export const FeedbackDebugTab: React.FC = () => {
                     </span>
                 }
             >
-                <div className="space-y-0.5">
+                <div className="space-y-v3-0.5">
                     <KVRow
                         label="platform"
                         value={Capacitor.isNativePlatform() ? Capacitor.getPlatform() : 'web'}
@@ -146,7 +146,7 @@ export const FeedbackDebugTab: React.FC = () => {
             </Section>
 
             <Section title="Sentiment ledger" icon={<Sparkles className="w-3 h-3" />} defaultOpen>
-                <div className="space-y-0.5">
+                <div className="space-y-v3-0.5">
                     <KVRow
                         label="positive count"
                         value={sentiment.positiveCount}
@@ -187,7 +187,7 @@ export const FeedbackDebugTab: React.FC = () => {
             </Section>
 
             <Section title="Per-surface state" icon={<Clock className="w-3 h-3" />}>
-                <div className="space-y-0.5">
+                <div className="space-y-v3-0.5">
                     {SURFACES.map(surface => {
                         const state = surfaces[surface];
 
@@ -202,8 +202,8 @@ export const FeedbackDebugTab: React.FC = () => {
                                               state?.mutedUntil && state.mutedUntil > Date.now()
                                                   ? ' (muted)'
                                                   : state?.lastAnsweredAt
-                                                  ? ' (answered)'
-                                                  : ' (session/week cap)'
+                                                    ? ' (answered)'
+                                                    : ' (session/week cap)'
                                           }`
                                 }
                                 copied={copied}
@@ -220,7 +220,7 @@ export const FeedbackDebugTab: React.FC = () => {
             </Section>
 
             <Section title="Actions" icon={<RotateCcw className="w-3 h-3" />} defaultOpen>
-                <div className="space-y-1.5">
+                <div className="space-y-v3-1.5">
                     <button
                         type="button"
                         onClick={() => {

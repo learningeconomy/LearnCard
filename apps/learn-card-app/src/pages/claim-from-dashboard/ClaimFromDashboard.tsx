@@ -73,7 +73,8 @@ export const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boost
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
 
-    const issuer = typeof boostVC.issuer === 'string' ? boostVC.issuer : boostVC?.issuer?.id ?? '';
+    const issuer =
+        typeof boostVC.issuer === 'string' ? boostVC.issuer : (boostVC?.issuer?.id ?? '');
 
     const isLCNetworkUrlIssuer = issuer?.includes('did:web');
 
@@ -120,9 +121,9 @@ export const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boost
                 </div>
                 <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                     <span className="created-at text-grayscale-700">{issueDate}</span>
-                    <span className="issued-by text-grayscale-900 font-[500]">
+                    <span className="issued-by text-grayscale-900 font-medium">
                         {m['claim.by']()}{' '}
-                        <strong className="font-[700] capitalize">{issuerName}</strong>
+                        <strong className="font-bold capitalize">{issuerName}</strong>
                     </span>
                 </div>
             </>
@@ -143,9 +144,8 @@ export const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boost
             </div>
             <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                 <span className="created-at text-grayscale-700">{issueDate}</span>
-                <span className="issued-by text-grayscale-900 font-[500]">
-                    {m['claim.by']()}{' '}
-                    <strong className="font-[700] capitalize">{issuerName}</strong>
+                <span className="issued-by text-grayscale-900 font-medium">
+                    {m['claim.by']()} <strong className="font-bold capitalize">{issuerName}</strong>
                 </span>
             </div>
         </>
@@ -312,7 +312,7 @@ const ClaimFromDashboard: React.FC = () => {
                                 interact: {
                                     service: [
                                         { serviceEndpoint: string; type: string },
-                                        { type: string }
+                                        { type: string },
                                     ];
                                 };
                                 query: { type: string };
