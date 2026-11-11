@@ -6,8 +6,8 @@ import handler, {
     getRegistryProxyBaseUrl,
     toRegistryProxyUrl,
 } from './registryProxy';
-import * as lcaEntry from '../../../../apps/learn-card-app/netlify/edge-functions/registry-proxy';
-import * as scoutsEntry from '../../../../apps/scouts/netlify/edge-functions/registry-proxy';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const ANCHOR = 'https://staging.opensalt.net/issuer-registry/.well-known/openid-federation';
 const JWS = 'eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJ4In0.c2ln';
@@ -291,11 +291,19 @@ describe('registry proxy edge handler', () => {
 });
 
 describe('app edge function entries', () => {
-    it.each([
-        ['learn-card-app', lcaEntry],
-        ['scouts', scoutsEntry],
-    ])('%s wires the shared handler', (_app, entry) => {
-        expect(entry.default).toBe(handler);
-        expect(entry.config).toEqual({ path: '/api/registry-proxy/*', cache: 'manual' });
+    it.each(['learn-card-app', 'scouts'])('%s wires the shared handler', app => {
+        const entryUrl = new URL(
+            `../../../../apps/${app}/netlify/edge-functions/registry-proxy.ts`,
+            import.meta.url
+        );
+        const source = readFileSync(fileURLToPath(entryUrl), 'utf8');
+
+        expect(source).toMatch(
+            /export\s*\{\s*default\s*\}\s*from\s*['"]\.\/shared\/registryProxy\.ts['"]/
+        );
+
+        expect(source).toMatch(
+            /export\s+const\s+config\s*=\s*\{\s*path:\s*['"]\/api\/registry-proxy\/\*['"],\s*cache:\s*['"]manual['"]\s*\}/
+        );
     });
 });
