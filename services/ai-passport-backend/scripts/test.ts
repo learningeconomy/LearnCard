@@ -99,6 +99,7 @@ const ALL_TEST_FILES = [
     'src/http/requestBody.test.ts',
     'src/http/cookieMutationOrigin.test.ts',
     'src/mcp-server/ownerOperation.test.ts',
+    'src/mcp-server/ownerOperation.scope.test.ts',
     'src/helpers/transcript-clr.helpers.test.ts',
     'src/workers/credentialIngestionState.test.ts',
     'src/workers/credentialIngestionProducer.test.ts',

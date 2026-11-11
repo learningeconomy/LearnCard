@@ -1,4 +1,5 @@
 import { getCurrentAiSubject } from '../../ai/privacy';
+import { CREDENTIAL_PRELOAD_CONCURRENCY } from '../../constants/env';
 import { pseudonymizeProviderInput } from '../../ai/pseudonymization';
 import { settleCredentialBatch, type CredentialBatchResult } from '../../credentials/batch';
 import { resolveVerifiedCredentialProjection } from '../../credentials/service';
@@ -36,7 +37,8 @@ const loadSharedContextUris = async (
             uris.map(uri => async () => {
                 await resolveVerifiedCredentialProjection(did, uri, receipt);
                 return uri;
-            })
+            }),
+            { concurrency: CREDENTIAL_PRELOAD_CONCURRENCY }
         );
         logSkippedCredentialCounts(skipped);
         return loaded;
