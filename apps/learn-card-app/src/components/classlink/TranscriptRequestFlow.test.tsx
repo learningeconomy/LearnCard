@@ -65,7 +65,11 @@ vi.mock('../../hooks/useReceivedTranscript', () => ({
             : { entry: undefined, model: null },
 }));
 
-import { TranscriptRequestFlow, TRANSCRIPT_FLOW_PATIENCE_MS } from './TranscriptRequestFlow';
+import {
+    TranscriptRequestFlow,
+    TRANSCRIPT_FLOW_ESTIMATE_GRACE_MS,
+    TRANSCRIPT_FLOW_PATIENCE_MS,
+} from './TranscriptRequestFlow';
 
 const REQUEST = { status: 'requested' as const, requestId: 'req-1', requestedAt: '2026-01-01' };
 const TRANSCRIPT_VC = {
@@ -165,6 +169,77 @@ describe('TranscriptRequestFlow', () => {
             fireEvent.click(screen.getByTestId('transcript-flow-continue'));
         });
         expect(onDone).toHaveBeenCalledWith({ requested: true });
+    });
+
+    describe('with a delivery estimate from the school', () => {
+        const requestExpecting = (inMs: number) => {
+            const now = Date.now();
+            return {
+                ...REQUEST,
+                requestedAt: new Date(now).toISOString(),
+                expectedBy: new Date(now + inMs).toISOString(),
+            };
+        };
+
+        it('keeps the live steps for an estimate of 30 seconds or less', async () => {
+            mocks.request.mockResolvedValue(requestExpecting(20_000));
+            renderFlow();
+            await ask();
+            expect(screen.getByTestId('transcript-flow-on-the-way')).toBeTruthy();
+        });
+
+        it('shows a progress bar with time left for an estimate of a couple of minutes', async () => {
+            vi.useFakeTimers({ shouldAdvanceTime: true });
+            mocks.request.mockResolvedValue(requestExpecting(120_000));
+            const { onDone } = renderFlow();
+            await ask();
+            expect(screen.getByTestId('transcript-flow-timed')).toBeTruthy();
+            const bar = screen.getByRole('progressbar');
+            expect(bar.getAttribute('aria-valuetext')).toBe('About 2 minutes left');
+            const startValue = Number(bar.getAttribute('aria-valuenow'));
+
+            // The usual 90-second patience doesn't cut a two-minute estimate short.
+            act(() => {
+                vi.advanceTimersByTime(TRANSCRIPT_FLOW_PATIENCE_MS);
+            });
+            expect(screen.getByTestId('transcript-flow-timed')).toBeTruthy();
+            expect(
+                Number(screen.getByRole('progressbar').getAttribute('aria-valuenow'))
+            ).toBeGreaterThan(startValue);
+            expect(onDone).not.toHaveBeenCalled();
+
+            act(() => {
+                vi.advanceTimersByTime(
+                    120_000 - TRANSCRIPT_FLOW_PATIENCE_MS + TRANSCRIPT_FLOW_ESTIMATE_GRACE_MS
+                );
+            });
+            expect(screen.getByTestId('transcript-flow-longer')).toBeTruthy();
+        });
+
+        it('confirms the request and when to expect it for a longer estimate', async () => {
+            mocks.request.mockResolvedValue(requestExpecting(3 * 60 * 60_000));
+            mocks.isPollingExhausted = true;
+            const { onDone } = renderFlow();
+            await ask();
+            expect(screen.getByTestId('transcript-flow-later')).toBeTruthy();
+            expect(screen.getByText('Transcript requested')).toBeTruthy();
+            expect(screen.getByText('Your school expects to send it in 3 hours.')).toBeTruthy();
+            expect(screen.queryByRole('progressbar')).toBeNull();
+            await act(async () => {
+                fireEvent.click(screen.getByTestId('transcript-flow-continue'));
+            });
+            expect(onDone).toHaveBeenCalledWith({ requested: true });
+        });
+
+        it('still reveals the transcript if it arrives early', async () => {
+            const request = requestExpecting(3 * 60 * 60_000);
+            mocks.request.mockResolvedValue(request);
+            mocks.latest = { ...request, receivedAt: new Date().toISOString() };
+            mocks.transcript = { entry: { vc: TRANSCRIPT_VC, uri: 'lc:t' }, model: MODEL };
+            renderFlow();
+            await ask();
+            expect(screen.getByTestId('transcript-flow-arrived')).toBeTruthy();
+        });
     });
 
     it('moves on when polling is exhausted', async () => {
