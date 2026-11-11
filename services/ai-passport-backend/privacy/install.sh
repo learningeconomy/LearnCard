@@ -8,27 +8,30 @@ assets=$1
 # Debian package names use hyphens where Tesseract language codes use underscores.
 # Do not install tesseract-ocr-all: it ships every traineddata file and pushed the
 # MCP image over Fly's 8 GiB unpack limit (Deploy #2485).
-apt-get update
-apt-get install -y --no-install-recommends \
-    python3 \
-    python3-venv \
-    ca-certificates \
-    libgomp1 \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    tesseract-ocr-spa \
-    tesseract-ocr-fra \
-    tesseract-ocr-deu \
-    tesseract-ocr-por \
-    tesseract-ocr-ita \
-    tesseract-ocr-ara \
-    tesseract-ocr-rus \
-    tesseract-ocr-hin \
-    tesseract-ocr-chi-sim \
-    tesseract-ocr-chi-tra \
-    tesseract-ocr-jpn \
-    tesseract-ocr-kor
-rm -rf /var/lib/apt/lists/*
+# CI sets AI_PRIVACY_SKIP_APT=1 after installing these exact packages from its cache.
+if [ "${AI_PRIVACY_SKIP_APT:-0}" != 1 ]; then
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        ca-certificates \
+        libgomp1 \
+        tesseract-ocr \
+        tesseract-ocr-eng \
+        tesseract-ocr-spa \
+        tesseract-ocr-fra \
+        tesseract-ocr-deu \
+        tesseract-ocr-por \
+        tesseract-ocr-ita \
+        tesseract-ocr-ara \
+        tesseract-ocr-rus \
+        tesseract-ocr-hin \
+        tesseract-ocr-chi-sim \
+        tesseract-ocr-chi-tra \
+        tesseract-ocr-jpn \
+        tesseract-ocr-kor
+    rm -rf /var/lib/apt/lists/*
+fi
 python3 -m venv /opt/ai-privacy
 /opt/ai-privacy/bin/python -m pip install --no-cache-dir -r "$assets/requirements.txt"
 mkdir -p /opt/ai-privacy/assets
