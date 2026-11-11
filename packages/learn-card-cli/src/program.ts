@@ -1,7 +1,7 @@
-import fs from 'node:fs/promises';
 import { Command, Option, type CommanderError } from 'commander';
 
 import { out } from './out';
+import { readDidkitWasm } from './didkit-wasm';
 import { errorEnvelope, humanErrorLines, CliError } from './errors';
 import { LOCAL_NETWORK, validateNetwork } from './project';
 import { registerOrgCommand } from './org';
@@ -20,13 +20,25 @@ import packageJson from '../package.json';
 const NETWORK_HELP = 'production|staging|local or a tRPC URL (default: production)';
 
 const readDidkit = (): Promise<Buffer> => {
-    const didkit = fs.readFile(
-        require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
-    );
+    const didkit = readDidkitWasm();
     // Commands that never sign never await this; don't let a missing file become an unhandled rejection.
     didkit.catch(() => {});
     return didkit;
 };
+
+/**
+ * Resolves once everything written to stdout has been handed to the OS.
+ *
+ * `process.exit()` drops output still buffered for a pipe. On Node 20 that truncated large
+ * `--json` results (e.g. `commands --json`) at 8 KB whenever a parent process captured stdout,
+ * which is how agents and scripts read the CLI.
+ */
+const stdoutFlushed = (): Promise<void> =>
+    process.stdout.writableLength === 0
+        ? Promise.resolve()
+        : new Promise(resolve => {
+              process.stdout.write('', () => resolve());
+          });
 
 /**
  * Shared runner for every subcommand. Sets up `out` for this run, validates `--network`
@@ -46,8 +58,10 @@ export const runCommand: RunCommand = async (command, options, action, settings 
         failure = { error };
     }
     if (!failure) {
-        if (out.json)
+        if (out.json) {
             process.stdout.write(JSON.stringify({ ok: true, command, ...out.result }) + '\n');
+            await stdoutFlushed();
+        }
         return process.exit(process.exitCode || 0);
     }
     if (out.json) {
@@ -59,6 +73,7 @@ export const runCommand: RunCommand = async (command, options, action, settings 
             ...(identityCreated ? { identityCreated } : {}),
         };
         process.stdout.write(JSON.stringify(envelope) + '\n');
+        await stdoutFlushed();
         return process.exit(1);
     }
     const lines = humanErrorLines(failure.error);
