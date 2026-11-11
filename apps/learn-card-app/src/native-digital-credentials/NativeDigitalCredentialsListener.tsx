@@ -77,13 +77,20 @@ export default function NativeDigitalCredentialsListener() {
             try {
                 enabled = (await nativeDigitalCredentials.status()).enabled;
                 if (!enabled || stopped) return;
+                const { pending, isProvider } = await nativeDigitalCredentials.getPendingRequest();
+                // The platform already selected this entry. Preserve its request and private
+                // mapping while the provider asks for sign-in; approval still checks the
+                // original owner and fresh inventory. Explicit logout/account changes use
+                // the immediate invalidation subscriptions above, including during login.
                 if (
                     !isHistoryAccountEligible() ||
-                    (!loggedIn && !currentUserStore.get.currentUser() && state.status === 'idle')
+                    (!pending &&
+                        !loggedIn &&
+                        !currentUserStore.get.currentUser() &&
+                        state.status === 'idle')
                 ) {
                     await clearNativeInventory();
                 }
-                const { pending, isProvider } = await nativeDigitalCredentials.getPendingRequest();
                 if (stopped) return;
                 if (pending || isProvider) {
                     if (history.location.pathname !== NATIVE_CREDENTIAL_PATH)

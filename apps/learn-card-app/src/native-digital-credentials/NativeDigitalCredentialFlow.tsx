@@ -8,7 +8,7 @@ import {
     useHistoryAccountRevision,
 } from '../helpers/verifier-history/account';
 import RequestConsent, { type ConsentPicks } from '../pages/oid4vp/components/RequestConsent';
-import ClaimLoginPage from '../pages/login/ClaimLoginPage';
+import LoginPage from '../pages/login/LoginPage';
 import { nativeDigitalCredentials } from './plugin';
 import { readNativeInventory } from './runtime';
 import { prepareAccountPresentation } from './presentation';
@@ -103,7 +103,7 @@ export default function NativeDigitalCredentialFlow() {
         }
     };
 
-    if (!loggedIn && !error) return <ClaimLoginPage />;
+    if (!loggedIn && !error) return <LoginPage />;
     return (
         <IonPage>
             <IonContent>

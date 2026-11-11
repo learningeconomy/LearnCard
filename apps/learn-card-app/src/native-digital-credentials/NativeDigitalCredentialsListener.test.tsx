@@ -6,6 +6,11 @@ const mocks = vi.hoisted(() => ({
     platform: 'android',
     available: true,
     revision: 0,
+    loggedIn: true,
+    user: { uid: 'account' } as { uid: string } | null,
+    clearInventory: vi.fn(),
+    clear: vi.fn(async () => undefined),
+    accountChange: undefined as undefined | ((next: unknown, previous: unknown) => void),
     status: vi.fn(),
     synchronize: vi.fn(),
     pending: vi.fn(),
@@ -41,14 +46,19 @@ const client = {
 };
 vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => client }));
 vi.mock('learn-card-base', () => ({
-    useIsLoggedIn: () => true,
+    useIsLoggedIn: () => mocks.loggedIn,
     useHasCurrentUserHydrated: () => true,
     useWallet: () => ({ initWallet: mocks.initialize }),
 }));
 vi.mock('learn-card-base/stores/currentUserStore', () => ({
     currentUserStore: {
-        store: { subscribe: () => vi.fn() },
-        get: { currentUser: () => ({ uid: 'account' }) },
+        store: {
+            subscribe: (callback: typeof mocks.accountChange) => {
+                mocks.accountChange = callback;
+                return vi.fn();
+            },
+        },
+        get: { currentUser: () => mocks.user },
     },
 }));
 vi.mock('learn-card-base/stores/walletStore', () => ({
@@ -65,11 +75,11 @@ vi.mock('./plugin', () => ({
     nativeDigitalCredentials: {
         status: mocks.status,
         getPendingRequest: mocks.pending,
-        clear: vi.fn(),
+        clear: mocks.clear,
     },
 }));
 vi.mock('./runtime', () => ({
-    clearNativeInventory: vi.fn(),
+    clearNativeInventory: mocks.clearInventory,
     synchronizeNativeInventory: mocks.synchronize,
 }));
 vi.mock('../paraglide/messages.js', () => ({
@@ -83,6 +93,10 @@ beforeEach(() => {
     mocks.platform = 'android';
     mocks.available = true;
     mocks.revision = 0;
+    mocks.loggedIn = true;
+    mocks.user = { uid: 'account' };
+    auth.state.status = 'authenticated';
+    mocks.accountChange = undefined;
     mocks.foreground = undefined;
     mocks.query = undefined;
     mocks.status.mockReset();
@@ -260,5 +274,46 @@ describe('native foreground expiration lifecycle', () => {
         await mount();
         await advance(5_000);
         expect(mocks.synchronize).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('sign-in for an already selected Android credential', () => {
+    it('keeps a pending request available while the settled signed-out provider asks for sign-in', async () => {
+        mocks.loggedIn = false;
+        mocks.user = null;
+        auth.state.status = 'idle';
+        mocks.pending.mockResolvedValue({ pending: { requestId: 'request' }, isProvider: true });
+        render(<NativeDigitalCredentialsListener />);
+        await advance();
+        expect(mocks.clearInventory).not.toHaveBeenCalled();
+        expect(mocks.clear).not.toHaveBeenCalled();
+        expect(mocks.initialize).not.toHaveBeenCalled();
+        expect(mocks.history.replace).toHaveBeenCalledWith('/native-digital-credentials');
+    });
+
+    it('still clears inventory when signed out without a pending request', async () => {
+        mocks.loggedIn = false;
+        mocks.user = null;
+        auth.state.status = 'idle';
+        render(<NativeDigitalCredentialsListener />);
+        await advance();
+        expect(mocks.clearInventory).toHaveBeenCalledOnce();
+        expect(mocks.synchronize).not.toHaveBeenCalled();
+    });
+
+    it('still invalidates an explicit logout during an open request immediately', async () => {
+        mocks.pending.mockResolvedValue({ pending: { requestId: 'request' }, isProvider: true });
+        render(<NativeDigitalCredentialsListener />);
+        await advance();
+        act(() =>
+            mocks.accountChange?.(
+                { currentUser: null, currentUserPK: null },
+                {
+                    currentUser: { uid: 'account', privateKey: 'test-key' },
+                    currentUserPK: 'test-key',
+                }
+            )
+        );
+        expect(mocks.clear).toHaveBeenCalledOnce();
     });
 });

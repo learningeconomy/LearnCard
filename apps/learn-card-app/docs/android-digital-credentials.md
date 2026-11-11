@@ -77,6 +77,14 @@ Use the repo-pinned Bun, JDK 21, Android SDK 36 and a Google Play-enabled emulat
 
 A sample with the wrong holder key, an invalid issuer signature, unrequested disclosure, a changed body or a removed index entry is rejected. Ordinary JSON-LD credentials are not automatically converted into native digital credentials.
 
+## Sign in during a selected request
+
+An Android request for a previously registered entry can arrive while LearnCard needs sign-in. The provider shows the regular sign-in screen and retains that already selected request and its private inventory mapping. After sign-in, LearnCard checks the original account owner, re-reads the selected credential and current index, then shows consent. Signing in does not approve disclosure. A different account, removed credential, canceled request or failed verification cannot return a presentation.
+
+This applies to an existing Android selection, not discovery for a fresh installation with no registered credentials. Explicit logout, profile switching and established account/key replacement still invalidate native handles immediately. Signed-out startup without a pending selection clears the registry as before.
+
+For emulator QA, use only the dedicated development APK, synthetic accounts and local APIs. Establish one registered sample, then simulate a missing local session while the app process is stopped without removing its Android discovery entry or private inventory mapping. Request from Verifier Lab, complete the normal sign-in UI with the original account, review the requested fields and approve. The same requester must show verified signatures, nonce/audience and holder binding without another request. Repeat with Android Back during sign-in and with a different account; neither may disclose a credential. This precondition simulates a stale registration/session loss, not a completed user-initiated logout. Email/social/SSO sign-in and physical-device qualification require their own provisioned auth setup.
+
 ## Build and run the emulator lab
 
 Prerequisites: Android SDK 36 with build tools, a Google Play-enabled emulator, JDK 21, Bun, and the repository's workspace dependencies. Android Studio's bundled JDK can be used through a command-scoped `JAVA_HOME`; changing the machine's Java configuration is unnecessary.
