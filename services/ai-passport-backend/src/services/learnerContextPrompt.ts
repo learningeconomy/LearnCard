@@ -93,7 +93,7 @@ const dependency = async <T>(
     try {
         return await operation();
     } catch (error) {
-        rethrowLearnerContextDependency(error, name);
+        return rethrowLearnerContextDependency(error, name);
     }
 };
 

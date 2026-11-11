@@ -13,7 +13,7 @@ import {
 import { withToolStage } from '../tool-failure';
 
 const logSkippedCredentialCounts = (skipped: CredentialBatchResult<string>['skipped']): void => {
-    const counts = new Map<string, number>();
+    const counts = new Map<CredentialBatchResult<string>['skipped'][number]['code'], number>();
     for (const item of skipped) counts.set(item.code, (counts.get(item.code) ?? 0) + 1);
     for (const [failureCode, count] of counts) {
         logSafeEvent('warn', 'credential_skipped', {
@@ -41,7 +41,7 @@ const loadSharedContextUris = async (
         logSkippedCredentialCounts(skipped);
         return loaded;
     } catch (error) {
-        rethrowLearnerContextDependency(error, 'verify');
+        return rethrowLearnerContextDependency(error, 'verify');
     }
 };
 
