@@ -146,8 +146,10 @@ export const generateLearnerContextPrompt = async (request: LearnerContextPrompt
             'Authentication required'
         );
     const learnCard = await dependency('wallet', () => getLearnCard());
-    const loadConsent = () =>
-        dependency('consent', () => loadActiveAiConsentData(learnCard, did, 'model-inference'));
+    const loadConsent = (options: { fresh?: boolean } = {}) =>
+        dependency('consent', () =>
+            loadActiveAiConsentData(learnCard, did, 'model-inference', options)
+        );
     const { records, receipt } = await loadConsent();
     const credentialUris = [...new Set(input.credentialUris)];
     const personalFields = [...new Set(input.personalFields)].sort();
@@ -172,7 +174,7 @@ export const generateLearnerContextPrompt = async (request: LearnerContextPrompt
         personalData[field] = (personal as Record<string, string>)[field]!;
     }
     const assertFresh = async () => {
-        const current = await loadConsent();
+        const current = await loadConsent({ fresh: true });
         if (current.receipt.revision !== receipt.revision) throw new AiConsentError();
     };
     // Validate every selected source, even if the caller explicitly limits synthesis.

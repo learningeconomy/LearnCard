@@ -105,7 +105,9 @@ export async function getLatestUserSummary(did: string) {
         pseudonymizeProviderInput(result.prompt)
     );
     await withToolStage('consent', async () => {
-        const current = await loadActiveAiConsentData(learnCard, did, 'model-inference');
+        const current = await loadActiveAiConsentData(learnCard, did, 'model-inference', {
+            fresh: true,
+        });
         if (current.receipt.revision !== receipt.revision) throw new AiConsentError();
     });
     return context;

@@ -674,7 +674,7 @@ export const enrichCredentialTitles = async (
             throwIfCancelled(options.signal, undefined);
 
             if (getCurrentAiSubject() !== did) throw new AiConsentError();
-            const receipt = await assertCurrentAiConsent('model-inference');
+            const receipt = await assertCurrentAiConsent('model-inference', { fresh: true });
             const contextHash = createHmac('sha256', getPrivacyKeyMaterial().reference)
                 .update(JSON.stringify([did, receipt.revision, result.context]))
                 .digest('hex');

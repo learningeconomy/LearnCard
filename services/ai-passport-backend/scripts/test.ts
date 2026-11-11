@@ -105,6 +105,7 @@ const ALL_TEST_FILES = [
     'src/workers/credentialIngestionState.test.ts',
     'src/workers/credentialIngestionProducer.test.ts',
     'src/services/learnerContextPrompt.test.ts',
+    'src/mcp-server/controllers/get-user-context.freshness.test.ts',
     'src/services/consentedCredentialVectorDiagnostics.test.ts',
     'src/services/credentialSearch.test.ts',
     'src/services/sessionPlans.test.ts',
