@@ -89,6 +89,9 @@ jobs:
                   path: ~/.cache/ai-passport-ocr-debs
                   key: ai-passport-ocr-debs-${{ runner.os }}-${{ runner.arch }}-${{ steps.image.outputs.version }}-${{ hashFiles('services/ai-passport-backend/privacy/install.sh') }}
 
+            - name: TEMP block every Ubuntu mirror
+              run: printf '0.0.0.0 %s\n' azure.archive.ubuntu.com archive.ubuntu.com security.ubuntu.com | sudo tee -a /etc/hosts
+
             - name: Install cached OCR packages
               if: steps.ocr-debs.outputs.cache-hit == 'true'
               run: |
