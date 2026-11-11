@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
 import {
     JobRegistryEntry,
     RegistryEntry,
@@ -8,6 +9,8 @@ import {
 
 import { knownDIDRegistryQueryOptions } from '../react-query/queries/issuerRegistry';
 import { isProductionEnvironment } from '../config/isProduction';
+import { useOptionalTenantConfig } from '../config/TenantConfigProvider';
+import { getRegistryProxyBaseUrl } from '../registry-proxy/registryProxy';
 
 export const useRegistry = () => {
     return useQuery<RegistryEntry[]>({
@@ -76,7 +79,13 @@ export const useTrustedAppsRegistry = (profileId?: string) => {
 
 export const useKnownDIDRegistry = (profileId?: string) => {
     const queryClient = useQueryClient();
-    return useQuery(knownDIDRegistryQueryOptions(queryClient, profileId));
+    const tenantConfig = useOptionalTenantConfig();
+    const proxyBaseUrl = getRegistryProxyBaseUrl(
+        Capacitor.isNativePlatform(),
+        tenantConfig?.domain,
+        typeof window === 'undefined' ? undefined : window.location.origin
+    );
+    return useQuery(knownDIDRegistryQueryOptions(queryClient, profileId, proxyBaseUrl));
 };
 
 export const useLCAStylesPackRegistry = () => {
