@@ -69,15 +69,27 @@ flowchart LR
     C -->|No| D[Create account / Login]
     C -->|Yes| E[Review credential]
     D --> E
-    E --> F[Accept & Save]
-    F --> G[Credential in wallet]
+    E --> F[Claim credential]
+    F --> G[Save to collection]
+    G --> H[Refresh collection]
 ```
 
-1. User receives a claim link or scans a QR code
-2. Link opens the LearnCard App
-3. User logs in (or creates an account)
-4. User reviews the credential details
-5. User accepts and saves to their wallet
+If completion stops, keep the page open and use its recovery action:
+
+| Action                      | What happens                                                                                                            |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Try again**               | Checks the same claim link again after a temporary confirmation failure.                                                |
+| **Check for my credential** | Looks for the previous claim's result before another claim can start. An unresolved result stays in this checking flow. |
+| **Save my credential**      | Uses the already-issued credential to finish saving, without claiming another copy or adding a duplicate entry.         |
+| **Refresh my collection**   | Keeps the confirmed saved credential and retries refresh, not claiming or saving.                                       |
+
+Expired links and links that have reached their claim limit have different messages, shown only when the service confirms the condition. Ask the issuer for a new link. A temporary connection failure is not treated as expiration. If the active account or network changes during recovery, stop and reopen the link in the intended account/network; recovery must not continue using the prior context.
+
+Recovery retains the original request identifier for the same link context and keeps any confirmed saved credential associated with the account that saved it. Refresh failures are reported only for the claimed credential's category and relevant connection data, not unrelated credential categories.
+
+If another tab is finishing the same claim, **Check for my credential** looks up its result without issuing another copy. A claim that is already saved and refreshed stays successful if your account or connection settings change before navigation. The page confirms it was saved to the original account, keeps the original recovery identifier, and does not navigate in the changed context. You do not need to reopen the link to finish that completed claim.
+
+If you're signed out, **Accept** opens the sign-in prompt. **Close** returns to the original preview without starting a claim.
 
 ### Receiving Credentials from a Website
 
