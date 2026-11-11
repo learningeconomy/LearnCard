@@ -8,7 +8,7 @@ import { postBatchReserveMs, recordPostBatchMs } from '../diagnostics/post-batch
 
 export const mcpToolTimeoutMs = (): number => {
     const parsed = Number(process.env.MCP_TOOL_TIMEOUT_MS);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : 20_000;
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : 45_000;
 };
 
 export const runMcpOwnerOperation = async <T>(did: string, operation: () => Promise<T>) => {
