@@ -35,6 +35,12 @@ import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { m } from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
+import {
+    getClassLinkProfileDefaults,
+    isClassLinkLogin,
+} from '../../auth/classlink/classlinkProfileDefaults';
+import { generateRandomSuffix } from '../onboarding/v2/handleGenerator';
+import { getClassLinkDisplayName } from '../../auth/classlink/classlinkDisplayName';
 
 const getStateValidator = () =>
     z.object({
@@ -75,11 +81,16 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
 
-    const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
+    const classlink = isClassLinkLogin();
+    const [name, setName] = useState<string | null | undefined>(() =>
+        classlink ? getClassLinkDisplayName() : (currentUser?.name ?? '')
+    );
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
 
     const [networkToggle, setNetworkToggle] = useState<boolean>(true);
-    const [profileId, setProfileId] = useState<string | null | undefined>('');
+    const [profileId, setProfileId] = useState<string | null | undefined>(() =>
+        classlink ? `learner-${generateRandomSuffix()}` : ''
+    );
 
     const [walletDid, setWalletDid] = useState<string>('');
 
@@ -185,6 +196,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     bio: '',
                     image: photo,
                     notificationsWebhook: getNotificationsEndpoint(),
+                    ...(await getClassLinkProfileDefaults()),
                 });
 
                 if (didWeb) {
@@ -452,6 +464,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                     }`}
                                     onIonInput={e => setProfileId(e.detail.value)}
                                     value={profileId}
+                                    readonly={classlink}
                                     placeholder="User ID"
                                     aria-label="User ID"
                                     type="text"

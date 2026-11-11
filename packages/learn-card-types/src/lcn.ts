@@ -540,6 +540,24 @@ export const GuardianStatusValidator = z.enum([
 ]);
 export type GuardianStatus = z.infer<typeof GuardianStatusValidator>;
 
+export const GuardianApprovalEmailStatusValidator = z
+    .enum(['not_requested', 'sending', 'accepted', 'failed', 'unknown'])
+    .describe(
+        'Outcome of the latest account-level guardian approval email. "accepted" means the email provider accepted the message; it does not confirm delivery.'
+    );
+export type GuardianApprovalEmailStatus = z.infer<typeof GuardianApprovalEmailStatusValidator>;
+
+export const GuardianApprovalRequestStatusValidator = z.object({
+    pendingApproval: z.boolean(),
+    status: GuardianApprovalEmailStatusValidator,
+    guardianEmail: z.string().optional(),
+    updatedAt: z.string().optional(),
+    linkExpiresAt: z.string().optional(),
+    resendAvailableAt: z.string().optional(),
+    attemptsRemaining: z.number().int().nonnegative(),
+});
+export type GuardianApprovalRequestStatus = z.infer<typeof GuardianApprovalRequestStatusValidator>;
+
 // Options for send method (applies when recipient is email/phone, routes to Universal Inbox)
 export const SendOptionsValidator = z.object({
     webhookUrl: z.string().url().optional().describe('Webhook URL to receive claim notifications'),

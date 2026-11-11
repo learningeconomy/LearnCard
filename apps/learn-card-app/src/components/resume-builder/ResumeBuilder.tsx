@@ -427,8 +427,8 @@ const ResumeBuilderContent: React.FC = () => {
     };
 
     const previewWrapperStyles = isMobile
-        ? 'flex-1 overflow-y-auto py-6 px-3 flex flex-col'
-        : 'flex-1 overflow-y-auto py-10 px-6 flex justify-center';
+        ? 'flex-1 min-h-0 overflow-y-auto py-4 px-3 flex flex-col gap-4'
+        : 'flex-1 min-h-0 overflow-y-auto py-6 px-6 flex flex-col items-center gap-4';
 
     useEffect(() => {
         return () => {
@@ -574,30 +574,7 @@ const ResumeBuilderContent: React.FC = () => {
                     <ResumeBuilderLoader />
                 </div>
             )}
-            <div className="flex-1 min-w-0 flex flex-col">
-                {canDiscardSetup && (
-                    <div className="bg-amber-50 border-b border-amber-100 px-6 py-4 space-y-v3-3">
-                        <p className="text-sm text-grayscale-700">
-                            {m['resumePublishing.interrupted']()}
-                        </p>
-                        <button
-                            type="button"
-                            onClick={() => void handleDiscardSetup()}
-                            disabled={Boolean(loadingAction)}
-                            className="py-3 px-4 rounded-[20px] border border-grayscale-300 bg-white text-grayscale-700 text-sm font-medium disabled:opacity-40"
-                        >
-                            {loadingAction
-                                ? m['resumePublishing.discarding']()
-                                : m['resumePublishing.discard']()}
-                        </button>
-                    </div>
-                )}
-                <p className="bg-white px-6 py-3 text-xs text-grayscale-600">
-                    {m['resumePublishing.republishLimits']()}
-                </p>
-                <p className="bg-white px-6 py-3 text-xs text-grayscale-600">
-                    {m['resumePublishing.originalClaims']()}
-                </p>
+            <div className="flex-1 min-w-0 min-h-0 flex flex-col">
                 <ResumeBuilderHeader
                     loadingAction={loadingAction}
                     isMobile={isMobile}
@@ -617,8 +594,35 @@ const ResumeBuilderContent: React.FC = () => {
                 />
 
                 <div className={previewWrapperStyles}>
+                    {canDiscardSetup && (
+                        <div className="bg-amber-50 border-b border-amber-100 px-6 py-4 space-y-v3-3">
+                            <p className="text-sm text-grayscale-700">
+                                {m['resumePublishing.interrupted']()}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => void handleDiscardSetup()}
+                                disabled={Boolean(loadingAction)}
+                                className="py-3 px-4 rounded-[20px] border border-grayscale-300 bg-white text-grayscale-700 text-sm font-medium disabled:opacity-40"
+                            >
+                                {loadingAction
+                                    ? m['resumePublishing.discarding']()
+                                    : m['resumePublishing.discard']()}
+                            </button>
+                        </div>
+                    )}
+                    <details className="w-full max-w-[760px] shrink-0 rounded-2xl border border-grayscale-200 bg-white px-4 py-3 text-xs text-grayscale-600">
+                        <summary className="cursor-pointer font-medium text-grayscale-700">
+                            {m['resumePublishing.aboutPublishing']()}
+                        </summary>
+                        <div className="mt-3 space-y-2 leading-relaxed">
+                            <p>{m['resumePublishing.republishLimits']()}</p>
+                            <p>{m['resumePublishing.originalClaims']()}</p>
+                        </div>
+                    </details>
                     <ResumePreview
                         ref={resumePreviewRef}
+                        scrollable={false}
                         isMobile={isMobile}
                         isPreviewing={isPreviewing}
                         qrCodeValue={resumeQrCodeLink}

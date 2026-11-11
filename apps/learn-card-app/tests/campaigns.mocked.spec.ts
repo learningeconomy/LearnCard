@@ -67,6 +67,8 @@ const mockCampaignBoot = (mock: TrpcMock): void => {
 
 test.describe('campaign composer @mocked', () => {
     test('admin draft, validation, preview, imports, test send and lifecycle', async ({ page }) => {
+        // This journey includes several reloads and many independent editor actions.
+        test.setTimeout(180_000);
         await page.setViewportSize({ width: 1440, height: 1000 });
         const mock = await installNetwork(page);
         mockCampaignBoot(mock);
@@ -214,6 +216,41 @@ test.describe('campaign composer @mocked', () => {
         });
         await page.getByRole('link', { name: 'Create campaign' }).click();
         await expect(page.getByRole('alert')).toHaveCount(0);
+        await expect(page.getByRole('group', { name: 'Delivery Methods' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Delivery Content' })).toBeVisible();
+        await expect(
+            page.getByText('Add content for each selected delivery method.')
+        ).toBeVisible();
+        await expect(page.getByText('Send to notification inbox and mobile push.')).toBeVisible();
+        const expectContentHeading = async (name: string) => {
+            const heading = page.getByRole('heading', { name, level: 3, exact: true });
+            await expect(heading).toBeVisible();
+            await expect(heading).toHaveCSS('border-top-style', 'solid');
+            await expect(heading).toHaveCSS('border-top-width', '1px');
+            await expect(heading).toHaveCSS('font-size', '14px');
+            await expect(heading).toHaveCSS('color', 'rgb(24, 34, 78)');
+            const selectionIcon = page
+                .getByRole('checkbox', { name, exact: true })
+                .locator('..')
+                .locator('ion-icon');
+            const contentIcon = heading.locator('ion-icon');
+            await expect(contentIcon).toHaveAttribute('aria-hidden', 'true');
+            if (name === 'In-app message') {
+                const headingBounds = await heading.boundingBox();
+                const tabsBounds = await page
+                    .getByRole('tablist', { name: 'Message editing mode' })
+                    .boundingBox();
+                expect(
+                    tabsBounds!.y - (headingBounds!.y + headingBounds!.height)
+                ).toBeGreaterThanOrEqual(16);
+            }
+            expect(
+                await contentIcon.evaluate(node => (node as HTMLElement & { icon: string }).icon)
+            ).toBe(
+                await selectionIcon.evaluate(node => (node as HTMLElement & { icon: string }).icon)
+            );
+        };
+        await expectContentHeading('In-app message');
         const previewPanel = page.getByRole('button', { name: 'Preview message' });
         const nameInput = page.getByLabel('Name', { exact: true });
         const nameBounds = await nameInput.boundingBox();
@@ -228,7 +265,7 @@ test.describe('campaign composer @mocked', () => {
         await page.getByLabel('Frequency', { exact: true }).selectOption('3');
         await page.getByLabel('Days between messages').fill('7');
         await page
-            .getByRole('heading', { name: 'Message', exact: true })
+            .getByRole('heading', { name: 'Delivery Content', exact: true })
             .evaluate(node => node.scrollIntoView({ block: 'start' }));
         await page.screenshot({
             path: 'test-results/campaign-message-fields-desktop.png',
@@ -268,7 +305,8 @@ test.describe('campaign composer @mocked', () => {
             .getByRole('tab', { name: 'JSON', exact: true })
             .press('ArrowLeft');
         await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Local preview only');
-        await page.getByLabel('Inbox / push notification').check();
+        await page.getByLabel('In-app & push notification').check();
+        await expectContentHeading('In-app & push notification');
         await page.getByLabel('Notification title').fill('Synthetic test');
         await page.getByLabel('Notification body').fill('Only a mocked test send');
         await page.getByRole('button', { name: 'Preview message' }).click();
@@ -469,6 +507,7 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Confirm paused' }).click();
         await expect(page.getByText('Campaign is paused.')).toBeVisible();
         await page.getByRole('checkbox', { name: 'Email', exact: true }).check();
+        await expectContentHeading('Email');
         await page.getByLabel('Email subject', { exact: true }).fill('Synthetic email test');
         await page.getByLabel('Email heading', { exact: true }).fill('News for our learners');
         await page
@@ -495,9 +534,7 @@ test.describe('campaign composer @mocked', () => {
         await expect(page.getByLabel('Email subject', { exact: true })).toHaveValue(
             'Synthetic email test'
         );
-        await page
-            .getByRole('heading', { name: 'Email content', exact: true })
-            .scrollIntoViewIfNeeded();
+        await page.getByRole('heading', { name: 'Email', exact: true }).scrollIntoViewIfNeeded();
         await page.screenshot({ path: 'test-results/campaign-email-desktop.png', fullPage: true });
         await page.getByRole('button', { name: 'Send Test to Me' }).click();
         await expect(page.getByRole('group', { name: 'Confirm campaign action' })).toContainText(
@@ -528,9 +565,7 @@ test.describe('campaign composer @mocked', () => {
         await expect(page.getByText(/Delivery started/)).toBeVisible();
         expect(dispatches).toBe(2);
         await page.setViewportSize({ width: 390, height: 844 });
-        await page
-            .getByRole('heading', { name: 'Email content', exact: true })
-            .scrollIntoViewIfNeeded();
+        await page.getByRole('heading', { name: 'Email', exact: true }).scrollIntoViewIfNeeded();
         for (const label of [
             'Email subject',
             'Email heading',
@@ -542,6 +577,9 @@ test.describe('campaign composer @mocked', () => {
             expect(bounds!.x).toBeGreaterThanOrEqual(0);
             expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
         }
+        await expectContentHeading('In-app message');
+        await expectContentHeading('In-app & push notification');
+        await expectContentHeading('Email');
         await page.screenshot({ path: 'test-results/campaign-email-mobile.png', fullPage: true });
         await page.getByRole('checkbox', { name: 'In-app message', exact: true }).uncheck();
         await expect(page.getByLabel('Email button text', { exact: true })).toHaveCount(0);
@@ -581,7 +619,7 @@ test.describe('campaign composer @mocked', () => {
             .scrollIntoViewIfNeeded();
         await page.screenshot({ path: 'test-results/campaign-mobile.png', fullPage: true });
         await page
-            .getByRole('heading', { name: 'Message', exact: true })
+            .getByRole('heading', { name: 'Delivery Content', exact: true })
             .evaluate(node => node.scrollIntoView({ block: 'start' }));
         await page.screenshot({
             path: 'test-results/campaign-message-fields-mobile.png',
@@ -629,6 +667,8 @@ test.describe('campaign composer @mocked', () => {
     test('in-app-only self-test arrives on the next app visit through existing endpoints', async ({
         page,
     }) => {
+        // Delivery is checked across two authenticated visits and a reload.
+        test.setTimeout(180_000);
         const mock = await installNetwork(page);
         mockCampaignBoot(mock);
         const profile = {
@@ -787,6 +827,8 @@ test.describe('campaign composer @mocked', () => {
 });
 
 test('campaign announcement inbox @mocked', async ({ page }) => {
+    // This end-to-end journey checks read/archive persistence and notification entry.
+    test.setTimeout(180_000);
     await page.setViewportSize({ width: 1440, height: 1000 });
     const mock = await installNetwork(page);
     mockCampaignBoot(mock);
@@ -802,6 +844,9 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
     mock.on('profile.getProfile', () => profile);
     mock.on('profile.getOtherProfile', () => profile);
     mock.on('profile.createProfile', () => profile.did);
+    // Profile refresh can share a tRPC batch with the campaign event. Without
+    // this handler the entire batch falls through to the HAR and is aborted.
+    mock.on('profile.updateProfile', () => true);
     mock.on('user.getDids', () => [profile.did]);
     mock.on('user.addDid', () => true);
     mock.on('campaigns.getMyCampaigns', () => []);
@@ -843,8 +888,12 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
         return true;
     });
     mock.on('notifications.markAllNotificationsRead', () => true);
-    await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
-    await page.goto('/notifications');
+    await waitForAuthenticatedState(page, {
+        profileId: TEST_USER_PROFILE_ID,
+        path: '/notifications',
+        nextPath: '/notifications',
+        waitUntil: 'commit',
+    });
     const card = page.getByRole('article', { name: notification.message.title });
     await expect(card).toBeVisible({ timeout: 120_000 });
     await expect(card.getByText('New', { exact: true })).toBeVisible();
@@ -919,12 +968,33 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
         events.push(input);
         return true;
     });
+    // Reproduce the mixed batch observed in CI. Every procedure must have a
+    // handler, or the mock passes the entire request to the unmatched HAR.
+    const mixedBatchStatus = await page.evaluate(async campaignId => {
+        const response = await fetch(
+            'http://localhost:4000/trpc/profile.updateProfile,campaigns.recordEvent?batch=1',
+            {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    0: {},
+                    1: { campaignId, event: 'shown' },
+                }),
+            }
+        );
+        return response.status;
+    }, campaign.id);
+    expect(mixedBatchStatus).toBe(200);
+    expect(events).toEqual([{ campaignId: campaign.id, event: 'shown' }]);
+    events.length = 0;
     await card.getByRole('button', { name: 'View', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Close alerts' })).not.toBeVisible();
     await expect(
         page.getByRole('heading', { name: 'Campaign opened from your alert', exact: true })
     ).toBeVisible({ timeout: 30_000 });
-    await expect.poll(() => events).toEqual([{ campaignId: campaign.id, event: 'shown' }]);
+    await expect
+        .poll(() => events, { timeout: 15_000 })
+        .toEqual([{ campaignId: campaign.id, event: 'shown' }]);
     await page.screenshot({ path: 'test-results/campaign-notification-entry.png' });
     await page.getByRole('button', { name: 'Close campaign', exact: true }).click();
     await expect(
@@ -932,7 +1002,7 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
     ).not.toBeVisible();
     // Dismissal is reported asynchronously; it is distinct from a CTA click.
     await expect
-        .poll(() => events)
+        .poll(() => events, { timeout: 15_000 })
         .toEqual([
             { campaignId: campaign.id, event: 'shown' },
             { campaignId: campaign.id, event: 'dismissed' },

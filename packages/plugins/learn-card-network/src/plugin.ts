@@ -3417,6 +3417,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.sendGuardianApprovalEmail.mutate(options);
             },
+            getGuardianApprovalStatus: async () => {
+                await ensureUser();
+
+                return client.inbox.getGuardianApprovalStatus.query();
+            },
             approveGuardianRequest: async (_learnCard, token) => {
                 // Open route; no auth required
                 return client.inbox.approveGuardianRequest.mutate({ token });

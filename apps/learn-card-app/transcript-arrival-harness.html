@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Transcript Arrival harness</title>
+        <script>
+            localStorage.setItem(
+                'i18n.language',
+                new URLSearchParams(window.location.search).get('lang') || 'en'
+            );
+        </script>
+    </head>
+    <body class="m-0 bg-grayscale-100">
+        <div id="root"></div>
+        <div id="modal-mid-root"></div>
+        <script type="module" src="/tests/fixtures/transcript-arrival-harness.tsx"></script>
+    </body>
+</html>
