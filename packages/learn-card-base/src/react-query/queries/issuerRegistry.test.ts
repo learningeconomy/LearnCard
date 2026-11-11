@@ -134,7 +134,8 @@ describe('OpenSALT registry proxy', () => {
         | 'proxy-network'
         | 'all-down'
         | 'cdn-collision'
-        | 'no-subject';
+        | 'no-subject'
+        | 'proxy-timeout';
     let mode: Mode;
     let osFetchMock: Mock<(url: string, init?: RequestInit) => Promise<Response>>;
     const upstream = (url: string) => {
@@ -150,7 +151,7 @@ describe('OpenSALT registry proxy', () => {
     };
     beforeEach(() => {
         mode = 'ok';
-        osFetchMock = vi.fn(async (url: string) => {
+        osFetchMock = vi.fn(async (url: string, init?: RequestInit) => {
             if (url === list)
                 return Response.json([
                     { type: 'dcc-legacy', name: 'Trusted', url: legacy },
@@ -159,6 +160,14 @@ describe('OpenSALT registry proxy', () => {
             if (url.includes('untrusted-did-registries')) return Response.json([]);
             if (url === legacy) return Response.json({ registry: {} });
             if (url.startsWith(`${base}/api/registry-proxy/`)) {
+                if (mode === 'proxy-timeout') {
+                    return new Promise<Response>((_resolve, reject) => {
+                        const signal = init?.signal;
+                        signal?.addEventListener('abort', () => reject(signal.reason), {
+                            once: true,
+                        });
+                    });
+                }
                 if (mode === 'proxy-network' || mode === 'all-down')
                     throw new TypeError('Failed to fetch');
                 if (mode === 'proxy-502')
@@ -195,6 +204,27 @@ describe('OpenSALT registry proxy', () => {
         osFetchMock.mock.calls.filter(([url]) => url.startsWith(`${base}/api/registry-proxy/`));
     const directOpenSaltCalls = () =>
         osFetchMock.mock.calls.filter(([url]) => url.startsWith('https://staging.opensalt.net/'));
+
+    it('falls back to direct OpenSALT when the proxy request times out', async () => {
+        mode = 'proxy-timeout';
+
+        const timeoutSpy = vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => {
+            const controller = new AbortController();
+            queueMicrotask(() => controller.abort());
+            return controller.signal;
+        });
+
+        try {
+            const result = await osLookup('did:os');
+
+            expect(result.source).toBe('trusted');
+            expect(proxyCalls().length).toBeGreaterThan(0);
+            expect(directOpenSaltCalls().length).toBeGreaterThan(0);
+            expect(timeoutSpy).toHaveBeenCalledWith(10_000);
+        } finally {
+            timeoutSpy.mockRestore();
+        }
+    });
 
     it('resolves OpenSALT-listed issuers as trusted through the proxy only', async () => {
         const result = await osLookup('did:os');

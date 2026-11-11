@@ -33,7 +33,10 @@ type IssuerMatch = { issuer: FederationMetadata; registry: object };
 const fetchRegistryDocument = async (url: string, proxyBaseUrl?: string): Promise<Response> => {
     const proxyUrl = proxyBaseUrl ? toRegistryProxyUrl(url, proxyBaseUrl) : null;
     if (proxyUrl) {
-        const proxied = await fetch(proxyUrl, { credentials: 'omit' }).catch(() => null);
+        const proxied = await fetch(proxyUrl, {
+            credentials: 'omit',
+            signal: AbortSignal.timeout(10_000),
+        }).catch(() => null);
         if (proxied?.headers.get(REGISTRY_PROXY_HEADER) && (proxied.ok || proxied.status === 404)) {
             return proxied;
         }
