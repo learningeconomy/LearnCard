@@ -30,8 +30,14 @@ if (!packageSpec) {
     console.error('Usage: check-cli-install.mjs --package=<npm spec or file:tarball>');
     process.exit(2);
 }
-const maxBytes = Number(readArg('max-mb') ?? DEFAULT_MAX_MB) * 1024 * 1024;
+const maxMegabytes = Number(readArg('max-mb') ?? DEFAULT_MAX_MB);
 const maxPackages = Number(readArg('max-packages') ?? DEFAULT_MAX_PACKAGES);
+// A NaN budget would make every comparison below false and pass without checking anything.
+if (!(maxMegabytes > 0) || !Number.isInteger(maxPackages) || maxPackages < 1) {
+    console.error('--max-mb must be a positive number and --max-packages a positive integer');
+    process.exit(2);
+}
+const maxBytes = maxMegabytes * 1024 * 1024;
 
 const directorySize = directory => {
     let bytes = 0;
@@ -51,8 +57,13 @@ const installedPackages = npxDirectory => {
 
 const workDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'lc-cli-install-'));
 const cache = path.join(workDirectory, 'cache');
-const npx = (...cliArgs) =>
-    spawnSync(
+/**
+ * Runs the CLI through npx. When npx cannot be spawned at all (ENOENT, timeout), spawnSync
+ * leaves stdout/stderr null and sets `error`; normalise that into strings so the caller
+ * reports a FAIL line instead of crashing.
+ */
+const npx = (...cliArgs) => {
+    const result = spawnSync(
         'npx',
         ['-y', '--cache', cache, `--package=${packageSpec}`, 'learncard', ...cliArgs],
         {
@@ -61,6 +72,13 @@ const npx = (...cliArgs) =>
             shell: process.platform === 'win32',
         }
     );
+
+    return {
+        status: result.status,
+        stdout: result.stdout ?? '',
+        stderr: result.error ? `could not run npx: ${result.error.message}` : (result.stderr ?? ''),
+    };
+};
 
 const failures = [];
 

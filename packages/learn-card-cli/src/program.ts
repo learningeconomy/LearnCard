@@ -27,18 +27,23 @@ const readDidkit = (): Promise<Buffer> => {
 };
 
 /**
- * Resolves once everything written to stdout has been handed to the OS.
+ * Resolves once everything written to stdout and stderr has been handed to the OS.
  *
  * `process.exit()` drops output still buffered for a pipe. On Node 20 that truncated large
- * `--json` results (e.g. `commands --json`) at 8 KB whenever a parent process captured stdout,
- * which is how agents and scripts read the CLI.
+ * results (e.g. `commands --json`) at 8 KB whenever a parent process captured the output,
+ * which is how agents and scripts read the CLI. Await this before every exit.
  */
-const stdoutFlushed = (): Promise<void> =>
-    process.stdout.writableLength === 0
-        ? Promise.resolve()
-        : new Promise(resolve => {
-              process.stdout.write('', () => resolve());
-          });
+const outputFlushed = async (): Promise<void> => {
+    await Promise.all(
+        [process.stdout, process.stderr].map(stream =>
+            stream.writableLength === 0
+                ? Promise.resolve()
+                : new Promise<void>(resolve => {
+                      stream.write('', () => resolve());
+                  })
+        )
+    );
+};
 
 /**
  * Shared runner for every subcommand. Sets up `out` for this run, validates `--network`
@@ -58,10 +63,9 @@ export const runCommand: RunCommand = async (command, options, action, settings 
         failure = { error };
     }
     if (!failure) {
-        if (out.json) {
+        if (out.json)
             process.stdout.write(JSON.stringify({ ok: true, command, ...out.result }) + '\n');
-            await stdoutFlushed();
-        }
+        await outputFlushed();
         return process.exit(process.exitCode || 0);
     }
     if (out.json) {
@@ -73,7 +77,7 @@ export const runCommand: RunCommand = async (command, options, action, settings 
             ...(identityCreated ? { identityCreated } : {}),
         };
         process.stdout.write(JSON.stringify(envelope) + '\n');
-        await stdoutFlushed();
+        await outputFlushed();
         return process.exit(1);
     }
     const lines = humanErrorLines(failure.error);
@@ -81,6 +85,7 @@ export const runCommand: RunCommand = async (command, options, action, settings 
     const footer =
         failure.error instanceof CliError ? undefined : settings.humanFooter?.(lines[0]!);
     if (footer) console.error(footer);
+    await outputFlushed();
     return process.exit(1);
 };
 
