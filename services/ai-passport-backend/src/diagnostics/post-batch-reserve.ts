@@ -18,10 +18,20 @@ const positiveInteger = (value: string | undefined, fallback: number): number =>
 
 /* Unmeasured defaults: fresh consent read (~0.7s) + one 10s model call +
  * pseudonymize and margin; get_answer adds a bounded search (6s) and keeps
- * its own fresh read before the answer's model call. */
+ * its own fresh read before the answer's model call. Each also pays the live
+ * consent reads at model dispatch and publication (CONSENT_READ_MS each):
+ * get_user_context +4 (16s), get_answer_about_user +7 (24s). */
 const DEFAULT_POST_BATCH_MS: Record<string, number> = {
-    get_user_context: 13_000,
-    get_answer_about_user: 19_000,
+    get_user_context: 16_000,
+    get_answer_about_user: 24_000,
+};
+
+/** One live consent read on prod (~675ms). */
+export const CONSENT_READ_MS = 675;
+/** Live consent reads after the batch, worst case (prompt-cache miss). */
+const POST_BATCH_CONSENT_READS: Record<string, number> = {
+    get_user_context: 5,
+    get_answer_about_user: 9,
 };
 
 /** Configured post-batch cost before any call of that tool was measured. */
@@ -51,13 +61,16 @@ export const postBatchEstimateMs = (tool: string | undefined): number =>
     (tool && estimates.get(tool)) || configuredPostBatchMs(tool);
 
 /** Reserve for a call of `tool` with `budgetMs`: the measured estimate plus
- *  headroom, or the conservative configured default; capped. */
+ *  headroom (at least its live consent reads), or the conservative
+ *  configured default; capped. */
 export const postBatchReserveMs = (tool: string | undefined, budgetMs: number): number => {
     const measured = tool ? estimates.get(tool) : undefined;
+    // A measured reserve never drops below the tool's live consent reads.
+    const consentFloorMs = ((tool && POST_BATCH_CONSENT_READS[tool]) || 0) * CONSENT_READ_MS;
     return Math.min(
         measured === undefined
             ? configuredPostBatchMs(tool)
-            : Math.ceil(measured * RESERVE_HEADROOM),
+            : Math.max(Math.ceil(measured * RESERVE_HEADROOM), consentFloorMs),
         Math.floor(budgetMs * MAX_RESERVE_SHARE)
     );
 };

@@ -15,7 +15,8 @@ type AnswerEvidence = {
  * left before the answer's reserve, without query expansion (a model call).
  * A slow or failed search answers from the learner context alone. */
 const SEARCH_MAX_MS = 6_000;
-const ANSWER_RESERVE_MS = 12_000;
+// The answer's model call (~10s) plus its 7 live consent reads (~675ms each).
+const ANSWER_RESERVE_MS = 16_000;
 const boundedSearch = async (question: string, did: string): Promise<TopicSearchResult[]> => {
     const budget = getLearnCardRequestBudget();
     const left = budget ? budget.deadlineAt - performance.now() - ANSWER_RESERVE_MS : SEARCH_MAX_MS;

@@ -52,16 +52,16 @@ test('the post-batch reserve learns from measured tails and backs off after a ti
     const reserve = await import('../diagnostics/post-batch-reserve');
     reserve.resetPostBatchEstimates();
     try {
-        // Unmeasured: the per-tool default (13s), capped at 60% of the budget.
-        expect(reserve.postBatchReserveMs('get_user_context', 45_000)).toBe(13_000);
-        expect(reserve.postBatchReserveMs('get_answer_about_user', 45_000)).toBe(19_000);
+        // Unmeasured: the per-tool default (16s / 24s), capped at 60% of the budget.
+        expect(reserve.postBatchReserveMs('get_user_context', 45_000)).toBe(16_000);
+        expect(reserve.postBatchReserveMs('get_answer_about_user', 45_000)).toBe(24_000);
         expect(reserve.postBatchReserveMs('get_user_context', 20_000)).toBe(12_000);
         expect(reserve.postBatchReserveMs('get_user_context', 10_000)).toBe(6_000);
         // Measured 4s tails pull the estimate down.
-        for (let i = 0; i < 10; i++)
+        for (let i = 0; i < 12; i++)
             reserve.recordPostBatchMs('get_user_context', 4_000, 'success');
         expect(reserve.postBatchEstimateMs('get_user_context')).toBeLessThan(4_300);
-        expect(reserve.postBatchEstimateMs('get_answer_about_user')).toBe(19_000);
+        expect(reserve.postBatchEstimateMs('get_answer_about_user')).toBe(24_000);
         // Measured: the estimate plus 25% headroom.
         expect(reserve.postBatchReserveMs('get_user_context', 45_000)).toBeLessThan(5_400);
         // A timeout 6s after the batch: the next estimate is at least 9s.
@@ -70,6 +70,37 @@ test('the post-batch reserve learns from measured tails and backs off after a ti
         // Failures say nothing about the tail.
         reserve.recordPostBatchMs('get_user_context', 100, 'failure');
         expect(reserve.postBatchEstimateMs('get_user_context')).toBe(9_000);
+    } finally {
+        reserve.resetPostBatchEstimates();
+    }
+});
+
+test('get_answer keeps time for its live consent reads after the batch', async () => {
+    const reserve = await import('../diagnostics/post-batch-reserve');
+    const { credentialBatchStopAt } = await import('./read-budget');
+    reserve.resetPostBatchEstimates();
+    try {
+        // 45s call: the batch stops starting credentials 24s before the deadline.
+        const budget = {
+            deadlineAt: 45_000,
+            budgetMs: 45_000,
+            postBatchReserveMs: reserve.postBatchReserveMs('get_answer_about_user', 45_000),
+        };
+        expect(credentialBudgetAllowsStart({ now: 20_500, budget })).toBe(true);
+        expect(credentialBudgetAllowsStart({ now: 20_600, budget })).toBe(false);
+        expect(credentialBatchStopAt(budget)).toBe(21_250);
+        // 19s (the old reserve) is no longer enough to start another credential.
+        expect(credentialBudgetAllowsStart({ now: 26_000, budget })).toBe(false);
+        // Fast measured tails never take the reserve below the 9 live consent reads.
+        for (let i = 0; i < 20; i++)
+            reserve.recordPostBatchMs('get_answer_about_user', 1_000, 'success');
+        expect(reserve.postBatchReserveMs('get_answer_about_user', 45_000)).toBe(
+            9 * reserve.CONSENT_READ_MS
+        );
+        // Slow measured tails still widen it.
+        for (let i = 0; i < 20; i++)
+            reserve.recordPostBatchMs('get_answer_about_user', 20_000, 'success');
+        expect(reserve.postBatchReserveMs('get_answer_about_user', 45_000)).toBeGreaterThan(24_000);
     } finally {
         reserve.resetPostBatchEstimates();
     }
