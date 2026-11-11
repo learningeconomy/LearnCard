@@ -24,6 +24,7 @@
     },
     "scripts": {
         "prepare": "husky install",
+        "changeset:version": "node scripts/release-bundled-dependents.mjs && changeset version",
         "lint": "bun run lint:workspace && bun run lint:a11y",
         "lint:workspace": "bun scripts/lint-workspace.ts",
         "lint:ox": "oxlint . -c .oxlintrc.json --deny-warnings",

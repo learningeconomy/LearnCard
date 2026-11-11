@@ -110,6 +110,12 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Test release tooling for bundled packages
+              run: >
+                  node --test
+                  scripts/release-bundled-dependents.test.mjs
+                  scripts/prepare-publish-workspace-deps.test.mjs
+
             - name: Build CLI
               run: bunx nx run-many -t build -p cli
 

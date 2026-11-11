@@ -143,8 +143,8 @@ const selfContainedPackages = new Map([
             entry: 'dist/index.js',
             // Written by the package's bundler: every non-builtin module the bundle still loads.
             externals: 'dist/bundle-externals.json',
-            // Optional native accelerator, loaded with a guarded dynamic import.
-            allowedExternals: new Set(['@learncard/didkit-plugin-node']),
+            // Nothing may be left for the installer to provide.
+            allowedExternals: new Set(),
         },
     ],
 ]);

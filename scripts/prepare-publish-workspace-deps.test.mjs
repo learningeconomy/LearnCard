@@ -316,7 +316,7 @@ const selfContainedFixture = (t, externals) => {
 };
 
 test('omits every dependency of a self-contained bundle from its published manifest', t => {
-    const f = selfContainedFixture(t, ['@learncard/didkit-plugin-node']);
+    const f = selfContainedFixture(t, []);
     const result = f.run();
     assert.equal(result.status, 0, result.stderr);
     assert.equal(f.read('cli').dependencies, undefined);
@@ -333,7 +333,7 @@ test('rejects a self-contained package whose build is missing', t => {
 });
 
 test('rejects a self-contained package whose build still loads a dependency', t => {
-    for (const externals of [['commander'], ['@learncard/public/sub']]) {
+    for (const externals of [['commander'], ['@learncard/didkit-plugin-node']]) {
         const f = selfContainedFixture(t, externals);
         const result = f.run();
         assert.equal(result.status, 1);
