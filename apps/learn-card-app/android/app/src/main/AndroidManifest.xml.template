@@ -95,8 +95,8 @@
 
         </activity>
 
-        <!-- A callback must reach the WebView that opened sign-in, before MainActivity's
-             singleTask launch can remove the provider holding Credential Manager's result. -->
+        <!-- One entry point for the tenant bundle scheme avoids an Android resolver
+             chooser. OAuth returns to its owning WebView; other links go to MainActivity. -->
         <activity android:name="com.learncard.digitalcredentials.AuthCallbackActivity"
             android:exported="true" android:noHistory="true" android:excludeFromRecents="true"
             android:taskAffinity="" android:theme="@android:style/Theme.Translucent.NoTitleBar">
@@ -104,13 +104,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="@string/custom_url_scheme" android:host="login" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="@string/custom_url_scheme" android:host="auth" android:path="/classlink/callback" />
+                <data android:scheme="@string/custom_url_scheme" />
             </intent-filter>
         </activity>
 
