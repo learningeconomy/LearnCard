@@ -14,6 +14,7 @@ export const MCP_TIMING_STAGES = [
     'verify',
     'store',
     'projection',
+    'batch',
     'learnercontext',
     'pseudonymize',
     'llm',

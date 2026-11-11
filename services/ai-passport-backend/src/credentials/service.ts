@@ -19,9 +19,11 @@ import {
 import {
     boundLearnCardCall,
     getLearnCardRequestSignal,
+    learnCardStoresDeferred,
     oncePerLearnCardRequest,
     runWithLearnCardRequestScope,
 } from '../learncard/requestScope';
+import { deferCredentialStore } from './store-queue';
 import {
     withAiInsightStage,
     withAiInsightResolutionOperation,
@@ -512,21 +514,26 @@ const resolveCredential = async (
                       ? 'malformed_input'
                       : 'verification_failed'
             );
-        try {
-            await Promise.all([
-                // Queue fencing but do not await Qdrant recovery here. The MCP
-                // read path used to wait for up to 32 unbounded cleanup units
-                // after a confirmed-invalid verify, which hung the tool past
-                // the client deadline once a busy lease no longer failed fast.
-                db.deleteVCsByUris(did, [ref.uri], { awaitCleanup: false }),
-                db.removeThreadCredentialsByUris(did, [ref.uri]),
-            ]);
-        } catch (error) {
-            // Mongo already queued cleanup and may have removed retained rows.
-            // A contended or unfinished fence must not fail chat or MCP reads.
-            if (!isRetryableSourceCleanupError(error)) throw error;
-        }
-        await db.storeCredentialVerification(did, verification);
+        const cleanUpInvalid = async () => {
+            try {
+                await Promise.all([
+                    // Queue fencing but do not await Qdrant recovery here. The MCP
+                    // read path used to wait for up to 32 unbounded cleanup units
+                    // after a confirmed-invalid verify, which hung the tool past
+                    // the client deadline once a busy lease no longer failed fast.
+                    db.deleteVCsByUris(did, [ref.uri], { awaitCleanup: false }),
+                    db.removeThreadCredentialsByUris(did, [ref.uri]),
+                ]);
+            } catch (error) {
+                // Mongo already queued cleanup and may have removed retained rows.
+                // A contended or unfinished fence must not fail chat or MCP reads.
+                if (!isRetryableSourceCleanupError(error)) throw error;
+            }
+            await db.storeCredentialVerification(did, verification);
+        };
+        // MCP reads skip the credential now and clean up in the background.
+        if (learnCardStoresDeferred()) deferCredentialStore(did, cleanUpInvalid);
+        else await cleanUpInvalid();
         throw copyVerifyFailureDiagnostics(
             verification,
             markCredentialItemFailure(
@@ -555,22 +562,28 @@ const resolveCredential = async (
     }
     await assertScope();
     const recheckConsent = assertScope;
-    await timeMcpStage('store', async () => {
-        await withAiInsightResolutionOperation('store_verification', () =>
-            db.storeCredentialVerification(did, verification, recheckConsent)
-        );
-        await withAiInsightResolutionOperation('store_raw', () =>
-            db.storeRawCredential(
-                did,
-                {
-                    uri: ref.uri,
-                    contentHash: verification.contentHash,
-                    rawCredentialJson: JSON.stringify(credential),
-                },
-                recheckConsent
-            )
-        );
-    });
+    const store = () =>
+        timeMcpStage('store', async () => {
+            await withAiInsightResolutionOperation('store_verification', () =>
+                db.storeCredentialVerification(did, verification, recheckConsent)
+            );
+            await withAiInsightResolutionOperation('store_raw', () =>
+                db.storeRawCredential(
+                    did,
+                    {
+                        uri: ref.uri,
+                        contentHash: verification.contentHash,
+                        rawCredentialJson: JSON.stringify(credential),
+                    },
+                    recheckConsent
+                )
+            );
+        });
+    // MCP reads never wait on store (~2s per credential in prod): the
+    // projection is ready, so the write runs in the background queue, which
+    // still re-checks consent and holds an owner operation.
+    if (learnCardStoresDeferred()) deferCredentialStore(did, store);
+    else await store();
     await assertScope();
     return { ...ref, credential, verification, projection };
 };

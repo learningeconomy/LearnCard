@@ -1,15 +1,17 @@
 import { createHash, createHmac } from 'node:crypto';
 
 import * as privacyKeys from '../ai/privacy-keys';
-import { getLearnCardRequestBudget } from '../learncard/requestScope';
+import { getLearnCardMeanTaskMs, getLearnCardRequestBudget } from '../learncard/requestScope';
 
 /*
  * Credential budget inside a request with a deadline (MCP tools). The batch
- * stops starting credentials once the time left, minus a reserve for the
- * learner-context synthesis, pseudonymization and the fresh consent check,
- * is too short; the unstarted ones are deferred and the tool returns context
- * from what loaded. Each read gets the smaller of a fixed cap and the time
- * left before that reserve. Env knobs are read directly (tests of modules
+ * stops starting credentials once the time left, minus the post-batch reserve
+ * (the fresh consent read, learner-context synthesis, pseudonymization and the
+ * model call), is too short for one more credential task; the unstarted ones
+ * are deferred and the tool returns context from what loaded. The reserve is
+ * the tool's measured post-batch cost (see diagnostics/post-batch-reserve),
+ * set on the request scope. Each read gets the smaller of a fixed cap and the
+ * time left before that reserve. Env knobs are read directly (tests of modules
  * that load this one replace the env module).
  */
 
@@ -18,7 +20,7 @@ const positiveInteger = (value: string | undefined, fallback: number): number =>
     return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-type RequestBudget = { deadlineAt: number; budgetMs: number };
+type RequestBudget = { deadlineAt: number; budgetMs: number; postBatchReserveMs?: number };
 
 /** Longest any one credential read may take under a request deadline. */
 export const credentialReadCapMs = (): number =>
@@ -30,23 +32,35 @@ export const CREDENTIAL_READ_FLOOR_MS = 500;
 /** A credential is not started with less than this left before the reserve. */
 export const CREDENTIAL_MIN_START_MS = 500;
 
-/** Time kept for synthesis and publication: MCP_SYNTHESIS_RESERVE_MS (8s), at
- *  most 40% of the request budget. */
-export const synthesisReserveMs = (budgetMs: number): number =>
+/** Headroom on the mean task time: a task started now must end before the reserve. */
+const TASK_HEADROOM = 1.5;
+
+/** Time kept after the batch. Requests without a measured reserve keep
+ *  MCP_POST_BATCH_RESERVE_MS (8s), at most 60% of the request budget. */
+export const synthesisReserveMs = (budget: RequestBudget): number =>
+    budget.postBatchReserveMs ??
     Math.min(
-        positiveInteger(process.env.MCP_SYNTHESIS_RESERVE_MS, 8_000),
-        Math.floor(budgetMs * 0.4)
+        positiveInteger(process.env.MCP_POST_BATCH_RESERVE_MS, 8_000),
+        Math.floor(budget.budgetMs * 0.6)
     );
 
 const credentialTimeLeftMs = (budget: RequestBudget, now: number): number =>
-    budget.deadlineAt - now - synthesisReserveMs(budget.budgetMs);
+    budget.deadlineAt - now - synthesisReserveMs(budget);
 
-/** Whether the batch may start another credential. Always true with no deadline. */
+/** Time one more credential task needs: its measured mean in this request,
+ *  with headroom; CREDENTIAL_MIN_START_MS until one has finished. */
+export const credentialTaskEstimateMs = (meanTaskMs = getLearnCardMeanTaskMs()): number =>
+    Math.max(CREDENTIAL_MIN_START_MS, Math.ceil((meanTaskMs ?? 0) * TASK_HEADROOM));
+
+/** Whether the batch may start another credential: it must finish before the
+ *  post-batch reserve. Always true with no deadline. */
 export const credentialBudgetAllowsStart = ({
     now = performance.now(),
     budget = getLearnCardRequestBudget(),
-}: { now?: number; budget?: RequestBudget } = {}): boolean =>
-    budget === undefined || credentialTimeLeftMs(budget, now) >= CREDENTIAL_MIN_START_MS;
+    meanTaskMs = getLearnCardMeanTaskMs(),
+}: { now?: number; budget?: RequestBudget; meanTaskMs?: number } = {}): boolean =>
+    budget === undefined ||
+    credentialTimeLeftMs(budget, now) >= credentialTaskEstimateMs(meanTaskMs);
 
 export const credentialReadTimeoutMs = ({
     now = performance.now(),

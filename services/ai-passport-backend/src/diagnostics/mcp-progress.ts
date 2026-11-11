@@ -15,4 +15,7 @@ export const newMcpRequestId = (): string => `req_${randomUUID().replaceAll('-',
 export const runWithMcpProgress = <T>(context: McpProgressContext, callback: () => T): T =>
     storage.run(context, callback);
 
+/** Run `callback` outside any MCP call: background work never lands in a call's timing. */
+export const runOutsideMcpProgress = <T>(callback: () => T): T => storage.exit(callback);
+
 export const getMcpProgress = (): McpProgressContext | undefined => storage.getStore();

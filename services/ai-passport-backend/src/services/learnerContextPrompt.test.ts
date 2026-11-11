@@ -57,6 +57,7 @@ let duringSearch: (() => void) | undefined;
 let learnCardFailure: unknown;
 let promptCacheFailure: unknown;
 let projectionFailure: unknown;
+let locationsFailure: Error | undefined;
 const searchCredentialsByTopic = mock(async () => {
     duringSearch?.();
     return searchResults;
@@ -105,7 +106,10 @@ mock.module('../learncard', () => ({
 mock.module('../credentials/service', () => ({
     assertCredentialScope: () => undefined,
     // Every shared URI is located; the projection mock ignores the location.
-    consentCredentialLocations: () => ({ get: (uri: string) => ({ uri }) }),
+    consentCredentialLocations: () => {
+        if (locationsFailure) throw locationsFailure;
+        return { get: (uri: string) => ({ uri }) };
+    },
     resolveVerifiedCredentialProjection: async (_did: string, uri: string) => {
         if (projectionFailure) throw projectionFailure;
         const projection = projections.get(uri);
@@ -181,6 +185,7 @@ beforeEach(() => {
     learnCardFailure = undefined;
     promptCacheFailure = undefined;
     projectionFailure = undefined;
+    locationsFailure = undefined;
 });
 
 describe('selection-only learner context', () => {
@@ -275,13 +280,17 @@ describe('selection-only learner context', () => {
 
     it('does not replace unavailable authoritative sources with an empty success', async () => {
         projections.clear();
+        // Same all-skipped diagnostics as the MCP tools: one shared batch.
         await expect(format()).rejects.toMatchObject({
             status: 503,
             message: 'Learner context service is unavailable',
             dependency: 'verify',
             cause: {
-                name: 'CredentialVerificationUnavailableError',
-                verificationSubreason: 'read_empty',
+                name: 'CredentialBatchEmptyError',
+                cause: {
+                    name: 'CredentialVerificationUnavailableError',
+                    verificationSubreason: 'read_empty',
+                },
             },
         });
         expect(providerInputs).toEqual([]);
@@ -543,14 +552,8 @@ describe('MCP answer/context consistency', () => {
     });
 
     it('labels a plain Error thrown outside the credential batch as uri_list', async () => {
-        currentReceipt = {
-            ...receipt,
-            credentialUris: {
-                [Symbol.iterator]() {
-                    throw new Error('shared uri listing failed for did:example:private-subject');
-                },
-            } as unknown as string[],
-        };
+        // The URI list (consent locations) is built once per call, before the batch.
+        locationsFailure = new Error('shared uri listing failed for did:example:private-subject');
         const failure = await runWithAiPrivacyContext(OWNER, () =>
             getLatestUserSummary(OWNER)
         ).catch((error: unknown) => error);

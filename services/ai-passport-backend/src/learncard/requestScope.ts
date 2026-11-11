@@ -20,6 +20,17 @@ type LearnCardRequestScope = {
     consentRead?: ConsentReadEntry;
     /** One in-flight or settled result per key (a credential URI) per request. */
     memo?: Map<string, Promise<unknown>>;
+    /** Time kept after the credential batch for synthesis and publication. */
+    readonly postBatchReserveMs?: number;
+    /** Store writes run in the background instead of on the request path. */
+    readonly deferStores?: boolean;
+    readonly onBatchEnded?: (at: number) => void;
+    /** performance.now() time the credential batch settled. */
+    batchEndedAt?: number;
+    /** Durations of credential tasks that finished in this request. */
+    taskMs?: { count: number; total: number };
+    /** Set once publication starts: every fresh read from then on shares one read. */
+    publicationConsent?: { entry?: ConsentReadEntry };
 };
 
 const requestScope = new AsyncLocalStorage<LearnCardRequestScope>();
@@ -44,13 +55,70 @@ export const runInAiCallConsentScope = <Result>(callback: () => Result): Result 
  * `reuseRequestConsentRead`).
  */
 export const runWithLearnCardRequestScope = <Result>(
-    options: { signal?: AbortSignal; deadlineAt?: number; budgetMs?: number },
+    options: {
+        signal?: AbortSignal;
+        deadlineAt?: number;
+        budgetMs?: number;
+        postBatchReserveMs?: number;
+        deferStores?: boolean;
+        /** Called when the request's credential batch settles. */
+        onBatchEnded?: (at: number) => void;
+    },
     callback: () => Result
 ): Result =>
     requestScope.run(
-        { signal: options.signal, deadlineAt: options.deadlineAt, budgetMs: options.budgetMs },
+        {
+            signal: options.signal,
+            deadlineAt: options.deadlineAt,
+            budgetMs: options.budgetMs,
+            postBatchReserveMs: options.postBatchReserveMs,
+            deferStores: options.deferStores,
+            onBatchEnded: options.onBatchEnded,
+        },
         callback
     );
+
+/**
+ * Mark the start of the request's publication phase: all credential data has
+ * been read. From here, every `fresh` consent check shares ONE live read (the
+ * first one after this call), so the request reads the contract fresh once
+ * before it sends anything to a model or returns a result. Calling it again
+ * (after more credential reads) makes the next fresh check read live again.
+ * Outside a request scope it does nothing, and fresh checks always read.
+ */
+export const beginLearnCardPublication = (): void => {
+    const scope = requestScope.getStore();
+    if (scope) scope.publicationConsent = {};
+};
+
+/** Record that the credential batch settled (for the post-batch reserve). */
+export const markLearnCardBatchEnded = (now = performance.now()): void => {
+    const scope = requestScope.getStore();
+    if (!scope) return;
+    scope.batchEndedAt = now;
+    scope.onBatchEnded?.(now);
+};
+
+export const getLearnCardBatchEndedAt = (): number | undefined =>
+    requestScope.getStore()?.batchEndedAt;
+
+/** Record how long one credential task took in this request. */
+export const recordLearnCardTaskMs = (ms: number): void => {
+    const scope = requestScope.getStore();
+    if (!scope || !Number.isFinite(ms) || ms < 0) return;
+    scope.taskMs ??= { count: 0, total: 0 };
+    scope.taskMs.count += 1;
+    scope.taskMs.total += ms;
+};
+
+/** Mean credential task duration in this request, if any finished. */
+export const getLearnCardMeanTaskMs = (): number | undefined => {
+    const stats = requestScope.getStore()?.taskMs;
+    return stats && stats.count ? stats.total / stats.count : undefined;
+};
+
+/** Whether store writes in this request go to the background queue. */
+export const learnCardStoresDeferred = (): boolean => requestScope.getStore()?.deferStores === true;
 
 /**
  * Run `callback` with no request scope: nothing inside inherits a request's
@@ -66,10 +134,14 @@ export const getLearnCardRequestDeadline = (): number | undefined =>
     requestScope.getStore()?.deadlineAt;
 
 export const getLearnCardRequestBudget = ():
-    { deadlineAt: number; budgetMs: number } | undefined => {
+    { deadlineAt: number; budgetMs: number; postBatchReserveMs?: number } | undefined => {
     const scope = requestScope.getStore();
     if (scope?.deadlineAt === undefined || scope.budgetMs === undefined) return undefined;
-    return { deadlineAt: scope.deadlineAt, budgetMs: scope.budgetMs };
+    return {
+        deadlineAt: scope.deadlineAt,
+        budgetMs: scope.budgetMs,
+        postBatchReserveMs: scope.postBatchReserveMs,
+    };
 };
 
 /**
@@ -107,6 +179,12 @@ export const CONSENT_READ_REUSE_MAX_MS = 10_000;
  * `runInAiCallConsentScope`) and reads fresh outside one. Every fresh read
  * made inside a call becomes that call's read, so boundary checks after a
  * dispatch or publication check see the newer state.
+ *
+ * After `beginLearnCardPublication`, `fresh` reads share one live read for the
+ * rest of the request (including AI-call dispatch checks), so publication
+ * reads the contract fresh once, after every credential read. Plain reads
+ * then reuse the request's read whatever its age, because a fresh check
+ * still runs before anything is sent or returned.
  */
 export const reuseRequestConsentRead = <T>(
     did: string,
@@ -138,12 +216,18 @@ export const reuseRequestConsentRead = <T>(
     };
     const scope = requestScope.getStore();
     if (!scope) return rememberAiCallRead(call, did, live(), now);
+    const publication = scope.publicationConsent;
+    const published = publication?.entry;
+    if (fresh && published && published.did === did)
+        return rememberAiCallRead(call, did, published.data as Promise<T>, now);
     const existing = scope.consentRead;
+    // During publication a plain read keeps the request's read whatever its
+    // age: the publication's fresh read decides, and it follows.
     if (
         !fresh &&
         existing &&
         existing.did === did &&
-        now() - existing.startedAt <= CONSENT_READ_REUSE_MAX_MS
+        (publication || now() - existing.startedAt <= CONSENT_READ_REUSE_MAX_MS)
     )
         return existing.data as Promise<T>;
     if (!fresh && snapshot) {
@@ -165,8 +249,10 @@ export const reuseRequestConsentRead = <T>(
     const data = rememberAiCallRead(call, did, live(), now);
     const entry: ConsentReadEntry = { did, startedAt: now(), data };
     scope.consentRead = entry;
+    if (fresh && publication) publication.entry = entry;
     data.catch(() => {
         if (scope.consentRead === entry) scope.consentRead = undefined;
+        if (publication?.entry === entry) publication.entry = undefined;
     });
     return data;
 };

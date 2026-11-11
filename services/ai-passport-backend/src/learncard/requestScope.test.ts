@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 
 import { LearnCardTimeoutError } from './errors';
 import {
+    beginLearnCardPublication,
     boundLearnCardCall,
     clearConsentSnapshots,
     CONSENT_READ_REUSE_MAX_MS,
@@ -107,6 +108,63 @@ describe('reuseRequestConsentRead', () => {
             now = CONSENT_READ_REUSE_MAX_MS + 1;
             expect(await reuseRequestConsentRead('did:a', read, { now: () => now })).toBe(2);
         });
+    });
+});
+
+describe('publication: one fresh consent read per request', () => {
+    test('after publication starts, fresh checks (dispatch ones too) share one live read', async () => {
+        let reads = 0;
+        const read = async () => ++reads;
+        await runWithLearnCardRequestScope({}, async () => {
+            expect(await reuseRequestConsentRead('did:a', read)).toBe(1);
+            // Before publication a fresh check reads live, as before.
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(2);
+            beginLearnCardPublication();
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(3);
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(3);
+            await runInAiCallConsentScope(async () => {
+                expect(
+                    await reuseRequestConsentRead('did:a', read, {
+                        fresh: true,
+                        oncePerAiCall: true,
+                    })
+                ).toBe(3);
+            });
+            // A plain read keeps the publication's read, whatever its age.
+            expect(
+                await reuseRequestConsentRead('did:a', read, {
+                    now: () => performance.now() + CONSENT_READ_REUSE_MAX_MS * 10,
+                })
+            ).toBe(3);
+            // Opening publication again (after more credential reads) reads live once more.
+            beginLearnCardPublication();
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(4);
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(4);
+        });
+        expect(reads).toBe(4);
+    });
+
+    test('a failed publication read is never reused', async () => {
+        let reads = 0;
+        const read = async () => {
+            reads += 1;
+            if (reads === 1) throw new Error('consent store down');
+            return reads;
+        };
+        await runWithLearnCardRequestScope({}, async () => {
+            beginLearnCardPublication();
+            await expect(reuseRequestConsentRead('did:a', read, { fresh: true })).rejects.toThrow();
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(2);
+        });
+    });
+
+    test('outside a request, every fresh check reads', async () => {
+        let reads = 0;
+        const read = async () => ++reads;
+        beginLearnCardPublication();
+        await reuseRequestConsentRead('did:a', read, { fresh: true });
+        await reuseRequestConsentRead('did:a', read, { fresh: true });
+        expect(reads).toBe(2);
     });
 });
 

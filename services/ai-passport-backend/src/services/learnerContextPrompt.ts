@@ -14,16 +14,33 @@ import {
     loadActiveAiConsentData,
     sameConsentAuthorization,
 } from '../learncard/consent';
-import { credentialBatchConcurrency, settleCredentialBatch } from '../credentials/batch';
-import { credentialReadTimeoutMs } from '../credentials/read-budget';
-import { resolveVerifiedCredentialProjection } from '../credentials/service';
-import { withCauseStep } from '../credentials/verify-diagnostics';
+import {
+    credentialBatchConcurrency,
+    emptyBatchSkipCountsOf,
+    isCredentialItemFailure,
+    settleCredentialBatch,
+} from '../credentials/batch';
+import { credentialBudgetAllowsStart, credentialReadTimeoutMs } from '../credentials/read-budget';
+import { deferCredentialStore } from '../credentials/store-queue';
+import {
+    beginLearnCardPublication,
+    learnCardStoresDeferred,
+    markLearnCardBatchEnded,
+    recordLearnCardTaskMs,
+} from '../learncard/requestScope';
+import {
+    assertCredentialScope,
+    consentCredentialLocations,
+    resolveVerifiedCredentialProjection,
+} from '../credentials/service';
+import { attachVerifyFailureDiagnostics, withCauseStep } from '../credentials/verify-diagnostics';
+import { logSafeEvent } from '../logging';
 import { serializeModelSafeCredentialProjection } from '../credentials/projection';
 import {
     LearnerContextPromptResponseValidator,
     LearnerCredentialSummaryValidator,
 } from '../ai/generation-schemas';
-import { timeMcpStage } from '../diagnostics/mcp-timing';
+import { recordMcpCredentialCount, timeMcpStage } from '../diagnostics/mcp-timing';
 
 /* Model calls inside an MCP tool count toward its llm stage timing. */
 const timedAiCall = ((...args: Parameters<typeof aiCall>) =>
@@ -146,14 +163,93 @@ export const parseLearnerContextPromptRequest = (input: unknown): LearnerContext
 const parseLearnerContextPromptInternal = (input: unknown): LearnerContextPromptRequest =>
     LearnerContextPromptInternalValidator.parse(input);
 
-export const generateLearnerContextPrompt = async (
-    request: LearnerContextPromptInput & {
-        resolvedProjections?: ModelSafeCredentialProjection[];
+type ConsentData = Awaited<ReturnType<typeof loadActiveAiConsentData>>;
+
+const logSkippedCredentialCounts = (skipped: Array<{ code: string }>): void => {
+    const counts = new Map<string, number>();
+    for (const item of skipped) counts.set(item.code, (counts.get(item.code) ?? 0) + 1);
+    for (const [failureCode, count] of counts)
+        logSafeEvent('warn', 'credential_skipped', {
+            credentialBatch: 'context',
+            failureCode: failureCode as never,
+            count,
+        });
+};
+
+/*
+ * The one credential batch for learner context, shared by the in-app
+ * /ai/learner-context/format route and the MCP tools:
+ * - scope and the consent locations once per call, from the consent read the
+ *   caller already made (no per-credential consent lookup);
+ * - at most credentialBatchConcurrency() credentials in flight;
+ * - one bad credential is skipped and counted, never fails its siblings;
+ * - under a request deadline (MCP), no credential starts that could not end
+ *   before the post-batch reserve; the rest are deferred.
+ */
+const loadContextCredentials = async (
+    did: string,
+    uris: string[],
+    receipt: ConsentData['receipt'],
+    records: ConsentData['records']
+): Promise<ModelSafeCredentialProjection[]> => {
+    recordMcpCredentialCount(uris.length);
+    if (uris.length === 0) return [];
+    await withCauseStep('scope', () => timeMcpStage('scope', () => assertCredentialScope(did)));
+    const locations = await withCauseStep('uri_list', () =>
+        timeMcpStage('uri_list', async () => consentCredentialLocations(records))
+    );
+    try {
+        const { loaded, skipped } = await withCauseStep('batch', () =>
+            timeMcpStage('batch', () =>
+                settleCredentialBatch(
+                    'context',
+                    uris.map(
+                        uri => () =>
+                            withCauseStep('projection', () =>
+                                timeMcpStage('projection', async () => {
+                                    const location = locations.get(uri);
+                                    if (!location)
+                                        throw new AiConsentError('Credential is not shared');
+                                    const startedAt = performance.now();
+                                    try {
+                                        return await resolveVerifiedCredentialProjection(
+                                            did,
+                                            uri,
+                                            receipt,
+                                            { readTimeoutMs: credentialReadTimeoutMs(), location }
+                                        );
+                                    } finally {
+                                        recordLearnCardTaskMs(performance.now() - startedAt);
+                                    }
+                                })
+                            )
+                    ),
+                    {
+                        // HTTP format allows up to 500 URIs; never verify them all at once.
+                        concurrency: credentialBatchConcurrency(),
+                        shouldStart: () => credentialBudgetAllowsStart(),
+                    }
+                )
+            )
+        );
+        logSkippedCredentialCounts(skipped);
+        return loaded;
+    } catch (error) {
+        if (!isCredentialItemFailure(error)) throw error;
+        const wrapper = new Error('All credentials were skipped', { cause: error });
+        wrapper.name = 'CredentialBatchEmptyError';
+        Object.assign(wrapper, { code: 'all_skipped' });
+        attachVerifyFailureDiagnostics(wrapper, {
+            kind: 'all_skipped',
+            skipCounts: emptyBatchSkipCountsOf(error),
+        });
+        throw wrapper;
     }
-) => {
+};
+
+export const generateLearnerContextPrompt = async (request: LearnerContextPromptInput) => {
     const startedAt = performance.now();
-    const { resolvedProjections, ...requestFields } = request;
-    const input = parseLearnerContextPromptInternal(requestFields);
+    const input = parseLearnerContextPromptInternal(request);
     const did = getCurrentAiSubject();
     if (!did)
         throw new LearnerContextPromptError(
@@ -193,27 +289,28 @@ export const generateLearnerContextPrompt = async (
         const current = await loadConsent({ fresh: true });
         if (!sameConsentAuthorization(current.receipt, receipt)) throw new AiConsentError();
     };
+    // Cache writes. MCP tools never wait on them: they run in the background
+    // store queue, which reads consent fresh (live, outside the request) right
+    // before writing, so nothing is cached after a revoke that read observes.
+    const persist = async (write: () => Promise<unknown>) => {
+        if (!learnCardStoresDeferred()) {
+            await write();
+            return;
+        }
+        deferCredentialStore(did, async () => {
+            await assertFresh();
+            await write();
+        });
+    };
     // Validate every selected source, even if the caller explicitly limits synthesis.
-    const credentials =
-        resolvedProjections && resolvedProjections.length === credentialUris.length
-            ? [...resolvedProjections]
-            : await dependency('verify', async () => {
-                  const { loaded } = await settleCredentialBatch(
-                      'context',
-                      credentialUris.map(
-                          uri => () =>
-                              withCauseStep('projection', () =>
-                                  resolveVerifiedCredentialProjection(did, uri, receipt, {
-                                      readTimeoutMs: credentialReadTimeoutMs(),
-                                  })
-                              )
-                      ),
-                      // HTTP format allows up to 500 URIs; never verify them all at once.
-                      { concurrency: credentialBatchConcurrency() }
-                  );
-                  return loaded;
-              });
-    await assertFresh();
+    const credentials = await dependency('verify', () =>
+        loadContextCredentials(did, credentialUris, receipt, records)
+    );
+    // Every credential read is done. Inside an MCP tool, from here the request
+    // reads consent fresh ONCE (the check after the prompt-cache lookup) and
+    // every later fresh check, including model dispatch checks, reuses it.
+    markLearnCardBatchEnded();
+    beginLearnCardPublication();
     const usedCredentials = credentials.slice(0, input.maxCredentials ?? credentials.length);
     const scope = {
         did,
@@ -292,12 +389,16 @@ export const generateLearnerContextPrompt = async (
     const cached = await dependency('credential_store', () =>
         db.getLearnerContextPromptByHash(did, receipt.revision, promptCacheHash)
     );
+    // The first fresh check after every credential and cache read, before any
+    // model call or return. Inside an MCP tool (after beginLearnCardPublication)
+    // this is the request's one live fresh read, and the checks below and the
+    // model dispatch checks reuse it.
+    await assertFresh();
     if (
         cached?.prompt &&
         cached.version === LEARNER_CONTEXT_PROMPT_CACHE_VERSION &&
         cached.metadata.consentRevision === receipt.revision
     ) {
-        await assertFresh();
         return {
             prompt: cached.prompt,
             metadata: {
@@ -364,15 +465,17 @@ export const generateLearnerContextPrompt = async (
                   actualCompactionTokens += tokens;
                   theoreticalCompactionTokens += tokens;
                   await assertFresh();
-                  await dependency('credential_store', () =>
-                      db.upsertCredentialSummaryByHash({
-                          did,
-                          consentRevision: receipt.revision,
-                          hash: summaryHash,
-                          summary,
-                          model: CHAT_MODEL,
-                          version: CREDENTIAL_SUMMARY_CACHE_VERSION,
-                      })
+                  await persist(() =>
+                      dependency('credential_store', () =>
+                          db.upsertCredentialSummaryByHash({
+                              did,
+                              consentRevision: receipt.revision,
+                              hash: summaryHash,
+                              summary,
+                              model: CHAT_MODEL,
+                              version: CREDENTIAL_SUMMARY_CACHE_VERSION,
+                          })
+                      )
                   );
                   return summary;
               })
@@ -465,16 +568,18 @@ Compact output: 120-220 words. Expanded output: 260-420 words. Follow the reques
         },
     };
     await assertFresh();
-    await dependency('credential_store', () =>
-        db.upsertLearnerContextPromptByHash({
-            did,
-            consentRevision: receipt.revision,
-            hash: promptCacheHash,
-            prompt,
-            metadata,
-            model: CHAT_MODEL,
-            version: LEARNER_CONTEXT_PROMPT_CACHE_VERSION,
-        })
+    await persist(() =>
+        dependency('credential_store', () =>
+            db.upsertLearnerContextPromptByHash({
+                did,
+                consentRevision: receipt.revision,
+                hash: promptCacheHash,
+                prompt,
+                metadata,
+                model: CHAT_MODEL,
+                version: LEARNER_CONTEXT_PROMPT_CACHE_VERSION,
+            })
+        )
     );
     await assertFresh();
     return { prompt, metadata, structuredContext: structuredContext() };

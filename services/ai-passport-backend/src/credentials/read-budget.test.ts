@@ -33,12 +33,45 @@ test('a read gets the cap or the time left before the synthesis reserve', () => 
     expect(credentialReadTimeoutMs({ now: 19_000, budget })).toBe(CREDENTIAL_READ_FLOOR_MS);
 });
 
-test('the batch stops starting credentials when only the reserve is left', () => {
+test('the batch stops starting credentials a task could not finish before the reserve', () => {
     const budget = { deadlineAt: 20_000, budgetMs: 20_000 };
-    expect(synthesisReserveMs(20_000)).toBe(8_000);
-    expect(synthesisReserveMs(1_500)).toBe(600);
-    expect(credentialBudgetAllowsStart({ now: 11_000, budget })).toBe(true);
+    // Unmeasured: configured 8s reserve, at most 60% of the budget.
+    expect(synthesisReserveMs(budget)).toBe(8_000);
+    expect(synthesisReserveMs({ deadlineAt: 1_500, budgetMs: 1_500 })).toBe(900);
+    // The measured reserve on the request wins.
+    expect(synthesisReserveMs({ ...budget, postBatchReserveMs: 5_000 })).toBe(5_000);
+    // No task finished yet: the 500ms minimum.
+    expect(credentialBudgetAllowsStart({ now: 11_500, budget })).toBe(true);
     expect(credentialBudgetAllowsStart({ now: 11_600, budget })).toBe(false);
+    // Measured 2s tasks need 3s before the reserve.
+    expect(credentialBudgetAllowsStart({ now: 9_000, budget, meanTaskMs: 2_000 })).toBe(true);
+    expect(credentialBudgetAllowsStart({ now: 9_100, budget, meanTaskMs: 2_000 })).toBe(false);
+    // Fast tasks still keep the 500ms minimum.
+    expect(credentialBudgetAllowsStart({ now: 11_500, budget, meanTaskMs: 50 })).toBe(true);
+    expect(credentialBudgetAllowsStart({ now: 11_600, budget, meanTaskMs: 50 })).toBe(false);
+});
+
+test('the post-batch reserve learns from measured tails and backs off after a timeout', async () => {
+    const reserve = await import('../diagnostics/post-batch-reserve');
+    reserve.resetPostBatchEstimates();
+    try {
+        // Configured 8s plus 25% headroom, capped at 60% of the budget.
+        expect(reserve.postBatchReserveMs('get_user_context', 20_000)).toBe(10_000);
+        expect(reserve.postBatchReserveMs('get_user_context', 10_000)).toBe(6_000);
+        // Measured 4s tails pull the estimate down.
+        for (let i = 0; i < 10; i++)
+            reserve.recordPostBatchMs('get_user_context', 4_000, 'success');
+        expect(reserve.postBatchEstimateMs('get_user_context')).toBeLessThan(4_200);
+        expect(reserve.postBatchEstimateMs('get_answer_about_user')).toBe(8_000);
+        // A timeout 6s after the batch: the next estimate is at least 9s.
+        reserve.recordPostBatchMs('get_user_context', 6_000, 'timeout');
+        expect(reserve.postBatchEstimateMs('get_user_context')).toBe(9_000);
+        // Failures say nothing about the tail.
+        reserve.recordPostBatchMs('get_user_context', 100, 'failure');
+        expect(reserve.postBatchEstimateMs('get_user_context')).toBe(9_000);
+    } finally {
+        reserve.resetPostBatchEstimates();
+    }
 });
 
 test('the slow-read warning has a 1s floor and fires only before the timeout', () => {

@@ -153,6 +153,7 @@ const { runWithLearnCardRequestScope, resetConsentSnapshots } =
 const { clearKnownBadCredentials, clearVerifiedCredentials } =
     await import('../../credentials/batch');
 const { logSafeEvent } = await import('../../logging');
+const { resetPostBatchEstimates } = await import('../../diagnostics/post-batch-reserve');
 
 const originalInfo = console.info;
 const originalWarn = console.warn;
@@ -171,6 +172,7 @@ const runTool = () =>
 
 beforeEach(() => {
     resetConsentSnapshots();
+    resetPostBatchEstimates();
     clearKnownBadCredentials();
     clearVerifiedCredentials();
     consentReads = 0;
@@ -497,6 +499,7 @@ describe('MCP get_user_context resolves each credential once per request', () =>
             summary: 'Sibling summary',
         }));
         delete process.env.MCP_TOOL_TIMEOUT_MS;
+        delete process.env.MCP_POST_BATCH_RESERVE_MS;
         console.info = originalInfo;
         console.warn = originalWarn;
         console.error = originalError;
@@ -546,13 +549,14 @@ describe('MCP get_user_context resolves each credential once per request', () =>
             expect(stages.projection?.count).toBe(CREDENTIALS);
             expect(stages.learnercontext?.count).toBe(1);
             expect(stages.pseudonymize?.count).toBe(1);
-            // The tool's consent read, the prompt's (shared) read, the prompt's
-            // four fresh checks (cache lookup, before the model, before and after
-            // the cache write) and the tool's final fresh check: 7, whatever the
-            // credential count. Nothing per credential.
+            // Consent checks: the tool's read, the prompt's (shared) read, the
+            // prompt's fresh checks and the tool's final fresh check, 7 whatever
+            // the credential count. Only two reach the store: the tool's read and
+            // ONE fresh read at publication; plus at most one by the background
+            // prompt-cache write. Nothing per credential.
             const storeConsentReads = getConsentFlowDataForDid.mock.calls.length;
             expect(stages.consent_read?.count).toBeLessThanOrEqual(7);
-            expect(storeConsentReads).toBeLessThanOrEqual(7);
+            expect(storeConsentReads).toBeLessThanOrEqual(3);
 
             console.log(
                 `30-credential tool: ${Math.round(elapsedMs)}ms, max ${store.maxActive()} in flight, ` +
@@ -621,6 +625,8 @@ describe('MCP get_user_context resolves each credential once per request', () =>
         uris = Array.from({ length: 6 }, (_, index) => `lc:cloud:credential:slow-${index}`);
         realisticStore();
         process.env.MCP_TOOL_TIMEOUT_MS = '1500';
+        // A small post-batch reserve so all 6 credentials start before the hang.
+        process.env.MCP_POST_BATCH_RESERVE_MS = '400';
         console.error = ((...data: unknown[]) => {
             capture(...data);
             return undefined;
@@ -649,4 +655,237 @@ describe('MCP get_user_context resolves each credential once per request', () =>
             restore();
         }
     });
+});
+
+describe('MCP get_user_context on a 213-credential account at prod latencies', () => {
+    // Measured on prod (v32 logs): consent read ~675ms, credential read ~130ms,
+    // verify ~330ms, store ~2s, model call 2-3.5s.
+    const CREDENTIALS = 213;
+    const CONSENT_MS = 675;
+    const READ_MS = 130;
+    const VERIFY_MS = 330;
+    const STORE_MS = 2_000;
+    const LLM_MS = [2_000, 3_500, 2_700];
+    const isInvalid = (index: number) => index % 8 === 3;
+    const isUnverifiable = (index: number) => index % 30 === 7;
+    const originalError = console.error;
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    const runAtBudget = async (budgetMs: number, requestId: string) => {
+        const { runMcpOwnerOperation } = await import('../ownerOperation');
+        const { runWithMcpProgress } = await import('../../diagnostics/mcp-progress');
+        const { pendingCredentialStores, drainCredentialStores } =
+            await import('../../credentials/store-queue');
+        const { db } = await import('../../db');
+        const indexOf = (uri: string) => Number(uri.slice(uri.lastIndexOf('-') + 1));
+        uris = Array.from(
+            { length: CREDENTIALS },
+            (_, index) => `lc:cloud:credential:prod-${index}`
+        );
+        process.env.MCP_TOOL_TIMEOUT_MS = String(budgetMs);
+
+        let releaseStores!: () => void;
+        const storesReleased = new Promise<void>(resolve => {
+            releaseStores = resolve;
+        });
+        const { getLearnCardRequestSignal } = await import('../../learncard/requestScope');
+        // Live consent reads made by the request (background store jobs run
+        // outside it and read on their own).
+        const consentReadsAt: number[] = [];
+        let backgroundConsentReads = 0;
+        let batchCompletedAt: number | undefined;
+        let storesStarted = 0;
+        let storesFinished = 0;
+        let llmCalls = 0;
+        const watch = (...data: unknown[]) => {
+            for (const item of data)
+                if (
+                    item &&
+                    typeof item === 'object' &&
+                    (item as { event?: string }).event === 'credential_batch_completed'
+                )
+                    batchCompletedAt = performance.now();
+            capture(...data);
+            return undefined;
+        };
+        console.info = watch as typeof console.info;
+        console.warn = watch as typeof console.warn;
+        console.error = ((...data: unknown[]) => {
+            capture(...data);
+            return undefined;
+        }) as typeof console.error;
+        getConsentFlowDataForDid.mockImplementation(async () => {
+            consentReads += 1;
+            if (getLearnCardRequestSignal()) consentReadsAt.push(performance.now());
+            else backgroundConsentReads += 1;
+            await sleep(CONSENT_MS);
+            return { records: [createActiveRecord(uris)], hasMore: false };
+        });
+        readGet.mockImplementation(async (uri?: string) => {
+            await sleep(READ_MS);
+            return createTestVc(uri ?? VALID_URI);
+        });
+        verifyCredential.mockImplementation(async (credential?: VC) => {
+            const index = indexOf(typeof credential?.id === 'string' ? credential.id : '');
+            await sleep(VERIFY_MS);
+            if (isUnverifiable(index)) throw new Error('verifier unreachable');
+            if (isInvalid(index))
+                return { checks: [], errors: ['Invalid signature'], warnings: [] };
+            return { checks: ['proof'], errors: [], warnings: [] };
+        });
+        const slowStore = async () => {
+            storesStarted += 1;
+            await Promise.race([sleep(STORE_MS), storesReleased]);
+            storesFinished += 1;
+        };
+        (db.storeCredentialVerification as ReturnType<typeof mock>).mockImplementation(slowStore);
+        (db.storeRawCredential as ReturnType<typeof mock>).mockImplementation(slowStore);
+        aiStubs.aiCall.mockImplementation(async () => {
+            const ms = LLM_MS[llmCalls % LLM_MS.length]!;
+            llmCalls += 1;
+            await sleep(ms);
+            return { prompt: 'Prod-latency learner context', summary: 'Cluster summary' };
+        });
+
+        const startedAt = performance.now();
+        const outcome = await runWithMcpProgress({ tool: 'get_user_context', requestId }, () =>
+            runMcpOwnerOperation(OWNER, () => getLatestUserSummary(OWNER))
+        ).then(
+            context => ({ context, error: undefined as unknown }),
+            (error: unknown) => ({ context: undefined, error })
+        );
+        const returnedAt = performance.now();
+        const pendingStoresAtReturn = pendingCredentialStores();
+        const storesAtReturn = { started: storesStarted, finished: storesFinished };
+        const readsBeforeReturn = consentReadsAt.filter(at => at < returnedAt);
+        const freshReads = readsBeforeReturn.filter(
+            at => batchCompletedAt !== undefined && at >= batchCompletedAt
+        ).length;
+        // Let the background queue finish quickly so nothing leaks into later tests.
+        releaseStores();
+        await drainCredentialStores();
+        const timing = events.find(event => event.event === 'mcp_tool_timing') as
+            | {
+                  mcpOutcome?: string;
+                  durationMs?: number;
+                  stageTimings?: Record<string, { count: number; ms: number }>;
+              }
+            | undefined;
+        const completed = events.find(event => event.event === 'credential_batch_completed') as
+            | {
+                  loadedCount?: number;
+                  skippedCount?: number;
+                  deferredCount?: number;
+                  count?: number;
+              }
+            | undefined;
+        return {
+            ...outcome,
+            elapsedMs: returnedAt - startedAt,
+            batchMs: batchCompletedAt === undefined ? undefined : batchCompletedAt - startedAt,
+            liveConsentReads: readsBeforeReturn.length,
+            backgroundConsentReads,
+            freshReads,
+            pendingStoresAtReturn,
+            storesAtReturn,
+            timing,
+            completed,
+            llmCalls,
+        };
+    };
+
+    const restore = async () => {
+        const { db } = await import('../../db');
+        getConsentFlowDataForDid.mockImplementation(async () => {
+            consentReads += 1;
+            const date = new Date(
+                Date.parse('2026-08-01T00:00:00.000Z') + consentReads * 1000
+            ).toISOString();
+            return { records: [createActiveRecord(uris, date)], hasMore: false };
+        });
+        readGet.mockImplementation(async (uri?: string) => createTestVc(uri ?? VALID_URI));
+        verifyCredential.mockImplementation(async (credential?: VC) => {
+            const id = typeof credential?.id === 'string' ? credential.id : '';
+            verified.push(id);
+            if (id === INVALID_URI)
+                return { checks: [], errors: ['Invalid signature'], warnings: [] };
+            return { checks: ['proof'], errors: [], warnings: [] };
+        });
+        (db.storeCredentialVerification as ReturnType<typeof mock>).mockImplementation(async () => {
+            storeAttempts += 1;
+            if (failFirstStore && storeAttempts === 1) {
+                throw new Error('Cleanup scope changed; retry');
+            }
+        });
+        (db.storeRawCredential as ReturnType<typeof mock>).mockImplementation(
+            async () => undefined
+        );
+        aiStubs.aiCall.mockImplementation(async () => ({
+            prompt: 'Sibling learner context',
+            summary: 'Sibling summary',
+        }));
+        delete process.env.MCP_TOOL_TIMEOUT_MS;
+        console.info = originalInfo;
+        console.warn = originalWarn;
+        console.error = originalError;
+    };
+
+    const expectProdShape = (result: Awaited<ReturnType<typeof runAtBudget>>, budgetMs: number) => {
+        expect(result.error).toBeUndefined();
+        expect(result.context).toBe('Prod-latency learner context');
+        expect(result.elapsedMs).toBeLessThan(budgetMs);
+        expect(result.timing?.mcpOutcome).toBe('success');
+        // One plain read at the start and ONE fresh read after the batch; every
+        // other check in the request (prompt checks, model dispatch, the tool's
+        // final check) reuses one of them.
+        expect(result.freshReads).toBe(1);
+        expect(result.liveConsentReads).toBeLessThanOrEqual(2);
+        // The tool never waits on store: writes were still queued when it returned,
+        // and store time is not in the call's timing.
+        expect(result.pendingStoresAtReturn).toBeGreaterThan(0);
+        expect(result.storesAtReturn.finished).toBeLessThan(result.storesAtReturn.started + 1);
+        expect(result.timing?.stageTimings?.store).toBeUndefined();
+        const completed = result.completed;
+        expect(completed?.count).toBe(CREDENTIALS);
+        expect(completed?.loadedCount ?? 0).toBeGreaterThan(0);
+        expect(
+            (completed?.loadedCount ?? 0) +
+                (completed?.skippedCount ?? 0) +
+                (completed?.deferredCount ?? 0)
+        ).toBe(CREDENTIALS);
+        expect(JSON.stringify(events)).not.toContain('lc:cloud:credential');
+        console.log(
+            `213 credentials at ${budgetMs / 1000}s: returned in ${Math.round(result.elapsedMs)}ms ` +
+                `(batch ${Math.round(result.batchMs ?? -1)}ms), loaded ${completed?.loadedCount}, ` +
+                `skipped ${completed?.skippedCount}, deferred ${completed?.deferredCount}, ` +
+                `live consent reads ${result.liveConsentReads} (fresh ${result.freshReads}; background store jobs ${result.backgroundConsentReads}), ` +
+                `model calls ${result.llmCalls}, store writes pending at return ${result.pendingStoresAtReturn} ` +
+                `(started ${result.storesAtReturn.started}, finished ${result.storesAtReturn.finished}), ` +
+                `timing ${JSON.stringify(result.timing?.stageTimings)}`
+        );
+    };
+
+    test(
+        'returns context inside the 20s default budget',
+        async () => {
+            try {
+                expectProdShape(await runAtBudget(20_000, 'req_prod213budget20'), 20_000);
+            } finally {
+                await restore();
+            }
+        },
+        { timeout: 30_000 }
+    );
+
+    test(
+        'returns context inside a 45s budget',
+        async () => {
+            try {
+                expectProdShape(await runAtBudget(45_000, 'req_prod213budget45'), 45_000);
+            } finally {
+                await restore();
+            }
+        },
+        { timeout: 60_000 }
+    );
 });

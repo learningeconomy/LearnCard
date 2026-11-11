@@ -5,6 +5,7 @@ import { assertCurrentAiConsent, getCurrentAiSubject } from '../../ai/privacy';
 import { AiConsentError } from '../../learncard/consent';
 import { getLatestUserSummary } from './get-user-context';
 import { withToolStage } from '../tool-failure';
+import { beginLearnCardPublication } from '../../learncard/requestScope';
 
 type AnswerEvidence = {
     learnerContext: string;
@@ -28,6 +29,10 @@ export const getAnswerAboutUser = async (did: string, question: string) => {
             searchCredentialsByTopic(question, did, { limit: 5 })
         ),
     };
+    // The search read more credential data after the summary's fresh read, so
+    // the answer gets its own: one live read here, shared by the model
+    // dispatch checks and the check after the answer.
+    beginLearnCardPublication();
     await withToolStage('consent', () =>
         assertCurrentAiConsent('model-inference', { fresh: true })
     );
