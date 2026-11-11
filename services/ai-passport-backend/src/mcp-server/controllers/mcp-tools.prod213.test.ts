@@ -2,7 +2,6 @@ import { describe, expect, mock, test } from 'bun:test';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import type { VC } from '@learncard/types';
-import type { McpProgressTool } from '../../diagnostics/mcp-progress';
 
 process.env.AI_PRIVACY_KEY ||= Buffer.alloc(32, 7).toString('base64');
 process.env.MONGO_URI ||= 'mongodb://localhost:27017/test';
@@ -37,6 +36,8 @@ const LLM_MS = 9_800;
 const ANSWER_MS = 8_000;
 const EXPANSION_MS = 3_000;
 const BUDGET_MS = 45_000;
+/** The per-call credential cap (MCP_CONTEXT_MAX_CREDENTIALS default). */
+const MAX_CREDENTIALS = 20;
 const CONTRACT_URI =
     process.env.LEARNCARD_CONTRACT_URI ||
     'lc:network:network.learncard.com/trpc:contract:fd6649c7-52c9-4d02-b5ab-fade649d5a0b';
@@ -111,6 +112,8 @@ const activeRecord = () => ({
 });
 
 const storedInvalid = new Set<string>();
+/** Credential reads during the current call, by URI. */
+const reads = new Map<string, number>();
 const prompts: string[] = [];
 
 const operations = new AsyncLocalStorage<{ did: string; token: string; signal: AbortSignal }>();
@@ -167,6 +170,7 @@ mock.module('../../learncard', () => ({
         },
         read: {
             get: async (uri: string) => {
+                reads.set(uri, (reads.get(uri) ?? 0) + 1);
                 await sleep(isCold(indexOf(uri)) ? COLD_READ_MS : READ_MS);
                 return createTestVc(uri);
             },
@@ -258,22 +262,8 @@ const { clearKnownBadCredentials, clearVerifiedCredentials } =
     await import('../../credentials/batch');
 const { resetPostBatchEstimates } = await import('../../diagnostics/post-batch-reserve');
 const { runMcpOwnerOperation } = await import('../ownerOperation');
-const { runWithMcpProgress } = await import('../../diagnostics/mcp-progress');
 const { drainCredentialStores } = await import('../../credentials/store-queue');
 
-type Timing = {
-    event: string;
-    mcpTool?: string;
-    mcpOutcome?: string;
-    durationMs?: number;
-    loadedCount?: number;
-    skippedCount?: number;
-    deferredCount?: number;
-    excludedCount?: number;
-    storeQueueDepth?: number;
-    loopDelayMaxMs?: number;
-    stageTimings?: Record<string, { count: number; ms: number }>;
-};
 const events: Array<Record<string, unknown>> = [];
 const capture = (...data: unknown[]) => {
     for (const item of data)
@@ -290,45 +280,26 @@ const freshMachine = () => {
     clearVerifiedCredentials();
 };
 
-const call = async <T>(tool: McpProgressTool, requestId: string, operation: () => Promise<T>) => {
+const call = async <T>(
+    tool: 'get_user_context' | 'get_answer_about_user',
+    operation: () => Promise<T>
+) => {
+    reads.clear();
     const startedAt = performance.now();
     const outcome = await runWithAiPrivacyContext(OWNER, () =>
-        runWithMcpProgress({ tool, requestId }, () => runMcpOwnerOperation(OWNER, operation))
+        runMcpOwnerOperation(OWNER, operation, tool)
     ).then(
         value => ({ value, error: undefined as unknown }),
         (error: unknown) => ({ value: undefined, error })
     );
     const elapsedMs = performance.now() - startedAt;
-    const timing = events.find(
-        event => event.event === 'mcp_tool_timing' && event.mcpRequestId === requestId
-    ) as Timing | undefined;
+    const readUris = [...reads.keys()];
+    const readOnce = [...reads.values()].every(count => count === 1);
     console.log(
         `${tool}: ${outcome.error ? `failed (${(outcome.error as Error).name})` : 'ok'} in ` +
-            `${Math.round(elapsedMs)}ms, loaded ${timing?.loadedCount}, ` +
-            `skipped ${timing?.skippedCount}, deferred ${timing?.deferredCount}, ` +
-            `excluded ${timing?.excludedCount}, store queue ${timing?.storeQueueDepth}, ` +
-            `loop delay max ${timing?.loopDelayMaxMs}ms, ` +
-            `timing ${JSON.stringify(timing?.stageTimings)}`
+            `${Math.round(elapsedMs)}ms, read ${readUris.length} of ${CREDENTIALS} credentials`
     );
-    return { ...outcome, elapsedMs, timing };
-};
-
-const expectTimed = (timing: Timing | undefined, tool: McpProgressTool) => {
-    expect(timing?.mcpTool).toBe(tool);
-    expect(timing?.mcpOutcome).toBe('success');
-    // Every credential is loaded, skipped, deferred or excluded, and the log says which.
-    expect(
-        (timing?.loadedCount ?? 0) +
-            (timing?.skippedCount ?? 0) +
-            (timing?.deferredCount ?? 0) +
-            (timing?.excludedCount ?? 0)
-    ).toBe(CREDENTIALS);
-    expect(timing?.loadedCount ?? 0).toBeGreaterThan(0);
-    expect(timing?.deferredCount ?? 0).toBeGreaterThan(0);
-    for (const stage of ['read', 'verify', 'fence', 'projection', 'projection_other'])
-        expect(timing?.stageTimings?.[stage]).toBeDefined();
-    expect(typeof timing?.loopDelayMaxMs).toBe('number');
-    expect(typeof timing?.storeQueueDepth).toBe('number');
+    return { ...outcome, elapsedMs, readUris, readOnce };
 };
 
 describe('MCP read tools on a 213-credential account under prod factors', () => {
@@ -342,14 +313,13 @@ describe('MCP read tools on a 213-credential account under prod factors', () => 
             process.env.MCP_TOOL_TIMEOUT_MS = String(BUDGET_MS);
             try {
                 freshMachine();
-                const context = await call('get_user_context', 'req_prod213ctx', () =>
-                    getLatestUserSummary(OWNER)
-                );
+                const context = await call('get_user_context', () => getLatestUserSummary(OWNER));
                 // The gap between the calls in prod was ~11s; background writes finish.
                 await Promise.race([drainCredentialStores(), sleep(30_000)]);
                 freshMachine();
                 prompts.length = 0;
-                const answer = await call('get_answer_about_user', 'req_prod213ans', () =>
+                const knownInvalid = new Set(storedInvalid);
+                const answer = await call('get_answer_about_user', () =>
                     getAnswerAboutUser(OWNER, 'What has this learner achieved?')
                 );
                 await Promise.race([drainCredentialStores(), sleep(30_000)]);
@@ -361,21 +331,28 @@ describe('MCP read tools on a 213-credential account under prod factors', () => 
                 expect(context.error).toBeUndefined();
                 expect(context.value).toBe('Synthesized learner context');
                 expect(context.elapsedMs).toBeLessThan(BUDGET_MS);
-                expectTimed(context.timing, 'get_user_context');
+                // Each credential read at most once; the rest deferred to a later call.
+                expect(context.readUris.length).toBeGreaterThan(0);
+                expect(context.readUris.length).toBeLessThan(CREDENTIALS);
+                expect(context.readOnce).toBe(true);
 
                 expect(answer.error).toBeUndefined();
                 expect(answer.value).toBe('Answer grounded in the learner evidence');
                 expect(answer.elapsedMs).toBeLessThan(BUDGET_MS);
-                expectTimed(answer.timing, 'get_answer_about_user');
+                expect(answer.readUris.length).toBeGreaterThan(0);
+                expect(answer.readUris.length).toBeLessThan(CREDENTIALS);
+                expect(answer.readOnce).toBe(true);
                 // The answer saw real, verified credential evidence and no invalid one.
                 const answerPrompt = prompts.at(-1) ?? '';
                 const evidence = [...answerPrompt.matchAll(/"value":"Skill (\d+)"/g)].map(match =>
                     Number(match[1])
                 );
-                expect(evidence.length).toBe(answer.timing?.loadedCount ?? -1);
+                expect(evidence.length).toBeGreaterThan(0);
+                expect(evidence.length).toBeLessThanOrEqual(MAX_CREDENTIALS);
                 expect(evidence.filter(isInvalid)).toEqual([]);
-                // The second machine skipped what the first stored as invalid.
-                expect(answer.timing?.excludedCount ?? 0).toBeGreaterThan(0);
+                // The second machine never read what the first stored as invalid.
+                expect(knownInvalid.size).toBeGreaterThan(0);
+                expect(answer.readUris.filter(uri => knownInvalid.has(uri))).toEqual([]);
                 expect(JSON.stringify(events)).not.toContain('lc:cloud:credential');
             } finally {
                 [console.info, console.warn, console.error] = originals;

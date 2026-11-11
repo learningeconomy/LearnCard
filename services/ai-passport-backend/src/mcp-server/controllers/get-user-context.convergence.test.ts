@@ -219,17 +219,8 @@ describe('MCP get_user_context projection convergence', () => {
         try {
             const context = await runTool();
             expect(context).toBe('Sibling learner context');
-            expect(storeAttempts).toBeGreaterThan(1);
-            expect(events).toEqual(
-                expect.arrayContaining([
-                    expect.objectContaining({
-                        event: 'projection_restart',
-                        restartReason: 'source_cleanup_scope_changed',
-                        attempt: 1,
-                    }),
-                ])
-            );
-            expect(events.filter(event => event.event === 'projection_restart')).toHaveLength(1);
+            // One restart: the failed store, then the one that lands.
+            expect(storeAttempts).toBe(2);
         } finally {
             console.info = originalInfo;
             console.warn = originalWarn;
@@ -293,7 +284,6 @@ describe('MCP get_user_context credential read budget', () => {
     const FAILING_URI = 'lc:cloud:credential:failing-read-private';
     const SIBLING_URI = 'lc:cloud:credential:sibling-2';
     const BUDGET_MS = 3_000;
-    const sentryPayloads: unknown[] = [];
 
     const restore = () => {
         readGet.mockImplementation(async (uri?: string) => createTestVc(uri ?? VALID_URI));
@@ -310,45 +300,28 @@ describe('MCP get_user_context credential read budget', () => {
             capture(...data);
             return undefined;
         }) as typeof console.error;
-        const Sentry = await import('@sentry/node');
-        const captureSpy = spyOn(Sentry, 'captureMessage').mockImplementation(((
-            message: string,
-            context: unknown
-        ) => {
-            sentryPayloads.push({ message, context });
-            return 'event';
-        }) as never);
         const { runMcpOwnerOperation } = await import('../ownerOperation');
-        const { runWithMcpProgress } = await import('../../diagnostics/mcp-progress');
-        const { reportToolFailure } = await import('../tools');
         const startedAt = performance.now();
-        try {
-            const context = await runWithMcpProgress(
-                { tool: 'get_user_context', requestId: 'req_readbudget01' },
-                () => runMcpOwnerOperation(OWNER, () => getLatestUserSummary(OWNER))
-            ).catch(error => {
-                reportToolFailure('get_user_context', error);
-                throw error;
-            });
-            return { context, elapsedMs: performance.now() - startedAt };
-        } finally {
-            captureSpy.mockRestore();
-        }
+        const context = await runMcpOwnerOperation(
+            OWNER,
+            () => getLatestUserSummary(OWNER),
+            'get_user_context'
+        );
+        return { context, elapsedMs: performance.now() - startedAt };
     };
+
+    const skippedCodes = () =>
+        events
+            .filter(event => event.event === 'credential_skipped' && 'index' in event)
+            .map(event => event.failureCode);
 
     const expectNoRawUri = (...privateUris: string[]) => {
         const logged = JSON.stringify(events);
-        const sentry = JSON.stringify(sentryPayloads);
-        for (const uri of privateUris) {
-            expect(logged).not.toContain(uri);
-            expect(sentry).not.toContain(uri);
-        }
-        expect(sentry).not.toContain('uriHash');
+        for (const uri of privateUris) expect(logged).not.toContain(uri);
     };
 
     test('a never-resolving read is skipped and siblings return inside the tool budget', async () => {
         uris = [HUNG_URI, VALID_URI, SIBLING_URI];
-        sentryPayloads.length = 0;
         readGet.mockImplementation(async (uri?: string) =>
             uri === HUNG_URI ? new Promise<VC>(() => undefined) : createTestVc(uri ?? VALID_URI)
         );
@@ -356,36 +329,7 @@ describe('MCP get_user_context credential read budget', () => {
             const { context, elapsedMs } = await runMcpTool();
             expect(context).toBe('Sibling learner context');
             expect(elapsedMs).toBeLessThan(BUDGET_MS);
-            // Per-credential skips; the batch also logs one aggregate count line.
-            const skipped = events.filter(
-                event => event.event === 'credential_skipped' && 'index' in event
-            );
-            expect(skipped).toEqual([
-                expect.objectContaining({
-                    failureCode: 'credential_read_timeout',
-                    readStage: 'fetch',
-                    credentialBatch: 'context',
-                }),
-            ]);
-            expect(skipped[0]?.uriHash).toMatch(/^[0-9a-f]{12}$/);
-            expect(events).toEqual(
-                expect.arrayContaining([
-                    expect.objectContaining({
-                        event: 'credential_read_slow',
-                        readStage: 'fetch',
-                        uriHash: skipped[0]?.uriHash,
-                        mcpRequestId: 'req_readbudget01',
-                    }),
-                    expect.objectContaining({
-                        event: 'mcp_tool_progress',
-                        mcpCauseStep: 'projection',
-                        readStage: 'fetch',
-                    }),
-                ])
-            );
-            expect(events.some(event => event.event === 'request_failed')).toBe(false);
-            expect(events.some(event => event.event === 'projection_restart')).toBe(false);
-            expect(sentryPayloads).toHaveLength(0);
+            expect(skippedCodes()).toEqual(['credential_read_timeout']);
             expectNoRawUri(HUNG_URI, VALID_URI, SIBLING_URI);
             console.log(`hung-read tool returned in ${Math.round(elapsedMs)}ms`);
         } finally {
@@ -405,37 +349,21 @@ describe('MCP get_user_context credential read budget', () => {
             const { context } = await runMcpTool();
             expect(context).toBe('Sibling learner context');
             expect(readGet.mock.calls.filter(([uri]) => uri === FAILING_URI)).toHaveLength(1);
-            expect(events.some(event => event.event === 'projection_restart')).toBe(false);
-            // Per-credential skips; the batch also logs one aggregate count line.
-            const skipped = events.filter(
-                event => event.event === 'credential_skipped' && 'index' in event
-            );
-            expect(skipped).toEqual([
-                expect.objectContaining({
-                    failureCode: 'credential_read_failed',
-                    readStage: 'fetch',
-                }),
-            ]);
-            expect(skipped[0]?.uriHash).toMatch(/^[0-9a-f]{12}$/);
+            expect(skippedCodes()).toEqual(['credential_read_failed']);
             expectNoRawUri(FAILING_URI, VALID_URI);
         } finally {
             restore();
         }
     });
 
-    test('when every read fails, Sentry gets allowlisted tags only, no URI or uriHash', async () => {
+    test('when every read fails, the tool fails after one read per credential', async () => {
         uris = [FAILING_URI];
-        sentryPayloads.length = 0;
         readGet.mockImplementation(async () => {
             throw new Error(`storage fetch failed for ${FAILING_URI}`);
         });
         try {
             await expect(runMcpTool()).rejects.toBeDefined();
             expect(readGet).toHaveBeenCalledTimes(1);
-            expect(sentryPayloads).toHaveLength(1);
-            expect(events.find(event => event.event === 'credential_skipped')?.uriHash).toMatch(
-                /^[0-9a-f]{12}$/
-            );
             expectNoRawUri(FAILING_URI);
         } finally {
             restore();
@@ -449,12 +377,13 @@ describe('MCP get_user_context resolves each credential once per request', () =>
     const VERIFY_MS = 8;
     const originalError = console.error;
 
-    const runMcp = async (requestId: string) => {
+    const runMcp = async () => {
         const { runMcpOwnerOperation } = await import('../ownerOperation');
-        const { runWithMcpProgress } = await import('../../diagnostics/mcp-progress');
         const startedAt = performance.now();
-        const outcome = await runWithMcpProgress({ tool: 'get_user_context', requestId }, () =>
-            runMcpOwnerOperation(OWNER, () => getLatestUserSummary(OWNER))
+        const outcome = await runMcpOwnerOperation(
+            OWNER,
+            () => getLatestUserSummary(OWNER),
+            'get_user_context'
         ).then(
             context => ({ context, error: undefined }),
             (error: unknown) => ({ context: undefined, error })
@@ -506,7 +435,7 @@ describe('MCP get_user_context resolves each credential once per request', () =>
         console.error = originalError;
     };
 
-    test('30 credentials: each read and verified once, consent and URI list once, at most 4 at a time', async () => {
+    test('30 credentials: each read and verified once, consent read once plus one fresh read, at most 4 at a time', async () => {
         uris = Array.from(
             { length: CREDENTIALS },
             (_, index) => `lc:cloud:credential:acct-${index}`
@@ -516,7 +445,7 @@ describe('MCP get_user_context resolves each credential once per request', () =>
         // not the per-call credential cap.
         process.env.MCP_CONTEXT_MAX_CREDENTIALS = '100';
         try {
-            const { context, error, elapsedMs } = await runMcp('req_onceperreq01');
+            const { context, error, elapsedMs } = await runMcp();
             expect(error).toBeUndefined();
             expect(context).toBe('Sibling learner context');
             expect(store.reads.size).toBe(CREDENTIALS);
@@ -528,44 +457,16 @@ describe('MCP get_user_context resolves each credential once per request', () =>
             // 30 x ~133ms in 4 workers is ~1s; serial would be ~4s.
             expect(elapsedMs).toBeLessThan(2_500);
 
-            const timing = events.find(event => event.event === 'mcp_tool_timing') as
-                | {
-                      mcpOutcome?: string;
-                      credentialCount?: number;
-                      stageTimings?: Record<string, { count: number; ms: number }>;
-                  }
-                | undefined;
-            expect(timing).toBeDefined();
-            expect(timing?.mcpOutcome).toBe('success');
-            expect(timing?.credentialCount).toBe(CREDENTIALS);
-            const stages = timing?.stageTimings ?? {};
-            expect(
-                events.filter(
-                    event =>
-                        event.event === 'mcp_tool_progress' && event.mcpCauseStep === 'consent_read'
-                )
-            ).toHaveLength(0);
             expect(JSON.stringify(events)).not.toContain('lc:cloud:credential');
-            expect(stages.scope?.count).toBe(1);
-            expect(stages.uri_list?.count).toBe(1);
-            expect(stages.read?.count).toBe(CREDENTIALS);
-            expect(stages.verify?.count).toBe(CREDENTIALS);
-            expect(stages.projection?.count).toBe(CREDENTIALS);
-            expect(stages.learnercontext?.count).toBe(1);
-            expect(stages.pseudonymize?.count).toBe(1);
-            // Consent checks: the tool's read, the prompt's (shared) read, the
-            // prompt's fresh checks and the tool's final fresh check, 7 whatever
-            // the credential count. Only two reach the store: the tool's read and
-            // ONE fresh read at publication; plus at most one by the background
-            // prompt-cache write. Nothing per credential.
+            // Consent reaches the store twice: the tool's read and ONE fresh read
+            // at publication; plus at most one by the background prompt-cache
+            // write. Nothing per credential.
             const storeConsentReads = getConsentFlowDataForDid.mock.calls.length;
-            expect(stages.consent_read?.count).toBeLessThanOrEqual(7);
             expect(storeConsentReads).toBeLessThanOrEqual(3);
 
             console.log(
                 `30-credential tool: ${Math.round(elapsedMs)}ms, max ${store.maxActive()} in flight, ` +
-                    `store consent reads ${storeConsentReads}, ` +
-                    `timing ${JSON.stringify(stages)}`
+                    `store consent reads ${storeConsentReads}`
             );
         } finally {
             restore();
@@ -607,31 +508,30 @@ describe('MCP get_user_context resolves each credential once per request', () =>
         const store = realisticStore();
         process.env.MCP_TOOL_TIMEOUT_MS = '3000';
         try {
-            const { context, error, elapsedMs } = await runMcp('req_budgetdefer01');
+            const { context, error, elapsedMs } = await runMcp();
             expect(error).toBeUndefined();
             expect(context).toBe('Sibling learner context');
             expect(elapsedMs).toBeLessThan(3_000);
             const completed = events.find(event => event.event === 'credential_batch_completed') as
-                { loadedCount?: number; deferredCount?: number; count?: number } | undefined;
-            expect(completed?.count).toBe(80);
-            expect(completed?.deferredCount).toBeGreaterThan(0);
-            expect((completed?.loadedCount ?? 0) + (completed?.deferredCount ?? 0)).toBe(80);
+                { loadedCount?: number; skippedCount?: number } | undefined;
+            const loaded = completed?.loadedCount ?? 0;
+            const deferred = 80 - loaded - (completed?.skippedCount ?? 0);
+            expect(loaded).toBeGreaterThan(0);
+            expect(deferred).toBeGreaterThan(0);
             // Reads in flight at the stop are abandoned and counted as deferred.
-            expect(store.reads.size).toBeGreaterThanOrEqual(completed?.loadedCount ?? Infinity);
-            expect(store.reads.size).toBeLessThanOrEqual(
-                (completed?.loadedCount ?? 0) + credentialBatchConcurrency()
-            );
+            expect(store.reads.size).toBeGreaterThanOrEqual(loaded);
+            expect(store.reads.size).toBeLessThanOrEqual(loaded + credentialBatchConcurrency());
             console.log(
-                `80-credential tool under 3s: ${Math.round(elapsedMs)}ms, loaded ${completed?.loadedCount}, deferred ${completed?.deferredCount}`
+                `80-credential tool under 3s: ${Math.round(elapsedMs)}ms, loaded ${loaded}, deferred ${deferred}`
             );
         } finally {
             restore();
         }
     });
 
-    test('mcp_tool_timing is logged on a timeout too', async () => {
+    test('a hung model call times out inside the tool budget', async () => {
         uris = Array.from({ length: 6 }, (_, index) => `lc:cloud:credential:slow-${index}`);
-        realisticStore();
+        const store = realisticStore();
         process.env.MCP_TOOL_TIMEOUT_MS = '1500';
         // A small post-batch reserve so all 6 credentials start before the hang.
         process.env.MCP_POST_BATCH_RESERVE_MS = '400';
@@ -641,24 +541,10 @@ describe('MCP get_user_context resolves each credential once per request', () =>
         }) as typeof console.error;
         aiStubs.aiCall.mockImplementation(() => new Promise(() => undefined));
         try {
-            const { error, elapsedMs } = await runMcp('req_timingtimeout1');
+            const { error, elapsedMs } = await runMcp();
             expect((error as Error | undefined)?.name).toBe('TimeoutError');
             expect(elapsedMs).toBeLessThan(2_500);
-            expect(events).toEqual(
-                expect.arrayContaining([
-                    expect.objectContaining({
-                        event: 'mcp_tool_timing',
-                        mcpTool: 'get_user_context',
-                        mcpRequestId: 'req_timingtimeout1',
-                        mcpOutcome: 'timeout',
-                        credentialCount: 6,
-                        stageTimings: expect.objectContaining({
-                            read: expect.objectContaining({ count: 6 }),
-                            learnercontext: expect.objectContaining({ count: 1 }),
-                        }),
-                    }),
-                ])
-            );
+            expect(store.reads.size).toBe(6);
         } finally {
             restore();
         }
@@ -679,9 +565,8 @@ describe('MCP get_user_context on a 213-credential account at prod latencies', (
     const originalError = console.error;
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-    const runAtBudget = async (budgetMs: number, requestId: string) => {
+    const runAtBudget = async (budgetMs: number) => {
         const { runMcpOwnerOperation } = await import('../ownerOperation');
-        const { runWithMcpProgress } = await import('../../diagnostics/mcp-progress');
         const { pendingCredentialStores, drainCredentialStores } =
             await import('../../credentials/store-queue');
         const { db } = await import('../../db');
@@ -756,8 +641,10 @@ describe('MCP get_user_context on a 213-credential account at prod latencies', (
         });
 
         const startedAt = performance.now();
-        const outcome = await runWithMcpProgress({ tool: 'get_user_context', requestId }, () =>
-            runMcpOwnerOperation(OWNER, () => getLatestUserSummary(OWNER))
+        const outcome = await runMcpOwnerOperation(
+            OWNER,
+            () => getLatestUserSummary(OWNER),
+            'get_user_context'
         ).then(
             context => ({ context, error: undefined as unknown }),
             (error: unknown) => ({ context: undefined, error })
@@ -772,19 +659,10 @@ describe('MCP get_user_context on a 213-credential account at prod latencies', (
         // Let the background queue finish quickly so nothing leaks into later tests.
         releaseStores();
         await drainCredentialStores();
-        const timing = events.find(event => event.event === 'mcp_tool_timing') as
-            | {
-                  mcpOutcome?: string;
-                  durationMs?: number;
-                  stageTimings?: Record<string, { count: number; ms: number }>;
-              }
-            | undefined;
         const completed = events.find(event => event.event === 'credential_batch_completed') as
             | {
                   loadedCount?: number;
                   skippedCount?: number;
-                  deferredCount?: number;
-                  count?: number;
               }
             | undefined;
         return {
@@ -796,7 +674,6 @@ describe('MCP get_user_context on a 213-credential account at prod latencies', (
             freshReads,
             pendingStoresAtReturn,
             storesAtReturn,
-            timing,
             completed,
             llmCalls,
         };
@@ -842,34 +719,27 @@ describe('MCP get_user_context on a 213-credential account at prod latencies', (
         expect(result.error).toBeUndefined();
         expect(result.context).toBe('Prod-latency learner context');
         expect(result.elapsedMs).toBeLessThan(budgetMs);
-        expect(result.timing?.mcpOutcome).toBe('success');
         // One plain read at the start and ONE fresh read after the batch; every
         // other check in the request (prompt checks, model dispatch, the tool's
         // final check) reuses one of them.
         expect(result.freshReads).toBe(1);
         expect(result.liveConsentReads).toBeLessThanOrEqual(2);
-        // The tool never waits on store: writes were still queued when it returned,
-        // and store time is not in the call's timing.
+        // The tool never waits on store: writes were still queued when it returned.
         expect(result.pendingStoresAtReturn).toBeGreaterThan(0);
         expect(result.storesAtReturn.finished).toBeLessThan(result.storesAtReturn.started + 1);
-        expect(result.timing?.stageTimings?.store).toBeUndefined();
         const completed = result.completed;
-        expect(completed?.count).toBe(CREDENTIALS);
-        expect(completed?.loadedCount ?? 0).toBeGreaterThan(0);
-        expect(
-            (completed?.loadedCount ?? 0) +
-                (completed?.skippedCount ?? 0) +
-                (completed?.deferredCount ?? 0)
-        ).toBe(CREDENTIALS);
+        const loaded = completed?.loadedCount ?? 0;
+        const deferred = CREDENTIALS - loaded - (completed?.skippedCount ?? 0);
+        expect(loaded).toBeGreaterThan(0);
+        expect(deferred).toBeGreaterThan(0);
         expect(JSON.stringify(events)).not.toContain('lc:cloud:credential');
         console.log(
             `213 credentials at ${budgetMs / 1000}s: returned in ${Math.round(result.elapsedMs)}ms ` +
                 `(batch ${Math.round(result.batchMs ?? -1)}ms), loaded ${completed?.loadedCount}, ` +
-                `skipped ${completed?.skippedCount}, deferred ${completed?.deferredCount}, ` +
+                `skipped ${completed?.skippedCount}, deferred ${deferred}, ` +
                 `live consent reads ${result.liveConsentReads} (fresh ${result.freshReads}; background store jobs ${result.backgroundConsentReads}), ` +
                 `model calls ${result.llmCalls}, store writes pending at return ${result.pendingStoresAtReturn} ` +
-                `(started ${result.storesAtReturn.started}, finished ${result.storesAtReturn.finished}), ` +
-                `timing ${JSON.stringify(result.timing?.stageTimings)}`
+                `(started ${result.storesAtReturn.started}, finished ${result.storesAtReturn.finished})`
         );
     };
 
@@ -877,7 +747,7 @@ describe('MCP get_user_context on a 213-credential account at prod latencies', (
         'returns context inside the 20s default budget',
         async () => {
             try {
-                expectProdShape(await runAtBudget(20_000, 'req_prod213budget20'), 20_000);
+                expectProdShape(await runAtBudget(20_000), 20_000);
             } finally {
                 await restore();
             }
@@ -889,7 +759,7 @@ describe('MCP get_user_context on a 213-credential account at prod latencies', (
         'returns context inside a 45s budget',
         async () => {
             try {
-                expectProdShape(await runAtBudget(45_000, 'req_prod213budget45'), 45_000);
+                expectProdShape(await runAtBudget(45_000), 45_000);
             } finally {
                 await restore();
             }

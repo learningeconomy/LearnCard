@@ -25,8 +25,6 @@ type LearnCardRequestScope = {
     /** Store writes run in the background instead of on the request path. */
     readonly deferStores?: boolean;
     readonly onBatchEnded?: (at: number) => void;
-    /** performance.now() time the credential batch settled. */
-    batchEndedAt?: number;
     /** Durations of credential tasks that finished in this request. */
     taskMs?: { count: number; total: number };
     /** Set once publication starts: every fresh read from then on shares one read. */
@@ -93,14 +91,8 @@ export const beginLearnCardPublication = (): void => {
 
 /** Record that the credential batch settled (for the post-batch reserve). */
 export const markLearnCardBatchEnded = (now = performance.now()): void => {
-    const scope = requestScope.getStore();
-    if (!scope) return;
-    scope.batchEndedAt = now;
-    scope.onBatchEnded?.(now);
+    requestScope.getStore()?.onBatchEnded?.(now);
 };
-
-export const getLearnCardBatchEndedAt = (): number | undefined =>
-    requestScope.getStore()?.batchEndedAt;
 
 /** Record how long one credential task took in this request. */
 export const recordLearnCardTaskMs = (ms: number): void => {

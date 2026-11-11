@@ -1,7 +1,6 @@
 import * as dataErasure from '../services/dataErasure';
 import { logSafeEvent } from '../logging';
 import { runOutsideLearnCardRequestScope } from '../learncard/requestScope';
-import { runOutsideMcpProgress } from '../diagnostics/mcp-progress';
 import { waitForCredentialContextIdle } from './batch';
 
 /*
@@ -22,9 +21,8 @@ import { waitForCredentialContextIdle } from './batch';
  *   write over that cap is dropped and counted: these rows are a cache of what
  *   ingestion and the next read rebuild.
  * - Failures are logged as allowlisted counts only (no error text, no URI).
- * - Writes run outside the request scope and the MCP call: the request's
- *   deadline and abort never cancel them, they share no request memo or
- *   consent read, and they never land in the call's mcp_tool_timing.
+ * - Writes run outside the request scope: the request's deadline and abort
+ *   never cancel them, and they share no request memo or consent read.
  */
 
 const STORE_CONCURRENCY = 4;
@@ -60,18 +58,16 @@ export const deferCredentialStore = (did: string, write: () => Promise<void>): v
         logSafeEvent('warn', 'credential_store_deferred_dropped', { count: 1 });
         return;
     }
-    const job = runOutsideMcpProgress(() =>
-        runOutsideLearnCardRequestScope(() =>
-            outsideOwnerOperation(async () => {
-                await waitForCredentialContextIdle(did, { maxMs: STORE_IDLE_WAIT_MS });
-                await acquire();
-                try {
-                    await dataErasure.withOwnerOperation(did, () => write());
-                } finally {
-                    release();
-                }
-            })
-        )
+    const job = runOutsideLearnCardRequestScope(() =>
+        outsideOwnerOperation(async () => {
+            await waitForCredentialContextIdle(did, { maxMs: STORE_IDLE_WAIT_MS });
+            await acquire();
+            try {
+                await dataErasure.withOwnerOperation(did, () => write());
+            } finally {
+                release();
+            }
+        })
     ).catch(() => {
         logSafeEvent('error', 'credential_store_deferred_failed', { count: 1 });
     });

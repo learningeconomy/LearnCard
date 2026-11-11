@@ -78,17 +78,6 @@ import {
     CredentialVerificationUnavailableError,
     type CredentialConsentReceipt,
 } from './verification';
-import { classifyLearnCardFailure } from '../learncard/errors';
-import { getMcpProgress } from '../diagnostics/mcp-progress';
-import { timeMcpStage } from '../diagnostics/mcp-timing';
-import { credentialSlowReadMs, credentialUriHash } from './read-budget';
-import {
-    attachCauseStep,
-    attachVerifyFailureDiagnostics,
-    copyVerifyFailureDiagnostics,
-    sanitizeCauseMessage,
-    withCauseStep,
-} from './verify-diagnostics';
 import {
     projectCredential,
     getCredentialProjection,
@@ -309,28 +298,27 @@ export const assertCredentialConsent = async (
 const FENCE_REUSE_MS = 1_000;
 const recentFences = new Map<string, { at: number; check: Promise<void> }>();
 
-const fenceOwnerOperation = (did: string): Promise<void> =>
-    timeMcpStage('fence', () => {
-        const current =
-            typeof ownerOperations.getCurrentOwnerOperation === 'function'
-                ? ownerOperations.getCurrentOwnerOperation()
-                : undefined;
-        if (!current || current.did !== did) return assertOwnerOperationActive(did);
-        current.signal.throwIfAborted();
-        const now = performance.now();
-        const recent = recentFences.get(current.token);
-        if (recent && now - recent.at <= FENCE_REUSE_MS) return recent.check;
-        const check = assertOwnerOperationActive(did);
-        const entry = { at: now, check };
-        recentFences.set(current.token, entry);
-        check.catch(() => {
-            if (recentFences.get(current.token) === entry) recentFences.delete(current.token);
-        });
-        if (recentFences.size > 1_000)
-            for (const [token, fence] of recentFences)
-                if (now - fence.at > FENCE_REUSE_MS) recentFences.delete(token);
-        return check;
+const fenceOwnerOperation = async (did: string): Promise<void> => {
+    const current =
+        typeof ownerOperations.getCurrentOwnerOperation === 'function'
+            ? ownerOperations.getCurrentOwnerOperation()
+            : undefined;
+    if (!current || current.did !== did) return assertOwnerOperationActive(did);
+    current.signal.throwIfAborted();
+    const now = performance.now();
+    const recent = recentFences.get(current.token);
+    if (recent && now - recent.at <= FENCE_REUSE_MS) return recent.check;
+    const check = assertOwnerOperationActive(did);
+    const entry = { at: now, check };
+    recentFences.set(current.token, entry);
+    check.catch(() => {
+        if (recentFences.get(current.token) === entry) recentFences.delete(current.token);
     });
+    if (recentFences.size > 1_000)
+        for (const [token, fence] of recentFences)
+            if (now - fence.at > FENCE_REUSE_MS) recentFences.delete(token);
+    return check;
+};
 
 const assertCredentialSnapshot = async (
     did: string,
@@ -411,47 +399,18 @@ export type CredentialReadOptions = {
 /*
  * One credential read, bounded by its own timeout. A timeout or fetch error is
  * this credential's skippable failure (credential_read_timeout or
- * credential_read_failed, with the read stage and a keyed URI hash). The
- * request's own abort or deadline is not: it is rethrown untouched, so the
- * shared abort reason is never labelled as one credential's read failure.
+ * credential_read_failed). The request's own abort or deadline is not: it is
+ * rethrown untouched, so the shared abort reason is never labelled as one
+ * credential's read failure.
  */
 const readCredential = async (
     learnCard: Awaited<ReturnType<typeof getLearnCard>>,
     uri: string,
     timeoutMs: number
 ): Promise<VC | undefined> => {
-    const progress = getMcpProgress();
-    if (progress) {
-        logSafeEvent('info', 'mcp_tool_progress', {
-            mcpTool: progress.tool,
-            mcpRequestId: progress.requestId,
-            mcpCauseStep: 'projection',
-            readStage: 'fetch',
-        });
-    }
-    const startedAt = performance.now();
-    let uriHash: string | undefined;
-    const hash = () => (uriHash ??= credentialUriHash(uri));
-    const slowAfterMs = credentialSlowReadMs(timeoutMs);
-    const slowTimer =
-        slowAfterMs === undefined
-            ? undefined
-            : setTimeout(() => {
-                  logSafeEvent('warn', 'credential_read_slow', {
-                      readStage: 'fetch',
-                      uriHash: hash(),
-                      durationMs: Math.round(performance.now() - startedAt),
-                      ...(progress
-                          ? { mcpTool: progress.tool, mcpRequestId: progress.requestId }
-                          : {}),
-                  });
-              }, slowAfterMs);
-    slowTimer?.unref?.();
     try {
-        return (await timeMcpStage('read', () =>
-            withAiInsightResolutionOperation('read', () =>
-                boundLearnCardCall(learnCard.read.get(uri), { timeoutMs })
-            )
+        return (await withAiInsightResolutionOperation('read', () =>
+            boundLearnCardCall(learnCard.read.get(uri), { timeoutMs })
         )) as VC | undefined;
     } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') throw error;
@@ -459,20 +418,10 @@ const readCredential = async (
         const timedOut = error instanceof Error && error.name === 'TimeoutError';
         // A non-object rejection is an unknown failure: fail closed, unmarked.
         if (error === null || typeof error !== 'object') throw error;
-        markCredentialReadFailure(error, {
-            code: timedOut ? 'credential_read_timeout' : 'credential_read_failed',
-            readStage: 'fetch',
-            uriHash: hash(),
-        });
-        attachVerifyFailureDiagnostics(error, {
-            kind:
-                classifyLearnCardFailure(error) === 'learncard_unauthorized'
-                    ? 'read_unauthorized'
-                    : 'read_failed',
-        });
-        throw error;
-    } finally {
-        clearTimeout(slowTimer);
+        throw markCredentialReadFailure(
+            error,
+            timedOut ? 'credential_read_timeout' : 'credential_read_failed'
+        );
     }
 };
 
@@ -485,11 +434,9 @@ const resolveCredential = async (
     const assertScope = () =>
         insightEligibility || options.location
             ? assertCredentialSnapshot(did, ref.uri, ref.consent)
-            : timeMcpStage('fence', () => assertCredentialConsent(did, ref.uri, ref.consent));
+            : assertCredentialConsent(did, ref.uri, ref.consent);
     await assertScope();
-    const learnCard = await timeMcpStage('sdk_init', () =>
-        withAiInsightResolutionOperation('sdk_init', () => getLearnCard())
-    );
+    const learnCard = await withAiInsightResolutionOperation('sdk_init', () => getLearnCard());
     // Do not substitute Zod's parsed copy for the signed original.
     // The SDK read and verify take no signal; bound both by the request scope's
     // signal and LEARNCARD_CALL_TIMEOUT_MS so a hung call cannot hold the caller.
@@ -502,13 +449,7 @@ const resolveCredential = async (
     // Missing data cannot establish invalidity or justify deleting retained records.
     if (!credential) {
         if (insightEligibility) throw new ExcludedInsightInput('unreadable_input');
-        throw markCredentialReadFailure(
-            attachVerifyFailureDiagnostics(
-                new CredentialVerificationUnavailableError('read_empty'),
-                { kind: 'read_empty' }
-            ),
-            { readStage: 'decode', uriHash: credentialUriHash(ref.uri) }
-        );
+        throw markCredentialReadFailure(new CredentialVerificationUnavailableError('read_empty'));
     }
     if (insightEligibility && hasKnownUnsupportedInsightSuite(credential))
         throw new ExcludedInsightInput('unsupported_cryptosuite');
@@ -516,22 +457,20 @@ const resolveCredential = async (
     // retained credential, association, vector, or provenance can be changed.
     let verification: CredentialVerificationMetadata;
     try {
-        verification = await timeMcpStage('verify', () =>
-            withAiInsightTiming('verification', () =>
-                verifyCredentialForIngestion(
-                    {
-                        verificationOrigin: 'source',
-                        credential,
-                        credentialUri: ref.uri,
-                        subjectDid: did,
-                        consent: ref.consent,
-                        verify: original =>
-                            boundLearnCardCall(learnCard.invoke.verifyCredential(original), {
-                                timeoutMs: learnCardCallTimeoutMs(),
-                            }),
-                    },
-                    !insightEligibility
-                )
+        verification = await withAiInsightTiming('verification', () =>
+            verifyCredentialForIngestion(
+                {
+                    verificationOrigin: 'source',
+                    credential,
+                    credentialUri: ref.uri,
+                    subjectDid: did,
+                    consent: ref.consent,
+                    verify: original =>
+                        boundLearnCardCall(learnCard.invoke.verifyCredential(original), {
+                            timeoutMs: learnCardCallTimeoutMs(),
+                        }),
+                },
+                !insightEligibility
             )
         );
     } catch (error) {
@@ -571,57 +510,40 @@ const resolveCredential = async (
         // MCP reads skip the credential now and clean up in the background.
         if (learnCardStoresDeferred()) deferCredentialStore(did, cleanUpInvalid);
         else await cleanUpInvalid();
-        throw copyVerifyFailureDiagnostics(
-            verification,
-            markCredentialItemFailure(
-                attachVerifyFailureDiagnostics(new InvalidCredentialError(), {
-                    kind: 'verify_errors',
-                }),
-                'credential_invalid'
-            )
-        );
+        throw markCredentialItemFailure(new InvalidCredentialError(), 'credential_invalid');
     }
     let projection: ModelSafeCredentialProjection;
     try {
-        projection = await timeMcpStage('project', () =>
-            withAiInsightResolutionOperation('projection', () =>
-                projectCredential(
-                    credential,
-                    ref.category ?? 'Uncategorized Credential',
-                    verification
-                )
-            )
+        projection = await withAiInsightResolutionOperation('projection', () =>
+            projectCredential(credential, ref.category ?? 'Uncategorized Credential', verification)
         );
     } catch {
         // One credential that cannot be projected is dropped and logged; it must
         // not fail the page or the batch around it.
         if (insightEligibility) throw new ExcludedInsightInput('malformed_input');
         throw markCredentialItemFailure(
-            attachVerifyFailureDiagnostics(new CredentialProjectionError(), {
-                kind: 'projection_failed',
-            }),
+            new CredentialProjectionError(),
             'credential_projection_failed'
         );
     }
     await assertScope();
     const recheckConsent = assertScope;
-    const store = () =>
-        timeMcpStage('store', async () => {
-            await withAiInsightResolutionOperation('store_verification', () =>
-                db.storeCredentialVerification(did, verification, recheckConsent)
-            );
-            await withAiInsightResolutionOperation('store_raw', () =>
-                db.storeRawCredential(
-                    did,
-                    {
-                        uri: ref.uri,
-                        contentHash: verification.contentHash,
-                        rawCredentialJson: JSON.stringify(credential),
-                    },
-                    recheckConsent
-                )
-            );
-        });
+    const store = async () => {
+        await withAiInsightResolutionOperation('store_verification', () =>
+            db.storeCredentialVerification(did, verification, recheckConsent)
+        );
+        await withAiInsightResolutionOperation('store_raw', () =>
+            db.storeRawCredential(
+                did,
+                {
+                    uri: ref.uri,
+                    contentHash: verification.contentHash,
+                    rawCredentialJson: JSON.stringify(credential),
+                },
+                recheckConsent
+            )
+        );
+    };
     // MCP reads never wait on store (~2s per credential in prod): the
     // projection is ready, so the write runs in the background queue, which
     // still re-checks consent and holds an owner operation.
@@ -679,22 +601,11 @@ const resolveVerifiedCredential = (
 
 export const MAX_PROJECTION_ATTEMPTS = 3;
 
-const projectionRestartReason = (error: unknown): string | undefined => {
-    // A failed read is that credential's skip; re-reading it would only spend
-    // the budget its siblings need.
-    if (isCredentialReadFailure(error)) return undefined;
-    if (!isRetryableSourceCleanupError(error) || !(error instanceof Error)) return undefined;
-    const reason = sanitizeCauseMessage(error.message);
-    return reason && reason !== 'unrecognized' ? reason : undefined;
-};
-
-const attachProjectionStep = async <T>(operation: () => Promise<T>): Promise<T> => {
-    try {
-        return await operation();
-    } catch (error) {
-        throw attachCauseStep(error, 'projection');
-    }
-};
+/* A source-cleanup race restarts the projection. A failed read is that
+ * credential's skip; re-reading it would only spend the budget its siblings
+ * need. */
+const shouldRestartProjection = (error: unknown): boolean =>
+    !isCredentialReadFailure(error) && isRetryableSourceCleanupError(error);
 
 /* Per-credential scope, consent read and URI lookup, for callers that did
  * not resolve them once for the whole request. */
@@ -703,27 +614,24 @@ const resolveCredentialLocation = async (
     uri: string,
     receipt: ActiveAiConsentReceipt
 ): Promise<ConsentFlowCredentialLocation> => {
-    await withCauseStep('scope', () => timeMcpStage('scope', () => requireCredentialOwner(did)));
-    const { records, receipt: current } = await withCauseStep('consent_read', async () =>
-        loadActiveAiConsentData(await getLearnCard(), did, receipt.purpose, {
-            expectedRevision: consentAuthorizationKey(receipt),
-        })
+    requireCredentialOwner(did);
+    const { records, receipt: current } = await loadActiveAiConsentData(
+        await getLearnCard(),
+        did,
+        receipt.purpose,
+        { expectedRevision: consentAuthorizationKey(receipt) }
     );
-    return withCauseStep('uri_list', () =>
-        timeMcpStage('uri_list', async () => {
-            if (
-                current.revision !== receipt.revision ||
-                !receipt.credentialUris.includes(uri) ||
-                !current.credentialUris.includes(uri)
-            )
-                throw new AiConsentError('Credential consent changed');
-            const found = records
-                .flatMap(record => extractConsentFlowCredentialRefs(record))
-                .find(ref => ref.uri === uri);
-            if (!found) throw new AiConsentError('Credential is not shared');
-            return found;
-        })
-    );
+    if (
+        current.revision !== receipt.revision ||
+        !receipt.credentialUris.includes(uri) ||
+        !current.credentialUris.includes(uri)
+    )
+        throw new AiConsentError('Credential consent changed');
+    const found = records
+        .flatMap(record => extractConsentFlowCredentialRefs(record))
+        .find(ref => ref.uri === uri);
+    if (!found) throw new AiConsentError('Credential is not shared');
+    return found;
 };
 
 const resolveVerifiedCredentialProjectionOnce = async (
@@ -745,36 +653,33 @@ const resolveVerifiedCredentialProjectionOnce = async (
     }
     // A recent verification under this same consent revision skips the read
     // and verify; consent is still checked above and below. A known-bad URI
-    // is not re-read or re-verified. Callers wrap this in the logged
-    // 'projection' step; here the step is only attached, not logged again.
-    return attachProjectionStep(async () => {
-        const knownBad = knownBadCredentialKind(did, uri);
-        if (knownBad === 'invalid') {
-            throw markCredentialItemFailure(new InvalidCredentialError(), 'credential_invalid');
-        }
-        if (knownBad === 'unverifiable') {
-            throw new CredentialVerificationUnavailableError(
-                'unrecognized_verifier_error',
-                'undefined_jsonld_term'
-            );
-        }
-        const projection =
-            getVerifiedCredential<ResolvedConsentFlowCredential>(did, uri, receipt.revision)
-                ?.projection ??
-            (
-                await resolveVerifiedCredential(
-                    did,
-                    {
-                        ...location,
-                        consent: receipt,
-                    },
-                    options
-                )
-            ).projection;
-        if (prepared) await assertCredentialSnapshot(did, uri, receipt);
-        else await timeMcpStage('fence', () => assertCredentialConsent(did, uri, receipt));
-        return projection;
-    });
+    // is not re-read or re-verified.
+    const knownBad = knownBadCredentialKind(did, uri);
+    if (knownBad === 'invalid') {
+        throw markCredentialItemFailure(new InvalidCredentialError(), 'credential_invalid');
+    }
+    if (knownBad === 'unverifiable') {
+        throw new CredentialVerificationUnavailableError(
+            'unrecognized_verifier_error',
+            'undefined_jsonld_term'
+        );
+    }
+    const projection =
+        getVerifiedCredential<ResolvedConsentFlowCredential>(did, uri, receipt.revision)
+            ?.projection ??
+        (
+            await resolveVerifiedCredential(
+                did,
+                {
+                    ...location,
+                    consent: receipt,
+                },
+                options
+            )
+        ).projection;
+    if (prepared) await assertCredentialSnapshot(did, uri, receipt);
+    else await assertCredentialConsent(did, uri, receipt);
+    return projection;
 };
 
 /*
@@ -802,21 +707,13 @@ const resolveVerifiedCredentialProjectionUncached = async (
         try {
             return await resolveVerifiedCredentialProjectionOnce(did, uri, receipt, options);
         } catch (error) {
-            const restartReason = projectionRestartReason(error);
-            if (!restartReason || attempt >= MAX_PROJECTION_ATTEMPTS || signal?.aborted) {
+            if (
+                !shouldRestartProjection(error) ||
+                attempt >= MAX_PROJECTION_ATTEMPTS ||
+                signal?.aborted
+            ) {
                 throw error;
             }
-            logSafeEvent('info', 'projection_restart', {
-                restartReason: restartReason as
-                    | 'source_cleanup_busy'
-                    | 'source_cleanup_lease_expired'
-                    | 'source_cleanup_pending'
-                    | 'source_cleanup_pending_ingest'
-                    | 'source_cleanup_scope_changed'
-                    | 'consent_changed'
-                    | 'snapshot_revision_mismatch',
-                attempt,
-            });
         }
     }
 };

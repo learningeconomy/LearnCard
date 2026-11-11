@@ -8,7 +8,6 @@ import {
     VERIFIED_CREDENTIAL_TTL_MS,
     isKnownBadCredential,
     KNOWN_BAD_CREDENTIAL_TTL_MS,
-    emptyBatchSkipCountsOf,
     markCredentialItemFailure,
     recordCredentialOutcome,
     settleCredentialBatch,
@@ -54,7 +53,7 @@ test('returns loaded items in order and skipped positions with codes', async () 
     });
 });
 
-test('an all-skipped batch remembers skip counts on the thrown error', async () => {
+test('an all-skipped batch rejects with the first skip', async () => {
     quiet();
     const first = new CredentialVerificationUnavailableError('read_empty');
     await expect(
@@ -63,10 +62,6 @@ test('an all-skipped batch remembers skip counts on the thrown error', async () 
             async () => Promise.reject(markCredentialItemFailure(new Error('private'))),
         ])
     ).rejects.toBe(first);
-    expect(emptyBatchSkipCountsOf(first)).toEqual({
-        credential_verification_unavailable: 1,
-        unknown: 1,
-    });
 });
 
 test('an unmarked failure still rejects the batch', async () => {
@@ -250,12 +245,8 @@ test('without an explicit concurrency a batch runs at most the configured limit 
     expect(credentialBatchConcurrency()).toBe(4);
 });
 
-test('shouldStart stops new starts, counts the rest as deferred, and logs one line', async () => {
+test('shouldStart stops new starts and counts the rest as deferred', async () => {
     quiet();
-    const lines: unknown[] = [];
-    console.warn = ((...data: unknown[]) => {
-        lines.push(...data);
-    }) as typeof console.warn;
     let started = 0;
     const result = await settleCredentialBatch(
         'context',
@@ -266,24 +257,14 @@ test('shouldStart stops new starts, counts the rest as deferred, and logs one li
         { concurrency: 2, shouldStart: () => started < 3 }
     );
     expect(result).toEqual({ loaded: [0, 1, 2], skipped: [], deferred: 7 });
-    expect(lines).toEqual([
-        expect.objectContaining({
-            event: 'credential_batch_completed',
-            count: 10,
-            loadedCount: 3,
-            skippedCount: 0,
-            deferredCount: 7,
-        }),
-    ]);
 });
 
-test('a budget spent before anything loaded fails as an item failure with skip counts', async () => {
+test('a budget spent before anything loaded fails as an item failure', async () => {
     quiet();
     const error = await settleCredentialBatch('context', [async () => 1, async () => 2], {
         shouldStart: () => false,
     }).catch((caught: unknown) => caught);
     expect(isCredentialItemFailure(error)).toBe(true);
-    expect(emptyBatchSkipCountsOf(error)).toEqual({ credential_budget_exhausted: 2 });
 });
 
 test('maxLoaded returns as soon as that many loaded; running tasks are deferred', async () => {

@@ -33,20 +33,13 @@ export const markCredentialItemFailure = <Failure>(error: Failure, code?: Failur
     return error;
 };
 
-/* Where a credential read failed, plus a keyed URI hash for log correlation. */
-export const CREDENTIAL_READ_STAGES = ['storage_resolve', 'fetch', 'decode'] as const;
-export type CredentialReadStage = (typeof CREDENTIAL_READ_STAGES)[number];
-type ReadFailure = { readStage: CredentialReadStage; uriHash: string };
-const readFailures = new WeakMap<object, ReadFailure>();
+const readFailures = new WeakSet<object>();
 
 /* Mark one credential's failed read: a skippable item failure, never retried. */
-export const markCredentialReadFailure = <Failure>(
-    error: Failure,
-    detail: ReadFailure & { code?: FailureCode }
-): Failure => {
+export const markCredentialReadFailure = <Failure>(error: Failure, code?: FailureCode): Failure => {
     if (!isObject(error)) return error;
-    itemFailures.set(error, detail.code);
-    readFailures.set(error, { readStage: detail.readStage, uriHash: detail.uriHash });
+    itemFailures.set(error, code);
+    readFailures.add(error);
     return error;
 };
 
@@ -210,13 +203,11 @@ export const logCredentialSkip = (
     error: unknown
 ): FailureCode => {
     const failureCode = credentialFailureCodeOf(error);
-    const read = isObject(error) ? readFailures.get(error) : undefined;
     logSafeEvent('warn', 'credential_skipped', {
         credentialBatch: batch,
         index,
         count,
         failureCode,
-        ...(read ? { readStage: read.readStage, uriHash: read.uriHash } : {}),
         ...(error instanceof CredentialVerificationUnavailableError
             ? {
                   ...(error.verificationSubreason
@@ -234,23 +225,16 @@ export const logCredentialSkip = (
 export const logCredentialBatch = (
     batch: CredentialBatchName,
     loadedCount: number,
-    skippedCount: number,
-    deferredCount = 0
+    skippedCount: number
 ): void => {
-    if (loadedCount + skippedCount + deferredCount === 0) return;
-    logSafeEvent(skippedCount + deferredCount > 0 ? 'warn' : 'info', 'credential_batch_completed', {
+    if (loadedCount + skippedCount === 0) return;
+    logSafeEvent(skippedCount > 0 ? 'warn' : 'info', 'credential_batch_completed', {
         credentialBatch: batch,
-        count: loadedCount + skippedCount + deferredCount,
+        count: loadedCount + skippedCount,
         loadedCount,
         skippedCount,
-        ...(deferredCount > 0 ? { deferredCount } : {}),
     });
 };
-
-const emptyBatchSkipCounts = new WeakMap<object, Record<string, number>>();
-
-export const emptyBatchSkipCountsOf = (error: unknown): Record<string, number> | undefined =>
-    isObject(error) ? emptyBatchSkipCounts.get(error) : undefined;
 
 /*
  * How many credential tasks a batch runs at once when the caller does not say.
@@ -394,26 +378,20 @@ export const settleCredentialBatch = async <Item>(
         code: logCredentialSkip(batch, index, tasks.length, error),
     }));
     const loaded = results.flatMap(result => (result ? [result.value] : []));
-    logCredentialBatch(batch, loaded.length, skipped.length, deferred);
+    logCredentialBatch(batch, loaded.length, skipped.length);
     if (loaded.length === 0 && !failures[0] && deferred > 0) {
         // The budget ran out before any credential loaded.
-        const error = markCredentialItemFailure(
+        throw markCredentialItemFailure(
             new Error('Credential budget exhausted'),
             'credential_budget_exhausted'
         );
-        emptyBatchSkipCounts.set(error, { credential_budget_exhausted: deferred });
-        throw error;
     }
     if (
         loaded.length === 0 &&
         failures[0] &&
         !(options.allowEmpty && failures.every(({ error }) => isPermanentCredentialFailure(error)))
-    ) {
-        const counts: Record<string, number> = {};
-        for (const item of skipped) counts[item.code] = (counts[item.code] ?? 0) + 1;
-        if (isObject(failures[0].error)) emptyBatchSkipCounts.set(failures[0].error, counts);
+    )
         throw failures[0].error;
-    }
     return { loaded, skipped, deferred };
 };
 

@@ -6,11 +6,8 @@ const {
     CREDENTIAL_READ_FLOOR_MS,
     credentialBudgetAllowsStart,
     credentialReadTimeoutMs,
-    credentialSlowReadMs,
-    credentialUriHash,
     synthesisReserveMs,
 } = await import('./read-budget');
-const { logSafeEvent } = await import('../logging');
 
 afterEach(() => {
     delete process.env.CREDENTIAL_READ_TIMEOUT_MS;
@@ -76,73 +73,4 @@ test('the post-batch reserve learns from measured tails and backs off after a ti
     } finally {
         reserve.resetPostBatchEstimates();
     }
-});
-
-test('the slow-read warning has a 1s floor and fires only before the timeout', () => {
-    // v31 warned at 125ms (half a 250ms timeout) on every ordinary read.
-    expect(credentialSlowReadMs(250)).toBeUndefined();
-    expect(credentialSlowReadMs(1_000)).toBeUndefined();
-    expect(credentialSlowReadMs(1_800)).toBe(1_000);
-    expect(credentialSlowReadMs(3_000)).toBe(1_500);
-    expect(credentialSlowReadMs(10_000)).toBe(2_000);
-});
-
-test('uriHash is a stable 12-hex keyed fingerprint, never the URI', () => {
-    const uri = 'lc:cloud:credential:private-123';
-    const hash = credentialUriHash(uri);
-    expect(hash).toMatch(/^[0-9a-f]{12}$/);
-    expect(credentialUriHash(uri)).toBe(hash);
-    expect(credentialUriHash(`${uri}x`)).not.toBe(hash);
-});
-
-test('log allowlist keeps read codes, stage and hash, and drops a raw URI or bad stage', () => {
-    const lines: unknown[] = [];
-    const originalWarn = console.warn;
-    console.warn = ((...data: unknown[]) => {
-        lines.push(...data);
-    }) as typeof console.warn;
-    try {
-        logSafeEvent('warn', 'credential_skipped', {
-            credentialBatch: 'context',
-            index: 0,
-            failureCode: 'credential_read_timeout',
-            readStage: 'fetch',
-            uriHash: 'abcdef012345',
-        });
-        logSafeEvent('warn', 'credential_skipped', {
-            credentialBatch: 'context',
-            index: 1,
-            failureCode: 'credential_read_failed',
-            readStage: 'network' as never,
-            uriHash: 'lc:cloud:credential:private-123',
-        });
-        logSafeEvent('warn', 'credential_read_slow', {
-            readStage: 'fetch',
-            uriHash: 'abcdef012345',
-            durationMs: 2_001,
-        });
-    } finally {
-        console.warn = originalWarn;
-    }
-    expect(lines).toEqual([
-        expect.objectContaining({
-            event: 'credential_skipped',
-            failureCode: 'credential_read_timeout',
-            readStage: 'fetch',
-            uriHash: 'abcdef012345',
-        }),
-        expect.objectContaining({
-            event: 'credential_skipped',
-            failureCode: 'credential_read_failed',
-        }),
-        expect.objectContaining({
-            event: 'credential_read_slow',
-            readStage: 'fetch',
-            uriHash: 'abcdef012345',
-            durationMs: 2_001,
-        }),
-    ]);
-    expect(lines[1]).not.toHaveProperty('readStage');
-    expect(lines[1]).not.toHaveProperty('uriHash');
-    expect(JSON.stringify(lines)).not.toContain('lc:cloud');
 });

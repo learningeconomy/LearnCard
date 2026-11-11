@@ -1,5 +1,4 @@
 import { withAiInsightStage } from '../diagnostics/ai-insight';
-import { timeMcpStage } from '../diagnostics/mcp-timing';
 import { bindAiConsentRevision } from '../ai/privacy';
 import { createHmac } from 'node:crypto';
 
@@ -375,17 +374,14 @@ const loadConsentData = async (
     const { expectedRevision } = options;
     const records = await reuseRequestConsentRead(
         did,
-        () => timeMcpStage('consent_live', () => readConsentRecords(learnCard, did, options)),
+        () => readConsentRecords(learnCard, did, options),
         {
             fresh: options.fresh,
             oncePerAiCall: options.oncePerAiCall,
             snapshot: {
                 contract: contractUri,
                 signal: options.signal,
-                read: () =>
-                    timeMcpStage('consent_live', () =>
-                        readConsentRecords(learnCard, did, { ...options, detached: true })
-                    ),
+                read: () => readConsentRecords(learnCard, did, { ...options, detached: true }),
                 accept:
                     expectedRevision === undefined
                         ? undefined
@@ -474,6 +470,4 @@ export const prefetchAiConsentSnapshot = (
 export const loadActiveAiConsentData = (
     ...args: Parameters<typeof loadConsentData>
 ): ReturnType<typeof loadConsentData> =>
-    timeMcpStage('consent_read', () =>
-        withAiInsightStage('consent', () => loadConsentData(...args))
-    );
+    withAiInsightStage('consent', () => loadConsentData(...args));

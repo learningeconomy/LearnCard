@@ -60,5 +60,4 @@ test('MCP startup warms the shared LearnCard instance the same way the API does'
     const api = await Bun.file(new URL('../index.ts', import.meta.url)).text();
     expect(mcp).toContain('getLearnCard.warm');
     expect(api).toContain('getLearnCard.warm');
-    expect(mcp).toContain('learncard_warm_ready');
 });

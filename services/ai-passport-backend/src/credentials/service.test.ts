@@ -2536,8 +2536,6 @@ test('preload skips a credential whose read throws or comes back empty', async (
             index: 1,
             count: 3,
             failureCode: 'credential_read_failed',
-            readStage: 'fetch',
-            uriHash: expect.stringMatching(/^[0-9a-f]{12}$/),
         })
     );
     expect(events).toContainEqual(
@@ -2547,7 +2545,6 @@ test('preload skips a credential whose read throws or comes back empty', async (
             count: 3,
             failureCode: 'credential_verification_unavailable',
             verificationSubreason: 'read_empty',
-            readStage: 'decode',
         })
     );
     expect(events).toContainEqual(

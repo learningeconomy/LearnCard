@@ -25,23 +25,8 @@ import {
     type LearnCardErrorClass,
     type LearnCardTrpcCode,
 } from './learncard/errors';
-import {
-    isCauseStep,
-    sanitizeCauseMessage,
-    sanitizeSkipCounts,
-    sanitizeVerifyChecks,
-    sanitizeVerifyDiagnosticList,
-    VERIFY_FAILURE_KINDS,
-    type CauseStep,
-    type VerifyFailureKind,
-} from './credentials/verify-diagnostics';
 
 type ConsoleLevel = 'debug' | 'error' | 'info' | 'log' | 'warn';
-
-const CAUSE_FRAME_PATTERN = /^[A-Za-z0-9_$.<>]{1,64}@[A-Za-z0-9_.-]{1,64}\.[A-Za-z]+$/;
-const sanitizeCauseFrameFromValue = (value: unknown): string | undefined =>
-    typeof value === 'string' && CAUSE_FRAME_PATTERN.test(value) ? value : undefined;
-
 type ConsoleWriter = (...data: unknown[]) => void;
 
 const CONSOLE_METHODS = [
@@ -102,11 +87,6 @@ const SAFE_EVENT_CODES = [
     'credential_context_deferred_completed',
     'learncard_warm_ready',
     'learncard_warm_failed',
-    'mcp_tool_started',
-    'mcp_tool_progress',
-    'projection_restart',
-    'credential_read_slow',
-    'mcp_tool_timing',
     'credential_skipped',
     'credential_batch_completed',
     'credential_raw_unavailable',
@@ -123,38 +103,6 @@ const SAFE_EVENT_CODES = [
 ] as const;
 
 const CREDENTIAL_BATCHES = ['preload', 'context', 'thread_context', 'ingestion'] as const;
-const CREDENTIAL_READ_STAGES = ['storage_resolve', 'fetch', 'decode'] as const;
-const MCP_TIMING_STAGE_KEYS = [
-    'scope',
-    'consent_read',
-    'uri_list',
-    'read',
-    'verify',
-    'store',
-    'projection',
-    'fence',
-    'sdk_init',
-    'project',
-    'projection_other',
-    'batch',
-    'learnercontext',
-    'search',
-    'pseudonymize',
-    'llm',
-    'consent_live',
-] as const;
-type McpTimingStageKey = (typeof MCP_TIMING_STAGE_KEYS)[number];
-const MCP_TOOL_OUTCOMES = ['success', 'failure', 'timeout'] as const;
-const URI_HASH_PATTERN = /^[0-9a-f]{12}$/;
-const PROJECTION_RESTART_REASONS = [
-    'source_cleanup_busy',
-    'source_cleanup_lease_expired',
-    'source_cleanup_pending',
-    'source_cleanup_pending_ingest',
-    'source_cleanup_scope_changed',
-    'consent_changed',
-    'snapshot_revision_mismatch',
-] as const;
 const MAX_BATCH_POSITION = 10_000;
 const CREDENTIAL_CONTEXT_STAGES = [
     'refresh',
@@ -335,22 +283,6 @@ export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
     count?: number;
     durationMs?: number;
     httpStatus?: number;
-    mcpTool?: 'get_user_context' | 'get_answer_about_user' | 'save_session_summary';
-    mcpRequestId?: string;
-    mcpErrorName?: string;
-    mcpErrorCode?: string;
-    mcpCauseName?: string;
-    mcpCauseCode?: string;
-    mcpCauseDependency?: 'wallet' | 'consent' | 'verify' | 'credential_store';
-    mcpCauseStep?: CauseStep;
-    mcpCauseMessage?: string;
-    mcpCauseFrame?: string;
-    mcpStage?: 'consent' | 'learnercontext' | 'pseudonymize' | 'llm';
-    mcpVerifyFailureKind?: VerifyFailureKind;
-    mcpVerifyErrors?: string[];
-    mcpVerifyWarnings?: string[];
-    mcpVerifyChecks?: string[];
-    mcpSkipCounts?: Record<string, number>;
     success?: boolean;
     provider?: 'openai' | 'anthropic' | 'google' | 'bedrock';
     failureCode?: (typeof SAFE_FAILURE_CODES)[number];
@@ -382,27 +314,6 @@ export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
     index?: number;
     loadedCount?: number;
     skippedCount?: number;
-    /** projection_restart: allowlisted reason a projection cycle ran again. */
-    restartReason?: (typeof PROJECTION_RESTART_REASONS)[number];
-    /** credential_skipped / credential_read_slow / mcp_tool_progress: read stage. */
-    readStage?: (typeof CREDENTIAL_READ_STAGES)[number];
-    /** credential_skipped / credential_read_slow: 12-hex keyed URI hash, never the URI. */
-    uriHash?: string;
-    /** credential_batch_completed: credentials not started because the budget ran out. */
-    deferredCount?: number;
-    /** mcp_tool_timing: per-stage run count and summed ms, fixed stage keys only. */
-    stageTimings?: Partial<Record<McpTimingStageKey, { count: number; ms: number }>>;
-    /** mcp_tool_timing: shared credential URIs in this request. */
-    credentialCount?: number;
-    /** mcp_tool_timing: how the call ended. */
-    mcpOutcome?: (typeof MCP_TOOL_OUTCOMES)[number];
-    /** mcp_tool_timing: credentials not considered (known bad, or over the cap). */
-    excludedCount?: number;
-    /** mcp_tool_timing: event-loop delay during the call (max and mean ms). */
-    loopDelayMaxMs?: number;
-    loopDelayMeanMs?: number;
-    /** mcp_tool_timing: background store writes queued or running at the end. */
-    storeQueueDepth?: number;
 };
 
 const FILE_STAGES: Record<string, true> = {
@@ -446,176 +357,6 @@ export const logSafeEvent = (
     for (const field of ['count', 'durationMs', 'httpStatus'] as const) {
         const value = metrics[field];
         if (typeof value === 'number' && Number.isFinite(value) && value >= 0) event[field] = value;
-    }
-    if (code === 'projection_restart') {
-        if (
-            metrics.restartReason &&
-            (PROJECTION_RESTART_REASONS as readonly string[]).includes(metrics.restartReason)
-        )
-            event.restartReason = metrics.restartReason;
-        if (Number.isInteger(metrics.attempt) && metrics.attempt! >= 1 && metrics.attempt! <= 100)
-            event.attempt = metrics.attempt;
-    }
-    if (code === 'credential_skipped' || code === 'credential_read_slow') {
-        if (metrics.readStage && CREDENTIAL_READ_STAGES.includes(metrics.readStage))
-            event.readStage = metrics.readStage;
-        if (typeof metrics.uriHash === 'string' && URI_HASH_PATTERN.test(metrics.uriHash))
-            event.uriHash = metrics.uriHash;
-    }
-    if (code === 'mcp_tool_timing') {
-        if (
-            metrics.mcpTool === 'get_user_context' ||
-            metrics.mcpTool === 'get_answer_about_user' ||
-            metrics.mcpTool === 'save_session_summary'
-        )
-            event.mcpTool = metrics.mcpTool;
-        if (
-            typeof metrics.mcpRequestId === 'string' &&
-            /^req_[A-Za-z0-9]{8,32}$/.test(metrics.mcpRequestId)
-        )
-            event.mcpRequestId = metrics.mcpRequestId;
-        if (metrics.mcpOutcome && MCP_TOOL_OUTCOMES.includes(metrics.mcpOutcome))
-            event.mcpOutcome = metrics.mcpOutcome;
-        const credentialCount = metrics.credentialCount;
-        if (
-            typeof credentialCount === 'number' &&
-            Number.isInteger(credentialCount) &&
-            credentialCount >= 0 &&
-            credentialCount <= MAX_BATCH_POSITION
-        )
-            event.credentialCount = credentialCount;
-        const timings = metrics.stageTimings;
-        if (timings && typeof timings === 'object') {
-            const picked: NonNullable<SafeLogMetrics['stageTimings']> = {};
-            for (const stage of MCP_TIMING_STAGE_KEYS) {
-                const entry = (timings as Record<string, unknown>)[stage] as
-                    { count?: unknown; ms?: unknown } | undefined;
-                if (!entry || typeof entry !== 'object') continue;
-                const { count, ms } = entry;
-                if (
-                    typeof count === 'number' &&
-                    Number.isInteger(count) &&
-                    count >= 0 &&
-                    count <= 1_000_000 &&
-                    typeof ms === 'number' &&
-                    Number.isInteger(ms) &&
-                    ms >= 0 &&
-                    ms <= 86_400_000
-                )
-                    picked[stage] = { count, ms };
-            }
-            if (Object.keys(picked).length) event.stageTimings = picked;
-        }
-        for (const field of [
-            'loadedCount',
-            'skippedCount',
-            'deferredCount',
-            'excludedCount',
-            'storeQueueDepth',
-        ] as const) {
-            const value = metrics[field];
-            if (
-                typeof value === 'number' &&
-                Number.isInteger(value) &&
-                value >= 0 &&
-                value <= MAX_BATCH_POSITION
-            )
-                event[field] = value;
-        }
-        for (const field of ['loopDelayMaxMs', 'loopDelayMeanMs'] as const) {
-            const value = metrics[field];
-            if (
-                typeof value === 'number' &&
-                Number.isFinite(value) &&
-                value >= 0 &&
-                value <= 600_000
-            )
-                event[field] = Math.round(value);
-        }
-    }
-    if (code === 'credential_read_slow') {
-        if (
-            metrics.mcpTool === 'get_user_context' ||
-            metrics.mcpTool === 'get_answer_about_user' ||
-            metrics.mcpTool === 'save_session_summary'
-        )
-            event.mcpTool = metrics.mcpTool;
-        if (
-            typeof metrics.mcpRequestId === 'string' &&
-            /^req_[A-Za-z0-9]{8,32}$/.test(metrics.mcpRequestId)
-        )
-            event.mcpRequestId = metrics.mcpRequestId;
-    }
-    if (
-        code === 'mcp_tool_progress' &&
-        metrics.readStage &&
-        CREDENTIAL_READ_STAGES.includes(metrics.readStage)
-    )
-        event.readStage = metrics.readStage;
-    if (code === 'request_failed' || code === 'mcp_tool_started' || code === 'mcp_tool_progress') {
-        if (
-            metrics.mcpTool === 'get_user_context' ||
-            metrics.mcpTool === 'get_answer_about_user' ||
-            metrics.mcpTool === 'save_session_summary'
-        )
-            event.mcpTool = metrics.mcpTool;
-        if (
-            typeof metrics.mcpRequestId === 'string' &&
-            /^req_[A-Za-z0-9]{8,32}$/.test(metrics.mcpRequestId)
-        )
-            event.mcpRequestId = metrics.mcpRequestId;
-        if (
-            typeof metrics.mcpErrorName === 'string' &&
-            /^[A-Za-z0-9_.-]{1,64}$/.test(metrics.mcpErrorName)
-        )
-            event.mcpErrorName = metrics.mcpErrorName;
-        if (
-            typeof metrics.mcpErrorCode === 'string' &&
-            /^[A-Za-z0-9_.-]{1,64}$/.test(metrics.mcpErrorCode)
-        )
-            event.mcpErrorCode = metrics.mcpErrorCode;
-        if (
-            typeof metrics.mcpCauseName === 'string' &&
-            /^[A-Za-z0-9_.-]{1,64}$/.test(metrics.mcpCauseName)
-        )
-            event.mcpCauseName = metrics.mcpCauseName;
-        if (
-            typeof metrics.mcpCauseCode === 'string' &&
-            /^[A-Za-z0-9_.-]{1,64}$/.test(metrics.mcpCauseCode)
-        )
-            event.mcpCauseCode = metrics.mcpCauseCode;
-        if (
-            metrics.mcpCauseDependency === 'wallet' ||
-            metrics.mcpCauseDependency === 'consent' ||
-            metrics.mcpCauseDependency === 'verify' ||
-            metrics.mcpCauseDependency === 'credential_store'
-        )
-            event.mcpCauseDependency = metrics.mcpCauseDependency;
-        if (isCauseStep(metrics.mcpCauseStep)) event.mcpCauseStep = metrics.mcpCauseStep;
-        const causeMessage = sanitizeCauseMessage(metrics.mcpCauseMessage);
-        if (causeMessage) event.mcpCauseMessage = causeMessage;
-        const causeFrame = sanitizeCauseFrameFromValue(metrics.mcpCauseFrame);
-        if (causeFrame) event.mcpCauseFrame = causeFrame;
-        if (
-            metrics.mcpStage === 'consent' ||
-            metrics.mcpStage === 'learnercontext' ||
-            metrics.mcpStage === 'pseudonymize' ||
-            metrics.mcpStage === 'llm'
-        )
-            event.mcpStage = metrics.mcpStage;
-        if (
-            typeof metrics.mcpVerifyFailureKind === 'string' &&
-            (VERIFY_FAILURE_KINDS as readonly string[]).includes(metrics.mcpVerifyFailureKind)
-        )
-            event.mcpVerifyFailureKind = metrics.mcpVerifyFailureKind;
-        const verifyErrors = sanitizeVerifyDiagnosticList(metrics.mcpVerifyErrors);
-        if (verifyErrors.length) event.mcpVerifyErrors = verifyErrors;
-        const verifyWarnings = sanitizeVerifyDiagnosticList(metrics.mcpVerifyWarnings);
-        if (verifyWarnings.length) event.mcpVerifyWarnings = verifyWarnings;
-        const verifyChecks = sanitizeVerifyChecks(metrics.mcpVerifyChecks);
-        if (verifyChecks.length) event.mcpVerifyChecks = verifyChecks;
-        const skipCounts = sanitizeSkipCounts(metrics.mcpSkipCounts);
-        if (skipCounts) event.mcpSkipCounts = skipCounts;
     }
     if (code === 'file_processing_completed' || code === 'file_processing_failed') {
         if (!Number.isInteger(event.count) || (event.count ?? 0) > 10_000) delete event.count;
@@ -848,7 +589,7 @@ export const logSafeEvent = (
     if (code === 'credential_skipped' || code === 'credential_batch_completed') {
         if (metrics.credentialBatch && CREDENTIAL_BATCHES.includes(metrics.credentialBatch))
             event.credentialBatch = metrics.credentialBatch;
-        for (const field of ['index', 'loadedCount', 'skippedCount', 'deferredCount'] as const) {
+        for (const field of ['index', 'loadedCount', 'skippedCount'] as const) {
             const value = metrics[field];
             if (
                 typeof value === 'number' &&

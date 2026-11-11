@@ -1,6 +1,3 @@
-import { createHash, createHmac } from 'node:crypto';
-
-import * as privacyKeys from '../ai/privacy-keys';
 import { getLearnCardMeanTaskMs, getLearnCardRequestBudget } from '../learncard/requestScope';
 
 /*
@@ -88,40 +85,4 @@ export const credentialReadTimeoutMs = ({
         CREDENTIAL_READ_FLOOR_MS,
         Math.min(cap, Math.floor(credentialTimeLeftMs(budget, now)))
     );
-};
-
-/** Reads under this are never "slow", whatever their timeout. */
-export const CREDENTIAL_SLOW_READ_MIN_MS = 1_000;
-
-/**
- * When a still-running read is logged as slow: half its timeout, between
- * CREDENTIAL_SLOW_READ_MIN_MS and CREDENTIAL_SLOW_READ_MS (2s). Undefined when
- * that is not before the timeout (the timeout itself is logged as a skip).
- */
-export const credentialSlowReadMs = (timeoutMs: number): number | undefined => {
-    const threshold = Math.max(
-        CREDENTIAL_SLOW_READ_MIN_MS,
-        Math.min(
-            positiveInteger(process.env.CREDENTIAL_SLOW_READ_MS, 2_000),
-            Math.floor(timeoutMs / 2)
-        )
-    );
-    return threshold < timeoutMs ? threshold : undefined;
-};
-
-/*
- * A short, keyed, non-reversible URI fingerprint for log correlation only.
- * Never a Sentry tag and never logged next to the URI. HMAC with the privacy
- * reference key; a truncated namespaced SHA-256 only if that key is absent.
- */
-export const credentialUriHash = (uri: string): string => {
-    const material = `credential-uri:v1\n${uri}`;
-    try {
-        return createHmac('sha256', privacyKeys.getPrivacyKeyMaterial().reference)
-            .update(material)
-            .digest('hex')
-            .slice(0, 12);
-    } catch {
-        return createHash('sha256').update(`ai-passport:${material}`).digest('hex').slice(0, 12);
-    }
 };
