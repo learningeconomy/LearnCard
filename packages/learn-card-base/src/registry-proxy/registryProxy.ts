@@ -23,12 +23,10 @@ const ALLOWED_PATHS: ReadonlyMap<string, readonly string[]> = new Map([
 const REQUIRED_PARAMS: ReadonlyMap<string, string> = new Map([['/issuer-registry/fetch', 'sub']]);
 
 /**
- * Netlify's CDN cache key ignores the query string unless the response opts in. Every
- * response (cached or not) must send the same value, so it is derived from the allowlist.
+ * Include the full query string in Netlify's CDN cache key so requests with
+ * unsupported parameters cannot reuse a cached response from a valid request.
  */
-export const REGISTRY_PROXY_NETLIFY_VARY = `query=${[
-    ...new Set([...ALLOWED_PATHS.values()].flat()),
-].join('|')}`;
+export const REGISTRY_PROXY_NETLIFY_VARY = 'query';
 
 const JWT_CONTENT_TYPES: ReadonlySet<string> = new Set([
     'application/entity-statement+jwt',

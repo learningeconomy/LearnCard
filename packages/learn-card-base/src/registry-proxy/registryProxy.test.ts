@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import handler, {
     REGISTRY_PROXY_MAX_BYTES,
-    REGISTRY_PROXY_NETLIFY_VARY,
     getAllowedRegistryUrl,
     getRegistryProxyBaseUrl,
     toRegistryProxyUrl,
@@ -17,7 +16,7 @@ const jwtResponse = (body = JWS, headers: Record<string, string> = {}) =>
     new Response(body, {
         headers: { 'Content-Type': 'application/entity-statement+jwt', ...headers },
     });
-const NETLIFY_VARY = 'query=sub|iss|entity_type';
+const NETLIFY_VARY = 'query';
 
 afterEach(() => {
     vi.unstubAllGlobals();
@@ -185,11 +184,7 @@ describe('registry proxy edge handler', () => {
         const response = await proxied(target);
         expect(response.headers.get('Netlify-CDN-Cache-Control')).toContain('s-maxage=300');
         const vary = response.headers.get('Netlify-Vary') ?? '';
-        expect(vary).toBe(REGISTRY_PROXY_NETLIFY_VARY);
-        const varied = new Set(vary.replace(/^query=/, '').split('|'));
-        for (const name of new URL(`https://x/${target}`).searchParams.keys()) {
-            expect(varied.has(name)).toBe(true);
-        }
+        expect(vary).toBe('query');
     });
 
     it('rejects path traversal out of the allowlisted prefix', async () => {
