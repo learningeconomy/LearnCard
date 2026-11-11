@@ -525,6 +525,7 @@
         "continue": "متابعة",
         "loading": "جاري التحميل...",
         "add": "إضافة",
+        "publishing": "جارٍ النشر…",
         "saving": "جارٍ الحفظ...",
         "searchResults": {
             "noResults": "لم يتم العثور على نتائج",
@@ -10365,6 +10366,7 @@
         "viewCredential": "عرض بيان الاعتماد"
     },
     "resumePublishing": {
+        "aboutPublishing": "حول النشر",
         "linkReady": "الرابط الخاص جاهز.",
         "opening": "جارٍ فتح الرابط الخاص...",
         "linkUnavailable": "هذا الرابط غير متاح. راجع إعداداته ثم انشر السيرة الذاتية مرة أخرى.",
@@ -10566,5 +10568,33 @@
         "retry": "إعادة المحاولة",
         "unsubscribing": "جارٍ إلغاء الاشتراك…",
         "unsubscribed": "تم إلغاء اشتراكك في الإعلانات."
+    },
+    "nativeCredentials": {
+        "credentialTitle": "بيان اعتماد رقمي",
+        "unavailableTitle": "الطلب غير متاح",
+        "unavailableDescription": "عُد إلى التطبيق الذي أرسل الطلب وحاول مرة أخرى.",
+        "canceling": "جارٍ الإلغاء…",
+        "preparing": "جارٍ التحضير…",
+        "requiredFields": "هذه الحقول مطلوبة. يمكنك إلغاء الطلب بدلًا من ذلك.",
+        "reviewTitle": "هل تريد مشاركة هذه التفاصيل؟",
+        "reviewDescription": "راجع التفاصيل المطلوبة قبل مشاركتها.",
+        "requestedBy": "مطلوب من",
+        "androidApp": "تطبيق Android",
+        "requestDetails": "تفاصيل الطلب",
+        "requestIdentity": "هوية توقيع التطبيق",
+        "selectedCredential": "بيانات الاعتماد المحددة",
+        "requestedDetails": "التفاصيل المطلوبة",
+        "required": "مطلوب",
+        "notShared": "لن تتم المشاركة",
+        "metadataIncluded": "يتم أيضًا تضمين الجهة المُصدرة ونوع بيانات الاعتماد.",
+        "credentialDetails": "تفاصيل بيانات الاعتماد",
+        "issuer": "الجهة المُصدرة",
+        "credentialType": "نوع بيانات الاعتماد",
+        "expires": "تنتهي الصلاحية في",
+        "sharing": "جارٍ المشاركة…",
+        "shareDetails": "مشاركة التفاصيل",
+        "loadingTitle": "جارٍ إعداد طلبك",
+        "loadingDescription": "نتحقق من التفاصيل التي يمكنك مشاركتها.",
+        "returnToApp": "العودة إلى التطبيق"
     }
 }

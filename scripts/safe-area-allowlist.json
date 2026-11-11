@@ -11,7 +11,6 @@
         "apps/learn-card-app/src/components/common/ContractSyncStatusBanner.tsx",
         "apps/learn-card-app/src/components/network-listener/OfflineBanner.tsx",
         "apps/learn-card-app/src/components/notifications/AppNotificationToast.tsx",
-        "apps/learn-card-app/src/components/resume-builder/ResumeBuilderHeader.tsx",
         "apps/learn-card-app/src/components/resume-builder/ResumeIframePreview.tsx",
         "apps/learn-card-app/src/components/sdk-activity/SdkActivityIndicator.tsx",
         "apps/learn-card-app/src/pages/boostAFriend/BoostAFriendPage.tsx",

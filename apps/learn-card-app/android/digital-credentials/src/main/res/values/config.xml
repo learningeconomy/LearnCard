@@ -1,0 +1,4 @@
+<resources>
+    <!-- Opt in at build time. Production remains disabled until account integration is qualified. -->
+    <bool name="lc_digital_credentials_enabled">false</bool>
+</resources>

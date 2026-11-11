@@ -285,6 +285,8 @@ Stopping access cannot retract downloaded copies or older résumé URLs. Includi
 
 If publishing is interrupted, retry in the same browser to recover the pending attempt. PDFs larger than 4 MiB cannot be published through this flow. Turn off the QR code to download a local copy without publishing.
 
+On mobile, **Preview** and **Publish** (or **Save** for an existing résumé) stay at the top while you edit. Resume history, download, and sharing are available in the header. Expand **About publishing** above the résumé to read the publishing notices. Tapping an editable field brings it into view above the software keyboard.
+
 ### Qualifications
 
 Qualifications has its own section after IDs in the wallet and navigation, even when it is empty. It contains professional licenses, certifications, and apprenticeship, journeyman, and master certificates.
