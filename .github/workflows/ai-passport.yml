@@ -24,7 +24,7 @@ concurrency:
 jobs:
     backend:
         name: Backend unit and privacy runtime
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         timeout-minutes: 30
         env:
             JWT_SECRET: ci-test-secret-key
@@ -74,7 +74,14 @@ jobs:
                   docker exec mongo-ci mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
                   timeout 60 bash -c 'until docker exec mongo-ci mongosh --quiet --eval "quit(db.hello().isWritablePrimary ? 0 : 1)"; do sleep 1; done'
 
+            - name: Use canonical Ubuntu package archive
+              run: |
+                  # The Azure mirror throttled the full OCR language-pack download until CI timed out.
+                  # Preserve the signed package sources and complete runtime; change only the mirror.
+                  sudo sed -i -E 's|https?://azure[.]archive[.]ubuntu[.]com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources
+
             - name: Provision local extraction runtime
+              timeout-minutes: 10
               run: |
                   AI_PRIVACY_KEY="$(openssl rand -base64 32)"
                   echo "::add-mask::$AI_PRIVACY_KEY"

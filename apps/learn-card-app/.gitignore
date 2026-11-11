@@ -143,3 +143,6 @@ public/branding/
 netlify/edge-functions/shared/resolved-tenant-configs.generated.json
 # Edge function — copy of packages/learn-card-base/src/registry-proxy/registryProxy.ts
 netlify/edge-functions/shared/registryProxy.ts
+
+# Generated Paraglide compiler cache
+project.inlang/cache/

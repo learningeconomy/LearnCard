@@ -43,6 +43,7 @@ import { ProofJwtSigner } from './vci/types';
 import { selectCredentialsForDcql } from './dcql/select';
 import { buildDcqlPresentations, type DcqlChosenCredential } from './dcql/build';
 import { buildDcqlResponse } from './dcql/respond';
+import { createDcApiResponse, parseDcApiRequest } from './vp/dcApi';
 import type { ChosenForPresentation } from './types';
 
 /**
@@ -223,6 +224,17 @@ export const getOpenID4VCPlugin = (
             },
 
             parseAuthorizationRequest: (_lc, input) => parseAuthorizationRequestUri(input),
+
+            createDcApiResponse: async (learnCard, input, verifiedOrigin, chosen, options) => {
+                const request = parseDcApiRequest(input, verifiedOrigin);
+                return createDcApiResponse(
+                    request,
+                    chosen,
+                    learnCard.id.did(),
+                    buildSdJwtPresenter(learnCard),
+                    options
+                );
+            },
 
             resolveAuthorizationRequest: async (_lc, input) =>
                 resolveAuthorizationRequestFn(input, fetchImpl, resolveOptions),

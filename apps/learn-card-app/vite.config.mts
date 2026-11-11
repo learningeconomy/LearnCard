@@ -271,6 +271,8 @@ export default defineConfig(async ({ mode, command }) => {
                 '@learncard/chapi-plugin > credential-handler-polyfill',
                 '@learncard/chapi-plugin > web-credential-handler',
                 '@learncard/sd-jwt-vc-plugin > @sd-jwt/sd-jwt-vc',
+                '@learncard/sd-jwt-vc-plugin > @noble/curves/ed25519',
+                '@learncard/sd-jwt-vc-plugin > @scure/base',
                 '@learncard/openid4vc-plugin > jose',
                 '@learncard/openid4vc-plugin > safe-regex',
                 '@learncard/openid4vc-plugin > @peculiar/x509',
@@ -345,6 +347,9 @@ export default defineConfig(async ({ mode, command }) => {
         server: {
             port: 3000,
             watch: {
+                // Native assembly writes generated HTML/assets; those must not reload an
+                // in-progress credential request in the development WebView.
+                ignored: ['**/android/**', '**/ios/**', '**/build/**'],
                 // Enable polling for Docker volume mounts
                 usePolling: environment.CHOKIDAR_USEPOLLING,
                 interval: environment.CHOKIDAR_INTERVAL,
