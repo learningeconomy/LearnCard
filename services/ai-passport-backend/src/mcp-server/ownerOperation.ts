@@ -4,7 +4,6 @@ import { boundLearnCardCall, runWithLearnCardRequestScope } from '../learncard/r
 import { withOwnerOperation } from '../services/dataErasure';
 import { getMcpProgress } from '../diagnostics/mcp-progress';
 import { mcpTimingSnapshot } from '../diagnostics/mcp-timing';
-import { logSafeEvent } from '../logging';
 
 export const mcpToolTimeoutMs = (): number => {
     const parsed = Number(process.env.MCP_TOOL_TIMEOUT_MS);
@@ -42,14 +41,20 @@ export const runMcpOwnerOperation = async <T>(did: string, operation: () => Prom
         clearTimeout(timer);
         // One line per MCP call, on success, failure or timeout: per-stage
         // counts and summed ms (allowlisted keys only) plus the credential count.
+        // Logging is loaded lazily, like withCauseStep, so this module keeps a
+        // small import graph (callers' tests stub a minimal env).
         const progress = getMcpProgress();
         if (progress) {
+            const snapshot = {
+                durationMs: Math.round(performance.now() - startedAt),
+                ...mcpTimingSnapshot(progress),
+            };
+            const { logSafeEvent } = await import('../logging');
             logSafeEvent('info', 'mcp_tool_timing', {
                 mcpTool: progress.tool,
                 mcpRequestId: progress.requestId,
                 mcpOutcome: outcome,
-                durationMs: Math.round(performance.now() - startedAt),
-                ...mcpTimingSnapshot(progress),
+                ...snapshot,
             });
         }
     }
