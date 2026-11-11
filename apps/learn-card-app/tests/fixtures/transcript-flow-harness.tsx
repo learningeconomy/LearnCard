@@ -27,6 +27,7 @@ import type { AppAuthContextValue } from '../../src/providers/AuthCoordinatorPro
  * - `outcome`: requested | none_yet | failed | error (what the request returns)
  * - `arrive`: 1 to report the transcript as received right after the request
  * - `variant`: onboarding | modal
+ * - `expect`: the school's delivery estimate in seconds (e.g. 120, or 86400 for a day)
  */
 setupIonicReact();
 
@@ -34,6 +35,9 @@ const params = new URLSearchParams(window.location.search);
 const outcome = params.get('outcome') ?? 'requested';
 const arrive = params.get('arrive') === '1';
 const variant = (params.get('variant') ?? 'onboarding') as 'onboarding' | 'modal';
+const expectSeconds = Number(params.get('expect') ?? '');
+const expectedBy = (from: string): string | undefined =>
+    expectSeconds > 0 ? new Date(Date.parse(from) + expectSeconds * 1000).toISOString() : undefined;
 
 const USER_DID = 'did:key:z6MkFlowHarnessUser';
 const ISSUER_DID = 'did:web:records.example.org';
@@ -80,6 +84,7 @@ const fakeWallet = {
                       status: 'requested' as const,
                       requestedAt,
                       requestId: REQUEST_ID,
+                      expectedBy: expectedBy(requestedAt),
                       ...(arrive ? { receivedAt: new Date().toISOString() } : {}),
                   }
                 : undefined,
@@ -88,7 +93,12 @@ const fakeWallet = {
             await new Promise(resolve => setTimeout(resolve, 600));
             if (outcome === 'error') throw new Error('offline');
             requestedAt = new Date().toISOString();
-            return { status: outcome, requestedAt, requestId: REQUEST_ID };
+            return {
+                status: outcome,
+                requestedAt,
+                requestId: REQUEST_ID,
+                expectedBy: expectedBy(requestedAt),
+            };
         },
         transcriptsMarkReceived: async () => undefined,
         getIncomingCredentials: async () => [],

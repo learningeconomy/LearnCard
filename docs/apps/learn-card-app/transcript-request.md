@@ -42,10 +42,16 @@ The transcript request feature is available to students who:
 ## User Experience
 
 1. **Opt-In**: Eligible students see a "Get your transcript" card in their wallet or during onboarding.
-2. **Requesting**: After consenting, the card shows a progress indicator. The app checks for the incoming transcript every 5 seconds at first, backing off to once a minute, and stops after 30 minutes in an app session. Returning to the app or receiving a credential notification triggers another check.
+2. **Requesting**: After consenting, what the student sees depends on how long the school says delivery takes (see [Delivery estimate](#delivery-estimate)):
+    - **No estimate, or 30 seconds or less**: live steps ("Request sent", "Your school is preparing your transcript", "Adding it to your account").
+    - **Up to 5 minutes**: a progress bar with the time left ("About 2 minutes left"). Past the estimate it keeps moving slowly and reads "Almost there" until the transcript arrives.
+    - **Longer**: "Transcript requested" with when to expect it ("Your school expects to send it tomorrow") and a **Continue** button. The School Connect card shows the same estimate.
+
+    In every case the student can move on, and the transcript is added whenever it arrives. The app checks for the incoming transcript every 5 seconds at first, backing off to once a minute, and stops after 30 minutes in an app session. Returning to the app or receiving a credential notification triggers another check.
+
 3. **Arrival**: When the transcript arrives, it is automatically verified and added to the wallet. The card updates to show a summary of the transcript (e.g., school name, graduation year, GPA) and a button to view the full details.
 4. **Notifications**: If the student leaves the app before the transcript arrives, they will receive a push notification. Tapping the notification opens the transcript directly. The app waits up to 5 seconds for the request status; if it cannot confirm the match in time, it shows the normal claim screen instead.
-5. **Still waiting**: If the request is more than 24 hours old, or the app has stopped checking, the card says the transcript may already be in their notifications and offers **Check Again** and **Open Notifications**.
+5. **Still waiting**: If the request is more than 24 hours old (or 24 hours past the school's estimate, if that is later), or the app has stopped checking and the estimate has passed, the card says the transcript may already be in their notifications and offers **Check Again** and **Open Notifications**.
 
 ## Partner Issuer Contract (draft)
 
@@ -82,6 +88,21 @@ The assertion is a 5-minute EdDSA JWT. Verify it against the `did:web` document 
 | `consent_at`       | When the student agreed to the request (unix seconds)            |
 
 Respond with HTTP `200` or `202` and `{ "status": "accepted" }`, or HTTP `200` and `{ "status": "none_yet" }` when there is no transcript yet. Any other response is treated as a failure.
+
+#### Delivery estimate
+
+An accepted response can say when you expect to deliver the transcript. This is optional but recommended: it lets the app set the right expectation instead of showing a spinner.
+
+```json
+{ "status": "accepted", "expectedInSeconds": 120 }
+```
+
+| Field               | Description                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `expectedInSeconds` | Seconds until you expect to deliver, counted from when LearnCard sent the request (not from your response). Preferred, because it ignores clock skew. |
+| `expectedBy`        | ISO 8601 time with an offset, for example `2026-11-12T09:00:00-05:00`.                                                                                |
+
+If both are valid, `expectedInSeconds` wins; a malformed field is ignored without discarding the other. An estimate that is malformed, already past, or more than 30 days away is ignored; the request still succeeds. Deliver as soon as you can: arriving early is always fine.
 
 Respond within 15 seconds. Return `202` as soon as the request is queued and do the work afterwards. If LearnCard gets no response in time (or the connection drops after the request was sent), it cannot tell whether you accepted the request, so it keeps the request pending and keeps waiting for a transcript that echoes that `request_id`. Treat `request_id` as idempotent: process each one at most once.
 
