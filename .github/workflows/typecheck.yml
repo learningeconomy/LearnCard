@@ -44,6 +44,14 @@ jobs:
               run: |
                   bun run --cwd apps/learn-card-app i18n:compile
                   bun run --cwd apps/scouts i18n:generate
+            # Registry proxy shared files are gitignored and copied during deployment.
+            # Generate them before typechecking so TypeScript can resolve the imports.
+            - name: Prepare registry proxy edge functions
+              run: |
+                  mkdir -p apps/learn-card-app/netlify/edge-functions/shared
+                  cp packages/learn-card-base/src/registry-proxy/registryProxy.ts apps/learn-card-app/netlify/edge-functions/shared/
+                  mkdir -p apps/scouts/netlify/edge-functions/shared
+                  cp packages/learn-card-base/src/registry-proxy/registryProxy.ts apps/scouts/netlify/edge-functions/shared/
 
             # Fails when any project's `bun check` (TypeScript 7) error count rises above
             # scripts/typecheck-baseline.json. The composite setup pins a Bun that has `bun check`.
