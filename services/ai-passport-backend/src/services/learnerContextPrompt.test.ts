@@ -524,8 +524,12 @@ describe('MCP answer/context consistency', () => {
             code: 'learner_context_unavailable',
             dependency: 'verify',
             cause: {
-                name: 'CredentialVerificationUnavailableError',
-                verificationSubreason: 'read_empty',
+                name: 'CredentialBatchEmptyError',
+                code: 'all_skipped',
+                cause: {
+                    name: 'CredentialVerificationUnavailableError',
+                    verificationSubreason: 'read_empty',
+                },
             },
         });
         expect(answerInputs).toHaveLength(0);
