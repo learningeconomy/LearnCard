@@ -4,9 +4,11 @@ process.env.AI_PRIVACY_KEY ||= Buffer.alloc(32, 7).toString('base64');
 
 const {
     CREDENTIAL_READ_FLOOR_MS,
+    credentialBudgetAllowsStart,
     credentialReadTimeoutMs,
     credentialSlowReadMs,
     credentialUriHash,
+    synthesisReserveMs,
 } = await import('./read-budget');
 const { logSafeEvent } = await import('../logging');
 
@@ -14,33 +16,38 @@ afterEach(() => {
     delete process.env.CREDENTIAL_READ_TIMEOUT_MS;
 });
 
-test('without a request deadline a read keeps LEARNCARD_CALL_TIMEOUT_MS', () => {
-    expect(credentialReadTimeoutMs({ pending: 10, concurrency: 4 })).toBeUndefined();
+test('without a request deadline a read keeps LEARNCARD_CALL_TIMEOUT_MS and always starts', () => {
+    expect(credentialReadTimeoutMs()).toBeUndefined();
+    expect(credentialBudgetAllowsStart()).toBe(true);
 });
 
-test('a read gets the cap or its share of the remaining budget per wave left', () => {
-    // 20s budget, 40 URIs at concurrency 4: 10 waves share half of 20s.
-    expect(
-        credentialReadTimeoutMs({ pending: 40, concurrency: 4, now: 0, deadlineAt: 20_000 })
-    ).toBe(1_000);
-    // One wave left: capped at 3s, never the whole budget.
-    expect(
-        credentialReadTimeoutMs({ pending: 2, concurrency: 4, now: 0, deadlineAt: 20_000 })
-    ).toBe(3_000);
+test('a read gets the cap or the time left before the synthesis reserve', () => {
+    const budget = { deadlineAt: 20_000, budgetMs: 20_000 };
+    // 20s budget: 8s reserve. At 2s in, 10s left: capped at 3s.
+    expect(credentialReadTimeoutMs({ now: 2_000, budget })).toBe(3_000);
+    // At 10s in, 2s left before the reserve.
+    expect(credentialReadTimeoutMs({ now: 10_000, budget })).toBe(2_000);
     process.env.CREDENTIAL_READ_TIMEOUT_MS = '1500';
-    expect(
-        credentialReadTimeoutMs({ pending: 2, concurrency: 4, now: 0, deadlineAt: 20_000 })
-    ).toBe(1_500);
-    // A spent budget still gets the floor, not zero or negative.
-    expect(
-        credentialReadTimeoutMs({ pending: 8, concurrency: 4, now: 25_000, deadlineAt: 20_000 })
-    ).toBe(CREDENTIAL_READ_FLOOR_MS);
+    expect(credentialReadTimeoutMs({ now: 2_000, budget })).toBe(1_500);
+    // A spent budget still gets the floor, never the 250ms that split prod reads.
+    expect(credentialReadTimeoutMs({ now: 19_000, budget })).toBe(CREDENTIAL_READ_FLOOR_MS);
 });
 
-test('the slow-read warning fires before the read times out', () => {
+test('the batch stops starting credentials when only the reserve is left', () => {
+    const budget = { deadlineAt: 20_000, budgetMs: 20_000 };
+    expect(synthesisReserveMs(20_000)).toBe(8_000);
+    expect(synthesisReserveMs(1_500)).toBe(600);
+    expect(credentialBudgetAllowsStart({ now: 11_000, budget })).toBe(true);
+    expect(credentialBudgetAllowsStart({ now: 11_600, budget })).toBe(false);
+});
+
+test('the slow-read warning has a 1s floor and fires only before the timeout', () => {
+    // v31 warned at 125ms (half a 250ms timeout) on every ordinary read.
+    expect(credentialSlowReadMs(250)).toBeUndefined();
+    expect(credentialSlowReadMs(1_000)).toBeUndefined();
+    expect(credentialSlowReadMs(1_800)).toBe(1_000);
     expect(credentialSlowReadMs(3_000)).toBe(1_500);
     expect(credentialSlowReadMs(10_000)).toBe(2_000);
-    expect(credentialSlowReadMs(250)).toBe(125);
 });
 
 test('uriHash is a stable 12-hex keyed fingerprint, never the URI', () => {

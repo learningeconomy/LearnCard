@@ -15,7 +15,11 @@ type LearnCardRequestScope = {
     readonly signal?: AbortSignal;
     /** performance.now() time the request's budget ends, when it has one. */
     readonly deadlineAt?: number;
+    /** The whole request budget in ms, when it has a deadline. */
+    readonly budgetMs?: number;
     consentRead?: ConsentReadEntry;
+    /** One in-flight or settled result per key (a credential URI) per request. */
+    memo?: Map<string, Promise<unknown>>;
 };
 
 const requestScope = new AsyncLocalStorage<LearnCardRequestScope>();
@@ -40,9 +44,13 @@ export const runInAiCallConsentScope = <Result>(callback: () => Result): Result 
  * `reuseRequestConsentRead`).
  */
 export const runWithLearnCardRequestScope = <Result>(
-    options: { signal?: AbortSignal; deadlineAt?: number },
+    options: { signal?: AbortSignal; deadlineAt?: number; budgetMs?: number },
     callback: () => Result
-): Result => requestScope.run({ signal: options.signal, deadlineAt: options.deadlineAt }, callback);
+): Result =>
+    requestScope.run(
+        { signal: options.signal, deadlineAt: options.deadlineAt, budgetMs: options.budgetMs },
+        callback
+    );
 
 /**
  * Run `callback` with no request scope: nothing inside inherits a request's
@@ -56,6 +64,32 @@ export const getLearnCardRequestSignal = (): AbortSignal | undefined =>
 
 export const getLearnCardRequestDeadline = (): number | undefined =>
     requestScope.getStore()?.deadlineAt;
+
+export const getLearnCardRequestBudget = ():
+    { deadlineAt: number; budgetMs: number } | undefined => {
+    const scope = requestScope.getStore();
+    if (scope?.deadlineAt === undefined || scope.budgetMs === undefined) return undefined;
+    return { deadlineAt: scope.deadlineAt, budgetMs: scope.budgetMs };
+};
+
+/**
+ * Run `operation` at most once per key within the current request; later
+ * callers share its promise, including a rejection (a credential that failed
+ * is not read again in the same request). Outside a request, runs every time.
+ */
+export const oncePerLearnCardRequest = <T>(
+    key: string,
+    operation: () => Promise<T>
+): Promise<T> => {
+    const scope = requestScope.getStore();
+    if (!scope) return operation();
+    scope.memo ??= new Map();
+    const existing = scope.memo.get(key);
+    if (existing) return existing as Promise<T>;
+    const result = operation();
+    scope.memo.set(key, result);
+    return result;
+};
 
 /** Longest a request may reuse one consent read before it must read again. */
 export const CONSENT_READ_REUSE_MAX_MS = 10_000;

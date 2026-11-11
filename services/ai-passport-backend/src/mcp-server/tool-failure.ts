@@ -10,6 +10,7 @@ import {
     type CauseStep,
     type VerifyFailureKind,
 } from '../credentials/verify-diagnostics';
+import { timeMcpStage } from '../diagnostics/mcp-timing';
 
 export const MCP_TOOLS = [
     'get_user_context',
@@ -135,7 +136,7 @@ export const withToolStage = async <T>(
             mcpStage: stage,
         });
     try {
-        return await operation();
+        return stage === 'consent' ? await operation() : await timeMcpStage(stage, operation);
     } catch (error) {
         throw attachToolStage(error, stage);
     }

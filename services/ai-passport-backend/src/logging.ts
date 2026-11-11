@@ -106,6 +106,7 @@ const SAFE_EVENT_CODES = [
     'mcp_tool_progress',
     'projection_restart',
     'credential_read_slow',
+    'mcp_tool_timing',
     'credential_skipped',
     'credential_batch_completed',
     'credential_raw_unavailable',
@@ -121,6 +122,20 @@ const SAFE_EVENT_CODES = [
 
 const CREDENTIAL_BATCHES = ['preload', 'context', 'thread_context', 'ingestion'] as const;
 const CREDENTIAL_READ_STAGES = ['storage_resolve', 'fetch', 'decode'] as const;
+const MCP_TIMING_STAGE_KEYS = [
+    'scope',
+    'consent_read',
+    'uri_list',
+    'read',
+    'verify',
+    'store',
+    'projection',
+    'learnercontext',
+    'pseudonymize',
+    'llm',
+] as const;
+type McpTimingStageKey = (typeof MCP_TIMING_STAGE_KEYS)[number];
+const MCP_TOOL_OUTCOMES = ['success', 'failure', 'timeout'] as const;
 const URI_HASH_PATTERN = /^[0-9a-f]{12}$/;
 const PROJECTION_RESTART_REASONS = [
     'source_cleanup_busy',
@@ -149,6 +164,7 @@ const SAFE_FAILURE_CODES = [
     'credential_invalid',
     'credential_projection_failed',
     'credential_read_timeout',
+    'credential_budget_exhausted',
     'credential_read_failed',
     'learncard_subject_not_found',
     'learncard_unavailable',
@@ -363,6 +379,14 @@ export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
     readStage?: (typeof CREDENTIAL_READ_STAGES)[number];
     /** credential_skipped / credential_read_slow: 12-hex keyed URI hash, never the URI. */
     uriHash?: string;
+    /** credential_batch_completed: credentials not started because the budget ran out. */
+    deferredCount?: number;
+    /** mcp_tool_timing: per-stage run count and summed ms, fixed stage keys only. */
+    stageTimings?: Partial<Record<McpTimingStageKey, { count: number; ms: number }>>;
+    /** mcp_tool_timing: shared credential URIs in this request. */
+    credentialCount?: number;
+    /** mcp_tool_timing: how the call ended. */
+    mcpOutcome?: (typeof MCP_TOOL_OUTCOMES)[number];
 };
 
 const FILE_STAGES: Record<string, true> = {
@@ -421,6 +445,51 @@ export const logSafeEvent = (
             event.readStage = metrics.readStage;
         if (typeof metrics.uriHash === 'string' && URI_HASH_PATTERN.test(metrics.uriHash))
             event.uriHash = metrics.uriHash;
+    }
+    if (code === 'mcp_tool_timing') {
+        if (
+            metrics.mcpTool === 'get_user_context' ||
+            metrics.mcpTool === 'get_answer_about_user' ||
+            metrics.mcpTool === 'save_session_summary'
+        )
+            event.mcpTool = metrics.mcpTool;
+        if (
+            typeof metrics.mcpRequestId === 'string' &&
+            /^req_[A-Za-z0-9]{8,32}$/.test(metrics.mcpRequestId)
+        )
+            event.mcpRequestId = metrics.mcpRequestId;
+        if (metrics.mcpOutcome && MCP_TOOL_OUTCOMES.includes(metrics.mcpOutcome))
+            event.mcpOutcome = metrics.mcpOutcome;
+        const credentialCount = metrics.credentialCount;
+        if (
+            typeof credentialCount === 'number' &&
+            Number.isInteger(credentialCount) &&
+            credentialCount >= 0 &&
+            credentialCount <= MAX_BATCH_POSITION
+        )
+            event.credentialCount = credentialCount;
+        const timings = metrics.stageTimings;
+        if (timings && typeof timings === 'object') {
+            const picked: NonNullable<SafeLogMetrics['stageTimings']> = {};
+            for (const stage of MCP_TIMING_STAGE_KEYS) {
+                const entry = (timings as Record<string, unknown>)[stage] as
+                    { count?: unknown; ms?: unknown } | undefined;
+                if (!entry || typeof entry !== 'object') continue;
+                const { count, ms } = entry;
+                if (
+                    typeof count === 'number' &&
+                    Number.isInteger(count) &&
+                    count >= 0 &&
+                    count <= 1_000_000 &&
+                    typeof ms === 'number' &&
+                    Number.isInteger(ms) &&
+                    ms >= 0 &&
+                    ms <= 86_400_000
+                )
+                    picked[stage] = { count, ms };
+            }
+            if (Object.keys(picked).length) event.stageTimings = picked;
+        }
     }
     if (code === 'credential_read_slow') {
         if (
@@ -737,7 +806,7 @@ export const logSafeEvent = (
     if (code === 'credential_skipped' || code === 'credential_batch_completed') {
         if (metrics.credentialBatch && CREDENTIAL_BATCHES.includes(metrics.credentialBatch))
             event.credentialBatch = metrics.credentialBatch;
-        for (const field of ['index', 'loadedCount', 'skippedCount'] as const) {
+        for (const field of ['index', 'loadedCount', 'skippedCount', 'deferredCount'] as const) {
             const value = metrics[field];
             if (
                 typeof value === 'number' &&

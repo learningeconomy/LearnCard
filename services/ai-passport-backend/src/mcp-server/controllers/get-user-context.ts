@@ -11,8 +11,16 @@ import {
     attachVerifyFailureDiagnostics,
     withCauseStep,
 } from '../../credentials/verify-diagnostics';
-import { credentialReadTimeoutMs } from '../../credentials/read-budget';
-import { resolveVerifiedCredentialProjection } from '../../credentials/service';
+import {
+    credentialBudgetAllowsStart,
+    credentialReadTimeoutMs,
+} from '../../credentials/read-budget';
+import {
+    assertCredentialScope,
+    consentCredentialLocations,
+    resolveVerifiedCredentialProjection,
+} from '../../credentials/service';
+import { recordMcpCredentialCount, timeMcpStage } from '../../diagnostics/mcp-timing';
 import { getLearnCard } from '../../learncard';
 import {
     AiConsentError,
@@ -51,30 +59,48 @@ const logSkippedCredentialCounts = (
 
 const loadSharedContextUris = async (
     did: string,
-    receipt: Awaited<ReturnType<typeof loadActiveAiConsentData>>['receipt']
+    receipt: Awaited<ReturnType<typeof loadActiveAiConsentData>>['receipt'],
+    records: Awaited<ReturnType<typeof loadActiveAiConsentData>>['records']
 ): Promise<LoadedContextCredential[]> => {
     try {
-        const uris = await withCauseStep('uri_list', async () => [
-            ...new Set(receipt.credentialUris),
-        ]);
+        // Scope, consent and the URI list once per request, not per credential.
+        // The consent read is the tool's own (passed in); each credential then
+        // checks the bound snapshot, and the fresh reads stay at publication.
+        await withCauseStep('scope', () => timeMcpStage('scope', () => assertCredentialScope(did)));
+        const { uris, locations } = await withCauseStep('uri_list', () =>
+            timeMcpStage('uri_list', async () => ({
+                uris: [...new Set(receipt.credentialUris)],
+                locations: consentCredentialLocations(records),
+            }))
+        );
+        recordMcpCredentialCount(uris.length);
         if (uris.length === 0) return [];
         const { tasks, concurrency } = await withCauseStep('batch_setup', async () => ({
             concurrency: CREDENTIAL_PRELOAD_CONCURRENCY,
-            tasks: uris.map((uri, index) => async () => {
-                // Each read gets its share of the time left before the tool
-                // deadline, so one hung read is skipped while siblings load.
-                const readTimeoutMs = credentialReadTimeoutMs({
-                    pending: uris.length - index,
-                    concurrency: CREDENTIAL_PRELOAD_CONCURRENCY,
-                });
-                const projection = await withCauseStep('projection', () =>
-                    resolveVerifiedCredentialProjection(did, uri, receipt, { readTimeoutMs })
-                );
-                return { uri, projection };
-            }),
+            tasks: uris.map(
+                uri => () =>
+                    withCauseStep('projection', () =>
+                        timeMcpStage('projection', async () => {
+                            const location = locations.get(uri);
+                            if (!location) throw new AiConsentError('Credential is not shared');
+                            const projection = await resolveVerifiedCredentialProjection(
+                                did,
+                                uri,
+                                receipt,
+                                { readTimeoutMs: credentialReadTimeoutMs(), location }
+                            );
+                            return { uri, projection };
+                        })
+                    )
+            ),
         }));
         const { loaded, skipped } = await withCauseStep('batch', () =>
-            settleCredentialBatch('context', tasks, { concurrency })
+            settleCredentialBatch('context', tasks, {
+                concurrency,
+                // Stop starting credentials once only the synthesis reserve is
+                // left; the tool answers from what loaded.
+                shouldStart: () => credentialBudgetAllowsStart(),
+            })
         );
         logSkippedCredentialCounts(skipped);
         return loaded;
@@ -101,17 +127,21 @@ export async function getLatestUserSummary(did: string) {
             'Authentication required'
         );
     }
-    const { learnCard, receipt } = await withToolStage('consent', async () => {
+    const { learnCard, receipt, records } = await withToolStage('consent', async () => {
         const learnCard = await getLearnCard();
-        const { receipt } = await loadActiveAiConsentData(learnCard, did, 'model-inference');
-        return { learnCard, receipt };
+        const { receipt, records } = await loadActiveAiConsentData(
+            learnCard,
+            did,
+            'model-inference'
+        );
+        return { learnCard, receipt, records };
     });
     // Legacy AIInsight summaries have no current source/consent provenance. Reuse
     // the owner-and-revision-scoped formatter instead, resolving signed evidence.
     // Skip unreadable or unverifiable credentials with the same policy as in-app
     // chat (`settleCredentialBatch`) and pass only the loaded URIs downstream.
     const result = await withToolStage('learnercontext', async () => {
-        const loaded = await loadSharedContextUris(did, receipt);
+        const loaded = await loadSharedContextUris(did, receipt, records);
         return generateLearnerContextPrompt({
             credentialUris: loaded.map(item => item.uri),
             resolvedProjections: loaded.map(item => item.projection),

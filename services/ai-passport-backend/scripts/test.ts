@@ -83,6 +83,7 @@ const ALL_TEST_FILES = [
     'src/credentials/verifier-error-kind.test.ts',
     'src/credentials/batch.test.ts',
     'src/credentials/read-budget.test.ts',
+    'src/diagnostics/mcp-timing.test.ts',
     'src/credentials/raw-vault.test.ts',
     'src/ai/topics.test.ts',
     'src/credentials/service.test.ts',

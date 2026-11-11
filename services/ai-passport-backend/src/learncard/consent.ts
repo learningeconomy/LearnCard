@@ -1,4 +1,5 @@
 import { withAiInsightStage } from '../diagnostics/ai-insight';
+import { timeMcpStage } from '../diagnostics/mcp-timing';
 import { bindAiConsentRevision } from '../ai/privacy';
 import { createHmac } from 'node:crypto';
 
@@ -470,4 +471,6 @@ export const prefetchAiConsentSnapshot = (
 export const loadActiveAiConsentData = (
     ...args: Parameters<typeof loadConsentData>
 ): ReturnType<typeof loadConsentData> =>
-    withAiInsightStage('consent', () => loadConsentData(...args));
+    timeMcpStage('consent_read', () =>
+        withAiInsightStage('consent', () => loadConsentData(...args))
+    );

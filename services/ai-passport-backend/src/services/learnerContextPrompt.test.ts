@@ -103,6 +103,9 @@ mock.module('../learncard', () => ({
     },
 }));
 mock.module('../credentials/service', () => ({
+    assertCredentialScope: () => undefined,
+    // Every shared URI is located; the projection mock ignores the location.
+    consentCredentialLocations: () => ({ get: (uri: string) => ({ uri }) }),
     resolveVerifiedCredentialProjection: async (_did: string, uri: string) => {
         if (projectionFailure) throw projectionFailure;
         const projection = projections.get(uri);

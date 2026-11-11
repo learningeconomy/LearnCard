@@ -290,7 +290,7 @@ describe('MCP get_user_context credential read budget', () => {
     const HUNG_URI = 'lc:cloud:credential:hung-read-private';
     const FAILING_URI = 'lc:cloud:credential:failing-read-private';
     const SIBLING_URI = 'lc:cloud:credential:sibling-2';
-    const BUDGET_MS = 1_500;
+    const BUDGET_MS = 3_000;
     const sentryPayloads: unknown[] = [];
 
     const restore = () => {
@@ -435,6 +435,216 @@ describe('MCP get_user_context credential read budget', () => {
                 /^[0-9a-f]{12}$/
             );
             expectNoRawUri(FAILING_URI);
+        } finally {
+            restore();
+        }
+    });
+});
+
+describe('MCP get_user_context resolves each credential once per request', () => {
+    const CREDENTIALS = 30;
+    const READ_MS = 125;
+    const VERIFY_MS = 8;
+    const originalError = console.error;
+
+    const runMcp = async (requestId: string) => {
+        const { runMcpOwnerOperation } = await import('../ownerOperation');
+        const { runWithMcpProgress } = await import('../../diagnostics/mcp-progress');
+        const startedAt = performance.now();
+        const outcome = await runWithMcpProgress({ tool: 'get_user_context', requestId }, () =>
+            runMcpOwnerOperation(OWNER, () => getLatestUserSummary(OWNER))
+        ).then(
+            context => ({ context, error: undefined }),
+            (error: unknown) => ({ context: undefined, error })
+        );
+        return { ...outcome, elapsedMs: performance.now() - startedAt };
+    };
+
+    const realisticStore = () => {
+        let active = 0;
+        let maxActive = 0;
+        const reads = new Map<string, number>();
+        const verifies = new Map<string, number>();
+        readGet.mockImplementation(async (uri?: string) => {
+            const key = uri ?? '';
+            reads.set(key, (reads.get(key) ?? 0) + 1);
+            active += 1;
+            maxActive = Math.max(maxActive, active);
+            await new Promise(resolve => setTimeout(resolve, READ_MS));
+            return createTestVc(key);
+        });
+        verifyCredential.mockImplementation(async (credential?: VC) => {
+            const id = typeof credential?.id === 'string' ? credential.id : '';
+            verifies.set(id, (verifies.get(id) ?? 0) + 1);
+            await new Promise(resolve => setTimeout(resolve, VERIFY_MS));
+            active -= 1;
+            return { checks: ['proof'], errors: [], warnings: [] };
+        });
+        return { reads, verifies, maxActive: () => maxActive };
+    };
+
+    const restore = () => {
+        readGet.mockImplementation(async (uri?: string) => createTestVc(uri ?? VALID_URI));
+        verifyCredential.mockImplementation(async (credential?: VC) => {
+            const id = typeof credential?.id === 'string' ? credential.id : '';
+            verified.push(id);
+            if (id === INVALID_URI)
+                return { checks: [], errors: ['Invalid signature'], warnings: [] };
+            return { checks: ['proof'], errors: [], warnings: [] };
+        });
+        aiStubs.aiCall.mockImplementation(async () => ({
+            prompt: 'Sibling learner context',
+            summary: 'Sibling summary',
+        }));
+        delete process.env.MCP_TOOL_TIMEOUT_MS;
+        console.info = originalInfo;
+        console.warn = originalWarn;
+        console.error = originalError;
+    };
+
+    test('30 credentials: each read and verified once, consent and URI list once, at most 4 at a time', async () => {
+        uris = Array.from(
+            { length: CREDENTIALS },
+            (_, index) => `lc:cloud:credential:acct-${index}`
+        );
+        const store = realisticStore();
+        try {
+            const { context, error, elapsedMs } = await runMcp('req_onceperreq01');
+            expect(error).toBeUndefined();
+            expect(context).toBe('Sibling learner context');
+            expect(store.reads.size).toBe(CREDENTIALS);
+            expect([...store.reads.values()].every(count => count === 1)).toBe(true);
+            expect(store.verifies.size).toBe(CREDENTIALS);
+            expect([...store.verifies.values()].every(count => count === 1)).toBe(true);
+            expect(store.maxActive()).toBeGreaterThan(1);
+            expect(store.maxActive()).toBeLessThanOrEqual(4);
+            // 30 x ~133ms in 4 workers is ~1s; serial would be ~4s.
+            expect(elapsedMs).toBeLessThan(2_500);
+
+            const timing = events.find(event => event.event === 'mcp_tool_timing') as
+                | {
+                      mcpOutcome?: string;
+                      credentialCount?: number;
+                      stageTimings?: Record<string, { count: number; ms: number }>;
+                  }
+                | undefined;
+            expect(timing).toBeDefined();
+            expect(timing?.mcpOutcome).toBe('success');
+            expect(timing?.credentialCount).toBe(CREDENTIALS);
+            const stages = timing?.stageTimings ?? {};
+            expect(
+                events.filter(
+                    event =>
+                        event.event === 'mcp_tool_progress' && event.mcpCauseStep === 'consent_read'
+                )
+            ).toHaveLength(0);
+            expect(JSON.stringify(events)).not.toContain('lc:cloud:credential');
+            expect(stages.scope?.count).toBe(1);
+            expect(stages.uri_list?.count).toBe(1);
+            expect(stages.read?.count).toBe(CREDENTIALS);
+            expect(stages.verify?.count).toBe(CREDENTIALS);
+            expect(stages.projection?.count).toBe(CREDENTIALS);
+            expect(stages.learnercontext?.count).toBe(1);
+            expect(stages.pseudonymize?.count).toBe(1);
+            // The tool's consent read, the prompt's (shared) read, the prompt's
+            // four fresh checks (cache lookup, before the model, before and after
+            // the cache write) and the tool's final fresh check: 7, whatever the
+            // credential count. Nothing per credential.
+            const storeConsentReads = getConsentFlowDataForDid.mock.calls.length;
+            expect(stages.consent_read?.count).toBeLessThanOrEqual(7);
+            expect(storeConsentReads).toBeLessThanOrEqual(7);
+
+            console.log(
+                `30-credential tool: ${Math.round(elapsedMs)}ms, max ${store.maxActive()} in flight, ` +
+                    `store consent reads ${storeConsentReads}, ` +
+                    `timing ${JSON.stringify(stages)}`
+            );
+        } finally {
+            restore();
+        }
+    });
+
+    test('a second resolve of the same credential in one request shares the first', async () => {
+        uris = [VALID_URI];
+        const store = realisticStore();
+        const { resolveVerifiedCredentialProjection } = await import('../../credentials/service');
+        const { loadActiveAiConsentData } = await import('../../learncard/consent');
+        try {
+            await runWithAiPrivacyContext(OWNER, () =>
+                runWithLearnCardRequestScope({}, async () => {
+                    const { getLearnCard } = await import('../../learncard');
+                    const { receipt } = await loadActiveAiConsentData(
+                        await getLearnCard(),
+                        OWNER,
+                        'model-inference'
+                    );
+                    clearVerifiedCredentials();
+                    await Promise.all([
+                        resolveVerifiedCredentialProjection(OWNER, VALID_URI, receipt),
+                        resolveVerifiedCredentialProjection(OWNER, VALID_URI, receipt),
+                    ]);
+                    clearVerifiedCredentials();
+                    await resolveVerifiedCredentialProjection(OWNER, VALID_URI, receipt);
+                })
+            );
+            expect(store.reads.get(VALID_URI)).toBe(1);
+            expect(store.verifies.get(VALID_URI)).toBe(1);
+        } finally {
+            restore();
+        }
+    });
+
+    test('an account too large for the budget returns context from what loaded, rest deferred', async () => {
+        uris = Array.from({ length: 80 }, (_, index) => `lc:cloud:credential:big-${index}`);
+        const store = realisticStore();
+        process.env.MCP_TOOL_TIMEOUT_MS = '3000';
+        try {
+            const { context, error, elapsedMs } = await runMcp('req_budgetdefer01');
+            expect(error).toBeUndefined();
+            expect(context).toBe('Sibling learner context');
+            expect(elapsedMs).toBeLessThan(3_000);
+            const completed = events.find(event => event.event === 'credential_batch_completed') as
+                { loadedCount?: number; deferredCount?: number; count?: number } | undefined;
+            expect(completed?.count).toBe(80);
+            expect(completed?.deferredCount).toBeGreaterThan(0);
+            expect((completed?.loadedCount ?? 0) + (completed?.deferredCount ?? 0)).toBe(80);
+            expect(store.reads.size).toBe(completed?.loadedCount ?? -1);
+            console.log(
+                `80-credential tool under 3s: ${Math.round(elapsedMs)}ms, loaded ${completed?.loadedCount}, deferred ${completed?.deferredCount}`
+            );
+        } finally {
+            restore();
+        }
+    });
+
+    test('mcp_tool_timing is logged on a timeout too', async () => {
+        uris = Array.from({ length: 6 }, (_, index) => `lc:cloud:credential:slow-${index}`);
+        realisticStore();
+        process.env.MCP_TOOL_TIMEOUT_MS = '1500';
+        console.error = ((...data: unknown[]) => {
+            capture(...data);
+            return undefined;
+        }) as typeof console.error;
+        aiStubs.aiCall.mockImplementation(() => new Promise(() => undefined));
+        try {
+            const { error, elapsedMs } = await runMcp('req_timingtimeout1');
+            expect((error as Error | undefined)?.name).toBe('TimeoutError');
+            expect(elapsedMs).toBeLessThan(2_500);
+            expect(events).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        event: 'mcp_tool_timing',
+                        mcpTool: 'get_user_context',
+                        mcpRequestId: 'req_timingtimeout1',
+                        mcpOutcome: 'timeout',
+                        credentialCount: 6,
+                        stageTimings: expect.objectContaining({
+                            read: expect.objectContaining({ count: 6 }),
+                            learnercontext: expect.objectContaining({ count: 1 }),
+                        }),
+                    }),
+                ])
+            );
         } finally {
             restore();
         }

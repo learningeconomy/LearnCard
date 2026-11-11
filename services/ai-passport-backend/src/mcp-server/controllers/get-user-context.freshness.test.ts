@@ -54,6 +54,9 @@ mock.module('../../learncard', () => ({
     getLearnCard: async () => ({ invoke: { getConsentFlowDataForDid } }),
 }));
 mock.module('../../credentials/service', () => ({
+    assertCredentialScope: () => undefined,
+    // Every shared URI is located; the projection mock ignores the location.
+    consentCredentialLocations: () => ({ get: (uri: string) => ({ uri }) }),
     resolveVerifiedCredentialProjection: async () => {
         duringProjection?.();
         return {

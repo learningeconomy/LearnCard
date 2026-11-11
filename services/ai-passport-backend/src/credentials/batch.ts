@@ -17,6 +17,8 @@ type FailureCode = NonNullable<SafeLogMetrics['failureCode']>;
 export type CredentialBatchResult<Item> = {
     loaded: Item[];
     skipped: { index: number; code: FailureCode }[];
+    /** Tasks never started because `shouldStart` said the budget ran out. */
+    deferred: number;
 };
 
 const isObject = (value: unknown): value is object =>
@@ -232,14 +234,16 @@ export const logCredentialSkip = (
 export const logCredentialBatch = (
     batch: CredentialBatchName,
     loadedCount: number,
-    skippedCount: number
+    skippedCount: number,
+    deferredCount = 0
 ): void => {
-    if (loadedCount + skippedCount === 0) return;
-    logSafeEvent(skippedCount > 0 ? 'warn' : 'info', 'credential_batch_completed', {
+    if (loadedCount + skippedCount + deferredCount === 0) return;
+    logSafeEvent(skippedCount + deferredCount > 0 ? 'warn' : 'info', 'credential_batch_completed', {
         credentialBatch: batch,
-        count: loadedCount + skippedCount,
+        count: loadedCount + skippedCount + deferredCount,
         loadedCount,
         skippedCount,
+        ...(deferredCount > 0 ? { deferredCount } : {}),
     });
 };
 
@@ -271,10 +275,14 @@ type BatchOptions = {
     allowEmpty?: boolean;
     signal?: AbortSignal;
     deadlineAt?: number;
+    /* Checked before each task starts; false stops new starts (budget spent).
+     * Tasks already running finish; the rest are counted as deferred. */
+    shouldStart?: () => boolean;
 };
 type Settled<Item> = {
     results: ({ value: Item } | undefined)[];
     failures: { index: number; error: unknown }[];
+    started: number;
 };
 
 /* At most `concurrency` tasks at once; a fatal failure stops new starts. */
@@ -282,17 +290,23 @@ const runTasks = async <Item>(
     tasks: readonly (() => Promise<Item>)[],
     options: BatchOptions
 ): Promise<Settled<Item>> => {
-    const settled: Settled<Item> = { results: [], failures: [] };
+    const settled: Settled<Item> = { results: [], failures: [], started: 0 };
     const limit = Math.max(
         1,
         Math.min(Math.floor(options.concurrency ?? credentialBatchConcurrency()) || 1, tasks.length)
     );
     let nextIndex = 0;
     let failed = false;
+    let stopped = false;
     const worker = async (): Promise<void> => {
-        while (!failed && nextIndex < tasks.length) {
+        while (!failed && !stopped && nextIndex < tasks.length) {
+            if (options.shouldStart && !options.shouldStart()) {
+                stopped = true;
+                break;
+            }
             const index = nextIndex;
             nextIndex += 1;
+            settled.started += 1;
             try {
                 settled.results[index] = { value: await tasks[index]!() };
             } catch (error) {
@@ -319,14 +333,24 @@ export const settleCredentialBatch = async <Item>(
     tasks: readonly (() => Promise<Item>)[],
     options: BatchOptions = {}
 ): Promise<CredentialBatchResult<Item>> => {
-    const { results, failures } = await runTasks(tasks, options);
+    const { results, failures, started } = await runTasks(tasks, options);
+    const deferred = tasks.length - started;
     failures.sort((left, right) => left.index - right.index);
     const skipped = failures.map(({ index, error }) => ({
         index,
         code: logCredentialSkip(batch, index, tasks.length, error),
     }));
     const loaded = results.flatMap(result => (result ? [result.value] : []));
-    logCredentialBatch(batch, loaded.length, skipped.length);
+    logCredentialBatch(batch, loaded.length, skipped.length, deferred);
+    if (loaded.length === 0 && !failures[0] && deferred > 0) {
+        // The budget ran out before any credential loaded.
+        const error = markCredentialItemFailure(
+            new Error('Credential budget exhausted'),
+            'credential_budget_exhausted'
+        );
+        emptyBatchSkipCounts.set(error, { credential_budget_exhausted: deferred });
+        throw error;
+    }
     if (
         loaded.length === 0 &&
         failures[0] &&
@@ -337,7 +361,7 @@ export const settleCredentialBatch = async <Item>(
         if (isObject(failures[0].error)) emptyBatchSkipCounts.set(failures[0].error, counts);
         throw failures[0].error;
     }
-    return { loaded, skipped };
+    return { loaded, skipped, deferred };
 };
 
 /*
