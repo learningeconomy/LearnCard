@@ -30,6 +30,7 @@ import {
     isKnownBadCredential,
     knownBadCredentialKind,
     logCredentialSkip,
+    CREDENTIAL_BATCH_MAX_CONCURRENCY,
     markCredentialItemFailure,
     settleCredentialBatch,
 } from '../credentials/batch';
@@ -642,7 +643,14 @@ const searchCredentialContextsPinned = async (
                             context: serializeModelSafeCredentialProjection(projection),
                         };
                     }),
-                    { signal, deadlineAt, allowEmpty: true }
+                    {
+                        signal,
+                        deadlineAt,
+                        allowEmpty: true,
+                        // One window is `limit` results (5 or 10 from chat and MCP) that
+                        // share one live-verify deadline; keep them in parallel, capped.
+                        concurrency: Math.min(limit, CREDENTIAL_BATCH_MAX_CONCURRENCY),
+                    }
                 ));
             } catch (error) {
                 // Keep what loaded when a later window fails per credential only.

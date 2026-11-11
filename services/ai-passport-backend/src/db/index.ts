@@ -48,7 +48,7 @@ import {
 } from '../credentials/raw-vault';
 import type { RawCredentialEnvelope } from '../credentials/raw-vault';
 import { fingerprintCredential } from '../credentials/verification';
-import { settleCredentialBatch } from '../credentials/batch';
+import { credentialBatchConcurrency, settleCredentialBatch } from '../credentials/batch';
 import { getLearnCardRequestSignal } from '../learncard/requestScope';
 import {
     assertCurrentAiConsent,
@@ -3042,7 +3042,8 @@ export class ChatDB {
                         projection.facts.find(({ kind }) => kind === 'title')?.value ??
                         projection.category,
                 };
-            })
+            }),
+            { concurrency: credentialBatchConcurrency() }
         );
         return loaded;
     }

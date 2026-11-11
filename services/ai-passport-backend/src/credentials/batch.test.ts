@@ -12,6 +12,7 @@ import {
     markCredentialItemFailure,
     recordCredentialOutcome,
     settleCredentialBatch,
+    credentialBatchConcurrency,
 } from './batch';
 import { CredentialVerificationUnavailableError } from './verification';
 
@@ -226,4 +227,21 @@ test('the verified cache stays bounded', () => {
     expect(getVerifiedCredential<unknown>('did:a', 'uri:0', 'rev', now + 1)).toBe(undefined);
     expect(getVerifiedCredential<unknown>('did:a', 'uri:10000', 'rev', now + 1)).toBe(10_000);
     clearVerifiedCredentials();
+});
+
+test('without an explicit concurrency a batch runs at most the configured limit at once', async () => {
+    quiet();
+    let active = 0;
+    let maxActive = 0;
+    const tasks = Array.from({ length: 40 }, (_, index) => async () => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await new Promise(resolve => setTimeout(resolve, 1));
+        active -= 1;
+        return index;
+    });
+    const { loaded } = await settleCredentialBatch('context', tasks);
+    expect(loaded).toHaveLength(40);
+    expect(maxActive).toBe(credentialBatchConcurrency());
+    expect(credentialBatchConcurrency()).toBe(4);
 });

@@ -14,7 +14,7 @@ import {
     loadActiveAiConsentData,
     sameConsentAuthorization,
 } from '../learncard/consent';
-import { settleCredentialBatch } from '../credentials/batch';
+import { credentialBatchConcurrency, settleCredentialBatch } from '../credentials/batch';
 import { resolveVerifiedCredentialProjection } from '../credentials/service';
 import { withCauseStep } from '../credentials/verify-diagnostics';
 import { serializeModelSafeCredentialProjection } from '../credentials/projection';
@@ -199,7 +199,9 @@ export const generateLearnerContextPrompt = async (
                               withCauseStep('projection', () =>
                                   resolveVerifiedCredentialProjection(did, uri, receipt)
                               )
-                      )
+                      ),
+                      // HTTP format allows up to 500 URIs; never verify them all at once.
+                      { concurrency: credentialBatchConcurrency() }
                   );
                   return loaded;
               });

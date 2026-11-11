@@ -226,7 +226,24 @@ const emptyBatchSkipCounts = new WeakMap<object, Record<string, number>>();
 export const emptyBatchSkipCountsOf = (error: unknown): Record<string, number> | undefined =>
     isObject(error) ? emptyBatchSkipCounts.get(error) : undefined;
 
+/*
+ * How many credential tasks a batch runs at once when the caller does not say.
+ * Each task is a signed LearnCard read plus a verify, so an unbounded batch of
+ * hundreds of URIs fires them all together. Same knob and parsing as
+ * CREDENTIAL_PRELOAD_CONCURRENCY in constants/env (read here directly because
+ * tests of modules that load this one replace the env module): default 4, max 16.
+ */
+export const CREDENTIAL_BATCH_MAX_CONCURRENCY = 16;
+export const credentialBatchConcurrency = (): number => {
+    const parsed = Number(process.env.CREDENTIAL_PRELOAD_CONCURRENCY);
+    return Math.min(
+        CREDENTIAL_BATCH_MAX_CONCURRENCY,
+        Number.isInteger(parsed) && parsed > 0 ? parsed : 4
+    );
+};
+
 type BatchOptions = {
+    /* Defaults to credentialBatchConcurrency(); never tasks.length. */
     concurrency?: number;
     /* Resolve empty, not reject, when every failure is permanent. */
     allowEmpty?: boolean;
@@ -246,7 +263,7 @@ const runTasks = async <Item>(
     const settled: Settled<Item> = { results: [], failures: [] };
     const limit = Math.max(
         1,
-        Math.min(Math.floor(options.concurrency ?? tasks.length) || 1, tasks.length)
+        Math.min(Math.floor(options.concurrency ?? credentialBatchConcurrency()) || 1, tasks.length)
     );
     let nextIndex = 0;
     let failed = false;

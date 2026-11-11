@@ -144,6 +144,9 @@ mock.module('../../db', () => ({
 }));
 
 const { getLatestUserSummary } = await import('./get-user-context');
+const { generateLearnerContextPrompt, parseLearnerContextPromptRequest } =
+    await import('../../services/learnerContextPrompt');
+const { credentialBatchConcurrency } = await import('../../credentials/batch');
 const { runWithAiPrivacyContext } = await import('../../ai/privacy');
 const { runWithLearnCardRequestScope, resetConsentSnapshots } =
     await import('../../learncard/requestScope');
@@ -226,6 +229,57 @@ describe('MCP get_user_context projection convergence', () => {
             );
             expect(events.filter(event => event.event === 'projection_restart')).toHaveLength(1);
         } finally {
+            console.info = originalInfo;
+            console.warn = originalWarn;
+        }
+    });
+});
+
+describe('/ai/learner-context/format credential fan-out', () => {
+    test('direct prompt generation over 50 URIs never resolves more than the batch limit at once', async () => {
+        uris = Array.from({ length: 50 }, (_, index) => `lc:cloud:credential:fanout-${index}`);
+        let active = 0;
+        let maxActive = 0;
+        readGet.mockImplementation(async (uri?: string) => {
+            active += 1;
+            maxActive = Math.max(maxActive, active);
+            // Deferred: hold each read until the event loop has had a chance to
+            // start every other resolution an unbounded batch would start.
+            await new Promise<void>(resolve => setTimeout(resolve, 5));
+            return createTestVc(uri ?? VALID_URI);
+        });
+        verifyCredential.mockImplementation(async (credential?: VC) => {
+            verified.push(typeof credential?.id === 'string' ? credential.id : '');
+            await new Promise(resolve => setTimeout(resolve, 1));
+            active -= 1;
+            return { checks: ['proof'], errors: [], warnings: [] };
+        });
+        try {
+            const result = await runWithAiPrivacyContext(OWNER, () =>
+                runWithLearnCardRequestScope({}, () =>
+                    generateLearnerContextPrompt(
+                        parseLearnerContextPromptRequest({
+                            credentialUris: uris,
+                            maxCredentials: 1,
+                        })
+                    )
+                )
+            );
+            expect(result.prompt).toBe('Sibling learner context');
+            expect(verified).toHaveLength(50);
+            expect(credentialBatchConcurrency()).toBe(4);
+            expect(maxActive).toBeGreaterThan(0);
+            expect(maxActive).toBeLessThanOrEqual(credentialBatchConcurrency());
+            console.log(`fan-out max concurrent resolutions: ${maxActive}`);
+        } finally {
+            readGet.mockImplementation(async (uri?: string) => createTestVc(uri ?? VALID_URI));
+            verifyCredential.mockImplementation(async (credential?: VC) => {
+                const id = typeof credential?.id === 'string' ? credential.id : '';
+                verified.push(id);
+                if (id === INVALID_URI)
+                    return { checks: [], errors: ['Invalid signature'], warnings: [] };
+                return { checks: ['proof'], errors: [], warnings: [] };
+            });
             console.info = originalInfo;
             console.warn = originalWarn;
         }
