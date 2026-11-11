@@ -11,12 +11,13 @@ export const mcpToolTimeoutMs = (): number => {
 export const runMcpOwnerOperation = async <T>(did: string, operation: () => Promise<T>) => {
     const timeoutMs = mcpToolTimeoutMs();
     const controller = new AbortController();
+    const deadlineAt = performance.now() + timeoutMs;
     const timer = setTimeout(() => controller.abort(new LearnCardTimeoutError()), timeoutMs);
     timer.unref?.();
     try {
         return await withOwnerOperation(did, () =>
             runWithAiPrivacyContext(did, () =>
-                runWithLearnCardRequestScope({ signal: controller.signal }, () =>
+                runWithLearnCardRequestScope({ signal: controller.signal, deadlineAt }, () =>
                     boundLearnCardCall(Promise.resolve().then(operation), {
                         signal: controller.signal,
                         timeoutMs,

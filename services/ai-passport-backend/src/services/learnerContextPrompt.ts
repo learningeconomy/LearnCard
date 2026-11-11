@@ -15,6 +15,7 @@ import {
     sameConsentAuthorization,
 } from '../learncard/consent';
 import { credentialBatchConcurrency, settleCredentialBatch } from '../credentials/batch';
+import { credentialReadTimeoutMs } from '../credentials/read-budget';
 import { resolveVerifiedCredentialProjection } from '../credentials/service';
 import { withCauseStep } from '../credentials/verify-diagnostics';
 import { serializeModelSafeCredentialProjection } from '../credentials/projection';
@@ -194,12 +195,17 @@ export const generateLearnerContextPrompt = async (
             : await dependency('verify', async () => {
                   const { loaded } = await settleCredentialBatch(
                       'context',
-                      credentialUris.map(
-                          uri => () =>
-                              withCauseStep('projection', () =>
-                                  resolveVerifiedCredentialProjection(did, uri, receipt)
-                              )
-                      ),
+                      credentialUris.map((uri, index) => () => {
+                          const readTimeoutMs = credentialReadTimeoutMs({
+                              pending: credentialUris.length - index,
+                              concurrency: credentialBatchConcurrency(),
+                          });
+                          return withCauseStep('projection', () =>
+                              resolveVerifiedCredentialProjection(did, uri, receipt, {
+                                  readTimeoutMs,
+                              })
+                          );
+                      }),
                       // HTTP format allows up to 500 URIs; never verify them all at once.
                       { concurrency: credentialBatchConcurrency() }
                   );

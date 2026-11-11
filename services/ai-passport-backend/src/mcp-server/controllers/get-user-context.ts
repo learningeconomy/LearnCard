@@ -11,6 +11,7 @@ import {
     attachVerifyFailureDiagnostics,
     withCauseStep,
 } from '../../credentials/verify-diagnostics';
+import { credentialReadTimeoutMs } from '../../credentials/read-budget';
 import { resolveVerifiedCredentialProjection } from '../../credentials/service';
 import { getLearnCard } from '../../learncard';
 import {
@@ -59,9 +60,15 @@ const loadSharedContextUris = async (
         if (uris.length === 0) return [];
         const { tasks, concurrency } = await withCauseStep('batch_setup', async () => ({
             concurrency: CREDENTIAL_PRELOAD_CONCURRENCY,
-            tasks: uris.map(uri => async () => {
+            tasks: uris.map((uri, index) => async () => {
+                // Each read gets its share of the time left before the tool
+                // deadline, so one hung read is skipped while siblings load.
+                const readTimeoutMs = credentialReadTimeoutMs({
+                    pending: uris.length - index,
+                    concurrency: CREDENTIAL_PRELOAD_CONCURRENCY,
+                });
                 const projection = await withCauseStep('projection', () =>
-                    resolveVerifiedCredentialProjection(did, uri, receipt)
+                    resolveVerifiedCredentialProjection(did, uri, receipt, { readTimeoutMs })
                 );
                 return { uri, projection };
             }),

@@ -31,6 +31,26 @@ export const markCredentialItemFailure = <Failure>(error: Failure, code?: Failur
     return error;
 };
 
+/* Where a credential read failed, plus a keyed URI hash for log correlation. */
+export const CREDENTIAL_READ_STAGES = ['storage_resolve', 'fetch', 'decode'] as const;
+export type CredentialReadStage = (typeof CREDENTIAL_READ_STAGES)[number];
+type ReadFailure = { readStage: CredentialReadStage; uriHash: string };
+const readFailures = new WeakMap<object, ReadFailure>();
+
+/* Mark one credential's failed read: a skippable item failure, never retried. */
+export const markCredentialReadFailure = <Failure>(
+    error: Failure,
+    detail: ReadFailure & { code?: FailureCode }
+): Failure => {
+    if (!isObject(error)) return error;
+    itemFailures.set(error, detail.code);
+    readFailures.set(error, { readStage: detail.readStage, uriHash: detail.uriHash });
+    return error;
+};
+
+export const isCredentialReadFailure = (error: unknown): boolean =>
+    isObject(error) && readFailures.has(error);
+
 export const isCredentialItemFailure = (
     error: unknown,
     options: { signal?: AbortSignal; deadlineAt?: number } = {}
@@ -188,11 +208,13 @@ export const logCredentialSkip = (
     error: unknown
 ): FailureCode => {
     const failureCode = credentialFailureCodeOf(error);
+    const read = isObject(error) ? readFailures.get(error) : undefined;
     logSafeEvent('warn', 'credential_skipped', {
         credentialBatch: batch,
         index,
         count,
         failureCode,
+        ...(read ? { readStage: read.readStage, uriHash: read.uriHash } : {}),
         ...(error instanceof CredentialVerificationUnavailableError
             ? {
                   ...(error.verificationSubreason

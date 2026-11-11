@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import type { VC } from '@learncard/types';
 
 process.env.AI_PRIVACY_KEY ||= Buffer.alloc(32, 7).toString('base64');
@@ -282,6 +282,161 @@ describe('/ai/learner-context/format credential fan-out', () => {
             });
             console.info = originalInfo;
             console.warn = originalWarn;
+        }
+    });
+});
+
+describe('MCP get_user_context credential read budget', () => {
+    const HUNG_URI = 'lc:cloud:credential:hung-read-private';
+    const FAILING_URI = 'lc:cloud:credential:failing-read-private';
+    const SIBLING_URI = 'lc:cloud:credential:sibling-2';
+    const BUDGET_MS = 1_500;
+    const sentryPayloads: unknown[] = [];
+
+    const restore = () => {
+        readGet.mockImplementation(async (uri?: string) => createTestVc(uri ?? VALID_URI));
+        delete process.env.MCP_TOOL_TIMEOUT_MS;
+        console.info = originalInfo;
+        console.warn = originalWarn;
+        console.error = originalError;
+    };
+    const originalError = console.error;
+
+    const runMcpTool = async () => {
+        process.env.MCP_TOOL_TIMEOUT_MS = String(BUDGET_MS);
+        console.error = ((...data: unknown[]) => {
+            capture(...data);
+            return undefined;
+        }) as typeof console.error;
+        const Sentry = await import('@sentry/node');
+        const captureSpy = spyOn(Sentry, 'captureMessage').mockImplementation(((
+            message: string,
+            context: unknown
+        ) => {
+            sentryPayloads.push({ message, context });
+            return 'event';
+        }) as never);
+        const { runMcpOwnerOperation } = await import('../ownerOperation');
+        const { runWithMcpProgress } = await import('../../diagnostics/mcp-progress');
+        const { reportToolFailure } = await import('../tools');
+        const startedAt = performance.now();
+        try {
+            const context = await runWithMcpProgress(
+                { tool: 'get_user_context', requestId: 'req_readbudget01' },
+                () => runMcpOwnerOperation(OWNER, () => getLatestUserSummary(OWNER))
+            ).catch(error => {
+                reportToolFailure('get_user_context', error);
+                throw error;
+            });
+            return { context, elapsedMs: performance.now() - startedAt };
+        } finally {
+            captureSpy.mockRestore();
+        }
+    };
+
+    const expectNoRawUri = (...privateUris: string[]) => {
+        const logged = JSON.stringify(events);
+        const sentry = JSON.stringify(sentryPayloads);
+        for (const uri of privateUris) {
+            expect(logged).not.toContain(uri);
+            expect(sentry).not.toContain(uri);
+        }
+        expect(sentry).not.toContain('uriHash');
+    };
+
+    test('a never-resolving read is skipped and siblings return inside the tool budget', async () => {
+        uris = [HUNG_URI, VALID_URI, SIBLING_URI];
+        sentryPayloads.length = 0;
+        readGet.mockImplementation(async (uri?: string) =>
+            uri === HUNG_URI ? new Promise<VC>(() => undefined) : createTestVc(uri ?? VALID_URI)
+        );
+        try {
+            const { context, elapsedMs } = await runMcpTool();
+            expect(context).toBe('Sibling learner context');
+            expect(elapsedMs).toBeLessThan(BUDGET_MS);
+            // Per-credential skips; the batch also logs one aggregate count line.
+            const skipped = events.filter(
+                event => event.event === 'credential_skipped' && 'index' in event
+            );
+            expect(skipped).toEqual([
+                expect.objectContaining({
+                    failureCode: 'credential_read_timeout',
+                    readStage: 'fetch',
+                    credentialBatch: 'context',
+                }),
+            ]);
+            expect(skipped[0]?.uriHash).toMatch(/^[0-9a-f]{12}$/);
+            expect(events).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        event: 'credential_read_slow',
+                        readStage: 'fetch',
+                        uriHash: skipped[0]?.uriHash,
+                        mcpRequestId: 'req_readbudget01',
+                    }),
+                    expect.objectContaining({
+                        event: 'mcp_tool_progress',
+                        mcpCauseStep: 'projection',
+                        readStage: 'fetch',
+                    }),
+                ])
+            );
+            expect(events.some(event => event.event === 'request_failed')).toBe(false);
+            expect(events.some(event => event.event === 'projection_restart')).toBe(false);
+            expect(sentryPayloads).toHaveLength(0);
+            expectNoRawUri(HUNG_URI, VALID_URI, SIBLING_URI);
+            console.log(`hung-read tool returned in ${Math.round(elapsedMs)}ms`);
+        } finally {
+            restore();
+        }
+    });
+
+    test('an always-failing read is skipped once, never restarted', async () => {
+        uris = [FAILING_URI, VALID_URI];
+        // A read error whose message matches a retryable cleanup message must
+        // still not restart the projection: reads are never retried.
+        readGet.mockImplementation(async (uri?: string) => {
+            if (uri === FAILING_URI) throw new Error('Cleanup scope changed; retry');
+            return createTestVc(uri ?? VALID_URI);
+        });
+        try {
+            const { context } = await runMcpTool();
+            expect(context).toBe('Sibling learner context');
+            expect(readGet.mock.calls.filter(([uri]) => uri === FAILING_URI)).toHaveLength(1);
+            expect(events.some(event => event.event === 'projection_restart')).toBe(false);
+            // Per-credential skips; the batch also logs one aggregate count line.
+            const skipped = events.filter(
+                event => event.event === 'credential_skipped' && 'index' in event
+            );
+            expect(skipped).toEqual([
+                expect.objectContaining({
+                    failureCode: 'credential_read_failed',
+                    readStage: 'fetch',
+                }),
+            ]);
+            expect(skipped[0]?.uriHash).toMatch(/^[0-9a-f]{12}$/);
+            expectNoRawUri(FAILING_URI, VALID_URI);
+        } finally {
+            restore();
+        }
+    });
+
+    test('when every read fails, Sentry gets allowlisted tags only, no URI or uriHash', async () => {
+        uris = [FAILING_URI];
+        sentryPayloads.length = 0;
+        readGet.mockImplementation(async () => {
+            throw new Error(`storage fetch failed for ${FAILING_URI}`);
+        });
+        try {
+            await expect(runMcpTool()).rejects.toBeDefined();
+            expect(readGet).toHaveBeenCalledTimes(1);
+            expect(sentryPayloads).toHaveLength(1);
+            expect(events.find(event => event.event === 'credential_skipped')?.uriHash).toMatch(
+                /^[0-9a-f]{12}$/
+            );
+            expectNoRawUri(FAILING_URI);
+        } finally {
+            restore();
         }
     });
 });

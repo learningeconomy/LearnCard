@@ -9,6 +9,8 @@ import {
     logCredentialBatch,
     logCredentialSkip,
     markCredentialItemFailure,
+    markCredentialReadFailure,
+    isCredentialReadFailure,
     recordCredentialOutcome,
     rememberVerifiedCredential,
     settleCredentialBatch,
@@ -73,6 +75,8 @@ import {
     type CredentialConsentReceipt,
 } from './verification';
 import { classifyLearnCardFailure } from '../learncard/errors';
+import { getMcpProgress } from '../diagnostics/mcp-progress';
+import { credentialSlowReadMs, credentialUriHash } from './read-budget';
 import {
     attachVerifyFailureDiagnostics,
     copyVerifyFailureDiagnostics,
@@ -334,10 +338,76 @@ const learnCardCallTimeoutMs = (): number => {
     return Number.isInteger(parsed) && parsed > 0 ? parsed : 5_000;
 };
 
+export type CredentialReadOptions = {
+    /** This read's own timeout; defaults to LEARNCARD_CALL_TIMEOUT_MS. */
+    readTimeoutMs?: number;
+};
+
+/*
+ * One credential read, bounded by its own timeout. A timeout or fetch error is
+ * this credential's skippable failure (credential_read_timeout or
+ * credential_read_failed, with the read stage and a keyed URI hash). The
+ * request's own abort or deadline is not: it is rethrown untouched, so the
+ * shared abort reason is never labelled as one credential's read failure.
+ */
+const readCredential = async (
+    learnCard: Awaited<ReturnType<typeof getLearnCard>>,
+    uri: string,
+    timeoutMs: number
+): Promise<VC | undefined> => {
+    const progress = getMcpProgress();
+    if (progress) {
+        logSafeEvent('info', 'mcp_tool_progress', {
+            mcpTool: progress.tool,
+            mcpRequestId: progress.requestId,
+            mcpCauseStep: 'projection',
+            readStage: 'fetch',
+        });
+    }
+    const startedAt = performance.now();
+    let uriHash: string | undefined;
+    const hash = () => (uriHash ??= credentialUriHash(uri));
+    const slowTimer = setTimeout(() => {
+        logSafeEvent('warn', 'credential_read_slow', {
+            readStage: 'fetch',
+            uriHash: hash(),
+            durationMs: Math.round(performance.now() - startedAt),
+            ...(progress ? { mcpTool: progress.tool, mcpRequestId: progress.requestId } : {}),
+        });
+    }, credentialSlowReadMs(timeoutMs));
+    slowTimer.unref?.();
+    try {
+        return (await withAiInsightResolutionOperation('read', () =>
+            boundLearnCardCall(learnCard.read.get(uri), { timeoutMs })
+        )) as VC | undefined;
+    } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') throw error;
+        if (getLearnCardRequestSignal()?.aborted) throw error;
+        const timedOut = error instanceof Error && error.name === 'TimeoutError';
+        // A non-object rejection is an unknown failure: fail closed, unmarked.
+        if (error === null || typeof error !== 'object') throw error;
+        markCredentialReadFailure(error, {
+            code: timedOut ? 'credential_read_timeout' : 'credential_read_failed',
+            readStage: 'fetch',
+            uriHash: hash(),
+        });
+        attachVerifyFailureDiagnostics(error, {
+            kind:
+                classifyLearnCardFailure(error) === 'learncard_unauthorized'
+                    ? 'read_unauthorized'
+                    : 'read_failed',
+        });
+        throw error;
+    } finally {
+        clearTimeout(slowTimer);
+    }
+};
+
 const resolveCredential = async (
     did: string,
     ref: ConsentFlowCredentialRef,
-    insightEligibility = false
+    insightEligibility = false,
+    options: CredentialReadOptions = {}
 ): Promise<ResolvedConsentFlowCredential> => {
     const assertScope = () =>
         insightEligibility
@@ -348,34 +418,21 @@ const resolveCredential = async (
     // Do not substitute Zod's parsed copy for the signed original.
     // The SDK read and verify take no signal; bound both by the request scope's
     // signal and LEARNCARD_CALL_TIMEOUT_MS so a hung call cannot hold the caller.
-    let credential: VC;
-    try {
-        credential = (await withAiInsightResolutionOperation('read', () =>
-            boundLearnCardCall(learnCard.read.get(ref.uri), {
-                timeoutMs: learnCardCallTimeoutMs(),
-            })
-        )) as VC;
-    } catch (error) {
-        /* A failed read is this credential's failure, unless the caller aborted. */
-        if (error instanceof Error && error.name === 'AbortError') throw error;
-        const marked = markCredentialItemFailure(error);
-        if (marked && typeof marked === 'object') {
-            attachVerifyFailureDiagnostics(marked, {
-                kind:
-                    classifyLearnCardFailure(error) === 'learncard_unauthorized'
-                        ? 'read_unauthorized'
-                        : 'read_failed',
-            });
-        }
-        throw marked;
-    }
+    const credential = await readCredential(
+        learnCard,
+        ref.uri,
+        options.readTimeoutMs ?? learnCardCallTimeoutMs()
+    );
     // SDK reads may hide validation/decryption/network failures as no result.
     // Missing data cannot establish invalidity or justify deleting retained records.
     if (!credential) {
         if (insightEligibility) throw new ExcludedInsightInput('unreadable_input');
-        throw attachVerifyFailureDiagnostics(
-            new CredentialVerificationUnavailableError('read_empty'),
-            { kind: 'read_empty' }
+        throw markCredentialReadFailure(
+            attachVerifyFailureDiagnostics(
+                new CredentialVerificationUnavailableError('read_empty'),
+                { kind: 'read_empty' }
+            ),
+            { readStage: 'decode', uriHash: credentialUriHash(ref.uri) }
         );
     }
     if (insightEligibility && hasKnownUnsupportedInsightSuite(credential))
@@ -505,11 +562,12 @@ const resolveEligibleInsightCredential = async (
 
 const resolveVerifiedCredential = (
     did: string,
-    ref: ConsentFlowCredentialRef
+    ref: ConsentFlowCredentialRef,
+    options: CredentialReadOptions = {}
 ): Promise<ResolvedConsentFlowCredential> =>
     withAiInsightStage('credential_resolution', async () => {
         try {
-            const resolved = await resolveCredential(did, ref);
+            const resolved = await resolveCredential(did, ref, false, options);
             recordCredentialOutcome(did, ref.uri);
             // The chat context and the preload reuse this until the TTL or the
             // revision changes.
@@ -526,6 +584,9 @@ const resolveVerifiedCredential = (
 export const MAX_PROJECTION_ATTEMPTS = 3;
 
 const projectionRestartReason = (error: unknown): string | undefined => {
+    // A failed read is that credential's skip; re-reading it would only spend
+    // the budget its siblings need.
+    if (isCredentialReadFailure(error)) return undefined;
     if (!isRetryableSourceCleanupError(error) || !(error instanceof Error)) return undefined;
     const reason = sanitizeCauseMessage(error.message);
     return reason && reason !== 'unrecognized' ? reason : undefined;
@@ -534,7 +595,8 @@ const projectionRestartReason = (error: unknown): string | undefined => {
 const resolveVerifiedCredentialProjectionOnce = async (
     did: string,
     uri: string,
-    receipt: ActiveAiConsentReceipt
+    receipt: ActiveAiConsentReceipt,
+    options: CredentialReadOptions
 ): Promise<ModelSafeCredentialProjection> => {
     await withCauseStep('scope', async () => {
         requireCredentialOwner(did);
@@ -575,10 +637,14 @@ const resolveVerifiedCredentialProjectionOnce = async (
             getVerifiedCredential<ResolvedConsentFlowCredential>(did, uri, receipt.revision)
                 ?.projection ??
             (
-                await resolveVerifiedCredential(did, {
-                    ...location,
-                    consent: receipt,
-                })
+                await resolveVerifiedCredential(
+                    did,
+                    {
+                        ...location,
+                        consent: receipt,
+                    },
+                    options
+                )
             ).projection;
         await assertCredentialConsent(did, uri, receipt);
         return projection;
@@ -588,12 +654,13 @@ const resolveVerifiedCredentialProjectionOnce = async (
 export const resolveVerifiedCredentialProjection = async (
     did: string,
     uri: string,
-    receipt: ActiveAiConsentReceipt
+    receipt: ActiveAiConsentReceipt,
+    options: CredentialReadOptions = {}
 ): Promise<ModelSafeCredentialProjection> => {
     const signal = getLearnCardRequestSignal();
     for (let attempt = 1; ; attempt += 1) {
         try {
-            return await resolveVerifiedCredentialProjectionOnce(did, uri, receipt);
+            return await resolveVerifiedCredentialProjectionOnce(did, uri, receipt, options);
         } catch (error) {
             const restartReason = projectionRestartReason(error);
             if (!restartReason || attempt >= MAX_PROJECTION_ATTEMPTS || signal?.aborted) {

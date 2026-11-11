@@ -105,6 +105,7 @@ const SAFE_EVENT_CODES = [
     'mcp_tool_started',
     'mcp_tool_progress',
     'projection_restart',
+    'credential_read_slow',
     'credential_skipped',
     'credential_batch_completed',
     'credential_raw_unavailable',
@@ -119,6 +120,8 @@ const SAFE_EVENT_CODES = [
 ] as const;
 
 const CREDENTIAL_BATCHES = ['preload', 'context', 'thread_context', 'ingestion'] as const;
+const CREDENTIAL_READ_STAGES = ['storage_resolve', 'fetch', 'decode'] as const;
+const URI_HASH_PATTERN = /^[0-9a-f]{12}$/;
 const PROJECTION_RESTART_REASONS = [
     'source_cleanup_busy',
     'source_cleanup_lease_expired',
@@ -145,6 +148,8 @@ const SAFE_FAILURE_CODES = [
     'credential_verification_unavailable',
     'credential_invalid',
     'credential_projection_failed',
+    'credential_read_timeout',
+    'credential_read_failed',
     'learncard_subject_not_found',
     'learncard_unavailable',
     'learncard_unauthorized',
@@ -354,6 +359,10 @@ export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
     skippedCount?: number;
     /** projection_restart: allowlisted reason a projection cycle ran again. */
     restartReason?: (typeof PROJECTION_RESTART_REASONS)[number];
+    /** credential_skipped / credential_read_slow / mcp_tool_progress: read stage. */
+    readStage?: (typeof CREDENTIAL_READ_STAGES)[number];
+    /** credential_skipped / credential_read_slow: 12-hex keyed URI hash, never the URI. */
+    uriHash?: string;
 };
 
 const FILE_STAGES: Record<string, true> = {
@@ -407,6 +416,31 @@ export const logSafeEvent = (
         if (Number.isInteger(metrics.attempt) && metrics.attempt! >= 1 && metrics.attempt! <= 100)
             event.attempt = metrics.attempt;
     }
+    if (code === 'credential_skipped' || code === 'credential_read_slow') {
+        if (metrics.readStage && CREDENTIAL_READ_STAGES.includes(metrics.readStage))
+            event.readStage = metrics.readStage;
+        if (typeof metrics.uriHash === 'string' && URI_HASH_PATTERN.test(metrics.uriHash))
+            event.uriHash = metrics.uriHash;
+    }
+    if (code === 'credential_read_slow') {
+        if (
+            metrics.mcpTool === 'get_user_context' ||
+            metrics.mcpTool === 'get_answer_about_user' ||
+            metrics.mcpTool === 'save_session_summary'
+        )
+            event.mcpTool = metrics.mcpTool;
+        if (
+            typeof metrics.mcpRequestId === 'string' &&
+            /^req_[A-Za-z0-9]{8,32}$/.test(metrics.mcpRequestId)
+        )
+            event.mcpRequestId = metrics.mcpRequestId;
+    }
+    if (
+        code === 'mcp_tool_progress' &&
+        metrics.readStage &&
+        CREDENTIAL_READ_STAGES.includes(metrics.readStage)
+    )
+        event.readStage = metrics.readStage;
     if (code === 'request_failed' || code === 'mcp_tool_started' || code === 'mcp_tool_progress') {
         if (
             metrics.mcpTool === 'get_user_context' ||

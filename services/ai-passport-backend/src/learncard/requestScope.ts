@@ -13,6 +13,8 @@ type ConsentReadEntry = {
 
 type LearnCardRequestScope = {
     readonly signal?: AbortSignal;
+    /** performance.now() time the request's budget ends, when it has one. */
+    readonly deadlineAt?: number;
     consentRead?: ConsentReadEntry;
 };
 
@@ -38,9 +40,9 @@ export const runInAiCallConsentScope = <Result>(callback: () => Result): Result 
  * `reuseRequestConsentRead`).
  */
 export const runWithLearnCardRequestScope = <Result>(
-    options: { signal?: AbortSignal },
+    options: { signal?: AbortSignal; deadlineAt?: number },
     callback: () => Result
-): Result => requestScope.run({ signal: options.signal }, callback);
+): Result => requestScope.run({ signal: options.signal, deadlineAt: options.deadlineAt }, callback);
 
 /**
  * Run `callback` with no request scope: nothing inside inherits a request's
@@ -51,6 +53,9 @@ export const runOutsideLearnCardRequestScope = <Result>(callback: () => Result):
 
 export const getLearnCardRequestSignal = (): AbortSignal | undefined =>
     requestScope.getStore()?.signal;
+
+export const getLearnCardRequestDeadline = (): number | undefined =>
+    requestScope.getStore()?.deadlineAt;
 
 /** Longest a request may reuse one consent read before it must read again. */
 export const CONSENT_READ_REUSE_MAX_MS = 10_000;
