@@ -221,3 +221,79 @@ describe('shared consent on the native transport', () => {
         expect(props.onApprove).not.toHaveBeenCalled();
     });
 });
+
+describe('existing direct-post consent without the native bridge', () => {
+    const legacyProps = (sdJwt = false): RequestConsentProps => ({
+        request: {
+            client_id: 'https://verifier.example.test',
+            nonce: 'legacy-request',
+            response_type: 'vp_token',
+            response_mode: 'direct_post',
+        } as AuthorizationRequest,
+        dcqlSelection: {
+            matches: {
+                course: {
+                    candidates: [
+                        {
+                            id: 'legacy-course',
+                            title: 'Course Completion',
+                            credential: sdJwt
+                                ? {
+                                      proof: {
+                                          type: 'SdJwtCompactProof',
+                                          jwt: 'issuer~disclosure~',
+                                      },
+                                  }
+                                : {
+                                      '@context': ['https://www.w3.org/2018/credentials/v1'],
+                                      type: ['VerifiableCredential'],
+                                      issuer: 'did:key:test-issuer',
+                                      credentialSubject: { course_name: 'Test course' },
+                                  },
+                        },
+                    ],
+                },
+            },
+            canSatisfy: true,
+        } as unknown as DcqlSelectionResult,
+        onApprove: vi.fn(),
+        onCancel: vi.fn(),
+    });
+
+    it.each(['approve', 'cancel'])(
+        'retains ordinary credential %s without native props',
+        async action => {
+            const props = legacyProps();
+            render(<RequestConsent {...props} />);
+            expect(screen.getByRole('heading', { name: 'Share credentials?' })).toBeVisible();
+            const share = await screen.findByRole('button', { name: 'Share' });
+            await waitFor(() => expect(share).toBeEnabled());
+            expect(screen.queryByRole('button', { name: 'Share details' })).not.toBeInTheDocument();
+            fireEvent.click(
+                action === 'approve' ? share : screen.getByRole('button', { name: 'Cancel' })
+            );
+            if (action === 'approve') {
+                expect(props.onApprove).toHaveBeenCalledWith({ row: { course: 0 }, disclose: {} });
+                expect(props.onCancel).not.toHaveBeenCalled();
+            } else {
+                expect(props.onCancel).toHaveBeenCalledOnce();
+                expect(props.onApprove).not.toHaveBeenCalled();
+            }
+        }
+    );
+
+    it('retains selective disclosure choices for an existing SD-JWT direct-post request', async () => {
+        const props = legacyProps(true);
+        render(<RequestConsent {...props} />);
+        const share = await screen.findByRole('button', { name: 'Share' });
+        const learner = await screen.findByRole('checkbox', { name: /Learner name/ });
+        await waitFor(() => expect(share).toBeEnabled());
+        fireEvent.click(learner);
+        expect(share).toBeEnabled();
+        fireEvent.click(share);
+        expect(props.onApprove).toHaveBeenCalledWith({
+            row: { course: 0 },
+            disclose: { 'course::legacy-course': { course_name: true, learner_name: false } },
+        });
+    });
+});

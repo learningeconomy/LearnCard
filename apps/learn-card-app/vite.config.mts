@@ -17,6 +17,7 @@ import type { Plugin as EsbuildPlugin } from 'esbuild';
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
+import { registryProxyDevServer } from '../../packages/learn-card-base/src/registry-proxy/registryProxyDevServer';
 
 // The polyfill package ships against a different esbuild type instance than Vite.
 const globalPolyfillPlugin = GlobalPolyfill({
@@ -187,6 +188,7 @@ export default defineConfig(async ({ mode, command }) => {
         plugins: [
             devCacheRevalidation,
             tailwindcss(),
+            registryProxyDevServer(),
             i18nImportGuard(),
             react(),
             svgr(),

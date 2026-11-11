@@ -175,6 +175,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'getBoostSkills',
     'getBoosts',
     'getBoostsThatUseFramework',
+    'getClaimBoostWithLinkStatus',
     'getClaimHooksForBoost',
     'getConnectedBoostRecipients',
     'getConnectionPromptStatus',
@@ -442,9 +443,10 @@ export const READ_ALLOWLIST: ReadonlySet<string> = new Set([
 
 /**
  * Read-looking names that change state on the network: they are tRPC mutations
- * (public share-link views and chunks are metered) or they consume a one-time code.
+ * (claim reconciliation and public share-link views/chunks) or they consume a one-time code.
  */
 export const WRITE_OVERRIDES: ReadonlySet<string> = new Set([
+    'getClaimBoostWithLinkStatus',
     'getShareLinkAttachmentChunk',
     'getShareLinkContent',
     'resolveShareLink',

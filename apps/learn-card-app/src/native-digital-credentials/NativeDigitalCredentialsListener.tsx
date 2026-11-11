@@ -32,7 +32,14 @@ export default function NativeDigitalCredentialsListener() {
     walletInitializer.current = initWallet;
 
     useEffect(() => {
-        if (Capacitor.getPlatform() !== 'android' || !hydrated) return;
+        // Existing store binaries do not include this optional bridge. Avoid native
+        // calls, subscriptions and retry timers until the installed binary has it.
+        if (
+            Capacitor.getPlatform() !== 'android' ||
+            !Capacitor.isPluginAvailable('NativeDigitalCredentials') ||
+            !hydrated
+        )
+            return;
         let stopped = false;
         let timer: ReturnType<typeof setTimeout> | undefined;
         let expirationTimer: ReturnType<typeof setTimeout> | undefined;

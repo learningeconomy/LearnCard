@@ -388,9 +388,23 @@ Expected output: `draft: true`, `live: true`, `recipient: found`. The live templ
 | `setPrimaryRegisteredSigningAuthority` | `(endpoint, name)`                              | Boolean                      |
 | `getPrimaryRegisteredSigningAuthority` | `()`                                            | Authority or `undefined`     |
 | `generateClaimLink`                    | `(boostUri, claimLinkSA, options?, challenge?)` | `{ boostUri, challenge }`    |
-| `claimBoostWithLink`                   | `(boostUri, challenge)`                         | Credential URI               |
+| `claimBoostWithLink`                   | `(boostUri, challenge, requestId?)`             | Credential URI               |
+| `getClaimBoostWithLinkStatus`          | `(boostUri, challenge, requestId)`              | `ClaimLinkRequestStatus`     |
 
 `generateClaimLink` returns claim parameters, not a fully assembled browser URL. Use the intended app's claim flow to present them, and protect the challenge like a secret. The hosted-authority and automatic-issuance example in [Writing Consented Data](../../core-concepts/consent-and-permissions/writing-consented-data.md) is independently snippet-tested.
+
+For recoverable claims, generate a unique `requestId` before the first attempt and retain it with the same account, network, `boostUri`, and `challenge`. Pass it to `claimBoostWithLink` from the start. After an uncertain response, call `getClaimBoostWithLinkStatus` with those original values:
+
+This status operation uses authenticated `POST /boost/claim/status`, not a read-only GET: it can finish acceptance and usage accounting for an already-stored credential. It never signs another credential. Existing SDK method names are unchanged.
+
+| Status     | Meaning and next action                                                                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `absent`   | No recorded result. Calling `claimBoostWithLink` with the **same request ID** is safe even if an earlier request is still reaching the service.             |
+| `pending`  | The service cannot yet establish a completed result. Check status again; do not replace the request ID or issue another claim.                              |
+| `complete` | `credentialUri` identifies the already-accepted credential. Retrieve it instead of claiming again, even if the link has since expired or reached its limit. |
+| `terminal` | `reason` is `expired`, `exhausted`, or `unavailable`. These are confirmed link conditions, not a classification of network exceptions.                      |
+
+Claiming, saving to the personal collection, and refreshing the app are separate steps. A failed save must reuse the returned credential and reconcile an uncertain index write; it must not start another claim. Calls without `requestId` retain the legacy `NOT_FOUND` / `Challenge not found` link-availability errors used by older clients, including ScoutPass, but do not identify a recoverable operation.
 
 ## Consent
 

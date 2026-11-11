@@ -71,6 +71,18 @@
             "classOf": "Class of",
             "noneYetTitle": "Nothing to add yet"
         },
+        "delivery": {
+            "timeLeftLabel": "Time left",
+            "secondsLeft": "About {{seconds}} seconds left",
+            "oneMinuteLeft": "About a minute left",
+            "minutesLeft": "About {{minutes}} minutes left",
+            "almostThere": "Almost there",
+            "requestedTitle": "Transcript requested",
+            "expectedWhen": "Your school expects to send it {{when}}.",
+            "notifyYou": "We'll let you know as soon as it's here.",
+            "byDate": "by {{date}}",
+            "expectedLabel": "Expected {{when}}"
+        },
         "promptTitle": "Get Your Transcript",
         "notNow": "Not now"
     },
@@ -554,6 +566,7 @@
         "continue": "Continue",
         "loading": "Loading...",
         "add": "Add",
+        "publishing": "Publishing…",
         "saving": "Saving...",
         "searchResults": {
             "noResults": "No results found",
@@ -3183,8 +3196,27 @@
             "haveAccount": "Have an account?"
         },
         "boost": {
-            "accepted": "Accepted",
-            "expiredHeader": "The boost claim link has expired or has reached the maximum number of times it can be claimed."
+            "accepted": "Accepted"
+        },
+        "recovery": {
+            "checking": "Checking your claim...",
+            "claiming": "Claiming your credential...",
+            "saving": "Saving to your collection...",
+            "refreshing": "Refreshing your collection...",
+            "checkFailed": "We couldn't confirm your claim. Your link is still here so you can try again.",
+            "claimUncertain": "Your claim may have completed. Check for your credential before trying again.",
+            "saveFailed": "Your credential was claimed, but saving wasn't confirmed. Try saving it again.",
+            "refreshFailed": "Your credential is saved. We couldn't refresh your collection.",
+            "pending": "Your claim is still being resolved. Check again to find the result without claiming another copy.",
+            "expired": "This claim link has expired. Ask the issuer for a new link.",
+            "exhausted": "This claim link has reached its claim limit. Ask the issuer for a new link.",
+            "unavailable": "This claim link isn't available. Ask the issuer to check the link.",
+            "contextChanged": "Your account or connection settings changed; close this page and reopen the original link to continue.",
+            "savedToOriginalAccount": "Your credential was saved to your original account.",
+            "tryAgain": "Try again",
+            "check": "Check for my credential",
+            "save": "Save my credential",
+            "refresh": "Refresh my collection"
         },
         "duplicate": {
             "title": "Already saved",
@@ -10312,6 +10344,7 @@
         "viewCredential": "View credential"
     },
     "resumePublishing": {
+        "aboutPublishing": "About publishing",
         "linkReady": "Your private link is ready.",
         "opening": "Opening your private link...",
         "linkUnavailable": "This link is unavailable. Publish the resume again after checking its settings.",

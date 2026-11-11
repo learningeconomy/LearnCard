@@ -19,7 +19,10 @@ export const ResumePreviewInfoChip: React.FC<{
         !onChange && detailKey === UserInfoEnum.Phone ? formatPhoneForDisplay(value) : value;
 
     return (
-        <div className="inline-flex w-full max-w-full items-center gap-2 overflow-hidden rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-grayscale-800 sm:w-auto">
+        <div
+            data-focus-ring
+            className="inline-flex w-full max-w-full items-center gap-2 overflow-hidden rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-grayscale-800 sm:w-auto"
+        >
             {detailKey === UserInfoEnum.LinkedIn && <LinkedInIcon className="w-4 h-4 shrink-0" />}
             {onChange ? (
                 <input

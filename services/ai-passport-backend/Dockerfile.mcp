@@ -1,7 +1,15 @@
 # syntax = docker/dockerfile:1
 
 # Bun pin matches the LearnCard monorepo (root package.json packageManager).
-ARG BUN_VERSION=1.4.2
+ARG BUN_VERSION=1.4.4
+
+# `start:mcp` runs TypeScript from src/ (`bun --conditions=development src/mcp-server/index.ts`),
+# the same way `start` runs the API. There is no admin UI or `dist/privacy` compile step, so this
+# image has no `bun run build` stage. The bun.lock is shared by every LearnCard workspace, so a
+# frozen install still needs every workspace manifest in the context (same pattern as
+# Dockerfile.api and services/learn-card-network/*/Dockerfile). `--filter` limits the install to
+# this service and its workspace dependencies; an unfiltered install pulls every app's dependency
+# tree (Next, Expo, Ionic, Storybook, CDK, ...) and puts the image over Fly's 8 GiB unpack limit.
 FROM oven/bun:${BUN_VERSION}-slim AS base
 
 LABEL fly_launch_runtime="Bun"
@@ -16,16 +24,16 @@ COPY services/ai-passport-backend/privacy/processor.py /opt/ai-privacy/assets/pr
 ENV AI_PRIVACY_PYTHON=/opt/ai-privacy/bin/python \
     AI_PRIVACY_ASSET_DIR=/opt/ai-privacy/assets
 
-# The bun.lock is shared by every LearnCard workspace, so a frozen install needs the full
-# workspace closure (same pattern as services/learn-card-network/*/Dockerfile).
 # .dockerignore at the repo root keeps node_modules and Rust targets out of the context.
 COPY . .
 
 ENV SKIP_DIDKIT_NAPI=1 \
     MONGOMS_DISABLE_POSTINSTALL=1
 
+# `start:mcp` runs src/ with --conditions=development, so the runtime keeps workspace sources and
+# production dependencies for this service's closure only (no devDependencies, no bun cache).
 RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
+    bun install --frozen-lockfile --filter ai-passport-backend --production
 
 WORKDIR /app/services/ai-passport-backend
 

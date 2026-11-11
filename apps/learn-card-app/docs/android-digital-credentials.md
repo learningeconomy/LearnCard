@@ -4,6 +4,8 @@ This development slice adds an app-local Capacitor bridge and an Android Credent
 
 The production provider is **disabled by default**. The dedicated `com.learncard.app.dctest` development build connects the reusable Android module to LearnCard's account initialization, encrypted LearnCloud credential inventory and existing OpenID4VP consent screen. Separate debug lab applications provide a synthetic issuer and native verifier. The development build can use Vite or bundled assets; either account-flow mode still requires reachable test APIs and a provisioned synthetic account.
 
+The feature stays latent on OTA channel `1.0.13`. On installed binaries without `NativeDigitalCredentials`, the listener checks plugin availability and skips native calls, subscriptions and retries. This preserves web updates for existing Android and iOS users; it does not enable the provider. Store-binary compatibility and physical-device qualification remain rollout gates.
+
 ## Reviewer quick start: which apps do I need?
 
 **Yes, the native-app demo needs a separate requesting app.** LearnCard Verifier Lab asks Android for a credential and checks the returned proof. It is not part of the normal LearnCard installation.
