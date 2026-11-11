@@ -132,6 +132,7 @@ const options = {
     integrationId: 'integration',
 } as unknown as Parameters<typeof sendBoost>[0];
 const claimOptions = {
+    claimLinkOwnerToken: 'owner-one',
     ...options,
     contractTerms: undefined,
     listingId: undefined,
@@ -153,6 +154,7 @@ describe('boost payload storage', () => {
         mocks.issue.mockImplementation(async unsigned => ({ ...unsigned, proof: {} }));
         mocks.commit.mockReset().mockResolvedValue(undefined);
         mocks.rollback.mockReset().mockResolvedValue(undefined);
+        mocks.transaction.run.mockReset().mockResolvedValue({ records: [{}] });
     });
 
     it.each([
@@ -175,6 +177,7 @@ describe('boost payload storage', () => {
             const uri = await sendBoost({ ...options, credential });
             expect(uri).toBe('lc:network:network.example/credential:stored');
             expect(mocks.store.mock.calls[0]?.[0]).toBe(credential);
+            expect(mocks.store).toHaveBeenCalledWith(credential, undefined, 'org', undefined);
             expect(mocks.decrypt).not.toHaveBeenCalled();
             expect(mocks.issue).not.toHaveBeenCalled();
         }
@@ -199,6 +202,12 @@ describe('boost payload storage', () => {
         listing.resolve();
         await expect(result).resolves.toBe('lc:network:network.example/credential:stored');
         expect(mocks.contract).not.toHaveBeenCalled();
+        expect(mocks.store).toHaveBeenCalledWith(
+            options.credential,
+            mocks.transaction,
+            'org',
+            undefined
+        );
         expect(mocks.instanceOf.mock.calls[0]?.[2]).toBe(mocks.transaction);
         expect(mocks.sent.mock.calls[0]?.[6]).toBe(mocks.transaction);
         expect(mocks.listing.mock.calls[0]?.[6]).toBe(mocks.transaction);
@@ -287,6 +296,53 @@ describe('boost payload storage', () => {
         expect(mocks.store.mock.calls[0]?.[0]).toBe(credential);
         expect(mocks.decrypt).not.toHaveBeenCalled();
         expect(mocks.issue).not.toHaveBeenCalled();
+    });
+
+    it('carries the receipt owner from issuance into the storage transaction', async () => {
+        const issued = { kind: 'issued-credential', credential: jwe, statusEntries: [] };
+        mocks.signingAuthority.mockResolvedValue(issued);
+        const boost = {
+            dataValues: { id: 'boost', boost: JSON.stringify(vc) },
+        } as Parameters<typeof issueClaimLinkBoost>[0];
+        const authority = { relationship: { did: 'did:example:sa' } } as Parameters<
+            typeof issueClaimLinkBoost
+        >[4];
+        await issueClaimLinkBoost(
+            boost,
+            options.domain,
+            options.from,
+            options.to,
+            authority,
+            'request-one',
+            undefined,
+            'owner-one'
+        );
+        expect(mocks.transaction.run).toHaveBeenCalledWith(expect.any(String), {
+            credentialId: 'request-one',
+            ownerToken: 'owner-one',
+        });
+        expect(mocks.store).toHaveBeenCalledWith(
+            issued,
+            expect.objectContaining({
+                run: mocks.transaction.run,
+            }),
+            'org',
+            { credentialId: 'request-one' }
+        );
+        expect(mocks.transaction.run.mock.invocationCallOrder[0]).toBeLessThan(
+            mocks.store.mock.invocationCallOrder[0]!
+        );
+    });
+
+    it('rejects a fenced claim writer before storage or acceptance', async () => {
+        mocks.transaction.run.mockResolvedValueOnce({ records: [] });
+        await expect(
+            sendBoost({ ...claimOptions, credentialId: 'request-one' })
+        ).rejects.toBeInstanceOf(ClaimLinkStorageRejectedError);
+        expect(mocks.store).not.toHaveBeenCalled();
+        expect(mocks.accept).not.toHaveBeenCalled();
+        expect(mocks.commit).not.toHaveBeenCalled();
+        expect(mocks.rollback).toHaveBeenCalledOnce();
     });
 
     it('distinguishes a rejected storage transaction from an uncertain commit outcome', async () => {

@@ -1,6 +1,7 @@
 import cloneDeep from 'lodash/cloneDeep';
 import type { Transaction } from 'neo4j-driver';
 import { neogma } from '@instance';
+import { lockClaimLinkRequestForStorage } from '@accesslayer/claim-link-request-fence';
 import {
     CredentialFieldError,
     isDisplayOnlyAnchorTemplate,
@@ -158,6 +159,7 @@ export const sendBoost = async ({
     integrationId,
     credentialId,
     atomicClaimLink = false,
+    claimLinkOwnerToken,
     onStorageStart,
 }: {
     from: CredentialIssuer;
@@ -176,6 +178,7 @@ export const sendBoost = async ({
     listingId?: string;
     credentialId?: string;
     atomicClaimLink?: boolean;
+    claimLinkOwnerToken?: string;
     onStorageStart?: () => void;
 }): Promise<string> => {
     return trace(
@@ -252,6 +255,14 @@ export const sendBoost = async ({
                 const transaction = session.beginTransaction();
                 let commitStarted = false;
                 try {
+                    if (credentialId) {
+                        if (!claimLinkOwnerToken) throw new Error('Claim-link owner is required');
+                        await lockClaimLinkRequestForStorage(
+                            transaction,
+                            credentialId,
+                            claimLinkOwnerToken
+                        );
+                    }
                     credentialInstance = await persistDelivery(transaction);
                     commitStarted = true;
                     await transaction.commit();
@@ -359,7 +370,8 @@ export const issueClaimLinkBoost = async (
     to: ProfileType,
     signingAuthorityForUser: SigningAuthorityForUserType,
     credentialId?: string,
-    onStorageStart?: () => void
+    onStorageStart?: () => void,
+    claimLinkOwnerToken?: string
 ): Promise<string> => {
     const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;
     const boostId = boost?.dataValues?.id;
@@ -396,6 +408,7 @@ export const issueClaimLinkBoost = async (
         autoAcceptCredential: true,
         credentialId,
         atomicClaimLink: true,
+        claimLinkOwnerToken,
         onStorageStart,
     });
 };

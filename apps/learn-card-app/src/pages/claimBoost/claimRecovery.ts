@@ -15,6 +15,8 @@ export type ClaimAttempt = {
     requestId: string;
     credentialUri?: string;
     saved: boolean;
+    synced?: boolean;
+    syncedContractTerms?: Set<string>;
     running: boolean;
     complete: boolean;
 };

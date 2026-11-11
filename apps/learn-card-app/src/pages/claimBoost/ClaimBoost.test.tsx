@@ -408,12 +408,38 @@ describe('ClaimBoost recovery', () => {
             fireEvent.click(refresh);
             await waitFor(() => expect(mocks.presentClaimSuccessToast).toHaveBeenCalledTimes(1));
             expect(observer.getCurrentResult().data).toEqual(['lc:credential:claimed']);
+            expect(mocks.syncCredentialToContracts).toHaveBeenCalledTimes(1);
             expect(mocks.claimBoostWithLink).toHaveBeenCalledTimes(1);
             expect(mocks.addVCtoWallet).toHaveBeenCalledTimes(1);
         } finally {
             unsubscribe();
             queryClient.clear();
         }
+    });
+
+    it('retains per-contract progress through a partial sync failure', async () => {
+        await renderClaim();
+        mocks.syncCredentialToContracts.mockImplementationOnce(
+            async (_input, _wallet, completed) => {
+                completed.add('successful-terms');
+                throw new Error('Another contract failed');
+            }
+        );
+        mocks.syncCredentialToContracts.mockImplementationOnce(
+            async (_input, _wallet, completed) => {
+                expect(completed).toEqual(new Set(['successful-terms']));
+                completed.add('retried-terms');
+                return true;
+            }
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+        const refresh = await screen.findByRole('button', { name: 'Refresh my collection' });
+        expect(mocks.presentClaimSuccessToast).not.toHaveBeenCalled();
+        fireEvent.click(refresh);
+        await waitFor(() => expect(mocks.presentClaimSuccessToast).toHaveBeenCalledTimes(1));
+        expect(mocks.syncCredentialToContracts).toHaveBeenCalledTimes(2);
+        expect(mocks.addVCtoWallet).toHaveBeenCalledTimes(1);
+        expect(mocks.claimBoostWithLink).toHaveBeenCalledTimes(1);
     });
 
     it('prevents double clicks and cancellation while the claim is in flight', async () => {

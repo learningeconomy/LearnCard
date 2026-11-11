@@ -518,10 +518,15 @@ const ClaimBoost: React.FC<{
                         await assertActive();
                         const record = await getSavedClaimRecord(wallet, credentialUri);
                         await assertActive();
-                        await syncCredentialToContracts(
-                            { record, category: record.category },
-                            wallet
-                        );
+                        if (!session.attempt.synced) {
+                            session.attempt.syncedContractTerms ??= new Set<string>();
+                            await syncCredentialToContracts(
+                                { record, category: record.category },
+                                wallet,
+                                session.attempt.syncedContractTerms
+                            );
+                            session.attempt.synced = true;
+                        }
                         await assertActive();
                         // Mark all of this actor's cached counts/lists stale without fetching
                         // unrelated categories or cache-only entries with no query function.

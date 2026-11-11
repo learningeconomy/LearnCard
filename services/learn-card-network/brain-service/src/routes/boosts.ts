@@ -4453,7 +4453,8 @@ export const boostsRouter = t.router({
                         : undefined,
                     () => {
                         storageStarted = true;
-                    }
+                    },
+                    claimRequest?.ownerToken
                 );
                 if (request) {
                     issuanceStage = 'reconciliation';
