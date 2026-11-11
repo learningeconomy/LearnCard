@@ -1,4 +1,5 @@
 import { ZodError } from 'zod';
+import { credentialFailureCodeOf } from '../credentials/batch';
 
 export const MCP_TOOLS = [
     'get_user_context',
@@ -75,6 +76,8 @@ export const withToolStage = async <T>(
 export type ToolFailureTags = {
     error_name?: string;
     error_code?: string;
+    cause_name?: string;
+    cause_code?: string;
     stage?: McpFailureStage;
 };
 
@@ -92,6 +95,14 @@ const readOwnString = (error: object, key: string): string | undefined => {
     if (!Object.prototype.hasOwnProperty.call(error, key)) return undefined;
     const value = (error as Record<string, unknown>)[key];
     return typeof value === 'string' ? value : undefined;
+};
+
+const readOwnToken = (error: object, key: string): string | undefined => {
+    if (!Object.prototype.hasOwnProperty.call(error, key)) return undefined;
+    const value = (error as Record<string, unknown>)[key];
+    if (typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value)))
+        return sanitizeDiagnosticToken(value);
+    return undefined;
 };
 
 const classifyErrorName = (error: object): string | undefined => {
@@ -121,6 +132,11 @@ const classifyErrorCode = (error: object): string | undefined => {
         const code = readOwnString(error, 'code');
         if (code) return sanitizeDiagnosticToken(code);
     }
+    if (named === 'CredentialVerificationUnavailableError') {
+        const subreason = readOwnString(error, 'verificationSubreason');
+        if (subreason) return sanitizeDiagnosticToken(subreason);
+    }
+    if (named === 'AbortError') return 'timeout';
     if (error instanceof ZodError) {
         const path = error.issues
             .map(issue => issue.path.map(String).join('.'))
@@ -129,7 +145,10 @@ const classifyErrorCode = (error: object): string | undefined => {
             .join(',');
         return sanitizeDiagnosticToken(path);
     }
-    return sanitizeDiagnosticToken(readOwnString(error, 'code') ?? readOwnString(error, 'Code'));
+    const ownCode = readOwnToken(error, 'code') ?? readOwnToken(error, 'Code');
+    if (ownCode) return ownCode;
+    const batchCode = credentialFailureCodeOf(error);
+    return batchCode && batchCode !== 'unknown' ? sanitizeDiagnosticToken(batchCode) : undefined;
 };
 
 export const classifyToolFailure = (error: unknown): ToolFailureTags => {
@@ -142,6 +161,13 @@ export const classifyToolFailure = (error: unknown): ToolFailureTags => {
         if (name) tags.error_name = name;
         const code = classifyErrorCode(inner);
         if (code) tags.error_code = code;
+        const cause = 'cause' in inner ? (inner as { cause?: unknown }).cause : undefined;
+        if (cause && typeof cause === 'object') {
+            const causeName = classifyErrorName(cause);
+            if (causeName) tags.cause_name = causeName;
+            const causeCode = classifyErrorCode(cause);
+            if (causeCode) tags.cause_code = causeCode;
+        }
     }
     return tags;
 };

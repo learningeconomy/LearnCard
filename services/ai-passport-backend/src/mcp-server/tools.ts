@@ -34,6 +34,8 @@ export const reportToolFailure = (tool: McpToolName, error: unknown): void => {
         mcpTool: tool,
         mcpErrorName: tags.error_name,
         mcpErrorCode: tags.error_code,
+        mcpCauseName: tags.cause_name,
+        mcpCauseCode: tags.cause_code,
         mcpStage: tags.stage,
     });
 };

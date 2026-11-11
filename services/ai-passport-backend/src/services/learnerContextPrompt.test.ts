@@ -79,6 +79,7 @@ const aiStubs = {
 // Load the real error class before replacing consent I/O. Production modules
 // below load only after Bun's module mocks have been registered.
 const { AiConsentError } = await import('../learncard/consent');
+const { CredentialVerificationUnavailableError } = await import('../credentials/verification');
 mock.module('../learncard/consent', () => ({
     AiConsentError,
     loadActiveAiConsentData: async (_learnCard: unknown, did: string) => {
@@ -94,7 +95,7 @@ mock.module('../learncard', () => ({ getLearnCard: async () => ({}) }));
 mock.module('../credentials/service', () => ({
     resolveVerifiedCredentialProjection: async (_did: string, uri: string) => {
         const projection = projections.get(uri);
-        if (!projection) throw new Error('private source dependency detail');
+        if (!projection) throw new CredentialVerificationUnavailableError('read_empty');
         return projection;
     },
 }));
@@ -444,11 +445,35 @@ describe('MCP answer/context consistency', () => {
         expect(answerInputs).toHaveLength(1);
     });
 
-    it('does not replace unavailable background evidence with retrieval-only success', async () => {
+    it('skips one unavailable shared-context credential and still returns the rest', async () => {
         addBackgroundEvidence();
         projections.delete('lc:network:design');
         searchResults = [arithmetic];
-        await expect(answer()).rejects.toMatchObject({ code: 'learner_context_unavailable' });
+        const context = await runWithAiPrivacyContext(OWNER, () => getLatestUserSummary(OWNER));
+        expect(context).toContain('AI Summary: experienced in visual design');
+        expect(context).toContain('TypeScript Foundations');
+        expect(context).not.toContain('Product design background');
+        await answer();
+        expect(answerInputs).toHaveLength(1);
+        expect(answerInputs[0]).toContain('AI Summary: experienced in visual design');
+        expect(answerInputs[0]).not.toContain('Product design background');
+    });
+
+    it('fails shared context when every consented credential is unavailable and keeps the cause', async () => {
+        currentReceipt = {
+            ...receipt,
+            credentialUris: ['lc:network:bad-1', 'lc:network:bad-2'],
+        };
+        projections.clear();
+        await expect(
+            runWithAiPrivacyContext(OWNER, () => getLatestUserSummary(OWNER))
+        ).rejects.toMatchObject({
+            code: 'learner_context_unavailable',
+            cause: {
+                name: 'CredentialVerificationUnavailableError',
+                verificationSubreason: 'read_empty',
+            },
+        });
         expect(answerInputs).toHaveLength(0);
     });
 

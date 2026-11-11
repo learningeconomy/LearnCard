@@ -74,11 +74,53 @@ test('drops unsafe tokens rather than passing them through', () => {
     ).not.toContain('did:example');
 });
 
+test('keeps allowlisted cause name and code from a wrapped dependency error', () => {
+    const cause = namedError('CredentialVerificationUnavailableError', {
+        verificationSubreason: 'read_empty',
+    });
+    const wrapped = namedError('LearnerContextPromptError', {
+        code: 'learner_context_unavailable',
+        cause,
+    });
+    expect(classifyToolFailure(wrapped)).toEqual({
+        error_name: 'LearnerContextPromptError',
+        error_code: 'learner_context_unavailable',
+        cause_name: 'CredentialVerificationUnavailableError',
+        cause_code: 'read_empty',
+    });
+    expect(
+        classifyToolFailure(namedError('AbortError', { cause: namedError('AbortError') }))
+    ).toEqual({
+        error_name: 'AbortError',
+        error_code: 'timeout',
+        cause_name: 'AbortError',
+        cause_code: 'timeout',
+    });
+    const mongo = namedError('LearnerContextPromptError', {
+        code: 'learner_context_unavailable',
+        cause: namedError('MongoServerError', { code: 50 }),
+    });
+    expect(classifyToolFailure(mongo)).toEqual({
+        error_name: 'LearnerContextPromptError',
+        error_code: 'learner_context_unavailable',
+        cause_name: 'MongoServerError',
+        cause_code: '50',
+    });
+    const leaked = namedError('LearnerContextPromptError', {
+        code: 'learner_context_unavailable',
+        cause: namedError(`leak ${PRIVATE}`, { message: PRIVATE }),
+    });
+    expect(JSON.stringify(classifyToolFailure(leaked))).not.toContain('did:example');
+    expect(JSON.stringify(classifyToolFailure(leaked))).not.toContain(PRIVATE);
+});
+
 test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', () => {
     const tags = pickAllowlistedMcpFailureTags({
         tool: 'get_user_context',
         error_name: 'AccessDenied',
         error_code: 'AccessDenied',
+        cause_name: 'CredentialVerificationUnavailableError',
+        cause_code: 'read_empty',
         stage: 'llm',
         user: PRIVATE,
         message: PRIVATE,
@@ -87,6 +129,8 @@ test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', 
         tool: 'get_user_context',
         error_name: 'AccessDenied',
         error_code: 'AccessDenied',
+        cause_name: 'CredentialVerificationUnavailableError',
+        cause_code: 'read_empty',
         stage: 'llm',
     });
 
@@ -103,6 +147,8 @@ test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', 
                 tool: 'get_answer_about_user',
                 error_name: 'AiConsentError',
                 error_code: 'guardian_required',
+                cause_name: 'MongoServerError',
+                cause_code: '50',
                 stage: 'consent',
                 leaked: PRIVATE,
             },
@@ -120,6 +166,8 @@ test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', 
             tool: 'get_answer_about_user',
             error_name: 'AiConsentError',
             error_code: 'guardian_required',
+            cause_name: 'MongoServerError',
+            cause_code: '50',
             stage: 'consent',
         },
     });

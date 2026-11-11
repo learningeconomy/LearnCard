@@ -23,6 +23,10 @@ export const pickAllowlistedMcpFailureTags = (
     if (errorName) allowlisted.error_name = errorName;
     const errorCode = sanitizeDiagnosticToken(tags.error_code);
     if (errorCode) allowlisted.error_code = errorCode;
+    const causeName = sanitizeDiagnosticToken(tags.cause_name);
+    if (causeName) allowlisted.cause_name = causeName;
+    const causeCode = sanitizeDiagnosticToken(tags.cause_code);
+    if (causeCode) allowlisted.cause_code = causeCode;
     if (isMcpStage(tags.stage)) allowlisted.stage = tags.stage;
     return Object.keys(allowlisted).length > 0 ? allowlisted : undefined;
 };

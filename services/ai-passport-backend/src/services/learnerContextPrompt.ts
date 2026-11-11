@@ -54,24 +54,29 @@ export class LearnerContextPromptError extends Error {
     constructor(
         readonly status: 401 | 403 | 503,
         readonly code: string,
-        message: string
+        message: string,
+        options?: { cause?: unknown }
     ) {
-        super(message);
+        super(message, options);
         this.name = 'LearnerContextPromptError';
     }
 }
+
+export const rethrowLearnerContextDependency = (error: unknown): never => {
+    if (error instanceof AiConsentError || error instanceof LearnerContextPromptError) throw error;
+    throw new LearnerContextPromptError(
+        503,
+        'learner_context_unavailable',
+        'Learner context service is unavailable',
+        { cause: error }
+    );
+};
 
 const dependency = async <T>(operation: () => Promise<T>): Promise<T> => {
     try {
         return await operation();
     } catch (error) {
-        if (error instanceof AiConsentError || error instanceof LearnerContextPromptError)
-            throw error;
-        throw new LearnerContextPromptError(
-            503,
-            'learner_context_unavailable',
-            'Learner context service is unavailable'
-        );
+        rethrowLearnerContextDependency(error);
     }
 };
 
