@@ -75,7 +75,7 @@ class NativeDigitalCredentialsPlugin : Plugin() {
                 require(provider.pendingRequest()?.getString("requestId") == call.getString("requestId"))
                 val token = ProviderAuthCallbacks.begin(provider,
                     call.getString("callbackUrlPrefix") ?: error("Missing callback"),
-                    call.getLong("timeoutMs") ?: 300_000L)
+                    authCallbackTimeout(call.data.opt("timeoutMs")))
                 call.resolve(JSObject().put("token", token) as JSObject)
             } catch (_: Exception) { call.reject("Could not start sign-in", "auth_unavailable") }
         }

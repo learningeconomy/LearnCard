@@ -4,6 +4,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AuthCallbackSessionTest {
+    @Test fun honorsJsonIntegerTimeoutsIncludingInteractiveSignInAndRejectsInvalidInput() {
+        assertEquals(1000L, authCallbackTimeout(org.json.JSONObject("{\"timeoutMs\":1000}").get("timeoutMs")))
+        assertEquals(600_000L, authCallbackTimeout(org.json.JSONObject("{\"timeoutMs\":600000}").get("timeoutMs")))
+        for (invalid in listOf(null, "1000", 1000.5, 0, -1, 600_001)) {
+            assertTrue(runCatching { authCallbackTimeout(invalid) }.isFailure)
+        }
+    }
+
     @Test fun routesOnlyToTheWaitingOwnerAndChecksExactCallbackRoute() {
         val sessions = AuthCallbackSession<String>()
         val token = sessions.begin("provider-a", "com.learncard.app://login", 1000)

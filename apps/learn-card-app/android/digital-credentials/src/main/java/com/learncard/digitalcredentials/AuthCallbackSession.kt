@@ -3,6 +3,14 @@ package com.learncard.digitalcredentials
 import java.net.URI
 import java.util.UUID
 
+/** Capacitor getLong ignores JSON Integer values; parse the bounded integer explicitly. */
+internal fun authCallbackTimeout(value: Any?): Long {
+    require(value is Int || value is Long) { "Invalid timeout" }
+    val timeout = (value as Number).toLong()
+    require(timeout in 1..600_000) { "Invalid timeout" }
+    return timeout
+}
+
 /** One activity owns a browser callback. Tokens fence cleanup from an older sign-in attempt. */
 internal class AuthCallbackSession<T>(private val now: () -> Long = System::currentTimeMillis) {
     private data class Session<T>(val token: String, val owner: T, val callback: URI, val expiresAt: Long)
