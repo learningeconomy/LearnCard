@@ -99,7 +99,10 @@ class FakeWebSocket {
     onclose: SocketHandler = null;
     onerror: SocketHandler = null;
 
-    constructor(readonly url: string, readonly protocols?: string | string[]) {
+    constructor(
+        readonly url: string,
+        readonly protocols?: string | string[]
+    ) {
         FakeWebSocket.instances.push(this);
     }
 
@@ -231,16 +234,24 @@ describe('chat session startup', () => {
         const socket = await openLatestSocket();
         await start;
         socket.receive({ event: 'session_start_accepted', requestId: 'request-preload' });
+        messages.set([
+            { role: 'user', content: 'Algebra' },
+            { role: 'assistant', content: 'Working on a plan...' },
+        ]);
+        const messagesBeforeError = messages.get();
         socket.receive({
             event: 'credential_preload_error',
             code: 'credential_verification_unavailable',
         });
 
         expect(credentialPreloadUnavailable.get()).toBe(true);
+        expect(messages.get()).toEqual(messagesBeforeError);
         expect(isLoading.get()).toBe(true);
         expect(isTyping.get()).toBe(true);
         expect(planReady.get()).toBe(false);
+        expect(sessionEnded.get()).toBe(false);
         expect(lastAiError.get()).toBe(null);
+        expect(mocks.showErrorModal).not.toHaveBeenCalled();
         socket.receive({
             event: 'plan_structured_delta',
             requestId: 'request-preload',
@@ -255,10 +266,15 @@ describe('chat session startup', () => {
         expect(planReady.get()).toBe(true);
         expect(planSections.get().welcome).toBe('Welcome to Algebra');
         expect(credentialPreloadUnavailable.get()).toBe(true);
+        const messagesBeforeReady = messages.get();
 
         socket.receive({ event: 'credentials_ready', suggestedTopics: ['Algebra'] });
         expect(credentialPreloadUnavailable.get()).toBe(false);
         expect(planReady.get()).toBe(true);
+        expect(messages.get()).toEqual(messagesBeforeReady);
+        expect(sessionEnded.get()).toBe(false);
+        expect(lastAiError.get()).toBe(null);
+        expect(mocks.showErrorModal).not.toHaveBeenCalled();
     });
 
     it('does not carry preload warnings across accounts or accept stale socket warnings', async () => {
