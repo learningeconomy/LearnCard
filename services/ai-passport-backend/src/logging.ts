@@ -395,7 +395,7 @@ export const logSafeEvent = (
             event.mcpTool = metrics.mcpTool;
         if (
             typeof metrics.mcpRequestId === 'string' &&
-            /^[A-Za-z0-9_.-]{1,64}$/.test(metrics.mcpRequestId)
+            /^req_[A-Za-z0-9]{8,32}$/.test(metrics.mcpRequestId)
         )
             event.mcpRequestId = metrics.mcpRequestId;
         if (

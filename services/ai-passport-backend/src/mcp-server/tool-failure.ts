@@ -21,16 +21,65 @@ export type McpToolName = (typeof MCP_TOOLS)[number];
 export const MCP_FAILURE_STAGES = ['consent', 'learnercontext', 'pseudonymize', 'llm'] as const;
 export type McpFailureStage = (typeof MCP_FAILURE_STAGES)[number];
 
-const SAFE_TOKEN = /^[A-Za-z0-9_.-]{1,64}$/;
+const DIAGNOSTIC_TOKENS = new Set([
+    'AbortError',
+    'AccessDenied',
+    'AiConsentError',
+    'BedrockConfigurationError',
+    'CredentialBatchEmptyError',
+    'CredentialVerificationUnavailableError',
+    'Error',
+    'InvalidCredentialError',
+    'LearnCardTimeoutError',
+    'LearnerContextPromptError',
+    'MongoNetworkError',
+    'MongoServerError',
+    'StagedToolError',
+    'TimeoutError',
+    'UnrecoverableError',
+    'ZodError',
+    'all_skipped',
+    'authentication_required',
+    'consent_changed',
+    'credential_invalid',
+    'credential_projection_failed',
+    'credential_revoked',
+    'credential_verification_unavailable',
+    'expired',
+    'guardian_required',
+    'invalid_signature',
+    'learner_context_unavailable',
+    'missing',
+    'projection_failed',
+    'question',
+    'read_empty',
+    'read_failed',
+    'read_unauthorized',
+    'revoked',
+    'source_cleanup_busy',
+    'source_cleanup_lease_expired',
+    'source_cleanup_pending',
+    'source_cleanup_pending_ingest',
+    'source_cleanup_scope_changed',
+    'summary',
+    'timeout',
+    'unavailable',
+    'unknown',
+    'unrecognized',
+    'verification_equation_unsatisfied',
+    'verify_errors',
+    '50',
+    '89',
+    '401',
+    '403',
+    '503',
+    '11000',
+]);
 
 export const sanitizeDiagnosticToken = (value: unknown): string | undefined => {
     if (typeof value !== 'string' && typeof value !== 'number') return undefined;
     const raw = String(value);
-    // Colon-bearing values include DIDs (`did:example:...`); drop them instead of
-    // stripping punctuation and keeping the rest.
-    if (/did:/i.test(raw)) return undefined;
-    const cleaned = raw.replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 64);
-    return SAFE_TOKEN.test(cleaned) ? cleaned : undefined;
+    return DIAGNOSTIC_TOKENS.has(raw) ? raw : undefined;
 };
 
 const STAGE_KEY = Symbol.for('mcp.toolFailureStage');

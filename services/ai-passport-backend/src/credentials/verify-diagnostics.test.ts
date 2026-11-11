@@ -9,25 +9,18 @@ import {
     withCauseStep,
 } from './verify-diagnostics';
 
-test('redacts DIDs, URLs, emails, UUIDs, long hex and base64, then truncates', () => {
-    const uuid = '550e8400-e29b-41d4-a716-446655440000';
-    const hex = 'a'.repeat(40);
-    const b64 = `${'A'.repeat(40)}==`;
+test('maps known verifier messages to codes and drops unknown prose', () => {
+    expect(sanitizeVerifyDiagnosticText('Invalid signature')).toBe('invalid_signature');
     expect(
-        sanitizeVerifyDiagnosticText(
-            `signature error for did:example:issuer at https://status.example/list#1 mailed to user@example.com id ${uuid} ${hex} ${b64}`
-        )
-    ).toBe('signature error for [did] at [url] mailed to [email] id [uuid] [hex] [b64]');
-    expect(sanitizeVerifyDiagnosticText(`did:example:only`)).toBe('[did]');
-    expect(sanitizeVerifyDiagnosticText(`http://insecure.example/x`)).toBe('[url]');
-    const long = `proof failed because ${'the check repeated '.repeat(12)}`;
-    const truncated = sanitizeVerifyDiagnosticText(long);
-    expect(truncated?.startsWith('proof failed because ')).toBe(true);
-    expect(truncated?.endsWith('...')).toBe(true);
-    expect(truncated?.length).toBe(123);
+        sanitizeVerifyDiagnosticText('signature error: Verification equation was not satisfied')
+    ).toBe('verification_equation_unsatisfied');
+    expect(sanitizeVerifyDiagnosticText('Source cleanup busy; retry')).toBe('source_cleanup_busy');
+    expect(sanitizeVerifyDiagnosticText('did:example:only')).toBe('unrecognized');
+    expect(sanitizeVerifyDiagnosticText('http://insecure.example/x')).toBe('unrecognized');
+    expect(sanitizeCauseMessage('source_cleanup_busy')).toBe('source_cleanup_busy');
 });
 
-test('caps sanitized lists at five entries and drops empty redactions', () => {
+test('caps sanitized lists at five entries and drops empty values', () => {
     expect(
         sanitizeVerifyDiagnosticList([
             'Invalid signature',
@@ -41,10 +34,16 @@ test('caps sanitized lists at five entries and drops empty redactions', () => {
             'fifth-should-fit',
             'sixth-should-drop',
         ])
-    ).toEqual(['Invalid signature', '[did]', 'Credential is revoked.', 'second', 'third']);
+    ).toEqual([
+        'invalid_signature',
+        'unrecognized',
+        'credential_revoked',
+        'unrecognized',
+        'unrecognized',
+    ]);
 });
 
-test('attached diagnostics keep sanitized verify strings and the outer kind', () => {
+test('attached diagnostics keep mapped verify codes and the outer kind', () => {
     const inner = attachVerifyFailureDiagnostics(new Error('inner'), {
         kind: 'verify_errors',
         checks: ['proof', 'not-a-check', 'credentialStatus'],
@@ -61,19 +60,16 @@ test('attached diagnostics keep sanitized verify strings and the outer kind', ()
     expect(readVerifyFailureDiagnostics(outer)).toEqual({
         kind: 'all_skipped',
         checks: ['proof', 'credentialStatus'],
-        errors: ['signature error: Verification equation was not satisfied', 'issuer [did]'],
-        warnings: ['status [url]'],
+        errors: ['verification_equation_unsatisfied', 'unrecognized'],
+        warnings: ['unrecognized'],
         skipCounts: { unknown: 2 },
     });
 });
 
-test('sanitized cause messages cap at 160 characters and redact identifiers', () => {
+test('unknown cause messages become unrecognized instead of redacted prose', () => {
     const long = `did:example:issuer proof failed because ${'the check repeated '.repeat(20)}`;
-    const sanitized = sanitizeCauseMessage(long);
-    expect(sanitized?.includes('[did]')).toBe(true);
-    expect(sanitized?.endsWith('...')).toBe(true);
-    expect(sanitized?.length).toBe(163);
-    expect(sanitized).not.toContain('did:example');
+    expect(sanitizeCauseMessage(long)).toBe('unrecognized');
+    expect(sanitizeCauseMessage('Source cleanup busy; retry')).toBe('source_cleanup_busy');
 });
 
 test('sanitized cause frames keep only the function name and file basename', () => {

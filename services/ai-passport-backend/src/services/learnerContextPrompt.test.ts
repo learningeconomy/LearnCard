@@ -562,7 +562,7 @@ describe('MCP answer/context consistency', () => {
         const { classifyToolFailure } = await import('../mcp-server/tool-failure');
         const tags = classifyToolFailure(failure);
         expect(tags.cause_step).toBe('uri_list');
-        expect(tags.cause_message).toBe('shared uri listing failed for [did]');
+        expect(tags.cause_message).toBe('unrecognized');
         expect(tags.cause_dependency).toBe('verify');
         expect(JSON.stringify(tags)).not.toContain('did:example');
     });
@@ -585,7 +585,7 @@ describe('MCP answer/context consistency', () => {
         const { classifyToolFailure } = await import('../mcp-server/tool-failure');
         const tags = classifyToolFailure(failure);
         expect(tags.cause_step).toBe('projection');
-        expect(tags.cause_message).toBe('consent snapshot reuse failed for [did]');
+        expect(tags.cause_message).toBe('unrecognized');
         expect(tags.verify_failure_kind).toBeUndefined();
         expect(JSON.stringify(tags)).not.toContain('did:example');
     });

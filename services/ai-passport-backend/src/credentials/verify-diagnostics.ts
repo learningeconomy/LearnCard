@@ -1,6 +1,12 @@
 import { getMcpProgress } from '../diagnostics/mcp-progress';
+import {
+    SOURCE_CLEANUP_BUSY_MESSAGE,
+    SOURCE_CLEANUP_LEASE_EXPIRED_MESSAGE,
+    SOURCE_CLEANUP_PENDING_INGEST_MESSAGE,
+    SOURCE_CLEANUP_PENDING_MESSAGE,
+    SOURCE_CLEANUP_SCOPE_CHANGED_MESSAGE,
+} from '../db/source-cleanup';
 
-const MAX_ENTRY_CHARS = 120;
 const MAX_ENTRIES = 5;
 const DIAGNOSTICS_KEY = Symbol.for('mcp.verifyDiagnostics');
 
@@ -44,24 +50,53 @@ const isVerifyFailureKind = (value: unknown): value is VerifyFailureKind =>
 const isSafeVerifyCheck = (value: unknown): value is SafeVerifyCheck =>
     typeof value === 'string' && (SAFE_VERIFY_CHECKS as readonly string[]).includes(value);
 
-/** Redact identifiers from verifier text and bound the result for logs. */
-export const sanitizeVerifyDiagnosticText = (
-    value: unknown,
-    maxChars = MAX_ENTRY_CHARS
-): string | undefined => {
+export const SAFE_CAUSE_MESSAGE_CODES = [
+    'unrecognized',
+    'source_cleanup_busy',
+    'source_cleanup_lease_expired',
+    'source_cleanup_pending',
+    'source_cleanup_pending_ingest',
+    'source_cleanup_scope_changed',
+    'invalid_signature',
+    'verification_equation_unsatisfied',
+    'credential_revoked',
+    'consent_changed',
+] as const;
+export type SafeCauseMessageCode = (typeof SAFE_CAUSE_MESSAGE_CODES)[number];
+
+const normalizeDiagnosticText = (value: string): string => value.replace(/\s+/g, ' ').trim();
+
+const CAUSE_MESSAGE_BY_TEXT = new Map<string, SafeCauseMessageCode>(
+    (
+        [
+            [SOURCE_CLEANUP_BUSY_MESSAGE, 'source_cleanup_busy'],
+            [SOURCE_CLEANUP_LEASE_EXPIRED_MESSAGE, 'source_cleanup_lease_expired'],
+            [SOURCE_CLEANUP_PENDING_MESSAGE, 'source_cleanup_pending'],
+            [SOURCE_CLEANUP_PENDING_INGEST_MESSAGE, 'source_cleanup_pending_ingest'],
+            [SOURCE_CLEANUP_SCOPE_CHANGED_MESSAGE, 'source_cleanup_scope_changed'],
+            ['Consent changed during this operation', 'consent_changed'],
+            ['Invalid signature', 'invalid_signature'],
+            [
+                'signature error: Verification equation was not satisfied',
+                'verification_equation_unsatisfied',
+            ],
+            ['Verification equation was not satisfied', 'verification_equation_unsatisfied'],
+            ['Credential is revoked.', 'credential_revoked'],
+            ['Credential is revoked', 'credential_revoked'],
+        ] as const
+    ).map(([text, code]) => [normalizeDiagnosticText(text), code])
+);
+
+const isSafeCauseMessageCode = (value: string): value is SafeCauseMessageCode =>
+    (SAFE_CAUSE_MESSAGE_CODES as readonly string[]).includes(value);
+
+/** Map known verifier/app messages to codes. Unknown prose becomes unrecognized. */
+export const sanitizeVerifyDiagnosticText = (value: unknown): string | undefined => {
     if (typeof value !== 'string') return undefined;
-    const limit = Number.isInteger(maxChars) && maxChars > 0 ? maxChars : MAX_ENTRY_CHARS;
-    const text = value
-        .replace(/\bdid:[^\s]+/gi, '[did]')
-        .replace(/\bhttps?:\/\/[^\s]+/gi, '[url]')
-        .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[email]')
-        .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, '[uuid]')
-        .replace(/\b[0-9a-f]{32,}\b/g, '[hex]')
-        .replace(/\b[A-Za-z0-9+/]{40,}={0,2}(?![A-Za-z0-9+/=])/g, '[b64]')
-        .replace(/\s+/g, ' ')
-        .trim();
+    const text = normalizeDiagnosticText(value);
     if (!text) return undefined;
-    return text.length > limit ? `${text.slice(0, limit)}...` : text;
+    if (isSafeCauseMessageCode(text)) return text;
+    return CAUSE_MESSAGE_BY_TEXT.get(text) ?? 'unrecognized';
 };
 
 export const sanitizeVerifyDiagnosticList = (values: unknown): string[] => {
@@ -184,13 +219,11 @@ export const CAUSE_STEPS = [
 export type CauseStep = (typeof CAUSE_STEPS)[number];
 
 const CAUSE_STEP_KEY = Symbol.for('mcp.causeStep');
-const CAUSE_MESSAGE_CHARS = 160;
-
 export const isCauseStep = (value: unknown): value is CauseStep =>
     typeof value === 'string' && (CAUSE_STEPS as readonly string[]).includes(value);
 
 export const sanitizeCauseMessage = (value: unknown): string | undefined =>
-    sanitizeVerifyDiagnosticText(value, CAUSE_MESSAGE_CHARS);
+    sanitizeVerifyDiagnosticText(value);
 
 const sanitizeFrameName = (value: string): string | undefined => {
     const cleaned = value.replace(/^Object\./, '').replace(/[^A-Za-z0-9_$.<>]/g, '');

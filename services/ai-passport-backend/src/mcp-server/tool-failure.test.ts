@@ -12,7 +12,7 @@ const namedError = (name: string, extras: Record<string, unknown> = {}, message 
         stack: `${name}: ${message}\n    at node:internal/process:1:1`,
         ...extras,
     });
-const SANITIZED_PRIVATE = '[did] SYNTHETIC_STACK';
+const SANITIZED_PRIVATE = 'unrecognized';
 
 test('classifies allowlisted consent and learner-context codes without reading messages', () => {
     expect(classifyToolFailure(namedError('AiConsentError', { reason: 'revoked' }))).toEqual({
@@ -224,12 +224,8 @@ test('the verify-failure path produces a cause code plus sanitized errors', () =
         cause_dependency: 'verify',
         verify_failure_kind: 'verify_errors',
         verify_checks: ['proof'],
-        verify_errors: [
-            'signature error: Verification equation was not satisfied',
-            'issuer [did] mailed [email] see [url]',
-            'id [uuid]',
-        ],
-        verify_warnings: ['[url]'],
+        verify_errors: ['verification_equation_unsatisfied', 'unrecognized', 'unrecognized'],
+        verify_warnings: ['unrecognized'],
         cause_message: SANITIZED_PRIVATE,
     });
     expect(JSON.stringify(tags)).not.toContain('did:example');
@@ -267,7 +263,7 @@ test('step labels and a sanitized cause message come through from a wrapped veri
         cause_code: 'unknown',
         cause_dependency: 'verify',
         cause_step: 'uri_list',
-        cause_message: 'consent snapshot reuse failed for [did] see [url]',
+        cause_message: 'unrecognized',
         cause_frame: 'settleCredentialBatch@batch.ts',
     });
     expect(JSON.stringify(tags)).not.toContain('did:example');
@@ -307,7 +303,7 @@ test('Sentry keeps the cause step as a tag and the sanitized message in extra', 
         cause_step: 'uri_list',
     });
     expect(scrubbed.extra).toEqual({
-        mcpCauseMessage: 'consent snapshot reuse failed for [did]',
+        mcpCauseMessage: 'unrecognized',
         mcpCauseFrame: 'settleCredentialBatch@batch.ts',
     });
     expect(JSON.stringify(scrubbed)).not.toContain(PRIVATE);
@@ -404,12 +400,77 @@ test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', 
         verify_failure_kind: 'verify_errors',
     });
     expect(scrubbed.extra).toEqual({
-        mcpVerifyErrors: [
-            'signature error: Verification equation was not satisfied',
-            'issuer [did]',
-        ],
+        mcpVerifyErrors: ['verification_equation_unsatisfied', 'unrecognized'],
         mcpVerifyChecks: ['proof'],
     });
     expect(JSON.stringify(scrubbed)).not.toContain(PRIVATE);
     expect(JSON.stringify(scrubbed)).not.toContain('did:example');
+});
+
+test('Sentry and classified failures drop names, phones, secrets and credential prose', () => {
+    const leaked =
+        'Invalid credential for Alice Smith; phone 202-555-0123; student ID stu_12345; token secret-short-token; mailed user@example.com did:example:alice Completed Algebra at Lincoln High';
+    const cause = attachVerifyFailureDiagnostics(
+        namedError(
+            'InvalidCredentialError',
+            { message: leaked, code: 'credential_invalid' },
+            leaked
+        ),
+        {
+            kind: 'verify_errors',
+            checks: ['proof'],
+            errors: [leaked, 'Invalid signature'],
+            warnings: [leaked],
+        }
+    );
+    const wrapped = namedError('LearnerContextPromptError', {
+        code: 'learner_context_unavailable',
+        dependency: 'verify',
+        cause,
+    });
+    const tags = classifyToolFailure(wrapped);
+    expect(tags.cause_message).toBe('unrecognized');
+    expect(tags.verify_errors).toEqual(['unrecognized', 'invalid_signature']);
+    expect(tags.verify_warnings).toEqual(['unrecognized']);
+    const payload = JSON.stringify(tags);
+    expect(payload).not.toContain('Alice Smith');
+    expect(payload).not.toContain('202-555-0123');
+    expect(payload).not.toContain('stu_12345');
+    expect(payload).not.toContain('secret-short-token');
+    expect(payload).not.toContain('user@example.com');
+    expect(payload).not.toContain('did:example');
+    expect(payload).not.toContain('Lincoln High');
+
+    const scrubbed = scrubMcpSentryEvent(
+        {
+            event_id: 'd'.repeat(32),
+            message: leaked,
+            extra: {
+                mcpCauseMessage: leaked,
+                mcpVerifyErrors: [leaked, 'Source cleanup busy; retry'],
+                mcpVerifyWarnings: [leaked],
+                mcpCauseFrame: 'withSourceCleanupLease@index.ts',
+            },
+            tags: {
+                tool: 'get_user_context',
+                error_name: 'LearnerContextPromptError',
+                leaked,
+            },
+        } as never,
+        { attachments: [] }
+    );
+    const sentry = JSON.stringify(scrubbed);
+    expect(scrubbed.extra).toEqual({
+        mcpCauseMessage: 'unrecognized',
+        mcpVerifyErrors: ['unrecognized', 'source_cleanup_busy'],
+        mcpVerifyWarnings: ['unrecognized'],
+        mcpCauseFrame: 'withSourceCleanupLease@index.ts',
+    });
+    expect(sentry).not.toContain('Alice Smith');
+    expect(sentry).not.toContain('202-555-0123');
+    expect(sentry).not.toContain('stu_12345');
+    expect(sentry).not.toContain('secret-short-token');
+    expect(sentry).not.toContain('user@example.com');
+    expect(sentry).not.toContain('did:example');
+    expect(sentry).not.toContain('Lincoln High');
 });

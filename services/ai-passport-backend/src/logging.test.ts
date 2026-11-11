@@ -512,7 +512,9 @@ describe('credential batch events', () => {
 test('request_failed keeps sanitized MCP verify diagnostics and drops raw verifier text', () => {
     const output: unknown[] = [];
     const originalError = console.error;
+    const originalInfo = console.info;
     console.error = ((...data: unknown[]) => output.push(...data)) as typeof console.error;
+    console.info = ((...data: unknown[]) => output.push(...data)) as typeof console.info;
     try {
         logSafeEvent('error', 'request_failed', {
             mcpTool: 'get_user_context',
@@ -549,15 +551,12 @@ test('request_failed keeps sanitized MCP verify diagnostics and drops raw verifi
             mcpCauseCode: 'all_skipped',
             mcpCauseDependency: 'verify',
             mcpCauseStep: 'uri_list',
-            mcpCauseMessage: 'consent snapshot reuse failed for [did] see [url]',
+            mcpCauseMessage: 'unrecognized',
             mcpCauseFrame: 'settleCredentialBatch@batch.ts',
             mcpStage: 'learnercontext',
             mcpVerifyFailureKind: 'all_skipped',
-            mcpVerifyErrors: [
-                'signature error: Verification equation was not satisfied',
-                'issuer [did]',
-            ],
-            mcpVerifyWarnings: ['[url]'],
+            mcpVerifyErrors: ['verification_equation_unsatisfied', 'unrecognized'],
+            mcpVerifyWarnings: ['unrecognized'],
             mcpVerifyChecks: ['proof'],
             mcpSkipCounts: { unknown: 2 },
         },
@@ -611,4 +610,61 @@ test('mcp tool start and progress keep only the tool, request id, step and stage
     ]);
     expect(JSON.stringify(output)).not.toContain('did:example');
     expect(JSON.stringify(output)).not.toContain('SYNTHETIC_STACK');
+});
+
+test('request_failed drops names, phones, secrets and credential prose from logger payloads', () => {
+    const leaked =
+        'Invalid credential for Alice Smith; phone 202-555-0123; student ID stu_12345; token secret-short-token; mailed user@example.com did:example:alice Completed Algebra at Lincoln High';
+    const output: unknown[] = [];
+    const originalError = console.error;
+    const originalInfo = console.info;
+    console.error = ((...data: unknown[]) => output.push(...data)) as typeof console.error;
+    console.info = ((...data: unknown[]) => output.push(...data)) as typeof console.info;
+    try {
+        logSafeEvent('error', 'request_failed', {
+            mcpTool: 'get_user_context',
+            mcpCauseMessage: leaked,
+            mcpVerifyErrors: [leaked, 'Invalid signature'],
+            mcpVerifyWarnings: [leaked],
+            mcpCauseFrame: 'withSourceCleanupLease@index.ts',
+        });
+        logSafeEvent('info', 'mcp_tool_started', {
+            mcpTool: 'get_user_context',
+            mcpRequestId: leaked,
+        });
+        logSafeEvent('info', 'mcp_tool_progress', {
+            mcpTool: 'get_user_context',
+            mcpRequestId: 'req_abcdef0123456789',
+            mcpCauseStep: 'projection',
+            mcpStage: 'learnercontext',
+            ...({ message: leaked } as object),
+        });
+    } finally {
+        console.error = originalError;
+        console.info = originalInfo;
+    }
+    expect(output[0]).toEqual({
+        event: 'request_failed',
+        mcpTool: 'get_user_context',
+        mcpCauseMessage: 'unrecognized',
+        mcpVerifyErrors: ['unrecognized', 'invalid_signature'],
+        mcpVerifyWarnings: ['unrecognized'],
+        mcpCauseFrame: 'withSourceCleanupLease@index.ts',
+    });
+    expect(output[1]).toEqual({ event: 'mcp_tool_started', mcpTool: 'get_user_context' });
+    expect(output[2]).toEqual({
+        event: 'mcp_tool_progress',
+        mcpTool: 'get_user_context',
+        mcpRequestId: 'req_abcdef0123456789',
+        mcpCauseStep: 'projection',
+        mcpStage: 'learnercontext',
+    });
+    const payload = JSON.stringify(output);
+    expect(payload).not.toContain('Alice Smith');
+    expect(payload).not.toContain('202-555-0123');
+    expect(payload).not.toContain('stu_12345');
+    expect(payload).not.toContain('secret-short-token');
+    expect(payload).not.toContain('user@example.com');
+    expect(payload).not.toContain('did:example');
+    expect(payload).not.toContain('Lincoln High');
 });
