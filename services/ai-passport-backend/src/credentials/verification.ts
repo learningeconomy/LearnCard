@@ -305,7 +305,7 @@ const verifyCredential = async ({
         errors.push('credential_subject_mismatch');
     }
 
-    const completed = {
+    const completed: CredentialVerificationMetadata = {
         ...metadata,
         status: errors.length > 0 ? 'invalid' : 'valid',
         verifiedPayload: verificationPayload.verifiedPayload,

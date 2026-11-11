@@ -28,6 +28,14 @@ export type VerifyFailureDiagnostics = {
     skipCounts?: Record<string, number>;
 };
 
+export type VerifyFailureDiagnosticsInput = {
+    kind: VerifyFailureKind;
+    checks?: readonly string[];
+    errors?: readonly unknown[];
+    warnings?: readonly unknown[];
+    skipCounts?: Record<string, number>;
+};
+
 const isVerifyFailureKind = (value: unknown): value is VerifyFailureKind =>
     typeof value === 'string' && (VERIFY_FAILURE_KINDS as readonly string[]).includes(value);
 
@@ -78,7 +86,9 @@ export const sanitizeSkipCounts = (value: unknown): Record<string, number> | und
     return Object.keys(counts).length > 0 ? counts : undefined;
 };
 
-const sanitizeDiagnostics = (diagnostics: VerifyFailureDiagnostics): VerifyFailureDiagnostics => ({
+const sanitizeDiagnostics = (
+    diagnostics: VerifyFailureDiagnosticsInput
+): VerifyFailureDiagnostics => ({
     kind: diagnostics.kind,
     ...(diagnostics.checks && diagnostics.checks.length > 0
         ? { checks: sanitizeVerifyChecks(diagnostics.checks) }
@@ -96,7 +106,7 @@ const sanitizeDiagnostics = (diagnostics: VerifyFailureDiagnostics): VerifyFailu
 
 export const attachVerifyFailureDiagnostics = <Target>(
     target: Target,
-    diagnostics: VerifyFailureDiagnostics
+    diagnostics: VerifyFailureDiagnosticsInput
 ): Target => {
     if (!target || typeof target !== 'object' || !isVerifyFailureKind(diagnostics.kind))
         return target;
