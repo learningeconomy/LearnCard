@@ -15,6 +15,7 @@ import {
     resolveVectorCollection,
 } from '../constants/collections';
 import { db } from '.';
+import { getLearnCardRequestSignal } from '../learncard/requestScope';
 import { isSourceCleanupLeaseBusyError, SOURCE_CLEANUP_PENDING_MESSAGE } from './source-cleanup';
 import { getCurrentAiSubject } from '../ai/privacy';
 import {
@@ -606,6 +607,7 @@ export async function recoverSourceVectorCleanup({
         tasksCompleted: 0,
     };
     for (; progress.units < limit; progress.units++) {
+        if (getLearnCardRequestSignal()?.aborted) break;
         const task = await database.getSourceCleanupTask(did);
         if (!task) break;
         try {

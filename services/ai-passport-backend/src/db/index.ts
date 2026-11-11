@@ -49,6 +49,7 @@ import {
 import type { RawCredentialEnvelope } from '../credentials/raw-vault';
 import { fingerprintCredential } from '../credentials/verification';
 import { settleCredentialBatch } from '../credentials/batch';
+import { getLearnCardRequestSignal } from '../learncard/requestScope';
 import {
     assertCurrentAiConsent,
     getCurrentAiSubject,
@@ -856,7 +857,8 @@ export class ChatDB {
                 lease = undefined;
             }
             if (lease && lease.token === token) break;
-            if (Date.now() >= retryUntil) throw new Error(SOURCE_CLEANUP_BUSY_MESSAGE);
+            if (getLearnCardRequestSignal()?.aborted || Date.now() >= retryUntil)
+                throw new Error(SOURCE_CLEANUP_BUSY_MESSAGE);
             await waitForSourceCleanupLeaseRetry(sourceCleanupLeaseRetryDelayMs());
         }
         const assertLease = async () => {
@@ -2791,7 +2793,11 @@ export class ChatDB {
         );
     }
 
-    public async deleteVCsByUris(did: string, uris: string[]): Promise<number> {
+    public async deleteVCsByUris(
+        did: string,
+        uris: string[],
+        options?: { awaitCleanup?: boolean }
+    ): Promise<number> {
         const deleted = await this.withOwnerWrite(did, async () => {
             await this.init();
             if (!uris.length) return 0;
@@ -2822,7 +2828,7 @@ export class ChatDB {
             );
             return result.deletedCount ?? 0;
         });
-        if (uris.length) {
+        if (uris.length && options?.awaitCleanup !== false) {
             const { deleteCredentialEmbeddings } = await import('./qdrant');
             await withOwnerOperation(did, () => deleteCredentialEmbeddings(did, uris, this));
         }

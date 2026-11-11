@@ -416,7 +416,11 @@ const resolveCredential = async (
             );
         try {
             await Promise.all([
-                db.deleteVCsByUris(did, [ref.uri]),
+                // Queue fencing but do not await Qdrant recovery here. The MCP
+                // read path used to wait for up to 32 unbounded cleanup units
+                // after a confirmed-invalid verify, which hung the tool past
+                // the client deadline once a busy lease no longer failed fast.
+                db.deleteVCsByUris(did, [ref.uri], { awaitCleanup: false }),
                 db.removeThreadCredentialsByUris(did, [ref.uri]),
             ]);
         } catch (error) {

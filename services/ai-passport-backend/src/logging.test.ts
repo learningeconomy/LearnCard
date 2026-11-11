@@ -565,3 +565,50 @@ test('request_failed keeps sanitized MCP verify diagnostics and drops raw verifi
     expect(JSON.stringify(output)).not.toContain('did:example');
     expect(JSON.stringify(output)).not.toContain('https://');
 });
+
+test('mcp tool start and progress keep only the tool, request id, step and stage', () => {
+    const output: unknown[] = [];
+    const originalInfo = console.info;
+    console.info = ((...data: unknown[]) => output.push(...data)) as typeof console.info;
+    try {
+        logSafeEvent('info', 'mcp_tool_started', {
+            mcpTool: 'get_user_context',
+            mcpRequestId: 'req_abcdef0123456789',
+            ...({ did: 'did:example:private', uri: 'lc:private' } as object),
+        });
+        logSafeEvent('info', 'mcp_tool_progress', {
+            mcpTool: 'get_user_context',
+            mcpRequestId: 'req_abcdef0123456789',
+            mcpCauseStep: 'projection',
+            mcpStage: 'learnercontext',
+            ...({ message: 'did:example:private SYNTHETIC_STACK' } as object),
+        });
+        logSafeEvent('info', 'mcp_tool_progress', {
+            mcpTool: 'get_user_context',
+            mcpRequestId: 'did:example:nope',
+            mcpCauseStep: 'not-a-step' as never,
+        });
+    } finally {
+        console.info = originalInfo;
+    }
+    expect(output).toEqual([
+        {
+            event: 'mcp_tool_started',
+            mcpTool: 'get_user_context',
+            mcpRequestId: 'req_abcdef0123456789',
+        },
+        {
+            event: 'mcp_tool_progress',
+            mcpTool: 'get_user_context',
+            mcpRequestId: 'req_abcdef0123456789',
+            mcpCauseStep: 'projection',
+            mcpStage: 'learnercontext',
+        },
+        {
+            event: 'mcp_tool_progress',
+            mcpTool: 'get_user_context',
+        },
+    ]);
+    expect(JSON.stringify(output)).not.toContain('did:example');
+    expect(JSON.stringify(output)).not.toContain('SYNTHETIC_STACK');
+});

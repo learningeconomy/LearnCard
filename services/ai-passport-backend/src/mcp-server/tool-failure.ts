@@ -1,4 +1,6 @@
 import { ZodError } from 'zod';
+import { getMcpProgress } from '../diagnostics/mcp-progress';
+import { logSafeEvent } from '../logging';
 import { credentialFailureCodeOf } from '../credentials/batch';
 import {
     readCauseStep,
@@ -74,6 +76,13 @@ export const withToolStage = async <T>(
     stage: McpFailureStage,
     operation: () => Promise<T>
 ): Promise<T> => {
+    const progress = getMcpProgress();
+    if (progress)
+        logSafeEvent('info', 'mcp_tool_progress', {
+            mcpTool: progress.tool,
+            mcpRequestId: progress.requestId,
+            mcpStage: stage,
+        });
     try {
         return await operation();
     } catch (error) {

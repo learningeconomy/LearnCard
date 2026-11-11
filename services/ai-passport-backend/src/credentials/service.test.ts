@@ -70,7 +70,9 @@ const dbMock = {
     getCredentialRecords: mock(async (): Promise<Array<Record<string, unknown>>> => []),
     storeVC: mock(async () => {}),
     removeThreadCredentialsByUris: mock(async () => 0),
-    deleteVCsByUris: mock(async () => 0),
+    deleteVCsByUris: mock(
+        async (_did?: string, _uris?: string[], _options?: { awaitCleanup?: boolean }) => 0
+    ),
     storeCredentialVerification: mock(async () => {}),
     storeRawCredential: mock(async () => {}),
 };
@@ -370,7 +372,8 @@ beforeEach(() => {
     dbMock.getCredentialRecords.mockResolvedValue([]);
     dbMock.storeVC.mockClear();
     dbMock.removeThreadCredentialsByUris.mockClear();
-    dbMock.deleteVCsByUris.mockClear();
+    dbMock.deleteVCsByUris.mockReset();
+    dbMock.deleteVCsByUris.mockResolvedValue(0);
     dbMock.storeCredentialVerification.mockClear();
     dbMock.storeRawCredential.mockClear();
     deleteCredentialEmbeddings.mockClear();
@@ -816,6 +819,33 @@ test('fetchCredentials hydrates flat consent-flow credentials arrays', async () 
         'lc:cloud:cloud.learncard.com/trpc:credential:title-1',
     ]);
 });
+test('fetchCredentials does not wait for source cleanup after an invalid verify', async () => {
+    learnCardMocks.verifyCredential.mockResolvedValue({
+        checks: [],
+        errors: ['Invalid signature'],
+        warnings: [],
+    });
+    dbMock.deleteVCsByUris.mockImplementation(
+        async (_did?: string, _uris?: string[], options?: { awaitCleanup?: boolean }) => {
+            if (options?.awaitCleanup !== false) await new Promise(() => undefined);
+            return 0;
+        }
+    );
+
+    const error = await Promise.race([
+        fetchCredentials('did:example:learner').then(
+            () => undefined,
+            (value: unknown) => value
+        ),
+        new Promise<string>(resolve => setTimeout(() => resolve('hung'), 200)),
+    ]);
+
+    expect(error).toBeInstanceOf(UnrecoverableError);
+    expect(error).not.toBe('hung');
+    expect(isCredentialItemFailure(error)).toBe(true);
+    expect(dbMock.deleteVCsByUris.mock.calls[0]?.[2]).toEqual({ awaitCleanup: false });
+});
+
 test('fetchCredentials treats a busy source-cleanup lease as a skippable invalid credential', async () => {
     learnCardMocks.verifyCredential.mockResolvedValue({
         checks: [],

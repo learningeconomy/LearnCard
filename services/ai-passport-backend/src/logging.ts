@@ -102,6 +102,8 @@ const SAFE_EVENT_CODES = [
     'credential_context_deferred_completed',
     'learncard_warm_ready',
     'learncard_warm_failed',
+    'mcp_tool_started',
+    'mcp_tool_progress',
     'credential_skipped',
     'credential_batch_completed',
     'credential_raw_unavailable',
@@ -294,6 +296,7 @@ export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
     durationMs?: number;
     httpStatus?: number;
     mcpTool?: 'get_user_context' | 'get_answer_about_user' | 'save_session_summary';
+    mcpRequestId?: string;
     mcpErrorName?: string;
     mcpErrorCode?: string;
     mcpCauseName?: string;
@@ -383,13 +386,18 @@ export const logSafeEvent = (
         const value = metrics[field];
         if (typeof value === 'number' && Number.isFinite(value) && value >= 0) event[field] = value;
     }
-    if (code === 'request_failed') {
+    if (code === 'request_failed' || code === 'mcp_tool_started' || code === 'mcp_tool_progress') {
         if (
             metrics.mcpTool === 'get_user_context' ||
             metrics.mcpTool === 'get_answer_about_user' ||
             metrics.mcpTool === 'save_session_summary'
         )
             event.mcpTool = metrics.mcpTool;
+        if (
+            typeof metrics.mcpRequestId === 'string' &&
+            /^[A-Za-z0-9_.-]{1,64}$/.test(metrics.mcpRequestId)
+        )
+            event.mcpRequestId = metrics.mcpRequestId;
         if (
             typeof metrics.mcpErrorName === 'string' &&
             /^[A-Za-z0-9_.-]{1,64}$/.test(metrics.mcpErrorName)

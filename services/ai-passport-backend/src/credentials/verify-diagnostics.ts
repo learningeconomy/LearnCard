@@ -1,3 +1,5 @@
+import { getMcpProgress } from '../diagnostics/mcp-progress';
+
 const MAX_ENTRY_CHARS = 120;
 const MAX_ENTRIES = 5;
 const DIAGNOSTICS_KEY = Symbol.for('mcp.verifyDiagnostics');
@@ -257,6 +259,15 @@ export const withCauseStep = async <T>(
     step: CauseStep,
     operation: () => Promise<T> | T
 ): Promise<T> => {
+    const progress = getMcpProgress();
+    if (progress) {
+        const { logSafeEvent } = await import('../logging');
+        logSafeEvent('info', 'mcp_tool_progress', {
+            mcpTool: progress.tool,
+            mcpRequestId: progress.requestId,
+            mcpCauseStep: step,
+        });
+    }
     try {
         return await operation();
     } catch (error) {

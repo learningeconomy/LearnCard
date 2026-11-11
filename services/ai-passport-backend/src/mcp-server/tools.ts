@@ -12,6 +12,7 @@ import { runMcpOwnerOperation } from './ownerOperation';
 import { logSafeEvent } from '../logging';
 import { AiConsentError } from '../learncard/consent';
 import { classifyToolFailure, unwrapToolFailure, type McpToolName } from './tool-failure';
+import { newMcpRequestId, runWithMcpProgress } from '../diagnostics/mcp-progress';
 
 const requireDid = (context: McpToolContext): string => {
     const did = getAuthenticatedDid(context);
@@ -92,19 +93,26 @@ export const getUserContextTool = defineMcpTool({
     outputSchema: { general_summary: z.string().nullable() },
     handler: async (_args, context) => {
         const did = requireDid(context);
-        try {
-            const general_summary = await runMcpOwnerOperation(did, () =>
-                getLatestUserSummary(did)
-            );
-            return jsonToolResponse({ general_summary });
-        } catch (error) {
-            reportToolFailure('get_user_context', error);
-            return jsonToolResponse({
-                general_summary: isConsentFailure(error)
-                    ? CONSENT_REQUIRED_MESSAGE
-                    : 'Unable to retrieve user context',
+        const requestId = newMcpRequestId();
+        return runWithMcpProgress({ tool: 'get_user_context', requestId }, async () => {
+            logSafeEvent('info', 'mcp_tool_started', {
+                mcpTool: 'get_user_context',
+                mcpRequestId: requestId,
             });
-        }
+            try {
+                const general_summary = await runMcpOwnerOperation(did, () =>
+                    getLatestUserSummary(did)
+                );
+                return jsonToolResponse({ general_summary });
+            } catch (error) {
+                reportToolFailure('get_user_context', error);
+                return jsonToolResponse({
+                    general_summary: isConsentFailure(error)
+                        ? CONSENT_REQUIRED_MESSAGE
+                        : 'Unable to retrieve user context',
+                });
+            }
+        });
     },
 });
 
@@ -123,16 +131,25 @@ export const getAnswerAboutUserTool = defineMcpTool({
     handler: async (args, context) => {
         const { question } = z.object({ question: z.string() }).parse(args);
         const did = requireDid(context);
-        try {
-            const answer = await runMcpOwnerOperation(did, () => getAnswerAboutUser(did, question));
-            return jsonToolResponse({ answer });
-        } catch (error) {
-            reportToolFailure('get_answer_about_user', error);
-            if (isConsentFailure(error)) {
-                throw new McpToolError('forbidden', CONSENT_REQUIRED_MESSAGE);
+        const requestId = newMcpRequestId();
+        return runWithMcpProgress({ tool: 'get_answer_about_user', requestId }, async () => {
+            logSafeEvent('info', 'mcp_tool_started', {
+                mcpTool: 'get_answer_about_user',
+                mcpRequestId: requestId,
+            });
+            try {
+                const answer = await runMcpOwnerOperation(did, () =>
+                    getAnswerAboutUser(did, question)
+                );
+                return jsonToolResponse({ answer });
+            } catch (error) {
+                reportToolFailure('get_answer_about_user', error);
+                if (isConsentFailure(error)) {
+                    throw new McpToolError('forbidden', CONSENT_REQUIRED_MESSAGE);
+                }
+                throw new McpToolError('internal_error', 'Unable to answer learning question');
             }
-            throw new McpToolError('internal_error', 'Unable to answer learning question');
-        }
+        });
     },
 });
 
@@ -162,24 +179,33 @@ export const saveSessionSummaryTool = defineMcpTool({
     handler: async (args, context) => {
         const { summary } = z.object({ summary: z.string() }).parse(args);
         const did = requireDid(context);
-        try {
-            const threadId = `session:${Date.now()}:${did.slice(-8)}`;
-            await runMcpOwnerOperation(did, () => saveSessionSummary(did, threadId, { summary }));
-            return jsonToolResponse({
-                success: true,
-                message: 'Session summary saved successfully',
-                // External models must not receive the underlying credential/storage IDs.
-                learnCardLink: 'https://learncard.app/ai/sessions',
+        const requestId = newMcpRequestId();
+        return runWithMcpProgress({ tool: 'save_session_summary', requestId }, async () => {
+            logSafeEvent('info', 'mcp_tool_started', {
+                mcpTool: 'save_session_summary',
+                mcpRequestId: requestId,
             });
-        } catch (error) {
-            reportToolFailure('save_session_summary', error);
-            return jsonToolResponse({
-                success: false,
-                message: isConsentFailure(error)
-                    ? CONSENT_REQUIRED_MESSAGE
-                    : 'Unable to save session summary',
-            });
-        }
+            try {
+                const threadId = `session:${Date.now()}:${did.slice(-8)}`;
+                await runMcpOwnerOperation(did, () =>
+                    saveSessionSummary(did, threadId, { summary })
+                );
+                return jsonToolResponse({
+                    success: true,
+                    message: 'Session summary saved successfully',
+                    // External models must not receive the underlying credential/storage IDs.
+                    learnCardLink: 'https://learncard.app/ai/sessions',
+                });
+            } catch (error) {
+                reportToolFailure('save_session_summary', error);
+                return jsonToolResponse({
+                    success: false,
+                    message: isConsentFailure(error)
+                        ? CONSENT_REQUIRED_MESSAGE
+                        : 'Unable to save session summary',
+                });
+            }
+        });
     },
 });
 
