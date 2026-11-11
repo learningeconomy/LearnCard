@@ -26,6 +26,7 @@ import {
 import type { DBCredentialRecord } from '../db';
 import { getLearnCard } from '../learncard';
 import { db } from '../db';
+import { isRetryableSourceCleanupError } from '../db/source-cleanup';
 
 import { aiCall, generateCredentialEmbeddingTexts } from '../ai';
 import { classifyFileContent } from '../helpers/file.helpers';
@@ -413,10 +414,16 @@ const resolveCredential = async (
                       ? 'malformed_input'
                       : 'verification_failed'
             );
-        await Promise.all([
-            db.deleteVCsByUris(did, [ref.uri]),
-            db.removeThreadCredentialsByUris(did, [ref.uri]),
-        ]);
+        try {
+            await Promise.all([
+                db.deleteVCsByUris(did, [ref.uri]),
+                db.removeThreadCredentialsByUris(did, [ref.uri]),
+            ]);
+        } catch (error) {
+            // Mongo already queued cleanup and may have removed retained rows.
+            // A contended or unfinished fence must not fail chat or MCP reads.
+            if (!isRetryableSourceCleanupError(error)) throw error;
+        }
         await db.storeCredentialVerification(did, verification);
         throw copyVerifyFailureDiagnostics(
             verification,

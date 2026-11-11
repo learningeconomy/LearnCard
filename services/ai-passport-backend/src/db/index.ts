@@ -15,6 +15,13 @@ import {
     type SourceCleanupTask,
     type VectorSource,
 } from './vector-source';
+import {
+    SOURCE_CLEANUP_BUSY_MESSAGE,
+    SOURCE_CLEANUP_LEASE_EXPIRED_MESSAGE,
+    sourceCleanupLeaseRetryDelayMs,
+    sourceCleanupLeaseWaitMs,
+    waitForSourceCleanupLeaseRetry,
+} from './source-cleanup';
 import type { StoredInsightCompaction } from '../services/insightCompaction';
 import { beginAiInsightTiming, withAiInsightTiming } from '../diagnostics/ai-insight';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -824,25 +831,34 @@ export class ChatDB {
         callback: (assertLease: () => Promise<void>) => Promise<T>
     ): Promise<T> {
         await this.init();
-        const _id = getPrivacySubjectRef(did),
-            token = randomUUID();
+        const _id = getPrivacySubjectRef(did);
+        // One Mongo document per privacy subject, shared across requests and
+        // machines. An unexpired holder makes upsert throw 11000. Wait briefly
+        // so parallel invalid-credential deletes can serialize instead of
+        // failing a read path; still throw if the holder does not finish.
+        const retryUntil = Date.now() + sourceCleanupLeaseWaitMs();
+        let token = randomUUID();
         let lease;
-        try {
-            lease = await this.sourceCleanupLeases.findOneAndUpdate(
-                { _id, expiresAt: { $lte: new Date() } },
-                { $set: { token, expiresAt: new Date(Date.now() + 60000) } },
-                {
-                    upsert: true,
-                    returnDocument: 'after',
-                    writeConcern: durableWriteConcern,
-                }
-            );
-        } catch (error) {
-            if ((error as { code?: number }).code === 11000)
-                throw new Error('Source cleanup busy; retry');
-            throw error;
+        for (;;) {
+            token = randomUUID();
+            try {
+                lease = await this.sourceCleanupLeases.findOneAndUpdate(
+                    { _id, expiresAt: { $lte: new Date() } },
+                    { $set: { token, expiresAt: new Date(Date.now() + 60000) } },
+                    {
+                        upsert: true,
+                        returnDocument: 'after',
+                        writeConcern: durableWriteConcern,
+                    }
+                );
+            } catch (error) {
+                if ((error as { code?: number }).code !== 11000) throw error;
+                lease = undefined;
+            }
+            if (lease && lease.token === token) break;
+            if (Date.now() >= retryUntil) throw new Error(SOURCE_CLEANUP_BUSY_MESSAGE);
+            await waitForSourceCleanupLeaseRetry(sourceCleanupLeaseRetryDelayMs());
         }
-        if (!lease || lease.token !== token) throw new Error('Source cleanup busy; retry');
         const assertLease = async () => {
             if (
                 !(await this.sourceCleanupLeases.findOne({
@@ -851,7 +867,7 @@ export class ChatDB {
                     expiresAt: { $gt: new Date() },
                 }))
             )
-                throw new Error('Source cleanup lease expired');
+                throw new Error(SOURCE_CLEANUP_LEASE_EXPIRED_MESSAGE);
         };
         try {
             return await callback(assertLease);

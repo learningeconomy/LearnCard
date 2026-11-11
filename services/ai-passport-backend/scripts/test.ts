@@ -144,6 +144,8 @@ const ALL_TEST_FILES = [
     'src/ai/nova-embeddings.consent-boundary.test.ts',
     'src/ai/read-generation-control.test.ts',
     'src/ai/read-generation.test.ts',
+    'src/db/source-cleanup.test.ts',
+    'src/db/source-cleanup-recover.test.ts',
     'src/db/source-fencing.test.ts',
 ];
 
