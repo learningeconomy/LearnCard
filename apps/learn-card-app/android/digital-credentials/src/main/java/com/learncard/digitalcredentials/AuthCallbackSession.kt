@@ -9,6 +9,7 @@ internal class AuthCallbackSession<T>(private val now: () -> Long = System::curr
     private var session: Session<T>? = null
 
     fun begin(owner: T, callback: String, timeoutMs: Long): String {
+        if (session?.let { now() >= it.expiresAt } == true) session = null
         check(session == null) { "Sign-in already active" }
         val uri = URI(callback)
         require(uri.scheme != null && uri.rawAuthority != null && uri.rawQuery == null && uri.rawFragment == null)
@@ -21,9 +22,13 @@ internal class AuthCallbackSession<T>(private val now: () -> Long = System::curr
     /** False means this callback belongs to normal app sign-in, not a provider session. */
     fun route(callback: String, isActive: (T) -> Boolean, deliver: (T) -> Unit): Boolean {
         val pending = session ?: return false
-        // Drop late/unrelated callbacks while a provider owns sign-in; never redirect
-        // them into MainActivity and collapse the activity holding the platform result.
-        if (now() >= pending.expiresAt || !isActive(pending.owner)) return true
+        // An expired/destroyed owner cannot receive this callback. The dispatcher
+        // explicitly cancels an unfinished OS request before handing it to MainActivity.
+        if (now() >= pending.expiresAt || !isActive(pending.owner)) {
+            session = null
+            return false
+        }
+        // Unrelated callbacks cannot take over another live provider sign-in.
         val uri = runCatching { URI(callback) }.getOrNull() ?: return true
         if (uri.scheme != pending.callback.scheme || uri.rawAuthority != pending.callback.rawAuthority ||
             uri.rawPath != pending.callback.rawPath) return true

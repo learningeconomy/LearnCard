@@ -38,6 +38,13 @@ internal object ProviderAuthCallbacks {
                     .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP))
             }
         }
-        return handled || active?.get()?.let { !it.isFinishing && !it.isDestroyed } == true
+        if (!handled) {
+            // A callback without a live provider auth session belongs to normal
+            // app handling. Return the pending OS result as canceled first; launching
+            // MainActivity must never strand or silently swallow that result.
+            active?.get()?.takeIf { !it.isFinishing && !it.isDestroyed && it.hasUnfinishedRequest() }
+                ?.cancel(null)
+        }
+        return handled
     }
 }

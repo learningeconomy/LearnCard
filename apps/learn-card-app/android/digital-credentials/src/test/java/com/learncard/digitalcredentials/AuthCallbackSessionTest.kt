@@ -29,15 +29,27 @@ class AuthCallbackSessionTest {
         assertEquals("new", delivered)
     }
 
+    @Test fun expiredSessionCanBeReplacedAndOldCleanupCannotClearItsSuccessor() {
+        var now = 0L
+        val sessions = AuthCallbackSession<String> { now }
+        val old = sessions.begin("old", "com.learncard.app://login", 1000)
+        now = 1000
+        sessions.begin("new", "com.learncard.app://login", 1000)
+        sessions.end(old)
+        var delivered: String? = null
+        assertTrue(sessions.route("com.learncard.app://login?code=x", { true }) { delivered = it })
+        assertEquals("new", delivered)
+    }
+
     @Test fun expiredOrCanceledProviderNeverReceivesAnAuthResponse() {
         var now = 100L
         val sessions = AuthCallbackSession<String> { now }
         val token = sessions.begin("provider", "com.learncard.app://login", 1000)
         now = 1100
-        assertTrue(sessions.route("com.learncard.app://login?code=x", { true }) { fail("expired") })
+        assertFalse(sessions.route("com.learncard.app://login?code=x", { true }) { fail("expired") })
         sessions.end(token)
         sessions.begin("provider", "com.learncard.app://login", 1000)
-        assertTrue(sessions.route("com.learncard.app://login?code=x", { false }) { fail("inactive") })
+        assertFalse(sessions.route("com.learncard.app://login?code=x", { false }) { fail("inactive") })
         sessions.endOwner("provider")
         assertFalse(sessions.route("com.learncard.app://login?code=x", { true }) { fail("destroyed") })
     }

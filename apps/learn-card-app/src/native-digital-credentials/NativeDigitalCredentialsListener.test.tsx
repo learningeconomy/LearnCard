@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import NativeDigitalCredentialsListener from './NativeDigitalCredentialsListener';
 
 const mocks = vi.hoisted(() => ({
+    eligible: true,
     platform: 'android',
     available: true,
     revision: 0,
@@ -68,7 +69,7 @@ const auth = { state: { status: 'authenticated' } };
 vi.mock('../providers/AuthCoordinatorProvider', () => ({ useAppAuth: () => auth }));
 vi.mock('../helpers/verifier-history/account', () => ({
     captureHistoryAccount: () => mocks.account,
-    isHistoryAccountEligible: () => true,
+    isHistoryAccountEligible: () => mocks.eligible,
     useHistoryAccountRevision: () => mocks.revision,
 }));
 vi.mock('./plugin', () => ({
@@ -90,6 +91,7 @@ beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(1_000);
     vi.clearAllMocks();
+    mocks.eligible = true;
     mocks.platform = 'android';
     mocks.available = true;
     mocks.revision = 0;
@@ -147,6 +149,29 @@ it('keeps a present but disabled provider inactive without retry backoff', async
     expect(mocks.pending).not.toHaveBeenCalled();
     expect(mocks.initialize).not.toHaveBeenCalled();
     expect(mocks.synchronize).not.toHaveBeenCalled();
+});
+
+it('clears an ineligible account even when the pending-request lookup fails', async () => {
+    mocks.eligible = false;
+    mocks.pending.mockRejectedValue(new Error('Bridge temporarily unavailable'));
+    render(<NativeDigitalCredentialsListener />);
+    await advance();
+    expect(mocks.clearInventory).toHaveBeenCalledOnce();
+    expect(mocks.synchronize).not.toHaveBeenCalled();
+});
+
+it('retains an inconclusive signed-out selection until the pending-request lookup can retry', async () => {
+    mocks.loggedIn = false;
+    mocks.user = null;
+    auth.state.status = 'idle';
+    mocks.pending.mockRejectedValueOnce(new Error('Bridge temporarily unavailable'));
+    mocks.pending.mockResolvedValueOnce({ pending: { requestId: 'request' }, isProvider: true });
+    render(<NativeDigitalCredentialsListener />);
+    await advance();
+    expect(mocks.clearInventory).not.toHaveBeenCalled();
+    await advance(2000);
+    expect(mocks.clearInventory).not.toHaveBeenCalled();
+    expect(mocks.history.replace).toHaveBeenCalledWith('/native-digital-credentials');
 });
 
 it('still retries a transient status failure when the plugin is available', async () => {

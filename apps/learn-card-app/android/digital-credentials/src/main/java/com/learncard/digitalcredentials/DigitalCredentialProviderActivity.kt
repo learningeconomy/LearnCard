@@ -97,6 +97,8 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
         })
     }
 
+    internal fun hasUnfinishedRequest(): Boolean = !completed && pending != null
+
     fun pendingRequest(): JSObject? = if (
         !completed && requestLease?.let { RegistryState.access.isActive(it) } == true &&
         registry.generation == generation
