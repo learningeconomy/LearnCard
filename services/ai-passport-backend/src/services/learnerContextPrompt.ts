@@ -9,7 +9,12 @@ import { getPrivacyKeyMaterial } from '../ai/privacy-keys';
 import { CHAT_MODEL } from '../constants/env';
 import { db } from '../db';
 import { getLearnCard } from '../learncard';
-import { AiConsentError, loadActiveAiConsentData } from '../learncard/consent';
+import {
+    AiConsentError,
+    loadActiveAiConsentData,
+    sameConsentAuthorization,
+} from '../learncard/consent';
+import { settleCredentialBatch } from '../credentials/batch';
 import { resolveVerifiedCredentialProjection } from '../credentials/service';
 import { withCauseStep } from '../credentials/verify-diagnostics';
 import { serializeModelSafeCredentialProjection } from '../credentials/projection';
@@ -135,9 +140,14 @@ export const parseLearnerContextPromptRequest = (input: unknown): LearnerContext
 const parseLearnerContextPromptInternal = (input: unknown): LearnerContextPromptRequest =>
     LearnerContextPromptInternalValidator.parse(input);
 
-export const generateLearnerContextPrompt = async (request: LearnerContextPromptInput) => {
+export const generateLearnerContextPrompt = async (
+    request: LearnerContextPromptInput & {
+        resolvedProjections?: ModelSafeCredentialProjection[];
+    }
+) => {
     const startedAt = performance.now();
-    const input = parseLearnerContextPromptInternal(request);
+    const { resolvedProjections, ...requestFields } = request;
+    const input = parseLearnerContextPromptInternal(requestFields);
     const did = getCurrentAiSubject();
     if (!did)
         throw new LearnerContextPromptError(
@@ -175,19 +185,24 @@ export const generateLearnerContextPrompt = async (request: LearnerContextPrompt
     }
     const assertFresh = async () => {
         const current = await loadConsent({ fresh: true });
-        if (current.receipt.revision !== receipt.revision) throw new AiConsentError();
+        if (!sameConsentAuthorization(current.receipt, receipt)) throw new AiConsentError();
     };
     // Validate every selected source, even if the caller explicitly limits synthesis.
-    const credentials = await runWithConcurrency(
-        credentialUris.map(
-            uri => () =>
-                dependency('verify', () =>
-                    withCauseStep('projection', () =>
-                        resolveVerifiedCredentialProjection(did, uri, receipt)
-                    )
-                )
-        )
-    );
+    const credentials =
+        resolvedProjections && resolvedProjections.length === credentialUris.length
+            ? [...resolvedProjections]
+            : await dependency('verify', async () => {
+                  const { loaded } = await settleCredentialBatch(
+                      'context',
+                      credentialUris.map(
+                          uri => () =>
+                              withCauseStep('projection', () =>
+                                  resolveVerifiedCredentialProjection(did, uri, receipt)
+                              )
+                      )
+                  );
+                  return loaded;
+              });
     await assertFresh();
     const usedCredentials = credentials.slice(0, input.maxCredentials ?? credentials.length);
     const scope = {

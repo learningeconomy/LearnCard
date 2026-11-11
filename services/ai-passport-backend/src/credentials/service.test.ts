@@ -251,8 +251,12 @@ mock.module('./helpers', () => ({
 const service = await import(new URL('./service.ts', import.meta.url).href);
 const { parseFile, resolveVerifiedCredentialProjection } = service;
 const { getActiveAiConsentReceipt } = await import('../learncard/consent');
-const { beginCredentialContextRead, clearVerifiedCredentials, isCredentialItemFailure } =
-    await import('./batch');
+const {
+    beginCredentialContextRead,
+    clearKnownBadCredentials,
+    clearVerifiedCredentials,
+    isCredentialItemFailure,
+} = await import('./batch');
 const currentReceipt = () =>
     getActiveAiConsentReceipt(consentFlowResponse.records[0], 'credential-ingestion')!;
 const fetchCredentials = (did: string) =>
@@ -367,6 +371,7 @@ const { resetConsentSnapshots } = await import('../learncard/requestScope');
 beforeEach(() => {
     resetConsentSnapshots();
     clearVerifiedCredentials();
+    clearKnownBadCredentials();
     consentFlowResponse = activeConsentFlowResponse;
     dbMock.getCredentialRecords.mockReset();
     dbMock.getCredentialRecords.mockResolvedValue([]);

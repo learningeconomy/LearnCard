@@ -61,6 +61,7 @@ export const SAFE_CAUSE_MESSAGE_CODES = [
     'verification_equation_unsatisfied',
     'credential_revoked',
     'consent_changed',
+    'snapshot_revision_mismatch',
 ] as const;
 export type SafeCauseMessageCode = (typeof SAFE_CAUSE_MESSAGE_CODES)[number];
 

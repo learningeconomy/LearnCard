@@ -668,3 +668,32 @@ test('request_failed drops names, phones, secrets and credential prose from logg
     expect(payload).not.toContain('did:example');
     expect(payload).not.toContain('Lincoln High');
 });
+
+test('projection_restart keeps only an allowlisted reason and attempt', () => {
+    const output: unknown[] = [];
+    const originalInfo = console.info;
+    console.info = ((...data: unknown[]) => output.push(...data)) as typeof console.info;
+    try {
+        logSafeEvent('info', 'projection_restart', {
+            restartReason: 'source_cleanup_scope_changed',
+            attempt: 2,
+            ...({ did: 'did:example:private', message: 'Source cleanup busy; retry' } as object),
+        });
+        logSafeEvent('info', 'projection_restart', {
+            ...({ restartReason: 'did:example:private' } as object),
+            attempt: 0,
+        });
+    } finally {
+        console.info = originalInfo;
+    }
+    expect(output).toEqual([
+        {
+            event: 'projection_restart',
+            restartReason: 'source_cleanup_scope_changed',
+            attempt: 2,
+        },
+        { event: 'projection_restart' },
+    ]);
+    expect(JSON.stringify(output)).not.toContain('did:example');
+    expect(JSON.stringify(output)).not.toContain('Source cleanup');
+});

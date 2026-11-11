@@ -5,6 +5,7 @@ import {
     forgetVerifiedCredential,
     getVerifiedCredential,
     isCredentialItemFailure,
+    knownBadCredentialKind,
     logCredentialBatch,
     logCredentialSkip,
     markCredentialItemFailure,
@@ -75,6 +76,7 @@ import { classifyLearnCardFailure } from '../learncard/errors';
 import {
     attachVerifyFailureDiagnostics,
     copyVerifyFailureDiagnostics,
+    sanitizeCauseMessage,
     withCauseStep,
 } from './verify-diagnostics';
 import {
@@ -84,6 +86,7 @@ import {
 } from './projection';
 import {
     AiConsentError,
+    consentAuthorizationKey,
     getActiveAiConsentReceipt,
     loadActiveAiConsentData,
     type ActiveAiConsentRecord,
@@ -278,7 +281,7 @@ const assertCredentialSnapshot = async (
     if (
         !expected.credentialUris.includes(uri) ||
         !getCurrentAiCredentialUris().includes(uri) ||
-        !bindAiConsentRevision(did, expected.revision)
+        !bindAiConsentRevision(did, consentAuthorizationKey(expected))
     )
         throw new AiConsentError('Credential is outside the consent snapshot');
 };
@@ -520,7 +523,15 @@ const resolveVerifiedCredential = (
         }
     });
 
-export const resolveVerifiedCredentialProjection = async (
+export const MAX_PROJECTION_ATTEMPTS = 3;
+
+const projectionRestartReason = (error: unknown): string | undefined => {
+    if (!isRetryableSourceCleanupError(error) || !(error instanceof Error)) return undefined;
+    const reason = sanitizeCauseMessage(error.message);
+    return reason && reason !== 'unrecognized' ? reason : undefined;
+};
+
+const resolveVerifiedCredentialProjectionOnce = async (
     did: string,
     uri: string,
     receipt: ActiveAiConsentReceipt
@@ -530,7 +541,7 @@ export const resolveVerifiedCredentialProjection = async (
     });
     const { records, receipt: current } = await withCauseStep('consent_read', async () =>
         loadActiveAiConsentData(await getLearnCard(), did, receipt.purpose, {
-            expectedRevision: receipt.revision,
+            expectedRevision: consentAuthorizationKey(receipt),
         })
     );
     const location = await withCauseStep('uri_list', async () => {
@@ -547,8 +558,19 @@ export const resolveVerifiedCredentialProjection = async (
         return found;
     });
     // A recent verification under this same consent revision skips the read
-    // and verify; consent is still checked above and below.
+    // and verify; consent is still checked above and below. A known-bad URI
+    // is not re-read or re-verified.
     return withCauseStep('projection', async () => {
+        const knownBad = knownBadCredentialKind(did, uri);
+        if (knownBad === 'invalid') {
+            throw markCredentialItemFailure(new InvalidCredentialError(), 'credential_invalid');
+        }
+        if (knownBad === 'unverifiable') {
+            throw new CredentialVerificationUnavailableError(
+                'unrecognized_verifier_error',
+                'undefined_jsonld_term'
+            );
+        }
         const projection =
             getVerifiedCredential<ResolvedConsentFlowCredential>(did, uri, receipt.revision)
                 ?.projection ??
@@ -561,6 +583,35 @@ export const resolveVerifiedCredentialProjection = async (
         await assertCredentialConsent(did, uri, receipt);
         return projection;
     });
+};
+
+export const resolveVerifiedCredentialProjection = async (
+    did: string,
+    uri: string,
+    receipt: ActiveAiConsentReceipt
+): Promise<ModelSafeCredentialProjection> => {
+    const signal = getLearnCardRequestSignal();
+    for (let attempt = 1; ; attempt += 1) {
+        try {
+            return await resolveVerifiedCredentialProjectionOnce(did, uri, receipt);
+        } catch (error) {
+            const restartReason = projectionRestartReason(error);
+            if (!restartReason || attempt >= MAX_PROJECTION_ATTEMPTS || signal?.aborted) {
+                throw error;
+            }
+            logSafeEvent('info', 'projection_restart', {
+                restartReason: restartReason as
+                    | 'source_cleanup_busy'
+                    | 'source_cleanup_lease_expired'
+                    | 'source_cleanup_pending'
+                    | 'source_cleanup_pending_ingest'
+                    | 'source_cleanup_scope_changed'
+                    | 'consent_changed'
+                    | 'snapshot_revision_mismatch',
+                attempt,
+            });
+        }
+    }
 };
 
 /**

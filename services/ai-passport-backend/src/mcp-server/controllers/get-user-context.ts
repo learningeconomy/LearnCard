@@ -13,7 +13,11 @@ import {
 } from '../../credentials/verify-diagnostics';
 import { resolveVerifiedCredentialProjection } from '../../credentials/service';
 import { getLearnCard } from '../../learncard';
-import { AiConsentError, loadActiveAiConsentData } from '../../learncard/consent';
+import {
+    AiConsentError,
+    loadActiveAiConsentData,
+    sameConsentAuthorization,
+} from '../../learncard/consent';
 import { logSafeEvent } from '../../logging';
 import {
     generateLearnerContextPrompt,
@@ -22,8 +26,18 @@ import {
 } from '../../services/learnerContextPrompt';
 import { withToolStage } from '../tool-failure';
 
-const logSkippedCredentialCounts = (skipped: CredentialBatchResult<string>['skipped']): void => {
-    const counts = new Map<CredentialBatchResult<string>['skipped'][number]['code'], number>();
+type LoadedContextCredential = {
+    uri: string;
+    projection: Awaited<ReturnType<typeof resolveVerifiedCredentialProjection>>;
+};
+
+const logSkippedCredentialCounts = (
+    skipped: CredentialBatchResult<LoadedContextCredential>['skipped']
+): void => {
+    const counts = new Map<
+        CredentialBatchResult<LoadedContextCredential>['skipped'][number]['code'],
+        number
+    >();
     for (const item of skipped) counts.set(item.code, (counts.get(item.code) ?? 0) + 1);
     for (const [failureCode, count] of counts) {
         logSafeEvent('warn', 'credential_skipped', {
@@ -37,7 +51,7 @@ const logSkippedCredentialCounts = (skipped: CredentialBatchResult<string>['skip
 const loadSharedContextUris = async (
     did: string,
     receipt: Awaited<ReturnType<typeof loadActiveAiConsentData>>['receipt']
-): Promise<string[]> => {
+): Promise<LoadedContextCredential[]> => {
     try {
         const uris = await withCauseStep('uri_list', async () => [
             ...new Set(receipt.credentialUris),
@@ -46,10 +60,10 @@ const loadSharedContextUris = async (
         const { tasks, concurrency } = await withCauseStep('batch_setup', async () => ({
             concurrency: CREDENTIAL_PRELOAD_CONCURRENCY,
             tasks: uris.map(uri => async () => {
-                await withCauseStep('projection', () =>
+                const projection = await withCauseStep('projection', () =>
                     resolveVerifiedCredentialProjection(did, uri, receipt)
                 );
-                return uri;
+                return { uri, projection };
             }),
         }));
         const { loaded, skipped } = await withCauseStep('batch', () =>
@@ -90,9 +104,10 @@ export async function getLatestUserSummary(did: string) {
     // Skip unreadable or unverifiable credentials with the same policy as in-app
     // chat (`settleCredentialBatch`) and pass only the loaded URIs downstream.
     const result = await withToolStage('learnercontext', async () => {
-        const credentialUris = await loadSharedContextUris(did, receipt);
+        const loaded = await loadSharedContextUris(did, receipt);
         return generateLearnerContextPrompt({
-            credentialUris,
+            credentialUris: loaded.map(item => item.uri),
+            resolvedProjections: loaded.map(item => item.projection),
             personalFields: receipt.personalFields,
             detailLevel: 'expanded',
         });
@@ -108,7 +123,7 @@ export async function getLatestUserSummary(did: string) {
         const current = await loadActiveAiConsentData(learnCard, did, 'model-inference', {
             fresh: true,
         });
-        if (current.receipt.revision !== receipt.revision) throw new AiConsentError();
+        if (!sameConsentAuthorization(current.receipt, receipt)) throw new AiConsentError();
     });
     return context;
 }

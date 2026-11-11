@@ -61,6 +61,8 @@ const DIAGNOSTIC_TOKENS = new Set([
     'source_cleanup_pending',
     'source_cleanup_pending_ingest',
     'source_cleanup_scope_changed',
+    'snapshot_revision_mismatch',
+    'projection_restart',
     'summary',
     'timeout',
     'unavailable',

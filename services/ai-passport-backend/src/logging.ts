@@ -104,6 +104,7 @@ const SAFE_EVENT_CODES = [
     'learncard_warm_failed',
     'mcp_tool_started',
     'mcp_tool_progress',
+    'projection_restart',
     'credential_skipped',
     'credential_batch_completed',
     'credential_raw_unavailable',
@@ -118,6 +119,15 @@ const SAFE_EVENT_CODES = [
 ] as const;
 
 const CREDENTIAL_BATCHES = ['preload', 'context', 'thread_context', 'ingestion'] as const;
+const PROJECTION_RESTART_REASONS = [
+    'source_cleanup_busy',
+    'source_cleanup_lease_expired',
+    'source_cleanup_pending',
+    'source_cleanup_pending_ingest',
+    'source_cleanup_scope_changed',
+    'consent_changed',
+    'snapshot_revision_mismatch',
+] as const;
 const MAX_BATCH_POSITION = 10_000;
 const CREDENTIAL_CONTEXT_STAGES = [
     'refresh',
@@ -342,6 +352,8 @@ export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
     index?: number;
     loadedCount?: number;
     skippedCount?: number;
+    /** projection_restart: allowlisted reason a projection cycle ran again. */
+    restartReason?: (typeof PROJECTION_RESTART_REASONS)[number];
 };
 
 const FILE_STAGES: Record<string, true> = {
@@ -385,6 +397,15 @@ export const logSafeEvent = (
     for (const field of ['count', 'durationMs', 'httpStatus'] as const) {
         const value = metrics[field];
         if (typeof value === 'number' && Number.isFinite(value) && value >= 0) event[field] = value;
+    }
+    if (code === 'projection_restart') {
+        if (
+            metrics.restartReason &&
+            (PROJECTION_RESTART_REASONS as readonly string[]).includes(metrics.restartReason)
+        )
+            event.restartReason = metrics.restartReason;
+        if (Number.isInteger(metrics.attempt) && metrics.attempt! >= 1 && metrics.attempt! <= 100)
+            event.attempt = metrics.attempt;
     }
     if (code === 'request_failed' || code === 'mcp_tool_started' || code === 'mcp_tool_progress') {
         if (
