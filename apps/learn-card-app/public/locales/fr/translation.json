@@ -3463,8 +3463,27 @@
             "haveAccount": "Vous avez déjà un compte ?"
         },
         "boost": {
-            "accepted": "Accepté",
-            "expiredHeader": "Le lien de réclamation du Boost a expiré ou a atteint le nombre maximal de réclamations autorisées."
+            "accepted": "Accepté"
+        },
+        "recovery": {
+            "checking": "Vérification de votre demande...",
+            "claiming": "Récupération de votre justificatif...",
+            "saving": "Enregistrement dans votre collection...",
+            "refreshing": "Actualisation de votre collection...",
+            "checkFailed": "Nous n'avons pas pu confirmer votre demande. Le lien reste disponible pour réessayer.",
+            "claimUncertain": "Votre demande a peut-être abouti. Recherchez votre justificatif avant de réessayer.",
+            "saveFailed": "Le justificatif a été récupéré, mais son enregistrement n'est pas confirmé. Réessayez de l'enregistrer.",
+            "refreshFailed": "Votre justificatif est enregistré. Nous n'avons pas pu actualiser votre collection.",
+            "pending": "Votre demande est toujours en cours. Vérifiez à nouveau le résultat sans récupérer une autre copie.",
+            "expired": "Ce lien a expiré. Demandez un nouveau lien à l'émetteur.",
+            "exhausted": "Ce lien a atteint sa limite d'utilisation. Demandez un nouveau lien à l'émetteur.",
+            "unavailable": "Ce lien n'est pas disponible. Demandez à l'émetteur de le vérifier.",
+            "contextChanged": "Votre compte ou les paramètres de connexion ont changé ; fermez cette page et rouvrez le lien d’origine pour continuer.",
+            "savedToOriginalAccount": "Votre justificatif a été enregistré dans votre compte d’origine.",
+            "tryAgain": "Réessayer",
+            "check": "Rechercher mon justificatif",
+            "save": "Enregistrer mon justificatif",
+            "refresh": "Actualiser ma collection"
         },
         "duplicate": {
             "title": "Déjà enregistré",
