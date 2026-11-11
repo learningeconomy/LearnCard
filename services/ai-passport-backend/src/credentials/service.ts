@@ -88,6 +88,7 @@ import {
     consentAuthorizationKey,
     getActiveAiConsentReceipt,
     loadActiveAiConsentData,
+    sameConsentAuthorization,
     type ActiveAiConsentRecord,
     type ActiveAiConsentReceipt,
 } from '../learncard/consent';
@@ -284,6 +285,22 @@ export const assertCredentialConsent = async (
         )
             throw new AiConsentError('Credential consent changed');
     });
+
+// A queued store runs after the request, outside its consent read: read the
+// contract live when it runs and compare the authorization, as the prompt-cache
+// persist does, so a withdrawal before the write blocks it.
+const assertLiveCredentialConsent = async (
+    did: string,
+    uri: string,
+    expected: ActiveAiConsentReceipt
+): Promise<void> => {
+    requireCredentialOwner(did);
+    const { receipt } = await loadActiveAiConsentData(await getLearnCard(), did, expected.purpose, {
+        fresh: true,
+    });
+    if (!sameConsentAuthorization(receipt, expected) || !receipt.credentialUris.includes(uri))
+        throw new AiConsentError('Credential consent changed');
+};
 
 // Insight inputs share one live contract snapshot. Local guards preserve owner,
 // revision and URI membership during reads/queued writes without remote fanout.
@@ -545,9 +562,13 @@ const resolveCredential = async (
         );
     };
     // MCP reads never wait on store (~2s per credential in prod): the
-    // projection is ready, so the write runs in the background queue, which
-    // still re-checks consent and holds an owner operation.
-    if (learnCardStoresDeferred()) deferCredentialStore(did, store);
+    // projection is ready, so the write runs in the background queue, holds an
+    // owner operation, and reads consent live first.
+    if (learnCardStoresDeferred())
+        deferCredentialStore(did, async () => {
+            await assertLiveCredentialConsent(did, ref.uri, ref.consent);
+            await store();
+        });
     else await store();
     await assertScope();
     return { ...ref, credential, verification, projection };

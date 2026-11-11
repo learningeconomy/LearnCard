@@ -356,6 +356,43 @@ describe('MCP get_user_context credential read budget', () => {
         }
     });
 
+    test('a store still queued when sharing consent is withdrawn writes no raw or verification row', async () => {
+        const { db } = await import('../../db');
+        const { beginCredentialContextRead } = await import('../../credentials/batch');
+        const { drainCredentialStores, pendingCredentialStores } =
+            await import('../../credentials/store-queue');
+        const storeVerification = db.storeCredentialVerification as ReturnType<typeof mock>;
+        const storeRaw = db.storeRawCredential as ReturnType<typeof mock>;
+        storeVerification.mockClear();
+        storeRaw.mockClear();
+        uris = [VALID_URI];
+        // Another context read for the owner keeps the background store queued.
+        const releaseQueue = beginCredentialContextRead(OWNER);
+        try {
+            const { context } = await runMcpTool();
+            expect(context).toBe('Sibling learner context');
+            expect(pendingCredentialStores()).toBeGreaterThan(0);
+            getConsentFlowDataForDid.mockImplementation(async () => ({
+                records: [{ ...createActiveRecord(uris), status: 'withdrawn' }],
+                hasMore: false,
+            }));
+            releaseQueue();
+            await drainCredentialStores();
+            expect(storeVerification).not.toHaveBeenCalled();
+            expect(storeRaw).not.toHaveBeenCalled();
+        } finally {
+            releaseQueue();
+            getConsentFlowDataForDid.mockImplementation(async () => {
+                consentReads += 1;
+                const date = new Date(
+                    Date.parse('2026-08-01T00:00:00.000Z') + consentReads * 1000
+                ).toISOString();
+                return { records: [createActiveRecord(uris, date)], hasMore: false };
+            });
+            restore();
+        }
+    });
+
     test('when every read fails, the tool fails after one read per credential', async () => {
         uris = [FAILING_URI];
         readGet.mockImplementation(async () => {
