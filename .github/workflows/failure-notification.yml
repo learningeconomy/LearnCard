@@ -46,6 +46,7 @@ on:
             - Smoketest
             - Service Health Check
             - Tailwind visual regression
+            - Nx cache experiment
             - Test Runner
             - Integration build-once benchmark
             - Integration runner benchmark
