@@ -384,6 +384,7 @@ export const LoginContent: React.FC = () => {
         },
     ];
 
+    // A cached profile without an authenticated session must still see sign-in.
     // Redirect-pending gate: once the wallet is built and the user counts as
     // logged in, the effect above will history.push away from /login — but
     // only on the tick AFTER React has already painted this component,
@@ -394,7 +395,9 @@ export const LoginContent: React.FC = () => {
     // RouteTransitionLoader. needs_setup is excluded so the form stays
     // visible under the onboarding modal.
     const redirectPending =
-        (isLoggedIn || !!currentUser) && coordinatorState.status !== 'needs_setup';
+        (isLoggedIn || !!currentUser) &&
+        authStatus.tag !== 'unauthenticated' &&
+        coordinatorState.status !== 'needs_setup';
 
     if (redirectPending) {
         return (
