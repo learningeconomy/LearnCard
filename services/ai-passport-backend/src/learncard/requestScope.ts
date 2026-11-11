@@ -27,7 +27,7 @@ type LearnCardRequestScope = {
     readonly onBatchEnded?: (at: number) => void;
     /** Durations of credential tasks that finished in this request. */
     taskMs?: { count: number; total: number };
-    /** Set once publication starts: every fresh read from then on shares one read. */
+    /** Set once publication starts: fresh checks outside an AI call share the newest live read. */
     publicationConsent?: { entry?: ConsentReadEntry };
 };
 
@@ -78,11 +78,12 @@ export const runWithLearnCardRequestScope = <Result>(
 
 /**
  * Mark the start of the request's publication phase: all credential data has
- * been read. From here, every `fresh` consent check shares ONE live read (the
- * first one after this call), so the request reads the contract fresh once
- * before it sends anything to a model or returns a result. Calling it again
- * (after more credential reads) makes the next fresh check read live again.
- * Outside a request scope it does nothing, and fresh checks always read.
+ * been read. From here, `fresh` checks outside an AI call share the newest live
+ * read instead of each reading the contract again. Checks inside an AI call
+ * (model dispatch and result) still read live, and each of those reads becomes
+ * the shared one. Calling it again makes the next fresh check read live: do
+ * that before publishing a result. Outside a request scope it does nothing,
+ * and fresh checks always read.
  */
 export const beginLearnCardPublication = (): void => {
     const scope = requestScope.getStore();
@@ -194,11 +195,11 @@ export const CONSENT_READ_REUSE_MAX_MS = 10_000;
  * made inside a call becomes that call's read, so boundary checks after a
  * dispatch or publication check see the newer state.
  *
- * After `beginLearnCardPublication`, `fresh` reads share one live read for the
- * rest of the request (including AI-call dispatch checks), so publication
- * reads the contract fresh once, after every credential read. Plain reads
- * then reuse the request's read whatever its age, because a fresh check
- * still runs before anything is sent or returned.
+ * After `beginLearnCardPublication`, `fresh` reads outside an AI call share the
+ * newest live read. Inside an AI call they never do: a withdrawal during
+ * compaction, generation or pseudonymization reaches the next model dispatch.
+ * Plain reads then reuse the request's read whatever its age, because a live
+ * check still runs before anything is sent or returned.
  */
 export const reuseRequestConsentRead = <T>(
     did: string,
@@ -232,8 +233,7 @@ export const reuseRequestConsentRead = <T>(
     if (!scope) return rememberAiCallRead(call, did, live(), now);
     const publication = scope.publicationConsent;
     const published = publication?.entry;
-    if (fresh && published && published.did === did)
-        return rememberAiCallRead(call, did, published.data as Promise<T>, now);
+    if (fresh && !call && published && published.did === did) return published.data as Promise<T>;
     const existing = scope.consentRead;
     // During publication a plain read keeps the request's read whatever its
     // age: the publication's fresh read decides, and it follows.

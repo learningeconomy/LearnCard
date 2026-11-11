@@ -57,8 +57,8 @@ export const getAnswerAboutUser = async (did: string, question: string) => {
         relevantCredentials: await boundedSearch(question, did),
     };
     // The search read more credential data after the summary's fresh read, so
-    // the answer gets its own: one live read here, shared by the model
-    // dispatch checks and the check after the answer.
+    // the answer gets its own live read here. The model call's own checks read
+    // live too.
     beginLearnCardPublication();
     await assertCurrentAiConsent('model-inference', { fresh: true });
 
@@ -92,6 +92,8 @@ ${credentialsContext || 'No additional semantic matches.'}
 Please answer the question based on the credentials provided above.`,
         options: { accumulateContent: true, audience: 'external-model' },
     });
+    // Publication: read consent live, not the request's shared read.
+    beginLearnCardPublication();
     await assertCurrentAiConsent('model-inference', { fresh: true });
 
     return answer;

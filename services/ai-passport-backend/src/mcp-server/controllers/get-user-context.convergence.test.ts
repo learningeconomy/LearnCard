@@ -435,12 +435,23 @@ describe('MCP get_user_context resolves each credential once per request', () =>
         console.error = originalError;
     };
 
-    test('30 credentials: each read and verified once, consent read once plus one fresh read, at most 4 at a time', async () => {
+    test('30 credentials: each read and verified once, consent read once plus fresh reads after the batch and at publication, at most 4 at a time', async () => {
         uris = Array.from(
             { length: CREDENTIALS },
             (_, index) => `lc:cloud:credential:acct-${index}`
         );
         const store = realisticStore();
+        const { getLearnCardRequestSignal } = await import('../../learncard/requestScope');
+        // Background store jobs run outside the request and read on their own.
+        let requestConsentReads = 0;
+        getConsentFlowDataForDid.mockImplementation(async () => {
+            consentReads += 1;
+            if (getLearnCardRequestSignal()) requestConsentReads += 1;
+            const date = new Date(
+                Date.parse('2026-08-01T00:00:00.000Z') + consentReads * 1000
+            ).toISOString();
+            return { records: [createActiveRecord(uris, date)], hasMore: false };
+        });
         // Every credential loads: this test is about once-per-request resolution,
         // not the per-call credential cap.
         process.env.MCP_CONTEXT_MAX_CREDENTIALS = '100';
@@ -458,10 +469,10 @@ describe('MCP get_user_context resolves each credential once per request', () =>
             expect(elapsedMs).toBeLessThan(2_500);
 
             expect(JSON.stringify(events)).not.toContain('lc:cloud:credential');
-            // Consent reaches the store twice: the tool's read and ONE fresh read
-            // at publication; plus at most one by the background prompt-cache
-            // write. Nothing per credential.
-            const storeConsentReads = getConsentFlowDataForDid.mock.calls.length;
+            // The request reads consent three times: the tool's read, one fresh
+            // read after the batch and one live read at publication. Nothing per
+            // credential on the request path.
+            const storeConsentReads = requestConsentReads;
             expect(storeConsentReads).toBeLessThanOrEqual(3);
 
             console.log(
@@ -719,11 +730,11 @@ describe('MCP get_user_context on a 213-credential account at prod latencies', (
         expect(result.error).toBeUndefined();
         expect(result.context).toBe('Prod-latency learner context');
         expect(result.elapsedMs).toBeLessThan(budgetMs);
-        // One plain read at the start and ONE fresh read after the batch; every
-        // other check in the request (prompt checks, model dispatch, the tool's
-        // final check) reuses one of them.
-        expect(result.freshReads).toBe(1);
-        expect(result.liveConsentReads).toBeLessThanOrEqual(2);
+        // One plain read at the start, one fresh read after the batch and one
+        // live read at publication; the prompt checks in between reuse the
+        // newest. (Model calls are stubbed here; their own checks read live.)
+        expect(result.freshReads).toBe(2);
+        expect(result.liveConsentReads).toBeLessThanOrEqual(3);
         // The tool never waits on store: writes were still queued when it returned.
         expect(result.pendingStoresAtReturn).toBeGreaterThan(0);
         expect(result.storesAtReturn.finished).toBeLessThan(result.storesAtReturn.started + 1);

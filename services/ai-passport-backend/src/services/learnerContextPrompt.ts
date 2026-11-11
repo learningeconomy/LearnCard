@@ -306,9 +306,9 @@ export const generateLearnerContextPrompt = async (
     const credentials = await dependency(() =>
         loadContextCredentials(did, credentialUris, receipt, records, input.maxCredentials)
     );
-    // Every credential read is done. Inside an MCP tool, from here the request
-    // reads consent fresh ONCE (the check after the prompt-cache lookup) and
-    // every later fresh check, including model dispatch checks, reuses it.
+    // Every credential read is done. Inside an MCP tool, from here the checks
+    // below share the newest live read (the check after the prompt-cache
+    // lookup, then each model call's own live checks).
     markLearnCardBatchEnded();
     beginLearnCardPublication();
     const usedCredentials = credentials.slice(0, input.maxCredentials ?? credentials.length);
@@ -391,8 +391,8 @@ export const generateLearnerContextPrompt = async (
     );
     // The first fresh check after every credential and cache read, before any
     // model call or return. Inside an MCP tool (after beginLearnCardPublication)
-    // this is the request's one live fresh read, and the checks below and the
-    // model dispatch checks reuse it.
+    // it reads live, and the checks below outside a model call reuse the newest
+    // live read.
     await assertFresh();
     if (
         cached?.prompt &&

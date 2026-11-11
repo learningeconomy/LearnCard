@@ -35,6 +35,7 @@ const createActiveRecord = () => ({
 let record: Record<string, unknown> = createActiveRecord();
 let duringProjection: (() => void) | undefined;
 let duringCacheRead: (() => void) | undefined;
+let duringModelCall: (() => Promise<void>) | undefined;
 const published: string[] = [];
 const promptCache = new Map<
     string,
@@ -70,12 +71,14 @@ mock.module('../../credentials/service', () => ({
 mock.module('../../ai', () => ({
     aiCall: mock(async (input: { message: unknown }) => {
         published.push(JSON.stringify(input.message));
+        await duringModelCall?.();
         return { prompt: 'Published learner context', summary: 'Published summary' };
     }),
 }));
 mock.module(new URL('../../ai/index.ts', import.meta.url).href, () => ({
     aiCall: mock(async (input: { message: unknown }) => {
         published.push(JSON.stringify(input.message));
+        await duringModelCall?.();
         return { prompt: 'Published learner context', summary: 'Published summary' };
     }),
 }));
@@ -108,9 +111,9 @@ mock.module('../../db', () => ({
 }));
 
 const { AiConsentError, loadActiveAiConsentData } = await import('../../learncard/consent');
-const { resetConsentSnapshots, runWithLearnCardRequestScope } =
+const { resetConsentSnapshots, runInAiCallConsentScope, runWithLearnCardRequestScope } =
     await import('../../learncard/requestScope');
-const { runWithAiPrivacyContext } = await import('../../ai/privacy');
+const { assertCurrentAiConsent, runWithAiPrivacyContext } = await import('../../ai/privacy');
 const { getLatestUserSummary } = await import('./get-user-context');
 
 const runTool = () =>
@@ -123,6 +126,7 @@ beforeEach(() => {
     record = createActiveRecord();
     duringProjection = undefined;
     duringCacheRead = undefined;
+    duringModelCall = undefined;
     published.length = 0;
     promptCache.clear();
     getConsentFlowDataForDid.mockClear();
@@ -170,6 +174,24 @@ describe('MCP get_user_context consent freshness', () => {
         };
         await expect(runTool()).rejects.toBeInstanceOf(AiConsentError);
         expect(published).toEqual([]);
+    });
+
+    test('a withdrawal while a model call is pending blocks the next model dispatch and the publication', async () => {
+        let nextDispatch: unknown;
+        duringModelCall = async () => {
+            // The first fresh check after the batch already passed. The learner
+            // withdraws while the model call is pending.
+            record = { ...createActiveRecord(), status: 'withdrawn' };
+            // The next model dispatch checks in its own AI call scope, as client.ts does.
+            nextDispatch = await runInAiCallConsentScope(() =>
+                assertCurrentAiConsent('model-inference', { fresh: true })
+            ).then(
+                () => 'dispatched',
+                (error: unknown) => error
+            );
+        };
+        await expect(runTool()).rejects.toBeInstanceOf(AiConsentError);
+        expect(nextDispatch).toBeInstanceOf(AiConsentError);
     });
 
     test('a snapshot reuse still hides a revoke from unqualified reads, but the tool stays closed', async () => {

@@ -10,7 +10,7 @@ import {
     generateLearnerContextPrompt,
     LearnerContextPromptError,
 } from '../../services/learnerContextPrompt';
-import { getLearnCardRequestBudget } from '../../learncard/requestScope';
+import { beginLearnCardPublication, getLearnCardRequestBudget } from '../../learncard/requestScope';
 
 /* Credentials per call under a deadline (every MCP call): at most what one
  * direct synthesis call takes (learnerContextPrompt's
@@ -49,6 +49,8 @@ export async function getLatestUserSummary(did: string, options: { synthesize?: 
     if (result.metadata.consentRevision !== receipt.revision) throw new AiConsentError();
     // This tool response goes directly to an external model, not the learner UI.
     const context = await pseudonymizeProviderInput(result.prompt);
+    // Publication: read consent live, not the request's shared read.
+    beginLearnCardPublication();
     const current = await loadActiveAiConsentData(learnCard, did, 'model-inference', {
         fresh: true,
     });
