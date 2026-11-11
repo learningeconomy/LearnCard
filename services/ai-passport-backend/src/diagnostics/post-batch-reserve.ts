@@ -1,11 +1,14 @@
 /*
  * Time an MCP tool keeps after its credential batch: the fresh consent read,
- * learner-context synthesis (prompt cache, compaction, the model call),
- * pseudonymization and publication. Learned per tool and per process from
- * measured post-batch durations (an EWMA), starting from
- * MCP_POST_BATCH_RESERVE_MS (configured, default 8s). A call that times out
- * after its batch raises the estimate above what it measured, so the next
- * batch stops earlier. Dependency-free: owner-operation tests stub the env.
+ * learner-context synthesis (prompt cache, the model call), pseudonymization,
+ * and for get_answer_about_user the search and the answer's model call.
+ * Learned per tool and per process from measured post-batch durations (an
+ * EWMA). Until a tool is measured on this machine, a conservative per-tool
+ * default holds: v33 measured a 9.8s model call on prod, so each model call
+ * after the batch is budgeted at 10s. MCP_POST_BATCH_RESERVE_MS overrides the
+ * default for every tool. A call that times out after its batch raises the
+ * estimate above what it measured. Dependency-free: owner-operation tests
+ * stub the env.
  */
 
 const positiveInteger = (value: string | undefined, fallback: number): number => {
@@ -13,9 +16,20 @@ const positiveInteger = (value: string | undefined, fallback: number): number =>
     return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 };
 
+/* Unmeasured defaults: fresh consent read (~0.7s) + one 10s model call +
+ * pseudonymize and margin; get_answer adds a bounded search (6s) and keeps
+ * its own fresh read before the answer's model call. */
+const DEFAULT_POST_BATCH_MS: Record<string, number> = {
+    get_user_context: 13_000,
+    get_answer_about_user: 19_000,
+};
+
 /** Configured post-batch cost before any call of that tool was measured. */
-export const configuredPostBatchMs = (): number =>
-    positiveInteger(process.env.MCP_POST_BATCH_RESERVE_MS, 8_000);
+export const configuredPostBatchMs = (tool?: string): number =>
+    positiveInteger(
+        process.env.MCP_POST_BATCH_RESERVE_MS,
+        (tool && DEFAULT_POST_BATCH_MS[tool]) || 13_000
+    );
 
 /** Weight of the newest measurement. */
 const EWMA_ALPHA = 0.3;
@@ -34,14 +48,19 @@ const clamp = (ms: number) => Math.min(MAX_ESTIMATE_MS, Math.max(MIN_ESTIMATE_MS
 
 /** Current post-batch estimate for `tool` (configured until measured). */
 export const postBatchEstimateMs = (tool: string | undefined): number =>
-    (tool && estimates.get(tool)) || configuredPostBatchMs();
+    (tool && estimates.get(tool)) || configuredPostBatchMs(tool);
 
-/** Reserve for a call of `tool` with `budgetMs`: estimate plus headroom, capped. */
-export const postBatchReserveMs = (tool: string | undefined, budgetMs: number): number =>
-    Math.min(
-        Math.ceil(postBatchEstimateMs(tool) * RESERVE_HEADROOM),
+/** Reserve for a call of `tool` with `budgetMs`: the measured estimate plus
+ *  headroom, or the conservative configured default; capped. */
+export const postBatchReserveMs = (tool: string | undefined, budgetMs: number): number => {
+    const measured = tool ? estimates.get(tool) : undefined;
+    return Math.min(
+        measured === undefined
+            ? configuredPostBatchMs(tool)
+            : Math.ceil(measured * RESERVE_HEADROOM),
         Math.floor(budgetMs * MAX_RESERVE_SHARE)
     );
+};
 
 /** Record what ran after the batch: the whole tail on success, a lower bound on timeout. */
 export const recordPostBatchMs = (

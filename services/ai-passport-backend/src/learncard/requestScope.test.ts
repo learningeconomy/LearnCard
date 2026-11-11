@@ -5,6 +5,9 @@ import {
     beginLearnCardPublication,
     boundLearnCardCall,
     clearConsentSnapshots,
+    getLearnCardRequestBudget,
+    getLearnCardRequestSignal,
+    joinLearnCardRequestScope,
     CONSENT_READ_REUSE_MAX_MS,
     CONSENT_SNAPSHOT_TTL_MS,
     prefetchConsentSnapshot,
@@ -356,5 +359,46 @@ describe('per-learner consent snapshot', () => {
         await prefetched;
         expect(await joined).toBe('prefetched');
         expect(calls).toBe(1);
+    });
+});
+
+describe('joinLearnCardRequestScope', () => {
+    test("a joined call keeps the request's deadline and adds its own abort", async () => {
+        const request = new AbortController();
+        const search = new AbortController();
+        const deadlineAt = performance.now() + 10_000;
+        await runWithLearnCardRequestScope(
+            { signal: request.signal, deadlineAt, budgetMs: 10_000, postBatchReserveMs: 4_000 },
+            () =>
+                joinLearnCardRequestScope({ signal: search.signal }, async () => {
+                    expect(getLearnCardRequestBudget()).toEqual({
+                        deadlineAt,
+                        budgetMs: 10_000,
+                        postBatchReserveMs: 4_000,
+                    });
+                    const signal = getLearnCardRequestSignal();
+                    search.abort();
+                    expect(signal?.aborted).toBe(true);
+                    expect(request.signal.aborted).toBe(false);
+                })
+        );
+    });
+
+    test('a joined call aborts with the request', async () => {
+        const request = new AbortController();
+        await runWithLearnCardRequestScope({ signal: request.signal }, () =>
+            joinLearnCardRequestScope({}, async () => {
+                request.abort();
+                expect(getLearnCardRequestSignal()?.aborted).toBe(true);
+            })
+        );
+    });
+
+    test('with no request it opens its own scope', () => {
+        const search = new AbortController();
+        joinLearnCardRequestScope({ signal: search.signal }, () => {
+            expect(getLearnCardRequestSignal()).toBe(search.signal);
+            expect(getLearnCardRequestBudget()).toBeUndefined();
+        });
     });
 });

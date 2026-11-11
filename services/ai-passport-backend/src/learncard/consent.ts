@@ -375,14 +375,17 @@ const loadConsentData = async (
     const { expectedRevision } = options;
     const records = await reuseRequestConsentRead(
         did,
-        () => readConsentRecords(learnCard, did, options),
+        () => timeMcpStage('consent_live', () => readConsentRecords(learnCard, did, options)),
         {
             fresh: options.fresh,
             oncePerAiCall: options.oncePerAiCall,
             snapshot: {
                 contract: contractUri,
                 signal: options.signal,
-                read: () => readConsentRecords(learnCard, did, { ...options, detached: true }),
+                read: () =>
+                    timeMcpStage('consent_live', () =>
+                        readConsentRecords(learnCard, did, { ...options, detached: true })
+                    ),
                 accept:
                     expectedRevision === undefined
                         ? undefined

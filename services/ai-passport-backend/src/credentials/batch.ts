@@ -278,6 +278,11 @@ type BatchOptions = {
     /* Checked before each task starts; false stops new starts (budget spent).
      * Tasks already running finish; the rest are counted as deferred. */
     shouldStart?: () => boolean;
+    /* Stop starting tasks once this many loaded (the rest are deferred). */
+    maxLoaded?: number;
+    /* performance.now() time the batch returns by; running tasks are abandoned
+     * and counted as deferred. */
+    stopAt?: number;
 };
 type Settled<Item> = {
     results: ({ value: Item } | undefined)[];
@@ -298,9 +303,20 @@ const runTasks = async <Item>(
     let nextIndex = 0;
     let failed = false;
     let stopped = false;
+    // Set once the batch has returned: late results and errors are dropped.
+    let abandoned = false;
+    let loaded = 0;
+    let capReached: () => void = () => undefined;
+    const cap = new Promise<'cap'>(resolve => {
+        capReached = () => resolve('cap');
+    });
     const worker = async (): Promise<void> => {
         while (!failed && !stopped && nextIndex < tasks.length) {
-            if (options.shouldStart && !options.shouldStart()) {
+            if (
+                (options.maxLoaded !== undefined && loaded >= options.maxLoaded) ||
+                (options.stopAt !== undefined && performance.now() >= options.stopAt) ||
+                (options.shouldStart && !options.shouldStart())
+            ) {
                 stopped = true;
                 break;
             }
@@ -308,8 +324,16 @@ const runTasks = async <Item>(
             nextIndex += 1;
             settled.started += 1;
             try {
-                settled.results[index] = { value: await tasks[index]!() };
+                const value = await tasks[index]!();
+                if (abandoned) return;
+                settled.results[index] = { value };
+                loaded += 1;
+                if (options.maxLoaded !== undefined && loaded >= options.maxLoaded) {
+                    stopped = true;
+                    capReached();
+                }
             } catch (error) {
+                if (abandoned) return;
                 if (!isCredentialItemFailure(error, options)) {
                     failed = true;
                     throw error;
@@ -318,8 +342,37 @@ const runTasks = async <Item>(
             }
         }
     };
-    await Promise.all(Array.from({ length: tasks.length ? limit : 0 }, worker));
-    return settled;
+    const workers = Promise.all(Array.from({ length: tasks.length ? limit : 0 }, worker));
+    if (options.stopAt === undefined && options.maxLoaded === undefined) {
+        await workers;
+        return settled;
+    }
+    // The batch returns at stopAt, or as soon as maxLoaded loaded, with what
+    // settled. Tasks still running are abandoned (counted deferred) so a slow
+    // credential never holds the batch past its window; their late results
+    // and errors are dropped.
+    workers.catch(() => undefined);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = new Promise<'stop'>(resolve => {
+        if (options.stopAt !== undefined)
+            timer = setTimeout(
+                () => resolve('stop'),
+                Math.max(0, options.stopAt - performance.now())
+            );
+    });
+    try {
+        await Promise.race([workers, stop, cap]);
+    } finally {
+        clearTimeout(timer);
+    }
+    stopped = true;
+    abandoned = true;
+    const done = settled.results.filter(Boolean).length + settled.failures.length;
+    return {
+        results: [...settled.results],
+        failures: [...settled.failures],
+        started: done,
+    };
 };
 
 /**

@@ -64,6 +64,7 @@ import { CREDENTIAL_PRELOAD_CONCURRENCY, FORMATTING_MODEL } from '../constants/e
 import { AI_INSIGHT_CREDENTIAL_TYPE } from '../constants/vc';
 import { DataErasureRequestedError } from '../services/dataErasure';
 import { isDataErasureRequested, assertOwnerOperationActive } from '../services/dataErasure';
+import * as ownerOperations from '../services/dataErasure';
 
 import { Source, Alignment, Evidence } from '../helpers/credential.helpers';
 
@@ -297,13 +298,47 @@ export const assertCredentialConsent = async (
 
 // Insight inputs share one live contract snapshot. Local guards preserve owner,
 // revision and URI membership during reads/queued writes without remote fanout.
+/*
+ * The owner-operation fence (a Redis script) once per FENCE_REUSE_MS per owner
+ * operation, shared by every credential in flight, instead of 4-5 times per
+ * credential. The operation's own signal is still checked on every call (the
+ * heartbeat aborts it when erasure is requested), and withOwnerOperation runs
+ * a live fence before it returns anything, so nothing is published after an
+ * erasure request; at most FENCE_REUSE_MS more reads can start.
+ */
+const FENCE_REUSE_MS = 1_000;
+const recentFences = new Map<string, { at: number; check: Promise<void> }>();
+
+const fenceOwnerOperation = (did: string): Promise<void> =>
+    timeMcpStage('fence', () => {
+        const current =
+            typeof ownerOperations.getCurrentOwnerOperation === 'function'
+                ? ownerOperations.getCurrentOwnerOperation()
+                : undefined;
+        if (!current || current.did !== did) return assertOwnerOperationActive(did);
+        current.signal.throwIfAborted();
+        const now = performance.now();
+        const recent = recentFences.get(current.token);
+        if (recent && now - recent.at <= FENCE_REUSE_MS) return recent.check;
+        const check = assertOwnerOperationActive(did);
+        const entry = { at: now, check };
+        recentFences.set(current.token, entry);
+        check.catch(() => {
+            if (recentFences.get(current.token) === entry) recentFences.delete(current.token);
+        });
+        if (recentFences.size > 1_000)
+            for (const [token, fence] of recentFences)
+                if (now - fence.at > FENCE_REUSE_MS) recentFences.delete(token);
+        return check;
+    });
+
 const assertCredentialSnapshot = async (
     did: string,
     uri: string,
     expected: ActiveAiConsentReceipt
 ): Promise<void> => {
     requireCredentialOwner(did);
-    await assertOwnerOperationActive(did);
+    await fenceOwnerOperation(did);
     if (
         !expected.credentialUris.includes(uri) ||
         !getCurrentAiCredentialUris().includes(uri) ||
@@ -450,9 +485,11 @@ const resolveCredential = async (
     const assertScope = () =>
         insightEligibility || options.location
             ? assertCredentialSnapshot(did, ref.uri, ref.consent)
-            : assertCredentialConsent(did, ref.uri, ref.consent);
+            : timeMcpStage('fence', () => assertCredentialConsent(did, ref.uri, ref.consent));
     await assertScope();
-    const learnCard = await withAiInsightResolutionOperation('sdk_init', () => getLearnCard());
+    const learnCard = await timeMcpStage('sdk_init', () =>
+        withAiInsightResolutionOperation('sdk_init', () => getLearnCard())
+    );
     // Do not substitute Zod's parsed copy for the signed original.
     // The SDK read and verify take no signal; bound both by the request scope's
     // signal and LEARNCARD_CALL_TIMEOUT_MS so a hung call cannot hold the caller.
@@ -546,8 +583,14 @@ const resolveCredential = async (
     }
     let projection: ModelSafeCredentialProjection;
     try {
-        projection = await withAiInsightResolutionOperation('projection', () =>
-            projectCredential(credential, ref.category ?? 'Uncategorized Credential', verification)
+        projection = await timeMcpStage('project', () =>
+            withAiInsightResolutionOperation('projection', () =>
+                projectCredential(
+                    credential,
+                    ref.category ?? 'Uncategorized Credential',
+                    verification
+                )
+            )
         );
     } catch {
         // One credential that cannot be projected is dropped and logged; it must
@@ -729,7 +772,7 @@ const resolveVerifiedCredentialProjectionOnce = async (
                 )
             ).projection;
         if (prepared) await assertCredentialSnapshot(did, uri, receipt);
-        else await assertCredentialConsent(did, uri, receipt);
+        else await timeMcpStage('fence', () => assertCredentialConsent(did, uri, receipt));
         return projection;
     });
 };

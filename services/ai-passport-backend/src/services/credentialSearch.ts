@@ -18,7 +18,7 @@ import { sendTimingEvent } from '../utils/timing';
 import { searchSimilar } from '../db/qdrant';
 import { assertCurrentAiConsent, getCurrentAiSubject } from '../ai/privacy';
 import { AiConsentError } from '../learncard/consent';
-import { runWithLearnCardRequestScope } from '../learncard/requestScope';
+import { joinLearnCardRequestScope } from '../learncard/requestScope';
 import {
     assertCredentialConsent,
     resolveVerifiedCredentialProjection,
@@ -168,7 +168,7 @@ export const warmCredentialTopicExpansion = (
     options: { signal?: AbortSignal } = {}
 ): Promise<void> =>
     withSearchGeneration(() =>
-        runWithLearnCardRequestScope({ signal: options.signal }, async () => {
+        joinLearnCardRequestScope({ signal: options.signal }, async () => {
             if (getCurrentAiSubject() !== did) throw new AiConsentError();
             const receipt = await assertCurrentAiConsent('model-inference', {
                 signal: options.signal,
@@ -301,7 +301,7 @@ export const searchCredentialContextsByTopic = (
     return withSearchGeneration(() =>
         // One request: LearnCard calls inherit the search signal, and the consent
         // contract is read once instead of once per check per credential.
-        runWithLearnCardRequestScope({ signal: options.signal }, () =>
+        joinLearnCardRequestScope({ signal: options.signal }, () =>
             searchCredentialContextsPinned(topic, did, options)
         )
     );
@@ -705,7 +705,7 @@ export const searchCredentialsByTopic = async (
     did: string,
     options: CredentialSearchOptions = {}
 ): Promise<TopicSearchResult[]> =>
-    runWithLearnCardRequestScope({ signal: options.signal }, async () => {
+    joinLearnCardRequestScope({ signal: options.signal }, async () => {
         const contexts = await searchCredentialContextsByTopic(topic, did, options);
 
         return enrichCredentialTitles(contexts, did, options);

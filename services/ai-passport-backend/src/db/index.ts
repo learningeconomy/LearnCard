@@ -2754,6 +2754,19 @@ export class ChatDB {
         );
     }
 
+    /** URIs among `uris` whose stored verification is invalid (one query). */
+    public async getInvalidCredentialUris(did: string, uris: string[]): Promise<string[]> {
+        if (!uris.length) return [];
+        await this.init();
+        const rows = await this.credentialVerifications
+            .find(
+                { did, credentialUri: { $in: uris }, status: 'invalid' },
+                { projection: { credentialUri: 1, _id: 0 }, session: this.session }
+            )
+            .toArray();
+        return rows.map(row => row.credentialUri);
+    }
+
     public async storeCredentialVerification(
         did: string,
         verification: CredentialVerificationMetadata,

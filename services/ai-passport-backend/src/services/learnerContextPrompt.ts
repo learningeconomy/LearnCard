@@ -17,13 +17,20 @@ import {
 import {
     credentialBatchConcurrency,
     emptyBatchSkipCountsOf,
+    getVerifiedCredential,
     isCredentialItemFailure,
+    knownBadCredentialKind,
     settleCredentialBatch,
 } from '../credentials/batch';
-import { credentialBudgetAllowsStart, credentialReadTimeoutMs } from '../credentials/read-budget';
+import {
+    credentialBatchStopAt,
+    credentialBudgetAllowsStart,
+    credentialReadTimeoutMs,
+} from '../credentials/read-budget';
 import { deferCredentialStore } from '../credentials/store-queue';
 import {
     beginLearnCardPublication,
+    getLearnCardRequestBudget,
     learnCardStoresDeferred,
     markLearnCardBatchEnded,
     recordLearnCardTaskMs,
@@ -40,7 +47,11 @@ import {
     LearnerContextPromptResponseValidator,
     LearnerCredentialSummaryValidator,
 } from '../ai/generation-schemas';
-import { recordMcpCredentialCount, timeMcpStage } from '../diagnostics/mcp-timing';
+import {
+    recordMcpBatchCounts,
+    recordMcpCredentialCount,
+    timeMcpStage,
+} from '../diagnostics/mcp-timing';
 
 /* Model calls inside an MCP tool count toward its llm stage timing. */
 const timedAiCall = ((...args: Parameters<typeof aiCall>) =>
@@ -186,11 +197,56 @@ const logSkippedCredentialCounts = (skipped: Array<{ code: string }>): void => {
  * - under a request deadline (MCP), no credential starts that could not end
  *   before the post-batch reserve; the rest are deferred.
  */
+/*
+ * Under an MCP deadline, which credentials to try and in what order:
+ * known-bad ones (this machine's cache, or a stored invalid verification) are
+ * not tried at all; ones this machine verified recently go first (they load
+ * without a read); the rest follow newest-shared first (guess: consent lists
+ * credentials in the order they were shared).
+ */
+const orderContextCandidates = async (
+    did: string,
+    uris: string[],
+    revision: string
+): Promise<{ candidates: string[]; excluded: number }> => {
+    let storedInvalid = new Set<string>();
+    if (typeof db.getInvalidCredentialUris === 'function') {
+        // One indexed query; never let it hold the batch.
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+            storedInvalid = new Set(
+                await Promise.race([
+                    db.getInvalidCredentialUris(did, uris),
+                    new Promise<string[]>(resolve => {
+                        timer = setTimeout(() => resolve([]), STORED_INVALID_LOOKUP_MS);
+                    }),
+                ])
+            );
+        } catch {
+            storedInvalid = new Set();
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+    const warm: string[] = [];
+    const cold: string[] = [];
+    let excluded = 0;
+    for (const uri of [...uris].reverse()) {
+        if (knownBadCredentialKind(did, uri) || storedInvalid.has(uri)) excluded += 1;
+        else if (getVerifiedCredential(did, uri, revision)) warm.push(uri);
+        else cold.push(uri);
+    }
+    return { candidates: [...warm, ...cold], excluded };
+};
+
+const STORED_INVALID_LOOKUP_MS = 1_500;
+
 const loadContextCredentials = async (
     did: string,
     uris: string[],
     receipt: ConsentData['receipt'],
-    records: ConsentData['records']
+    records: ConsentData['records'],
+    maxCredentials?: number
 ): Promise<ModelSafeCredentialProjection[]> => {
     recordMcpCredentialCount(uris.length);
     if (uris.length === 0) return [];
@@ -198,12 +254,20 @@ const loadContextCredentials = async (
     const locations = await withCauseStep('uri_list', () =>
         timeMcpStage('uri_list', async () => consentCredentialLocations(records))
     );
+    // In-app (no deadline) every selected credential is still validated. Under
+    // an MCP deadline the batch is bounded: known-bad ones are not tried, it
+    // stops once maxCredentials loaded, and it returns by the stop time even if
+    // a credential is still running.
+    const budgeted = getLearnCardRequestBudget() !== undefined;
+    const { candidates, excluded } = budgeted
+        ? await orderContextCandidates(did, uris, receipt.revision)
+        : { candidates: uris, excluded: 0 };
     try {
-        const { loaded, skipped } = await withCauseStep('batch', () =>
+        const { loaded, skipped, deferred } = await withCauseStep('batch', () =>
             timeMcpStage('batch', () =>
                 settleCredentialBatch(
                     'context',
-                    uris.map(
+                    candidates.map(
                         uri => () =>
                             withCauseStep('projection', () =>
                                 timeMcpStage('projection', async () => {
@@ -228,14 +292,29 @@ const loadContextCredentials = async (
                         // HTTP format allows up to 500 URIs; never verify them all at once.
                         concurrency: credentialBatchConcurrency(),
                         shouldStart: () => credentialBudgetAllowsStart(),
+                        ...(budgeted
+                            ? { stopAt: credentialBatchStopAt(), maxLoaded: maxCredentials }
+                            : {}),
                     }
                 )
             )
         );
         logSkippedCredentialCounts(skipped);
+        recordMcpBatchCounts({
+            loadedCount: loaded.length,
+            skippedCount: skipped.length,
+            deferredCount: deferred,
+            excludedCount: excluded,
+        });
         return loaded;
     } catch (error) {
         if (!isCredentialItemFailure(error)) throw error;
+        recordMcpBatchCounts({
+            loadedCount: 0,
+            skippedCount: candidates.length,
+            deferredCount: 0,
+            excludedCount: excluded,
+        });
         const wrapper = new Error('All credentials were skipped', { cause: error });
         wrapper.name = 'CredentialBatchEmptyError';
         Object.assign(wrapper, { code: 'all_skipped' });
@@ -247,7 +326,13 @@ const loadContextCredentials = async (
     }
 };
 
-export const generateLearnerContextPrompt = async (request: LearnerContextPromptInput) => {
+export const generateLearnerContextPrompt = async (
+    request: LearnerContextPromptInput,
+    /** `synthesize: false` skips the model call on a prompt-cache miss and
+     *  returns the verified evidence block itself (get_answer_about_user, whose
+     *  answer call already reads that evidence). */
+    { synthesize = true }: { synthesize?: boolean } = {}
+) => {
     const startedAt = performance.now();
     const input = parseLearnerContextPromptInternal(request);
     const did = getCurrentAiSubject();
@@ -304,7 +389,7 @@ export const generateLearnerContextPrompt = async (request: LearnerContextPrompt
     };
     // Validate every selected source, even if the caller explicitly limits synthesis.
     const credentials = await dependency('verify', () =>
-        loadContextCredentials(did, credentialUris, receipt, records)
+        loadContextCredentials(did, credentialUris, receipt, records, input.maxCredentials)
     );
     // Every credential read is done. Inside an MCP tool, from here the request
     // reads consent fresh ONCE (the check after the prompt-cache lookup) and
@@ -416,6 +501,32 @@ export const generateLearnerContextPrompt = async (request: LearnerContextPrompt
                       stats: { ...stats, ...cached.metadata },
                   }
                 : undefined,
+        };
+    }
+
+    if (!synthesize) {
+        // The verified, consent-scoped evidence itself, bounded; no model call.
+        let evidence = '';
+        for (const [index, item] of representatives.entries()) {
+            const line = `${index + 1}. ${item.payload}`;
+            if (evidence.length + line.length > DIRECT_SYNTHESIS_MAX_CHARS) break;
+            evidence += (evidence ? '\n\n' : '') + line;
+        }
+        const personal = Object.keys(personalData).length
+            ? `Authorized personal data: ${stableStringify(personalData)}\n\n`
+            : '';
+        return {
+            prompt: personal + (evidence || 'No credential evidence selected.'),
+            metadata: {
+                ...stats,
+                synthesisStrategy: 'evidence',
+                consentRevision: receipt.revision,
+                promptCacheHit: false,
+                promptCacheHash,
+                promptCacheVersion: LEARNER_CONTEXT_PROMPT_CACHE_VERSION,
+                totalTimeMs: performance.now() - startedAt,
+            },
+            structuredContext: structuredContext(),
         };
     }
 

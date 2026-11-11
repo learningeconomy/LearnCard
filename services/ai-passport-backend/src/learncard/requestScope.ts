@@ -121,6 +121,28 @@ export const getLearnCardMeanTaskMs = (): number | undefined => {
 export const learnCardStoresDeferred = (): boolean => requestScope.getStore()?.deferStores === true;
 
 /**
+ * Like runWithLearnCardRequestScope, but inside an existing request scope it
+ * joins it: the callback shares the outer request's consent read, publication
+ * read, memo, deadline and store mode, and is bounded by both signals. Used by
+ * credential search, which an MCP tool calls inside its own request.
+ */
+export const joinLearnCardRequestScope = <Result>(
+    options: { signal?: AbortSignal },
+    callback: () => Result
+): Result => {
+    const parent = requestScope.getStore();
+    if (!parent) return requestScope.run({ signal: options.signal }, callback);
+    const signals = [parent.signal, options.signal].filter(
+        (signal): signal is AbortSignal => signal !== undefined
+    );
+    const signal = signals.length > 1 ? AbortSignal.any(signals) : signals[0];
+    const child = Object.create(parent, {
+        signal: { value: signal, enumerable: true },
+    }) as LearnCardRequestScope;
+    return requestScope.run(child, callback);
+};
+
+/**
  * Run `callback` with no request scope: nothing inside inherits a request's
  * signal or shares its consent read. For work shared across requests.
  */

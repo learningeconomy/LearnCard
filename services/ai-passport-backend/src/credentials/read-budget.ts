@@ -47,6 +47,21 @@ export const synthesisReserveMs = (budget: RequestBudget): number =>
 const credentialTimeLeftMs = (budget: RequestBudget, now: number): number =>
     budget.deadlineAt - now - synthesisReserveMs(budget);
 
+/** Past the reserve, the hard stop waits this long so a read bounded to the
+ *  reserve (credentialReadTimeoutMs) times out and is reported as a skip
+ *  before the stop abandons it as deferred. */
+export const CREDENTIAL_BATCH_STOP_GRACE_MS = 250;
+
+/** When the credential batch must return under a request deadline: the
+ *  deadline minus the post-batch reserve, plus the grace. Undefined with no
+ *  deadline. */
+export const credentialBatchStopAt = (
+    budget: RequestBudget | undefined = getLearnCardRequestBudget()
+): number | undefined =>
+    budget === undefined
+        ? undefined
+        : budget.deadlineAt - synthesisReserveMs(budget) + CREDENTIAL_BATCH_STOP_GRACE_MS;
+
 /** Time one more credential task needs: its measured mean in this request,
  *  with headroom; CREDENTIAL_MIN_START_MS until one has finished. */
 export const credentialTaskEstimateMs = (meanTaskMs = getLearnCardMeanTaskMs()): number =>

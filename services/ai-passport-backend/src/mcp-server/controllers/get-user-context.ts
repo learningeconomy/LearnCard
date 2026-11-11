@@ -11,8 +11,19 @@ import {
     LearnerContextPromptError,
 } from '../../services/learnerContextPrompt';
 import { withToolStage } from '../tool-failure';
+import { getLearnCardRequestBudget } from '../../learncard/requestScope';
 
-export async function getLatestUserSummary(did: string) {
+/* Credentials per call under a deadline (every MCP call): at most what one
+ * direct synthesis call takes (learnerContextPrompt's
+ * DIRECT_SYNTHESIS_MAX_CREDENTIALS), so a large account costs one bounded model
+ * call. MCP_CONTEXT_MAX_CREDENTIALS overrides. Without a deadline every
+ * consented credential is synthesized, as before. */
+export const mcpContextMaxCredentials = (): number => {
+    const parsed = Number(process.env.MCP_CONTEXT_MAX_CREDENTIALS);
+    return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 100) : 20;
+};
+
+export async function getLatestUserSummary(did: string, options: { synthesize?: boolean } = {}) {
     if (!did || getCurrentAiSubject() !== did) {
         throw new LearnerContextPromptError(
             401,
@@ -31,11 +42,17 @@ export async function getLatestUserSummary(did: string) {
     // prompt cache, and one fresh consent read before any model call or return.
     // Its consent read reuses this one (same request).
     const result = await withToolStage('learnercontext', () =>
-        generateLearnerContextPrompt({
-            credentialUris: receipt.credentialUris,
-            personalFields: receipt.personalFields,
-            detailLevel: 'expanded',
-        })
+        generateLearnerContextPrompt(
+            {
+                credentialUris: receipt.credentialUris,
+                personalFields: receipt.personalFields,
+                detailLevel: 'expanded',
+                ...(getLearnCardRequestBudget()
+                    ? { maxCredentials: mcpContextMaxCredentials() }
+                    : {}),
+            },
+            options
+        )
     );
     await withToolStage('consent', async () => {
         if (result.metadata.consentRevision !== receipt.revision) throw new AiConsentError();

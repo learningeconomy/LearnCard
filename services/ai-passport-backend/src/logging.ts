@@ -132,10 +132,16 @@ const MCP_TIMING_STAGE_KEYS = [
     'verify',
     'store',
     'projection',
+    'fence',
+    'sdk_init',
+    'project',
+    'projection_other',
     'batch',
     'learnercontext',
+    'search',
     'pseudonymize',
     'llm',
+    'consent_live',
 ] as const;
 type McpTimingStageKey = (typeof MCP_TIMING_STAGE_KEYS)[number];
 const MCP_TOOL_OUTCOMES = ['success', 'failure', 'timeout'] as const;
@@ -390,6 +396,13 @@ export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
     credentialCount?: number;
     /** mcp_tool_timing: how the call ended. */
     mcpOutcome?: (typeof MCP_TOOL_OUTCOMES)[number];
+    /** mcp_tool_timing: credentials not considered (known bad, or over the cap). */
+    excludedCount?: number;
+    /** mcp_tool_timing: event-loop delay during the call (max and mean ms). */
+    loopDelayMaxMs?: number;
+    loopDelayMeanMs?: number;
+    /** mcp_tool_timing: background store writes queued or running at the end. */
+    storeQueueDepth?: number;
 };
 
 const FILE_STAGES: Record<string, true> = {
@@ -492,6 +505,32 @@ export const logSafeEvent = (
                     picked[stage] = { count, ms };
             }
             if (Object.keys(picked).length) event.stageTimings = picked;
+        }
+        for (const field of [
+            'loadedCount',
+            'skippedCount',
+            'deferredCount',
+            'excludedCount',
+            'storeQueueDepth',
+        ] as const) {
+            const value = metrics[field];
+            if (
+                typeof value === 'number' &&
+                Number.isInteger(value) &&
+                value >= 0 &&
+                value <= MAX_BATCH_POSITION
+            )
+                event[field] = value;
+        }
+        for (const field of ['loopDelayMaxMs', 'loopDelayMeanMs'] as const) {
+            const value = metrics[field];
+            if (
+                typeof value === 'number' &&
+                Number.isFinite(value) &&
+                value >= 0 &&
+                value <= 600_000
+            )
+                event[field] = Math.round(value);
         }
     }
     if (code === 'credential_read_slow') {

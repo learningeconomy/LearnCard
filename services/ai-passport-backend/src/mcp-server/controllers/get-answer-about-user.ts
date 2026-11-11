@@ -5,11 +5,38 @@ import { assertCurrentAiConsent, getCurrentAiSubject } from '../../ai/privacy';
 import { AiConsentError } from '../../learncard/consent';
 import { getLatestUserSummary } from './get-user-context';
 import { withToolStage } from '../tool-failure';
-import { beginLearnCardPublication } from '../../learncard/requestScope';
+import { beginLearnCardPublication, getLearnCardRequestBudget } from '../../learncard/requestScope';
+import { timeMcpStage } from '../../diagnostics/mcp-timing';
 
 type AnswerEvidence = {
     learnerContext: string;
     relevantCredentials: TopicSearchResult[];
+};
+
+/* Semantic matches are extra detail: bounded by SEARCH_MAX_MS and the time
+ * left before the answer's reserve, without query expansion (a model call).
+ * A slow or failed search answers from the learner context alone. */
+const SEARCH_MAX_MS = 6_000;
+const ANSWER_RESERVE_MS = 12_000;
+const boundedSearch = async (question: string, did: string): Promise<TopicSearchResult[]> => {
+    const budget = getLearnCardRequestBudget();
+    const left = budget ? budget.deadlineAt - performance.now() - ANSWER_RESERVE_MS : SEARCH_MAX_MS;
+    const timeoutMs = Math.min(SEARCH_MAX_MS, left);
+    if (timeoutMs <= 0) return [];
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await searchCredentialsByTopic(question, did, {
+            limit: 5,
+            expandQueries: false,
+            signal: controller.signal,
+        });
+    } catch (error) {
+        if (error instanceof AiConsentError) throw error;
+        return [];
+    } finally {
+        clearTimeout(timer);
+    }
 };
 
 export const getAnswerAboutUser = async (did: string, question: string) => {
@@ -23,10 +50,16 @@ export const getAnswerAboutUser = async (did: string, question: string) => {
 
     // Top-k ranks detail, not the learner's whole background. Use the same
     // verified, consent-scoped context as get_user_context even with zero hits.
+    // Under a deadline (every MCP call) the learner context is the verified
+    // evidence itself (or the cached synthesis): no separate model call before
+    // the answer's own. Without one it is synthesized over every credential.
+    const learnerContext = await getLatestUserSummary(did, {
+        synthesize: getLearnCardRequestBudget() === undefined,
+    });
     const evidence: AnswerEvidence = {
-        learnerContext: await getLatestUserSummary(did),
+        learnerContext,
         relevantCredentials: await withToolStage('learnercontext', () =>
-            searchCredentialsByTopic(question, did, { limit: 5 })
+            timeMcpStage('search', () => boundedSearch(question, did))
         ),
     };
     // The search read more credential data after the summary's fresh read, so

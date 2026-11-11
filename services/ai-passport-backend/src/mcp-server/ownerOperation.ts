@@ -19,6 +19,23 @@ export const runMcpOwnerOperation = async <T>(did: string, operation: () => Prom
     timer.unref?.();
     const startedAt = performance.now();
     const tool = getMcpProgress()?.tool;
+    // Event-loop delay during the call: a 50ms tick's lateness (CPU-bound
+    // verify or JSON work shows here, not in any one stage).
+    const loop = { max: 0, total: 0, samples: 0, expected: performance.now() + 50 };
+    const loopTimer = setInterval(() => {
+        const now = performance.now();
+        const lag = Math.max(0, now - loop.expected);
+        loop.max = Math.max(loop.max, lag);
+        loop.total += lag;
+        loop.samples += 1;
+        loop.expected = now + 50;
+    }, 50);
+    loopTimer.unref?.();
+    // Background store writes for this owner wait while this call reads (the
+    // in-app preload's yield to a chat start: credentials/batch.ts).
+    const contextRead = await import('../credentials/batch')
+        .then(batch => batch.beginCredentialContextRead(did))
+        .catch(() => undefined);
     let batchEndedAt: number | undefined;
     let outcome: 'success' | 'failure' | 'timeout' = 'failure';
     try {
@@ -53,6 +70,8 @@ export const runMcpOwnerOperation = async <T>(did: string, operation: () => Prom
         throw error;
     } finally {
         clearTimeout(timer);
+        clearInterval(loopTimer);
+        contextRead?.();
         if (batchEndedAt !== undefined)
             recordPostBatchMs(tool, performance.now() - batchEndedAt, outcome);
         // One line per MCP call, on success, failure or timeout: per-stage
@@ -65,12 +84,18 @@ export const runMcpOwnerOperation = async <T>(did: string, operation: () => Prom
                 durationMs: Math.round(performance.now() - startedAt),
                 ...mcpTimingSnapshot(progress),
             };
+            const storeQueueDepth = await import('../credentials/store-queue')
+                .then(queue => queue.pendingCredentialStores())
+                .catch(() => undefined);
             const { logSafeEvent } = await import('../logging');
             logSafeEvent('info', 'mcp_tool_timing', {
                 mcpTool: progress.tool,
                 mcpRequestId: progress.requestId,
                 mcpOutcome: outcome,
                 ...snapshot,
+                loopDelayMaxMs: loop.max,
+                loopDelayMeanMs: loop.samples ? loop.total / loop.samples : 0,
+                ...(storeQueueDepth === undefined ? {} : { storeQueueDepth }),
             });
         }
     }

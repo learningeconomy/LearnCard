@@ -55,14 +55,18 @@ test('the post-batch reserve learns from measured tails and backs off after a ti
     const reserve = await import('../diagnostics/post-batch-reserve');
     reserve.resetPostBatchEstimates();
     try {
-        // Configured 8s plus 25% headroom, capped at 60% of the budget.
-        expect(reserve.postBatchReserveMs('get_user_context', 20_000)).toBe(10_000);
+        // Unmeasured: the per-tool default (13s), capped at 60% of the budget.
+        expect(reserve.postBatchReserveMs('get_user_context', 45_000)).toBe(13_000);
+        expect(reserve.postBatchReserveMs('get_answer_about_user', 45_000)).toBe(19_000);
+        expect(reserve.postBatchReserveMs('get_user_context', 20_000)).toBe(12_000);
         expect(reserve.postBatchReserveMs('get_user_context', 10_000)).toBe(6_000);
         // Measured 4s tails pull the estimate down.
         for (let i = 0; i < 10; i++)
             reserve.recordPostBatchMs('get_user_context', 4_000, 'success');
-        expect(reserve.postBatchEstimateMs('get_user_context')).toBeLessThan(4_200);
-        expect(reserve.postBatchEstimateMs('get_answer_about_user')).toBe(8_000);
+        expect(reserve.postBatchEstimateMs('get_user_context')).toBeLessThan(4_300);
+        expect(reserve.postBatchEstimateMs('get_answer_about_user')).toBe(19_000);
+        // Measured: the estimate plus 25% headroom.
+        expect(reserve.postBatchReserveMs('get_user_context', 45_000)).toBeLessThan(5_400);
         // A timeout 6s after the batch: the next estimate is at least 9s.
         reserve.recordPostBatchMs('get_user_context', 6_000, 'timeout');
         expect(reserve.postBatchEstimateMs('get_user_context')).toBe(9_000);

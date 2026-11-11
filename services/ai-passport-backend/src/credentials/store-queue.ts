@@ -2,14 +2,21 @@ import * as dataErasure from '../services/dataErasure';
 import { logSafeEvent } from '../logging';
 import { runOutsideLearnCardRequestScope } from '../learncard/requestScope';
 import { runOutsideMcpProgress } from '../diagnostics/mcp-progress';
+import { waitForCredentialContextIdle } from './batch';
 
 /*
  * Background store writes for MCP reads. A read tool returns as soon as it has
- * the projection; persisting the verification, the raw credential and
- * invalid-credential cleanup run here, never on the request path.
+ * the projection; persisting the verification, the raw credential,
+ * invalid-credential cleanup and cache writes run here, never on the request
+ * path, and never while a request for that owner is still reading.
  *
- * - Each write holds its own detached owner operation, begun while the request
- *   still holds its own, so erasure still waits for (or fences out) the write
+ * - A queued write waits until no credential context read is active for the
+ *   owner (the same yield the in-app credential preload uses for a chat
+ *   start, batch.ts waitForCredentialContextIdle), at most STORE_IDLE_WAIT_MS.
+ *   So the request's fence checks and reads never queue behind these writes
+ *   on Redis or the Mongo pool.
+ * - Each write then runs outside the request's owner operation, in its own
+ *   (withOwnerOperation), so erasure still waits for or fences out the write,
  *   and every write still re-checks consent before it lands.
  * - At most STORE_CONCURRENCY run at once; at most STORE_QUEUE_MAX wait. A
  *   write over that cap is dropped and counted: these rows are a cache of what
@@ -22,6 +29,7 @@ import { runOutsideMcpProgress } from '../diagnostics/mcp-progress';
 
 const STORE_CONCURRENCY = 4;
 const STORE_QUEUE_MAX = 256;
+const STORE_IDLE_WAIT_MS = 60_000;
 
 let running = 0;
 const waiting: Array<() => void> = [];
@@ -41,6 +49,11 @@ const release = (): void => {
     else running -= 1;
 };
 
+const outsideOwnerOperation = <T>(callback: () => T): T =>
+    typeof dataErasure.runOutsideOwnerOperation === 'function'
+        ? dataErasure.runOutsideOwnerOperation(callback)
+        : callback();
+
 /** Queue `write` for `did` in the background. Never awaited by the caller. */
 export const deferCredentialStore = (did: string, write: () => Promise<void>): void => {
     if (inFlight.size >= STORE_CONCURRENCY + STORE_QUEUE_MAX) {
@@ -49,18 +62,15 @@ export const deferCredentialStore = (did: string, write: () => Promise<void>): v
     }
     const job = runOutsideMcpProgress(() =>
         runOutsideLearnCardRequestScope(() =>
-            dataErasure.withOwnerOperation(
-                did,
-                async () => {
-                    await acquire();
-                    try {
-                        await write();
-                    } finally {
-                        release();
-                    }
-                },
-                { detached: true }
-            )
+            outsideOwnerOperation(async () => {
+                await waitForCredentialContextIdle(did, { maxMs: STORE_IDLE_WAIT_MS });
+                await acquire();
+                try {
+                    await dataErasure.withOwnerOperation(did, () => write());
+                } finally {
+                    release();
+                }
+            })
         )
     ).catch(() => {
         logSafeEvent('error', 'credential_store_deferred_failed', { count: 1 });

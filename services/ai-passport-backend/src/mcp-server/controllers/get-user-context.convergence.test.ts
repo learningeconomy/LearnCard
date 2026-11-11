@@ -500,6 +500,7 @@ describe('MCP get_user_context resolves each credential once per request', () =>
         }));
         delete process.env.MCP_TOOL_TIMEOUT_MS;
         delete process.env.MCP_POST_BATCH_RESERVE_MS;
+        delete process.env.MCP_CONTEXT_MAX_CREDENTIALS;
         console.info = originalInfo;
         console.warn = originalWarn;
         console.error = originalError;
@@ -511,6 +512,9 @@ describe('MCP get_user_context resolves each credential once per request', () =>
             (_, index) => `lc:cloud:credential:acct-${index}`
         );
         const store = realisticStore();
+        // Every credential loads: this test is about once-per-request resolution,
+        // not the per-call credential cap.
+        process.env.MCP_CONTEXT_MAX_CREDENTIALS = '100';
         try {
             const { context, error, elapsedMs } = await runMcp('req_onceperreq01');
             expect(error).toBeUndefined();
@@ -612,7 +616,11 @@ describe('MCP get_user_context resolves each credential once per request', () =>
             expect(completed?.count).toBe(80);
             expect(completed?.deferredCount).toBeGreaterThan(0);
             expect((completed?.loadedCount ?? 0) + (completed?.deferredCount ?? 0)).toBe(80);
-            expect(store.reads.size).toBe(completed?.loadedCount ?? -1);
+            // Reads in flight at the stop are abandoned and counted as deferred.
+            expect(store.reads.size).toBeGreaterThanOrEqual(completed?.loadedCount ?? Infinity);
+            expect(store.reads.size).toBeLessThanOrEqual(
+                (completed?.loadedCount ?? 0) + credentialBatchConcurrency()
+            );
             console.log(
                 `80-credential tool under 3s: ${Math.round(elapsedMs)}ms, loaded ${completed?.loadedCount}, deferred ${completed?.deferredCount}`
             );
