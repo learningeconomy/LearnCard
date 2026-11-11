@@ -3,7 +3,6 @@
  *
  * This module must stay dependency-free: the same file is bundled by Netlify edge
  * functions (Deno), the Vite dev/preview middleware (Node), and the browser client.
- * See README.md in this directory for the allowlist, caching and cost assumptions.
  */
 
 export const REGISTRY_PROXY_PATH = '/api/registry-proxy';
