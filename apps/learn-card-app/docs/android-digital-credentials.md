@@ -79,7 +79,7 @@ A sample with the wrong holder key, an invalid issuer signature, unrequested dis
 
 ## Sign in during a selected request
 
-An Android request for a previously registered entry can arrive while LearnCard needs sign-in. The provider shows the regular sign-in screen and retains that already selected request and its private inventory mapping. After sign-in, LearnCard checks the original account owner, re-reads the selected credential and current index, then shows consent. Signing in does not approve disclosure. A different account, removed credential, canceled request or failed verification cannot return a presentation.
+An Android request for a previously registered entry can arrive while LearnCard needs sign-in. A cached profile alone is not account readiness: the signing wallet must be available. The provider shows the regular sign-in screen and retains that already selected request and its private inventory mapping. After sign-in, LearnCard checks the original account owner, re-reads the selected credential and current index, then shows consent. Signing in does not approve disclosure. A different account, removed credential, canceled request or failed verification cannot return a presentation.
 
 This applies to an existing Android selection, not discovery for a fresh installation with no registered credentials. Explicit logout, profile switching and established account/key replacement still invalidate native handles immediately. Signed-out startup without a pending selection clears the registry as before.
 

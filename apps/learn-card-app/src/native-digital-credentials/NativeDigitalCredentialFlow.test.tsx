@@ -4,6 +4,7 @@ import NativeDigitalCredentialFlow from './NativeDigitalCredentialFlow';
 
 const mocks = vi.hoisted(() => ({
     loggedIn: false,
+    wallet: null as object | null,
     current: true,
     revision: 0,
     pending: vi.fn(),
@@ -25,6 +26,9 @@ vi.mock('learn-card-base', () => ({
     useIsLoggedIn: () => mocks.loggedIn,
     useWallet: () => ({ initWallet: mocks.initialize }),
     redirectStore: { set: { lcnRedirect: mocks.redirect } },
+}));
+vi.mock('learn-card-base/stores/walletStore', () => ({
+    walletStore: { use: { wallet: () => mocks.wallet } },
 }));
 vi.mock('../helpers/verifier-history/account', () => ({
     captureHistoryAccount: () => () => mocks.current,
@@ -70,6 +74,7 @@ const request = {
 beforeEach(() => {
     vi.resetAllMocks();
     mocks.loggedIn = false;
+    mocks.wallet = null;
     mocks.current = true;
     mocks.revision = 0;
     mocks.pending.mockResolvedValue({ pending: request, isProvider: true });
@@ -93,6 +98,7 @@ it('waits for sign-in and completes the original request only after consent', as
     expect(mocks.prepare).not.toHaveBeenCalled();
     expect(mocks.complete).not.toHaveBeenCalled();
     mocks.loggedIn = true;
+    mocks.wallet = {};
     mocks.revision++;
     view.rerender(<NativeDigitalCredentialFlow />);
     fireEvent.click(await screen.findByRole('button', { name: 'Approve request' }));
@@ -110,6 +116,7 @@ it('returns no credential if the signed-in account cannot access the original se
     await waitFor(() => expect(mocks.redirect).toHaveBeenCalled());
     mocks.prepare.mockRejectedValue(new Error('Account changed'));
     mocks.loggedIn = true;
+    mocks.wallet = {};
     mocks.revision++;
     view.rerender(<NativeDigitalCredentialFlow />);
     await screen.findByText('Request unavailable');
@@ -125,6 +132,7 @@ it('does not send a response if the request is canceled while sign-in is pending
     await waitFor(() => expect(mocks.redirect).toHaveBeenCalled());
     mocks.pending.mockResolvedValue({ isProvider: true });
     mocks.loggedIn = true;
+    mocks.wallet = {};
     mocks.revision++;
     view.rerender(<NativeDigitalCredentialFlow />);
     await screen.findByText('Request unavailable');
@@ -134,6 +142,7 @@ it('does not send a response if the request is canceled while sign-in is pending
 
 it('rejects an approval whose account changes while signing is in flight', async () => {
     mocks.loggedIn = true;
+    mocks.wallet = {};
     let finish!: (value: string) => void;
     mocks.approve.mockReturnValue(
         new Promise(resolve => {
@@ -145,5 +154,19 @@ it('rejects an approval whose account changes while signing is in flight', async
     mocks.current = false;
     await act(async () => finish('late-signed-response'));
     await screen.findByText('Request unavailable');
+    expect(mocks.complete).not.toHaveBeenCalled();
+});
+
+it('asks for sign-in when only the cached profile exists, then resumes once its wallet is ready', async () => {
+    mocks.loggedIn = true;
+    const view = render(<NativeDigitalCredentialFlow />);
+    await waitFor(() => expect(mocks.redirect).toHaveBeenCalled());
+    expect(screen.getByText('Sign in first')).toBeInTheDocument();
+    expect(mocks.initialize).not.toHaveBeenCalled();
+    expect(mocks.prepare).not.toHaveBeenCalled();
+    mocks.wallet = {};
+    view.rerender(<NativeDigitalCredentialFlow />);
+    await screen.findByRole('button', { name: 'Approve request' });
+    expect(mocks.prepare.mock.calls[0][2]).toBe(request);
     expect(mocks.complete).not.toHaveBeenCalled();
 });
