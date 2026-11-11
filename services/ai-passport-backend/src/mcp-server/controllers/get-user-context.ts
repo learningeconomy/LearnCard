@@ -7,7 +7,10 @@ import {
     settleCredentialBatch,
     type CredentialBatchResult,
 } from '../../credentials/batch';
-import { attachVerifyFailureDiagnostics } from '../../credentials/verify-diagnostics';
+import {
+    attachVerifyFailureDiagnostics,
+    withCauseStep,
+} from '../../credentials/verify-diagnostics';
 import { resolveVerifiedCredentialProjection } from '../../credentials/service';
 import { getLearnCard } from '../../learncard';
 import { AiConsentError, loadActiveAiConsentData } from '../../learncard/consent';
@@ -35,16 +38,22 @@ const loadSharedContextUris = async (
     did: string,
     receipt: Awaited<ReturnType<typeof loadActiveAiConsentData>>['receipt']
 ): Promise<string[]> => {
-    const uris = [...new Set(receipt.credentialUris)];
-    if (uris.length === 0) return [];
     try {
-        const { loaded, skipped } = await settleCredentialBatch(
-            'context',
-            uris.map(uri => async () => {
-                await resolveVerifiedCredentialProjection(did, uri, receipt);
+        const uris = await withCauseStep('uri_list', async () => [
+            ...new Set(receipt.credentialUris),
+        ]);
+        if (uris.length === 0) return [];
+        const { tasks, concurrency } = await withCauseStep('batch_setup', async () => ({
+            concurrency: CREDENTIAL_PRELOAD_CONCURRENCY,
+            tasks: uris.map(uri => async () => {
+                await withCauseStep('projection', () =>
+                    resolveVerifiedCredentialProjection(did, uri, receipt)
+                );
                 return uri;
             }),
-            { concurrency: CREDENTIAL_PRELOAD_CONCURRENCY }
+        }));
+        const { loaded, skipped } = await withCauseStep('batch', () =>
+            settleCredentialBatch('context', tasks, { concurrency })
         );
         logSkippedCredentialCounts(skipped);
         return loaded;

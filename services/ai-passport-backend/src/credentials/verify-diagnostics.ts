@@ -43,8 +43,12 @@ const isSafeVerifyCheck = (value: unknown): value is SafeVerifyCheck =>
     typeof value === 'string' && (SAFE_VERIFY_CHECKS as readonly string[]).includes(value);
 
 /** Redact identifiers from verifier text and bound the result for logs. */
-export const sanitizeVerifyDiagnosticText = (value: unknown): string | undefined => {
+export const sanitizeVerifyDiagnosticText = (
+    value: unknown,
+    maxChars = MAX_ENTRY_CHARS
+): string | undefined => {
     if (typeof value !== 'string') return undefined;
+    const limit = Number.isInteger(maxChars) && maxChars > 0 ? maxChars : MAX_ENTRY_CHARS;
     const text = value
         .replace(/\bdid:[^\s]+/gi, '[did]')
         .replace(/\bhttps?:\/\/[^\s]+/gi, '[url]')
@@ -55,7 +59,7 @@ export const sanitizeVerifyDiagnosticText = (value: unknown): string | undefined
         .replace(/\s+/g, ' ')
         .trim();
     if (!text) return undefined;
-    return text.length > MAX_ENTRY_CHARS ? `${text.slice(0, MAX_ENTRY_CHARS)}...` : text;
+    return text.length > limit ? `${text.slice(0, limit)}...` : text;
 };
 
 export const sanitizeVerifyDiagnosticList = (values: unknown): string[] => {
@@ -165,4 +169,97 @@ export const readVerifyFailureDiagnostics = (
     return isVerifyFailureKind(merged.kind)
         ? sanitizeDiagnostics(merged as VerifyFailureDiagnostics)
         : undefined;
+};
+
+export const CAUSE_STEPS = [
+    'consent_read',
+    'uri_list',
+    'scope',
+    'batch_setup',
+    'batch',
+    'projection',
+] as const;
+export type CauseStep = (typeof CAUSE_STEPS)[number];
+
+const CAUSE_STEP_KEY = Symbol.for('mcp.causeStep');
+const CAUSE_MESSAGE_CHARS = 160;
+
+export const isCauseStep = (value: unknown): value is CauseStep =>
+    typeof value === 'string' && (CAUSE_STEPS as readonly string[]).includes(value);
+
+export const sanitizeCauseMessage = (value: unknown): string | undefined =>
+    sanitizeVerifyDiagnosticText(value, CAUSE_MESSAGE_CHARS);
+
+const sanitizeFrameName = (value: string): string | undefined => {
+    const cleaned = value.replace(/^Object\./, '').replace(/[^A-Za-z0-9_$.<>]/g, '');
+    return cleaned.slice(0, 64) || undefined;
+};
+
+const sanitizeFrameFile = (value: string): string | undefined => {
+    const base = value.split(/[/\\]/).pop() ?? '';
+    return /^[A-Za-z0-9_.-]+\.[A-Za-z]+$/.test(base) ? base.slice(0, 64) : undefined;
+};
+
+/** Top app stack frame as `function@basename`, never a path or message. */
+export const sanitizeCauseFrame = (error: unknown): string | undefined => {
+    if (!(error instanceof Error) || typeof error.stack !== 'string') return undefined;
+    for (const line of error.stack.split('\n').slice(1)) {
+        if (/did:/i.test(line) || /node_modules|node:internal|^\s*at node:/.test(line)) continue;
+        const withFn = line.match(
+            /^\s*at (?:async )?([^\s(]+) \((?:file:\/\/)?(?:.*[/\\])?([^/\\:]+):\d+:\d+\)\s*$/
+        );
+        if (withFn) {
+            const file = sanitizeFrameFile(withFn[2] ?? '');
+            const name = sanitizeFrameName(withFn[1] ?? 'anonymous');
+            if (name && file) return `${name}@${file}`;
+            continue;
+        }
+        const noFn = line.match(/^\s*at (?:file:\/\/)?(?:.*[/\\])?([^/\\:]+):\d+:\d+\s*$/);
+        if (!noFn) continue;
+        const file = sanitizeFrameFile(noFn[1] ?? '');
+        if (file) return `anonymous@${file}`;
+    }
+    return undefined;
+};
+
+export const attachCauseStep = <Target>(target: Target, step: CauseStep): Target => {
+    if (!target || typeof target !== 'object' || !isCauseStep(step)) return target;
+    if (CAUSE_STEP_KEY in target) return target;
+    try {
+        Object.defineProperty(target, CAUSE_STEP_KEY, {
+            value: step,
+            enumerable: false,
+            configurable: true,
+        });
+    } catch {
+        /* Non-extensible errors still propagate. */
+    }
+    return target;
+};
+
+export const readCauseStep = (error: unknown): CauseStep | undefined => {
+    let current: unknown = error;
+    const seen = new Set<object>();
+    let found: CauseStep | undefined;
+    for (let depth = 0; depth < 6; depth += 1) {
+        if (!current || typeof current !== 'object' || seen.has(current)) break;
+        seen.add(current);
+        if (CAUSE_STEP_KEY in current) {
+            const step = (current as Record<typeof CAUSE_STEP_KEY, unknown>)[CAUSE_STEP_KEY];
+            if (isCauseStep(step)) found = step;
+        }
+        current = 'cause' in current ? (current as { cause?: unknown }).cause : undefined;
+    }
+    return found;
+};
+
+export const withCauseStep = async <T>(
+    step: CauseStep,
+    operation: () => Promise<T> | T
+): Promise<T> => {
+    try {
+        return await operation();
+    } catch (error) {
+        throw attachCauseStep(error, step);
+    }
 };

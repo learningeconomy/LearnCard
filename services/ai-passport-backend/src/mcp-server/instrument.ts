@@ -9,6 +9,8 @@ import {
     type McpToolName,
 } from './tool-failure';
 import {
+    isCauseStep,
+    sanitizeCauseMessage,
     sanitizeSkipCounts,
     sanitizeVerifyChecks,
     sanitizeVerifyDiagnosticList,
@@ -41,6 +43,7 @@ export const pickAllowlistedMcpFailureTags = (
     if (isMcpCauseDependency(tags.cause_dependency))
         allowlisted.cause_dependency = tags.cause_dependency;
     if (isMcpStage(tags.stage)) allowlisted.stage = tags.stage;
+    if (isCauseStep(tags.cause_step)) allowlisted.cause_step = tags.cause_step;
     if (
         typeof tags.verify_failure_kind === 'string' &&
         (VERIFY_FAILURE_KINDS as readonly string[]).includes(tags.verify_failure_kind)
@@ -61,6 +64,13 @@ const pickSanitizedVerifyExtra = (extra: unknown): Record<string, unknown> | und
     if (checks.length) picked.mcpVerifyChecks = checks;
     const skipCounts = sanitizeSkipCounts(record.mcpSkipCounts);
     if (skipCounts) picked.mcpSkipCounts = skipCounts;
+    const causeMessage = sanitizeCauseMessage(record.mcpCauseMessage);
+    if (causeMessage) picked.mcpCauseMessage = causeMessage;
+    if (
+        typeof record.mcpCauseFrame === 'string' &&
+        /^[A-Za-z0-9_$.<>]{1,64}@[A-Za-z0-9_.-]{1,64}\.[A-Za-z]+$/.test(record.mcpCauseFrame)
+    )
+        picked.mcpCauseFrame = record.mcpCauseFrame;
     return Object.keys(picked).length > 0 ? picked : undefined;
 };
 

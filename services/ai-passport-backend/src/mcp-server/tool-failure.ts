@@ -1,7 +1,11 @@
 import { ZodError } from 'zod';
 import { credentialFailureCodeOf } from '../credentials/batch';
 import {
+    readCauseStep,
     readVerifyFailureDiagnostics,
+    sanitizeCauseFrame,
+    sanitizeCauseMessage,
+    type CauseStep,
     type VerifyFailureKind,
 } from '../credentials/verify-diagnostics';
 
@@ -92,6 +96,9 @@ export type ToolFailureTags = {
     verify_warnings?: string[];
     verify_checks?: string[];
     skip_counts?: Record<string, number>;
+    cause_step?: CauseStep;
+    cause_message?: string;
+    cause_frame?: string;
 };
 
 const unwrapStaged = (error: unknown): { inner: unknown; stage?: McpFailureStage } => {
@@ -209,6 +216,15 @@ const readCauseDependency = (error: object): McpCauseDependency | undefined => {
         : undefined;
 };
 
+const pickDeepestError = (error: object): Error | undefined => {
+    const chain = collectCauseChain(error);
+    for (let index = chain.length - 1; index >= 1; index -= 1) {
+        const frame = chain[index];
+        if (frame instanceof Error) return frame;
+    }
+    return undefined;
+};
+
 export const classifyToolFailure = (error: unknown): ToolFailureTags => {
     const { inner, stage: wrappedStage } = unwrapStaged(error);
     const stage = readAttachedStage(inner) ?? readAttachedStage(error) ?? wrappedStage;
@@ -230,6 +246,13 @@ export const classifyToolFailure = (error: unknown): ToolFailureTags => {
             if (diagnostics.checks?.length) tags.verify_checks = diagnostics.checks;
             if (diagnostics.skipCounts) tags.skip_counts = diagnostics.skipCounts;
         }
+        const step = readCauseStep(inner);
+        if (step) tags.cause_step = step;
+        const causeError = pickDeepestError(inner);
+        const message = sanitizeCauseMessage(causeError?.message);
+        if (message) tags.cause_message = message;
+        const frame = sanitizeCauseFrame(causeError);
+        if (frame) tags.cause_frame = frame;
     }
     return tags;
 };

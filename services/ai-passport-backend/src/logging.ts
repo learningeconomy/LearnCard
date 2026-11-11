@@ -26,14 +26,22 @@ import {
     type LearnCardTrpcCode,
 } from './learncard/errors';
 import {
+    isCauseStep,
+    sanitizeCauseMessage,
     sanitizeSkipCounts,
     sanitizeVerifyChecks,
     sanitizeVerifyDiagnosticList,
     VERIFY_FAILURE_KINDS,
+    type CauseStep,
     type VerifyFailureKind,
 } from './credentials/verify-diagnostics';
 
 type ConsoleLevel = 'debug' | 'error' | 'info' | 'log' | 'warn';
+
+const CAUSE_FRAME_PATTERN = /^[A-Za-z0-9_$.<>]{1,64}@[A-Za-z0-9_.-]{1,64}\.[A-Za-z]+$/;
+const sanitizeCauseFrameFromValue = (value: unknown): string | undefined =>
+    typeof value === 'string' && CAUSE_FRAME_PATTERN.test(value) ? value : undefined;
+
 type ConsoleWriter = (...data: unknown[]) => void;
 
 const CONSOLE_METHODS = [
@@ -291,6 +299,9 @@ export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
     mcpCauseName?: string;
     mcpCauseCode?: string;
     mcpCauseDependency?: 'wallet' | 'consent' | 'verify' | 'credential_store';
+    mcpCauseStep?: CauseStep;
+    mcpCauseMessage?: string;
+    mcpCauseFrame?: string;
     mcpStage?: 'consent' | 'learnercontext' | 'pseudonymize' | 'llm';
     mcpVerifyFailureKind?: VerifyFailureKind;
     mcpVerifyErrors?: string[];
@@ -406,6 +417,11 @@ export const logSafeEvent = (
             metrics.mcpCauseDependency === 'credential_store'
         )
             event.mcpCauseDependency = metrics.mcpCauseDependency;
+        if (isCauseStep(metrics.mcpCauseStep)) event.mcpCauseStep = metrics.mcpCauseStep;
+        const causeMessage = sanitizeCauseMessage(metrics.mcpCauseMessage);
+        if (causeMessage) event.mcpCauseMessage = causeMessage;
+        const causeFrame = sanitizeCauseFrameFromValue(metrics.mcpCauseFrame);
+        if (causeFrame) event.mcpCauseFrame = causeFrame;
         if (
             metrics.mcpStage === 'consent' ||
             metrics.mcpStage === 'learnercontext' ||

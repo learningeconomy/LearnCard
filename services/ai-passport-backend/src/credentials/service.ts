@@ -71,7 +71,11 @@ import {
     type CredentialConsentReceipt,
 } from './verification';
 import { classifyLearnCardFailure } from '../learncard/errors';
-import { attachVerifyFailureDiagnostics, copyVerifyFailureDiagnostics } from './verify-diagnostics';
+import {
+    attachVerifyFailureDiagnostics,
+    copyVerifyFailureDiagnostics,
+    withCauseStep,
+} from './verify-diagnostics';
 import {
     projectCredential,
     getCredentialProjection,
@@ -510,36 +514,42 @@ export const resolveVerifiedCredentialProjection = async (
     uri: string,
     receipt: ActiveAiConsentReceipt
 ): Promise<ModelSafeCredentialProjection> => {
-    requireCredentialOwner(did);
-    const { records, receipt: current } = await loadActiveAiConsentData(
-        await getLearnCard(),
-        did,
-        receipt.purpose,
-        { expectedRevision: receipt.revision }
+    await withCauseStep('scope', async () => {
+        requireCredentialOwner(did);
+    });
+    const { records, receipt: current } = await withCauseStep('consent_read', async () =>
+        loadActiveAiConsentData(await getLearnCard(), did, receipt.purpose, {
+            expectedRevision: receipt.revision,
+        })
     );
-    if (
-        current.revision !== receipt.revision ||
-        !receipt.credentialUris.includes(uri) ||
-        !current.credentialUris.includes(uri)
-    )
-        throw new AiConsentError('Credential consent changed');
-    const location = records
-        .flatMap(record => extractConsentFlowCredentialRefs(record))
-        .find(ref => ref.uri === uri);
-    if (!location) throw new AiConsentError('Credential is not shared');
+    const location = await withCauseStep('uri_list', async () => {
+        if (
+            current.revision !== receipt.revision ||
+            !receipt.credentialUris.includes(uri) ||
+            !current.credentialUris.includes(uri)
+        )
+            throw new AiConsentError('Credential consent changed');
+        const found = records
+            .flatMap(record => extractConsentFlowCredentialRefs(record))
+            .find(ref => ref.uri === uri);
+        if (!found) throw new AiConsentError('Credential is not shared');
+        return found;
+    });
     // A recent verification under this same consent revision skips the read
     // and verify; consent is still checked above and below.
-    const projection =
-        getVerifiedCredential<ResolvedConsentFlowCredential>(did, uri, receipt.revision)
-            ?.projection ??
-        (
-            await resolveVerifiedCredential(did, {
-                ...location,
-                consent: receipt,
-            })
-        ).projection;
-    await assertCredentialConsent(did, uri, receipt);
-    return projection;
+    return withCauseStep('projection', async () => {
+        const projection =
+            getVerifiedCredential<ResolvedConsentFlowCredential>(did, uri, receipt.revision)
+                ?.projection ??
+            (
+                await resolveVerifiedCredential(did, {
+                    ...location,
+                    consent: receipt,
+                })
+            ).projection;
+        await assertCredentialConsent(did, uri, receipt);
+        return projection;
+    });
 };
 
 /**

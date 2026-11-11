@@ -7,7 +7,12 @@ import { classifyToolFailure, sanitizeDiagnosticToken, withToolStage } from './t
 const PRIVATE = 'did:example:private-subject SYNTHETIC_STACK';
 
 const namedError = (name: string, extras: Record<string, unknown> = {}, message = PRIVATE) =>
-    Object.assign(new Error(message), { name, ...extras });
+    Object.assign(new Error(message), {
+        name,
+        stack: `${name}: ${message}\n    at node:internal/process:1:1`,
+        ...extras,
+    });
+const SANITIZED_PRIVATE = '[did] SYNTHETIC_STACK';
 
 test('classifies allowlisted consent and learner-context codes without reading messages', () => {
     expect(classifyToolFailure(namedError('AiConsentError', { reason: 'revoked' }))).toEqual({
@@ -90,6 +95,7 @@ test('keeps allowlisted cause name and code from a wrapped dependency error', ()
         cause_name: 'CredentialVerificationUnavailableError',
         cause_code: 'read_empty',
         cause_dependency: 'verify',
+        cause_message: SANITIZED_PRIVATE,
     });
     expect(
         classifyToolFailure(namedError('AbortError', { cause: namedError('AbortError') }))
@@ -98,6 +104,7 @@ test('keeps allowlisted cause name and code from a wrapped dependency error', ()
         error_code: 'timeout',
         cause_name: 'AbortError',
         cause_code: 'timeout',
+        cause_message: SANITIZED_PRIVATE,
     });
     const mongo = namedError('LearnerContextPromptError', {
         code: 'learner_context_unavailable',
@@ -110,6 +117,7 @@ test('keeps allowlisted cause name and code from a wrapped dependency error', ()
         cause_name: 'MongoServerError',
         cause_code: '50',
         cause_dependency: 'credential_store',
+        cause_message: SANITIZED_PRIVATE,
     });
     const chain = namedError('LearnerContextPromptError', {
         code: 'learner_context_unavailable',
@@ -127,6 +135,7 @@ test('keeps allowlisted cause name and code from a wrapped dependency error', ()
         cause_name: 'MongoServerError',
         cause_code: '89',
         cause_dependency: 'wallet',
+        cause_message: SANITIZED_PRIVATE,
     });
     const leaked = namedError('LearnerContextPromptError', {
         code: 'learner_context_unavailable',
@@ -154,6 +163,7 @@ test('a plain Error cause still gets a cause name and code', () => {
         cause_name: 'Error',
         cause_code: 'unknown',
         cause_dependency: 'verify',
+        cause_message: SANITIZED_PRIVATE,
     });
     expect(JSON.stringify(classifyToolFailure(wrapped))).not.toContain(PRIVATE);
 });
@@ -181,6 +191,7 @@ test('the all-skipped path carries a cause code and skip counts', () => {
         cause_dependency: 'verify',
         verify_failure_kind: 'all_skipped',
         skip_counts: { unknown: 2 },
+        cause_message: SANITIZED_PRIVATE,
     });
     expect(JSON.stringify(classifyToolFailure(wrapped))).not.toContain(PRIVATE);
 });
@@ -219,11 +230,88 @@ test('the verify-failure path produces a cause code plus sanitized errors', () =
             'id [uuid]',
         ],
         verify_warnings: ['[url]'],
+        cause_message: SANITIZED_PRIVATE,
     });
     expect(JSON.stringify(tags)).not.toContain('did:example');
     expect(JSON.stringify(tags)).not.toContain(PRIVATE);
     expect(JSON.stringify(tags)).not.toContain('user@example.com');
     expect(JSON.stringify(tags)).not.toContain('https://');
+});
+
+test('step labels and a sanitized cause message come through from a wrapped verify error', async () => {
+    const { attachCauseStep } = await import('../credentials/verify-diagnostics');
+    const cause = attachCauseStep(
+        namedError(
+            'Error',
+            {
+                message:
+                    'consent snapshot reuse failed for did:example:alice see https://secret.example',
+                stack: `Error: consent snapshot reuse failed
+    at settleCredentialBatch (file:///app/src/credentials/batch.ts:40:11)
+    at loadSharedContextUris (/app/src/mcp-server/controllers/get-user-context.ts:20:9)`,
+            },
+            'consent snapshot reuse failed for did:example:alice see https://secret.example'
+        ),
+        'uri_list'
+    );
+    const wrapped = namedError('LearnerContextPromptError', {
+        code: 'learner_context_unavailable',
+        dependency: 'verify',
+        cause,
+    });
+    const tags = classifyToolFailure(wrapped);
+    expect(tags).toMatchObject({
+        error_name: 'LearnerContextPromptError',
+        error_code: 'learner_context_unavailable',
+        cause_name: 'Error',
+        cause_code: 'unknown',
+        cause_dependency: 'verify',
+        cause_step: 'uri_list',
+        cause_message: 'consent snapshot reuse failed for [did] see [url]',
+        cause_frame: 'settleCredentialBatch@batch.ts',
+    });
+    expect(JSON.stringify(tags)).not.toContain('did:example');
+    expect(JSON.stringify(tags)).not.toContain('https://');
+    expect(JSON.stringify(tags)).not.toContain('/app/');
+});
+
+test('Sentry keeps the cause step as a tag and the sanitized message in extra', () => {
+    const tags = pickAllowlistedMcpFailureTags({
+        tool: 'get_user_context',
+        cause_step: 'batch',
+        leaked: PRIVATE,
+    });
+    expect(tags).toEqual({
+        tool: 'get_user_context',
+        cause_step: 'batch',
+    });
+    const scrubbed = scrubMcpSentryEvent(
+        {
+            event_id: 'c'.repeat(32),
+            message: PRIVATE,
+            extra: {
+                did: PRIVATE,
+                mcpCauseMessage: 'consent snapshot reuse failed for did:example:alice',
+                mcpCauseFrame: 'settleCredentialBatch@batch.ts',
+            },
+            tags: {
+                tool: 'get_user_context',
+                cause_step: 'uri_list',
+                leaked: PRIVATE,
+            },
+        } as never,
+        { attachments: [] }
+    );
+    expect(scrubbed.tags).toEqual({
+        tool: 'get_user_context',
+        cause_step: 'uri_list',
+    });
+    expect(scrubbed.extra).toEqual({
+        mcpCauseMessage: 'consent snapshot reuse failed for [did]',
+        mcpCauseFrame: 'settleCredentialBatch@batch.ts',
+    });
+    expect(JSON.stringify(scrubbed)).not.toContain(PRIVATE);
+    expect(JSON.stringify(scrubbed)).not.toContain('did:example');
 });
 
 test('Sentry rebuild keeps allowlisted tags and drops message, DID, and stack', () => {

@@ -2,8 +2,11 @@ import { expect, test } from 'bun:test';
 import {
     attachVerifyFailureDiagnostics,
     readVerifyFailureDiagnostics,
+    sanitizeCauseFrame,
+    sanitizeCauseMessage,
     sanitizeVerifyDiagnosticList,
     sanitizeVerifyDiagnosticText,
+    withCauseStep,
 } from './verify-diagnostics';
 
 test('redacts DIDs, URLs, emails, UUIDs, long hex and base64, then truncates', () => {
@@ -62,4 +65,36 @@ test('attached diagnostics keep sanitized verify strings and the outer kind', ()
         warnings: ['status [url]'],
         skipCounts: { unknown: 2 },
     });
+});
+
+test('sanitized cause messages cap at 160 characters and redact identifiers', () => {
+    const long = `did:example:issuer proof failed because ${'the check repeated '.repeat(20)}`;
+    const sanitized = sanitizeCauseMessage(long);
+    expect(sanitized?.includes('[did]')).toBe(true);
+    expect(sanitized?.endsWith('...')).toBe(true);
+    expect(sanitized?.length).toBe(163);
+    expect(sanitized).not.toContain('did:example');
+});
+
+test('sanitized cause frames keep only the function name and file basename', () => {
+    const error = new Error('hidden did:example:alice');
+    error.stack = `Error: hidden did:example:alice
+    at settleCredentialBatch (file:///app/src/credentials/batch.ts:40:11)
+    at loadSharedContextUris (/app/src/mcp-server/controllers/get-user-context.ts:20:9)`;
+    expect(sanitizeCauseFrame(error)).toBe('settleCredentialBatch@batch.ts');
+    const nested = new Error('inner');
+    nested.stack = `Error: inner
+    at Object.anonymous (node:internal/process:1:1)
+    at loadSharedContextUris (/tmp/secret/get-user-context.ts:9:3)`;
+    expect(sanitizeCauseFrame(nested)).toBe('loadSharedContextUris@get-user-context.ts');
+});
+
+test('withCauseStep keeps the innermost step when wrappers catch the same error', async () => {
+    const error = await withCauseStep('batch', async () => {
+        await withCauseStep('uri_list', async () => {
+            throw new Error('listing failed');
+        });
+    }).catch(caught => caught);
+    const { readCauseStep } = await import('./verify-diagnostics');
+    expect(readCauseStep(error)).toBe('uri_list');
 });

@@ -11,6 +11,7 @@ import { db } from '../db';
 import { getLearnCard } from '../learncard';
 import { AiConsentError, loadActiveAiConsentData } from '../learncard/consent';
 import { resolveVerifiedCredentialProjection } from '../credentials/service';
+import { withCauseStep } from '../credentials/verify-diagnostics';
 import { serializeModelSafeCredentialProjection } from '../credentials/projection';
 import {
     LearnerContextPromptResponseValidator,
@@ -178,7 +179,11 @@ export const generateLearnerContextPrompt = async (request: LearnerContextPrompt
     const credentials = await runWithConcurrency(
         credentialUris.map(
             uri => () =>
-                dependency('verify', () => resolveVerifiedCredentialProjection(did, uri, receipt))
+                dependency('verify', () =>
+                    withCauseStep('projection', () =>
+                        resolveVerifiedCredentialProjection(did, uri, receipt)
+                    )
+                )
         )
     );
     await assertFresh();

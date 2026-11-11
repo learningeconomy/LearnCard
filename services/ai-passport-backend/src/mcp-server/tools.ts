@@ -39,6 +39,7 @@ export const reportToolFailure = (tool: McpToolName, error: unknown): void => {
             cause_dependency: tags.cause_dependency,
             stage: tags.stage,
             verify_failure_kind: tags.verify_failure_kind,
+            cause_step: tags.cause_step,
         }).filter(([, value]) => value !== undefined)
     );
     const extra = {
@@ -46,6 +47,8 @@ export const reportToolFailure = (tool: McpToolName, error: unknown): void => {
         ...(tags.verify_warnings ? { mcpVerifyWarnings: tags.verify_warnings } : {}),
         ...(tags.verify_checks ? { mcpVerifyChecks: tags.verify_checks } : {}),
         ...(tags.skip_counts ? { mcpSkipCounts: tags.skip_counts } : {}),
+        ...(tags.cause_message ? { mcpCauseMessage: tags.cause_message } : {}),
+        ...(tags.cause_frame ? { mcpCauseFrame: tags.cause_frame } : {}),
     };
     Sentry.captureMessage('backend_operation_failed', {
         level: 'error',
@@ -59,6 +62,9 @@ export const reportToolFailure = (tool: McpToolName, error: unknown): void => {
         mcpCauseName: tags.cause_name,
         mcpCauseCode: tags.cause_code,
         mcpCauseDependency: tags.cause_dependency,
+        mcpCauseStep: tags.cause_step,
+        mcpCauseMessage: tags.cause_message,
+        mcpCauseFrame: tags.cause_frame,
         mcpStage: tags.stage,
         mcpVerifyFailureKind: tags.verify_failure_kind,
         mcpVerifyErrors: tags.verify_errors,

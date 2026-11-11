@@ -521,6 +521,10 @@ test('request_failed keeps sanitized MCP verify diagnostics and drops raw verifi
             mcpCauseName: 'CredentialBatchEmptyError',
             mcpCauseCode: 'all_skipped',
             mcpCauseDependency: 'verify',
+            mcpCauseStep: 'uri_list',
+            mcpCauseMessage:
+                'consent snapshot reuse failed for did:example:alice see https://secret.example',
+            mcpCauseFrame: 'settleCredentialBatch@batch.ts',
             mcpStage: 'learnercontext',
             mcpVerifyFailureKind: 'all_skipped',
             mcpVerifyErrors: [
@@ -544,6 +548,9 @@ test('request_failed keeps sanitized MCP verify diagnostics and drops raw verifi
             mcpCauseName: 'CredentialBatchEmptyError',
             mcpCauseCode: 'all_skipped',
             mcpCauseDependency: 'verify',
+            mcpCauseStep: 'uri_list',
+            mcpCauseMessage: 'consent snapshot reuse failed for [did] see [url]',
+            mcpCauseFrame: 'settleCredentialBatch@batch.ts',
             mcpStage: 'learnercontext',
             mcpVerifyFailureKind: 'all_skipped',
             mcpVerifyErrors: [

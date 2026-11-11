@@ -56,6 +56,7 @@ let searchResults: TopicSearchResult[] = [];
 let duringSearch: (() => void) | undefined;
 let learnCardFailure: unknown;
 let promptCacheFailure: unknown;
+let projectionFailure: unknown;
 const searchCredentialsByTopic = mock(async () => {
     duringSearch?.();
     return searchResults;
@@ -88,9 +89,10 @@ mock.module('../learncard/consent', () => ({
     loadActiveAiConsentData: async (_learnCard: unknown, did: string) => {
         if (revoked || !currentReceipt.guardian.approved) throw new AiConsentError();
         if (!bindAiConsentRevision(did, currentReceipt.revision)) throw new AiConsentError();
+        const cloned = structuredClone(currentReceipt);
         return {
             records: [{ personal: { name: personalName } }],
-            receipt: structuredClone(currentReceipt),
+            receipt: { ...cloned, credentialUris: currentReceipt.credentialUris },
         };
     },
 }));
@@ -102,6 +104,7 @@ mock.module('../learncard', () => ({
 }));
 mock.module('../credentials/service', () => ({
     resolveVerifiedCredentialProjection: async (_did: string, uri: string) => {
+        if (projectionFailure) throw projectionFailure;
         const projection = projections.get(uri);
         if (!projection) throw new CredentialVerificationUnavailableError('read_empty');
         return projection;
@@ -174,6 +177,7 @@ beforeEach(() => {
     duringPseudonymization = undefined;
     learnCardFailure = undefined;
     promptCacheFailure = undefined;
+    projectionFailure = undefined;
 });
 
 describe('selection-only learner context', () => {
@@ -533,6 +537,57 @@ describe('MCP answer/context consistency', () => {
             },
         });
         expect(answerInputs).toHaveLength(0);
+    });
+
+    it('labels a plain Error thrown outside the credential batch as uri_list', async () => {
+        currentReceipt = {
+            ...receipt,
+            credentialUris: {
+                [Symbol.iterator]() {
+                    throw new Error('shared uri listing failed for did:example:private-subject');
+                },
+            } as unknown as string[],
+        };
+        const failure = await runWithAiPrivacyContext(OWNER, () =>
+            getLatestUserSummary(OWNER)
+        ).catch((error: unknown) => error);
+        expect(failure).toMatchObject({
+            code: 'learner_context_unavailable',
+            dependency: 'verify',
+            cause: { name: 'Error' },
+        });
+        expect((failure as { cause?: { name?: string } }).cause?.name).not.toBe(
+            'CredentialBatchEmptyError'
+        );
+        const { classifyToolFailure } = await import('../mcp-server/tool-failure');
+        const tags = classifyToolFailure(failure);
+        expect(tags.cause_step).toBe('uri_list');
+        expect(tags.cause_message).toBe('shared uri listing failed for [did]');
+        expect(tags.cause_dependency).toBe('verify');
+        expect(JSON.stringify(tags)).not.toContain('did:example');
+    });
+
+    it('does not treat an unmarked projection Error as an all-skipped batch', async () => {
+        projectionFailure = new Error(
+            'consent snapshot reuse failed for did:example:private-subject'
+        );
+        const failure = await runWithAiPrivacyContext(OWNER, () =>
+            getLatestUserSummary(OWNER)
+        ).catch((error: unknown) => error);
+        expect(failure).toMatchObject({
+            code: 'learner_context_unavailable',
+            dependency: 'verify',
+            cause: { name: 'Error' },
+        });
+        expect((failure as { cause?: { name?: string } }).cause?.name).not.toBe(
+            'CredentialBatchEmptyError'
+        );
+        const { classifyToolFailure } = await import('../mcp-server/tool-failure');
+        const tags = classifyToolFailure(failure);
+        expect(tags.cause_step).toBe('projection');
+        expect(tags.cause_message).toBe('consent snapshot reuse failed for [did]');
+        expect(tags.verify_failure_kind).toBeUndefined();
+        expect(JSON.stringify(tags)).not.toContain('did:example');
     });
 
     it('keeps the 501st consented credential through shared context before search and answer', async () => {
