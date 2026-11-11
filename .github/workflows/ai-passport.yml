@@ -74,11 +74,37 @@ jobs:
                   docker exec mongo-ci mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
                   timeout 60 bash -c 'until docker exec mongo-ci mongosh --quiet --eval "quit(db.hello().isWritablePrimary ? 0 : 1)"; do sleep 1; done'
 
-            - name: Use canonical Ubuntu package archive
+            # The OCR packages come from the runner's apt mirror list, which tries the Azure mirror
+            # first. When that mirror stops answering, apt waits ~20s on it for every index and
+            # package and this step times out (run 43052496216). A cache hit installs the exact
+            # .debs offline; a miss tries the canonical archive first, with short timeouts and retries.
+            - name: Restore OCR package cache
+              id: ocr-debs
+              uses: actions/cache/restore@v6
+              with:
+                  path: ~/.cache/ai-passport-ocr-debs
+                  key: ai-passport-ocr-debs-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-${{ hashFiles('services/ai-passport-backend/privacy/install.sh') }}
+
+            - name: Install cached OCR packages
+              if: steps.ocr-debs.outputs.cache-hit == 'true'
               run: |
-                  # The Azure mirror throttled the full OCR language-pack download until CI timed out.
-                  # Preserve the signed package sources and complete runtime; change only the mirror.
-                  sudo sed -i -E 's|https?://azure[.]archive[.]ubuntu[.]com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources
+                  sudo dpkg -i ~/.cache/ai-passport-ocr-debs/*.deb
+                  echo "AI_PRIVACY_SKIP_APT=1" >> "$GITHUB_ENV"
+
+            - name: Prefer canonical Ubuntu mirrors
+              if: steps.ocr-debs.outputs.cache-hit != 'true'
+              run: |
+                  # ubuntu.sources points at `mirror+file:/etc/apt/apt-mirrors.txt`; move Azure to the end.
+                  list=/etc/apt/apt-mirrors.txt
+                  { grep -v azure "$list" || true; grep azure "$list" || true; } > "$RUNNER_TEMP/apt-mirrors.txt"
+                  sudo cp "$RUNNER_TEMP/apt-mirrors.txt" "$list"
+                  cat "$list"
+                  printf '%s\n' \
+                      'Acquire::Retries "3";' \
+                      'Acquire::http::Timeout "15";' \
+                      'Acquire::https::Timeout "15";' \
+                      'APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/99ci-network
+                  sudo rm -f /var/cache/apt/archives/*.deb
 
             - name: Provision local extraction runtime
               timeout-minutes: 10
@@ -86,8 +112,21 @@ jobs:
                   AI_PRIVACY_KEY="$(openssl rand -base64 32)"
                   echo "::add-mask::$AI_PRIVACY_KEY"
                   echo "AI_PRIVACY_KEY=$AI_PRIVACY_KEY" >> "$GITHUB_ENV"
-                  sudo sh services/ai-passport-backend/privacy/install.sh services/ai-passport-backend/privacy
+                  sudo AI_PRIVACY_SKIP_APT="${AI_PRIVACY_SKIP_APT:-0}" sh services/ai-passport-backend/privacy/install.sh services/ai-passport-backend/privacy
                   sudo cp services/ai-passport-backend/privacy/processor.py /opt/ai-privacy/assets/processor.py
+
+            - name: Save OCR package cache
+              if: steps.ocr-debs.outputs.cache-hit != 'true'
+              run: |
+                  mkdir -p ~/.cache/ai-passport-ocr-debs
+                  cp /var/cache/apt/archives/*.deb ~/.cache/ai-passport-ocr-debs/
+                  ls -1 ~/.cache/ai-passport-ocr-debs
+
+            - if: steps.ocr-debs.outputs.cache-hit != 'true'
+              uses: actions/cache/save@v6
+              with:
+                  path: ~/.cache/ai-passport-ocr-debs
+                  key: ${{ steps.ocr-debs.outputs.cache-primary-key }}
 
             - name: Run backend unit tests
               working-directory: services/ai-passport-backend
