@@ -1,0 +1,45 @@
+name: Recover LearnCard Production Frontend (CapGo Version)
+
+on:
+    workflow_dispatch:
+        inputs:
+            recovery-version:
+                description: 'Recovery bundle version (current package version-recovery.N)'
+                type: string
+                required: true
+
+jobs:
+    validate:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@v7
+            - name: Validate recovery version
+              env:
+                  RECOVERY_VERSION: ${{ inputs.recovery-version }}
+                  TARGET_ENVIRONMENT: production
+                  DEPLOY_FRONTEND: 'true'
+              run: |
+                  if [[ -z "$RECOVERY_VERSION" ]]; then
+                    echo '::error::Enter a recovery bundle version.'
+                    exit 1
+                  fi
+                  node scripts/validate-capgo-recovery-version.mjs
+
+    deploy:
+        needs: validate
+        uses: ./.github/workflows/deploy.yml
+        # Reusable workflows cannot elevate the caller's token permissions.
+        # The shared workflow declares these for its other, skipped jobs.
+        permissions:
+            actions: read
+            contents: read
+            packages: write
+            attestations: write
+            id-token: write
+        with:
+            target-environment: production
+            deploy-frontend: true
+            capgo-bundle-version: ${{ inputs.recovery-version }}
+        secrets: inherit

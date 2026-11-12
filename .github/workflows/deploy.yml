@@ -4,6 +4,21 @@ on:
     push:
         branches:
             - main
+    # The separate recovery workflow calls the same deployment path with a
+    # production-only bundle override. Ordinary dispatches do not expose it.
+    # Remaining github.event.inputs references read the caller's dispatch inputs;
+    # avoid adding service or publishing input names to the recovery workflow.
+    workflow_call:
+        inputs:
+            target-environment:
+                type: string
+                required: true
+            deploy-frontend:
+                type: boolean
+                required: true
+            capgo-bundle-version:
+                type: string
+                required: true
     workflow_dispatch:
         inputs:
             # Environment selection
@@ -40,11 +55,6 @@ on:
                 required: false
                 default: false
                 type: boolean
-            capgo-bundle-version:
-                description: 'LearnCard production frontend recovery only: <current package version>-recovery.N (unused N). Preserves future release versions; must satisfy native/channel update rules.'
-                required: false
-                default: ''
-                type: string
             deploy-ai-agent:
                 description: 'Deploy AI Agent (ECS + Trigger.dev)'
                 required: false
@@ -124,14 +134,13 @@ jobs:
             frontend_matrix_has_legs: ${{ steps.set-env.outputs.frontend_matrix_has_legs }}
             native_plugin_needed: ${{ steps.native-plugin.outputs.needed }}
         steps:
-            # Recovery validation needs only the checkout; ordinary manual runs still skip it.
             - name: Checkout Repo
               if: github.event_name != 'workflow_dispatch' || inputs.capgo-bundle-version != ''
               uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
-            # Validate before any service or frontend deployment can start.
+            # Fail before any deployments if the recovery override is invalid.
             - name: Validate CapGo recovery input
               if: inputs.capgo-bundle-version != ''
               env:
@@ -140,7 +149,6 @@ jobs:
                   DEPLOY_FRONTEND: ${{ inputs.deploy-frontend }}
               run: node scripts/validate-capgo-recovery-version.mjs
 
-            # Set deployment flags only after recovery input validation succeeds.
             - name: Check if this is a manual dispatch
               id: check_manual
               run: |
@@ -310,29 +318,29 @@ jobs:
                     tr ',' '\n' <<< "$AFFECTED" | grep -qx "$1"
                   }
 
-                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && ("${{ github.event.inputs.target-environment }}" == 'vetpass' || "${{ github.event.inputs.target-environment }}" == 'vetpass-staging') ]]; then
+                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && ("${{ inputs.target-environment }}" == 'vetpass' || "${{ inputs.target-environment }}" == 'vetpass-staging') ]]; then
                     # VetPass runs on the LearnCard services; deploy those via 'staging'/'production'.
                     if [[ "${{ github.event.inputs.deploy-brain-service }}" == 'true' || "${{ github.event.inputs.deploy-learn-cloud }}" == 'true' || "${{ github.event.inputs.deploy-lca-api }}" == 'true' ]]; then
                       echo "::error::VetPass has no services of its own (it uses LearnCard's). Untick the service boxes, or dispatch 'staging'/'production' to deploy LearnCard services."
                       exit 1
                     fi
                     set_service_matrix
-                    if [[ "${{ github.event.inputs.target-environment }}" == 'vetpass' ]]; then
+                    if [[ "${{ inputs.target-environment }}" == 'vetpass' ]]; then
                       echo "frontend_env=vetpass-app-production" >> "$GITHUB_OUTPUT"
                       set_frontend_matrix "$VETPASS_FE_PRODUCTION"
                     else
                       echo "frontend_env=vetpass-app-staging" >> "$GITHUB_OUTPUT"
                       set_frontend_matrix "$VETPASS_FE_STAGING"
                     fi
-                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.target-environment }}" == 'scouts' ]]; then
                     echo "frontend_env=scout-app-production" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$SCOUTS_PRODUCTION"
                     set_frontend_matrix "$SCOUTS_FE_PRODUCTION"
-                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts-staging' ]]; then
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.target-environment }}" == 'scouts-staging' ]]; then
                     echo "frontend_env=scout-app-staging" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$SCOUTS_STAGING"
                     set_frontend_matrix "$SCOUTS_FE_STAGING"
-                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.target-environment }}" == 'production' ]]; then
                     echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$LC_PRODUCTION"
                     set_frontend_matrix "$LC_FE_PRODUCTION"
@@ -1129,6 +1137,8 @@ jobs:
     # ============================================================================
     deploy-frontend:
         name: Deploy Frontend (${{ matrix.name }})
+        permissions:
+            contents: read
         needs:
             [
                 determine-affected,
@@ -1145,9 +1155,9 @@ jobs:
             needs.build-native-plugin.result != 'cancelled' &&
             needs.determine-affected.outputs.frontend_matrix_has_legs == 'true' &&
             (
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts') ||
-                (needs.determine-affected.outputs.is_manual == 'true' && startsWith(github.event.inputs.target-environment, 'vetpass')) ||
+                (needs.determine-affected.outputs.is_manual == 'true' && inputs.deploy-frontend == true) ||
+                (needs.determine-affected.outputs.is_manual == 'true' && inputs.target-environment == 'scouts') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && startsWith(inputs.target-environment, 'vetpass')) ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true') ||
                 (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success')
             ) &&
@@ -1497,6 +1507,8 @@ jobs:
     # JIRA RELEASE TAGGING (production only, non-blocking)
     # ============================================================================
     tag-jira-release:
+        permissions:
+            contents: read
         name: Tag Jira Release
         needs:
             [
@@ -1512,7 +1524,7 @@ jobs:
             !cancelled() &&
             (
                 needs.determine-affected.outputs.is_release == 'true' ||
-                (needs.determine-affected.outputs.is_manual == 'true' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
+                (needs.determine-affected.outputs.is_manual == 'true' && (inputs.target-environment == 'production' || inputs.target-environment == 'scouts'))
             ) &&
             (
                 needs.deploy-brain-service.result == 'success' ||
@@ -2002,7 +2014,7 @@ jobs:
             !cancelled() &&
             (
                 (needs.determine-affected.outputs.is_release != 'true' && needs.determine-affected.outputs.is_manual != 'true') ||
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'staging')
+                (needs.determine-affected.outputs.is_manual == 'true' && inputs.target-environment == 'staging')
             ) &&
             (
               needs.deploy-brain-service.result == 'success' ||
@@ -2017,6 +2029,8 @@ jobs:
 
     smoketest-production:
         name: Smoketest Production
+        permissions:
+            contents: read
         needs:
             [
                 determine-affected,
@@ -2030,7 +2044,7 @@ jobs:
             !cancelled() &&
             (
                 needs.determine-affected.outputs.is_release == 'true' ||
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'production')
+                (needs.determine-affected.outputs.is_manual == 'true' && inputs.target-environment == 'production')
             ) &&
             (
               needs.deploy-brain-service.result == 'success' ||
@@ -2057,7 +2071,7 @@ jobs:
             always() &&
             !cancelled() &&
             needs.determine-affected.outputs.is_manual == 'true' &&
-            github.event.inputs.target-environment == 'scouts' &&
+            inputs.target-environment == 'scouts' &&
             (
               needs.deploy-brain-service.result == 'success' ||
               needs.deploy-learn-cloud.result == 'success' ||
