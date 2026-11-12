@@ -83,6 +83,15 @@ export type BoostAndVCType = {
 import { resolveCredentialForClaim } from '../helpers/ingestManagedCredential';
 
 type AddVCInput = Omit<LCR, 'id'>;
+/** Options for saving an existing credential, optionally deferring post-save work. */
+export type AddVCToWalletInput = AddVCInput & {
+    id?: string;
+    skipSync?: boolean;
+    deferClaim?: boolean;
+    deferRefresh?: boolean;
+    /** Pin a staged save to its original account if the active account changes while awaiting it. */
+    expectedDid?: string;
+};
 
 type StoreCredentialMetadata = Partial<{
     id: string;
@@ -301,7 +310,10 @@ export const useWallet = () => {
 
     const syncCredentialToContracts = async (
         { record, category }: { record: LCR; category: CredentialCategory },
-        wallet?: BespokeLearnCard
+        wallet?: BespokeLearnCard,
+        // Owned by one claim attempt (one actor, credential and network), not a global cache.
+        // Supplying this also makes partial failures visible to the recovery UI.
+        completedTerms?: Set<string>
     ) => {
         const learnCard = wallet ?? (await getWallet());
         // Fetch and cache all consented contracts for the user
@@ -312,9 +324,9 @@ export const useWallet = () => {
             contractCount: allContracts.length,
         });
         // Batch sync credentials to contracts, respecting share settings
-        await Promise.allSettled(
+        const outcomes = await Promise.allSettled(
             allContracts.map(async ({ contract, terms, uri: termsUri, status }) => {
-                if (status !== 'live') return;
+                if (status !== 'live' || completedTerms?.has(termsUri)) return;
 
                 const categoryInfo = terms.read.credentials.categories[category];
 
@@ -360,6 +372,8 @@ export const useWallet = () => {
                             },
                             audience.audienceVersion
                         );
+                        // Remember the acknowledged mutation before any cache/refresh work.
+                        completedTerms?.add(termsUri);
                         logWalletSync('syncCredentialsToContract completed', {
                             ownerDid: contract.owner.did,
                             contractUri: contract.uri,
@@ -391,6 +405,7 @@ export const useWallet = () => {
                             queryKey: ['useTermsTransactions', termsUri],
                         });
                     } else {
+                        if (completedTerms) throw new Error('Unable to prepare credential sharing');
                         logWalletSync('No shared URI available for contract', {
                             ownerDid: contract.owner.did,
                             contractUri: contract.uri,
@@ -410,6 +425,14 @@ export const useWallet = () => {
                 }
             })
         );
+        if (completedTerms && outcomes.some(outcome => outcome.status === 'rejected')) {
+            throw new AggregateError(
+                outcomes.flatMap(outcome =>
+                    outcome.status === 'rejected' ? [outcome.reason] : []
+                ),
+                'Some consented contracts could not be synced'
+            );
+        }
         logWalletSync('Finished credential sync to contracts', {
             recordUri: record.uri,
             category,
@@ -703,7 +726,7 @@ export const useWallet = () => {
 
     // Adds a VC to wallet given a URI
     const addVCtoWallet = async (
-        input: AddVCInput & { skipSync?: boolean; deferClaim?: boolean },
+        input: AddVCToWalletInput,
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud'
     ) => {
         const {
@@ -716,16 +739,19 @@ export const useWallet = () => {
             networkUri,
             skipSync,
             deferClaim,
+            deferRefresh,
+            expectedDid,
         } = input;
-        let _id = id;
+        const _id = id || uuidv4();
         const originProfileDid = switchedProfileStore.get.switchedDid();
         if (!uri) throw new Error('No uri was provided, uri required');
-
-        if (!id) _id = uuidv4();
 
         try {
             const context = await createWalletMutationContext(originProfileDid);
             const wallet = context.wallet;
+            if (expectedDid && wallet.id.did() !== expectedDid) {
+                throw new Error('The account changed before saving the credential');
+            }
 
             const { credential: vc, baseline } = await resolveCredentialForClaim(wallet, uri);
             // The receipt may carry the signed service list; the managed entry identifies it.
@@ -772,6 +798,8 @@ export const useWallet = () => {
             const result = await wallet.index[location].add(record);
             if (result) {
                 if (!deferClaim) void recordCredentialClaim(wallet, uri, vc as VC, category);
+                // Staged flows confirm storage before attempting display refresh or sharing sync.
+                if (deferRefresh) return result;
                 await refreshCredentialCaches(
                     new Map([[category, [record]]]),
                     context.profileDid,

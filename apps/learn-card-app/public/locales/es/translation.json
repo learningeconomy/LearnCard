@@ -3463,8 +3463,27 @@
             "haveAccount": "¿Ya tienes una cuenta?"
         },
         "boost": {
-            "accepted": "Aceptada",
-            "expiredHeader": "El enlace para reclamar el Boost ha caducado o ha alcanzado el número máximo de veces que puede reclamarse."
+            "accepted": "Aceptada"
+        },
+        "recovery": {
+            "checking": "Comprobando tu solicitud...",
+            "claiming": "Reclamando tu credencial...",
+            "saving": "Guardando en tu colección...",
+            "refreshing": "Actualizando tu colección...",
+            "checkFailed": "No pudimos confirmar tu solicitud. El enlace sigue aquí para que puedas intentarlo de nuevo.",
+            "claimUncertain": "Es posible que la solicitud se haya completado. Busca tu credencial antes de intentarlo de nuevo.",
+            "saveFailed": "La credencial se reclamó, pero no se confirmó el guardado. Intenta guardarla de nuevo.",
+            "refreshFailed": "Tu credencial está guardada. No pudimos actualizar tu colección.",
+            "pending": "Tu solicitud sigue en curso. Vuelve a comprobar el resultado sin reclamar otra copia.",
+            "expired": "Este enlace ha caducado. Pide un nuevo enlace al emisor.",
+            "exhausted": "Este enlace ha alcanzado su límite de solicitudes. Pide un nuevo enlace al emisor.",
+            "unavailable": "Este enlace no está disponible. Pide al emisor que lo revise.",
+            "contextChanged": "Tu cuenta o los ajustes de conexión cambiaron; cierra esta página y vuelve a abrir el enlace original para continuar.",
+            "savedToOriginalAccount": "Tu credencial se guardó en tu cuenta original.",
+            "tryAgain": "Intentar de nuevo",
+            "check": "Buscar mi credencial",
+            "save": "Guardar mi credencial",
+            "refresh": "Actualizar mi colección"
         },
         "duplicate": {
             "title": "Ya está guardada",
@@ -10479,5 +10498,33 @@
         "retry": "Reintentar",
         "unsubscribing": "Cancelando la suscripción…",
         "unsubscribed": "Ya no recibirás anuncios."
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Credencial digital",
+        "unavailableTitle": "Solicitud no disponible",
+        "unavailableDescription": "Vuelve a la aplicación que hizo la solicitud e inténtalo de nuevo.",
+        "canceling": "Cancelando…",
+        "preparing": "Preparando…",
+        "requiredFields": "Estos campos son obligatorios. Puedes cancelar si lo prefieres.",
+        "reviewTitle": "¿Compartir estos datos?",
+        "reviewDescription": "Revisa los datos solicitados antes de compartirlos.",
+        "requestedBy": "Solicitado por",
+        "androidApp": "Aplicación de Android",
+        "requestDetails": "Detalles de la solicitud",
+        "requestIdentity": "Identidad de firma de la aplicación",
+        "selectedCredential": "Credencial seleccionada",
+        "requestedDetails": "Datos solicitados",
+        "required": "Obligatorio",
+        "notShared": "No se comparte",
+        "metadataIncluded": "También se incluyen el emisor y el tipo de credencial.",
+        "credentialDetails": "Detalles de la credencial",
+        "issuer": "Emisor",
+        "credentialType": "Tipo de credencial",
+        "expires": "Vence",
+        "sharing": "Compartiendo…",
+        "shareDetails": "Compartir datos",
+        "loadingTitle": "Preparando tu solicitud",
+        "loadingDescription": "Comprobando los datos que puedes compartir.",
+        "returnToApp": "Volver a la aplicación"
     }
 }

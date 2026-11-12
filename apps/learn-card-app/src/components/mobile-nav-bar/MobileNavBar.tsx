@@ -32,6 +32,7 @@ import { ColorSetEnum } from '../../theme/colors';
 
 import * as m from '../../paraglide/messages.js';
 import { getNavBarLinkLabel } from './mobileNavBarI18n';
+import { NATIVE_CREDENTIAL_PATH } from '../../native-digital-credentials/types';
 
 export enum MobileNavBarLinks {
     dashboard = 'dashboard',
@@ -107,6 +108,7 @@ const MobileNavBar: React.FC = () => {
                     <Routes />
                 </IonRouterOutlet>
                 {isLoggedIn &&
+                activePathname !== NATIVE_CREDENTIAL_PATH &&
                 !/^\/s(?:\/|$)/.test(activePathname) &&
                 showNavBar(activePathname) ? (
                     <IonTabBar

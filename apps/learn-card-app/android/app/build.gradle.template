@@ -17,6 +17,13 @@ android {
         }
     }
     buildTypes {
+        debug {
+            if (project.hasProperty('digitalCredentialsDev')) {
+                applicationIdSuffix '.dctest'
+                resValue 'bool', 'lc_digital_credentials_enabled', 'true'
+                resValue 'string', 'app_name', 'LearnCard Native Dev'
+            }
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -24,6 +31,7 @@ android {
     }
 
     buildFeatures {
+        resValues true
         dataBinding true
     }
     dataBinding {
@@ -44,6 +52,7 @@ repositories {
 }
 
 dependencies {
+    implementation project(':learncard-digital-credentials')
     implementation 'androidx.browser:browser:1.3.0'
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
@@ -96,7 +105,7 @@ apply from: 'capacitor.build.gradle'
 
 try {
     def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
+    if (servicesJSON.text && !project.hasProperty('digitalCredentialsDev')) {
         apply plugin: 'com.google.gms.google-services'
     }
 } catch (Exception e) {
