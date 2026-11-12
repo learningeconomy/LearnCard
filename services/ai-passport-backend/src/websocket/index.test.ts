@@ -266,6 +266,7 @@ const searchCredentialContextsByTopic = mock(
                 resultCount: number;
             }) => void;
             onIncomplete?: () => void;
+            onConsent?: (permitted: ReadonlySet<string>) => void;
         }
     ) => {
         const attempt = (credentialSearchAttempts.get(topic) ?? 0) + 1;
@@ -347,12 +348,21 @@ const searchCredentialContextsByTopic = mock(
                 topic === 'Ready' ||
                 ((topic === 'GoogleDeferred' || topic === 'DeferredClosed') && attempt > 1)
                     ? [credentialContext]
-                    : topic === 'PartialGaveWay'
+                    : topic === 'PartialGaveWay' || topic === 'PartialConsentDropped'
                       ? attempt === 1
                           ? [credentialContext]
                           : [lateCredentialContext]
                       : [];
-            if (topic === 'PartialGaveWay' && attempt === 1) options.onIncomplete?.();
+            if ((topic === 'PartialGaveWay' || topic === 'PartialConsentDropped') && attempt === 1)
+                options.onIncomplete?.();
+            // Consent dropped the partial credential before the deferred search.
+            options.onConsent?.(
+                new Set(
+                    topic === 'PartialConsentDropped' && attempt > 1
+                        ? [lateCredentialContext.uri]
+                        : [credentialContext.uri, lateCredentialContext.uri]
+                )
+            );
 
             options.onMetrics?.({
                 embeddingTextsFromCache: false,
@@ -1943,6 +1953,29 @@ describe('WebSocket session startup', () => {
             expect.objectContaining({ credentials: [credentialContext, lateCredentialContext] }),
         ]);
         expect(events(socket, 'plan_ready')).toHaveLength(1);
+    });
+
+    it('drops a partial credential that consent no longer allows when the deferred search publishes', async () => {
+        const did = 'did:example:partial-consent-dropped';
+        const socket = new TestSocket(did);
+
+        await start(socket, 'PartialConsentDropped');
+        await waitFor(
+            () =>
+                credentialSearchSettledAttempts.get('PartialConsentDropped') === 2 &&
+                !activeStartups.has(did),
+            'partial consent-dropped completion'
+        );
+
+        expect(db.storeThreadCredentials).toHaveBeenLastCalledWith(did, 'thread-1', [
+            lateCredentialContext,
+        ]);
+        expect(events(socket, 'credentials_for_topic')).toEqual([
+            expect.objectContaining({ credentials: [lateCredentialContext] }),
+        ]);
+        expect(JSON.stringify(events(socket, 'credentials_for_topic'))).not.toContain(
+            credentialContext.uri
+        );
     });
 
     it('a complete opening context is ready and skips the deferred search', async () => {

@@ -872,6 +872,9 @@ const deferCredentialContext = async (
     let highestStrongestScore: number | undefined;
     let highestAverageScore: number | undefined;
     let maxMatchCount: number | undefined;
+    // What the deferred search's own consent read allows. Until it has read one,
+    // no provisional credential is kept.
+    let permitted: ReadonlySet<string> = new Set();
     // How far the deferred phase got, for its server log event.
     let stage: CredentialContextDeferredStage = 'refresh';
 
@@ -908,15 +911,22 @@ const deferCredentialContext = async (
                 highestAverageScore = metrics.highestAverageScore;
                 maxMatchCount = metrics.maxMatchCount;
             },
+            onConsent: uris => {
+                permitted = uris;
+            },
         });
         // The deferred results replace the provisional ones by URI. A provisional
         // credential it didn't return (skipped again, or past its window) is kept
-        // unless it's now known invalid, so a retry never shrinks the context.
+        // only while the current consent still allows it and it isn't known
+        // invalid, so a retry never shrinks the context.
         const foundUris = new Set(found.map(({ uri }) => uri));
         const contexts = [
             ...found,
             ...provisional.filter(
-                ({ uri }) => !foundUris.has(uri) && knownBadCredentialKind(did, uri) !== 'invalid'
+                ({ uri }) =>
+                    !foundUris.has(uri) &&
+                    permitted.has(uri) &&
+                    knownBadCredentialKind(did, uri) !== 'invalid'
             ),
         ]
             .sort((left, right) => right.score - left.score)

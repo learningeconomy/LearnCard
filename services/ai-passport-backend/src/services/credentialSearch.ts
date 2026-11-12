@@ -88,6 +88,8 @@ export type CredentialSearchOptions = {
      * still load it.
      */
     onIncomplete?: () => void;
+    /** The credential URIs this search's consent read allows, once it has read them. */
+    onConsent?: (permitted: ReadonlySet<string>) => void;
 };
 
 const SEARCH_DIMENSIONS = [
@@ -325,6 +327,7 @@ const searchCredentialContextsPinned = async (
         signal: options.signal,
     });
     const permitted = new Set(receipt.credentialUris);
+    options.onConsent?.(permitted);
     if (!permitted.size) return [];
     const queryKey = topicQueryKey(did, receipt.revision, topic);
     const {
