@@ -20,7 +20,12 @@ import type { FastifyInstance } from 'fastify';
  * check) so a sibling route such as `/public/share-links-other` is not treated
  * as public.
  */
-const PUBLIC_SHARE_LINK_PREFIXES = ['/api/public/share-links', '/public/share-links'] as const;
+const PUBLIC_SHARE_LINK_PREFIXES = [
+    '/api/public/share-links',
+    '/public/share-links',
+    '/api/readable-delivery',
+    '/readable-delivery',
+] as const;
 
 /** True for the mounted public share-link OpenAPI route prefix only. */
 export const isPublicShareLinkOpenApiRequestUrl = (url: string | undefined): boolean => {

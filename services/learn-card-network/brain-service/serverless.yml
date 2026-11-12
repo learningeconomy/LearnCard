@@ -376,6 +376,79 @@ functions:
 
 resources:
     Resources:
+        ReadableDeliveryKey:
+            Type: AWS::KMS::Key
+            DeletionPolicy: Retain
+            UpdateReplacePolicy: Retain
+            Properties:
+                Description: Envelope encryption for organization readable-delivery keys
+                KeySpec: SYMMETRIC_DEFAULT
+                KeyUsage: ENCRYPT_DECRYPT
+                EnableKeyRotation: true
+                PendingWindowInDays: 30
+                KeyPolicy:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Sid: AccountKeyAdministration
+                          Effect: Allow
+                          Principal:
+                              AWS:
+                                  Fn::Sub: arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+                          Action:
+                              - kms:DescribeKey
+                              - kms:GetKeyPolicy
+                              - kms:PutKeyPolicy
+                              - kms:ListResourceTags
+                              - kms:TagResource
+                              - kms:UntagResource
+                              - kms:GetKeyRotationStatus
+                              - kms:EnableKeyRotation
+                              - kms:DisableKeyRotation
+                              - kms:UpdateKeyDescription
+                              - kms:EnableKey
+                              - kms:DisableKey
+                              - kms:ScheduleKeyDeletion
+                              - kms:CancelKeyDeletion
+                              - kms:CreateAlias
+                              - kms:UpdateAlias
+                              - kms:DeleteAlias
+                          Resource: '*'
+                        - Sid: ReadableDeliveryEncryption
+                          Effect: Allow
+                          Principal:
+                              AWS:
+                                  Fn::GetAtt: [IamRoleLambdaExecution, Arn]
+                          Action: [kms:Encrypt, kms:Decrypt]
+                          Resource: '*'
+                          Condition:
+                              StringEquals:
+                                  kms:EncryptionContext:purpose: learncard-readable-delivery-v1
+                        - Sid: DenyOtherCryptographicPrincipals
+                          Effect: Deny
+                          Principal: '*'
+                          Action:
+                              [kms:Decrypt, 'kms:ReEncrypt*', 'kms:GenerateDataKey*', kms:Encrypt]
+                          Resource: '*'
+                          Condition:
+                              ArnNotEquals:
+                                  aws:PrincipalArn:
+                                      Fn::GetAtt: [IamRoleLambdaExecution, Arn]
+        ReadableDeliveryKeyPolicy:
+            Type: AWS::IAM::Policy
+            Properties:
+                PolicyName: ${self:service}-${self:provider.stage}-readable-delivery
+                Roles:
+                    - Ref: IamRoleLambdaExecution
+                PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Effect: Allow
+                          Action: [kms:Encrypt, kms:Decrypt]
+                          Resource:
+                              Fn::GetAtt: [ReadableDeliveryKey, Arn]
+                          Condition:
+                              StringEquals:
+                                  kms:EncryptionContext:purpose: learncard-readable-delivery-v1
         InboxQueueAgeAlarm:
             Type: AWS::CloudWatch::Alarm
             Properties:

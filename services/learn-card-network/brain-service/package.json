@@ -120,7 +120,8 @@
         "tweetnacl": "^1.0.3",
         "uuid": "^14.0.0",
         "zod": "4.6.6",
-        "zod-openapi": "^5.0.1"
+        "zod-openapi": "^5.0.1",
+        "@aws-sdk/client-kms": "^3.1139.0"
     },
     "repository": {
         "type": "git",

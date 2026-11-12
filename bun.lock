@@ -1710,6 +1710,7 @@
       "name": "@learncard/network-brain-service",
       "version": "4.1.3",
       "dependencies": {
+        "@aws-sdk/client-kms": "^3.1139.0",
         "@aws-sdk/client-bedrock-runtime": "^3.1139.0",
         "@aws-sdk/client-sqs": "^3.379.1",
         "@digitalcredentials/issuer-registry-client": "^4.1.0",

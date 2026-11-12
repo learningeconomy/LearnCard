@@ -1,5 +1,6 @@
 import { environment } from '@environment';
 import { t } from '@routes';
+import { readableDeliveryRouter, type ReadableDeliveryRouter } from '@routes/readable-delivery';
 import { boostsRouter, BoostsRouter } from '@routes/boosts';
 import { claimHooksRouter, ClaimHooksRouter } from '@routes/claim-hooks';
 import { profilesRouter, ProfilesRouter } from '@routes/profiles';
@@ -38,6 +39,7 @@ import { benchRouter, BenchRouter } from '@routes/bench';
 export { createContext } from '@routes';
 
 export const appRouter = t.router<{
+    readableDelivery: ReadableDeliveryRouter;
     boost: BoostsRouter;
     claimHook: ClaimHooksRouter;
     profile: ProfilesRouter;
@@ -66,6 +68,7 @@ export const appRouter = t.router<{
     test?: TestRouter;
     bench?: BenchRouter;
 }>({
+    readableDelivery: readableDeliveryRouter,
     boost: boostsRouter,
     claimHook: claimHooksRouter,
     profile: profilesRouter,

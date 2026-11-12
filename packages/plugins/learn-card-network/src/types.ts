@@ -1,5 +1,11 @@
 import type { CampaignAudienceResult } from '@learncard/types';
 import type {
+    CreateReadableDeliveryRecipient,
+    ReadableDeliveryRecipient,
+    ReadableDeliveryReadInput,
+    ReadableDeliveryPage,
+} from '@learncard/types';
+import type {
     SendContractRequest,
     ConsentFlowContractRequestForProfile,
     GuardianApprovalRequestStatus,
@@ -802,6 +808,14 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataQuery }
     ) => Promise<PaginatedConsentFlowData>;
+    /** Provision a fresh recipient with explicit LearnCard delegation. */
+    createReadableDeliveryRecipient: (
+        input: CreateReadableDeliveryRecipient
+    ) => Promise<ReadableDeliveryRecipient>;
+    /** Disable future readable API calls and remove the agent from new encryption. */
+    disableReadableDelivery: (profileId: string) => Promise<boolean>;
+    /** Requires both contracts-data:read and contracts-data:decrypt. */
+    getReadableDeliveryData: (input: ReadableDeliveryReadInput) => Promise<ReadableDeliveryPage>;
     getConsentFlowDataForDid: (
         did: string,
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataForDidQuery }
