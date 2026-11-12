@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from openapi_client.models.boost_send_request_display import BoostSendRequestDisplay
 from openapi_client.models.boost_send_request_options import BoostSendRequestOptions
 from openapi_client.models.boost_send_request_template import BoostSendRequestTemplate
 from openapi_client.models.boost_send_request_template_credential_any_of import BoostSendRequestTemplateCredentialAnyOf
@@ -37,18 +38,31 @@ class BoostSendRequest(BaseModel):
     template_uri: Optional[StrictStr] = Field(default=None, alias="templateUri")
     template: Optional[BoostSendRequestTemplate] = None
     signed_credential: Optional[BoostSendRequestTemplateCredentialAnyOf] = Field(default=None, alias="signedCredential")
+    display: Optional[BoostSendRequestDisplay] = None
+    status_purposes: Optional[List[StrictStr]] = Field(default=None, alias="statusPurposes")
     options: Optional[BoostSendRequestOptions] = None
     template_data: Optional[Dict[str, Any]] = Field(default=None, alias="templateData")
     integration_id: Optional[StrictStr] = Field(default=None, description="Integration ID for activity tracking", alias="integrationId")
     refresh: Optional[StrictBool] = Field(default=None, description="Request managed credential refresh for this send. Profile/DID recipients use immediate issuance; email/phone recipients use deferred Universal Inbox signing and bind the holder at claim.")
     idempotency_key: Optional[Annotated[str, Field(min_length=1, strict=True, max_length=200)]] = Field(default=None, description="Caller-chosen key that makes a managed refresh send (refresh: true) safe to retry as a whole: retries with the same key reuse the same boost, refresh allocation and result. Reusing a key for a different request is rejected. With signedCredential, requires prior tRPC prepareRefreshableSend; direct REST callers omit the key and retry the exact signed credential and templateUri.", alias="idempotencyKey")
-    __properties: ClassVar[List[str]] = ["type", "recipient", "contractUri", "templateUri", "template", "signedCredential", "options", "templateData", "integrationId", "refresh", "idempotencyKey"]
+    __properties: ClassVar[List[str]] = ["type", "recipient", "contractUri", "templateUri", "template", "signedCredential", "display", "statusPurposes", "options", "templateData", "integrationId", "refresh", "idempotencyKey"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
         """Validates the enum"""
         if value not in set(['boost']):
             raise ValueError("must be one of enum values ('boost')")
+        return value
+
+    @field_validator('status_purposes')
+    def status_purposes_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        for i in value:
+            if i not in set(['revocation', 'suspension']):
+                raise ValueError("each list item must be one of ('revocation', 'suspension')")
         return value
 
     model_config = ConfigDict(
@@ -95,6 +109,9 @@ class BoostSendRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of signed_credential
         if self.signed_credential:
             _dict['signedCredential'] = self.signed_credential.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of display
+        if self.display:
+            _dict['display'] = self.display.to_dict()
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
@@ -116,6 +133,8 @@ class BoostSendRequest(BaseModel):
             "templateUri": obj.get("templateUri"),
             "template": BoostSendRequestTemplate.from_dict(obj["template"]) if obj.get("template") is not None else None,
             "signedCredential": BoostSendRequestTemplateCredentialAnyOf.from_dict(obj["signedCredential"]) if obj.get("signedCredential") is not None else None,
+            "display": BoostSendRequestDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
+            "statusPurposes": obj.get("statusPurposes"),
             "options": BoostSendRequestOptions.from_dict(obj["options"]) if obj.get("options") is not None else None,
             "templateData": obj.get("templateData"),
             "integrationId": obj.get("integrationId"),

@@ -13,6 +13,7 @@ All URIs are relative to _/api_
 | [**inbox_claim_pending_guardian_links**](UniversalInboxApi.md#inbox_claim_pending_guardian_links)             | **POST** /inbox/claim-guardian-links                           | Claim Pending Guardian Links                 |
 | [**inbox_finalize**](UniversalInboxApi.md#inbox_finalize)                                                     | **POST** /inbox/finalize                                       | Finalize Universal Inbox Credentials         |
 | [**inbox_get_batch**](UniversalInboxApi.md#inbox_get_batch)                                                   | **GET** /inbox/batches/{batchId}                               | Get Inbox Batch Progress                     |
+| [**inbox_get_guardian_approval_status**](UniversalInboxApi.md#inbox_get_guardian_approval_status)             | **GET** /inbox/guardian-approval-status                        | Get Guardian Approval Email Status           |
 | [**inbox_get_guardian_pending_credential**](UniversalInboxApi.md#inbox_get_guardian_pending_credential)       | **GET** /inbox/guardian-credential-approval/{token}            | Get Guardian Pending Credential              |
 | [**inbox_get_inbox_credential**](UniversalInboxApi.md#inbox_get_inbox_credential)                             | **GET** /inbox/credentials/{credentialId}                      | Get Universal Inbox Credential Details       |
 | [**inbox_get_my_inbox_deliveries**](UniversalInboxApi.md#inbox_get_my_inbox_deliveries)                       | **POST** /inbox/deliveries                                     | Recover claimed inbox deliveries             |
@@ -747,6 +748,82 @@ with openapi_client.ApiClient(configuration) as api_client:
 | **401**     | Authorization not provided | -                |
 | **403**     | Insufficient access        | -                |
 | **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **inbox_get_guardian_approval_status**
+
+> InboxGetGuardianApprovalStatus200Response inbox_get_guardian_approval_status()
+
+Get Guardian Approval Email Status
+
+Returns the latest guardian approval email outcome, the guardian address on file, and when another email may be requested. "accepted" means the email provider accepted the message, not that it was delivered.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.inbox_get_guardian_approval_status200_response import InboxGetGuardianApprovalStatus200Response
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.UniversalInboxApi(api_client)
+
+    try:
+        # Get Guardian Approval Email Status
+        api_response = api_instance.inbox_get_guardian_approval_status()
+        print("The response of UniversalInboxApi->inbox_get_guardian_approval_status:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling UniversalInboxApi->inbox_get_guardian_approval_status: %s\n" % e)
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**InboxGetGuardianApprovalStatus200Response**](InboxGetGuardianApprovalStatus200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
 | **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

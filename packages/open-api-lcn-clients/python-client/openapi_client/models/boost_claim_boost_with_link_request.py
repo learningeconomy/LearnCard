@@ -18,7 +18,8 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,7 +30,8 @@ class BoostClaimBoostWithLinkRequest(BaseModel):
     """ # noqa: E501
     boost_uri: StrictStr = Field(alias="boostUri")
     challenge: StrictStr
-    __properties: ClassVar[List[str]] = ["boostUri", "challenge"]
+    request_id: Optional[Annotated[str, Field(min_length=1, strict=True)]] = Field(default=None, alias="requestId")
+    __properties: ClassVar[List[str]] = ["boostUri", "challenge", "requestId"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -82,7 +84,8 @@ class BoostClaimBoostWithLinkRequest(BaseModel):
 
         _values = {
             "boostUri": obj.get("boostUri"),
-            "challenge": obj.get("challenge")
+            "challenge": obj.get("challenge"),
+            "requestId": obj.get("requestId")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

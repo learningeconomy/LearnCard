@@ -88,6 +88,13 @@ class TestBoostSendRequest(unittest.TestCase):
                 signed_credential = {
                     'key' : null
                     },
+                display = openapi_client.models.boost_send_request_display.boost_send_request_display(
+                    name = '0', 
+                    category = '', 
+                    image = '', ),
+                status_purposes = [
+                    'revocation'
+                    ],
                 options = openapi_client.models.boost_send_request_options.boost_send_request_options(
                     webhook_url = '', 
                     suppress_delivery = True, 
