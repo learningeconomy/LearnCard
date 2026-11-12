@@ -260,7 +260,7 @@ export const consentFlowFeature: FeatureDefinition = {
                 })
             );
         const readDelivery = (token: string, actAs = recipient.profileId): Promise<Response> =>
-            fetch(`${context.stack.brain}/api/readable-delivery/data`, {
+            fetch(`${context.stack.brainApi}/readable-delivery/data`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -282,7 +282,7 @@ export const consentFlowFeature: FeatureDefinition = {
                 credential: {
                     name: achievementName,
                     issuer: partner.id.did(),
-                    verification: { proof: 'valid', status: 'not_checked' },
+                    verification: { proof: 'not_checked', status: 'not_checked' },
                 },
             });
             expect(data.records[0]?.credential).not.toHaveProperty('credentialSubject');
@@ -305,8 +305,16 @@ export const consentFlowFeature: FeatureDefinition = {
                 record => record.contractUri === contractUri
             )?.termsUri;
             expect(termsUri).toBeDefined();
+            const accepted = consent.records.find(record => record.termsUri === termsUri)!;
             await learnerLc.invoke.withdrawConsent(termsUri!);
             expect((await readDelivery(token)).status).toBe(403);
+            // Restore the same explicit selection before testing disablement independently.
+            const contract = await learnerLc.invoke.getContract(contractUri);
+            await learnerLc.invoke.consentToContract(contractUri, {
+                terms: accepted.terms,
+                audienceVersion: contract.audienceVersion ?? 0,
+            });
+            expect((await readDelivery(token)).status).toBe(200);
             await partner.invoke.disableReadableDelivery(recipient.profileId);
             expect((await readDelivery(token)).status).toBe(403);
             return { withdrawal: 'denied', disabled: 'denied' };
