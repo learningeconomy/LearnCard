@@ -11,6 +11,9 @@ A partner defines a data-sharing contract. A learner reviews exactly what's requ
 - `consent-partner-issues`: the docs' `issueThroughContract` returns an exact URI present in the learner's incoming or received credentials. The learner resolves it and asserts the tutorial name/description, partner issuer DID, learner subject DID, network boost ID, and successful proof verification without errors. This proves SDK delivery, not UI claiming.
 - `consent-upload-after-consent`: a separate learner already has category-wide live consent with an owner and recipient. Real JSON file upload, partially invalid bulk upload, and paste must save exactly four valid credentials. Both audience members read them through `data-for-did` and decrypt byte-equivalent credentials; the index survives reload.
 
+- `consent-readable-delivery`: a freshly provisioned managed recipient receives the learner-selected encrypted copy. The bearer-token API returns only the summary with a checked proof, requires read AND decrypt permission, refuses another target, and sets no-store. The consent dialog names the organization and discloses LearnCard processing.
+- `consent-readable-delivery-revoked`: withdrawing terms and disabling the recipient deny subsequent reads. The disposable stack supplies a random local wrapping key; this does not prove deployed KMS permissions.
+
 ## How to get to it (user POV)
 
 - A partner site links to `https://learncard.app/consent-flow?uri=<contractUri>&returnTo=…`; verification uses the allocated app origin from `doctor` with the same route.
@@ -32,7 +35,7 @@ Preconditions:
 ## Gotchas
 
 - `create-contract.mjs` requires an https `RETURN_TO`; the journey builds the same contract without a redirect, so the app stays put after **Accept**.
-- **Privacy & Data** covers anonymization off, explicit Name sharing, and one selected Achievement. The upload regression seeds live consent through the SDK; it does not cover choosing live sync in the UI. Other categories, expiry, child accounts ("That's me!" + PIN), game-flow redirects, and withdrawal aren't covered. `apps/learn-card-app/tests/consent-flow.spec.ts` has broader UI recipes.
+- **Privacy & Data** covers anonymization off, explicit Name sharing, and one selected Achievement. The upload regression seeds live consent through the SDK; it does not cover choosing live sync in the UI. Other categories, expiry, child accounts ("That's me!" + PIN), game-flow redirects, aren't covered by the upload and baseline consent cases. `apps/learn-card-app/tests/consent-flow.spec.ts` has broader UI recipes.
 - The contract personal field is `Name` (capitalized), matching the app's personal-field keys.
 - The Name button includes the profile image's accessible text; match the `Name Hidden` / `Name Share` suffix rather than assuming those are the entire names. `getProfile()` without a profile ID returns the SDK's cached self profile; use `getProfile(learner.profileId)` to corroborate an edit made in the browser.
 - Saving Account Settings publishes the same wallet's updated self profile to the exact identity-scoped query key and awaits durable persistence before navigation. Browser cache reads and writes stay on localforage even after SQLite initializes. This preserves normal five-minute query caching instead of forcing self-profile refetches on every mount. Keep the exact saved-name assertion: a generic "Continue as" assertion would miss a stale restored profile.

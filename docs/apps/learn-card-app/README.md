@@ -369,3 +369,7 @@ For how this works under the hood, see [Key Management (SSS)](../../core-concept
 - [Build an App Inside LearnCard](../../how-to-guides/publish-your-app.md) — Build an experience inside the app
 - [Verify Credentials](../../tutorials/verify-credentials.md) — For verifiers
 - [ConsentFlow Overview](../../core-concepts/consent-and-permissions/consentflow-overview.md) — How users control what they share
+
+## Organization readable delivery
+
+When an organization uses readable delivery, the consent dialog names it and explains that LearnCard can process the selected information on its behalf. You still choose which credentials to provide. Withdrawing consent stops subsequent API reads; it cannot recall information the organization already received. See [Readable Delivery](../../how-to-guides/consent-flow/readable-delivery.md) for integration details.
