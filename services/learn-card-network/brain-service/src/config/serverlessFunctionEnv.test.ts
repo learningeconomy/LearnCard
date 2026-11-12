@@ -35,6 +35,35 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('brain-service serverless provider environment', () => {
+    it('binds readable delivery to its retained KMS key and never forwards the local wrapping key', () => {
+        const service = load(
+            readFileSync(new URL('../../serverless.yml', import.meta.url), 'utf8')
+        );
+        const key = service.resources.Resources.ReadableDeliveryKey;
+        expect(key.DeletionPolicy).toBe('Retain');
+        expect(key.Properties.EnableKeyRotation).toBe(true);
+        const cryptographicPolicy = key.Properties.KeyPolicy.Statement.find(
+            (statement: { Sid: string }) => statement.Sid === 'ReadableDeliveryEncryption'
+        );
+        expect(cryptographicPolicy).toMatchObject({
+            Principal: { AWS: { 'Fn::GetAtt': ['IamRoleLambdaExecution', 'Arn'] } },
+            Action: ['kms:Encrypt', 'kms:Decrypt'],
+            Condition: {
+                StringEquals: { 'kms:EncryptionContext:purpose': 'learncard-readable-delivery-v1' },
+            },
+        });
+        const env = functions.provider({
+            env: {
+                READABLE_DELIVERY_LOCAL_KEY: 'synthetic-local-only',
+                READABLE_DELIVERY_KMS_KEY_ARN: 'override',
+            },
+        });
+        expect(env.READABLE_DELIVERY_KMS_KEY_ARN).toEqual({
+            'Fn::GetAtt': ['ReadableDeliveryKey', 'Arn'],
+        });
+        expect(env).not.toHaveProperty('READABLE_DELIVERY_LOCAL_KEY');
+    });
+
     it('routes the shared notifications worker through NAT to the internet', () => {
         const service = load(
             readFileSync(new URL('../../serverless.yml', import.meta.url), 'utf8')

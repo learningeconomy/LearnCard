@@ -145,7 +145,8 @@ const readGrant = async (
     if (!input.did.startsWith('did:key:') && !input.did.startsWith(`did:web:${domain}:users:`))
         throw denied();
     const other = await getProfileByDid(input.did);
-    if (!other) throw denied();
+    if (!other || (input.did !== other.did && input.did !== getDidWeb(domain, other.profileId)))
+        throw denied();
     const result = await getConsentedDataBetweenProfiles(recipient, other.profileId, {
         query: { id: contract.id },
         limit: 1,

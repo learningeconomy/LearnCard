@@ -8,6 +8,11 @@ const ensureConstraints = (): Promise<unknown> =>
         .run(
             'CREATE CONSTRAINT readable_delivery_provision_unique IF NOT EXISTS FOR (d:ReadableDelivery) REQUIRE d.provisionId IS UNIQUE'
         )
+        .then(() =>
+            neogma.queryRunner.run(
+                'CREATE CONSTRAINT readable_delivery_recipient_unique IF NOT EXISTS FOR (d:ReadableDelivery) REQUIRE (d.profileId, d.domain) IS UNIQUE'
+            )
+        )
         .catch(error => {
             constraints = undefined;
             throw error;
