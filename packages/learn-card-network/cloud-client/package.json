@@ -1,6 +1,6 @@
 {
     "name": "@learncard/learn-cloud-client",
-    "version": "1.6.52",
+    "version": "1.6.53",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
