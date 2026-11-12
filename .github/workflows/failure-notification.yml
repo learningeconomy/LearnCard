@@ -42,7 +42,7 @@ on:
             - Publish verification proof
             - Publish to App Stores
             - Prepare shared E2E SDK builds
-            - Recover LearnCard Production Frontend
+            - Recover LearnCard Production Frontend (CapGo Version)
             - Smoketest Published NPM Packages
             - Smoketest
             - Service Health Check

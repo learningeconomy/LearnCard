@@ -1,4 +1,4 @@
-name: Recover LearnCard Production Frontend
+name: Recover LearnCard Production Frontend (CapGo Version)
 
 on:
     workflow_dispatch:
