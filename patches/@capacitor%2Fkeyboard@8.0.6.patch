@@ -1,0 +1,100 @@
+diff --git a/ios/Sources/KeyboardPlugin/Keyboard.m b/ios/Sources/KeyboardPlugin/Keyboard.m
+index 72cfe2f81d65e4213f2f036c95b7a490961fa7c1..4f1bc14d0f5ab7cd1d454d003914dc1d50467ae6 100644
+--- a/ios/Sources/KeyboardPlugin/Keyboard.m
++++ b/ios/Sources/KeyboardPlugin/Keyboard.m
+@@ -40,6 +40,9 @@ typedef enum : NSUInteger {
+ @property (nonatomic, readwrite) ResizePolicy keyboardResizes;
+ @property (readwrite, assign, nonatomic) NSString* keyboardStyle;
+ @property (nonatomic, readwrite) int paddingBottom;
++@property (nonatomic, strong) UIView *resizeAnimationView;
++@property (nonatomic, strong) CADisplayLink *resizeDisplayLink;
++@property (nonatomic, assign) NSUInteger resizeAnimationGeneration;
+ 
+ @end
+ 
+@@ -212,7 +215,7 @@ double stageManagerOffset;
+ 
+ - (void)onKeyboardWillHide:(NSNotification *)notification
+ {
+-  [self setKeyboardHeight:0 delay:0.01];
++  [self resizeForKeyboardNotification:notification height:0 fallbackDelay:0.01];
+   [self resetScrollView];
+   hideTimer = [NSTimer scheduledTimerWithTimeInterval:0 repeats:NO block:^(NSTimer * _Nonnull timer) {
+     [self.bridge triggerWindowJSEventWithEventName:@"keyboardWillHide"];
+@@ -255,7 +258,7 @@ double stageManagerOffset;
+   }
+ 
+   double duration = [[notification.userInfo valueForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue]+0.2;
+-  [self setKeyboardHeight:(int)height delay:duration];
++  [self resizeForKeyboardNotification:notification height:(int)height fallbackDelay:duration];
+   [self resetScrollView];
+ 
+   NSString * data = [NSString stringWithFormat:@"{ 'keyboardHeight': %d }", (int)height];
+@@ -304,6 +307,67 @@ double stageManagerOffset;
+   stageManagerOffset = 0;
+ }
+ 
++- (void)resizeForKeyboardNotification:(NSNotification *)notification height:(int)height fallbackDelay:(NSTimeInterval)delay
++{
++  if (self.keyboardResizes != ResizeNative) {
++    [self setKeyboardHeight:height delay:delay];
++    return;
++  }
++
++  if (self.paddingBottom == height && self.resizeDisplayLink == nil) return;
++  self.paddingBottom = height;
++  [self.resizeDisplayLink invalidate];
++  self.resizeDisplayLink = nil;
++  [self.resizeAnimationView removeFromSuperview];
++  self.resizeAnimationView = nil;
++  NSUInteger generation = ++self.resizeAnimationGeneration;
++
++  CGRect currentFrame = self.webView.frame;
++  CGRect windowBounds = [self currentKeyWindow].bounds;
++  CGRect targetFrame = CGRectMake(currentFrame.origin.x, currentFrame.origin.y,
++      windowBounds.size.width - currentFrame.origin.x,
++      windowBounds.size.height - currentFrame.origin.y - height);
++
++  // Expand before dismissal exposes the area below the old viewport. Expanding
++  // WKWebView incrementally lets its asynchronous paint trail the keyboard,
++  // revealing its empty backing surface for several frames.
++  if (height == 0) {
++    self.webView.frame = targetFrame;
++    return;
++  }
++
++  // WKWebView lays out at an animation's destination size immediately. Animate
++  // an invisible UIKit guide instead and resize the real viewport on each frame,
++  // so the web content keeps filling the area above the moving keyboard.
++  UIView *guide = [[UIView alloc] initWithFrame:currentFrame];
++  guide.userInteractionEnabled = NO;
++  guide.hidden = YES;
++  [self.webView.superview addSubview:guide];
++  self.resizeAnimationView = guide;
++  self.resizeDisplayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(updateAnimatedKeyboardFrame:)];
++  [self.resizeDisplayLink addToRunLoop:NSRunLoop.mainRunLoop forMode:NSRunLoopCommonModes];
++
++  NSTimeInterval duration = [notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
++  NSUInteger curve = [notification.userInfo[UIKeyboardAnimationCurveUserInfoKey] unsignedIntegerValue];
++  UIViewAnimationOptions options = (curve << 16) | UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction;
++  [UIView animateWithDuration:duration delay:0 options:options animations:^{
++    guide.frame = targetFrame;
++  } completion:^(BOOL finished) {
++    if (generation != self.resizeAnimationGeneration) return;
++    [self.resizeDisplayLink invalidate];
++    self.resizeDisplayLink = nil;
++    [guide removeFromSuperview];
++    self.resizeAnimationView = nil;
++    self.webView.frame = targetFrame;
++  }];
++}
++
++- (void)updateAnimatedKeyboardFrame:(CADisplayLink *)displayLink
++{
++  CALayer *presentation = self.resizeAnimationView.layer.presentationLayer;
++  if (presentation != nil) self.webView.frame = presentation.frame;
++}
++
+ - (void)setKeyboardHeight:(int)height delay:(NSTimeInterval)delay
+ {
+   if (self.paddingBottom == height) {

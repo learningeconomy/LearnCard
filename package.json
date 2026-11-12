@@ -185,6 +185,7 @@
     "patchedDependencies": {
         "libsodium-wrappers@0.7.16": "patches/libsodium-wrappers@0.7.16.patch",
         "@capacitor-community/in-app-review@8.0.0": "patches/@capacitor-community%2Fin-app-review@8.0.0.patch",
-        "@serverless/dashboard-plugin@7.2.3": "patches/@serverless%2Fdashboard-plugin@7.2.3.patch"
+        "@serverless/dashboard-plugin@7.2.3": "patches/@serverless%2Fdashboard-plugin@7.2.3.patch",
+        "@capacitor/keyboard@8.0.6": "patches/@capacitor%2Fkeyboard@8.0.6.patch"
     }
 }

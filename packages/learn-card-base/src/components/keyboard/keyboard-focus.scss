@@ -1,6 +1,6 @@
 // The visible viewport can shrink without the layout viewport shrinking (mobile
 // Safari and overlay keyboard modes). Fit the shared hosts, not every form leaf.
-html[data-lc-keyboard-open] {
+html[data-lc-keyboard-open][data-lc-keyboard-overlay] {
     ion-app,
     .lc-auth-overlay,
     #modal-mid-root > [data-lc-surface] {
