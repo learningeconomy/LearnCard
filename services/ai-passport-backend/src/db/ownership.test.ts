@@ -218,7 +218,8 @@ describe('persistent owner boundaries', () => {
 
     test("the search's aiContext read returns only the requested URIs and needs no raw credential", async () => {
         const second: VC = { ...original, id: 'lc:alice:second' };
-        await asOwner(() => database.storeVC(owner, record()));
+        const first = record();
+        await asOwner(() => database.storeVC(owner, first));
         await asOwner(() =>
             database.storeVC(owner, {
                 ...record(second, 'lc:alice:second'),
@@ -236,12 +237,36 @@ describe('persistent owner boundaries', () => {
         ).toEqual([
             {
                 uri: 'lc:alice:credential',
-                aiContext: 'Calculus',
+                aiContext: serializeModelSafeCredentialProjection(first.projection!),
                 category: 'Achievement',
                 verified: true,
             },
         ]);
         expect(await asOwner(() => database.getCredentialAiContexts(owner, []))).toEqual([]);
+    });
+
+    // commitLegacyVerification writes a valid projection and verification but
+    // leaves the row's older aiContext in place.
+    test('a repaired legacy row with old aiContext text is verified by its projection, never that text', async () => {
+        const stored = record();
+        await asOwner(() => database.storeVC(owner, stored));
+        await persisted
+            .collection('credentials')
+            .updateOne(
+                { did: owner, uri: stored.uri },
+                { $set: { aiContext: 'LEGACY unverified text' } }
+            );
+        const rows = await asOwner(() => database.getCredentialAiContexts(owner, [stored.uri]));
+
+        expect(rows).toEqual([
+            {
+                uri: stored.uri,
+                aiContext: serializeModelSafeCredentialProjection(stored.projection!),
+                category: 'Achievement',
+                verified: true,
+            },
+        ]);
+        expect(JSON.stringify(rows)).not.toContain('LEGACY');
     });
 
     // Prod v187: rows repaired with only a projection had no stored aiContext,
