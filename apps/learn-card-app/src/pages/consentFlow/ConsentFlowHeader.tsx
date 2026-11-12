@@ -29,6 +29,8 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
 
     const name = appName ?? contractName;
     const image = appImage ?? contractImage;
+    const readableRecipients =
+        contractDetails?.readableDeliveryRecipients?.filter(recipient => recipient.enabled) ?? [];
 
     return (
         <header className="flex items-center flex-col gap-[15px] w-full">
@@ -86,13 +88,13 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
             <span className="text-grayscale-900 font-notoSans text-[22px] font-[600] leading-[130%] text-center tracking-[-0.25px]">
                 {name}
             </span>
-            {!!contractDetails?.readableDeliveryRecipients?.length && (
+            {!!readableRecipients.length && (
                 <p
                     data-testid="readable-delivery-disclosure"
                     className="font-poppins text-sm text-grayscale-600 leading-relaxed text-center"
                 >
                     {m['consentFlow.readableDeliveryDisclosure']({
-                        organizations: contractDetails.readableDeliveryRecipients
+                        organizations: readableRecipients
                             .map(recipient => recipient.displayName)
                             .join(', '),
                     })}
