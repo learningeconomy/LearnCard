@@ -40,11 +40,6 @@ on:
                 required: false
                 default: false
                 type: boolean
-            capgo-bundle-version:
-                description: 'LearnCard production frontend recovery only: <current package version>-recovery.N (unused N). Preserves future release versions; must satisfy native/channel update rules.'
-                required: false
-                default: ''
-                type: string
             deploy-ai-agent:
                 description: 'Deploy AI Agent (ECS + Trigger.dev)'
                 required: false
@@ -124,23 +119,12 @@ jobs:
             frontend_matrix_has_legs: ${{ steps.set-env.outputs.frontend_matrix_has_legs }}
             native_plugin_needed: ${{ steps.native-plugin.outputs.needed }}
         steps:
-            # Recovery validation needs only the checkout; ordinary manual runs still skip it.
             - name: Checkout Repo
-              if: github.event_name != 'workflow_dispatch' || inputs.capgo-bundle-version != ''
+              if: github.event_name != 'workflow_dispatch'
               uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
-            # Validate before any service or frontend deployment can start.
-            - name: Validate CapGo recovery input
-              if: inputs.capgo-bundle-version != ''
-              env:
-                  RECOVERY_VERSION: ${{ inputs.capgo-bundle-version }}
-                  TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
-                  DEPLOY_FRONTEND: ${{ inputs.deploy-frontend }}
-              run: node scripts/validate-capgo-recovery-version.mjs
-
-            # Set deployment flags only after recovery input validation succeeds.
             - name: Check if this is a manual dispatch
               id: check_manual
               run: |
@@ -1361,12 +1345,7 @@ jobs:
                   CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
                   PROJECT_NAME: ${{ steps.vars.outputs.project_name }}
                   APP_VERSION: ${{ steps.app-version.outputs.version }}
-                  RECOVERY_VERSION: ${{ inputs.capgo-bundle-version }}
               run: |
-                  if [[ -n "$RECOVERY_VERSION" ]]; then
-                    # determine-affected already validated the target and version.
-                    APP_VERSION="$RECOVERY_VERSION"
-                  fi
                   VERSION_ARGS=(--bundle "$APP_VERSION")
                   if [[ "$PROJECT_NAME" == "scouts" ]]; then
                     # OTA versions advance independently of package/store versions.
