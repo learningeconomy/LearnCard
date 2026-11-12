@@ -3,8 +3,19 @@ import { DecryptCommand, EncryptCommand, KMSClient } from '@aws-sdk/client-kms';
 import type { DeliveryKeyBinding, DeliveryKeyCustody } from 'types/readable-delivery';
 
 const purpose = 'learncard-readable-delivery-v1';
+// Reuse only the AWS transport/connection pool. Agent keys never enter this cache.
+const kmsClients = new Map<string, KMSClient>();
+const getKmsClient = (region?: string): KMSClient => {
+    const id = region ?? '';
+    let client = kmsClients.get(id);
+    if (!client) {
+        client = new KMSClient({ region, maxAttempts: 2 });
+        kmsClients.set(id, client);
+    }
+    return client;
+};
 
-/** Private material is never cached, logged, or used as a cache key. */
+/** Agent private keys are never cached, logged, or used as cache keys. */
 export const createDeliveryKeyCustody = (
     config: { kmsKeyArn?: string; region?: string; localKey?: string; local: boolean },
     client?: Pick<KMSClient, 'send'>
@@ -12,13 +23,7 @@ export const createDeliveryKeyCustody = (
     if (!config.kmsKeyArn && !(config.local && /^[a-f0-9]{64}$/i.test(config.localKey ?? ''))) {
         throw new Error('Readable delivery key custody is not configured');
     }
-    const kms = config.kmsKeyArn
-        ? (client ??
-          new KMSClient({
-              region: config.region,
-              maxAttempts: 2,
-          }))
-        : undefined;
+    const kms = config.kmsKeyArn ? (client ?? getKmsClient(config.region)) : undefined;
     const context = (binding: DeliveryKeyBinding): Record<string, string> => ({
         purpose,
         profileId: binding.profileId,

@@ -78,16 +78,18 @@ export const provisionReadableDelivery = async (
 ): Promise<ReadableDeliveryRecipient> => {
     const keys = custody();
     const provisionId = `${domain}:${owner}:${input.requestId}`;
-    const previous = await getDeliveryProvision(provisionId);
-    if (previous) {
+    const reuse = (record: DeliveryRecord): ReadableDeliveryRecipient => {
         if (
-            previous.ownerProfileId !== owner ||
-            previous.displayName !== input.displayName ||
-            !previous.enabled
+            record.ownerProfileId !== owner ||
+            record.domain !== domain ||
+            record.displayName !== input.displayName ||
+            !record.enabled
         )
             throw denied();
-        return publicRecipient(previous);
-    }
+        return publicRecipient(record);
+    };
+    const previous = await getDeliveryProvision(provisionId);
+    if (previous) return reuse(previous);
     const wallet = await getEmptyLearnCard();
     const entropy = randomBytes(32);
     const recipientEntropy = randomBytes(32);
@@ -114,6 +116,10 @@ export const provisionReadableDelivery = async (
         await createDeliveryRecipient(record, recipientDid);
         return publicRecipient(record);
     } catch {
+        // A concurrent request may have committed the unique provision, or the
+        // database response may have been lost after commit. Reuse that result.
+        const committed = await getDeliveryProvision(provisionId).catch(() => undefined);
+        if (committed) return reuse(committed);
         throw unavailable();
     } finally {
         entropy.fill(0);

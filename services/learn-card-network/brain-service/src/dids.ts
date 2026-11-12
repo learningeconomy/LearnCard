@@ -328,7 +328,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         finalDoc = normalizeDidDocument(finalDoc);
 
         const [delivery] = await getDeliveryDisclosures([profileId], domain);
-        if (delivery) {
+        if (delivery?.enabled) {
             finalDoc.service = [
                 ...(finalDoc.service ?? []),
                 {

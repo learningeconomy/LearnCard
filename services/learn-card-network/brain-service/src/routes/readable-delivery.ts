@@ -55,6 +55,14 @@ export const readableDeliveryRouter = t.router({
         .input(z.object({ profileId: z.string().min(3).max(40) }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
+            await enforceRateLimits([
+                {
+                    key: `readable-delivery:disable:${ctx.user.profile.profileId}`,
+                    limit: 60,
+                    windowSeconds: 60,
+                    description: 'readable delivery disablement',
+                },
+            ]);
             await disableReadableDelivery(input.profileId, ctx.domain, ctx.user.profile.profileId);
             return true;
         }),
@@ -75,6 +83,22 @@ export const readableDeliveryRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const recipient = ctx.user.profile.profileId;
             const actor = ctx.user.onBehalfOf ?? recipient;
+            // Bound durable audit writes for every authenticated caller, including
+            // under-scoped tokens. Rejected traffic stops at the shared counter.
+            await enforceRateLimits([
+                {
+                    key: `readable-delivery:actor:${actor}`,
+                    limit: 60,
+                    windowSeconds: 60,
+                    description: 'readable delivery requests',
+                },
+                {
+                    key: `readable-delivery:read:${recipient}`,
+                    limit: 60,
+                    windowSeconds: 60,
+                    description: 'readable delivery',
+                },
+            ]);
             try {
                 await auditDeliveryRead(actor, recipient, 'started');
                 if (
@@ -86,14 +110,6 @@ export const readableDeliveryRouter = t.router({
                         code: 'FORBIDDEN',
                         message: 'Read and decrypt permissions are required.',
                     });
-                await enforceRateLimits([
-                    {
-                        key: `readable-delivery:read:${recipient}`,
-                        limit: 60,
-                        windowSeconds: 60,
-                        description: 'readable delivery',
-                    },
-                ]);
                 const result = await readReadableDelivery(recipient, ctx.domain, input);
                 await auditDeliveryRead(actor, recipient, 'allowed', result.records.length);
                 return result;

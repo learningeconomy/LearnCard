@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     managers: vi.fn(),
     grants: vi.fn(),
     read: vi.fn(),
+    rateLimit: vi.fn(),
     encryptKey: vi.fn(),
     generateKey: vi.fn(),
     decryptKey: vi.fn(),
@@ -73,7 +74,7 @@ vi.mock('@helpers/learnCard.helpers', () => ({
         },
     }),
 }));
-vi.mock('@helpers/rateLimit.helpers', () => ({ enforceRateLimits: vi.fn() }));
+vi.mock('@helpers/rateLimit.helpers', () => ({ enforceRateLimits: mocks.rateLimit }));
 
 import {
     readReadableDelivery,
@@ -119,6 +120,7 @@ const vc = {
 beforeEach(() => {
     vi.resetAllMocks();
     mocks.environment.READABLE_DELIVERY_ENABLED = true;
+    mocks.provision.mockResolvedValue(undefined);
     mocks.generateKey.mockReturnValue({ kty: 'OKP', crv: 'Ed25519', x: 'public', d: 'private' });
     mocks.encryptKey.mockResolvedValue({ provider: 'local-v1', ciphertext: 'encrypted-key' });
     mocks.delivery.mockResolvedValue({
@@ -247,6 +249,16 @@ describe('readable delivery authorization and projection', () => {
 });
 
 describe('readable API permission and audit boundary', () => {
+    it('does not write audit nodes or unwrap keys when throttled, even without decrypt permission', async () => {
+        mocks.rateLimit.mockRejectedValue(new Error('throttled'));
+        const caller = readableDeliveryRouter.createCaller({
+            domain,
+            user: { did: 'did:key:caller', isChallengeValid: true, scope: 'contracts-data:read' },
+        } as Parameters<typeof readableDeliveryRouter.createCaller>[0]);
+        await expect(caller.read(input)).rejects.toThrow('throttled');
+        expect(mocks.audit).not.toHaveBeenCalled();
+        expect(mocks.decryptKey).not.toHaveBeenCalled();
+    });
     it('audits a permitted read before releasing the projection', async () => {
         const caller = readableDeliveryRouter.createCaller({
             domain,
@@ -340,6 +352,22 @@ describe('readable recipient provisioning', () => {
             provisionReadableDelivery('owner', domain, { ...request, displayName: 'Different' })
         ).rejects.toMatchObject({ code: 'FORBIDDEN' });
         expect(mocks.create).not.toHaveBeenCalled();
+    });
+    it('returns the committed recipient after a concurrent provision or lost response', async () => {
+        mocks.provision.mockResolvedValueOnce(undefined);
+        mocks.provision.mockResolvedValueOnce({
+            ownerProfileId: 'owner',
+            domain,
+            profileId: 'existing',
+            agentDid: 'did:key:agent',
+            displayName: request.displayName,
+            enabled: true,
+        });
+        mocks.create.mockRejectedValue(new Error('concurrent unique provision'));
+        expect((await provisionReadableDelivery('owner', domain, request)).profileId).toBe(
+            'existing'
+        );
+        expect(mocks.create).toHaveBeenCalledOnce();
     });
     it('does not create a recipient if key custody fails', async () => {
         mocks.encryptKey.mockRejectedValue(new Error('private detail'));

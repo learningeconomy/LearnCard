@@ -95,6 +95,23 @@ describe('consent account avatar', () => {
         expect(screen.getByTestId('readable-delivery-disclosure').textContent).toBe(
             'LearnCard can read your selected information on behalf of Example Organization.'
         );
+        view.rerender(
+            <ConsentFlowHeader
+                contractDetails={{
+                    ...contract,
+                    readableDeliveryRecipients: [
+                        {
+                            profileId: 'disabled-partner',
+                            displayName: 'Disabled Organization',
+                            agentDid: 'did:key:agent',
+                            enabled: false,
+                            disclosureVersion: '1',
+                        },
+                    ],
+                }}
+            />
+        );
+        expect(screen.queryByTestId('readable-delivery-disclosure')).toBeNull();
     });
 
     it('shows the selected organization image instead of a stale local-account image', () => {

@@ -95,6 +95,12 @@ export const consentFlowFeature: FeatureDefinition = {
                 disclosureVersion: '1',
             });
             expect(details.recipients?.map(profile => profile.did)).toContain(recipient.did);
+            const recipientDocument = await partner.invoke.resolveDid(recipient.did);
+            expect(
+                recipientDocument.service?.some(
+                    service => service.type === 'LearnCardReadableDelivery'
+                )
+            ).toBe(true);
             expect(await partner.invoke.verifyConsent(uri, learner.profileId)).toBe(false);
             return uri;
         });
@@ -335,6 +341,16 @@ export const consentFlowFeature: FeatureDefinition = {
             expect((await readDelivery(token)).status).toBe(200);
             await partner.invoke.disableReadableDelivery(recipient.profileId);
             expect((await readDelivery(token)).status).toBe(403);
+            // Fetch directly so a resolver's local DID cache cannot mask invalidation.
+            const documentResponse = await fetch(
+                `${new URL(context.stack.brain).origin}/users/${recipient.profileId}/did.json`
+            );
+            expect(documentResponse.status).toBe(200);
+            const document = (await documentResponse.json()) as { service?: { type?: string }[] };
+            expect(
+                document.service?.some(service => service.type === 'LearnCardReadableDelivery') ??
+                    false
+            ).toBe(false);
             return { withdrawal: 'denied', disabled: 'denied' };
         });
 
