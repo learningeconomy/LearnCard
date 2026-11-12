@@ -2811,6 +2811,46 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         // --- Server communication ---
 
+        fetchArchivedKey: async (
+            authToken: string,
+            providerType: AuthProviderType
+        ): Promise<{ privateKey: string; did: string } | null> => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 8000);
+
+            try {
+                const response = await fetch(`${serverUrl}/keys/archived-key`, {
+                    method: 'POST',
+                    headers: buildHeaders(authToken, undefined, tenantId),
+                    signal: controller.signal,
+                    body: JSON.stringify({ authToken, providerType }),
+                });
+                if (!response.ok) return null;
+
+                const body: unknown = await response.json();
+                if (
+                    !body ||
+                    typeof body !== 'object' ||
+                    !('available' in body) ||
+                    body.available !== true ||
+                    !('privateKey' in body) ||
+                    typeof body.privateKey !== 'string' ||
+                    !/^[0-9a-f]{64}$/i.test(body.privateKey) ||
+                    !('did' in body) ||
+                    typeof body.did !== 'string' ||
+                    !body.did.startsWith('did:key:')
+                )
+                    return null;
+
+                return { privateKey: body.privateKey, did: body.did };
+            } catch {
+                // Optional lookup: never forward response bodies or raw errors containing credentials.
+                return null;
+            } finally {
+                clearTimeout(timer);
+            }
+        },
+
         async fetchServerKeyStatus(
             token: string,
             providerType: AuthProviderType
