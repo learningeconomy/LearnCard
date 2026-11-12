@@ -60,12 +60,13 @@ const CredentialSyncListener: React.FC = () => {
     }, [completedContractSyncJob]);
 
     useEffect(() => {
-        const jobs = Object.values(pendingContractSyncJobs);
+        // Credential discovery jobs have no single contract identity.
+        const jobs = Object.values(pendingContractSyncJobs).filter(
+            job => job.kind !== 'credential'
+        );
         if (!jobs.length) return;
 
         const newestJob = jobs.sort((a, b) => b.updatedAt - a.updatedAt)[0];
-        // Discovery retries do not identify one contract; contract telemetry requires one.
-        if (newestJob.kind === 'credential') return;
         const telemetryKey = [
             newestJob.id,
             newestJob.status,

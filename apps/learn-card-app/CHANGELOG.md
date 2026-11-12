@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- LC-2371: Sync successfully uploaded, pasted, and Partner Connect credentials to existing live consent contracts. Preserve successful saves when sharing fails and persist account-scoped retries.
+- LC-2371: Sync uploaded, pasted, and Partner Connect credentials to existing live consent contracts. Return Partner Connect saves after queuing delivery without waiting for sharing. Preserve AI Topic/Session saves' previous sharing opt-out and keep credential discovery jobs from masking contract telemetry.
 
 ## 1.101.1
 
