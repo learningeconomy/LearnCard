@@ -486,23 +486,30 @@ describe('credential search pipeline', () => {
         }
     });
 
-    it('a deadline mid-batch is a timeout even when one credential already failed', async () => {
+    it('a hung verify with no stored text gives way before the deadline and keeps the fallback that loaded', async () => {
         searchSimilar.mockImplementation(twoStrongResults);
         withoutStoredText('lc:credential:strong');
         resolveVerifiedCredentialProjection.mockImplementation(async (_did, uri) => {
             if (uri === 'lc:credential:1') throw jsonLdFailure();
             return new Promise<never>(() => {});
         });
-        const outcome = await settleWithin(
-            searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
-                expandQueries: false,
-                deadlineAt: performance.now() + 1_100,
-            }),
-            2_500
+        let results: { uri: string }[] = [];
+        const deadlineAt = performance.now() + 1_100;
+        const outcome = await withQuietWarn(() =>
+            settleWithin(
+                searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                    expandQueries: false,
+                    deadlineAt,
+                }).then(contexts => {
+                    results = contexts;
+                }),
+                2_500
+            )
         );
 
-        expect(outcome.state).toBe('rejected');
-        expect(outcome.error).toMatchObject({ name: 'TimeoutError' });
+        expect(outcome.state).toBe('resolved');
+        expect(performance.now()).toBeLessThan(deadlineAt);
+        expect(results.map(({ uri }) => uri)).toEqual(['lc:credential:1']);
     });
 
     it('an abort mid-batch is not a skip, even if a verifier reports it', async () => {
@@ -1096,6 +1103,66 @@ describe('credential search pipeline', () => {
         );
         expect(results.map(({ uri }) => uri)).toEqual(rankedUris.slice(1, 6));
         expect(JSON.stringify(results)).not.toContain('UNVERIFIED');
+    });
+
+    it('a hung live verify of an unverified row gives way and keeps the verified stored text', async () => {
+        useRankedCandidates();
+        withUnverifiedStoredText('lc:credential:r1');
+        resolveVerifiedCredentialProjection.mockImplementation(() => new Promise<never>(() => {}));
+        let results: Awaited<ReturnType<typeof searchCredentialContextsByTopic>> = [];
+        const deadlineAt = performance.now() + 1_100;
+        const outcome = await withQuietWarn(() =>
+            settleWithin(
+                searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                    expandQueries: false,
+                    limit: 5,
+                    preferStoredText: true,
+                    deadlineAt,
+                }).then(value => {
+                    results = value;
+                }),
+                2_500
+            )
+        );
+
+        expect(outcome.state).toBe('resolved');
+        expect(performance.now()).toBeLessThan(deadlineAt);
+        expect(resolveVerifiedCredentialProjection.mock.calls.map(([, uri]) => uri)).toEqual([
+            'lc:credential:r1',
+        ]);
+        expect(results.map(({ uri }) => uri)).toEqual([
+            'lc:credential:r0',
+            'lc:credential:r2',
+            'lc:credential:r3',
+            'lc:credential:r4',
+            'lc:credential:r5',
+        ]);
+        expect(results.every(({ context }) => context === 'stored context')).toBe(true);
+    });
+
+    it('when every row is unverified and its verify hangs, the search defers as a timeout before the deadline', async () => {
+        useRankedCandidates();
+        withUnverifiedStoredText(...rankedUris);
+        resolveVerifiedCredentialProjection.mockImplementation(() => new Promise<never>(() => {}));
+        const deadlineAt = performance.now() + 1_100;
+        const outcome = await withQuietWarn(() =>
+            settleWithin(
+                searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                    expandQueries: false,
+                    limit: 5,
+                    preferStoredText: true,
+                    deadlineAt,
+                }),
+                2_500
+            )
+        );
+
+        // A timeout keeps the opening context pending for the deferred live search;
+        // an empty result would settle it as empty.
+        expect(outcome.state).toBe('rejected');
+        expect(outcome.error).toMatchObject({ name: 'TimeoutError' });
+        expect(performance.now()).toBeLessThan(deadlineAt);
+        expect(assertCredentialConsent).not.toHaveBeenCalled();
     });
 
     it('v198: preferStoredText uses stored text without a live verify', async () => {

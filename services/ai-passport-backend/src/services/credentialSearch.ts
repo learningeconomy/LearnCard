@@ -578,17 +578,27 @@ const searchCredentialContextsPinned = async (
     // same credentials), and a context of stored text beats no context. The
     // reserve is at most half of what is left, so a short budget still tries.
     // Giving way is transient: it never marks the credential known-bad.
+    // A credential with no verified stored text gives way too and is skipped, so
+    // one hung verify can't hold its window past the deadline and discard what
+    // already loaded. When every verify gave way and nothing loaded, the search
+    // rejects as a timeout before the deadline: the opening context then stays
+    // pending for the deferred live search instead of settling empty.
     const liveVerifyDeadlineAt =
         deadlineAt === undefined
             ? undefined
             : deadlineAt -
               Math.min(STORED_TEXT_RESERVE_MS, Math.max(0, deadlineAt - performance.now()) / 2);
+    const gaveWay = new WeakSet<CredentialVerificationUnavailableError>();
     const verifyLive = (result: TopicSearchContext) => {
-        if (liveVerifyDeadlineAt === undefined || !result.context.trim())
+        if (liveVerifyDeadlineAt === undefined)
             return resolveVerifiedCredentialProjection(did, result.uri, receipt);
 
         const verifyBudgetMs = liveVerifyDeadlineAt - performance.now();
-        const giveWay = () => new CredentialVerificationUnavailableError('sdk_timeout');
+        const giveWay = () => {
+            const error = new CredentialVerificationUnavailableError('sdk_timeout');
+            gaveWay.add(error);
+            return error;
+        };
 
         if (verifyBudgetMs <= 0) return Promise.reject(giveWay());
 
@@ -662,6 +672,8 @@ const searchCredentialContextsPinned = async (
             } catch (error) {
                 // Keep what loaded when a later window fails per credential only.
                 if (loaded.length && isCredentialItemFailure(error, { signal, deadlineAt })) break;
+                if (error instanceof CredentialVerificationUnavailableError && gaveWay.has(error))
+                    throw new DOMException('Credential verification gave way', 'TimeoutError');
                 throw error;
             }
             loaded.push(...window);
