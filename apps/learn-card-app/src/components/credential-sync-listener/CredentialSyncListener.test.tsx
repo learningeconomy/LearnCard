@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, cleanup, render } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import {
     enqueuePendingContractSync,
@@ -22,7 +22,6 @@ vi.mock('learn-card-base', async () => {
         await import('learn-card-base/stores/pendingContractSyncStore');
     return { usePendingContractSyncJobs };
 });
-vi.mock('../common/ContractSyncStatusBanner', () => ({ default: () => null }));
 
 beforeEach(() => {
     vi.useFakeTimers();
@@ -51,6 +50,7 @@ it('reports contract progress and completion even when a credential job is newer
         category: 'Achievement',
     });
     render(<CredentialSyncListener />);
+    expect(screen.getByText('Syncing')).toBeVisible();
     expect(mocks.track).toHaveBeenCalledWith(
         'sync-job',
         expect.objectContaining({ contractUri: 'contract-a', phase: 'running' })
@@ -61,6 +61,8 @@ it('reports contract progress and completion even when a credential job is newer
         vi.setSystemTime(4000);
         pendingContractSyncStore.set.markRunning(credential.id);
     });
+    expect(screen.getByText('Syncing complete')).toBeVisible();
+    expect(screen.queryByText('Syncing')).not.toBeInTheDocument();
     expect(mocks.track).toHaveBeenCalledWith(
         'sync-job',
         expect.objectContaining({ contractUri: 'contract-a', phase: 'done' })
@@ -72,4 +74,25 @@ it('reports contract progress and completion even when a credential job is newer
     expect(mocks.track.mock.calls.every(([, data]) => data.contractUri === 'contract-a')).toBe(
         true
     );
+});
+
+it('does not show active or complete contract banners for background credential delivery', () => {
+    const job = enqueuePendingContractSync({
+        kind: 'credential',
+        profileDid: 'did:example:learner',
+        record: { id: 'saved', uri: 'credential-a', category: 'Achievement' },
+        category: 'Achievement',
+    });
+    render(<CredentialSyncListener />);
+    expect(screen.queryByText(/Syncing/)).not.toBeInTheDocument();
+    act(() => {
+        pendingContractSyncStore.set.markRunning(job.id);
+        pendingContractSyncStore.set.setTotals(job.id, 1);
+    });
+    expect(screen.queryByText(/Syncing/)).not.toBeInTheDocument();
+    act(() => {
+        pendingContractSyncStore.set.markDone(job.id);
+    });
+    expect(screen.queryByText(/Syncing/)).not.toBeInTheDocument();
+    expect(mocks.track).not.toHaveBeenCalled();
 });

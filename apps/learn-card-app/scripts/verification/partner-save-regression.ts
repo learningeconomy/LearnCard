@@ -64,7 +64,15 @@ export const verifyPartnerCredentialSave = async (
                     requestTimeout: 60_000,
                 });
                 try {
-                    return await sdk.sendCredential(input.credential);
+                    const saved = await sdk.sendCredential(input.credential);
+                    let status = await sdk.getSyncStatus();
+                    if (status.status === 'syncing') {
+                        status = await new Promise(resolve => sdk.onSyncComplete(resolve));
+                    }
+                    if (status.status !== 'ready') {
+                        throw new Error('Partner credential delivery did not finish successfully');
+                    }
+                    return saved;
                 } finally {
                     sdk.destroy();
                 }
@@ -90,23 +98,17 @@ export const verifyPartnerCredentialSave = async (
         expect((await learner.index.LearnCloud.get()).some(record => record.uri === uri)).toBe(
             true
         );
-        await expect
-            .poll(
-                async () =>
-                    (await owner.invoke.getConsentFlowDataForDid(learnerDid)).records.find(
-                        record => record.contractUri === contractUri
-                    )?.credentials.length,
-                { timeout: 60_000 }
-            )
-            .toBe(1);
+        await expect(page.getByText(/^Syncing(?: \d+\/\d+| complete)?$/)).toHaveCount(0);
         const data = (await owner.invoke.getConsentFlowDataForDid(learnerDid)).records.find(
             record => record.contractUri === contractUri
         )!;
+        expect(data.credentials).toHaveLength(1);
         expect(await owner.read.get(data.credentials[0]!.uri)).toEqual(credential);
         await context.record('partner-save-live-consent', {
             contractUri,
             savedUri: uri,
             sharedUri: data.credentials[0]!.uri,
+            readyBeforePartnerRead: true,
         });
     });
 };

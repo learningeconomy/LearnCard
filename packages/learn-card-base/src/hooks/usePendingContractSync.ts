@@ -72,7 +72,7 @@ export const usePendingContractSync = (enabled = true): void => {
     const jobs = usePendingContractSyncJobs(); // get all jobs
     const activeWallet = walletStore.use.wallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    const activeDid = switchedDid || activeWallet?.id.did();
+    const activeDid = switchedDid ?? activeWallet?.id.did();
 
     const processingJobIdRef = useRef<string | null>(null); // track currently processing job
     const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -145,9 +145,11 @@ export const usePendingContractSync = (enabled = true): void => {
             try {
                 const wallet = await initWallet();
                 const currentDid =
-                    switchedProfileStore.get.switchedDid() || walletStore.get.wallet()?.id.did();
+                    switchedProfileStore.get.switchedDid() ?? walletStore.get.wallet()?.id.did();
                 // A stale wallet is not a failed delivery. Wait for identity state to settle.
                 if (wallet.id.did() !== job.profileDid || currentDid !== job.profileDid) {
+                    // No self-wake for an unchanged snapshot: the next job or identity
+                    // store update resumes processing without spinning on a stale wallet.
                     shouldWake =
                         currentDid !== activeDid || walletStore.get.wallet() !== activeWallet;
                     return;

@@ -651,7 +651,7 @@ export const useWallet = () => {
                     enqueuePendingContractSync({
                         kind: 'credential',
                         profileDid: wallet.id.did(),
-                        record,
+                        record: { id: record.id, uri: record.uri, category },
                         category,
                     });
                 }

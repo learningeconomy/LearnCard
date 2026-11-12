@@ -10,12 +10,9 @@ import {
     useModal,
     ModalTypes,
     getOrFetchIntegrationForListing,
-    pendingContractSyncStore,
     getCategoryForCredential,
     getOrCreateSharedUriForWallet,
     contractCategoryNameToCategoryMetadata,
-    isJobTerminal,
-    MAX_JOB_RETRIES,
 } from 'learn-card-base';
 import { UnsignedVP, VC, VP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -42,6 +39,7 @@ import {
     type LearnerContextSourceData,
 } from './learnerContext.helpers';
 import { savePartnerCredential } from './partnerCredentialSave';
+import { getPendingSyncStatus, waitForPendingSync } from './pendingSyncStatus.helpers';
 
 interface LaunchConfig {
     url?: string;
@@ -103,79 +101,6 @@ const LearnerContextAppSourceValidator = z.object({
     credentialUris: z.array(z.string().min(1)),
     personalData: z.record(z.string(), z.string()).optional(),
 });
-
-const getPendingSyncStatus = (contractUri?: string) => {
-    const allJobs = Object.values(pendingContractSyncStore.get.jobs());
-    // When a contractUri is provided (a partner app asking about its own
-    // contract), only consider that contract's jobs so an unrelated contract's
-    // sync can't make this app appear to be syncing or skew its progress
-    // totals. With no contractUri we fall back to the store-global view.
-    const jobs = contractUri ? allJobs.filter(job => job.contractUri === contractUri) : allJobs;
-    // A job that just errored but still has retries left is not terminal — it
-    // will be retried by the worker — so treat it as active. Otherwise a
-    // waitForSync caller could see a premature "ready" during the retry window.
-    const activeJobs = jobs.filter(
-        job =>
-            job.status === 'queued' ||
-            job.status === 'running' ||
-            (job.status === 'error' && job.retryCount < MAX_JOB_RETRIES)
-    );
-    const latestTerminalJob = jobs
-        .filter(isJobTerminal)
-        .sort((a, b) => b.updatedAt - a.updatedAt)[0];
-
-    const relevantJobs =
-        activeJobs.length > 0 ? activeJobs : latestTerminalJob ? [latestTerminalJob] : [];
-
-    const progress = relevantJobs.reduce(
-        (summary, job) => ({
-            totalCredentials: summary.totalCredentials + job.totalCredentials,
-            completedCredentials: summary.completedCredentials + job.completedCredentials,
-            failedCredentials: summary.failedCredentials + job.failedCredentials,
-            retryCount: summary.retryCount + job.retryCount,
-        }),
-        {
-            totalCredentials: 0,
-            completedCredentials: 0,
-            failedCredentials: 0,
-            retryCount: 0,
-        }
-    );
-
-    if (activeJobs.length > 0) {
-        return {
-            status: 'syncing' as const,
-            progress,
-        };
-    }
-
-    if (latestTerminalJob?.status === 'error') {
-        return {
-            status: 'error' as const,
-            progress,
-            lastError: latestTerminalJob.lastError,
-        };
-    }
-
-    return {
-        status: 'ready' as const,
-        progress,
-    };
-};
-
-const waitForPendingSync = async (contractUri?: string, timeoutMs = 25000) => {
-    const startedAt = Date.now();
-
-    while (Date.now() - startedAt < timeoutMs) {
-        const status = getPendingSyncStatus(contractUri);
-        if (status.status !== 'syncing') return status;
-        const { promise, resolve } = createDeferred<void>();
-        setTimeout(resolve, 500);
-        await promise;
-    }
-
-    return getPendingSyncStatus(contractUri);
-};
 
 /**
  * Shared hook for creating LEARNCARD_V1 message handlers.
@@ -1421,7 +1346,11 @@ export function useLearnCardMessageHandlers({
                           const appContractUri = await getConfiguredContractUri();
 
                           if (options.waitForSync) {
-                              const syncStatus = await waitForPendingSync(appContractUri);
+                              const syncStatus = await waitForPendingSync(
+                                  switchedProfileStore.get.switchedDid() ??
+                                      walletStore.get.wallet()?.id.did(),
+                                  appContractUri
+                              );
 
                               if (syncStatus.status === 'syncing') {
                                   return {
@@ -1514,7 +1443,11 @@ export function useLearnCardMessageHandlers({
                         ),
                     ]);
 
-                    return getPendingSyncStatus(contractUri);
+                    return getPendingSyncStatus(
+                        switchedProfileStore.get.switchedDid() ??
+                            walletStore.get.wallet()?.id.did(),
+                        contractUri
+                    );
                 },
             }),
         [

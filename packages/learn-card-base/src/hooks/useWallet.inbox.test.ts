@@ -842,13 +842,26 @@ it('does not mark unavailable shared credentials as successfully synced', async 
 
 it('queues Partner Connect sharing after the index write without waiting for network delivery', async () => {
     mocks.getConsentedContracts.mockImplementationOnce(() => new Promise(() => {}));
-    const saved = await useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true);
+    const saved = await useWallet().storeAndAddVCToWallet(
+        credential,
+        {
+            title: 'Partner badge',
+            imgUrl: 'https://example.com/badge.png',
+            networkUri: 'network-vc',
+        },
+        'LearnCloud',
+        true
+    );
     expect(saved).toMatchObject({ result: true, credentialUri: 'encrypted-uri' });
     expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
     expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
         expect.objectContaining({
             profileDid: 'did:example:claiming-account',
-            record: expect.objectContaining({ uri: saved.credentialUri, category: 'Achievement' }),
+            record: {
+                id: expect.any(String),
+                uri: saved.credentialUri,
+                category: 'Achievement',
+            },
         }),
     ]);
     pendingContractSyncStore.set.jobs({});

@@ -5,6 +5,7 @@
 ### Patch Changes
 
 - LC-2371: Shared store/add/bulk-save callers retain successful saves when consent discovery or sharing fails. Persist account-scoped retries and acknowledged terms so retries do not repeat successful contract mutations. Queue Partner Connect delivery before returning, pause stale-account attempts without consuming retries, and cancel retries after recategorization. Automatic sharing remains limited to LearnCloud-indexed credentials; the audience-copy cache and retry worker do not support SQLite-only sources.
+- LC-2371: Persist only credential identifiers and category in automatic delivery jobs, without optional display or network metadata.
 
 ## 0.8.1
 
