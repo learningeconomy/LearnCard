@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { useIsLoggedIn, useWallet, redirectStore } from 'learn-card-base';
+import { walletStore } from 'learn-card-base/stores/walletStore';
 import {
     captureHistoryAccount,
     isHistoryAccountEligible,
     useHistoryAccountRevision,
 } from '../helpers/verifier-history/account';
 import RequestConsent, { type ConsentPicks } from '../pages/oid4vp/components/RequestConsent';
-import ClaimLoginPage from '../pages/login/ClaimLoginPage';
+import LoginPage from '../pages/login/LoginPage';
 import { nativeDigitalCredentials } from './plugin';
 import { readNativeInventory } from './runtime';
 import { prepareAccountPresentation } from './presentation';
@@ -22,6 +23,10 @@ type Prepared = Awaited<ReturnType<typeof prepareAccountPresentation>>;
 /** Native result delivery replaces HTTP submission; consent and account services stay shared. */
 export default function NativeDigitalCredentialFlow() {
     const loggedIn = useIsLoggedIn();
+    // A cached profile survives a missing/expired session. It cannot authorize
+    // credential reads; wait for the account's signing wallet to be restored.
+    const activeWallet = walletStore.use.wallet();
+    const accountReady = loggedIn && Boolean(activeWallet);
     const { initWallet } = useWallet();
     const revision = useHistoryAccountRevision();
     const history = useHistory();
@@ -49,8 +54,8 @@ export default function NativeDigitalCredentialFlow() {
             setPending(request);
             setIsProvider(Boolean(context.isProvider));
             if (!request) throw new Error('Request unavailable');
-            if (!loggedIn) {
-                redirectStore.set.lcnRedirect('/native-digital-credentials');
+            if (!accountReady) {
+                redirectStore.set.requestRedirect(request.requestId, '/native-digital-credentials');
                 return;
             }
             if (!isHistoryAccountEligible()) throw new Error('Account unavailable');
@@ -72,11 +77,12 @@ export default function NativeDigitalCredentialFlow() {
         };
         // initWallet is recreated by the shared hook; account revision is the initialization boundary.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [loggedIn, revision]);
+    }, [accountReady, revision]);
 
     const cancel = async () => {
         if (sending || canceling) return;
         setCanceling(true);
+        if (pending) redirectStore.set.clearRequestRedirect(pending.requestId);
         try {
             if (pending || isProvider)
                 await nativeDigitalCredentials.cancel({ requestId: pending?.requestId });
@@ -95,6 +101,7 @@ export default function NativeDigitalCredentialFlow() {
             const active = (await nativeDigitalCredentials.getPendingRequest()).pending;
             if (!accountCurrent() || active?.requestId !== pending.requestId)
                 throw new Error('Request expired');
+            redirectStore.set.clearRequestRedirect(pending.requestId);
             await nativeDigitalCredentials.complete({ requestId: pending.requestId, responseJson });
         } catch {
             setPrepared(undefined);
@@ -103,7 +110,7 @@ export default function NativeDigitalCredentialFlow() {
         }
     };
 
-    if (!loggedIn && !error) return <ClaimLoginPage />;
+    if (!accountReady && !error) return <LoginPage />;
     return (
         <IonPage>
             <IonContent>

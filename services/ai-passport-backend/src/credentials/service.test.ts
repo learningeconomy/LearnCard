@@ -70,7 +70,9 @@ const dbMock = {
     getCredentialRecords: mock(async (): Promise<Array<Record<string, unknown>>> => []),
     storeVC: mock(async () => {}),
     removeThreadCredentialsByUris: mock(async () => 0),
-    deleteVCsByUris: mock(async () => 0),
+    deleteVCsByUris: mock(
+        async (_did?: string, _uris?: string[], _options?: { awaitCleanup?: boolean }) => 0
+    ),
     storeCredentialVerification: mock(async () => {}),
     storeRawCredential: mock(async () => {}),
 };
@@ -249,7 +251,12 @@ mock.module('./helpers', () => ({
 const service = await import(new URL('./service.ts', import.meta.url).href);
 const { parseFile, resolveVerifiedCredentialProjection } = service;
 const { getActiveAiConsentReceipt } = await import('../learncard/consent');
-const { beginCredentialContextRead, clearVerifiedCredentials } = await import('./batch');
+const {
+    beginCredentialContextRead,
+    clearKnownBadCredentials,
+    clearVerifiedCredentials,
+    isCredentialItemFailure,
+} = await import('./batch');
 const currentReceipt = () =>
     getActiveAiConsentReceipt(consentFlowResponse.records[0], 'credential-ingestion')!;
 const fetchCredentials = (did: string) =>
@@ -364,12 +371,14 @@ const { resetConsentSnapshots } = await import('../learncard/requestScope');
 beforeEach(() => {
     resetConsentSnapshots();
     clearVerifiedCredentials();
+    clearKnownBadCredentials();
     consentFlowResponse = activeConsentFlowResponse;
     dbMock.getCredentialRecords.mockReset();
     dbMock.getCredentialRecords.mockResolvedValue([]);
     dbMock.storeVC.mockClear();
     dbMock.removeThreadCredentialsByUris.mockClear();
-    dbMock.deleteVCsByUris.mockClear();
+    dbMock.deleteVCsByUris.mockReset();
+    dbMock.deleteVCsByUris.mockResolvedValue(0);
     dbMock.storeCredentialVerification.mockClear();
     dbMock.storeRawCredential.mockClear();
     deleteCredentialEmbeddings.mockClear();
@@ -815,6 +824,79 @@ test('fetchCredentials hydrates flat consent-flow credentials arrays', async () 
         'lc:cloud:cloud.learncard.com/trpc:credential:title-1',
     ]);
 });
+test('fetchCredentials does not wait for source cleanup after an invalid verify', async () => {
+    learnCardMocks.verifyCredential.mockResolvedValue({
+        checks: [],
+        errors: ['Invalid signature'],
+        warnings: [],
+    });
+    dbMock.deleteVCsByUris.mockImplementation(
+        async (_did?: string, _uris?: string[], options?: { awaitCleanup?: boolean }) => {
+            if (options?.awaitCleanup !== false) await new Promise(() => undefined);
+            return 0;
+        }
+    );
+
+    const error = await Promise.race([
+        fetchCredentials('did:example:learner').then(
+            () => undefined,
+            (value: unknown) => value
+        ),
+        new Promise<string>(resolve => setTimeout(() => resolve('hung'), 200)),
+    ]);
+
+    expect(error).toBeInstanceOf(UnrecoverableError);
+    expect(error).not.toBe('hung');
+    expect(isCredentialItemFailure(error)).toBe(true);
+    expect(dbMock.deleteVCsByUris.mock.calls[0]?.[2]).toEqual({ awaitCleanup: false });
+});
+
+test('fetchCredentials treats a busy source-cleanup lease as a skippable invalid credential', async () => {
+    learnCardMocks.verifyCredential.mockResolvedValue({
+        checks: [],
+        errors: ['Invalid signature'],
+        warnings: [],
+    });
+    dbMock.deleteVCsByUris.mockRejectedValue(new Error('Source cleanup busy; retry'));
+
+    const error: unknown = await fetchCredentials('did:example:learner').catch(
+        (value: unknown) => value
+    );
+
+    expect(error).toBeInstanceOf(UnrecoverableError);
+    expect(error).toEqual(expect.objectContaining({ message: 'Credential verification failed' }));
+    expect(isCredentialItemFailure(error)).toBe(true);
+    expect(dbMock.deleteVCsByUris).toHaveBeenCalled();
+    expect(dbMock.storeCredentialVerification).toHaveBeenCalled();
+});
+
+test('fetchCredentials loads siblings when invalid-credential cleanup is busy', async () => {
+    consentFlowResponse = {
+        ...activeConsentFlowResponse,
+        records: [
+            {
+                ...activeConsentFlowResponse.records[0],
+                credentials: [
+                    { uri: 'vc:test:1', category: 'TestCredential' },
+                    { uri: 'vc:test:2', category: 'TestCredential' },
+                ],
+            },
+        ],
+    };
+    learnCardMocks.verifyCredential.mockImplementation(async (credential?: VC) =>
+        credential?.id === 'vc:test:1'
+            ? { checks: [], errors: ['Invalid signature'], warnings: [] }
+            : { checks: ['proof'], errors: [], warnings: [] }
+    );
+    dbMock.deleteVCsByUris.mockRejectedValue(new Error('Source cleanup busy; retry'));
+
+    const credentials = await fetchCredentials('did:example:learner');
+
+    expect(credentials.map((vc: { uri: string }) => vc.uri)).toEqual(['vc:test:2']);
+    expect(dbMock.deleteVCsByUris).toHaveBeenCalled();
+    expect(isCredentialItemFailure(new Error('Source cleanup busy; retry'))).toBe(false);
+});
+
 test('fetchCredentials re-verifies credentials instead of trusting cached metadata', async () => {
     dbMock.getCredentialRecords.mockResolvedValue([createStoredCredential()]);
     learnCardMocks.verifyCredential.mockResolvedValueOnce({
@@ -2453,7 +2535,7 @@ test('preload skips a credential whose read throws or comes back empty', async (
             event: 'credential_skipped',
             index: 1,
             count: 3,
-            failureCode: 'unknown',
+            failureCode: 'credential_read_failed',
         })
     );
     expect(events).toContainEqual(
@@ -2474,6 +2556,7 @@ test('preload skips a credential whose read throws or comes back empty', async (
     );
     expect(JSON.stringify(events)).not.toContain('private read failure');
     expect(JSON.stringify(events)).not.toContain('did:');
+    expect(JSON.stringify(events)).not.toContain('vc:test');
 });
 
 test('preload still fails when every credential is bad', async () => {

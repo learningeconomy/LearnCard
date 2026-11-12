@@ -1127,7 +1127,7 @@ export const generateAIInsightCredential = async (
     const revision = sourceCredentials[0]!.verification!.consent.revision;
     const assertFresh = async () => {
         await assertOwnerOperationActive(did);
-        const receipt = await assertCurrentAiConsent('model-inference');
+        const receipt = await assertCurrentAiConsent('model-inference', { fresh: true });
         if (
             receipt.revision !== revision ||
             sourceCredentials.some(

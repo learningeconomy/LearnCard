@@ -32,8 +32,20 @@ export type ActiveAiConsentReceipt = {
     personalFields: string[];
     purpose: AiConsentPurpose;
     revision: string;
+    /** Grant identity excluding record.date / updatedAt, so a later live read
+     *  with a new timestamp is not treated as a different authorization. */
+    authorizationRevision?: string;
     guardian: { required: boolean; approved: boolean };
 };
+
+export const consentAuthorizationKey = (
+    receipt: Pick<ActiveAiConsentReceipt, 'revision' | 'authorizationRevision'>
+): string => receipt.authorizationRevision || receipt.revision;
+
+export const sameConsentAuthorization = (
+    left: Pick<ActiveAiConsentReceipt, 'revision' | 'authorizationRevision'>,
+    right: Pick<ActiveAiConsentReceipt, 'revision' | 'authorizationRevision'>
+): boolean => consentAuthorizationKey(left) === consentAuthorizationKey(right);
 
 export type ActiveAiConsentRecord = Record<string, unknown> & {
     credentials?: unknown;
@@ -241,21 +253,22 @@ export const getActiveAiConsentReceipt = (
     };
     // This is an authorization-state fingerprint, not a fabricated privacy notice
     // version. Key it because personal permission values can themselves be PII.
+    const grantMaterial = {
+        contractUri,
+        receiptId,
+        contractUpdatedAt,
+        expiresAt,
+        contractExpiresAt,
+        guardian: { ...guardianState, approval },
+        permissions,
+        credentialUris,
+        personal: personalFields.map(field => [field, personal[field]]),
+    };
     const revision = createHmac('sha256', getPrivacyKeyMaterial().reference)
-        .update(
-            JSON.stringify({
-                contractUri,
-                receiptId,
-                updatedAt,
-                contractUpdatedAt,
-                expiresAt,
-                contractExpiresAt,
-                guardian: { ...guardianState, approval },
-                permissions,
-                credentialUris,
-                personal: personalFields.map(field => [field, personal[field]]),
-            })
-        )
+        .update(JSON.stringify({ ...grantMaterial, updatedAt }))
+        .digest('hex');
+    const authorizationRevision = createHmac('sha256', getPrivacyKeyMaterial().reference)
+        .update(JSON.stringify(grantMaterial))
         .digest('hex');
     return {
         contractUri,
@@ -271,6 +284,7 @@ export const getActiveAiConsentReceipt = (
         personalFields,
         purpose,
         revision,
+        authorizationRevision,
         guardian: guardianState,
     };
 };
@@ -371,7 +385,8 @@ const loadConsentData = async (
                 accept:
                     expectedRevision === undefined
                         ? undefined
-                        : value => consentRecordsRevision(value, purpose) === expectedRevision,
+                        : value =>
+                              consentRecordsMatchExpectedRevision(value, purpose, expectedRevision),
             },
         }
     );
@@ -412,7 +427,7 @@ const loadConsentData = async (
     if (
         !bindAiConsentRevision(
             did,
-            receipt.revision,
+            consentAuthorizationKey(receipt),
             (records[0]?.personal ?? {}) as Record<string, string>,
             receipt.credentialUris
         )
@@ -424,6 +439,19 @@ const loadConsentData = async (
 const consentRecordsRevision = (value: unknown, purpose: AiConsentPurpose): string | undefined => {
     if (!Array.isArray(value) || value.length !== 1) return undefined;
     return getActiveAiConsentReceipt(value[0] as ActiveAiConsentRecord, purpose)?.revision;
+};
+
+const consentRecordsMatchExpectedRevision = (
+    value: unknown,
+    purpose: AiConsentPurpose,
+    expectedRevision: string
+): boolean => {
+    if (!Array.isArray(value) || value.length !== 1) return false;
+    const receipt = getActiveAiConsentReceipt(value[0] as ActiveAiConsentRecord, purpose);
+    if (!receipt) return false;
+    return (
+        receipt.revision === expectedRevision || receipt.authorizationRevision === expectedRevision
+    );
 };
 
 /**
