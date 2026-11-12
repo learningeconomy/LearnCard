@@ -11,8 +11,8 @@ A partner defines a data-sharing contract. A learner reviews exactly what's requ
 - `consent-partner-issues`: the docs' `issueThroughContract` returns an exact URI present in the learner's incoming or received credentials. The learner resolves it and asserts the tutorial name/description, partner issuer DID, learner subject DID, network boost ID, and successful proof verification without errors. This proves SDK delivery, not UI claiming.
 - `consent-upload-after-consent`: a separate learner already has category-wide live consent with an owner and recipient. Real JSON file upload, partially invalid bulk upload, and paste must save exactly four valid credentials. Both audience members read them through `data-for-did` and decrypt byte-equivalent credentials; the index survives reload.
 
-- `consent-readable-delivery`: a freshly provisioned managed recipient receives the learner-selected encrypted copy. The bearer-token API returns only the summary with a checked proof, requires read AND decrypt permission, refuses another target, and sets no-store. The consent dialog names the organization and discloses LearnCard processing.
-- `consent-readable-delivery-revoked`: withdrawing terms and disabling the recipient deny subsequent reads. The disposable stack supplies a random local wrapping key; this does not prove deployed KMS permissions.
+- `consent-readable-delivery`: a freshly provisioned managed recipient receives the learner-selected encrypted copy. The bearer-token API returns only the summary with an explicit unchecked did:web proof/status, requires read AND decrypt permission, refuses another target, and sets no-store. The consent dialog names the organization and discloses LearnCard processing.
+- `consent-readable-delivery-revoked`: withdrawing terms denies reads; after explicitly restoring consent, disabling the recipient independently denies reads. The disposable stack supplies a random local wrapping key; this does not prove deployed KMS permissions.
 
 ## How to get to it (user POV)
 
