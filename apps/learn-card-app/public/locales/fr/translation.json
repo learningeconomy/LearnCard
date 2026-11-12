@@ -1,4 +1,50 @@
 {
+    "classlinkPersonalEmail": {
+        "title": "Ajoutez une adresse e-mail personnelle",
+        "body": "Pour conserver votre compte après votre départ de l’école.",
+        "email": "Adresse e-mail personnelle",
+        "code": "Code à 6 chiffres",
+        "send": "Envoyer le code",
+        "sending": "Envoi en cours…",
+        "verify": "Vérifier",
+        "verifying": "Vérification en cours…",
+        "skip": "Pas maintenant",
+        "success": "Adresse e-mail personnelle ajoutée.",
+        "schoolError": "Utilisez une adresse personnelle, pas celle de votre école",
+        "conflictError": "Cette adresse e-mail est déjà utilisée par un autre compte.",
+        "codeError": "Code incorrect ou expiré. Veuillez réessayer.",
+        "limitError": "Trop de codes demandés. Veuillez réessayer plus tard.",
+        "error": "Une erreur est survenue. Veuillez réessayer."
+    },
+    "transcriptOptIn": {
+        "title": "Obtenez votre relevé de notes de {{state}}",
+        "body": "Nous demanderons aux registres scolaires d'envoyer votre relevé de notes ici.",
+        "consent": "J'accepte de partager mon numéro d'identification étudiant avec les registres scolaires de {{state}}, et d'ajouter mon relevé de notes à mon compte à son arrivée.",
+        "submit": "Obtenir Mon Relevé",
+        "requesting": "Demande en cours…",
+        "requested": "Votre relevé de notes est en route. Nous vous préviendrons à son arrivée.",
+        "noneYet": "Il n'y a pas encore de relevé de notes pour vous. Revenez plus tard.",
+        "reauthRequired": "Reconnectez votre compte scolaire pour continuer",
+        "reauthButton": "Reconnecter",
+        "reauthing": "Reconnexion…",
+        "noStateId": "Nous n'avons pas trouvé votre dossier d'étudiant. Demandez à votre école de vérifier votre compte ClassLink.",
+        "error": "Nous n'avons pas pu joindre les registres de votre école pour le moment. Veuillez réessayer plus tard.",
+        "tryAgain": "Réessayer",
+        "requestingFrom": "Demande en cours auprès des registres scolaires de {{state}}…",
+        "takingAWhile": "Cela peut prendre un certain temps. Nous vous préviendrons dès qu'il sera là.",
+        "addedToAccount": "Ajouté à votre compte",
+        "updated": "Mis à jour le {{date}}",
+        "viewTranscript": "Voir le Relevé",
+        "arrivedTitle": "Votre relevé de notes est arrivé",
+        "transcript": "Relevé de Notes",
+        "gradYear": "Promotion {{year}}",
+        "gpa": "Moyenne : {{gpa}}",
+        "receivedLoading": "Votre relevé de notes a été reçu. Il apparaîtra ici dans un instant.",
+        "checkManually": "Il vous attend peut-être déjà dans vos notifications. Ouvrez-le là-bas pour l'ajouter à votre compte, ou vérifiez à nouveau.",
+        "checkAgain": "Vérifier à Nouveau",
+        "openNotifications": "Ouvrir les Notifications",
+        "autoAcceptFailed": "Nous n'avons pas pu ajouter votre relevé de notes automatiquement. Vous pouvez l'accepter ici."
+    },
     "consentUpdate": {
         "summary": {
             "requestDetails": "Détails de la demande",
@@ -195,9 +241,18 @@
                 "label": "Famille",
                 "description": "Profils familiaux liés par des parcours d’apprentissage partagés."
             },
-            "name": { "label": "Nom", "description": "Votre nom." },
-            "email": { "label": "Adresse e-mail", "description": "Votre adresse e-mail." },
-            "profilePhoto": { "label": "Photo de profil", "description": "Votre photo de profil." },
+            "name": {
+                "label": "Nom",
+                "description": "Votre nom."
+            },
+            "email": {
+                "label": "Adresse e-mail",
+                "description": "Votre adresse e-mail."
+            },
+            "profilePhoto": {
+                "label": "Photo de profil",
+                "description": "Votre photo de profil."
+            },
             "qualifications": {
                 "label": "Qualifications",
                 "description": "Études, formations et qualifications professionnelles."
@@ -261,18 +316,11 @@
         "searching": "Recherche… Résultats trouvés : {{count}}.",
         "loadError": "Justificatifs chargés : {{count}}. La collection est incomplète.",
         "loadErrorEmpty": "Impossible de charger les justificatifs. La collection est incomplète.",
-        "complete": "Justificatifs : {{count}}. Collection complète.",
-        "loaded": "Justificatifs chargés : {{count}}. {{state}}",
-        "loadingMore": "Chargement de la suite…",
-        "moreAvailable": "D’autres justificatifs sont disponibles.",
         "retrying": "Nouvelle tentative…",
         "retry": "Réessayer de charger les justificatifs",
-        "loading": "Chargement…",
-        "continue": "Continuer le chargement",
         "loadingEarned": "Chargement des justificatifs obtenus",
         "initialError": "Impossible de charger les justificatifs. Réessayez.",
         "loadingCredentials": "Chargement des justificatifs…",
-        "loadMore": "Charger plus de justificatifs",
         "recentIncomplete": "Certains justificatifs récents n’ont pas pu être chargés. Ces résultats sont incomplets.",
         "recentError": "Impossible de charger les justificatifs récents.",
         "loadingRecent": "Chargement des justificatifs récents…",
@@ -477,6 +525,7 @@
         "continue": "Continuer",
         "loading": "Chargement...",
         "add": "Ajouter",
+        "publishing": "Publication…",
         "saving": "Enregistrement...",
         "searchResults": {
             "noResults": "Aucun résultat trouvé",
@@ -1408,6 +1457,13 @@
         "korean": "한국어"
     },
     "login": {
+        "classlink": {
+            "cancelled": "La connexion avec ClassLink a été annulée.",
+            "expired": "Ce lien de connexion a expiré. Veuillez réessayer.",
+            "failed": "Nous n'avons pas pu vous connecter avec ClassLink. Veuillez réessayer.",
+            "timedOut": "La connexion avec ClassLink a pris trop de temps. Veuillez réessayer.",
+            "unavailable": "La connexion scolaire est temporairement indisponible. Veuillez réessayer dans quelques minutes."
+        },
         "welcome": {
             "heading": "Bienvenue sur {{brand}}",
             "subtitle": "Connectez-vous pour accéder à vos certifications, réalisations et plus.",
@@ -1646,7 +1702,22 @@
                 },
                 "error": {
                     "invalidEmail": "Veuillez saisir un e-mail valide.",
-                    "sendFailed": "Échec de l'envoi de la demande. Veuillez réessayer."
+                    "sendFailed": "Échec de l'envoi de la demande. Veuillez réessayer.",
+                    "cooldown": "Vous pourrez envoyer une autre demande à {{time}}.",
+                    "inProgress": "Une demande est déjà en cours d'envoi. Veuillez patienter un instant."
+                },
+                "status": {
+                    "accepted": "Votre demande d'approbation a été envoyée à <0>{{email}}</0>. Si votre parent ou tuteur ne la voit pas, demandez-lui de vérifier ses courriers indésirables.",
+                    "failed": "Nous n'avons pas pu envoyer la demande d'approbation à <0>{{email}}</0>. Veuillez essayer de l'envoyer à nouveau.",
+                    "sending": "Envoi de la demande d'approbation…",
+                    "unknown": "Votre compte est en attente de l'approbation de votre parent ou tuteur. Si votre parent ou tuteur n'a pas reçu de demande d'approbation, vous pouvez en envoyer une nouvelle ci-dessous.",
+                    "expired": "Le lien d'approbation envoyé à <0>{{email}}</0> a expiré. Envoyez-en un nouveau."
+                },
+                "resendRequest": "Renvoyer la demande",
+                "banner": {
+                    "title": "En attente de l'approbation du tuteur",
+                    "limited": "Certaines fonctionnalités restent limitées jusqu'à ce que votre parent ou tuteur approuve votre compte.",
+                    "manage": "Renvoyer ou modifier l'e-mail"
                 }
             },
             "us": {
@@ -1804,12 +1875,14 @@
             "privacyDesc": "Modifiable à tout moment dans les Paramètres.",
             "brandAi": "{{brand}} IA",
             "aiMinorNote": "Les fonctionnalités d'IA sont désactivées pour les mineurs.",
+            "schoolLockedNote": "Votre école désactive les fonctionnalités d’IA, les statistiques d’utilisation et les rapports de bugs pour les comptes élèves.",
             "analytics": "Analytique",
             "bugReports": "Rapports de bogues",
             "createMy": "Créer mon {{brand}}",
             "almostThere": "Vous y êtes presque !",
             "youreIn": "Vous y êtes !",
             "guardianEmailed": "Nous avons envoyé un e-mail à votre tuteur pour approuver votre compte. Vous pouvez commencer à explorer dès maintenant — certaines fonctionnalités se débloquent une fois qu'il confirme.",
+            "guardianEmailFailed": "Nous n'avons pas pu envoyer la demande d'approbation à <0>{{email}}</0>. Vous pouvez commencer à explorer dès maintenant et la renvoyer depuis votre tableau de bord.",
             "ready": "Votre {{brand}} est prêt.",
             "whoAreYou": "Qui êtes-vous ? (Facultatif)",
             "explore": "Explorer {{brand}}",
@@ -1825,6 +1898,13 @@
                 "saveFailedSkip": "Impossible d'enregistrer votre PIN. Réessayez, ou ignorez cette étape pour le moment et configurez-le plus tard.",
                 "hint": "Vous pouvez le modifier ou le supprimer à tout moment dans les Paramètres."
             }
+        },
+        "transcript": {
+            "title": "Votre relevé de notes officiel, dans votre poche.",
+            "desc": "Recevez vos registres scolaires directement dans votre compte.",
+            "get": "Obtenir Mon Relevé",
+            "notNow": "Pas Maintenant",
+            "onItsWay": "Votre relevé de notes est en route."
         }
     },
     "profile": {
@@ -1861,7 +1941,8 @@
             "loading": "Chargement...",
             "deleting": "Suppression du compte...",
             "recentLoginRequired": "Une connexion récente est requise !",
-            "reauthenticateHere": "Réauthentifiez-vous ici"
+            "reauthenticateHere": "Réauthentifiez-vous ici",
+            "fallbackPhrase": "SUPPRIMER"
         },
         "export": {
             "title": "Phrase d'exportation de semences",
@@ -1874,7 +1955,8 @@
             "button": "Phrase d'exportation de semences",
             "revealPrompt": "Je comprends - Révéler ma graine",
             "confirm": "Confirmer",
-            "cancel": "Annuler"
+            "cancel": "Annuler",
+            "fallbackPhrase": "EXPORTER"
         },
         "email": {
             "header": "Adresses e-mail",
@@ -2277,6 +2359,8 @@
     },
     "recovery": {
         "pin": {
+            "setPin": "Définissez un PIN de récupération",
+            "setPinDesc": "Définissez un PIN à 6 chiffres pour une récupération instantanée.",
             "throttled": "Trop de tentatives. Veuillez réessayer plus tard.",
             "title": "PIN de récupération",
             "instantRecoveryOn": "Récupération instantanée : activée",
@@ -2287,6 +2371,10 @@
                 "body": "Votre PIN de récupération n'est plus actif. Choisissez-en un nouveau pour conserver la récupération instantanée.",
                 "hint": "Mêmes règles : 6 chiffres, rien d’évident."
             },
+            "afterHoldRecovery": {
+                "title": "Évitez l'attente la prochaine fois",
+                "body": "Vous êtes de retour. Définissez un PIN à 6 chiffres pour récupérer votre compte instantanément la prochaine fois, sans attendre 7 jours."
+            },
             "pinResetRequired": {
                 "title": "Définissez un nouveau PIN de récupération",
                 "body": "Votre ancien PIN de récupération ne peut plus être utilisé depuis la récupération de votre compte. Définissez un nouveau PIN à 6 chiffres pour rétablir la récupération automatique."
@@ -2296,14 +2384,27 @@
             "locked": "Trop de tentatives. Vous pouvez toujours récupérer votre compte en attendant 7 jours.",
             "confirmPin": "Confirmez votre PIN",
             "confirmPinDesc": "Saisissez à nouveau votre PIN pour le confirmer.",
+            "saving": "Enregistrement du PIN...",
+            "success": "PIN défini avec succès",
             "trivial": "Choisissez un PIN plus difficile à deviner.",
             "mismatch": "Les PIN ne correspondent pas.",
+            "saveFailed": "Impossible d'enregistrer le PIN. Veuillez réessayer.",
+            "enterPin": "Saisissez un PIN à 6 chiffres",
+            "removeConfirm": "Voulez-vous vraiment supprimer votre PIN de récupération ? Vous ne pourrez récupérer votre compte qu'en attendant 7 jours.",
+            "removing": "Suppression en cours...",
+            "remove": "Supprimer le PIN",
+            "resetBanner": "Votre PIN de récupération a été réinitialisé — ",
+            "setAgain": "définissez-le à nouveau",
+            "doYouHave": "Avez-vous un PIN de récupération ?",
+            "enterForInstant": "Saisissez votre PIN à 6 chiffres pour une récupération instantanée.",
+            "dontHave": "Je n'ai pas de PIN",
             "samePin": "Choisissez un PIN différent de celui que vous venez d'utiliser.",
             "newPinRequired": {
                 "title": "Choisissez un nouveau PIN de récupération",
                 "body": "Votre PIN de récupération a été saisi incorrectement auparavant : il lui reste donc moins d'essais. Choisissez un PIN différent à 6 chiffres pour retrouver tous vos essais.",
                 "skipNote": "Si vous passez cette étape, votre PIN actuel continue de fonctionner avec moins d'essais. Vous pourrez en choisir un nouveau plus tard dans Récupération du compte."
-            }
+            },
+            "escrowNotice": "Une partie chiffrée de la clé de votre compte est conservée par un service sécurisé. Votre PIN la déverrouille immédiatement, sans attendre 7 jours. <0>En savoir plus</0>"
         },
         "confirmCode": {
             "mismatch": "Ce code est incorrect. Réessayez.",
@@ -2608,12 +2709,33 @@
             }
         },
         "automatic": {
+            "title": "Récupération automatique",
+            "on": "Activée — votre compte peut être restauré après un délai d'attente de 7 jours.",
+            "off": "Désactivée",
+            "notOn": "Non activée",
+            "turningOn": "Activation...",
+            "turningOff": "Désactivation...",
+            "updating": "Mise à jour...",
+            "turnOn": "Activer",
+            "turnOff": "Désactiver",
+            "warning": "Sans récupération automatique, perdre tous vos appareils et toutes vos méthodes de récupération signifie perdre votre compte.",
+            "precondition": "Configurez d'abord une autre méthode de récupération.",
             "restoreWait": "Restaurer après un délai de 7 jours"
         },
         "addWayBackIn": "Ajoutez un moyen de vous reconnecter",
         "addAnotherMethod": "Ajouter une autre méthode",
         "fullyProtected": "Votre compte est entièrement protégé.",
         "added": "Ajouté",
+        "escrowHold": {
+            "title": "Était-ce vous ?",
+            "body": "Quelqu'un a commencé à récupérer votre compte {{timeAgo}}.",
+            "finishesIn": "La récupération se terminera {{when}}, sauf si vous l'arrêtez.",
+            "finishingSoon": "La récupération peut se terminer à tout moment, sauf si vous l'arrêtez.",
+            "stop": "Arrêter la récupération",
+            "stopping": "Arrêt en cours…",
+            "success": "Récupération arrêtée. Votre compte est en sécurité.",
+            "dismiss": "C'était moi"
+        },
         "whichWordIs": "Quel est le mot nº {{number}} ?",
         "tapTheWord": "Touchez le mot de votre phrase de récupération.",
         "wrongWord": "Ce n'est pas le mot nº {{number}}. Vérifiez votre phrase enregistrée et réessayez.",
@@ -3341,8 +3463,27 @@
             "haveAccount": "Vous avez déjà un compte ?"
         },
         "boost": {
-            "accepted": "Accepté",
-            "expiredHeader": "Le lien de réclamation du Boost a expiré ou a atteint le nombre maximal de réclamations autorisées."
+            "accepted": "Accepté"
+        },
+        "recovery": {
+            "checking": "Vérification de votre demande...",
+            "claiming": "Récupération de votre justificatif...",
+            "saving": "Enregistrement dans votre collection...",
+            "refreshing": "Actualisation de votre collection...",
+            "checkFailed": "Nous n'avons pas pu confirmer votre demande. Le lien reste disponible pour réessayer.",
+            "claimUncertain": "Votre demande a peut-être abouti. Recherchez votre justificatif avant de réessayer.",
+            "saveFailed": "Le justificatif a été récupéré, mais son enregistrement n'est pas confirmé. Réessayez de l'enregistrer.",
+            "refreshFailed": "Votre justificatif est enregistré. Nous n'avons pas pu actualiser votre collection.",
+            "pending": "Votre demande est toujours en cours. Vérifiez à nouveau le résultat sans récupérer une autre copie.",
+            "expired": "Ce lien a expiré. Demandez un nouveau lien à l'émetteur.",
+            "exhausted": "Ce lien a atteint sa limite d'utilisation. Demandez un nouveau lien à l'émetteur.",
+            "unavailable": "Ce lien n'est pas disponible. Demandez à l'émetteur de le vérifier.",
+            "contextChanged": "Votre compte ou les paramètres de connexion ont changé ; fermez cette page et rouvrez le lien d’origine pour continuer.",
+            "savedToOriginalAccount": "Votre justificatif a été enregistré dans votre compte d’origine.",
+            "tryAgain": "Réessayer",
+            "check": "Rechercher mon justificatif",
+            "save": "Enregistrer mon justificatif",
+            "refresh": "Actualiser ma collection"
         },
         "duplicate": {
             "title": "Déjà enregistré",
@@ -8921,7 +9062,8 @@
         "manyResults": "{{count}} résultats pour \"{{query}}\"",
         "shortcuts": {
             "skillInsights": "Aperçus des compétences",
-            "boostAFriend": "Encourager un ami"
+            "boostAFriend": "Encourager un ami",
+            "schoolConnect": "Connexion Scolaire"
         }
     },
     "addToPassport": {
@@ -10154,6 +10296,7 @@
         "viewCredential": "Voir le justificatif"
     },
     "resumePublishing": {
+        "aboutPublishing": "À propos de la publication",
         "linkReady": "Votre lien privé est prêt.",
         "opening": "Ouverture de votre lien privé...",
         "linkUnavailable": "Ce lien est indisponible. Vérifiez ses paramètres, puis republiez le CV.",
@@ -10317,6 +10460,34 @@
         "evidenceCount": "Éléments de preuve : {{count}}",
         "evidence": "Pièces justificatives"
     },
+    "schoolConnect": {
+        "signInFirst": "Connectez-vous, puis reconnectez votre école.",
+        "connectFailed": "Nous n'avons pas pu connecter votre compte scolaire. Veuillez réessayer.",
+        "connectedToast": "Votre compte scolaire est connecté.",
+        "tryAgain": "Réessayer",
+        "notAvailable": "La Connexion Scolaire n'est pas encore disponible pour votre compte.",
+        "yourSchool": "Votre école",
+        "lastConnected": "Dernière connexion {{date}}",
+        "connected": "Connecté",
+        "refreshConnection": "Actualiser la connexion",
+        "connecting": "Connexion...",
+        "studentNote": "Les fonctionnalités d'IA, les analyses et les rapports de bugs sont désactivés, comme l'exige votre école.",
+        "warningTitle": "Avant de vous connecter",
+        "warningBody": "Si vous êtes étudiant, votre école n'autorise pas les fonctionnalités d'IA, les analyses ou les rapports de bugs pour les comptes étudiants, nous les désactiverons donc.",
+        "connectWithClassLink": "Se connecter avec ClassLink",
+        "notNow": "Pas maintenant",
+        "heroTitle": "Vos dossiers scolaires, entre vos mains",
+        "heroSubhead": "Connectez votre compte scolaire pour accéder à vos dossiers officiels.",
+        "benefit1": "Demandez votre relevé de notes officiel",
+        "benefit2": "Partagez-le avec les universités et les employeurs",
+        "benefit3": "Vous décidez qui le voit",
+        "chooseProvider": "Choisissez comment votre école se connecte",
+        "dontSeeSchool": "Vous ne voyez pas votre école ?",
+        "moreComingSoon": "D'autres écoles arriveront bientôt.",
+        "askToAdd": "Demandez-nous d'ajouter votre école",
+        "mailtoSubject": "Ajouter mon école à Connexion Scolaire",
+        "mailtoBody": "Nom de l'école :\nDistrict :\nÉtat :\n"
+    },
     "announcements": {
         "title": "Annonces du produit",
         "email": "E-mail",
@@ -10327,5 +10498,33 @@
         "retry": "Réessayer",
         "unsubscribing": "Désinscription…",
         "unsubscribed": "Vous ne recevrez plus les annonces."
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Justificatif numérique",
+        "unavailableTitle": "Demande indisponible",
+        "unavailableDescription": "Revenez à l’application à l’origine de la demande et réessayez.",
+        "canceling": "Annulation…",
+        "preparing": "Préparation…",
+        "requiredFields": "Ces champs sont obligatoires. Vous pouvez annuler.",
+        "reviewTitle": "Partager ces informations ?",
+        "reviewDescription": "Vérifiez les informations demandées avant de les partager.",
+        "requestedBy": "Demandé par",
+        "androidApp": "Application Android",
+        "requestDetails": "Détails de la demande",
+        "requestIdentity": "Identité de signature de l’application",
+        "selectedCredential": "Justificatif sélectionné",
+        "requestedDetails": "Informations demandées",
+        "required": "Obligatoire",
+        "notShared": "Non partagé",
+        "metadataIncluded": "L’émetteur et le type de justificatif sont également inclus.",
+        "credentialDetails": "Détails du justificatif",
+        "issuer": "Émetteur",
+        "credentialType": "Type de justificatif",
+        "expires": "Expire le",
+        "sharing": "Partage en cours…",
+        "shareDetails": "Partager les informations",
+        "loadingTitle": "Préparation de votre demande",
+        "loadingDescription": "Vérification des informations que vous pouvez partager.",
+        "returnToApp": "Revenir à l’application"
     }
 }

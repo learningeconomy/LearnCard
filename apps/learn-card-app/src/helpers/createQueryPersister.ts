@@ -1,6 +1,7 @@
 import { dehydrate } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import type { PersistedClient, Persister } from '@tanstack/react-query-persist-client';
+import { sanitizePersistedQueries } from 'learn-card-base/react-query/infiniteQueryGuard';
 
 interface QueryStorage {
     getItem: (key: string) => Promise<string | null | undefined>;
@@ -9,6 +10,28 @@ interface QueryStorage {
 }
 
 const CACHE_KEY = 'REACT_QUERY_OFFLINE_CACHE';
+
+/**
+ * A missing own profile is a live-session result, not durable identity state.
+ * Profile creation can finish just before a reload drops the next batched save;
+ * restoring the older null would suppress a fresh lookup for its five-minute
+ * staleTime. Keep real profiles for offline use, but resolve absence again.
+ * JSON turns the optional profileId in the query key from undefined into null.
+ */
+const withoutMissingOwnProfiles = (snapshot: PersistedClient): PersistedClient => ({
+    ...snapshot,
+    clientState: {
+        ...snapshot.clientState,
+        queries: snapshot.clientState.queries.filter(
+            query =>
+                !(
+                    query.queryKey[0] === 'getProfile' &&
+                    query.queryKey[2] == null &&
+                    query.state.data == null
+                )
+        ),
+    },
+});
 
 /** Batch ordinary cache events, but let mutations await a durable, ordered snapshot. */
 export const createQueryPersister = (
@@ -40,7 +63,9 @@ export const createQueryPersister = (
         const snapshot = pending;
         clearPending();
         if (!snapshot) return writes;
-        const serialized = JSON.stringify(snapshot);
+        const serialized = JSON.stringify(
+            sanitizePersistedQueries(withoutMissingOwnProfiles(snapshot))
+        );
         return enqueue(() => storage.setItem(CACHE_KEY, serialized));
     };
 
@@ -56,7 +81,11 @@ export const createQueryPersister = (
         restoreClient: async () => {
             await writes;
             const serialized = await storage.getItem(CACHE_KEY);
-            return serialized ? JSON.parse(serialized) : undefined;
+            // Also repair snapshots written by earlier app versions.
+            // Drop malformed InfiniteData entries before hydrate (LC-2352).
+            return serialized
+                ? sanitizePersistedQueries(withoutMissingOwnProfiles(JSON.parse(serialized)))
+                : undefined;
         },
         removeClient: () => {
             clearPending();

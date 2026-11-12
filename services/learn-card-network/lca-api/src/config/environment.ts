@@ -11,6 +11,9 @@ import {
     requiredEnvironmentString,
 } from '@learncard/helpers';
 
+const DEFAULT_CLASSLINK_DISCOVERY_URL =
+    'https://launchpad.classlink.com/.well-known/openid-configuration';
+
 /**
  * Same as `ESCROW_AUTHORITY_TENANT_PATTERN` in `@learncard/sss-key-manager`; copied so loading
  * the environment doesn't import the SDK. `environment.test.ts` asserts the two stay identical.
@@ -53,6 +56,21 @@ export const lcaApiEnvironmentShape = {
         .pipe(z.number().int().min(1_000).max(25_000)),
     METABASE_SECRET_KEY: optionalEnvironmentString,
     SCOUTS_SSO_CLIENT_SECRET: optionalEnvironmentString,
+    CLASSLINK_CLIENT_ID: optionalEnvironmentString,
+    CLASSLINK_CLIENT_SECRET: optionalEnvironmentString,
+    CLASSLINK_DISCOVERY_URL: optionalEnvironmentString.transform(
+        value => value ?? DEFAULT_CLASSLINK_DISCOVERY_URL
+    ),
+    CLASSLINK_REDIRECT_URIS: optionalEnvironmentString,
+    CLASSLINK_TENANTS: optionalEnvironmentString,
+    CLASSLINK_PII_KEY: optionalEnvironmentString,
+    CLASSLINK_PII_KEY_PREVIOUS: optionalEnvironmentString,
+    CLASSLINK_IDENTITY_KEY: optionalEnvironmentString,
+    CLASSLINK_MAX_AUTH_AGE_SECONDS: optionalEnvironmentString
+        .transform(value => (value === undefined ? 86_400 : Number(value)))
+        .pipe(z.number().int().positive()),
+    // JSON registry keyed by the tenant's transcriptIssuer (or "default").
+    TRANSCRIPT_ISSUERS: optionalEnvironmentString,
     KEYCLOAK_ISSUERS: optionalEnvironmentString,
     KEYCLOAK_AUDIENCES: optionalEnvironmentString,
     KEYCLOAK_JWKS_URL_OVERRIDES: optionalEnvironmentString,

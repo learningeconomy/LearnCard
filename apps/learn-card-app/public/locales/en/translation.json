@@ -1,4 +1,91 @@
 {
+    "classlinkPersonalEmail": {
+        "title": "Add a personal email",
+        "body": "So you can keep your account after you leave school.",
+        "email": "Personal email",
+        "code": "6-digit code",
+        "send": "Send Code",
+        "sending": "Sending…",
+        "verify": "Verify",
+        "verifying": "Verifying…",
+        "skip": "Skip for Now",
+        "success": "Personal email added.",
+        "schoolError": "Use a personal email, not your school email",
+        "conflictError": "This email is already used by another account.",
+        "codeError": "Invalid or expired code. Please try again.",
+        "limitError": "Too many codes requested. Please try again later.",
+        "error": "Something went wrong. Please try again."
+    },
+    "transcriptOptIn": {
+        "title": "Get your {{state}} transcript",
+        "body": "We'll ask your school records to send your transcript here.",
+        "consent": "I agree to share my student ID with {{state}} school records, and to add my transcript to my account when it arrives.",
+        "submit": "Get My Transcript",
+        "requesting": "Requesting…",
+        "requested": "Your transcript is on its way. We'll let you know when it arrives.",
+        "noneYet": "There's no transcript for you yet. Check back later.",
+        "reauthRequired": "Reconnect your school account to continue",
+        "reauthButton": "Reconnect",
+        "reauthing": "Reconnecting…",
+        "noStateId": "We couldn't find your student record. Ask your school to check your ClassLink account.",
+        "error": "We couldn't reach your school records right now. Please try again later.",
+        "tryAgain": "Try Again",
+        "requestingFrom": "Requesting from {{state}} school records…",
+        "takingAWhile": "This can take a while. We'll let you know when it's here.",
+        "addedToAccount": "Added to your account",
+        "updated": "Updated {{date}}",
+        "viewTranscript": "View Transcript",
+        "arrivedTitle": "Your transcript arrived",
+        "transcript": "Transcript",
+        "gradYear": "Class of {{year}}",
+        "gpa": "GPA: {{gpa}}",
+        "receivedLoading": "Your transcript was received. It will appear here in a moment.",
+        "finishingUp": "Finishing up…",
+        "inPassport": "It's in your Passport.",
+        "viewInPassport": "View in Passport",
+        "bannerTitle": "Get your official transcript",
+        "bannerFailed": "We couldn't reach your school records",
+        "getIt": "Get it",
+        "checkManually": "It may already be waiting in your notifications. Open it there to add it to your account, or check again.",
+        "checkAgain": "Check Again",
+        "openNotifications": "Open Notifications",
+        "autoAcceptFailed": "We couldn't add your transcript automatically. You can accept it here instead.",
+        "preparingTranscript": "Your school is preparing your transcript.",
+        "willAddWhenArrives": "We'll add it here as soon as it arrives.",
+        "waiting": "Waiting",
+        "checkNow": "Check now",
+        "requestSent": "Request Sent",
+        "untrackableBody": "We'll notify you when it arrives.",
+        "flow": {
+            "requestSent": "Request sent",
+            "preparing": "Your school is preparing your transcript",
+            "adding": "Adding it to your account",
+            "usuallyTakes": "This usually takes less than a minute.",
+            "takingLonger": "We'll let you know as soon as your transcript is here. You can keep going.",
+            "continue": "Continue",
+            "onTheWayTitle": "Your transcript is on its way",
+            "stillWorkingTitle": "Still working on it",
+            "arrivedBody": "It's saved to your account.",
+            "courses": "Courses",
+            "gpa": "GPA",
+            "classOf": "Class of",
+            "noneYetTitle": "Nothing to add yet"
+        },
+        "delivery": {
+            "timeLeftLabel": "Time left",
+            "secondsLeft": "About {{seconds}} seconds left",
+            "oneMinuteLeft": "About a minute left",
+            "minutesLeft": "About {{minutes}} minutes left",
+            "almostThere": "Almost there",
+            "requestedTitle": "Transcript requested",
+            "expectedWhen": "Your school expects to send it {{when}}.",
+            "notifyYou": "We'll let you know as soon as it's here.",
+            "byDate": "by {{date}}",
+            "expectedLabel": "Expected {{when}}"
+        },
+        "promptTitle": "Get Your Transcript",
+        "notNow": "Not now"
+    },
     "consentUpdate": {
         "summary": {
             "requestDetails": "Request details",
@@ -167,12 +254,18 @@
                 "label": "Learning History",
                 "description": "Structured programs of learning."
             },
-            "ids": { "label": "IDs", "description": "Credentials used to verify identity." },
+            "ids": {
+                "label": "IDs",
+                "description": "Credentials used to verify identity."
+            },
             "socialBadges": {
                 "label": "Social Badges",
                 "description": "Digital labels recognizing participation or group membership."
             },
-            "memberships": { "label": "Memberships", "description": "Records of memberships." },
+            "memberships": {
+                "label": "Memberships",
+                "description": "Records of memberships."
+            },
             "accomplishments": {
                 "label": "Accomplishments",
                 "description": "Collections of work that showcase skills and experience."
@@ -189,9 +282,18 @@
                 "label": "Family",
                 "description": "Family profiles connected through shared learning journeys."
             },
-            "name": { "label": "Name", "description": "Your name." },
-            "email": { "label": "Email", "description": "Your email address." },
-            "profilePhoto": { "label": "Profile photo", "description": "Your profile photo." },
+            "name": {
+                "label": "Name",
+                "description": "Your name."
+            },
+            "email": {
+                "label": "Email",
+                "description": "Your email address."
+            },
+            "profilePhoto": {
+                "label": "Profile photo",
+                "description": "Your profile photo."
+            },
             "qualifications": {
                 "label": "Qualifications",
                 "description": "Education, training, and professional qualifications."
@@ -255,18 +357,11 @@
         "searching": "Searching… Found so far: {{count}}.",
         "loadError": "Credentials loaded: {{count}}. The collection is incomplete.",
         "loadErrorEmpty": "Could not load credentials. The collection is incomplete.",
-        "complete": "Credentials: {{count}}. Collection complete.",
-        "loaded": "Credentials loaded: {{count}}. {{state}}",
-        "loadingMore": "Loading more…",
-        "moreAvailable": "More credentials are available.",
         "retrying": "Retrying…",
         "retry": "Retry loading credentials",
-        "loading": "Loading…",
-        "continue": "Continue loading",
         "loadingEarned": "Loading earned credentials",
         "initialError": "Credentials could not be loaded. Try again.",
         "loadingCredentials": "Loading credentials…",
-        "loadMore": "Load more credentials",
         "recentIncomplete": "Some recent credentials could not be loaded. These results are incomplete.",
         "recentError": "Recent credentials could not be loaded.",
         "loadingRecent": "Loading recent credentials…",
@@ -346,7 +441,7 @@
         "description": "Stay in touch and recognize what comes next.",
         "connect": "Connect",
         "skipForNow": "Skip for Now",
-        "connecting": "Connecting...",
+        "connecting": "Connecting…",
         "skipping": "Skipping...",
         "error": "Something went wrong. Please try again.",
         "connected": "Connected",
@@ -471,6 +566,7 @@
         "continue": "Continue",
         "loading": "Loading...",
         "add": "Add",
+        "publishing": "Publishing…",
         "saving": "Saving...",
         "searchResults": {
             "noResults": "No results found",
@@ -1523,6 +1619,13 @@
                 "google": "Google"
             }
         },
+        "classlink": {
+            "cancelled": "ClassLink sign-in was cancelled.",
+            "expired": "That sign-in link expired. Please try again.",
+            "failed": "We couldn't sign you in with ClassLink. Please try again.",
+            "timedOut": "ClassLink sign-in took too long. Please try again.",
+            "unavailable": "School sign-in is temporarily unavailable. Please try again in a few minutes."
+        },
         "welcome": {
             "heading": "Welcome to {{brand}}",
             "subtitle": "Sign in to access your credentials, achievements, and more.",
@@ -1583,7 +1686,22 @@
                 },
                 "error": {
                     "invalidEmail": "Please enter a valid email.",
-                    "sendFailed": "Failed to send consent request. Please try again."
+                    "sendFailed": "Failed to send consent request. Please try again.",
+                    "cooldown": "You can send another request at {{time}}.",
+                    "inProgress": "A request is already being sent. Please wait a moment."
+                },
+                "status": {
+                    "accepted": "Your approval request was sent to <0>{{email}}</0>. If your guardian doesn't see it, ask them to check their spam folder.",
+                    "failed": "We couldn't send the approval request to <0>{{email}}</0>. Please try sending it again.",
+                    "sending": "Sending the approval request…",
+                    "unknown": "Your account is awaiting guardian approval. If your guardian hasn't received an approval request, you can send another one below.",
+                    "expired": "The approval link sent to <0>{{email}}</0> has expired. Send a new one."
+                },
+                "resendRequest": "Resend Request",
+                "banner": {
+                    "title": "Pending guardian approval",
+                    "limited": "Some features stay limited until your parent or guardian approves your account.",
+                    "manage": "Resend or change email"
                 }
             },
             "us": {
@@ -1616,6 +1734,7 @@
             "selectRole": "Select Role",
             "fullName": "Full Name",
             "fullNameOptional": "Full Name (optional)",
+            "classlinkNameHint": "Only people you connect with can see your name.",
             "dateOfBirth": "Date of Birth",
             "age": "Age: {{age}}",
             "countryOfResidence": "Country of Residence",
@@ -1798,12 +1917,14 @@
             "privacyDesc": "Change anytime in Settings.",
             "brandAi": "{{brand}} AI",
             "aiMinorNote": "AI features are disabled for minors.",
+            "schoolLockedNote": "Your school turns off AI features, analytics, and bug reports for student accounts.",
             "analytics": "Analytics",
             "bugReports": "Bug Reports",
             "createMy": "Create my {{brand}}",
             "almostThere": "Almost there!",
             "youreIn": "You're in!",
             "guardianEmailed": "We've emailed your guardian to approve your account. You can start exploring now — some features unlock once they confirm.",
+            "guardianEmailFailed": "We couldn't send the approval request to <0>{{email}}</0>. You can start exploring now and send it again from your dashboard.",
             "ready": "Your {{brand}} is ready.",
             "whoAreYou": "Who are you? (Optional)",
             "explore": "Explore {{brand}}",
@@ -1819,6 +1940,13 @@
                 "saveFailedSkip": "Couldn't save your PIN. Try again, or skip for now and set it up later.",
                 "hint": "You can change or remove it anytime in Settings."
             }
+        },
+        "transcript": {
+            "title": "Your official transcript, in your pocket.",
+            "desc": "Get your school records delivered directly to your account.",
+            "get": "Get My Transcript",
+            "notNow": "Not Now",
+            "onItsWay": "Your transcript is on its way."
         }
     },
     "profile": {
@@ -1837,7 +1965,8 @@
             "loading": "Loading...",
             "deleting": "Deleting Account...",
             "recentLoginRequired": "A recent login is required!",
-            "reauthenticateHere": "Reauthenticate here"
+            "reauthenticateHere": "Reauthenticate here",
+            "fallbackPhrase": "DELETE"
         },
         "deleteAccount": "Delete Account",
         "didCopied": "DID copied to clipboard",
@@ -1877,7 +2006,8 @@
             "button": "Export Seed Phrase",
             "revealPrompt": "I understand - Reveal My Seed",
             "confirm": "Confirm",
-            "cancel": "Cancel"
+            "cancel": "Cancel",
+            "fallbackPhrase": "EXPORT"
         },
         "exportSeedPhrase": "Export Seed Phrase",
         "fullName": "Full Name",
@@ -2616,7 +2746,8 @@
                 "title": "Choose a new recovery PIN",
                 "body": "Your recovery PIN was entered incorrectly before, so it has fewer tries left. Choose a different 6-digit PIN to get all your tries back.",
                 "skipNote": "If you skip this, your current PIN keeps working with fewer tries left. You can choose a new one later in Account Recovery."
-            }
+            },
+            "escrowNotice": "An encrypted piece of your account key is held by a secure service. Your PIN unlocks it right away, without a 7-day wait. <0>Learn more</0>"
         },
         "confirmCode": {
             "mismatch": "That code isn't right. Try again.",
@@ -3028,7 +3159,7 @@
             "step2": "Your credential arrives safely",
             "step3": "It's yours to keep, forever",
             "privacy": "Your identity is only shared to complete this exchange. You're always in control of your data.",
-            "connecting": "Connecting...",
+            "connecting": "Connecting…",
             "claimButton": "Claim my credential",
             "decline": "No thanks, take me home",
             "loginRequired": "Please log in to continue."
@@ -3065,8 +3196,27 @@
             "haveAccount": "Have an account?"
         },
         "boost": {
-            "accepted": "Accepted",
-            "expiredHeader": "The boost claim link has expired or has reached the maximum number of times it can be claimed."
+            "accepted": "Accepted"
+        },
+        "recovery": {
+            "checking": "Checking your claim...",
+            "claiming": "Claiming your credential...",
+            "saving": "Saving to your collection...",
+            "refreshing": "Refreshing your collection...",
+            "checkFailed": "We couldn't confirm your claim. Your link is still here so you can try again.",
+            "claimUncertain": "Your claim may have completed. Check for your credential before trying again.",
+            "saveFailed": "Your credential was claimed, but saving wasn't confirmed. Try saving it again.",
+            "refreshFailed": "Your credential is saved. We couldn't refresh your collection.",
+            "pending": "Your claim is still being resolved. Check again to find the result without claiming another copy.",
+            "expired": "This claim link has expired. Ask the issuer for a new link.",
+            "exhausted": "This claim link has reached its claim limit. Ask the issuer for a new link.",
+            "unavailable": "This claim link isn't available. Ask the issuer to check the link.",
+            "contextChanged": "Your account or connection settings changed; close this page and reopen the original link to continue.",
+            "savedToOriginalAccount": "Your credential was saved to your original account.",
+            "tryAgain": "Try again",
+            "check": "Check for my credential",
+            "save": "Save my credential",
+            "refresh": "Refresh my collection"
         },
         "duplicate": {
             "title": "Already saved",
@@ -3192,7 +3342,7 @@
             "cancelled": "Request cancelled. Return to the issuing website.",
             "connectTitle": "Connecting your account",
             "connectDescription": "Preparing this website’s request.",
-            "connecting": "Connecting...",
+            "connecting": "Connecting…",
             "savedBeforeCancel": "Credentials already saved remain in your Passport ({{saved}})."
         }
     },
@@ -4771,7 +4921,7 @@
         "activityCount": "Showing {{count}} activities from this app",
         "editAccess": "Edit access",
         "dataAccess": "Data access",
-        "connecting": "Connecting...",
+        "connecting": "Connecting…",
         "disconnecting": "Disconnecting...",
         "connected": "Connected",
         "disconnected": "Successfully Disconnected",
@@ -4850,7 +5000,7 @@
         "unableToLoadPermissions": "Unable to load data permissions for this app.",
         "uninstallNote": "You can uninstall this app at any time from your installed apps.",
         "previewOnly": "Preview Only",
-        "connecting": "Connecting...",
+        "connecting": "Connecting…",
         "install": "Install",
         "permission": {
             "requestIdentity": {
@@ -8960,7 +9110,8 @@
         "manyResults": "{{count}} results for \"{{query}}\"",
         "shortcuts": {
             "skillInsights": "Skill Insights",
-            "boostAFriend": "Boost a Friend"
+            "boostAFriend": "Boost a Friend",
+            "schoolConnect": "School Connect"
         }
     },
     "addToPassport": {
@@ -10184,7 +10335,7 @@
         "viewNotificationsHint": "Get a private notification with the view count and time. Off by default.",
         "saveToLearnCard": "Save collection",
         "savingToLearnCard": "Saving collection…",
-        "savedCollectionStatus": "Collection saved for reference.",
+        "savedCollectionStatus": "Collection saved.",
         "savedCollectionDestination": "Find it in Data & Sharing under Shared with you.",
         "viewSavedCollections": "View saved collections",
         "saveError": "Could not save this collection. Please try again.",
@@ -10193,6 +10344,7 @@
         "viewCredential": "View credential"
     },
     "resumePublishing": {
+        "aboutPublishing": "About publishing",
         "linkReady": "Your private link is ready.",
         "opening": "Opening your private link...",
         "linkUnavailable": "This link is unavailable. Publish the resume again after checking its settings.",
@@ -10356,6 +10508,45 @@
         "evidenceCount": "Evidence items: {{count}}",
         "evidence": "Supporting evidence"
     },
+    "schoolConnect": {
+        "signInFirst": "Sign in, then connect your school again.",
+        "connectFailed": "We couldn't connect your school account. Please try again.",
+        "connectedToast": "Your school account is connected.",
+        "tryAgain": "Try Again",
+        "notAvailable": "School Connect isn't available for your account yet.",
+        "yourSchool": "Your school",
+        "lastConnected": "Last connected {{date}}",
+        "connected": "Connected",
+        "refreshConnection": "Refresh Connection",
+        "connecting": "Connecting…",
+        "studentNote": "AI features, analytics, and bug reports are off, as your school requires.",
+        "warningTitle": "Before you connect",
+        "warningBody": "If you're a student, your school doesn't allow AI features, analytics, or bug reports for student accounts, so we'll turn them off.",
+        "connectWithClassLink": "Connect with ClassLink",
+        "notNow": "Not Now",
+        "heroTitle": "Your school records, in your hands",
+        "heroSubhead": "Connect your school account to access your official records.",
+        "benefit1": "Request your official transcript",
+        "benefit2": "Share it with colleges and employers",
+        "benefit3": "You decide who sees it",
+        "chooseProvider": "Choose how your school connects",
+        "dontSeeSchool": "Don't see your school?",
+        "moreComingSoon": "More schools are coming soon.",
+        "askToAdd": "Ask us to add your school",
+        "mailtoSubject": "Add my school to School Connect",
+        "mailtoBody": "School name:\nDistrict:\nState:\n",
+        "pageTitle": "School Connect",
+        "pageSubtitle": "Your school accounts and official records.",
+        "sectionSchools": "Your schools",
+        "sectionRecords": "Records",
+        "sectionPrivacy": "Privacy",
+        "refresh": "Refresh",
+        "moreSchools": "More schools are coming soon",
+        "privacyStudentTitle": "Set by your school",
+        "privacySharedTitle": "What we share with your school",
+        "privacySharedBody": "Only your student ID, and only when you request your transcript. Nothing else from your account.",
+        "notAvailableTitle": "Not available yet"
+    },
     "announcements": {
         "title": "Product announcements",
         "email": "Email",
@@ -10366,5 +10557,33 @@
         "retry": "Try Again",
         "unsubscribing": "Unsubscribing…",
         "unsubscribed": "You’re unsubscribed from announcements."
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Digital credential",
+        "unavailableTitle": "Request unavailable",
+        "unavailableDescription": "Return to the requesting app and try again.",
+        "canceling": "Canceling…",
+        "preparing": "Preparing…",
+        "requiredFields": "These fields are required. You can cancel instead.",
+        "reviewTitle": "Share these details?",
+        "reviewDescription": "Check the requested details before sharing.",
+        "requestedBy": "Requested by",
+        "androidApp": "Android app",
+        "requestDetails": "Request details",
+        "requestIdentity": "App signing identity",
+        "selectedCredential": "Selected credential",
+        "requestedDetails": "Requested details",
+        "required": "Required",
+        "notShared": "Not shared",
+        "metadataIncluded": "The issuer and credential type are also included.",
+        "credentialDetails": "Credential details",
+        "issuer": "Issuer",
+        "credentialType": "Credential type",
+        "expires": "Expires",
+        "sharing": "Sharing…",
+        "shareDetails": "Share details",
+        "loadingTitle": "Preparing your request",
+        "loadingDescription": "Checking the details you can share.",
+        "returnToApp": "Return to app"
     }
 }

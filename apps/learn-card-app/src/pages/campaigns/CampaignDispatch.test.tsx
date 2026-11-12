@@ -72,6 +72,28 @@ const review = async () => {
 };
 
 describe('audience notification dispatch', () => {
+    it.each(['local', 'server'] as const)(
+        'uses the composer delivery labels when %s sending is disabled',
+        async source => {
+            const api = mockApi();
+            if (source === 'server') {
+                api.campaignsPreviewDispatch.mockResolvedValue({
+                    ...preview,
+                    recipientCount: 0,
+                    blockedReason: 'notify_disabled',
+                });
+            }
+            mount(api, source === 'local' ? { ...live(), channels: ['inApp'] } : live());
+            if (source === 'server') await review();
+            expect(
+                screen.getByText(
+                    'Enable Email or In-app & push notification and save before sending.'
+                )
+            ).toBeVisible();
+            expect(api.campaignsDispatch).not.toHaveBeenCalled();
+        }
+    );
+
     it('reviews email-only and mixed sends before dispatch', async () => {
         for (const notify of [false, true]) {
             const api = mockApi();

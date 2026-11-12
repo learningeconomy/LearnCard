@@ -1,7 +1,7 @@
 import React from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
-import { IonItem, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import { ThreeDotVertical } from '@learncard/react';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -43,11 +43,11 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     }
 
     return (
-        <IonItem
-            lines="none"
-            className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-xs"
+        <div
+            data-testid="app-store-list-item"
+            className="w-full max-w-[600px] p-3 flex bg-white items-center justify-between rounded-[12px] mt-2 first:mt-4 shadow-xs"
         >
-            <div className="flex items-center justify-start w-full bg-white-100">
+            <div className="flex items-center justify-start w-full min-w-0">
                 <div className="rounded-lg w-[50px] h-[50px] me-3 min-w-[50px] min-h-[50px]">
                     <img
                         className="w-full h-full object-cover bg-white rounded-lg"
@@ -118,7 +118,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                     </div>
                 </div>
             </div>
-        </IonItem>
+        </div>
     );
 };
 

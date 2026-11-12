@@ -1,6 +1,7 @@
 import cloneDeep from 'lodash/cloneDeep';
 import type { Transaction } from 'neo4j-driver';
 import { neogma } from '@instance';
+import { lockClaimLinkRequestForStorage } from '@accesslayer/claim-link-request-fence';
 import {
     CredentialFieldError,
     isDisplayOnlyAnchorTemplate,
@@ -55,6 +56,14 @@ import { DbTermsType } from 'types/consentflowcontract';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
 import { getIssuedCredentialPayload } from './issuedCredentialStatus.helpers';
 import type { IssuedCredential } from '../types/credential';
+
+/** No commit was attempted: the caller can safely retry this claim's storage. */
+export class ClaimLinkStorageRejectedError extends Error {
+    constructor(cause: unknown) {
+        super('Claim-link storage transaction was rolled back', { cause });
+        this.name = 'ClaimLinkStorageRejectedError';
+    }
+}
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -145,9 +154,13 @@ export const sendBoost = async ({
     contractWriterProfileId,
     allowConsumedOneTime = false,
     metadata,
+    listingId,
     activityId,
     integrationId,
-    listingId,
+    credentialId,
+    atomicClaimLink = false,
+    claimLinkOwnerToken,
+    onStorageStart,
 }: {
     from: CredentialIssuer;
     to: ProfileType;
@@ -163,6 +176,10 @@ export const sendBoost = async ({
     activityId?: string;
     integrationId?: string;
     listingId?: string;
+    credentialId?: string;
+    atomicClaimLink?: boolean;
+    claimLinkOwnerToken?: string;
+    onStorageStart?: () => void;
 }): Promise<string> => {
     return trace(
         'boost',
@@ -191,13 +208,15 @@ export const sendBoost = async ({
             const persistDelivery = async (
                 transaction?: Transaction
             ): Promise<CredentialInstance> => {
-                const stored = await traceDb('storeCredential', () =>
-                    storeCredential(
+                const stored = await traceDb('storeCredential', () => {
+                    if (atomicClaimLink) onStorageStart?.();
+                    return storeCredential(
                         credential,
                         transaction,
-                        contractWriterProfileId ?? fromProfile.profileId
-                    )
-                );
+                        contractWriterProfileId ?? fromProfile.profileId,
+                        credentialId === undefined ? undefined : { credentialId }
+                    );
+                });
                 if (!contractTerms) {
                     await traceDb('createRelationships', async () => {
                         await createBoostInstanceOfRelationship(stored, boost, transaction);
@@ -229,9 +248,40 @@ export const sendBoost = async ({
                 }
                 return stored;
             };
-            const credentialInstance = contractTerms
-                ? await persistDelivery()
-                : await neogma.getTransaction(null, persistDelivery);
+            let credentialInstance: CredentialInstance;
+            // Claim recovery distinguishes rejected writes from an unacknowledged commit.
+            if (atomicClaimLink) {
+                const session = neogma.driver.session();
+                const transaction = session.beginTransaction();
+                let commitStarted = false;
+                try {
+                    if (credentialId) {
+                        if (!claimLinkOwnerToken) throw new Error('Claim-link owner is required');
+                        await lockClaimLinkRequestForStorage(
+                            transaction,
+                            credentialId,
+                            claimLinkOwnerToken
+                        );
+                    }
+                    credentialInstance = await persistDelivery(transaction);
+                    commitStarted = true;
+                    await transaction.commit();
+                } catch (error) {
+                    try {
+                        await transaction.rollback();
+                    } catch {
+                        // Rollback failure cannot replace the original storage/commit outcome.
+                    }
+                    if (!commitStarted) throw new ClaimLinkStorageRejectedError(error);
+                    throw error;
+                } finally {
+                    await session.close();
+                }
+            } else {
+                credentialInstance = contractTerms
+                    ? await persistDelivery()
+                    : await neogma.getTransaction(null, persistDelivery);
+            }
 
             try {
                 if (contractTerms) {
@@ -318,7 +368,10 @@ export const issueClaimLinkBoost = async (
     domain: string,
     from: CredentialIssuer,
     to: ProfileType,
-    signingAuthorityForUser: SigningAuthorityForUserType
+    signingAuthorityForUser: SigningAuthorityForUserType,
+    credentialId?: string,
+    onStorageStart?: () => void,
+    claimLinkOwnerToken?: string
 ): Promise<string> => {
     const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;
     const boostId = boost?.dataValues?.id;
@@ -331,12 +384,10 @@ export const issueClaimLinkBoost = async (
 
     setCredentialSubjectIds(boostCredential, getDidWeb(domain, to.profileId));
 
-    // Embed the boostURI into the boost credential for verification purposes.
     if (boostCredential.type.includes('BoostCredential')) {
         boostCredential.boostId = boostURI;
     }
 
-    // Inject OBv3 skill alignments based on boost's framework/skills
     await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
     const vc = await issueCredentialWithSigningAuthority(
@@ -355,6 +406,10 @@ export const issueClaimLinkBoost = async (
         domain,
         skipNotification: true,
         autoAcceptCredential: true,
+        credentialId,
+        atomicClaimLink: true,
+        claimLinkOwnerToken,
+        onStorageStart,
     });
 };
 

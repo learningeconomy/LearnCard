@@ -15,7 +15,7 @@ import {
 } from './src/helpers/sentry.helpers';
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
-import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './src/models';
+import { ensureUserKeysIndexes } from './src/models';
 import { runEscrowHoldReminders } from './src/jobs/escrowHoldReminders';
 import { runEscrowBlobRewrap } from './src/jobs/escrowBlobRewrap';
 import { checkEscrowRemoteConfig } from './src/services/escrow-enclave';
@@ -23,14 +23,12 @@ import { createRetryingOnce } from './src/helpers/retryingOnce';
 
 checkEscrowRemoteConfig();
 
-// Cold-start work every handler waits for. A failure is not cached, so a transient
-// error (e.g. a slow Mongo call) fails only the requests that hit it and the next
-// request retries, instead of the container failing everything until recycled.
+// Retry global startup (WASM + user-keys) without caching failures, and without
+// letting an escrow migration reject unrelated calls.
 const ensureStartup = createRetryingOnce(() =>
     Promise.all([
         getEmptyLearnCard(), // Load WASM in for better cold starts
         ensureUserKeysIndexes(),
-        createEscrowHoldsIndexes(),
     ])
 );
 

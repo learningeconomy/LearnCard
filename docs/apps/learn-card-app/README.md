@@ -56,7 +56,7 @@ Open a Passport category and choose **Search**. Search checks every eligible rec
 
 Dashboard credential and credential-category totals exclude hidden and internal records. Totals remain unknown while the collection is loading; a failed count offers **Retry credential totals** instead of showing zero or first-credential onboarding. Passport categories remain available when their count cannot be loaded, and the unavailable-count message follows the app language.
 
-**Recently added** fills up to five visible cards, including when the first page contains only internal records. **See all** stays available even if recent cards are empty or fail to load. Category lists and **All credentials** keep loading when you scroll, even if the collection total has already finished counting. In **All credentials**, **Load more credentials** also works with a keyboard. A loading failure preserves the cards already loaded, explains that the collection is incomplete, and offers **Retry loading credentials**.
+**Recently added** fills up to five visible cards, including when the first page contains only internal records. **See all** stays available even if recent cards are empty or fail to load. Category lists and **All credentials** load more automatically when you scroll, without a loaded-count message or continuation button. In **All credentials**, keyboard users can focus the list and scroll with the arrow keys, Page Down, or End. A loading failure preserves the cards already loaded, explains that the collection is incomplete, and offers **Retry loading credentials**.
 
 Titles already saved in the encrypted index are searched locally from metadata. Older records without saved titles may need their credential contents loaded before a search can finish; wrapped credentials can match both their displayed name and their achievement name. Collection totals use metadata rather than credential contents.
 
@@ -69,15 +69,27 @@ flowchart LR
     C -->|No| D[Create account / Login]
     C -->|Yes| E[Review credential]
     D --> E
-    E --> F[Accept & Save]
-    F --> G[Credential in wallet]
+    E --> F[Claim credential]
+    F --> G[Save to collection]
+    G --> H[Refresh collection]
 ```
 
-1. User receives a claim link or scans a QR code
-2. Link opens the LearnCard App
-3. User logs in (or creates an account)
-4. User reviews the credential details
-5. User accepts and saves to their wallet
+If completion stops, keep the page open and use its recovery action:
+
+| Action                      | What happens                                                                                                            |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Try again**               | Checks the same claim link again after a temporary confirmation failure.                                                |
+| **Check for my credential** | Looks for the previous claim's result before another claim can start. An unresolved result stays in this checking flow. |
+| **Save my credential**      | Uses the already-issued credential to finish saving, without claiming another copy or adding a duplicate entry.         |
+| **Refresh my collection**   | Keeps the confirmed saved credential and retries refresh, not claiming or saving.                                       |
+
+Expired links and links that have reached their claim limit have different messages, shown only when the service confirms the condition. Ask the issuer for a new link. A temporary connection failure is not treated as expiration. If the active account or network changes during recovery, stop and reopen the link in the intended account/network; recovery must not continue using the prior context.
+
+Recovery retains the original request identifier for the same link context and keeps any confirmed saved credential associated with the account that saved it. Refresh failures are reported only for the claimed credential's category and relevant connection data, not unrelated credential categories.
+
+If another tab is finishing the same claim, **Check for my credential** looks up its result without issuing another copy. A claim that is already saved and refreshed stays successful if your account or connection settings change before navigation. The page confirms it was saved to the original account, keeps the original recovery identifier, and does not navigate in the changed context. You do not need to reopen the link to finish that completed claim.
+
+If you're signed out, **Accept** opens the sign-in prompt. **Close** returns to the original preview without starting a claim.
 
 ### Receiving Credentials from a Website
 
@@ -145,6 +157,16 @@ flowchart LR
 
 The success message appears only after saving is confirmed. If saving fails, the
 collection stays open with an error and the option to try again.
+An unreadable earlier saved copy does not prevent saving the current collection.
+
+Saved status belongs to the signed collection contents and the account that saved
+them, not to every collection from the same sender. If the sender replaces a link's
+contents, you can save the new selection. The saved list shows only the newest saved
+selection for each link; earlier saved copies are not deleted. Distinct shared links
+remain separate in the list, even when they contain the same presentation.
+
+The sender bubble uses the sender's current profile photo when available, with
+initials as a fallback. Saving a collection does not copy the viewer's or issuer's photo.
 
 Saved collections remain available under **Data & Sharing → Shared with you**, even
 when creating shared links is not enabled for your account. **View saved collections**
@@ -274,6 +296,8 @@ Stopping access cannot retract downloaded copies or older résumé URLs. Includi
 {% endhint %}
 
 If publishing is interrupted, retry in the same browser to recover the pending attempt. PDFs larger than 4 MiB cannot be published through this flow. Turn off the QR code to download a local copy without publishing.
+
+On mobile, **Preview** and **Publish** (or **Save** for an existing résumé) stay at the top while you edit. Resume history, download, and sharing are available in the header. Expand **About publishing** above the résumé to read the publishing notices. Tapping an editable field brings it into view above the software keyboard.
 
 ### Qualifications
 

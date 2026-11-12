@@ -14,68 +14,14 @@ env:
     MONGOMS_DISABLE_POSTINSTALL: '1'
 
 jobs:
-    build-native-plugin:
-        name: Build Native DIDKit Plugin
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout Repo
-              uses: actions/checkout@v7
-              with:
-                  submodules: true
-
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: 1.4.4
-
-            - name: Setup Bun cache
-              uses: actions/cache@v6
-              with:
-                  path: ~/.bun/install/cache
-                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-                  restore-keys: |
-                      ${{ runner.os }}-bun-
-
-            - name: Setup Rust
-              uses: dtolnay/rust-toolchain@stable
-              with:
-                  toolchain: stable
-                  targets: x86_64-unknown-linux-gnu
-
-            - name: Cache cargo
-              uses: actions/cache@v6
-              with:
-                  path: |
-                      ~/.cargo/registry/index/
-                      ~/.cargo/registry/cache/
-                      ~/.cargo/git/db/
-                      packages/plugins/didkit-plugin-node/native/target/
-                  key: linux-x64-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-            - name: Install dependencies
-              run: bun install --frozen-lockfile
-
-            - name: Build native plugin
-              working-directory: packages/plugins/didkit-plugin-node
-              env:
-                  BUILD_DIDKIT_NAPI: true
-              run: |
-                  bunx nx build didkit-plugin-node
-                  strip -x *.node
-
-            - name: Upload native binary
-              uses: actions/upload-artifact@v4
-              with:
-                  name: didkit-native-linux-x64
-                  path: packages/plugins/didkit-plugin-node/*.node
-                  if-no-files-found: error
-                  retention-days: 1
-
     maid-service:
         name: Maid-Service
-        needs: [build-native-plugin]
+        # No native DIDKit build: these tests fall back to WASM, like PR test.yml.
         runs-on: ubuntu-latest
         environment: ci-tests
+        outputs:
+            test-outcome: ${{ steps.tests.outcome }}
+            snapshot-outcome: ${{ steps.full-snapshot.outcome }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -86,12 +32,6 @@ jobs:
             - name: Fetch main for NX comparison
               run: |
                   git fetch --no-tags --prune --depth=5 origin main
-
-            - name: Download native plugin binary
-              uses: actions/download-artifact@v4
-              with:
-                  name: didkit-native-linux-x64
-                  path: packages/plugins/didkit-plugin-node
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
@@ -116,15 +56,45 @@ jobs:
             - name: Install dependencies
               run: bun install --frozen-lockfile
 
+            # Install once before parallel Nx tasks invoke cargo.
+            - name: Install pinned Rust toolchain
+              working-directory: services/escrow-enclave-app
+              run: rustup toolchain install
+
             - name: Run tests
-              uses: nick-fields/retry@v2
-              with:
-                  timeout_minutes: 10
-                  max_attempts: 3
-                  command: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
+              id: tests
+              timeout-minutes: 20
+              run: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
               env:
+                  LC_CI_TEST_RETRY: '1'
+                  LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   SEED: ${{ secrets.SEED }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+
+            # Capture the full run before housekeeping stages or commits anything.
+            - name: Snapshot full-run changes
+              id: full-snapshot
+              timeout-minutes: 2
+              if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+              continue-on-error: true
+              run: node scripts/maid-shadow.cjs snapshot full "$RUNNER_TEMP/maid-full.json"
+
+            - name: Upload full-run snapshot
+              if: ${{ !cancelled() && steps.full-snapshot.outcome == 'success' }}
+              continue-on-error: true
+              uses: actions/upload-artifact@v4
+              with:
+                  name: maid-full-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: ${{ runner.temp }}/maid-full.json
+                  if-no-files-found: error
+                  retention-days: 14
+
+            - name: Summarize test retries
+              if: always()
+              env:
+                  LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
+                  LC_CI_NX_OUTCOME: ${{ steps.tests.outcome }}
+              run: node scripts/ci-test-retries/summary.cjs
 
             - name: Commit changes
               run: |
@@ -162,3 +132,95 @@ jobs:
               with:
                   path: .nx-cache
                   key: ${{ steps.restore-nx-cache.outputs.cache-primary-key }}
+
+    # An independent checkout prevents the candidate from changing housekeeping
+    # output or competing with the full test run for CPU on the same runner.
+    barrel-shadow:
+        name: Barrel generator shadow
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        continue-on-error: true
+        outputs:
+            generator-outcome: ${{ steps.generator.outcome }}
+            snapshot-outcome: ${{ steps.shadow-snapshot.outcome }}
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.sha }}
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.4
+
+            - name: Restore Bun cache
+              uses: actions/cache/restore@v6
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
+
+            - name: Install dependencies
+              run: bun install --frozen-lockfile
+
+            - name: Run barrel generator
+              id: generator
+              timeout-minutes: 5
+              run: bun run --cwd packages/react-learn-card generate-barrels
+
+            - name: Snapshot shadow changes
+              id: shadow-snapshot
+              run: node scripts/maid-shadow.cjs snapshot shadow "$RUNNER_TEMP/maid-shadow.json"
+
+            - name: Upload shadow snapshot
+              uses: actions/upload-artifact@v4
+              with:
+                  name: maid-shadow-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: ${{ runner.temp }}/maid-shadow.json
+                  if-no-files-found: error
+                  retention-days: 14
+
+    compare-shadow:
+        name: Compare housekeeping changes
+        needs: [maid-service, barrel-shadow]
+        if: always()
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        continue-on-error: true
+        steps:
+            - name: Checkout comparison script
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.sha }}
+
+            - name: Download full-run snapshot
+              id: full-download
+              if: ${{ needs.maid-service.outputs.snapshot-outcome == 'success' }}
+              continue-on-error: true
+              uses: actions/download-artifact@v4
+              with:
+                  name: maid-full-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: ${{ runner.temp }}/maid-full
+
+            - name: Download shadow snapshot
+              id: shadow-download
+              if: ${{ needs.barrel-shadow.outputs.snapshot-outcome == 'success' }}
+              continue-on-error: true
+              uses: actions/download-artifact@v4
+              with:
+                  name: maid-shadow-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: ${{ runner.temp }}/maid-shadow
+
+            - name: Summarize comparison
+              if: always()
+              env:
+                  MAID_FULL_JOB_OUTCOME: ${{ needs.maid-service.result }}
+                  MAID_FULL_TEST_OUTCOME: ${{ needs.maid-service.outputs.test-outcome }}
+                  MAID_FULL_SNAPSHOT_OUTCOME: ${{ needs.maid-service.outputs.snapshot-outcome }}
+                  MAID_SHADOW_GENERATOR_OUTCOME: ${{ needs.barrel-shadow.outputs.generator-outcome }}
+                  MAID_SHADOW_SNAPSHOT_OUTCOME: ${{ needs.barrel-shadow.outputs.snapshot-outcome }}
+                  MAID_FULL_DOWNLOAD_OUTCOME: ${{ steps.full-download.outcome }}
+                  MAID_SHADOW_DOWNLOAD_OUTCOME: ${{ steps.shadow-download.outcome }}
+              run: node scripts/maid-shadow.cjs compare "$RUNNER_TEMP/maid-full/maid-full.json" "$RUNNER_TEMP/maid-shadow/maid-shadow.json"

@@ -128,9 +128,8 @@ textarea[class*='border-gray']:-webkit-autofill:active {
     transition: background-color 5000s ease-in-out 0s;
 }
 
-// Keyboard focus is intentionally invisible for pointer interaction and appears
-// only for keyboard-style focus. This covers native controls and the small
-// number of composite widgets used by the core app flows.
+// Keep focus visible on the control's visible shape. Text fields can match
+// :focus-visible on touch too; composite fields own one ring on their wrapper.
 :where(#app-router, #modal-mid-root) {
     :where(
         button,
@@ -148,6 +147,18 @@ textarea[class*='border-gray']:-webkit-autofill:active {
         box-shadow:
             0 0 0 2px white,
             0 0 0 4px var(--color-emerald-500);
+    }
+
+    [data-focus-ring]:has(> input:focus-visible, > textarea:focus-visible) {
+        box-shadow:
+            0 0 0 2px white,
+            0 0 0 4px var(--color-emerald-500);
+    }
+
+    // Existing Tailwind ring surfaces retain their own colour and thickness.
+    :is([data-focus-ring], [class*='focus-within:ring-']) > :is(input, textarea):focus-visible {
+        outline: none;
+        box-shadow: none;
     }
 }
 

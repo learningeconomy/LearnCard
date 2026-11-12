@@ -1,6 +1,6 @@
 {
     "name": "@learncard/escrow-canary",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "private": true,
     "type": "module",
     "scripts": {
@@ -17,6 +17,7 @@
         "@aws-sdk/lib-dynamodb": "^3.883.0",
         "@learncard/init": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
+        "firebase-admin": "13.4.0",
         "zod": "4.6.6"
     },
     "devDependencies": {

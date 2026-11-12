@@ -31,10 +31,16 @@ test('managed profile authentication verifies relationship, nonce, audience and 
     const key = manager.privateKey.export({ format: 'jwk' });
     const publicKey = manager.publicKey.export({ format: 'jwk' });
     let document: object;
+    let documentReads = 0;
     const server = Bun.serve({
         hostname: '127.0.0.1',
         port: 0,
-        fetch: () => Response.json(document),
+        fetch: () => {
+            documentReads++;
+            // This fixture changes authorization at the same URL between assertions.
+            // WASM clearCache does not clear the SDK's separate HTTP document cache.
+            return Response.json(document, { headers: { 'Cache-Control': 'no-store' } });
+        },
     });
     const profile = `did:web:localhost%3A${server.port}`;
     const method = `${profile}#manager`;
@@ -131,9 +137,11 @@ test('managed profile authentication verifies relationship, nonce, audience and 
         for (const options of [{ wrongNonce: true }, { wrongAudience: true }, { wrongKey: true }])
             await expect(service.authenticate(await attempt(options))).rejects.toThrow();
         const assertionOnly = await attempt();
+        const readsBeforeChange = documentReads;
         document = { ...document, authentication: [], assertionMethod: [method] };
         await didkit.clearCache();
         await expect(service.authenticate(assertionOnly)).rejects.toThrow();
+        expect(documentReads).toBeGreaterThan(readsBeforeChange);
     } finally {
         server.stop(true);
     }

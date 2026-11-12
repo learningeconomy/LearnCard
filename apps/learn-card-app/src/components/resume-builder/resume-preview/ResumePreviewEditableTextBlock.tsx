@@ -64,7 +64,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
             <div className="flex items-start justify-center gap-2 w-full my-1">
                 <div className="flex-1">
                     {showDecoration ? (
-                        <div className="bg-indigo-50 rounded-lg overflow-hidden">
+                        <div data-focus-ring className="bg-indigo-50 rounded-lg overflow-hidden">
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR */}
                             <textarea {...(sharedProps as any)} rows={3} />
                             <div className="flex justify-end px-2 pb-1.5">

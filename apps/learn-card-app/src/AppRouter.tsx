@@ -64,8 +64,10 @@ import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useRecordFeedbackSession } from './feedback/useRecordFeedbackSession';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { AI_ROUTES } from './constants/aiRoutes';
+import { NATIVE_CREDENTIAL_PATH } from './native-digital-credentials/types';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
+import { useTranscriptPrompt } from './hooks/useTranscriptPrompt';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
 import { reconcileQualificationCategories } from 'learn-card-base/helpers/qualificationCategoryBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
@@ -227,6 +229,7 @@ const AppRouter: React.FC = () => {
 
     const hideSideMenu =
         isShareViewer ||
+        location.pathname === NATIVE_CREDENTIAL_PATH ||
         [
             '/consent-flow',
             '/consent-flow-login',
@@ -431,6 +434,7 @@ const AppRouter: React.FC = () => {
     useScreenView();
     useAutoVerifyContactMethodWithProofOfLogin();
     useFinalizeInboxCredentials();
+    useTranscriptPrompt();
 
     const saved_email = window.localStorage.getItem('emailForSignIn');
 

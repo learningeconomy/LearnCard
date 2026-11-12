@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import { useLocation, useHistory } from 'react-router-dom';
 
@@ -33,6 +33,7 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
     const location = useLocation();
     const history = useHistory();
     const { textLogoDark } = useTenantBrandingAssets();
+    const [failedLogoSrc, setFailedLogoSrc] = useState<string>();
     const tenantConfig = useTenantConfig();
 
     const { getThemedCategoryColors } = useTheme();
@@ -57,10 +58,11 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
                 <span className="font-poppins text-[20px] font-normal normal-case tracking-normal whitespace-nowrap">
                     {pageTitle}
                 </span>
-            ) : textLogoDark ? (
+            ) : textLogoDark && textLogoDark !== failedLogoSrc ? (
                 <img
                     src={textLogoDark}
                     alt={headerText}
+                    onError={() => setFailedLogoSrc(textLogoDark)}
                     className="max-w-[150px] max-h-[24px] object-contain"
                 />
             ) : (

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Transcript request flow harness</title>
+        <script type="module">
+            import { Buffer } from 'buffer';
+            window.Buffer = Buffer;
+            window.global = window;
+        </script>
+        <script>
+            localStorage.setItem('i18n.language', 'en');
+        </script>
+    </head>
+    <body class="m-0">
+        <div id="root"></div>
+        <div id="modal-mid-root"></div>
+        <script type="module" src="/tests/fixtures/transcript-flow-harness.tsx"></script>
+    </body>
+</html>

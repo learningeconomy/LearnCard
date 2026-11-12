@@ -24,6 +24,9 @@ import {
     getSSSConfig,
     useAuthStatus,
     resumeAuthRedirect,
+    useFeatureConfig,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import { getLogger } from 'learn-card-base';
@@ -33,6 +36,9 @@ import { Capacitor } from '@capacitor/core';
 
 import { useFirebase } from '../../hooks/useFirebase';
 import useLogout from '../../hooks/useLogout';
+import { useClassLinkAuthorizeUrl } from 'learn-card-base/react-query/mutations/firebase';
+import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
+import ClassLinkIcon from 'learn-card-base/assets/images/classlink-logo.png';
 
 import { changeSignInPersistence, useSignInPersistence } from '../../auth/signInPersistence';
 import { SignInPersistenceError } from './SignInPersistenceError';
@@ -329,8 +335,39 @@ export const LoginContent: React.FC = () => {
     const isReturningUser =
         coordinatorState.status === 'ready' || coordinatorState.status === 'needs_recovery';
 
+    const features = useFeatureConfig();
+    const { mutateAsync: getClassLinkAuthorizeUrl } = useClassLinkAuthorizeUrl();
+
+    const { presentToast: presentClassLinkToast } = useToast();
+
+    /** Resolves `true` while navigating away, so the button keeps its loading state. */
+    const classLinkLogin = async (): Promise<boolean> => {
+        const outcome = await runClassLinkLogin(getClassLinkAuthorizeUrl, path =>
+            history.push(path)
+        );
+        // 'handled' (sheet closed / timed out) is reported by the callback route.
+        if (outcome === 'failed') {
+            presentClassLinkToast(m['login.classlink.failed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+        return outcome === 'started';
+    };
+
     // custom logins associated with the app
     const extraSocialLogins = [
+        ...(features.classlinkSso
+            ? [
+                  {
+                      id: 3,
+                      src: ClassLinkIcon,
+                      alt: 'Sign in with ClassLink',
+                      onClick: classLinkLogin,
+                      type: SocialLoginTypes.classlink,
+                  },
+              ]
+            : []),
         {
             id: 1,
             src: AppleIcon,
@@ -347,6 +384,7 @@ export const LoginContent: React.FC = () => {
         },
     ];
 
+    // A cached profile without an authenticated session must still see sign-in.
     // Redirect-pending gate: once the wallet is built and the user counts as
     // logged in, the effect above will history.push away from /login — but
     // only on the tick AFTER React has already painted this component,
@@ -357,7 +395,9 @@ export const LoginContent: React.FC = () => {
     // RouteTransitionLoader. needs_setup is excluded so the form stays
     // visible under the onboarding modal.
     const redirectPending =
-        (isLoggedIn || !!currentUser) && coordinatorState.status !== 'needs_setup';
+        (isLoggedIn || !!currentUser) &&
+        authStatus.tag !== 'unauthenticated' &&
+        coordinatorState.status !== 'needs_setup';
 
     if (redirectPending) {
         return (

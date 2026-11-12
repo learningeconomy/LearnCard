@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Lock, Loader2, CheckCircle2 } from 'lucide-react';
 import * as m from '../../../paraglide/messages.js';
 import { RecoveryPinInput } from '../../recovery/RecoveryPinInput';
+import { EscrowPinNotice } from '../../recovery/EscrowPinNotice';
 import { validatePin } from '@learncard/sss-key-manager';
 import {
     canSkipRequiredPin,
@@ -111,7 +112,7 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({
     };
 
     return (
-        <div className="relative z-10 max-w-[600px] mx-auto pt-[calc(var(--ion-safe-area-top,0px)+2.5rem)] px-4 w-full h-full flex flex-col justify-center items-center animate-pop-in pb-[calc(var(--ion-safe-area-bottom,0px)+1.5rem)] font-poppins">
+        <div className="relative z-10 max-w-[600px] mx-auto pt-[calc(var(--ion-safe-area-top,0px)+2.5rem)] px-4 w-full h-full flex flex-col justify-center-safe items-center animate-pop-in pb-[calc(var(--ion-safe-area-bottom,0px)+1.5rem)] font-poppins">
             <div className="w-full max-w-[360px] md:max-w-[440px] bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-white/50 p-8 md:px-12 md:py-10 flex flex-col items-center relative overflow-hidden">
                 <div className="w-16 h-16 mx-auto mb-6 bg-emerald-50 rounded-full flex items-center justify-center shadow-xs border border-emerald-100/50">
                     {step === 'success' ? (
@@ -183,9 +184,12 @@ export const RecoveryPinStep: React.FC<RecoveryPinStepProps> = ({
 
                 <div className="mt-6 w-full flex flex-col items-center gap-4">
                     {step === 'enter' && (
-                        <p className="text-xs text-grayscale-500 text-center">
-                            {m['onboarding.v2.pin.hint']()}
-                        </p>
+                        <div className="w-full max-w-[300px] mx-auto flex flex-col items-center gap-1.5">
+                            <p className="text-xs text-grayscale-500 leading-relaxed text-center text-balance">
+                                {m['onboarding.v2.pin.hint']()}
+                            </p>
+                            <EscrowPinNotice />
+                        </div>
                     )}
 
                     {step === 'confirm' && (
