@@ -973,6 +973,17 @@ export const ConsentFlowContractChangesValidator = z.object({
 export type ConsentFlowContractChanges = z.input<typeof ConsentFlowContractChangesValidator>;
 
 export const ConsentFlowContractDetailsValidator = z.object({
+    readableDeliveryRecipients: z
+        .array(
+            z.object({
+                profileId: z.string(),
+                displayName: z.string(),
+                agentDid: z.string(),
+                enabled: z.boolean(),
+                disclosureVersion: z.literal('1'),
+            })
+        )
+        .optional(),
     contract: ConsentFlowContractValidator,
     owner: LCNProfileValidator,
     name: z.string(),

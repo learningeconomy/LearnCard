@@ -2397,7 +2397,8 @@
             "email": "email",
             "profilePicture": "profile picture"
         },
-        "retryPublication": "Your sharing choices are saved. Try again to finish sending them."
+        "retryPublication": "Your sharing choices are saved. Try again to finish sending them.",
+        "readableDeliveryDisclosure": "LearnCard can read your selected information on behalf of {{organizations}}."
     },
     "recovery": {
         "cancel": {

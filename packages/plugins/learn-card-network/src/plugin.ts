@@ -2951,6 +2951,15 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.getConsentedDataForContract.query({ uri, ...options });
             },
 
+            createReadableDeliveryRecipient: async (_learnCard, input) => {
+                return client.readableDelivery.createRecipient.mutate(input);
+            },
+            disableReadableDelivery: async (_learnCard, profileId) => {
+                return client.readableDelivery.disable.mutate({ profileId });
+            },
+            getReadableDeliveryData: async (_learnCard, input) => {
+                return client.readableDelivery.read.mutate(input);
+            },
             getConsentFlowDataForDid: async (_learnCard, did, options = {}) => {
                 await ensureUser();
 

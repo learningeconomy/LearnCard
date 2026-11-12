@@ -1,4 +1,5 @@
 import { environment } from '@environment';
+import { getDeliveryDisclosures } from '@accesslayer/readable-delivery';
 import Fastify, { FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import _sodium from 'libsodium-wrappers';
@@ -325,6 +326,19 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         });
 
         finalDoc = normalizeDidDocument(finalDoc);
+
+        const [delivery] = await getDeliveryDisclosures([profileId], domain);
+        if (delivery?.enabled) {
+            finalDoc.service = [
+                ...(finalDoc.service ?? []),
+                {
+                    id: `${did}#readable-delivery`,
+                    type: 'LearnCardReadableDelivery',
+                    serviceEndpoint:
+                        'https://docs.learncard.com/understand/consentflow-overview/readable-delivery',
+                },
+            ];
+        }
 
         setDidDocForProfile(profileId, finalDoc);
 

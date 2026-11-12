@@ -14,6 +14,7 @@ import {
 } from '@accesslayer/consentflowcontract/relationships/smartResume';
 import { uploadSmartResume } from '@helpers/smartResume.helpers';
 import { TRPCError } from '@trpc/server';
+import { getDeliveryDisclosures } from '@accesslayer/readable-delivery';
 import { z } from 'zod';
 
 import { t, profileRoute, openRoute, guardianGatedRoute } from '@routes';
@@ -408,9 +409,17 @@ export const contractsRouter = t.router({
 
             const autoboosts = await getAutoBoostsForContract(result.contract.id, ctx.domain);
             const recipients = await getRecipientsForContract(result.contract.id);
+            const readableDeliveryRecipients = await getDeliveryDisclosures(
+                [
+                    result.contractOwner.profileId,
+                    ...recipients.map(recipient => recipient.profileId),
+                ],
+                ctx.domain
+            );
 
             return {
                 owner: updateDidForProfile(ctx.domain, result.contractOwner),
+                readableDeliveryRecipients,
                 contract: result.contract.contract,
                 name: result.contract.name,
                 subtitle: result.contract.subtitle,

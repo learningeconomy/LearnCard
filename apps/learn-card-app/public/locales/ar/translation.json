@@ -2355,7 +2355,8 @@
             "email": "البريد الإلكتروني",
             "profilePicture": "صورة الملف الشخصي"
         },
-        "retryPublication": "تم حفظ خيارات المشاركة. حاول مرة أخرى لإكمال إرسالها."
+        "retryPublication": "تم حفظ خيارات المشاركة. حاول مرة أخرى لإكمال إرسالها.",
+        "readableDeliveryDisclosure": "يمكن لـ LearnCard قراءة المعلومات التي تختارها نيابةً عن {{organizations}}."
     },
     "recovery": {
         "pin": {

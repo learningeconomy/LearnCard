@@ -2355,7 +2355,8 @@
             "email": "correo electrónico",
             "profilePicture": "foto de perfil"
         },
-        "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas."
+        "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas.",
+        "readableDeliveryDisclosure": "LearnCard puede leer la información que seleccionas en nombre de {{organizations}}."
     },
     "recovery": {
         "pin": {

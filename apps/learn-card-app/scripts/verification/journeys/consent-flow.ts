@@ -1,5 +1,10 @@
-import { randomBytes } from 'node:crypto';
-import { ConsentFlowContractDataForDidValidator, VCValidator } from '@learncard/types';
+import { randomBytes, randomUUID } from 'node:crypto';
+import {
+    ACT_AS_HEADER,
+    ConsentFlowContractDataForDidValidator,
+    ReadableDeliveryPageValidator,
+    VCValidator,
+} from '@learncard/types';
 
 import { readUserData } from '../../../../../docs/snippets/consentflow/read-user-data.mjs';
 import { issueThroughContract } from '../../../../../docs/snippets/consentflow/issue-through-contract.mjs';
@@ -18,6 +23,8 @@ export const consentFlowFeature: FeatureDefinition = {
         'consent-app-accept',
         'consent-partner-reads',
         'consent-partner-issues',
+        'consent-readable-delivery',
+        'consent-readable-delivery-revoked',
     ],
     run: async context => {
         const { issuer, learner } = context.actors;
@@ -52,10 +59,18 @@ export const consentFlowFeature: FeatureDefinition = {
             category: 'Achievement',
         });
 
+        const recipient = await partner.invoke.createReadableDeliveryRecipient({
+            requestId: randomUUID(),
+            displayName: `Readable Partner ${suffix}`,
+            acceptDelegatedAuthority: true,
+            disclosureVersion: '1',
+        });
+
         const contractUri = await context.step(null, 'consent-partner-contract', async () => {
             // Same terms as the docs create-contract snippet, without its external redirect.
             const uri = await partner.invoke.createContract({
                 name,
+                recipients: [recipient.profileId],
                 subtitle: 'Receive a verification badge',
                 description:
                     'Allow us to read your name and selected achievement, and send an achievement.',
@@ -71,6 +86,21 @@ export const consentFlowFeature: FeatureDefinition = {
                 },
             });
             expect(uri.startsWith(networkPrefix)).toBe(true);
+            const details = await partner.invoke.getContract(uri);
+            expect(details.readableDeliveryRecipients).toContainEqual({
+                profileId: recipient.profileId,
+                displayName: recipient.displayName,
+                agentDid: recipient.agentDid,
+                enabled: true,
+                disclosureVersion: '1',
+            });
+            expect(details.recipients?.map(profile => profile.did)).toContain(recipient.did);
+            const recipientDocument = await partner.invoke.resolveDid(recipient.did);
+            expect(
+                recipientDocument.service?.some(
+                    service => service.type === 'LearnCardReadableDelivery'
+                )
+            ).toBe(true);
             expect(await partner.invoke.verifyConsent(uri, learner.profileId)).toBe(false);
             return uri;
         });
@@ -112,6 +142,9 @@ export const consentFlowFeature: FeatureDefinition = {
             ).toBeVisible({
                 timeout: UI_TIMEOUT,
             });
+            await expect(dialog.getByTestId('readable-delivery-disclosure')).toContainText(
+                recipient.displayName
+            );
             await dialog.getByRole('button', { name: 'Privacy & Data', exact: true }).click();
             const privacy = page.getByTestId('consent-privacy-and-data');
             await expect(privacy).toBeVisible({ timeout: UI_TIMEOUT });
@@ -146,6 +179,15 @@ export const consentFlowFeature: FeatureDefinition = {
             await privacy.getByRole('button', { name: 'Back', exact: true }).click();
             await expect(privacy).toBeHidden();
             await dialog.getByRole('button', { name: 'Accept', exact: true }).click();
+            const audience = page.getByRole('dialog').filter({
+                has: page.getByRole('heading', {
+                    name: 'Review who receives your data',
+                    exact: true,
+                }),
+            });
+            await expect(audience).toBeVisible({ timeout: UI_TIMEOUT });
+            await expect(audience.getByText(recipient.displayName, { exact: true })).toBeVisible();
+            await audience.getByRole('button', { name: 'Confirm Sharing', exact: true }).click();
             await expect(dialog.getByRole('button', { name: 'Accept', exact: true })).toBeHidden({
                 timeout: UI_TIMEOUT,
             });
@@ -229,6 +271,87 @@ export const consentFlowFeature: FeatureDefinition = {
             expect(verification.errors).toEqual([]);
             expect(verification.checks).toContain('proof');
             return { uri, boostUri: delivered.boostId, proofChecks: verification.checks };
+        });
+
+        // Real bearer-token HTTP requests exercise scoped delegation and the public API.
+        // Tokens remain in this closure, never in observations or proof artifacts.
+        const tokenFor = async (scope: string): Promise<string> =>
+            partner.invoke.getAPITokenForAuthGrant(
+                await partner.invoke.addAuthGrant({
+                    name: 'Readable delivery verification',
+                    scope,
+                    actAs: recipient.profileId,
+                })
+            );
+        const readDelivery = (token: string, actAs = recipient.profileId): Promise<Response> =>
+            fetch(`${context.stack.brainApi}/readable-delivery/data`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    [ACT_AS_HEADER]: actAs,
+                },
+                body: JSON.stringify({ contractUri, did: learnerDid, limit: 1 }),
+            });
+        const token = await tokenFor('contracts-data:read contracts-data:decrypt');
+        await context.step(page, 'consent-readable-delivery', async () => {
+            const response = await readDelivery(token);
+            expect(response.status).toBe(200);
+            expect(response.headers.get('cache-control')).toContain('no-store');
+            const data = ReadableDeliveryPageValidator.parse(await response.json());
+            expect(data.records).toHaveLength(1);
+            expect(data.records[0]).toMatchObject({
+                uri: records.sharedUri,
+                status: 'readable',
+                credential: {
+                    name: achievementName,
+                    issuer: partner.id.did(),
+                    verification: { proof: 'not_checked', status: 'not_checked' },
+                },
+            });
+            expect(data.records[0]?.credential).not.toHaveProperty('credentialSubject');
+            expect(data.hasMore).toBe(false);
+            for (const scope of ['contracts-data:read', 'contracts-data:decrypt', '*:read']) {
+                expect((await readDelivery(await tokenFor(scope))).status).toBe(403);
+            }
+            expect((await readDelivery(token, learner.profileId)).status).toBe(403);
+            return {
+                records: data.records.length,
+                scopedAccess: 'enforced',
+                proof: data.records[0]?.credential?.verification.proof,
+            };
+        });
+        await context.step(page, 'consent-readable-delivery-revoked', async () => {
+            const consent = await partner.invoke.getConsentFlowDataForDid(learnerDid, {
+                query: { id: contractUri.split(':').at(-1) },
+            });
+            const termsUri = consent.records.find(
+                record => record.contractUri === contractUri
+            )?.termsUri;
+            expect(termsUri).toBeDefined();
+            const accepted = consent.records.find(record => record.termsUri === termsUri)!;
+            await learnerLc.invoke.withdrawConsent(termsUri!);
+            expect((await readDelivery(token)).status).toBe(403);
+            // Restore the same explicit selection before testing disablement independently.
+            const contract = await learnerLc.invoke.getContract(contractUri);
+            await learnerLc.invoke.consentToContract(contractUri, {
+                terms: accepted.terms,
+                audienceVersion: contract.audienceVersion ?? 0,
+            });
+            expect((await readDelivery(token)).status).toBe(200);
+            await partner.invoke.disableReadableDelivery(recipient.profileId);
+            expect((await readDelivery(token)).status).toBe(403);
+            // Fetch directly so a resolver's local DID cache cannot mask invalidation.
+            const documentResponse = await fetch(
+                `${new URL(context.stack.brain).origin}/users/${recipient.profileId}/did.json`
+            );
+            expect(documentResponse.status).toBe(200);
+            const document = (await documentResponse.json()) as { service?: { type?: string }[] };
+            expect(
+                document.service?.some(service => service.type === 'LearnCardReadableDelivery') ??
+                    false
+            ).toBe(false);
+            return { withdrawal: 'denied', disabled: 'denied' };
         });
 
         return {

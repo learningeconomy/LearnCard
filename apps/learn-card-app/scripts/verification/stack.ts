@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { closeSync, openSync } from 'node:fs';
 import { lstat, mkdir, readFile, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import { createServer, type Server } from 'node:net';
@@ -398,6 +398,15 @@ const composeConfiguration = async (state: StackState): Promise<Record<string, u
             delete environment.SMART_RESUME_CLIENT_ID;
             delete environment.SMART_RESUME_CONTRACT_URI;
             delete environment.SKILL_EMBEDDING_GOOGLE_API_KEY;
+            if (name === 'brain') {
+                Object.assign(environment, {
+                    READABLE_DELIVERY_ENABLED: 'true',
+                    READABLE_DELIVERY_LOCAL_KEY: randomBytes(32).toString('hex'),
+                    READABLE_DELIVERY_KMS_KEY_ARN: '',
+                    READABLE_DELIVERY_CLOUD_URL: `http://localhost:${state.ports.cloud}`,
+                    READABLE_DELIVERY_CLOUD_INTERNAL_URL: `http://cloud:${state.ports.cloud}`,
+                });
+            }
             if (name === 'api')
                 Object.assign(environment, {
                     DOMAIN_NAME: `localhost%3A${state.ports.api}`,
