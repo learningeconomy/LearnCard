@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Patch Changes
+
+- Keep authenticated AI chat startup running when optional credential/topic preloading fails. Show a localized, nonfatal warning instead of treating the missing suggestions as a failed session. Clear the warning on credential recovery or account/socket changes; ignore stale socket notifications. Credential verification, consent, and model-context privacy checks remain mandatory.
+
+
 ## 1.101.0
 
 ### Minor Changes
