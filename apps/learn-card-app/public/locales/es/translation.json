@@ -2356,7 +2356,7 @@
             "profilePicture": "foto de perfil"
         },
         "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas.",
-        "readableDeliveryDisclosure": "LearnCard ayuda a {{organizations}} a leer la información que compartes."
+        "readableDeliveryDisclosure": "LearnCard puede leer la información que seleccionas en nombre de {{organizations}}."
     },
     "recovery": {
         "pin": {

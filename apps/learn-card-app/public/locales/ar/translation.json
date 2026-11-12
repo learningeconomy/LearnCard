@@ -2356,7 +2356,7 @@
             "profilePicture": "صورة الملف الشخصي"
         },
         "retryPublication": "تم حفظ خيارات المشاركة. حاول مرة أخرى لإكمال إرسالها.",
-        "readableDeliveryDisclosure": "يساعد LearnCard {{organizations}} على قراءة المعلومات التي تشاركها معهم."
+        "readableDeliveryDisclosure": "يمكن لـ LearnCard قراءة المعلومات التي تختارها نيابةً عن {{organizations}}."
     },
     "recovery": {
         "pin": {

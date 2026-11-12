@@ -2356,7 +2356,7 @@
             "profilePicture": "photo de profil"
         },
         "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi.",
-        "readableDeliveryDisclosure": "LearnCard aide {{organizations}} à lire les informations que vous partagez."
+        "readableDeliveryDisclosure": "LearnCard peut lire les informations sélectionnées pour le compte de {{organizations}}."
     },
     "recovery": {
         "pin": {

@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
     managers: vi.fn(),
     grants: vi.fn(),
     read: vi.fn(),
+    encryptKey: vi.fn(),
+    generateKey: vi.fn(),
     decryptKey: vi.fn(),
     decrypt: vi.fn(),
     verify: vi.fn(),
@@ -23,12 +25,14 @@ const mocks = vi.hoisted(() => ({
         NEO4J_PASSWORD: 'synthetic',
     },
 }));
-vi.mock('@environment', async importOriginal => ({
-    environment: {
-        ...(await importOriginal<typeof import('@environment')>()).environment,
-        ...mocks.environment,
-    },
-}));
+vi.mock('@environment', async importOriginal => {
+    const defaults = (await importOriginal<typeof import('@environment')>()).environment;
+    return {
+        get environment() {
+            return { ...defaults, ...mocks.environment };
+        },
+    };
+});
 vi.mock('@accesslayer/readable-delivery', () => ({
     getDeliveryRecord: mocks.delivery,
     getDeliveryProvision: mocks.provision,
@@ -50,7 +54,7 @@ vi.mock('@helpers/readable-delivery-storage.helpers', () => ({
     readDeliveryCiphertext: mocks.read,
 }));
 vi.mock('@helpers/readable-delivery-keys.helpers', () => ({
-    createDeliveryKeyCustody: () => ({ decrypt: mocks.decryptKey }),
+    createDeliveryKeyCustody: () => ({ decrypt: mocks.decryptKey, encrypt: mocks.encryptKey }),
 }));
 vi.mock('@helpers/uri.helpers', () => ({
     getUriParts: (uri: string) => {
@@ -63,6 +67,7 @@ vi.mock('@helpers/learnCard.helpers', () => ({
     getEmptyLearnCard: async () => ({
         invoke: {
             keyToDid: () => 'did:key:agent',
+            generateEd25519KeyFromBytes: mocks.generateKey,
             decryptDagJwe: mocks.decrypt,
             verifyCredential: mocks.verify,
         },
@@ -70,7 +75,11 @@ vi.mock('@helpers/learnCard.helpers', () => ({
 }));
 vi.mock('@helpers/rateLimit.helpers', () => ({ enforceRateLimits: vi.fn() }));
 
-import { readReadableDelivery, isDeliveryConsentReadable } from './readable-delivery.helpers';
+import {
+    readReadableDelivery,
+    isDeliveryConsentReadable,
+    provisionReadableDelivery,
+} from './readable-delivery.helpers';
 import { readableDeliveryRouter } from '@routes/readable-delivery';
 
 const domain = 'network.example';
@@ -108,8 +117,10 @@ const vc = {
 };
 
 beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     mocks.environment.READABLE_DELIVERY_ENABLED = true;
+    mocks.generateKey.mockReturnValue({ kty: 'OKP', crv: 'Ed25519', x: 'public', d: 'private' });
+    mocks.encryptKey.mockResolvedValue({ provider: 'local-v1', ciphertext: 'encrypted-key' });
     mocks.delivery.mockResolvedValue({
         enabled: true,
         agentProfileId: 'agent',
@@ -128,6 +139,23 @@ beforeEach(() => {
 });
 
 describe('readable delivery authorization and projection', () => {
+    it('fails closed while the feature is disabled', async () => {
+        mocks.environment.READABLE_DELIVERY_ENABLED = false;
+        await expect(readReadableDelivery('recipient', domain, input)).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+        });
+        expect(mocks.decryptKey).not.toHaveBeenCalled();
+    });
+    it('rejects a malformed local DID that resolves to a different profile', async () => {
+        await expect(
+            readReadableDelivery('recipient', domain, {
+                ...input,
+                did: `did:web:${domain}:users:wrong:learner`,
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        expect(mocks.decryptKey).not.toHaveBeenCalled();
+    });
+
     it('returns a bounded projection, rechecks consent, and paginates', async () => {
         const result = await readReadableDelivery('recipient', domain, input);
         expect(result).toMatchObject({
@@ -219,6 +247,28 @@ describe('readable delivery authorization and projection', () => {
 });
 
 describe('readable API permission and audit boundary', () => {
+    it('audits a permitted read before releasing the projection', async () => {
+        const caller = readableDeliveryRouter.createCaller({
+            domain,
+            user: {
+                did: 'did:key:caller',
+                isChallengeValid: true,
+                scope: 'contracts-data:read contracts-data:decrypt',
+            },
+        } as Parameters<typeof readableDeliveryRouter.createCaller>[0]);
+        expect((await caller.read(input)).records[0]?.status).toBe('readable');
+        expect(mocks.audit.mock.calls).toEqual([
+            ['learner', 'learner', 'started'],
+            ['learner', 'learner', 'allowed', 1],
+        ]);
+        mocks.audit.mockImplementation(async (_actor, _recipient, result) => {
+            if (result === 'allowed') throw new Error('private audit detail');
+        });
+        await expect(caller.read(input)).rejects.toMatchObject({
+            message: 'Readable delivery is temporarily unavailable.',
+        });
+    });
+
     it.each(['contracts-data:read', 'contracts-data:decrypt', '*:read', ''])(
         'requires both permissions for scope %s',
         async scope => {
@@ -239,5 +289,55 @@ describe('readable API permission and audit boundary', () => {
         } as Parameters<typeof readableDeliveryRouter.createCaller>[0]);
         await expect(caller.read(input)).rejects.toThrow();
         expect(mocks.decryptKey).not.toHaveBeenCalled();
+    });
+});
+
+describe('readable recipient provisioning', () => {
+    const request = {
+        requestId: '12345678-1234-4234-8234-123456789012',
+        displayName: 'Example Organization',
+        acceptDelegatedAuthority: true as const,
+        disclosureVersion: '1' as const,
+    };
+    it('stores only an encrypted envelope and creates a fresh recipient', async () => {
+        const result = await provisionReadableDelivery('owner', domain, request);
+        expect(result.profileId).toMatch(/^readable-/);
+        expect(mocks.create).toHaveBeenCalledOnce();
+        const stored = mocks.create.mock.calls[0]?.[0];
+        expect(stored).toMatchObject({
+            ownerProfileId: 'owner',
+            domain,
+            provider: 'local-v1',
+            ciphertext: 'encrypted-key',
+            enabled: true,
+        });
+        expect(JSON.stringify(stored)).not.toContain('private');
+        expect(result).not.toHaveProperty('ciphertext');
+    });
+    it('reuses the same provision request and rejects a mismatched retry', async () => {
+        mocks.provision.mockResolvedValue({
+            ownerProfileId: 'owner',
+            domain,
+            profileId: 'existing',
+            agentDid: 'did:key:agent',
+            displayName: request.displayName,
+            enabled: true,
+        });
+        expect((await provisionReadableDelivery('owner', domain, request)).profileId).toBe(
+            'existing'
+        );
+        expect(mocks.encryptKey).not.toHaveBeenCalled();
+        await expect(
+            provisionReadableDelivery('owner', domain, { ...request, displayName: 'Different' })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        expect(mocks.create).not.toHaveBeenCalled();
+    });
+    it('does not create a recipient if key custody fails', async () => {
+        mocks.encryptKey.mockRejectedValue(new Error('private detail'));
+        await expect(provisionReadableDelivery('owner', domain, request)).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+            message: 'Readable delivery is unavailable.',
+        });
+        expect(mocks.create).not.toHaveBeenCalled();
     });
 });
