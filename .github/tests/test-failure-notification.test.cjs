@@ -109,7 +109,14 @@ test('only failed or timed-out main runs notify; no checkout or extra token acce
 test('real workflow examples preserve main alerts without creating PR/queue notification runs', () => {
     const createsRun = (name, branch) =>
         subscription.workflows.includes(name) && subscription.branches.includes(branch);
-    for (const file of ['deploy.yml', 'codeql.yml', 'test.yml', 'e2e.yml', 'keycloak-drift.yml']) {
+    for (const file of [
+        'deploy.yml',
+        'capgo-recovery.yml',
+        'codeql.yml',
+        'test.yml',
+        'e2e.yml',
+        'keycloak-drift.yml',
+    ]) {
         const name = workflows[file].name;
         assert.equal(createsRun(name, 'main'), true, file);
         assert.equal(createsRun(name, 'feature/example'), false, file);
