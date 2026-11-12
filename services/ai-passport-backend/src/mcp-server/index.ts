@@ -5,6 +5,12 @@ export const startMcpServer = async () => {
     configureProductionLogging();
 
     validateBackendEnvironment();
+    // Start the shared LearnCard init now, alongside the dependency checks below,
+    // so the first MCP tool call after a cold start doesn't wait for it. Best
+    // effort: it never fails or delays startup, and a failure isn't cached.
+    void import('../learncard')
+        .then(({ getLearnCard }) => getLearnCard.warm())
+        .catch(() => undefined);
     // SDK and database imports must not run before logging has been restricted.
     const { initializeInstrumentation } = await import('./instrument');
     initializeInstrumentation();
