@@ -1,6 +1,6 @@
 {
     "name": "@learncard/dynamic-loader-plugin",
-    "version": "1.1.44",
+    "version": "1.1.45",
     "description": "Resolves JSON-LD contexts at runtime by fetching them.",
     "type": "module",
     "main": "./dist/index.cjs",
