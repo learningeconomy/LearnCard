@@ -10517,6 +10517,7 @@
         "required": "Obligatorio",
         "notShared": "No se comparte",
         "metadataIncluded": "También se incluyen el emisor y el tipo de credencial.",
+        "metadataWithStatusIncluded": "También se incluyen el emisor, el tipo de credencial y la información de estado.",
         "credentialDetails": "Detalles de la credencial",
         "issuer": "Emisor",
         "credentialType": "Tipo de credencial",

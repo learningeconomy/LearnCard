@@ -1,6 +1,5 @@
-import type { VerificationCheck } from '@learncard/types';
 import type { DidDocument } from '@learncard/types';
-import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
+import { SDJwtInstance } from '@sd-jwt/core';
 import type { JWK } from 'jose';
 import { base64url } from 'jose';
 import { base58 } from '@scure/base';
@@ -8,6 +7,7 @@ import { base58 } from '@scure/base';
 import { sha256Hasher } from './hasher';
 import { randomSalt } from './salt';
 import { createJoseVerifier } from './signer';
+import { checkTokenStatusList } from './status';
 import { parseSdJwtVc } from './parse';
 import {
     CLOCK_SKEW_MS,
@@ -15,6 +15,7 @@ import {
     type ParsedSdJwtVc,
     type SdJwtVcDependentLearnCard,
     type VerifySdJwtVcOptions,
+    type SdJwtVcVerificationCheck,
 } from './types';
 
 interface VerificationMethod {
@@ -200,7 +201,7 @@ export const verifySdJwtVc = async (
     learnCard: SdJwtVcDependentLearnCard,
     compact: string,
     options: VerifySdJwtVcOptions = {}
-): Promise<VerificationCheck> => {
+): Promise<SdJwtVcVerificationCheck> => {
     const checks: string[] = [];
     const warnings: string[] = [];
     const errors: string[] = [];
@@ -233,7 +234,10 @@ export const verifySdJwtVc = async (
     }
 
     const { verifier, getLastError } = await createJoseVerifier(issuerJwk, issuerAlg);
-    const instance = new SDJwtVcInstance({
+    // The VC subclass fetches status implicitly inside verify(), before our
+    // expiration checks, and conflates transport failures with bad signatures.
+    // Verify the SD-JWT first, then apply the explicit bounded status policy.
+    const instance = new SDJwtInstance({
         hasher: sha256Hasher,
         hashAlg: 'sha-256',
         saltGenerator: randomSalt,
@@ -264,8 +268,33 @@ export const verifySdJwtVc = async (
         checks.push('expiration');
     }
 
-    if (!options.skipStatusCheck && parsed.rawPayload.status !== undefined) {
-        warnings.push('status_check_deferred: Token Status List checking lands in Slice 4');
+    if (errors.length === 0 && parsed.claims.status !== undefined) {
+        if (options.skipStatusCheck) {
+            warnings.push('status_check_skipped: Credential status was not checked');
+        } else {
+            try {
+                // A status reference must be part of the issuer JWT, not an
+                // optional disclosure a presenter can omit.
+                if (parsed.rawPayload.status === undefined)
+                    throw new Error('Selectively disclosed status is unsupported');
+                const statusList = await checkTokenStatusList(
+                    parsed.rawPayload.status,
+                    parsed.issuer,
+                    issuerAlg,
+                    verifier,
+                    options.now ?? (() => new Date())
+                );
+                checks.push('credential_status');
+                if (statusList.value === 1) errors.push('status_revoked: Credential revoked');
+                else if (statusList.value === 2)
+                    errors.push('status_suspended: Credential suspended');
+                else if (statusList.value !== 0)
+                    errors.push('status_unsupported: Unsupported credential status');
+                return { checks, warnings, errors, statusList };
+            } catch {
+                errors.push('status_check_failed: Credential status unavailable or invalid');
+            }
+        }
     }
 
     return { checks, warnings, errors };

@@ -110,6 +110,32 @@ describe('shared consent on the native transport', () => {
         onCancel: vi.fn(),
     });
 
+    it('explains included status metadata without rendering its tracking reference as a requested field', async () => {
+        initWallet.mockImplementationOnce(async () => ({
+            invoke: {
+                parseSdJwtVc: async () => ({
+                    disclosureKeys: ['course_name'],
+                    claims: { course_name: 'Test course', learner_name: 'Not requested' },
+                    issuer: 'did:key:test-issuer',
+                    vct: 'https://example.test/course-completion',
+                    rawPayload: {
+                        status: {
+                            status_list: {
+                                uri: 'https://status.example.test/private-reference',
+                                idx: 987654,
+                            },
+                        },
+                    },
+                }),
+            },
+        }));
+        render(<RequestConsent {...nativeProps()} />);
+        await screen.findByText(
+            'The issuer, credential type and status information are also included.'
+        );
+        expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+        expect(screen.queryByText(/private-reference|987654/)).not.toBeInTheDocument();
+    });
     it.each(['constructor', 'toString', 'hasOwnProperty', '__proto__'])(
         'approves the selected native credential for a valid query ID %s',
         async queryId => {

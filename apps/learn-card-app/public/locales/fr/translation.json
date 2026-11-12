@@ -10517,6 +10517,7 @@
         "required": "Obligatoire",
         "notShared": "Non partagé",
         "metadataIncluded": "L’émetteur et le type de justificatif sont également inclus.",
+        "metadataWithStatusIncluded": "L’émetteur, le type d’attestation et les informations de statut sont également inclus.",
         "credentialDetails": "Détails du justificatif",
         "issuer": "Émetteur",
         "credentialType": "Type de justificatif",

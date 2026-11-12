@@ -60,6 +60,17 @@ export interface VerifySdJwtVcOptions {
     skipStatusCheck?: boolean;
 }
 
+/** Authenticated token status, with a bounded local freshness deadline (milliseconds). */
+export interface TokenStatusListResult {
+    value: number;
+    checkedAt: number;
+    validUntil: number;
+}
+
+export type SdJwtVcVerificationCheck = VerificationCheck & {
+    statusList?: TokenStatusListResult;
+};
+
 export type SdJwtVcErrorCode =
     | 'invalid_compact_form'
     | 'invalid_jwt'
@@ -81,6 +92,9 @@ export type SdJwtVcErrorCode =
     | 'nonce_mismatch'
     | 'vct_mismatch'
     | 'status_check_failed'
+    | 'status_revoked'
+    | 'status_suspended'
+    | 'status_unsupported'
     | 'kb_jwt_invalid'
     | 'presentation_verification_failed'
     | 'key_binding_mismatch'
@@ -109,7 +123,10 @@ export type SdJwtVcDependentLearnCard = LearnCard<any, 'id', SdJwtVcPluginDepend
 export type SdJwtVcPluginMethods = VerifyExtension & {
     parseSdJwtVc: (compact: string) => Promise<ParsedSdJwtVc>;
 
-    verifySdJwtVc: (compact: string, options?: VerifySdJwtVcOptions) => Promise<VerificationCheck>;
+    verifySdJwtVc: (
+        compact: string,
+        options?: VerifySdJwtVcOptions
+    ) => Promise<SdJwtVcVerificationCheck>;
 
     decodeSdJwtClaims: (compact: string) => Promise<Record<string, unknown>>;
 

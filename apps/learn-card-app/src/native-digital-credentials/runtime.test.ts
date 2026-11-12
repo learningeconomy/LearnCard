@@ -76,6 +76,38 @@ const setup = () => {
 };
 
 describe('native registration replacement', () => {
+    it('returns a status refresh deadline after suspension clears every registry entry', async () => {
+        const { wallet, expire } = setup();
+        const parsed = await wallet.invoke.parseSdJwtVc('jwt~course');
+        vi.mocked(wallet.invoke.parseSdJwtVc).mockResolvedValue({
+            ...parsed,
+            rawPayload: {
+                status: { status_list: { uri: 'https://issuer.example.test/status', idx: 0 } },
+            },
+        });
+        let value = 0;
+        vi.mocked(wallet.invoke.verifySdJwtVc).mockImplementation(async () => ({
+            checks: ['issuer_signature', 'credential_status'],
+            warnings: [],
+            errors: value ? ['status_suspended: suspended'] : [],
+            statusList: { value, checkedAt: Date.now(), validUntil: Date.now() + 1000 },
+        }));
+        expect(
+            (await synchronizeNativeInventory(wallet, () => true, 'Credential')).nextRefreshAt
+        ).toBe(2000);
+        expect(native.ids).toHaveLength(1);
+        expire();
+        value = 2;
+        const suspended = await synchronizeNativeInventory(wallet, () => true, 'Credential');
+        expect(native.ids).toEqual([]);
+        expect(native.stored?.entries).toEqual([]);
+        expect(suspended.nextRefreshAt).toBe(Date.now() + 1000);
+        expire();
+        value = 0;
+        await synchronizeNativeInventory(wallet, () => true, 'Credential');
+        expect(native.ids).toHaveLength(1);
+    });
+
     it.each([false, true])(
         'serializes overlapping refreshes and applies the newest inventory (first rejects: %s)',
         async firstRejects => {

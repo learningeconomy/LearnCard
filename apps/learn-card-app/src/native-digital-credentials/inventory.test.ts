@@ -46,7 +46,85 @@ const setup = (count = 1) => {
 };
 
 describe('native registry inventory reconciliation', () => {
-    it.each(['status', 'credentialStatus'])(
+    it('requires authenticated status instead of trusting an unchecked SDK result', async () => {
+        const { wallet, parsed } = setup();
+        parsed.rawPayload.status = {
+            status_list: { uri: 'https://issuer.example.test/status', idx: 0 },
+        };
+        const result = await buildAccountInventory(wallet, undefined, 'Credential');
+        expect(result.entries).toEqual([]);
+        expect(result.retryRequired).toBe(true);
+        expect(wallet.invoke.verifySdJwtVc).toHaveBeenCalled();
+    });
+
+    it('refreshes valid → suspended → valid → revoked and schedules recovery with no registered entries', async () => {
+        const { wallet, parsed } = setup();
+        parsed.rawPayload.status = {
+            status_list: { uri: 'https://issuer.example.test/status', idx: 0 },
+        };
+        let time = 1000;
+        const cache = new Map<string, InventoryCacheEntry>();
+        let previous;
+        for (const value of [0, 2, 0, 1]) {
+            vi.mocked(wallet.invoke.verifySdJwtVc).mockResolvedValue({
+                checks: ['issuer_signature', 'credential_status'],
+                warnings: [],
+                errors:
+                    value === 0
+                        ? []
+                        : [value === 1 ? 'status_revoked: revoked' : 'status_suspended: suspended'],
+                statusList: { value, checkedAt: time, validUntil: time + 1000 },
+            });
+            const result = await buildAccountInventory(wallet, previous, 'Credential', {
+                cache,
+                now: () => time,
+            });
+            expect(result.entries).toHaveLength(value === 0 ? 1 : 0);
+            expect(result.nextRefreshAt).toBe(time + 1000);
+            expect(result.retryRequired).toBe(false);
+            previous = result;
+            time += 1000;
+        }
+        expect(wallet.read.get).toHaveBeenCalledTimes(4);
+    });
+
+    it('retains an indexed entry during a temporary status failure, then removes confirmed suspension', async () => {
+        const { wallet, parsed } = setup();
+        parsed.rawPayload.status = {
+            status_list: { uri: 'https://issuer.example.test/status', idx: 0 },
+        };
+        vi.mocked(wallet.invoke.verifySdJwtVc).mockResolvedValue({
+            checks: ['issuer_signature', 'credential_status'],
+            warnings: [],
+            errors: [],
+            statusList: { value: 0, checkedAt: 1000, validUntil: 2000 },
+        });
+        const initial = await buildAccountInventory(wallet, undefined, 'Credential', {
+            now: () => 1000,
+        });
+        vi.mocked(wallet.invoke.verifySdJwtVc).mockResolvedValue({
+            checks: ['issuer_signature'],
+            warnings: [],
+            errors: ['status_check_failed: offline'],
+        });
+        const unavailable = await buildAccountInventory(wallet, initial, 'Credential', {
+            now: () => 2000,
+        });
+        expect(unavailable.entries).toEqual(initial.entries);
+        expect(unavailable.retryRequired).toBe(true);
+        vi.mocked(wallet.invoke.verifySdJwtVc).mockResolvedValue({
+            checks: ['issuer_signature', 'credential_status'],
+            warnings: [],
+            errors: ['status_suspended: suspended'],
+            statusList: { value: 2, checkedAt: 3000, validUntil: 4000 },
+        });
+        expect(
+            (await buildAccountInventory(wallet, unavailable, 'Credential', { now: () => 3000 }))
+                .entries
+        ).toEqual([]);
+    });
+
+    it.each(['credentialStatus'])(
         'excludes unsupported %s instead of treating deferred revocation checks as success',
         async status => {
             const { wallet, parsed } = setup();

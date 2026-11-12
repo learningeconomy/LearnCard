@@ -36,6 +36,8 @@ interface ParsedSdJwtForConsent {
     issuer?: string;
     vct?: string;
     expiresAt?: Date;
+    /** Mandatory metadata is separate from fields the learner can select. */
+    rawPayload?: { status?: unknown };
 }
 
 interface SdJwtAwareInvoke {
@@ -345,6 +347,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                         issuer: parsed?.issuer,
                         credentialType: parsed?.vct,
                         expires: parsed?.expiresAt?.toLocaleDateString(),
+                        hasStatus: parsed?.rawPayload?.status !== undefined,
                         available: Boolean(candidate),
                         loading: Boolean(
                             sdJwtStatuses[row.id]?.isSdJwt && !sdJwtStatuses[row.id]?.isReady
