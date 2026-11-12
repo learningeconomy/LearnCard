@@ -5,9 +5,12 @@ import {
     forgetVerifiedCredential,
     getVerifiedCredential,
     isCredentialItemFailure,
+    knownBadCredentialKind,
     logCredentialBatch,
     logCredentialSkip,
     markCredentialItemFailure,
+    markCredentialReadFailure,
+    isCredentialReadFailure,
     recordCredentialOutcome,
     rememberVerifiedCredential,
     settleCredentialBatch,
@@ -16,8 +19,11 @@ import {
 import {
     boundLearnCardCall,
     getLearnCardRequestSignal,
+    learnCardStoresDeferred,
+    oncePerLearnCardRequest,
     runWithLearnCardRequestScope,
 } from '../learncard/requestScope';
+import { deferCredentialStore } from './store-queue';
 import {
     withAiInsightStage,
     withAiInsightResolutionOperation,
@@ -26,6 +32,7 @@ import {
 import type { DBCredentialRecord } from '../db';
 import { getLearnCard } from '../learncard';
 import { db } from '../db';
+import { isRetryableSourceCleanupError } from '../db/source-cleanup';
 
 import { aiCall, generateCredentialEmbeddingTexts } from '../ai';
 import { classifyFileContent } from '../helpers/file.helpers';
@@ -57,6 +64,7 @@ import { CREDENTIAL_PRELOAD_CONCURRENCY, FORMATTING_MODEL } from '../constants/e
 import { AI_INSIGHT_CREDENTIAL_TYPE } from '../constants/vc';
 import { DataErasureRequestedError } from '../services/dataErasure';
 import { isDataErasureRequested, assertOwnerOperationActive } from '../services/dataErasure';
+import * as ownerOperations from '../services/dataErasure';
 
 import { Source, Alignment, Evidence } from '../helpers/credential.helpers';
 
@@ -77,8 +85,10 @@ import {
 } from './projection';
 import {
     AiConsentError,
+    consentAuthorizationKey,
     getActiveAiConsentReceipt,
     loadActiveAiConsentData,
+    sameConsentAuthorization,
     type ActiveAiConsentRecord,
     type ActiveAiConsentReceipt,
 } from '../learncard/consent';
@@ -182,6 +192,20 @@ const extractConsentFlowCredentialRefs = (record: ActiveAiConsentRecord) => {
         .map(ref => ({ ...ref, consent }));
 };
 
+/**
+ * Where each shared credential lives, from one consent read: built once per
+ * request so each credential does not rescan every record.
+ */
+export const consentCredentialLocations = (
+    records: readonly ActiveAiConsentRecord[]
+): Map<string, ConsentFlowCredentialLocation> => {
+    const locations = new Map<string, ConsentFlowCredentialLocation>();
+    for (const ref of records.flatMap(record => extractConsentFlowCredentialRefs(record)))
+        if (!locations.has(ref.uri))
+            locations.set(ref.uri, { uri: ref.uri, category: ref.category });
+    return locations;
+};
+
 export const storeCredentialEmbeddings = async (
     credential: DBCredentialRecord,
     did: string,
@@ -238,6 +262,9 @@ const requireCredentialOwner = (did: string): void => {
         throw new AiConsentError('Authenticated AI subject mismatch');
 };
 
+/** The request's authenticated AI subject owns `did`'s credentials. */
+export const assertCredentialScope = (did: string): void => requireCredentialOwner(did);
+
 export const assertCredentialConsent = async (
     did: string,
     uri: string,
@@ -259,19 +286,68 @@ export const assertCredentialConsent = async (
             throw new AiConsentError('Credential consent changed');
     });
 
+// A queued store runs after the request, outside its consent read: read the
+// contract live when it runs and compare the authorization, as the prompt-cache
+// persist does, so a withdrawal before the write blocks it.
+const assertLiveCredentialConsent = async (
+    did: string,
+    uri: string,
+    expected: ActiveAiConsentReceipt
+): Promise<void> => {
+    requireCredentialOwner(did);
+    const { receipt } = await loadActiveAiConsentData(await getLearnCard(), did, expected.purpose, {
+        fresh: true,
+    });
+    if (!sameConsentAuthorization(receipt, expected) || !receipt.credentialUris.includes(uri))
+        throw new AiConsentError('Credential consent changed');
+};
+
 // Insight inputs share one live contract snapshot. Local guards preserve owner,
 // revision and URI membership during reads/queued writes without remote fanout.
+/*
+ * The owner-operation fence (a Redis script) once per FENCE_REUSE_MS per owner
+ * operation, shared by every credential in flight, instead of 4-5 times per
+ * credential. The operation's own signal is still checked on every call (the
+ * heartbeat aborts it when erasure is requested), and withOwnerOperation runs
+ * a live fence before it returns anything, so nothing is published after an
+ * erasure request; at most FENCE_REUSE_MS more reads can start.
+ */
+const FENCE_REUSE_MS = 1_000;
+const recentFences = new Map<string, { at: number; check: Promise<void> }>();
+
+const fenceOwnerOperation = async (did: string): Promise<void> => {
+    const current =
+        typeof ownerOperations.getCurrentOwnerOperation === 'function'
+            ? ownerOperations.getCurrentOwnerOperation()
+            : undefined;
+    if (!current || current.did !== did) return assertOwnerOperationActive(did);
+    current.signal.throwIfAborted();
+    const now = performance.now();
+    const recent = recentFences.get(current.token);
+    if (recent && now - recent.at <= FENCE_REUSE_MS) return recent.check;
+    const check = assertOwnerOperationActive(did);
+    const entry = { at: now, check };
+    recentFences.set(current.token, entry);
+    check.catch(() => {
+        if (recentFences.get(current.token) === entry) recentFences.delete(current.token);
+    });
+    if (recentFences.size > 1_000)
+        for (const [token, fence] of recentFences)
+            if (now - fence.at > FENCE_REUSE_MS) recentFences.delete(token);
+    return check;
+};
+
 const assertCredentialSnapshot = async (
     did: string,
     uri: string,
     expected: ActiveAiConsentReceipt
 ): Promise<void> => {
     requireCredentialOwner(did);
-    await assertOwnerOperationActive(did);
+    await fenceOwnerOperation(did);
     if (
         !expected.credentialUris.includes(uri) ||
         !getCurrentAiCredentialUris().includes(uri) ||
-        !bindAiConsentRevision(did, expected.revision)
+        !bindAiConsentRevision(did, consentAuthorizationKey(expected))
     )
         throw new AiConsentError('Credential is outside the consent snapshot');
 };
@@ -324,13 +400,56 @@ const learnCardCallTimeoutMs = (): number => {
     return Number.isInteger(parsed) && parsed > 0 ? parsed : 5_000;
 };
 
+export type CredentialReadOptions = {
+    /** This read's own timeout; defaults to LEARNCARD_CALL_TIMEOUT_MS. */
+    readTimeoutMs?: number;
+    /**
+     * The credential's location from the request's one consent read. When set,
+     * scope, consent and the URI list were resolved once for the request, and
+     * the per-credential checks use that bound snapshot (owner, operation fence,
+     * URI membership, revision) instead of re-reading consent. The fresh
+     * consent reads at the publication boundaries stay with the caller.
+     */
+    location?: ConsentFlowCredentialLocation;
+};
+
+/*
+ * One credential read, bounded by its own timeout. A timeout or fetch error is
+ * this credential's skippable failure (credential_read_timeout or
+ * credential_read_failed). The request's own abort or deadline is not: it is
+ * rethrown untouched, so the shared abort reason is never labelled as one
+ * credential's read failure.
+ */
+const readCredential = async (
+    learnCard: Awaited<ReturnType<typeof getLearnCard>>,
+    uri: string,
+    timeoutMs: number
+): Promise<VC | undefined> => {
+    try {
+        return (await withAiInsightResolutionOperation('read', () =>
+            boundLearnCardCall(learnCard.read.get(uri), { timeoutMs })
+        )) as VC | undefined;
+    } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') throw error;
+        if (getLearnCardRequestSignal()?.aborted) throw error;
+        const timedOut = error instanceof Error && error.name === 'TimeoutError';
+        // A non-object rejection is an unknown failure: fail closed, unmarked.
+        if (error === null || typeof error !== 'object') throw error;
+        throw markCredentialReadFailure(
+            error,
+            timedOut ? 'credential_read_timeout' : 'credential_read_failed'
+        );
+    }
+};
+
 const resolveCredential = async (
     did: string,
     ref: ConsentFlowCredentialRef,
-    insightEligibility = false
+    insightEligibility = false,
+    options: CredentialReadOptions = {}
 ): Promise<ResolvedConsentFlowCredential> => {
     const assertScope = () =>
-        insightEligibility
+        insightEligibility || options.location
             ? assertCredentialSnapshot(did, ref.uri, ref.consent)
             : assertCredentialConsent(did, ref.uri, ref.consent);
     await assertScope();
@@ -338,24 +457,16 @@ const resolveCredential = async (
     // Do not substitute Zod's parsed copy for the signed original.
     // The SDK read and verify take no signal; bound both by the request scope's
     // signal and LEARNCARD_CALL_TIMEOUT_MS so a hung call cannot hold the caller.
-    let credential: VC;
-    try {
-        credential = (await withAiInsightResolutionOperation('read', () =>
-            boundLearnCardCall(learnCard.read.get(ref.uri), {
-                timeoutMs: learnCardCallTimeoutMs(),
-            })
-        )) as VC;
-    } catch (error) {
-        /* A failed read is this credential's failure, unless the caller aborted. */
-        throw error instanceof Error && error.name === 'AbortError'
-            ? error
-            : markCredentialItemFailure(error);
-    }
+    const credential = await readCredential(
+        learnCard,
+        ref.uri,
+        options.readTimeoutMs ?? learnCardCallTimeoutMs()
+    );
     // SDK reads may hide validation/decryption/network failures as no result.
     // Missing data cannot establish invalidity or justify deleting retained records.
     if (!credential) {
         if (insightEligibility) throw new ExcludedInsightInput('unreadable_input');
-        throw new CredentialVerificationUnavailableError('read_empty');
+        throw markCredentialReadFailure(new CredentialVerificationUnavailableError('read_empty'));
     }
     if (insightEligibility && hasKnownUnsupportedInsightSuite(credential))
         throw new ExcludedInsightInput('unsupported_cryptosuite');
@@ -396,11 +507,26 @@ const resolveCredential = async (
                       ? 'malformed_input'
                       : 'verification_failed'
             );
-        await Promise.all([
-            db.deleteVCsByUris(did, [ref.uri]),
-            db.removeThreadCredentialsByUris(did, [ref.uri]),
-        ]);
-        await db.storeCredentialVerification(did, verification);
+        const cleanUpInvalid = async () => {
+            try {
+                await Promise.all([
+                    // Queue fencing but do not await Qdrant recovery here. The MCP
+                    // read path used to wait for up to 32 unbounded cleanup units
+                    // after a confirmed-invalid verify, which hung the tool past
+                    // the client deadline once a busy lease no longer failed fast.
+                    db.deleteVCsByUris(did, [ref.uri], { awaitCleanup: false }),
+                    db.removeThreadCredentialsByUris(did, [ref.uri]),
+                ]);
+            } catch (error) {
+                // Mongo already queued cleanup and may have removed retained rows.
+                // A contended or unfinished fence must not fail chat or MCP reads.
+                if (!isRetryableSourceCleanupError(error)) throw error;
+            }
+            await db.storeCredentialVerification(did, verification);
+        };
+        // MCP reads skip the credential now and clean up in the background.
+        if (learnCardStoresDeferred()) deferCredentialStore(did, cleanUpInvalid);
+        else await cleanUpInvalid();
         throw markCredentialItemFailure(new InvalidCredentialError(), 'credential_invalid');
     }
     let projection: ModelSafeCredentialProjection;
@@ -419,20 +545,31 @@ const resolveCredential = async (
     }
     await assertScope();
     const recheckConsent = assertScope;
-    await withAiInsightResolutionOperation('store_verification', () =>
-        db.storeCredentialVerification(did, verification, recheckConsent)
-    );
-    await withAiInsightResolutionOperation('store_raw', () =>
-        db.storeRawCredential(
-            did,
-            {
-                uri: ref.uri,
-                contentHash: verification.contentHash,
-                rawCredentialJson: JSON.stringify(credential),
-            },
-            recheckConsent
-        )
-    );
+    const store = async () => {
+        await withAiInsightResolutionOperation('store_verification', () =>
+            db.storeCredentialVerification(did, verification, recheckConsent)
+        );
+        await withAiInsightResolutionOperation('store_raw', () =>
+            db.storeRawCredential(
+                did,
+                {
+                    uri: ref.uri,
+                    contentHash: verification.contentHash,
+                    rawCredentialJson: JSON.stringify(credential),
+                },
+                recheckConsent
+            )
+        );
+    };
+    // MCP reads never wait on store (~2s per credential in prod): the
+    // projection is ready, so the write runs in the background queue, holds an
+    // owner operation, and reads consent live first.
+    if (learnCardStoresDeferred())
+        deferCredentialStore(did, async () => {
+            await assertLiveCredentialConsent(did, ref.uri, ref.consent);
+            await store();
+        });
+    else await store();
     await assertScope();
     return { ...ref, credential, verification, projection };
 };
@@ -464,11 +601,12 @@ const resolveEligibleInsightCredential = async (
 
 const resolveVerifiedCredential = (
     did: string,
-    ref: ConsentFlowCredentialRef
+    ref: ConsentFlowCredentialRef,
+    options: CredentialReadOptions = {}
 ): Promise<ResolvedConsentFlowCredential> =>
     withAiInsightStage('credential_resolution', async () => {
         try {
-            const resolved = await resolveCredential(did, ref);
+            const resolved = await resolveCredential(did, ref, false, options);
             recordCredentialOutcome(did, ref.uri);
             // The chat context and the preload reuse this until the TTL or the
             // revision changes.
@@ -482,17 +620,27 @@ const resolveVerifiedCredential = (
         }
     });
 
-export const resolveVerifiedCredentialProjection = async (
+export const MAX_PROJECTION_ATTEMPTS = 3;
+
+/* A source-cleanup race restarts the projection. A failed read is that
+ * credential's skip; re-reading it would only spend the budget its siblings
+ * need. */
+const shouldRestartProjection = (error: unknown): boolean =>
+    !isCredentialReadFailure(error) && isRetryableSourceCleanupError(error);
+
+/* Per-credential scope, consent read and URI lookup, for callers that did
+ * not resolve them once for the whole request. */
+const resolveCredentialLocation = async (
     did: string,
     uri: string,
     receipt: ActiveAiConsentReceipt
-): Promise<ModelSafeCredentialProjection> => {
+): Promise<ConsentFlowCredentialLocation> => {
     requireCredentialOwner(did);
     const { records, receipt: current } = await loadActiveAiConsentData(
         await getLearnCard(),
         did,
         receipt.purpose,
-        { expectedRevision: receipt.revision }
+        { expectedRevision: consentAuthorizationKey(receipt) }
     );
     if (
         current.revision !== receipt.revision ||
@@ -500,23 +648,95 @@ export const resolveVerifiedCredentialProjection = async (
         !current.credentialUris.includes(uri)
     )
         throw new AiConsentError('Credential consent changed');
-    const location = records
+    const found = records
         .flatMap(record => extractConsentFlowCredentialRefs(record))
         .find(ref => ref.uri === uri);
-    if (!location) throw new AiConsentError('Credential is not shared');
+    if (!found) throw new AiConsentError('Credential is not shared');
+    return found;
+};
+
+const resolveVerifiedCredentialProjectionOnce = async (
+    did: string,
+    uri: string,
+    receipt: ActiveAiConsentReceipt,
+    options: CredentialReadOptions
+): Promise<ModelSafeCredentialProjection> => {
+    const prepared = options.location;
+    let location: ConsentFlowCredentialLocation;
+    if (prepared) {
+        // Scope, consent and the URI list were resolved once for this request.
+        requireCredentialOwner(did);
+        if (prepared.uri !== uri || !receipt.credentialUris.includes(uri))
+            throw new AiConsentError('Credential is not shared');
+        location = prepared;
+    } else {
+        location = await resolveCredentialLocation(did, uri, receipt);
+    }
     // A recent verification under this same consent revision skips the read
-    // and verify; consent is still checked above and below.
+    // and verify; consent is still checked above and below. A known-bad URI
+    // is not re-read or re-verified.
+    const knownBad = knownBadCredentialKind(did, uri);
+    if (knownBad === 'invalid') {
+        throw markCredentialItemFailure(new InvalidCredentialError(), 'credential_invalid');
+    }
+    if (knownBad === 'unverifiable') {
+        throw new CredentialVerificationUnavailableError(
+            'unrecognized_verifier_error',
+            'undefined_jsonld_term'
+        );
+    }
     const projection =
         getVerifiedCredential<ResolvedConsentFlowCredential>(did, uri, receipt.revision)
             ?.projection ??
         (
-            await resolveVerifiedCredential(did, {
-                ...location,
-                consent: receipt,
-            })
+            await resolveVerifiedCredential(
+                did,
+                {
+                    ...location,
+                    consent: receipt,
+                },
+                options
+            )
         ).projection;
-    await assertCredentialConsent(did, uri, receipt);
+    if (prepared) await assertCredentialSnapshot(did, uri, receipt);
+    else await assertCredentialConsent(did, uri, receipt);
     return projection;
+};
+
+/*
+ * Each credential is read and verified at most once per request: callers in
+ * the same request share one in-flight or settled result (a failure too).
+ */
+export const resolveVerifiedCredentialProjection = (
+    did: string,
+    uri: string,
+    receipt: ActiveAiConsentReceipt,
+    options: CredentialReadOptions = {}
+): Promise<ModelSafeCredentialProjection> =>
+    oncePerLearnCardRequest(`credential-projection\n${did}\n${receipt.revision}\n${uri}`, () =>
+        resolveVerifiedCredentialProjectionUncached(did, uri, receipt, options)
+    );
+
+const resolveVerifiedCredentialProjectionUncached = async (
+    did: string,
+    uri: string,
+    receipt: ActiveAiConsentReceipt,
+    options: CredentialReadOptions
+): Promise<ModelSafeCredentialProjection> => {
+    const signal = getLearnCardRequestSignal();
+    for (let attempt = 1; ; attempt += 1) {
+        try {
+            return await resolveVerifiedCredentialProjectionOnce(did, uri, receipt, options);
+        } catch (error) {
+            if (
+                !shouldRestartProjection(error) ||
+                attempt >= MAX_PROJECTION_ATTEMPTS ||
+                signal?.aborted
+            ) {
+                throw error;
+            }
+        }
+    }
 };
 
 /**

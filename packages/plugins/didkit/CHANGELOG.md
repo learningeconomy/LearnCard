@@ -1,5 +1,19 @@
 # learn-card-core
 
+## 1.10.11
+
+### Patch Changes
+
+- [#2003](https://github.com/learningeconomy/LearnCard/pull/2003) [`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop sending inline JSON-LD context objects to the DIDKit WASM context loader. Signing or verifying a credential with an inline context (such as the managed refresh context) no longer triggers WASM out-of-bounds traps (LC-2380).
+
+- [#2013](https://github.com/learningeconomy/LearnCard/pull/2013) [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Dedupe and short-TTL cache concurrent did:web `did.json` fetches so opening one credential no longer stampedes the issuer document.
+
+    `getDidKitPlugin` keeps the generic 10s default and never raises a shorter preinstalled TTL. LearnCard App wallet boot calls `installWalletDidWebDocumentFetchCache()` (`WALLET_DID_WEB_DOCUMENT_TTL_MS` = 60s) before `initLearnCard` as an explicit opt-in.
+
+- Updated dependencies [[`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/types@6.1.0
+    - @learncard/core@9.4.45
+
 ## 1.10.10
 
 ### Patch Changes

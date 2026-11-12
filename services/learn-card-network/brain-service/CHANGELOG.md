@@ -1,5 +1,36 @@
 # @learncard/network-brain-service
 
+## 5.1.0
+
+### Minor Changes
+
+- [#2004](https://github.com/learningeconomy/LearnCard/pull/2004) [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c) Thanks [@rhen92](https://github.com/rhen92)! - Track the outcome of account-level guardian approval emails (LC-2289). Adds `getGuardianApprovalStatus` (sending / accepted / failed / unknown, plus resend availability) and an additive `status: 'accepted'` field on the `sendGuardianApprovalEmail` response. `sendGuardianApprovalEmail` is now serialized and rate-limited: it returns `CONFLICT` while a send is in flight and `TOO_MANY_REQUESTS` during the resend cooldown or once the hourly attempt limit is reached, and it returns `BAD_REQUEST` for profiles that are not awaiting guardian approval. Each new approval email invalidates links from earlier sends, so `approveGuardianRequest` rejects superseded tokens with `BAD_REQUEST`. The app validates the guardian address format during onboarding and in the resend modal, says so on the onboarding completion screen when the email could not be sent, and shows the pending-approval banner in the dashboard recovery-banner slot (taking priority over it) with the real email status plus resend and email correction through the existing consent modal. The banner clears itself once the guardian approves.
+
+### Patch Changes
+
+- [#1983](https://github.com/learningeconomy/LearnCard/pull/1983) [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2288] Recover credential claims in place without false expiration errors or duplicate issuance, preserving confirmed save and refresh progress.
+
+    Expose claim reconciliation in CLI method and capability discovery, and require `call --write` because reconciliation can finish acceptance and usage accounting.
+
+- [#2004](https://github.com/learningeconomy/LearnCard/pull/2004) [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2289] Show accurate guardian approval email status and support resend during onboarding
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/types@6.1.0
+    - @learncard/credential-library@2.1.8
+    - @learncard/didkit-plugin-node@0.3.11
+    - @learncard/core@9.4.45
+    - @learncard/helpers@1.8.1
+    - @learncard/did-web-plugin@1.1.45
+    - @learncard/didkey-plugin@1.1.45
+    - @learncard/encryption-plugin@1.2.1
+    - @learncard/learn-card-plugin@1.2.45
+    - @learncard/vc-plugin@1.7.1
+    - @learncard/vc-templates-plugin@1.1.45
+    - @learncard/crypto-plugin@1.1.45
+    - @learncard/dynamic-loader-plugin@1.1.45
+    - @learncard/expiration-plugin@1.2.45
+
 ## 5.0.0
 
 ### Major Changes

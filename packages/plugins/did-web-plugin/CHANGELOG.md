@@ -1,5 +1,12 @@
 # did-web-plugin
 
+## 1.1.45
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.45
+
 ## 1.1.44
 
 ### Patch Changes
