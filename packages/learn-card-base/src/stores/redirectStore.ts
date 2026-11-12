@@ -4,6 +4,8 @@ import { createStore } from '@udecode/zustood';
 export const LCN_REDIRECT_TTL_MS = 30 * 60 * 1000;
 
 export const redirectStore = createStore('redirectStore')<{
+    /** Activity-local destination: never persist an Android request into a later app launch. */
+    requestRedirect: { requestId: string; destination: string; createdAt: number } | null;
     authRedirect: string | null;
     lcnRedirect: string | null;
     lcnRedirectCreatedAt: number | null;
@@ -12,6 +14,7 @@ export const redirectStore = createStore('redirectStore')<{
     isOnboardingOpen: boolean;
 }>(
     {
+        requestRedirect: null,
         authRedirect: null,
         lcnRedirect: null,
         lcnRedirectCreatedAt: null,
@@ -38,14 +41,32 @@ export const redirectStore = createStore('redirectStore')<{
     .extendActions(set => ({
         lcnRedirect: (destination: string | null) => {
             set.state(state => {
+                state.requestRedirect = null;
                 state.lcnRedirectCreatedAt = destination ? Date.now() : null;
                 state.lcnRedirect = destination;
+            });
+        },
+        requestRedirect: (requestId: string, destination: string) => {
+            set.state(state => {
+                state.requestRedirect = { requestId, destination, createdAt: Date.now() };
+            });
+        },
+        clearRequestRedirect: (requestId: string) => {
+            set.state(state => {
+                if (state.requestRedirect?.requestId === requestId) state.requestRedirect = null;
             });
         },
     }))
     .extendSelectors(state => ({
         // Legacy persisted destinations without a timestamp are deliberately expired.
         lcnRedirect: () => {
+            const request = state.requestRedirect;
+            if (request) {
+                const age = Date.now() - request.createdAt;
+                if (age >= 0 && age < LCN_REDIRECT_TTL_MS) return request.destination;
+            }
+            // Upgrade cleanup: older builds persisted an activity-local destination.
+            if (state.lcnRedirect === '/native-digital-credentials') return null;
             const createdAt = state.lcnRedirectCreatedAt;
             const age = createdAt == null ? Infinity : Date.now() - createdAt;
             return age >= 0 && age < LCN_REDIRECT_TTL_MS ? state.lcnRedirect : null;
