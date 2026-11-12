@@ -130,6 +130,36 @@ afterAll(async () => {
 });
 
 describe('persistent owner boundaries', () => {
+    test('a deferred thread context keeps its ranking first and fills only with provisional credentials whose row still exists', async () => {
+        const thread = await database.createThread(owner);
+        const context = (uri: string, score: number) => ({
+            uri,
+            type: 'Achievement',
+            context: uri,
+            score,
+        });
+        for (const uri of ['lc:alice:p0', 'lc:alice:p1', 'lc:alice:p2', 'lc:alice:p3'])
+            await asOwner(() => database.storeVC(owner, { ...record(original, uri), id: uri }));
+        // Confirmed invalid on another instance: its row is gone, no local cache knows.
+        await asOwner(() => database.deleteVCsByUris(owner, ['lc:alice:p1']));
+        const found = [context('lc:alice:late', 0.4), context('lc:alice:extra', 0.3)];
+        const provisional = ['lc:alice:p0', 'lc:alice:p1', 'lc:alice:p2', 'lc:alice:p3'].map(
+            (uri, index) => context(uri, 0.99 - index / 100)
+        );
+
+        const stored = await asOwner(() =>
+            database.storeThreadCredentials(owner, thread, found, { provisional, limit: 4 })
+        );
+
+        const uris = ['lc:alice:late', 'lc:alice:extra', 'lc:alice:p0', 'lc:alice:p2'];
+        expect(stored.map(({ uri }) => uri)).toEqual(uris);
+        const persistedThread = await persisted.collection('threads').findOne({ id: thread });
+        expect((persistedThread?.credentials as { uri: string }[]).map(({ uri }) => uri)).toEqual(
+            uris
+        );
+        expect(persistedThread?.credentialContextStatus).toBe('ready');
+    });
+
     test('a different owner cannot read or delete thread messages', async () => {
         const thread = await database.createThread(owner);
         await asOwner(() =>

@@ -136,6 +136,7 @@ const {
     clearKnownBadCredentials,
     isKnownBadCredential,
     markCredentialItemFailure,
+    markCredentialReadFailure,
     recordCredentialOutcome,
 } = await import('../credentials/batch');
 const twoStrongResults = async () => [
@@ -1167,6 +1168,64 @@ describe('credential search pipeline', () => {
         expect(outcome.error).toMatchObject({ name: 'TimeoutError' });
         expect(performance.now()).toBeLessThan(deadlineAt);
         expect(assertCredentialConsent).not.toHaveBeenCalled();
+    });
+
+    it('a fast transient skip in a mixed window marks the search incomplete', async () => {
+        useRankedCandidates();
+        withUnverifiedStoredText('lc:credential:r1', 'lc:credential:r2');
+        resolveVerifiedCredentialProjection.mockImplementation(async (_did, uri) => {
+            // Neither waits for the give-way: one read failure, one verifier timeout.
+            if (uri === 'lc:credential:r1')
+                throw markCredentialReadFailure(new Error('LearnCard read failed'));
+            if (uri === 'lc:credential:r2')
+                throw new CredentialVerificationUnavailableError('sdk_timeout');
+            return currentProjection;
+        });
+        const onIncomplete = mock(() => undefined);
+        const startedAt = performance.now();
+        const results = await withQuietWarn(() =>
+            searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                expandQueries: false,
+                limit: 5,
+                preferStoredText: true,
+                deadlineAt: startedAt + 5_000,
+                onIncomplete,
+            })
+        );
+
+        expect(performance.now() - startedAt).toBeLessThan(1_000);
+        expect(results.map(({ uri }) => uri)).not.toContain('lc:credential:r1');
+        expect(results.map(({ uri }) => uri)).not.toContain('lc:credential:r2');
+        expect(onIncomplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('a known-invalid or known-bad skip does not mark the search incomplete', async () => {
+        useRankedCandidates();
+        withUnverifiedStoredText('lc:credential:r1', 'lc:credential:r2', 'lc:credential:r3');
+        // Known invalid before the search: skipped without a verify.
+        recordCredentialOutcome(
+            'did:example:learner',
+            'lc:credential:r3',
+            confirmedInvalidFailure()
+        );
+        resolveVerifiedCredentialProjection.mockImplementation(async (_did, uri) => {
+            // Confirmed invalid now, and permanently unverifiable (known-bad from here on).
+            if (uri === 'lc:credential:r1') throw confirmedInvalidFailure();
+            if (uri === 'lc:credential:r2') throw undefinedTermFailure();
+            return currentProjection;
+        });
+        const onIncomplete = mock(() => undefined);
+        await withQuietWarn(() =>
+            searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                expandQueries: false,
+                limit: 5,
+                preferStoredText: true,
+                deadlineAt: performance.now() + 5_000,
+                onIncomplete,
+            })
+        );
+
+        expect(onIncomplete).not.toHaveBeenCalled();
     });
 
     it('v198: preferStoredText uses stored text without a live verify', async () => {

@@ -509,14 +509,18 @@ const resolveCredential = async (
             );
         const cleanUpInvalid = async () => {
             try {
-                await Promise.all([
+                // The row goes before the thread copies: a deferred chat context
+                // checks the row in the same owner transaction as its thread
+                // write, so it either sees the row gone or is pulled after.
+                try {
                     // Queue fencing but do not await Qdrant recovery here. The MCP
                     // read path used to wait for up to 32 unbounded cleanup units
                     // after a confirmed-invalid verify, which hung the tool past
                     // the client deadline once a busy lease no longer failed fast.
-                    db.deleteVCsByUris(did, [ref.uri], { awaitCleanup: false }),
-                    db.removeThreadCredentialsByUris(did, [ref.uri]),
-                ]);
+                    await db.deleteVCsByUris(did, [ref.uri], { awaitCleanup: false });
+                } finally {
+                    await db.removeThreadCredentialsByUris(did, [ref.uri]);
+                }
             } catch (error) {
                 // Mongo already queued cleanup and may have removed retained rows.
                 // A contended or unfinished fence must not fail chat or MCP reads.

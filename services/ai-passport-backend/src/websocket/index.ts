@@ -872,9 +872,6 @@ const deferCredentialContext = async (
     let highestStrongestScore: number | undefined;
     let highestAverageScore: number | undefined;
     let maxMatchCount: number | undefined;
-    // What the deferred search's own consent read allows. Until it has read one,
-    // no provisional credential is kept.
-    let permitted: ReadonlySet<string> = new Set();
     // How far the deferred phase got, for its server log event.
     let stage: CredentialContextDeferredStage = 'refresh';
 
@@ -911,29 +908,44 @@ const deferCredentialContext = async (
                 highestAverageScore = metrics.highestAverageScore;
                 maxMatchCount = metrics.maxMatchCount;
             },
-            onConsent: uris => {
-                permitted = uris;
-            },
         });
-        // The deferred results replace the provisional ones by URI. A provisional
-        // credential it didn't return (skipped again, or past its window) is kept
-        // only while the current consent still allows it and it isn't known
-        // invalid, so a retry never shrinks the context.
+        // The deferred ranking stands. Provisional credentials it didn't return
+        // only fill what's left, in their own order: the two searches' scores
+        // aren't comparable. Each one needs consent read fresh here, at
+        // publication, and a stored row that still exists (checked with the write).
         const foundUris = new Set(found.map(({ uri }) => uri));
-        const contexts = [
-            ...found,
-            ...provisional.filter(
-                ({ uri }) =>
-                    !foundUris.has(uri) &&
-                    permitted.has(uri) &&
-                    knownBadCredentialKind(did, uri) !== 'invalid'
-            ),
-        ]
-            .sort((left, right) => right.score - left.score)
-            .slice(0, 5);
+        let provisionalFill =
+            found.length < 5
+                ? provisional.filter(
+                      ({ uri }) =>
+                          !foundUris.has(uri) && knownBadCredentialKind(did, uri) !== 'invalid'
+                  )
+                : [];
+        if (provisionalFill.length) {
+            try {
+                const { loadActiveAiConsentData } = await import('../learncard/consent');
+                const { receipt } = await loadActiveAiConsentData(
+                    await getLearnCard(),
+                    did,
+                    'model-inference',
+                    { fresh: true, signal: bound.signal }
+                );
+                const permitted = new Set(receipt.credentialUris);
+                provisionalFill = provisionalFill.filter(({ uri }) => permitted.has(uri));
+            } catch {
+                // Withdrawn or unreadable: nothing from the provisional set.
+                provisionalFill = [];
+            }
+        }
         getBoundRemainingMs(bound);
         stage = 'store';
-        await db.storeThreadCredentials(did, threadId, contexts);
+        let contexts = found;
+        if (provisionalFill.length)
+            contexts = await db.storeThreadCredentials(did, threadId, found, {
+                provisional: provisionalFill,
+                limit: 5,
+            });
+        else await db.storeThreadCredentials(did, threadId, found);
         stage = 'complete';
 
         const status = contexts.length > 0 ? 'ready' : 'empty';

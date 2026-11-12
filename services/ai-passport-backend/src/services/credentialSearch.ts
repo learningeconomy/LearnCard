@@ -27,6 +27,7 @@ import { serializeModelSafeCredentialProjection } from '../credentials/projectio
 import {
     isCredentialItemFailure,
     isConfirmedInvalidCredentialFailure,
+    isPermanentCredentialFailure,
     isKnownBadCredential,
     knownBadCredentialKind,
     logCredentialSkip,
@@ -84,12 +85,10 @@ export type CredentialSearchOptions = {
     onMetrics?: (metrics: CredentialSearchMetrics) => void;
     /**
      * Called before a result returns when a credential with no verified stored
-     * text was skipped because its live verify gave way: a longer search may
-     * still load it.
+     * text was skipped for a transient reason (its live verify gave way, a read
+     * failed, the verifier timed out): a longer search may still load it.
      */
     onIncomplete?: () => void;
-    /** The credential URIs this search's consent read allows, once it has read them. */
-    onConsent?: (permitted: ReadonlySet<string>) => void;
 };
 
 const SEARCH_DIMENSIONS = [
@@ -327,7 +326,6 @@ const searchCredentialContextsPinned = async (
         signal: options.signal,
     });
     const permitted = new Set(receipt.credentialUris);
-    options.onConsent?.(permitted);
     if (!permitted.size) return [];
     const queryKey = topicQueryKey(did, receipt.revision, topic);
     const {
@@ -660,9 +658,10 @@ const searchCredentialContextsPinned = async (
                                 isConfirmedInvalidCredentialFailure(error) ||
                                 !result.context.trim()
                             ) {
+                                // A transient skip may still load later; a permanent one won't.
                                 if (
-                                    error instanceof CredentialVerificationUnavailableError &&
-                                    gaveWay.has(error)
+                                    isCredentialItemFailure(error, { signal, deadlineAt }) &&
+                                    !isPermanentCredentialFailure(error)
                                 )
                                     incomplete = true;
                                 throw error;

@@ -3010,24 +3010,48 @@ export class ChatDB {
     }
 
     /* --------------------- thread credential embeddings --------------- */
-    public async storeThreadCredentials(
+    /**
+     * With `fill`, `creds` keep their order and the provisional credentials fill
+     * what's left up to `limit`, in their own order, but only while their stored
+     * row still exists. Confirmed-invalid cleanup deletes that row (in an owner
+     * transaction) before it pulls thread copies; this read and write share one
+     * owner transaction, so a concurrent invalidation either lands first and the
+     * credential is skipped, or pulls it after this write. Returns what was stored.
+     */
+    public async storeThreadCredentials<Context extends ThreadCredentialContext>(
         did: string,
         threadId: string,
-        creds: ThreadCredentialContext[]
-    ) {
+        creds: Context[],
+        fill?: { provisional: Context[]; limit: number }
+    ): Promise<Context[]> {
         return this.withOwnerWrite(did, async () => {
             await this.init();
-            const credentialState = creds.length > 0 ? 'ready' : 'empty';
+            let credentials = creds;
+            if (fill?.provisional.length) {
+                const rows = await this.credentials
+                    .find(
+                        { did, uri: { $in: fill.provisional.map(({ uri }) => uri) } },
+                        { projection: { _id: 0, uri: 1 }, session: this.session }
+                    )
+                    .toArray();
+                const stored = new Set(rows.map(({ uri }) => uri));
+                credentials = [
+                    ...creds,
+                    ...fill.provisional.filter(({ uri }) => stored.has(uri)),
+                ].slice(0, fill.limit);
+            }
+            const credentialState = credentials.length > 0 ? 'ready' : 'empty';
             await this.threads.updateOne(
                 { did, id: threadId },
                 {
                     $set: {
-                        credentials: creds,
+                        credentials,
                         credentialContextStatus: credentialState,
                     },
                 },
                 { session: this.session }
             );
+            return credentials;
         });
     }
 
