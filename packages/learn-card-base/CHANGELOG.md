@@ -1,5 +1,11 @@
 # learn-card-base
 
+## Unreleased
+
+### Patch Changes
+
+- LC-2371: Retry failed credential sharing, including consent discovery, through the persisted contract-sync queue without failing successful saves. Keep retries scoped to the saving account and exact contract terms.
+
 ## 0.8.1
 
 ### Patch Changes

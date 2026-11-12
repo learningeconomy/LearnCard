@@ -16,6 +16,7 @@ import {
     MAX_JOB_RETRIES,
 } from '../stores/pendingContractSyncStore';
 import { getLogger } from '../logging/logger';
+import { switchedProfileStore, walletStore } from '../stores/walletStore';
 
 const log = getLogger('pending-contract-sync');
 
@@ -64,10 +65,13 @@ const runWithConcurrency = async <T>(
  * two workers race on the same jobs.
  */
 export const usePendingContractSync = (enabled = true): void => {
-    const { initWallet } = useWallet();
+    const { initWallet, syncCredentialToContracts } = useWallet();
     const queryClient = useQueryClient();
 
     const jobs = usePendingContractSyncJobs(); // get all jobs
+    const activeWallet = walletStore.use.wallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+    const activeDid = switchedDid || activeWallet?.id.did();
 
     const processingJobIdRef = useRef<string | null>(null); // track currently processing job
     const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,10 +92,15 @@ export const usePendingContractSync = (enabled = true): void => {
     }, [enabled]);
 
     useEffect(() => {
-        if (!enabled || processingJobIdRef.current) return;
+        if (!enabled || !activeDid || processingJobIdRef.current) return;
 
         const pendingJobs = Object.values(jobs)
-            .filter(job => job.status !== 'done' && job.retryCount < MAX_JOB_RETRIES)
+            .filter(
+                job =>
+                    job.profileDid === activeDid &&
+                    job.status !== 'done' &&
+                    job.retryCount < MAX_JOB_RETRIES
+            )
             .sort((a, b) => a.createdAt - b.createdAt);
 
         const nextJob = pendingJobs.find(job => isJobReadyToProcess(job));
@@ -143,6 +152,31 @@ export const usePendingContractSync = (enabled = true): void => {
 
             try {
                 const wallet = await initWallet();
+                // Never spend another account's retries or follow an owner into different terms.
+                if (wallet.id.did() !== job.profileDid) {
+                    throw new Error('The account changed before retrying credential sharing.');
+                }
+                await queryClient.invalidateQueries({
+                    queryKey: ['useConsentedContracts'],
+                    refetchType: 'none',
+                });
+                if (job.kind === 'credential') {
+                    const source = job.record;
+                    const records = await wallet.index.LearnCloud.get({ id: source.id });
+                    if (!records.some(record => record.uri === source.uri)) {
+                        pendingContractSyncStore.set.markDone(job.id);
+                        return;
+                    }
+                    pendingContractSyncStore.set.setTotals(job.id, 1);
+                    await syncCredentialToContracts(
+                        { record: job.record, category: job.category },
+                        wallet,
+                        new Set<string>()
+                    );
+                    pendingContractSyncStore.set.recordCredentialProcessed(job.id);
+                    pendingContractSyncStore.set.markDone(job.id);
+                    return;
+                }
                 log.info('Loaded wallet for contract sync job', {
                     contractUri: job.contractUri,
                     termsUri: job.termsUri,
@@ -150,8 +184,8 @@ export const usePendingContractSync = (enabled = true): void => {
                 const contracts = await getOrFetchConsentedContracts(queryClient, wallet);
                 const consentedContract = contracts.find(
                     contract =>
-                        contract.uri === job.termsUri ||
-                        contract.contract.uri === job.contractUri ||
+                        contract.uri === job.termsUri &&
+                        contract.contract.uri === job.contractUri &&
                         contract.contract.owner.did === job.ownerDid
                 );
 
@@ -194,7 +228,7 @@ export const usePendingContractSync = (enabled = true): void => {
                         });
 
                         return records.map(
-                            record =>
+                            (record: { uri: string }) =>
                                 ({
                                     categoryName,
                                     credentialCategory,
@@ -354,5 +388,5 @@ export const usePendingContractSync = (enabled = true): void => {
             processingJobIdRef.current = null;
             setWorkerTick(tick => tick + 1);
         });
-    }, [enabled, initWallet, jobs, queryClient, workerTick]);
+    }, [enabled, activeDid, initWallet, syncCredentialToContracts, jobs, queryClient, workerTick]);
 };

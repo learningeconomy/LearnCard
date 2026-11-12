@@ -64,6 +64,8 @@ const CredentialSyncListener: React.FC = () => {
         if (!jobs.length) return;
 
         const newestJob = jobs.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+        // Discovery retries do not identify one contract; contract telemetry requires one.
+        if (newestJob.kind === 'credential') return;
         const telemetryKey = [
             newestJob.id,
             newestJob.status,

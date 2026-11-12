@@ -32,6 +32,7 @@ import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPassport';
 import { getLogger } from '../logging/logger';
+import { enqueuePendingContractSync } from '../stores/pendingContractSyncStore';
 import {
     addCredentialSummary,
     getCredentialFactsEpoch,
@@ -316,97 +317,105 @@ export const useWallet = () => {
         completedTerms?: Set<string>
     ) => {
         const learnCard = wallet ?? (await getWallet());
-        // Fetch and cache all consented contracts for the user
-        const allContracts = await getOrFetchConsentedContracts(queryClient, learnCard);
-        logWalletSync('Starting credential sync to contracts', {
-            recordUri: record.uri,
-            category,
-            contractCount: allContracts.length,
-        });
-        // Batch sync credentials to contracts, respecting share settings
-        const outcomes = await Promise.allSettled(
-            allContracts.map(async ({ contract, terms, uri: termsUri, status }) => {
-                if (status !== 'live' || completedTerms?.has(termsUri)) return;
+        try {
+            // Fetch and cache all consented contracts for the user
+            const allContracts = await getOrFetchConsentedContracts(queryClient, learnCard);
+            logWalletSync('Starting credential sync to contracts', {
+                recordUri: record.uri,
+                category,
+                contractCount: allContracts.length,
+            });
+            // Batch sync credentials to contracts, respecting share settings
+            const outcomes = await Promise.allSettled(
+                allContracts.map(async ({ contract, terms, uri: termsUri, status }) => {
+                    if (status !== 'live' || completedTerms?.has(termsUri)) return;
 
-                const categoryInfo = terms.read.credentials.categories[category];
+                    const categoryInfo = terms.read.credentials.categories[category];
 
-                logWalletSync('Evaluating contract', {
-                    ownerDid: contract.owner.did,
-                    contractUri: contract.uri,
-                    termsUri,
-                    category,
-                    shareAll: categoryInfo?.shareAll,
-                    sharing: categoryInfo?.sharing,
-                    shareUntil: categoryInfo?.shareUntil,
-                    status,
-                });
+                    logWalletSync('Evaluating contract', {
+                        ownerDid: contract.owner.did,
+                        contractUri: contract.uri,
+                        termsUri,
+                        category,
+                        shareAll: categoryInfo?.shareAll,
+                        sharing: categoryInfo?.sharing,
+                        shareUntil: categoryInfo?.shareUntil,
+                        status,
+                    });
 
-                if (
-                    categoryInfo?.shareAll &&
-                    categoryInfo.sharing &&
-                    (!categoryInfo.shareUntil || categoryInfo.shareUntil > new Date().toISOString())
-                ) {
-                    if (!record.uri) return;
+                    if (
+                        categoryInfo?.shareAll &&
+                        categoryInfo.sharing &&
+                        (!categoryInfo.shareUntil ||
+                            categoryInfo.shareUntil > new Date().toISOString())
+                    ) {
+                        if (!record.uri) return;
 
-                    const audience = await loadContractAudience(learnCard, contract.uri);
-                    const sharedUri = await getOrCreateSharedUriForWallet(
-                        learnCard,
-                        audience.recipients,
-                        queryClient,
-                        record.uri,
-                        category
-                    );
-
-                    if (sharedUri) {
-                        logWalletSync('Syncing credential to contract', {
-                            ownerDid: contract.owner.did,
-                            contractUri: contract.uri,
-                            termsUri,
-                            category,
-                            sharedUri,
-                        });
-                        await learnCard.invoke.syncCredentialsToContract(
-                            termsUri,
-                            {
-                                [category]: [sharedUri],
-                            },
-                            audience.audienceVersion
+                        const audience = await loadContractAudience(learnCard, contract.uri);
+                        const sharedUri = await getOrCreateSharedUriForWallet(
+                            learnCard,
+                            audience.recipients,
+                            queryClient,
+                            record.uri,
+                            category
                         );
-                        // Remember the acknowledged mutation before any cache/refresh work.
-                        completedTerms?.add(termsUri);
-                        logWalletSync('syncCredentialsToContract completed', {
-                            ownerDid: contract.owner.did,
-                            contractUri: contract.uri,
-                            termsUri,
-                            category,
-                        });
 
-                        if (isLearnCardAiPassportContractUri(contract.uri)) {
-                            logWalletSync('Queueing AI Passport refresh', {
+                        if (sharedUri) {
+                            logWalletSync('Syncing credential to contract', {
+                                ownerDid: contract.owner.did,
+                                contractUri: contract.uri,
+                                termsUri,
+                                category,
+                                sharedUri,
+                            });
+                            await learnCard.invoke.syncCredentialsToContract(
+                                termsUri,
+                                {
+                                    [category]: [sharedUri],
+                                },
+                                audience.audienceVersion
+                            );
+                            // Remember the acknowledged mutation before any cache/refresh work.
+                            completedTerms?.add(termsUri);
+                            logWalletSync('syncCredentialsToContract completed', {
                                 ownerDid: contract.owner.did,
                                 contractUri: contract.uri,
                                 termsUri,
                                 category,
                             });
-                            void queueAiInsightCredentialRefresh({
-                                wallet: learnCard,
-                                queryClient,
-                            }).catch(error =>
-                                logWalletSyncError('Failed to queue AI Passport refresh', error, {
+
+                            if (isLearnCardAiPassportContractUri(contract.uri)) {
+                                logWalletSync('Queueing AI Passport refresh', {
                                     ownerDid: contract.owner.did,
                                     contractUri: contract.uri,
                                     termsUri,
                                     category,
-                                })
-                            );
-                        }
+                                });
+                                void queueAiInsightCredentialRefresh({
+                                    wallet: learnCard,
+                                    queryClient,
+                                }).catch(error =>
+                                    logWalletSyncError(
+                                        'Failed to queue AI Passport refresh',
+                                        error,
+                                        {
+                                            ownerDid: contract.owner.did,
+                                            contractUri: contract.uri,
+                                            termsUri,
+                                            category,
+                                        }
+                                    )
+                                );
+                            }
 
-                        queryClient.invalidateQueries({
-                            queryKey: ['useTermsTransactions', termsUri],
-                        });
+                            queryClient.invalidateQueries({
+                                queryKey: ['useTermsTransactions', termsUri],
+                            });
+                        } else {
+                            throw new Error('Unable to prepare credential sharing');
+                        }
                     } else {
-                        if (completedTerms) throw new Error('Unable to prepare credential sharing');
-                        logWalletSync('No shared URI available for contract', {
+                        logWalletSync('Contract not eligible for sync', {
                             ownerDid: contract.owner.did,
                             contractUri: contract.uri,
                             termsUri,
@@ -414,30 +423,36 @@ export const useWallet = () => {
                             recordUri: record.uri,
                         });
                     }
-                } else {
-                    logWalletSync('Contract not eligible for sync', {
-                        ownerDid: contract.owner.did,
-                        contractUri: contract.uri,
-                        termsUri,
-                        category,
-                        recordUri: record.uri,
-                    });
-                }
-            })
-        );
-        if (completedTerms && outcomes.some(outcome => outcome.status === 'rejected')) {
-            throw new AggregateError(
-                outcomes.flatMap(outcome =>
-                    outcome.status === 'rejected' ? [outcome.reason] : []
-                ),
-                'Some consented contracts could not be synced'
+                })
             );
+            if (outcomes.some(outcome => outcome.status === 'rejected')) {
+                throw new AggregateError(
+                    outcomes.flatMap(outcome =>
+                        outcome.status === 'rejected' ? [outcome.reason] : []
+                    ),
+                    'Some consented contracts could not be synced'
+                );
+            }
+            logWalletSync('Finished credential sync to contracts', {
+                recordUri: record.uri,
+                category,
+            });
+            return true;
+        } catch (error) {
+            // Staged claim flows own their retries; ordinary saves must remain successful.
+            if (completedTerms) throw error;
+            enqueuePendingContractSync({
+                kind: 'credential',
+                profileDid: learnCard.id.did(),
+                record: { id: record.id, uri: record.uri, category },
+                category,
+            });
+            logWalletSyncError('Credential sharing queued for retry', error, {
+                recordUri: record.uri,
+                category,
+            });
+            return false;
         }
-        logWalletSync('Finished credential sync to contracts', {
-            recordUri: record.uri,
-            category,
-        });
-        return true;
     };
 
     // Run in the background so local facts persistence cannot delay a successful claim.
@@ -623,6 +638,9 @@ export const useWallet = () => {
                 result = await wallet.index[location].add(record);
                 returnUri = uri2;
                 if (result) void recordCredentialClaim(wallet, uri2, vc, category);
+                if (result && !deferContractSync) {
+                    await syncCredentialToContracts({ record, category }, wallet);
+                }
             }
 
             if (!skipLCNUser) {
@@ -662,7 +680,7 @@ export const useWallet = () => {
                     }
                 }
 
-                if (!deferContractSync) {
+                if (result && !deferContractSync) {
                     stage = 'sync';
                     await syncCredentialToContracts({ record, category }, wallet);
                 }

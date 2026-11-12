@@ -82,6 +82,7 @@ vi.mock('learn-card-base/constants/aiPassport', () => ({
 }));
 import { InfiniteQueryObserver, QueryClient, QueryObserver } from '@tanstack/react-query';
 import { useWallet } from './useWallet';
+import { pendingContractSyncStore } from '../stores/pendingContractSyncStore';
 import {
     addCredentialSummary,
     clearCredentialFacts,
@@ -108,6 +109,7 @@ let records: { id: string; uri: string; inboxDeliveryId?: string }[];
 
 beforeEach(async () => {
     vi.clearAllMocks();
+    pendingContractSyncStore.set.jobs({});
     clearInAppMessageEvents();
     await clearCredentialFacts();
     vi.stubGlobal('crypto', webcrypto);
@@ -176,7 +178,14 @@ it('keeps a staged collection save successful when later sharing refresh fails',
             record: { id: records[0]!.id, uri: 'existing-uri', category: 'Achievement' },
             category: 'Achievement',
         })
-    ).rejects.toBe(refreshError);
+    ).resolves.toBe(false);
+    expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+        expect.objectContaining({
+            profileDid: 'did:example:claiming-account',
+            record: expect.objectContaining({ uri: 'existing-uri', category: 'Achievement' }),
+            status: 'queued',
+        }),
+    ]);
     expect(records).toEqual([expect.objectContaining({ uri: 'existing-uri' })]);
 });
 
@@ -321,7 +330,13 @@ it.each([
     async (_name, claim) => {
         mocks.getConsentedContracts.mockRejectedValueOnce(new Error('sync failed'));
 
-        await expect(claim()).rejects.toThrow('sync failed');
+        await expect(claim()).resolves.toBeTruthy();
+        expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+            expect.objectContaining({
+                profileDid: 'did:example:claiming-account',
+                status: 'queued',
+            }),
+        ]);
 
         expect(await loadCredentialFacts('did:example:claiming-account')).toEqual([
             expect.objectContaining({ issuer: 'did:key:issuer', category: 'Achievement' }),
@@ -749,7 +764,7 @@ it('refreshes persisted bulk writes when contract sync fails and the reader init
             { ...credential, id: 'urn:sync-failure:one' },
             { ...credential, id: 'urn:sync-failure:two' },
         ])
-    ).rejects.toThrow('contract sync failed');
+    ).resolves.toEqual([true, true]);
 
     expect(records).toHaveLength(2);
     expect(calls.get('category')).toBe(1);
@@ -822,4 +837,54 @@ it('does not mark unavailable shared credentials as successfully synced', async 
     expect(mocks.syncContract).not.toHaveBeenCalled();
     await expect(hooks.syncCredentialToContracts(input, undefined, completed)).resolves.toBe(true);
     expect(completed).toEqual(new Set(['terms-a']));
+});
+
+it('syncs Partner Connect saves only after a confirmed index write and preserves save success on failure', async () => {
+    mocks.getConsentedContracts.mockRejectedValueOnce(new Error('network unavailable'));
+    const saved = await useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true);
+    expect(saved).toMatchObject({ result: true, credentialUri: 'encrypted-uri' });
+    expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+        expect.objectContaining({
+            profileDid: 'did:example:claiming-account',
+            record: expect.objectContaining({ uri: saved.credentialUri, category: 'Achievement' }),
+        }),
+    ]);
+    pendingContractSyncStore.set.jobs({});
+    mocks.getConsentedContracts.mockClear();
+    mocks.add.mockResolvedValueOnce(false);
+    expect(
+        await useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true)
+    ).toMatchObject({
+        result: false,
+    });
+    expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
+    expect(pendingContractSyncStore.get.jobs()).toEqual({});
+});
+
+it('queues an unavailable shared copy without expanding beyond live category-wide consent', async () => {
+    const contracts = [
+        ['eligible', 'live', { shareAll: true, sharing: true }],
+        ['once', 'live', { shareAll: false, sharing: true }],
+        ['denied', 'live', { shareAll: true, sharing: false }],
+        ['withdrawn', 'withdrawn', { shareAll: true, sharing: true }],
+        ['expired', 'live', { shareAll: true, sharing: true, shareUntil: '2000-01-01' }],
+    ].map(([uri, status, config]) => ({
+        uri,
+        status,
+        contract: { uri: `contract-${uri}`, owner: { did: 'did:key:owner' } },
+        terms: { read: { credentials: { categories: { Achievement: config } } } },
+    }));
+    mocks.getConsentedContracts.mockResolvedValue(contracts);
+    mocks.sharedUri.mockResolvedValueOnce(false);
+    expect(
+        await useWallet().syncCredentialToContracts({
+            record: { id: 'saved', uri: 'credential', category: 'Achievement' },
+            category: 'Achievement',
+        })
+    ).toBe(false);
+    expect(mocks.sharedUri).toHaveBeenCalledTimes(1);
+    expect(mocks.syncContract).not.toHaveBeenCalled();
+    expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+        expect.objectContaining({ record: expect.objectContaining({ uri: 'credential' }) }),
+    ]);
 });

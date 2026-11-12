@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Patch Changes
+
+- LC-2371: Sync successfully uploaded, pasted, and Partner Connect credentials to existing live consent contracts. Preserve successful saves when sharing fails and persist account-scoped retries.
+
 ## 1.101.1
 
 ### Patch Changes

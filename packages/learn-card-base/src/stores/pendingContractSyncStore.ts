@@ -1,13 +1,32 @@
+import type { LCR } from '../types/credential-records';
+import type { CredentialCategory } from '../types/credentials';
 import { createStore } from '@udecode/zustood';
 
 export type PendingContractSyncStatus = 'queued' | 'running' | 'done' | 'error';
 
-export type PendingContractSyncJob = {
+type PendingContractSyncInput =
+    | {
+          kind?: 'contract';
+          profileDid: string;
+          contractUri: string;
+          termsUri: string;
+          ownerDid: string;
+          record?: never;
+          category?: never;
+      }
+    | {
+          kind: 'credential';
+          profileDid: string;
+          /** Retry discovery as well as delivery when the consent lookup itself failed. */
+          record: LCR;
+          category: CredentialCategory;
+          contractUri?: never;
+          termsUri?: never;
+          ownerDid?: never;
+      };
+
+export type PendingContractSyncJob = PendingContractSyncInput & {
     id: string;
-    profileDid: string;
-    contractUri: string;
-    termsUri: string;
-    ownerDid: string;
     status: PendingContractSyncStatus;
     retryCount: number;
     totalCredentials: number;
@@ -81,13 +100,11 @@ export const pendingContractSyncStore = createStore(
     { jobs: {} },
     { persist: { name: 'pendingContractSyncStore', enabled: true } }
 ).extendActions((set, get) => ({
-    enqueueContractSyncJob: (input: {
-        profileDid: string;
-        contractUri: string;
-        termsUri: string;
-        ownerDid: string;
-    }) => {
-        const id = getPendingContractSyncJobId(input); // get id
+    enqueueContractSyncJob: (input: PendingContractSyncInput) => {
+        const id =
+            input.kind === 'credential'
+                ? ['credential', input.profileDid, input.category, input.record.uri].join('::')
+                : getPendingContractSyncJobId(input);
 
         const jobs = get.jobs(); // get existing jobs
         const existing = jobs[id]; // look up existing job

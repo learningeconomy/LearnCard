@@ -41,6 +41,7 @@ import {
     type LearnerContextRequestOptions,
     type LearnerContextSourceData,
 } from './learnerContext.helpers';
+import { savePartnerCredential } from './partnerCredentialSave';
 
 interface LaunchConfig {
     url?: string;
@@ -688,14 +689,10 @@ export function useLearnCardMessageHandlers({
 
                                 // Save the credential to wallet
                                 try {
-                                    const credentialId = (
-                                        await storeAndAddVCToWallet(
-                                            vc,
-                                            { title: vc.name || 'Credential' },
-                                            'LearnCloud',
-                                            true
-                                        )
-                                    )?.credentialUri;
+                                    const credentialId = await savePartnerCredential(
+                                        vc,
+                                        storeAndAddVCToWallet
+                                    );
 
                                     // Announce the ingest to the pathway
                                     // reactor. Without this, pathway nodes
@@ -774,14 +771,11 @@ export function useLearnCardMessageHandlers({
                     const vc = credential as VC;
                     log('Saving credential:', vc);
 
-                    const stored = await storeAndAddVCToWallet(
-                        vc,
-                        { title: vc.name || 'Credential' },
-                        'LearnCloud',
-                        true
-                    );
-                    sdkActivityStore.set.endActivity();
-                    return stored.credentialUri;
+                    try {
+                        return await savePartnerCredential(vc, storeAndAddVCToWallet);
+                    } finally {
+                        sdkActivityStore.set.endActivity();
+                    }
                 },
                 getCredentialById: async (id: string) => {
                     log('Fetching credential:', id);
