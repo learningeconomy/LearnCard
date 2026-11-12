@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ConsentFlowContractDataForDidValidator } from '@learncard/types';
+import { ConsentFlowContractDataForDidValidator, LCNProfileValidator } from '@learncard/types';
 
 const mocks = vi.hoisted(() => ({
     delivery: vi.fn(),
@@ -301,7 +301,7 @@ describe('readable recipient provisioning', () => {
     };
     it('stores only an encrypted envelope and creates a fresh recipient', async () => {
         const result = await provisionReadableDelivery('owner', domain, request);
-        expect(result.profileId).toMatch(/^readable-/);
+        expect(result.profileId).toMatch(/^rd-/);
         expect(mocks.create).toHaveBeenCalledOnce();
         const stored = mocks.create.mock.calls[0]?.[0];
         expect(stored).toMatchObject({
@@ -311,6 +311,15 @@ describe('readable recipient provisioning', () => {
             ciphertext: 'encrypted-key',
             enabled: true,
         });
+        expect(
+            LCNProfileValidator.safeParse({ profileId: stored.profileId, did: result.did }).success
+        ).toBe(true);
+        expect(
+            LCNProfileValidator.safeParse({
+                profileId: stored.agentProfileId,
+                did: stored.agentDid,
+            }).success
+        ).toBe(true);
         expect(JSON.stringify(stored)).not.toContain('private');
         expect(result).not.toHaveProperty('ciphertext');
     });
