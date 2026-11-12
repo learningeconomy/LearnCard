@@ -55,6 +55,8 @@ let failFirstStore = false;
 let uris = [VALID_URI, INVALID_URI];
 const verified: string[] = [];
 const events: Array<Record<string, unknown>> = [];
+/** Stored ingest-time text by URI (rows earlier ingestion wrote). */
+const storedText = new Map<string, string>();
 
 const getConsentFlowDataForDid = mock(async () => {
     consentReads += 1;
@@ -140,6 +142,11 @@ mock.module('../../db', () => ({
         upsertLearnerContextPromptByHash: mock(async () => undefined),
         getCredentialSummaryByHash: mock(async () => undefined),
         upsertCredentialSummaryByHash: mock(async () => undefined),
+        // Every stored row, whatever was asked: a stale row must still be
+        // filtered by the request's consent.
+        getCredentialAiContexts: mock(async () =>
+            [...storedText].map(([uri, aiContext]) => ({ uri, aiContext, category: 'Achievement' }))
+        ),
     },
 }));
 
@@ -181,6 +188,7 @@ beforeEach(() => {
     uris = [VALID_URI, INVALID_URI];
     verified.length = 0;
     events.length = 0;
+    storedText.clear();
     getConsentFlowDataForDid.mockClear();
     readGet.mockClear();
     verifyCredential.mockClear();
@@ -466,7 +474,6 @@ describe('MCP get_user_context resolves each credential once per request', () =>
         }));
         delete process.env.MCP_TOOL_TIMEOUT_MS;
         delete process.env.MCP_POST_BATCH_RESERVE_MS;
-        delete process.env.MCP_CONTEXT_MAX_CREDENTIALS;
         console.info = originalInfo;
         console.warn = originalWarn;
         console.error = originalError;
@@ -489,9 +496,6 @@ describe('MCP get_user_context resolves each credential once per request', () =>
             ).toISOString();
             return { records: [createActiveRecord(uris, date)], hasMore: false };
         });
-        // Every credential loads: this test is about once-per-request resolution,
-        // not the per-call credential cap.
-        process.env.MCP_CONTEXT_MAX_CREDENTIALS = '100';
         try {
             const { context, error, elapsedMs } = await runMcp();
             expect(error).toBeUndefined();
@@ -778,8 +782,9 @@ describe('MCP get_user_context on a 213-credential account at prod latencies', (
         const completed = result.completed;
         const loaded = completed?.loadedCount ?? 0;
         const deferred = CREDENTIALS - loaded - (completed?.skippedCount ?? 0);
-        expect(loaded).toBeGreaterThan(0);
-        expect(deferred).toBeGreaterThan(0);
+        // No per-call credential cap: the batch loads until its stop time.
+        expect(loaded).toBeGreaterThan(20);
+        if (budgetMs < 45_000) expect(deferred).toBeGreaterThan(0);
         expect(JSON.stringify(events)).not.toContain('lc:cloud:credential');
         console.log(
             `213 credentials at ${budgetMs / 1000}s: returned in ${Math.round(result.elapsedMs)}ms ` +
@@ -812,6 +817,84 @@ describe('MCP get_user_context on a 213-credential account at prod latencies', (
                 await restore();
             }
         },
-        { timeout: 60_000 }
+        // The tool returns inside 45s; the rest drains its queued store writes.
+        { timeout: 180_000 }
     );
+});
+
+describe('MCP get_user_context stored ingest-verified evidence', () => {
+    const SHARED_URIS = Array.from(
+        { length: 30 },
+        (_, index) => `lc:cloud:credential:stored-${index}`
+    );
+    const WITHDRAWN_URI = 'lc:cloud:credential:withdrawn-1';
+    const text = (label: string) =>
+        JSON.stringify({
+            schemaVersion: '1',
+            category: 'Achievement',
+            credentialTypes: ['AchievementCredential'],
+            facts: [{ label: 'Achievement', value: label }],
+        });
+    const runMcpTool = async () => {
+        process.env.MCP_TOOL_TIMEOUT_MS = '10000';
+        const { runMcpOwnerOperation } = await import('../ownerOperation');
+        return runMcpOwnerOperation(OWNER, () => getLatestUserSummary(OWNER), 'get_user_context');
+    };
+    const restore = () => {
+        aiStubs.aiCall.mockImplementation(async () => ({
+            prompt: 'Sibling learner context',
+            summary: 'Sibling summary',
+        }));
+        delete process.env.MCP_TOOL_TIMEOUT_MS;
+        console.info = originalInfo;
+        console.warn = originalWarn;
+    };
+
+    test('every shared credential with stored text is represented, none read live; a withdrawn one with a stored row never is', async () => {
+        uris = SHARED_URIS;
+        SHARED_URIS.forEach((uri, index) => storedText.set(uri, text(`Stored skill ${index}`)));
+        storedText.set(WITHDRAWN_URI, text('WITHDRAWN_PRIVATE_SENTINEL'));
+        aiStubs.aiCall.mockClear();
+        try {
+            expect(await runMcpTool()).toBe('Sibling learner context');
+            const messages = (aiStubs.aiCall.mock.calls as unknown as [{ message?: string }][]).map(
+                ([request]) => request.message ?? ''
+            );
+            // One model call over the evidence: no per-credential summaries.
+            expect(messages).toHaveLength(1);
+            const represented = new Set(
+                [...messages[0]!.matchAll(/Stored skill (\d+)/g)].map(match => match[1])
+            );
+            expect(represented.size).toBe(SHARED_URIS.length);
+            expect(messages[0]).not.toContain('WITHDRAWN_PRIVATE_SENTINEL');
+            expect(readGet).not.toHaveBeenCalled();
+        } finally {
+            restore();
+        }
+    });
+
+    test('a withdrawal during the synthesis call publishes nothing from stored text', async () => {
+        uris = [...SHARED_URIS];
+        SHARED_URIS.forEach((uri, index) => storedText.set(uri, text(`Stored skill ${index}`)));
+        aiStubs.aiCall.mockImplementation(async () => {
+            // Sharing is withdrawn for one credential while the model runs.
+            uris = SHARED_URIS.slice(1);
+            return { prompt: 'Sibling learner context', summary: 'Sibling summary' };
+        });
+        const { db } = await import('../../db');
+        const upsert = db.upsertLearnerContextPromptByHash as ReturnType<typeof mock>;
+        upsert.mockClear();
+        try {
+            const error = await runMcpTool().then(
+                () => undefined,
+                (caught: unknown) => caught
+            );
+            expect((error as Error | undefined)?.name).toBe('AiConsentError');
+            const { drainCredentialStores } = await import('../../credentials/store-queue');
+            await drainCredentialStores();
+            expect(upsert).not.toHaveBeenCalled();
+        } finally {
+            restore();
+        }
+    });
 });

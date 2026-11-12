@@ -267,27 +267,6 @@ test('a budget spent before anything loaded fails as an item failure', async () 
     expect(isCredentialItemFailure(error)).toBe(true);
 });
 
-test('maxLoaded returns as soon as that many loaded; running tasks are deferred', async () => {
-    quiet();
-    let started = 0;
-    const slow = () => new Promise<string>(resolve => setTimeout(() => resolve('slow'), 500));
-    const tasks = Array.from({ length: 10 }, (_, index) => async () => {
-        started += 1;
-        if (index < 2) return `fast-${index}`;
-        return slow();
-    });
-    const startedAt = performance.now();
-    const result = await settleCredentialBatch('thread_context', tasks, {
-        concurrency: 4,
-        maxLoaded: 2,
-    });
-    expect(performance.now() - startedAt).toBeLessThan(250);
-    expect(result.loaded).toEqual(['fast-0', 'fast-1']);
-    expect(result.skipped).toEqual([]);
-    expect(result.deferred).toBe(8);
-    expect(started).toBeLessThanOrEqual(6);
-});
-
 test('stopAt returns by the stop with what settled; a hung task is deferred, not awaited', async () => {
     quiet();
     const tasks = [

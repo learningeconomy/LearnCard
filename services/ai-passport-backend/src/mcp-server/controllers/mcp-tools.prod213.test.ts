@@ -22,6 +22,8 @@ process.env.SEED ||= 'test-seed';
  *   caches are cleared between them, Mongo is shared.
  * Search is a stub with the old shape: query expansion (a model call) unless
  * expandQueries is false, then an embedding and a vector query.
+ * Credentials ingested earlier have a stored row with their ingest-verified
+ * text (one metadata query reads them all); the rest are read and verified live.
  */
 const OWNER = 'did:example:learner';
 const CREDENTIALS = 213;
@@ -36,8 +38,6 @@ const LLM_MS = 9_800;
 const ANSWER_MS = 8_000;
 const EXPANSION_MS = 3_000;
 const BUDGET_MS = 45_000;
-/** The per-call credential cap (MCP_CONTEXT_MAX_CREDENTIALS default). */
-const MAX_CREDENTIALS = 20;
 const CONTRACT_URI =
     process.env.LEARNCARD_CONTRACT_URI ||
     'lc:network:network.learncard.com/trpc:contract:fd6649c7-52c9-4d02-b5ab-fade649d5a0b';
@@ -112,6 +112,17 @@ const activeRecord = () => ({
 });
 
 const storedInvalid = new Set<string>();
+/** Stored ingest-time text by URI: what earlier ingestion wrote. */
+const storedText = new Map<string, string>();
+const ingestedText = (index: number) =>
+    JSON.stringify({
+        schemaVersion: '1',
+        category: 'Achievement',
+        credentialTypes: ['AchievementCredential'],
+        facts: [{ label: 'Achievement', value: `Skill ${index}` }],
+    });
+/** What the last synthesis cached: its metadata. */
+let cachedMetadata: Record<string, unknown> | undefined;
 /** Credential reads during the current call, by URI. */
 const reads = new Map<string, number>();
 const prompts: string[] = [];
@@ -178,7 +189,7 @@ mock.module('../../learncard', () => ({
     }),
 }));
 const aiCall = mock(async (request: { message?: string; userPrompt?: string }) => {
-    prompts.push(JSON.stringify(request));
+    prompts.push(request.message ?? JSON.stringify(request));
     await sleep(LLM_MS);
     return { prompt: 'Synthesized learner context', summary: 'Cluster summary' };
 });
@@ -245,7 +256,17 @@ mock.module('../../db', () => ({
             await mongo.use(30);
             return undefined;
         },
-        upsertLearnerContextPromptByHash: async () => mongo.use(STORE_MS),
+        upsertLearnerContextPromptByHash: async (row: { metadata: Record<string, unknown> }) => {
+            cachedMetadata = row.metadata;
+            await mongo.use(STORE_MS);
+        },
+        getCredentialAiContexts: async (_did: string, candidates: string[]) => {
+            await mongo.use(50);
+            return candidates.flatMap(uri => {
+                const aiContext = storedText.get(uri);
+                return aiContext ? [{ uri, aiContext, category: 'Achievement' }] : [];
+            });
+        },
         getCredentialSummaryByHash: async () => {
             await mongo.use(30);
             return undefined;
@@ -302,63 +323,104 @@ const call = async <T>(
     return { ...outcome, elapsedMs, readUris, readOnce };
 };
 
+/** Distinct credentials a prompt carries, by their "Skill N" fact. */
+const markers = (prompt: string) => [
+    ...new Set([...prompt.matchAll(/"value":"Skill (\d+)"/g)].map(match => Number(match[1]))),
+];
+
+/** get_user_context, then (on another fresh machine) get_answer_about_user. */
+const runBoth = async () => {
+    const originals = [console.info, console.warn, console.error] as const;
+    console.info = capture as typeof console.info;
+    console.warn = capture as typeof console.warn;
+    console.error = capture as typeof console.error;
+    process.env.MCP_TOOL_TIMEOUT_MS = String(BUDGET_MS);
+    try {
+        freshMachine();
+        prompts.length = 0;
+        cachedMetadata = undefined;
+        const context = await call('get_user_context', () => getLatestUserSummary(OWNER));
+        const contextPrompt = prompts.at(-1) ?? '';
+        // The gap between the calls in prod was ~11s; background writes finish.
+        await Promise.race([drainCredentialStores(), sleep(30_000)]);
+        freshMachine();
+        prompts.length = 0;
+        const knownInvalid = new Set(storedInvalid);
+        const answer = await call('get_answer_about_user', () =>
+            getAnswerAboutUser(OWNER, 'What has this learner achieved?')
+        );
+        const answerPrompt = prompts.at(-1) ?? '';
+        await drainCredentialStores();
+        // The context's prompt-cache write (the answer makes none) ran in the
+        // background store queue.
+        const contextMetadata = cachedMetadata as Record<string, unknown> | undefined;
+        console.log(
+            `redis max wait ${Math.round(redis.maxWaitMs)}ms, mongo max wait ${Math.round(mongo.maxWaitMs)}ms; ` +
+                `context used ${contextMetadata?.usedCredentialCount} credentials, ` +
+                `${markers(contextPrompt).length} in its prompt; answer prompt carries ${markers(answerPrompt).length}`
+        );
+        return { context, contextPrompt, contextMetadata, answer, answerPrompt, knownInvalid };
+    } finally {
+        [console.info, console.warn, console.error] = originals;
+        delete process.env.MCP_TOOL_TIMEOUT_MS;
+    }
+};
+
+const expectBothRepresentMoreThan20 = (result: Awaited<ReturnType<typeof runBoth>>) => {
+    const { context, contextPrompt, contextMetadata, answer, answerPrompt } = result;
+    expect(context.error).toBeUndefined();
+    expect(context.value).toBe('Synthesized learner context');
+    expect(context.elapsedMs).toBeLessThan(BUDGET_MS);
+    expect(context.readOnce).toBe(true);
+    expect(Number(contextMetadata?.usedCredentialCount)).toBeGreaterThan(20);
+    expect(markers(contextPrompt).length).toBeGreaterThan(20);
+    expect(markers(contextPrompt).filter(isInvalid)).toEqual([]);
+
+    expect(answer.error).toBeUndefined();
+    expect(answer.value).toBe('Answer grounded in the learner evidence');
+    expect(answer.elapsedMs).toBeLessThan(BUDGET_MS);
+    expect(answer.readOnce).toBe(true);
+    // The answer saw more than 20 real, verified credentials and no invalid one.
+    expect(markers(answerPrompt).length).toBeGreaterThan(20);
+    expect(markers(answerPrompt).filter(isInvalid)).toEqual([]);
+    // The second machine never read what the first stored as invalid.
+    expect(result.knownInvalid.size).toBeGreaterThan(0);
+    expect(answer.readUris.filter(uri => result.knownInvalid.has(uri))).toEqual([]);
+    expect(JSON.stringify(events)).not.toContain('lc:cloud:credential');
+};
+
 describe('MCP read tools on a 213-credential account under prod factors', () => {
     test(
-        'get_user_context then get_answer_about_user both return real context inside 45s',
+        'with every valid credential ingested, both tools represent more than 20 credentials inside 45s',
         async () => {
-            const originals = [console.info, console.warn, console.error] as const;
-            console.info = capture as typeof console.info;
-            console.warn = capture as typeof console.warn;
-            console.error = capture as typeof console.error;
-            process.env.MCP_TOOL_TIMEOUT_MS = String(BUDGET_MS);
-            try {
-                freshMachine();
-                const context = await call('get_user_context', () => getLatestUserSummary(OWNER));
-                // The gap between the calls in prod was ~11s; background writes finish.
-                await Promise.race([drainCredentialStores(), sleep(30_000)]);
-                freshMachine();
-                prompts.length = 0;
-                const knownInvalid = new Set(storedInvalid);
-                const answer = await call('get_answer_about_user', () =>
-                    getAnswerAboutUser(OWNER, 'What has this learner achieved?')
-                );
-                await Promise.race([drainCredentialStores(), sleep(30_000)]);
-
-                console.log(
-                    `redis max wait ${Math.round(redis.maxWaitMs)}ms, mongo max wait ${Math.round(mongo.maxWaitMs)}ms`
-                );
-
-                expect(context.error).toBeUndefined();
-                expect(context.value).toBe('Synthesized learner context');
-                expect(context.elapsedMs).toBeLessThan(BUDGET_MS);
-                // Each credential read at most once; the rest deferred to a later call.
-                expect(context.readUris.length).toBeGreaterThan(0);
-                expect(context.readUris.length).toBeLessThan(CREDENTIALS);
-                expect(context.readOnce).toBe(true);
-
-                expect(answer.error).toBeUndefined();
-                expect(answer.value).toBe('Answer grounded in the learner evidence');
-                expect(answer.elapsedMs).toBeLessThan(BUDGET_MS);
-                expect(answer.readUris.length).toBeGreaterThan(0);
-                expect(answer.readUris.length).toBeLessThan(CREDENTIALS);
-                expect(answer.readOnce).toBe(true);
-                // The answer saw real, verified credential evidence and no invalid one.
-                const answerPrompt = prompts.at(-1) ?? '';
-                const evidence = [...answerPrompt.matchAll(/"value":"Skill (\d+)"/g)].map(match =>
-                    Number(match[1])
-                );
-                expect(evidence.length).toBeGreaterThan(0);
-                expect(evidence.length).toBeLessThanOrEqual(MAX_CREDENTIALS);
-                expect(evidence.filter(isInvalid)).toEqual([]);
-                // The second machine never read what the first stored as invalid.
-                expect(knownInvalid.size).toBeGreaterThan(0);
-                expect(answer.readUris.filter(uri => knownInvalid.has(uri))).toEqual([]);
-                expect(JSON.stringify(events)).not.toContain('lc:cloud:credential');
-            } finally {
-                [console.info, console.warn, console.error] = originals;
-                delete process.env.MCP_TOOL_TIMEOUT_MS;
-            }
+            storedInvalid.clear();
+            storedText.clear();
+            uris.forEach((uri, index) => {
+                if (!isInvalid(index)) storedText.set(uri, ingestedText(index));
+            });
+            const result = await runBoth();
+            expectBothRepresentMoreThan20(result);
+            // Stored credentials are never read live; only the un-ingested ones are.
+            expect(result.context.readUris.filter(uri => storedText.has(uri))).toEqual([]);
+            expect(result.answer.readUris.filter(uri => storedText.has(uri))).toEqual([]);
         },
-        { timeout: 240_000 }
+        { timeout: 420_000 }
+    );
+
+    test(
+        'with half the valid credentials not yet ingested, both tools still represent more than 20 inside 45s',
+        async () => {
+            storedInvalid.clear();
+            storedText.clear();
+            uris.forEach((uri, index) => {
+                if (!isInvalid(index) && index % 2 === 0) storedText.set(uri, ingestedText(index));
+            });
+            const result = await runBoth();
+            expectBothRepresentMoreThan20(result);
+            // The un-ingested ones were verified live, each at most once.
+            expect(result.context.readUris.length).toBeGreaterThan(0);
+            expect(result.context.readUris.filter(uri => storedText.has(uri))).toEqual([]);
+        },
+        { timeout: 420_000 }
     );
 });
