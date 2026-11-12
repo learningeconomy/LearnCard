@@ -1,0 +1,5 @@
+/node_modules/
+/.gradle/
+/lab/src/holder/assets/
+/lab/src/verifier/assets/
+/local.properties

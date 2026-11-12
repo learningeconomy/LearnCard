@@ -16,6 +16,7 @@ type Latest = {
     requestId: string;
     requestedAt: string;
     receivedAt?: string;
+    expectedBy?: string;
 };
 
 const mocks = vi.hoisted(() => ({
@@ -375,6 +376,128 @@ describe('TranscriptOptInCard', () => {
         };
         render(<TranscriptOptInCard source="wallet" />);
         expect(screen.getByTestId('transcript-optin-stale')).toBeTruthy();
+    });
+
+    describe('with a delivery estimate from the school', () => {
+        const pending = (requestedAgoMs: number, expectedInMs: number): Latest => {
+            const now = Date.now();
+            return {
+                status: 'requested',
+                requestId: 'r1',
+                requestedAt: new Date(now - requestedAgoMs).toISOString(),
+                expectedBy: new Date(now + expectedInMs).toISOString(),
+            };
+        };
+
+        it('shows a progress bar for a request expected within a couple of minutes', () => {
+            mocks.latest = pending(10_000, 110_000);
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.getByRole('progressbar').getAttribute('aria-valuetext')).toBe(
+                'About 2 minutes left'
+            );
+        });
+
+        it('says when to expect a longer delivery', () => {
+            mocks.latest = pending(60_000, 3 * 60 * 60_000);
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.getByTestId('transcript-optin-waiting').textContent).toBe(
+                'Expected in 3 hours'
+            );
+            expect(screen.queryByRole('progressbar')).toBeNull();
+        });
+
+        it('waits for the estimate before offering recovery, even after polling stops', () => {
+            mocks.isPollingExhausted = true;
+            mocks.latest = pending(60 * 60_000, 2 * 24 * 60 * 60_000);
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
+        });
+
+        it('drops the progress bar for a short estimate that was missed long ago', () => {
+            mocks.latest = pending(3 * 60 * 60_000, -(3 * 60 * 60_000 - 120_000));
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.queryByRole('progressbar')).toBeNull();
+            expect(screen.getByTestId('transcript-optin-waiting').textContent).toBe('Waiting');
+            expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
+        });
+
+        it('drops the progress bar exactly when the estimate grace expires', async () => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date('2026-11-10T12:00:00.000Z'));
+            mocks.latest = pending(0, 120_000);
+            render(<TranscriptOptInCard source="wallet" />);
+
+            await act(async () => vi.advanceTimersByTimeAsync(179_999));
+            expect(screen.getByRole('progressbar')).toBeTruthy();
+
+            await act(async () => vi.advanceTimersByTimeAsync(1));
+            expect(screen.queryByRole('progressbar')).toBeNull();
+            expect(screen.getByTestId('transcript-optin-waiting').textContent).toBe('Waiting');
+            expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
+        });
+
+        it.each([false, true])(
+            'offers recovery exactly at the stale deadline (estimate: %s)',
+            async withEstimate => {
+                vi.useFakeTimers();
+                vi.setSystemTime(new Date('2026-11-10T12:00:00.000Z'));
+                mocks.latest = pending(
+                    TRANSCRIPT_STALE_AFTER_MS + 60_000,
+                    -TRANSCRIPT_STALE_AFTER_MS + 1_000
+                );
+                if (!withEstimate) {
+                    mocks.latest.requestedAt = new Date(
+                        Date.now() - TRANSCRIPT_STALE_AFTER_MS + 1_000
+                    ).toISOString();
+                    delete mocks.latest.expectedBy;
+                }
+                render(<TranscriptOptInCard source="wallet" />);
+
+                await act(async () => vi.advanceTimersByTimeAsync(999));
+                expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
+
+                await act(async () => vi.advanceTimersByTimeAsync(1));
+                expect(screen.getByTestId('transcript-optin-stale')).toBeTruthy();
+                expect(screen.getByTestId('transcript-optin-open-notifications')).toBeTruthy();
+            }
+        );
+
+        it('updates on its own when an estimate passes after polling has stopped', () => {
+            vi.useFakeTimers({ shouldAdvanceTime: true });
+            try {
+                mocks.isPollingExhausted = true;
+                mocks.latest = pending(31 * 60_000, 50 * 60_000);
+                render(<TranscriptOptInCard source="wallet" />);
+                expect(screen.getByTestId('transcript-optin-waiting').textContent).toBe(
+                    'Expected in 50 minutes'
+                );
+                expect(screen.queryByTestId('transcript-optin-stale')).toBeNull();
+
+                act(() => {
+                    vi.advanceTimersByTime(30 * 60_000);
+                });
+                expect(screen.getByTestId('transcript-optin-waiting').textContent).toBe(
+                    'Expected in 20 minutes'
+                );
+
+                act(() => {
+                    vi.advanceTimersByTime(20 * 60_000 + 1_000);
+                });
+                expect(screen.getByTestId('transcript-optin-stale')).toBeTruthy();
+                expect(screen.getByTestId('transcript-optin-open-notifications')).toBeTruthy();
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
+        it('offers recovery a day after a missed estimate', () => {
+            mocks.latest = pending(
+                3 * TRANSCRIPT_STALE_AFTER_MS,
+                -TRANSCRIPT_STALE_AFTER_MS - 1000
+            );
+            render(<TranscriptOptInCard source="wallet" />);
+            expect(screen.getByTestId('transcript-optin-stale')).toBeTruthy();
+        });
     });
 
     describe('after a none_yet response', () => {

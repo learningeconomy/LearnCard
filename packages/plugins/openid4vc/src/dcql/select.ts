@@ -136,7 +136,7 @@ export const selectCredentialsForDcql = async (
         dcqlCredentials
     );
 
-    const matches: Record<string, DcqlCredentialMatch> = {};
+    const matches: Record<string, DcqlCredentialMatch> = Object.create(null);
 
     for (const [queryId, match] of Object.entries(result.credential_matches)) {
         if (match.success) {

@@ -14,6 +14,7 @@ import {
 } from '@helpers/classlinkContext.helpers';
 import { getTranscriptRequesterDid, signIssuerAssertion } from '@helpers/issuerAssertion.helpers';
 import { getStateStudentId } from '@helpers/classlinkPii.helpers';
+import { parseExpectedDelivery } from '@helpers/transcriptDelivery.helpers';
 import {
     createTranscriptRequest,
     findLatestTranscriptRequest,
@@ -47,10 +48,11 @@ if redis.call('GET', KEYS[1]) == ARGV[1] then
     return redis.call('DEL', KEYS[1])
 end
 return 0`;
-const project = ({ status, requestedAt, jti }: MongoTranscriptRequestType) => ({
+const project = ({ status, requestedAt, jti, expectedBy }: MongoTranscriptRequestType) => ({
     status,
     requestedAt,
     requestId: jti,
+    ...(status === 'requested' && expectedBy ? { expectedBy: expectedBy.toISOString() } : {}),
 });
 const recent = (record: MongoTranscriptRequestType | null): record is MongoTranscriptRequestType =>
     record?.status === 'requested' &&
@@ -142,6 +144,8 @@ export const transcriptsRouter = t.router({
                         requestedAt: z.date(),
                         requestId: z.string(),
                         receivedAt: z.string().datetime().optional(),
+                        /** When the issuer expects to deliver a `requested` transcript. */
+                        expectedBy: z.string().datetime().optional(),
                     })
                     .optional(),
             })
@@ -212,6 +216,7 @@ export const transcriptsRouter = t.router({
                 status: z.enum(['requested', 'none_yet', 'failed']),
                 requestedAt: z.date(),
                 requestId: z.string(),
+                expectedBy: z.string().datetime().optional(),
             })
         )
         .mutation(async ({ ctx }) => {
@@ -300,6 +305,7 @@ export const transcriptsRouter = t.router({
                 });
                 let issuerHttpStatus: number | undefined;
                 let issuerResponseCode: string | undefined;
+                let expectedBy: Date | undefined;
                 let status: MongoTranscriptRequestType['status'] = 'failed';
                 try {
                     const response = await axios.post<unknown>(
@@ -320,8 +326,10 @@ export const transcriptsRouter = t.router({
                         if (
                             (response.status === 200 || response.status === 202) &&
                             body.data.status === 'accepted'
-                        )
+                        ) {
                             status = 'requested';
+                            expectedBy = parseExpectedDelivery(response.data, record.requestedAt);
+                        }
                         if (response.status === 200 && body.data.status === 'none_yet')
                             status = 'none_yet';
                     }
@@ -340,10 +348,11 @@ export const transcriptsRouter = t.router({
                     status,
                     ...(issuerHttpStatus === undefined ? {} : { issuerHttpStatus }),
                     ...(issuerResponseCode === undefined ? {} : { issuerResponseCode }),
+                    ...(expectedBy ? { expectedBy } : {}),
                 });
                 if (status === 'failed')
                     throw new TRPCError({ code: 'BAD_GATEWAY', message: FAILURE });
-                return project({ ...record, status });
+                return project({ ...record, status, expectedBy });
             } catch (error) {
                 if (error instanceof TRPCError) throw error;
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: FAILURE });

@@ -20,6 +20,8 @@ export interface MongoTranscriptRequestType {
     consentAt: Date;
     requestedAt: Date;
     receivedAt?: Date;
+    /** When the issuer said it expects to deliver the transcript, if it gave a hint. */
+    expectedBy?: Date;
     status: TranscriptRequestStatus;
     issuerHttpStatus?: number;
     issuerResponseCode?: string;
