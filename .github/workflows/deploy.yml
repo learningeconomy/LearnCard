@@ -6,6 +6,8 @@ on:
             - main
     # The separate recovery workflow calls the same deployment path with a
     # production-only bundle override. Ordinary dispatches do not expose it.
+    # Remaining github.event.inputs references read the caller's dispatch inputs;
+    # avoid adding service or publishing input names to the recovery workflow.
     workflow_call:
         inputs:
             target-environment:

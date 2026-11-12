@@ -14,6 +14,9 @@ const determine = deploy.jobs['determine-affected'];
 
 test('recovery is isolated from the standard deploy menu and fixes the production frontend target', () => {
     assert.equal(deploy.on.workflow_dispatch.inputs['capgo-bundle-version'], undefined);
+    // Other jobs still read the caller's event inputs; additional names could
+    // accidentally select a service or publishing job during recovery.
+    assert.deepEqual(Object.keys(recovery.on.workflow_dispatch.inputs), ['recovery-version']);
     assert.equal(recovery.on.workflow_dispatch.inputs['recovery-version'].required, true);
     const call = recovery.jobs.deploy;
     assert.equal(call.needs, 'validate');
@@ -27,7 +30,7 @@ test('recovery is isolated from the standard deploy menu and fixes the productio
     assert.match(deploy.jobs['deploy-frontend'].concurrency.group, /matrix\.environment/);
 });
 
-test('recovery preflight rejects blank and invalid versions before invoking deploy', () => {
+test('recovery preflight rejects invalid versions and deploy validates before setting flags', () => {
     const step = recovery.jobs.validate.steps.find(
         item => item.name === 'Validate recovery version'
     );
