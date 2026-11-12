@@ -365,7 +365,7 @@ test('job gates reuse an existing runner, fail toward execution and retain all s
     assert.equal(jobs.Test.needs, undefined, 'required unit tests are not delayed or filtered');
     assert.equal(jobs.Test.if, undefined);
     for (const command of [
-        'node --test scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs .github/tests/test-deploy-test-proof.test.cjs',
+        'node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs .github/tests/test-deploy-test-proof.test.cjs .github/tests/test-capgo-recovery-workflow.test.cjs',
         'node --test scripts/wait-for-didkit-registry.test.mjs',
     ]) {
         const index = jobs.Test.steps.findIndex(step => step.run === command);
