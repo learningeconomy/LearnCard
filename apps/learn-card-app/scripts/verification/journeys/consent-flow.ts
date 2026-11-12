@@ -164,6 +164,15 @@ export const consentFlowFeature: FeatureDefinition = {
             await privacy.getByRole('button', { name: 'Back', exact: true }).click();
             await expect(privacy).toBeHidden();
             await dialog.getByRole('button', { name: 'Accept', exact: true }).click();
+            const audience = page.getByRole('dialog').filter({
+                has: page.getByRole('heading', {
+                    name: 'Review who receives your data',
+                    exact: true,
+                }),
+            });
+            await expect(audience).toBeVisible({ timeout: UI_TIMEOUT });
+            await expect(audience.getByText(recipient.displayName, { exact: true })).toBeVisible();
+            await audience.getByRole('button', { name: 'Confirm Sharing', exact: true }).click();
             await expect(dialog.getByRole('button', { name: 'Accept', exact: true })).toBeHidden({
                 timeout: UI_TIMEOUT,
             });
