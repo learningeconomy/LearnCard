@@ -722,6 +722,7 @@ serviceConfigContract({
         'NOTIFICATIONS_QUEUE_URL',
         'INBOX_QUEUE_URL',
         'CAMPAIGN_QUEUE_URL',
+        'READABLE_DELIVERY_KMS_KEY_ARN',
         'GIT_SHA',
     ],
     fallback: [
@@ -753,6 +754,7 @@ serviceConfigContract({
         NOTIFICATIONS_QUEUE_URL: 120,
         INBOX_QUEUE_URL: 120,
         CAMPAIGN_QUEUE_URL: 120,
+        READABLE_DELIVERY_KMS_KEY_ARN: 120,
         RUNTIME_SECRETS_ID: 90,
         GIT_SHA: 40,
         SEED: 64,

@@ -82,6 +82,8 @@ Learners can withdraw consent using the existing app flow. The creating administ
 | `READABLE_DELIVERY_CLOUD_INTERNAL_URL` | Optional trusted internal origin; HTTPS required outside local development           |
 | `READABLE_DELIVERY_LOCAL_KEY`          | 64 hex characters, accepted only by an offline, nonproduction runtime outside Lambda |
 
+For Lambda, set the enable flag and trusted origins in the brain service's checked-in per-stage configuration (`config/config.<stage>.json`); they are applied at cold start. The deployment helper supplies the KMS ARN and deliberately never forwards a local wrapping key. Local standalone processes can use their own `.env`.
+
 The infrastructure creates a retained, automatically rotating KMS wrapping key restricted to the brain service execution role and the readable-delivery encryption context. That role is shared by the existing brain service functions; it is the runtime trust boundary. The recipient, domain, and key version are bound to each ciphertext. KMS failure never falls back to a local key. Automatic KMS rotation preserves access to existing envelopes; rotating a recipient's agent identity is not supported by this API.
 
 The graph stores encrypted private-key envelopes separately from public profiles. Reads, provisioning, and disabling write audit events containing actor, recipient, action, outcome, timestamp, and result count, without credential content or learner identifiers. An unavailable audit store prevents successful delivery. Retain and restrict these audit records under your organization's operational policy.
