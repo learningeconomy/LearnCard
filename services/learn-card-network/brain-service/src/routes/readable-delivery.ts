@@ -52,7 +52,7 @@ export const readableDeliveryRouter = t.router({
                 summary: 'Disable readable delivery for a recipient you created',
             },
         })
-        .input(z.object({ profileId: z.string().min(1).max(64) }))
+        .input(z.object({ profileId: z.string().min(3).max(40) }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             await disableReadableDelivery(input.profileId, ctx.domain, ctx.user.profile.profileId);

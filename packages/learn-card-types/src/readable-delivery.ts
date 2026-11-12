@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const READABLE_DELIVERY_DISCLOSURE_VERSION = '1' as const;
 
 export const ReadableDeliveryRecipientValidator = z.object({
-    profileId: z.string(),
+    profileId: z.string().min(3).max(40),
     did: z.string(),
     displayName: z.string(),
     agentDid: z.string(),

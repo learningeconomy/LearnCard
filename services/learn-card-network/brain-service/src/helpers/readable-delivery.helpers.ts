@@ -98,14 +98,14 @@ export const provisionReadableDelivery = async (
             'key',
             await wallet.invoke.generateEd25519KeyFromBytes(recipientEntropy)
         );
-        const binding = { profileId: `readable-${randomUUID()}`, domain, version: 1 };
+        const binding = { profileId: `rd-${randomUUID()}`, domain, version: 1 };
         const encrypted = await keys.encrypt(JSON.stringify(key), binding);
         const record: DeliveryRecord = {
             ...binding,
             ...encrypted,
             provisionId,
             agentDid,
-            agentProfileId: `delivery-agent-${randomUUID()}`,
+            agentProfileId: `rda-${randomUUID().replaceAll('-', '')}`,
             ownerProfileId: owner,
             displayName: input.displayName,
             enabled: true,

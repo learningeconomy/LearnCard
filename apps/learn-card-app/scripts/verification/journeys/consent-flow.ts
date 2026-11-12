@@ -86,6 +86,15 @@ export const consentFlowFeature: FeatureDefinition = {
                 },
             });
             expect(uri.startsWith(networkPrefix)).toBe(true);
+            const details = await partner.invoke.getContract(uri);
+            expect(details.readableDeliveryRecipients).toContainEqual({
+                profileId: recipient.profileId,
+                displayName: recipient.displayName,
+                agentDid: recipient.agentDid,
+                enabled: true,
+                disclosureVersion: '1',
+            });
+            expect(details.recipients?.map(profile => profile.did)).toContain(recipient.did);
             expect(await partner.invoke.verifyConsent(uri, learner.profileId)).toBe(false);
             return uri;
         });
