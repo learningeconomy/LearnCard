@@ -14,7 +14,11 @@ import { isAiProviderError, toAiErrorPayload } from '../ai/errors';
 import { sendConversationSummary, createTopicVCStructure } from '../services/awarding';
 import { getSuggestedTopics } from '../credentials/service';
 import { CredentialVerificationUnavailableError } from '../credentials/verification';
-import { beginCredentialContextRead, credentialFailureCodeOf } from '../credentials/batch';
+import {
+    beginCredentialContextRead,
+    credentialFailureCodeOf,
+    knownBadCredentialKind,
+} from '../credentials/batch';
 import { classifyLearnCardFailure, learnCardFailureLogFields } from '../learncard/errors';
 import { type DBMessage, db } from '../db';
 import { getLearnCard } from '../learncard';
@@ -629,6 +633,9 @@ const openCredentialContext = async (
     let highestStrongestScore: number | undefined;
     let highestAverageScore: number | undefined;
     let maxMatchCount: number | undefined;
+    // A live verify gave way: keep what loaded, but leave the context pending
+    // so the deferred search can still add what was skipped.
+    let incomplete = false;
     const searchPromise = searchCredentialContextsByTopic(topic, did, {
         limit: 5,
         expandQueries: false,
@@ -647,6 +654,9 @@ const openCredentialContext = async (
             highestStrongestScore = metrics.highestStrongestScore;
             highestAverageScore = metrics.highestAverageScore;
             maxMatchCount = metrics.maxMatchCount;
+        },
+        onIncomplete: () => {
+            incomplete = true;
         },
     })
         .then(contexts => ({ contexts }))
@@ -681,7 +691,7 @@ const openCredentialContext = async (
         }
 
         if ('contexts' in outcome) {
-            if (ingestionPendingAtSearch) {
+            if (ingestionPendingAtSearch || incomplete) {
                 if (outcome.contexts.length > 0) {
                     await db.storeThreadCredentials(did, threadId, outcome.contexts);
                     await db.setThreadCredentialContextState(threadId, did, 'pending', topic);
@@ -699,7 +709,7 @@ const openCredentialContext = async (
                     maxMatchCount,
                     embeddingTextsFromCache,
                     ingestionPhaseAtSearch,
-                    indexWarm: false,
+                    indexWarm: !ingestionPendingAtSearch,
                 });
                 sendCredentialContextStatus(
                     did,
@@ -826,7 +836,7 @@ const completeCredentialContext = async (
     }
 
     return asCredentialContextRead(did, () =>
-        deferCredentialContext(topic, did, threadId, startup, timing, ownerSignal)
+        deferCredentialContext(topic, did, threadId, opening.contexts, startup, timing, ownerSignal)
     );
 };
 
@@ -834,6 +844,7 @@ const deferCredentialContext = async (
     topic: string,
     did: string,
     threadId: string,
+    provisional: TopicSearchContext[],
     startup: StartupRequest,
     timing: RequestTiming,
     ownerSignal: AbortSignal
@@ -883,7 +894,7 @@ const deferCredentialContext = async (
 
         getBoundRemainingMs(bound);
         stage = 'search';
-        const contexts = await searchCredentialContextsByTopic(topic, did, {
+        const found = await searchCredentialContextsByTopic(topic, did, {
             limit: 5,
             expandQueries: detectProvider(TITLE_MODEL) !== 'google',
             signal: bound.signal,
@@ -898,6 +909,18 @@ const deferCredentialContext = async (
                 maxMatchCount = metrics.maxMatchCount;
             },
         });
+        // The deferred results replace the provisional ones by URI. A provisional
+        // credential it didn't return (skipped again, or past its window) is kept
+        // unless it's now known invalid, so a retry never shrinks the context.
+        const foundUris = new Set(found.map(({ uri }) => uri));
+        const contexts = [
+            ...found,
+            ...provisional.filter(
+                ({ uri }) => !foundUris.has(uri) && knownBadCredentialKind(did, uri) !== 'invalid'
+            ),
+        ]
+            .sort((left, right) => right.score - left.score)
+            .slice(0, 5);
         getBoundRemainingMs(bound);
         stage = 'store';
         await db.storeThreadCredentials(did, threadId, contexts);

@@ -1110,6 +1110,7 @@ describe('credential search pipeline', () => {
         withUnverifiedStoredText('lc:credential:r1');
         resolveVerifiedCredentialProjection.mockImplementation(() => new Promise<never>(() => {}));
         let results: Awaited<ReturnType<typeof searchCredentialContextsByTopic>> = [];
+        const onIncomplete = mock(() => undefined);
         const deadlineAt = performance.now() + 1_100;
         const outcome = await withQuietWarn(() =>
             settleWithin(
@@ -1118,6 +1119,7 @@ describe('credential search pipeline', () => {
                     limit: 5,
                     preferStoredText: true,
                     deadlineAt,
+                    onIncomplete,
                 }).then(value => {
                     results = value;
                 }),
@@ -1138,6 +1140,8 @@ describe('credential search pipeline', () => {
             'lc:credential:r5',
         ]);
         expect(results.every(({ context }) => context === 'stored context')).toBe(true);
+        // r1 was skipped, not settled: chat keeps this context retryable.
+        expect(onIncomplete).toHaveBeenCalledTimes(1);
     });
 
     it('when every row is unverified and its verify hangs, the search defers as a timeout before the deadline', async () => {
@@ -1169,11 +1173,13 @@ describe('credential search pipeline', () => {
         useRankedCandidates();
         resolveVerifiedCredentialProjection.mockImplementation(() => new Promise<never>(() => {}));
         const startedAt = performance.now();
+        const onIncomplete = mock(() => undefined);
         const results = await searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
             expandQueries: false,
             limit: 5,
             preferStoredText: true,
             deadlineAt: startedAt + 2_000,
+            onIncomplete,
         });
 
         // Well before the live verify would have given way (deadline - 1s).
@@ -1182,6 +1188,7 @@ describe('credential search pipeline', () => {
         expect(results.every(({ context }) => context === 'stored context')).toBe(true);
         expect(resolveVerifiedCredentialProjection).not.toHaveBeenCalled();
         expect(assertCredentialConsent).toHaveBeenCalledTimes(5);
+        expect(onIncomplete).not.toHaveBeenCalled();
     });
 
     it('preferStoredText still verifies live a credential with no stored text', async () => {

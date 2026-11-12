@@ -82,6 +82,12 @@ export type CredentialSearchOptions = {
      */
     preferStoredText?: boolean;
     onMetrics?: (metrics: CredentialSearchMetrics) => void;
+    /**
+     * Called before a result returns when a credential with no verified stored
+     * text was skipped because its live verify gave way: a longer search may
+     * still load it.
+     */
+    onIncomplete?: () => void;
 };
 
 const SEARCH_DIMENSIONS = [
@@ -329,6 +335,7 @@ const searchCredentialContextsPinned = async (
         deadlineAt,
         preferStoredText = false,
         onMetrics,
+        onIncomplete,
     } = options;
     const overallStartedAt = performance.now();
     let embeddingTextsFromCache = false;
@@ -589,6 +596,7 @@ const searchCredentialContextsPinned = async (
             : deadlineAt -
               Math.min(STORED_TEXT_RESERVE_MS, Math.max(0, deadlineAt - performance.now()) / 2);
     const gaveWay = new WeakSet<CredentialVerificationUnavailableError>();
+    let incomplete = false;
     const verifyLive = (result: TopicSearchContext) => {
         if (liveVerifyDeadlineAt === undefined)
             return resolveVerifiedCredentialProjection(did, result.uri, receipt);
@@ -648,8 +656,14 @@ const searchCredentialContextsPinned = async (
                                 !isCredentialItemFailure(error, { signal, deadlineAt }) ||
                                 isConfirmedInvalidCredentialFailure(error) ||
                                 !result.context.trim()
-                            )
+                            ) {
+                                if (
+                                    error instanceof CredentialVerificationUnavailableError &&
+                                    gaveWay.has(error)
+                                )
+                                    incomplete = true;
                                 throw error;
+                            }
                             const fallback = await useStoredText(result);
                             logCredentialSkip('context', start + offset, ranked.length, error);
                             return fallback;
@@ -680,12 +694,16 @@ const searchCredentialContextsPinned = async (
         }
         return loaded.slice(0, limit);
     };
+    const complete = (contexts: TopicSearchContext[]) => {
+        if (incomplete) onIncomplete?.();
+        return contexts;
+    };
     throwIfCancelled(signal, deadlineAt);
     try {
-        return await raceCancellation(project(), signal, deadlineAt);
+        return complete(await raceCancellation(project(), signal, deadlineAt));
     } catch (error) {
         if (loaded.length && error instanceof Error && error.name === 'TimeoutError')
-            return loaded.slice(0, limit);
+            return complete(loaded.slice(0, limit));
         throw error;
     }
 };

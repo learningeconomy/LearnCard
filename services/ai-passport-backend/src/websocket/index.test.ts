@@ -236,6 +236,12 @@ const credentialContext = {
     context: 'Relevant credential',
     score: 0.9,
 };
+// Skipped by the opening when its live verify gave way; the deferred search loads it.
+const lateCredentialContext = {
+    uri: 'lc:credential:late',
+    context: 'Late verified credential',
+    score: 0.8,
+};
 
 const waitForAbort = async (signal: AbortSignal): Promise<never> => {
     signal.throwIfAborted();
@@ -259,6 +265,7 @@ const searchCredentialContextsByTopic = mock(
                 embeddingTextsFromCache: boolean;
                 resultCount: number;
             }) => void;
+            onIncomplete?: () => void;
         }
     ) => {
         const attempt = (credentialSearchAttempts.get(topic) ?? 0) + 1;
@@ -340,7 +347,12 @@ const searchCredentialContextsByTopic = mock(
                 topic === 'Ready' ||
                 ((topic === 'GoogleDeferred' || topic === 'DeferredClosed') && attempt > 1)
                     ? [credentialContext]
-                    : [];
+                    : topic === 'PartialGaveWay'
+                      ? attempt === 1
+                          ? [credentialContext]
+                          : [lateCredentialContext]
+                      : [];
+            if (topic === 'PartialGaveWay' && attempt === 1) options.onIncomplete?.();
 
             options.onMetrics?.({
                 embeddingTextsFromCache: false,
@@ -1897,6 +1909,59 @@ describe('WebSocket session startup', () => {
         await settle();
         expect(createActiveSessionThread).toHaveBeenCalledTimes(2);
         expect(events(otherSocket, 'plan_ready')).toHaveLength(1);
+    });
+
+    it('keeps a partial opening context pending and lets the deferred search add what gave way', async () => {
+        const socket = new TestSocket('did:example:partial-gave-way');
+
+        await start(socket, 'PartialGaveWay');
+        await waitFor(
+            () =>
+                credentialSearchSettledAttempts.get('PartialGaveWay') === 2 &&
+                !activeStartups.has('did:example:partial-gave-way'),
+            'partial credential completion'
+        );
+
+        expect(credentialSearchAttempts.get('PartialGaveWay')).toBe(2);
+        expect(db.storeThreadCredentials).toHaveBeenNthCalledWith(
+            1,
+            'did:example:partial-gave-way',
+            'thread-1',
+            [credentialContext]
+        );
+        expect(db.storeThreadCredentials).toHaveBeenLastCalledWith(
+            'did:example:partial-gave-way',
+            'thread-1',
+            [credentialContext, lateCredentialContext]
+        );
+        expect(events(socket, 'credential_context_status')).toEqual([
+            expect.objectContaining({ status: 'pending', count: 0 }),
+            expect.objectContaining({ status: 'pending', count: 1 }),
+            expect.objectContaining({ status: 'ready', count: 2 }),
+        ]);
+        expect(events(socket, 'credentials_for_topic')).toEqual([
+            expect.objectContaining({ credentials: [credentialContext, lateCredentialContext] }),
+        ]);
+        expect(events(socket, 'plan_ready')).toHaveLength(1);
+    });
+
+    it('a complete opening context is ready and skips the deferred search', async () => {
+        const socket = new TestSocket('did:example:complete-opening');
+
+        await start(socket, 'Ready');
+        await waitFor(
+            () => !activeStartups.has('did:example:complete-opening'),
+            'complete opening context'
+        );
+
+        expect(credentialSearchAttempts.get('Ready')).toBe(1);
+        expect(events(socket, 'credential_context_status')).toEqual([
+            expect.objectContaining({ status: 'pending', count: 0 }),
+            expect.objectContaining({ status: 'ready', count: 1 }),
+        ]);
+        expect(events(socket, 'credentials_for_topic')).toEqual([
+            expect.objectContaining({ credentials: [credentialContext] }),
+        ]);
     });
 
     it('refreshes provisional context after pending ingestion settles', async () => {
