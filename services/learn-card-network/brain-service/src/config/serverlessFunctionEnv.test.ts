@@ -54,6 +54,7 @@ describe('brain-service serverless provider environment', () => {
         });
         const env = functions.provider({
             env: {
+                NODE_ENV: 'production',
                 READABLE_DELIVERY_LOCAL_KEY: 'synthetic-local-only',
                 READABLE_DELIVERY_KMS_KEY_ARN: 'override',
             },
