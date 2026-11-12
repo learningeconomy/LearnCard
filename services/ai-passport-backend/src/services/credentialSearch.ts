@@ -385,8 +385,8 @@ const searchCredentialContextsPinned = async (
     // Known-bad credentials (a permanent failure in the last few minutes) are
     // left out of the search itself, so they cannot take the top-k slots from
     // credentials that may still verify. The exception is an unverifiable one
-    // (not confirmed invalid) with stored ingest-time text: that text is what
-    // the walk will use for it, so it stays searchable.
+    // (not confirmed invalid) with stored ingest-verified text: that text is
+    // what the walk will use for it, so it stays searchable.
     const unverifiableUris = receipt.credentialUris.filter(
         uri => knownBadCredentialKind(did, uri) === 'unverifiable'
     );
@@ -394,8 +394,11 @@ const searchCredentialContextsPinned = async (
     const knownBadWithStoredText = new Set(
         unverifiableUris.length
             ? (await db.getCredentialAiContexts(did, unverifiableUris)).flatMap(
-                  ({ uri, aiContext }) =>
-                      unverifiable.has(uri) && typeof aiContext === 'string' && aiContext.trim()
+                  ({ uri, aiContext, verified }) =>
+                      verified === true &&
+                      unverifiable.has(uri) &&
+                      typeof aiContext === 'string' &&
+                      aiContext.trim()
                           ? [uri]
                           : []
               )
@@ -507,8 +510,12 @@ const searchCredentialContextsPinned = async (
     );
     const ranked = rankedCandidates
         .flatMap((candidate): TopicSearchContext[] => {
-            const context = storedByUri.get(candidate.uri)?.aiContext;
-            if (typeof context !== 'string') return [];
+            const row = storedByUri.get(candidate.uri);
+            if (typeof row?.aiContext !== 'string') return [];
+            // Stored text stands in for a live verify only when its stored
+            // verification and projection validate. Any other row is walked
+            // with no stored text: live verify decides, with no fallback.
+            const context = row.verified === true ? row.aiContext : '';
             // A known-bad credential is walked only for its stored text.
             if (isKnownBadCredential(did, candidate.uri) && !context.trim()) return [];
             return [{ ...candidate, context }];
