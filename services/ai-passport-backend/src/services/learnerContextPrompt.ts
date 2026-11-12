@@ -247,12 +247,12 @@ const resolveContextCredential = async (
 /*
  * Under an MCP deadline, each credential's evidence text, newest-shared first.
  * Like the chat's opening context (credentialSearch preferStoredText), a
- * credential's stored ingest-time text stands in for a live verify: one
+ * credential's stored ingest-verified text stands in for a live verify: one
  * metadata query for every candidate, and a stored row counts only for a URI
  * this request's consent authorizes and shares (checked here, in memory, not
- * per credential against the network). Only credentials with no stored text
- * are read and verified live, and only until the batch's stop time; the rest
- * are deferred. Known-bad credentials are not tried at all.
+ * per credential against the network). Only credentials with no verified
+ * stored text are read and verified live, and only until the batch's stop
+ * time; the rest are deferred. Known-bad credentials are not tried at all.
  */
 const loadBudgetedContextEvidence = async (
     did: string,
@@ -270,9 +270,13 @@ const loadBudgetedContextEvidence = async (
             ? boundedLookup(() => db.getCredentialAiContexts(did, uris), [])
             : Promise.resolve([]),
     ]);
+    // Only a row whose stored projection and ingest-time verification validate
+    // (verified) stands in for a live verify. A legacy or failed row, or a
+    // failed or slow lookup (no rows), goes to the live batch below.
     const stored = new Map<string, string>();
-    for (const { uri, aiContext } of storedRows) {
+    for (const { uri, aiContext, verified } of storedRows) {
         if (
+            verified === true &&
             typeof aiContext === 'string' &&
             aiContext.trim() &&
             authorized.has(uri) &&

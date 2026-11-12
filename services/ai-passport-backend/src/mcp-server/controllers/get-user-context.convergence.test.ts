@@ -55,8 +55,10 @@ let failFirstStore = false;
 let uris = [VALID_URI, INVALID_URI];
 const verified: string[] = [];
 const events: Array<Record<string, unknown>> = [];
-/** Stored ingest-time text by URI (rows earlier ingestion wrote). */
+/** Stored ingest-verified text by URI (rows earlier ingestion wrote). */
 const storedText = new Map<string, string>();
+/** Stored text whose stored verification or projection does not validate. */
+const unverifiedText = new Map<string, string>();
 
 const getConsentFlowDataForDid = mock(async () => {
     consentReads += 1;
@@ -144,8 +146,18 @@ mock.module('../../db', () => ({
         upsertCredentialSummaryByHash: mock(async () => undefined),
         // Every stored row, whatever was asked: a stale row must still be
         // filtered by the request's consent.
-        getCredentialAiContexts: mock(async () =>
-            [...storedText].map(([uri, aiContext]) => ({ uri, aiContext, category: 'Achievement' }))
+        getCredentialAiContexts: mock(
+            async (): Promise<
+                { uri: string; aiContext?: string; category?: string; verified?: true }[]
+            > => [
+                ...[...storedText].map(([uri, aiContext]) => ({
+                    uri,
+                    aiContext,
+                    category: 'Achievement',
+                    verified: true as const,
+                })),
+                ...[...unverifiedText].map(([uri, aiContext]) => ({ uri, aiContext })),
+            ]
         ),
     },
 }));
@@ -189,6 +201,7 @@ beforeEach(() => {
     verified.length = 0;
     events.length = 0;
     storedText.clear();
+    unverifiedText.clear();
     getConsentFlowDataForDid.mockClear();
     readGet.mockClear();
     verifyCredential.mockClear();
@@ -894,6 +907,84 @@ describe('MCP get_user_context stored ingest-verified evidence', () => {
             await drainCredentialStores();
             expect(upsert).not.toHaveBeenCalled();
         } finally {
+            restore();
+        }
+    });
+    test('stored text without validated provenance never reaches synthesis; live verify decides', async () => {
+        const LEGACY_OK = 'lc:cloud:credential:legacy-ok';
+        const LEGACY_BAD = 'lc:cloud:credential:legacy-bad';
+        const FAILED_OK = 'lc:cloud:credential:failed-ok';
+        const FAILED_BAD = 'lc:cloud:credential:failed-bad';
+        uris = [LEGACY_OK, LEGACY_BAD, FAILED_OK, FAILED_BAD];
+        // Legacy rows (no verification metadata) and rows whose stored
+        // verification or projection fails both come back without `verified`.
+        for (const uri of uris) unverifiedText.set(uri, text(`UNVERIFIED_STORED_${uri}`));
+        readGet.mockImplementation(async (uri?: string) => {
+            const vc = createTestVc(uri ?? VALID_URI);
+            return {
+                ...vc,
+                credentialSubject: { id: OWNER, achievement: { name: `Live ${uri}` } },
+            };
+        });
+        verifyCredential.mockImplementation(async (credential?: VC) => {
+            const id = typeof credential?.id === 'string' ? credential.id : '';
+            return id.endsWith('-bad')
+                ? { checks: [], errors: ['Invalid signature'], warnings: [] }
+                : { checks: ['proof'], errors: [], warnings: [] };
+        });
+        aiStubs.aiCall.mockClear();
+        try {
+            expect(await runMcpTool()).toBe('Sibling learner context');
+            const message =
+                (aiStubs.aiCall.mock.calls as unknown as [{ message?: string }][])[0]?.[0]
+                    .message ?? '';
+            expect(message).not.toContain('UNVERIFIED_STORED_');
+            // Each went to live verification: verified ones in, failed ones out.
+            expect(new Set(readGet.mock.calls.map(([uri]) => uri))).toEqual(new Set(uris));
+            expect(message).toContain(`Live ${LEGACY_OK}`);
+            expect(message).toContain(`Live ${FAILED_OK}`);
+            expect(message).not.toContain(`Live ${LEGACY_BAD}`);
+            expect(message).not.toContain(`Live ${FAILED_BAD}`);
+        } finally {
+            readGet.mockImplementation(async (uri?: string) => createTestVc(uri ?? VALID_URI));
+            verifyCredential.mockImplementation(async (credential?: VC) => {
+                const id = typeof credential?.id === 'string' ? credential.id : '';
+                verified.push(id);
+                if (id === INVALID_URI)
+                    return { checks: [], errors: ['Invalid signature'], warnings: [] };
+                return { checks: ['proof'], errors: [], warnings: [] };
+            });
+            restore();
+        }
+    });
+
+    test('a failed or hung provenance lookup trusts no stored text', async () => {
+        const { db } = await import('../../db');
+        const lookup = db.getCredentialAiContexts as ReturnType<typeof mock>;
+        const original = lookup.getMockImplementation();
+        uris = SHARED_URIS.slice(0, 3);
+        uris.forEach(uri => storedText.set(uri, text('STORED_SENTINEL')));
+        try {
+            for (const failure of [
+                async () => {
+                    throw new Error('lookup failed');
+                },
+                () => new Promise<never>(() => undefined),
+            ]) {
+                lookup.mockImplementation(failure);
+                readGet.mockClear();
+                aiStubs.aiCall.mockClear();
+                expect(await runMcpTool()).toBe('Sibling learner context');
+                const message =
+                    (aiStubs.aiCall.mock.calls as unknown as [{ message?: string }][])[0]?.[0]
+                        .message ?? '';
+                expect(message).not.toContain('STORED_SENTINEL');
+                expect(new Set(readGet.mock.calls.map(([uri]) => uri))).toEqual(new Set(uris));
+                resetConsentSnapshots();
+                clearVerifiedCredentials();
+            }
+        } finally {
+            if (original) lookup.mockImplementation(original);
             restore();
         }
     });

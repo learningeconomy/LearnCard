@@ -264,7 +264,9 @@ mock.module('../../db', () => ({
             await mongo.use(50);
             return candidates.flatMap(uri => {
                 const aiContext = storedText.get(uri);
-                return aiContext ? [{ uri, aiContext, category: 'Achievement' }] : [];
+                return aiContext
+                    ? [{ uri, aiContext, category: 'Achievement', verified: true as const }]
+                    : [];
             });
         },
         getCredentialSummaryByHash: async () => {

@@ -2295,6 +2295,10 @@ export class ChatDB {
      * text (a legacy row repaired with only its projection) gets the text ingest
      * would have stored: its stored projection, serialized, when that projection
      * passed verification at ingest. `fromProjection` marks those.
+     * `verified` marks a row whose stored projection and ingest-time
+     * verification validate now (valid, proof-checked). A row without it may
+     * still carry legacy text: only callers that accept unverified stored text
+     * (the chat's fallback) should use that.
      */
     public async getCredentialAiContexts(
         did: string,
@@ -2305,6 +2309,7 @@ export class ChatDB {
             aiContext?: string;
             category?: string;
             fromProjection?: true;
+            verified?: true;
         }[]
     > {
         assertRawCredentialOwner(did);
@@ -2338,7 +2343,7 @@ export class ChatDB {
             } catch {
                 stored = undefined;
             }
-            const category = stored ? { category: stored.category } : {};
+            const category = stored ? { category: stored.category, verified: true as const } : {};
             if (typeof aiContext === 'string' && aiContext.trim())
                 return { uri, aiContext, ...category };
             if (stored)
