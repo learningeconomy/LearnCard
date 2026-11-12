@@ -419,15 +419,15 @@ Checked 2026-11-06 (staging drill 6, read-only, against both environments' store
 receipt rules, ledgers and read-only Terraform plans):
 
 1. SES stored-message header order and `Authentication-Results` format/position,
-   DKIM `header.i`/`header.d`. **Partly verified.** Real mail carries one SES
+   DKIM `header.i`/`header.d`. **Verified** (2026-11-12). Real mail carries one SES
    `Authentication-Results` (authserv-id `amazonses.com`) above the first
    `DKIM-Signature`, `header.i` only (never `header.d`), two dkim results in either
    order; the parser accepted every real code, started and login-code message. The
    synthetic fixture differs cosmetically (one `DKIM-Signature` instead of two, no
    `X-SES-DKIM-SIGNATURE`, `smtp.mailfrom` instead of the real
-   `client-ip`/`envelope-from`/`helo` form, no trace headers). **Open:** no real
-   warning email exists yet; check the first one (~2026-11-10 production,
-   ~2026-11-11 staging).
+   `client-ip`/`envelope-from`/`helo` form, no trace headers). Real warning emails
+   were then read and trusted in both environments (production 2026-11-10 22:46Z,
+   staging 2026-11-11 16:10Z), and those holds released and re-enrolled.
 2. SES setup-notification object name/location. **Verified:** one
    `inbox/hold-NN/AMAZON_SES_SETUP_NOTIFICATION` per rule prefix, which the runner
    excludes by exact key.

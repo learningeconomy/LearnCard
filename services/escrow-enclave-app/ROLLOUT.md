@@ -173,8 +173,10 @@ production host has run the brand-aware image since 2026-11-05 02:36Z (pins
       monitored, alongside the paging escrow canary alarms.
 - [x] Production alarm drill: denied-write and unexpected-write authority alarms
       fired and delivered (2026-11-05 ~17:10Z; LAUNCH-DECISIONS.md RAR condition).
-- [ ] Production canary clean, including the first production tier 3 release
-      (~2026-11-11).
+- [x] Production canary clean, including the first production tier 3 release:
+      `hold-01` started 2026-11-04 22:26Z, warning read 2026-11-10 22:46Z, released
+      and re-enrolled 2026-11-11 22:56Z; `hold-02` released 2026-11-12. Tier 1/2 at
+      100% and all canary alarms OK since 2026-11-06.
 - [x] `escrow-enclave-production-AuthorityRepeatedPinClear` (ALARM since
       2026-10-30) understood: the 2026-10-30 production pilot test on Jackson Smith's
       own account (`ACCOUNT#3ab64432…`, matched from his `did:key`; 13 authority

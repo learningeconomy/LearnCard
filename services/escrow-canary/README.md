@@ -444,8 +444,9 @@ backlog of real holds can legitimately delay a warning past its due time and pag
 
 ### Tier 3 staging drills
 
-1. Warm-up and cancel gap: 8+ days enabled with no false page. In progress (staging
-   enabled 2026-11-03; no false page as of 2026-11-06).
+1. Warm-up and cancel gap: 8+ days enabled with no false page. Passed 2026-11-12:
+   staging enabled 2026-11-03; its only tier 3 pages were drills 2–4 on 2026-11-04.
+   First weekly cancel runs closed `cancelled` in both environments on 2026-11-09.
 2. `inject-overdue` pages within one evaluation; `close-step` clears it. Observed
    2026-11-04: paged at the first evaluation (19:58Z), OK one evaluation after `close-step`.
 3. Disable only the evaluator schedule: the heartbeat alarm pages. Observed 2026-11-04:
@@ -454,12 +455,13 @@ backlog of real holds can legitimately delay a warning past its due time and pag
    evaluation range. Cleared ~1 min after the schedule was re-enabled.
 4. Point `TIER3_LEDGER_TABLE` at a missing table: no heartbeat, pages. Observed
    2026-11-04: paged ~75 min later; cleared 23:15:51Z after the setting was restored.
-5. Send mail from a non-allowlisted sender to a pool address: ignored. In progress: one
-   plain-text message from an outside mailbox was delivered to staging `hold-03` on
-   2026-11-06 19:34Z. Proof is that run reaching `warned` once its warning-read window
-   opens (~2026-11-11 15:13Z) with no `Step.Failure` Tier=3 series and no Overdue.
-   A skipped foreign message emits nothing by design. Real non-allowlisted mail already
-   in the inboxes (lca-api cancellation notices) returns untrusted offline.
+5. Send mail from a non-allowlisted sender to a pool address: ignored. Passed
+   2026-11-12: one plain-text message from an outside mailbox was delivered to staging
+   `hold-03` on 2026-11-06 19:34Z. The runner read that prefix every tick from the
+   warning-read window (2026-11-11 15:13Z) until the real warning arrived (16:10:48Z),
+   skipped the foreign message, then reached `warned` and was released and re-enrolled
+   2026-11-12 16:28Z. No `Step.Failure` Tier=3 series and no Overdue. A skipped
+   foreign message emits nothing by design.
 6. Resolve every UNVERIFIED item in TIER3-DESIGN.md §11: capture a redacted
    real code email (header order, `Authentication-Results` position, DKIM
    `header.i`/`header.d`), the SES setup-notification object, SSE-KMS writes
