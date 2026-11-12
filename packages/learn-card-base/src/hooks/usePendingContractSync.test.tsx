@@ -118,6 +118,17 @@ it('does not share a saved credential removed before retry', async () => {
     expect(mocks.sync).not.toHaveBeenCalled();
 });
 
+it('cancels an Achievement retry when the same saved credential has been moved to ID', async () => {
+    const job = enqueue();
+    mocks.readIndex.mockResolvedValue([{ ...source, category: 'ID' }]);
+    mount();
+    await waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
+    expect(mocks.readIndex).toHaveBeenCalledWith({ id: source.id });
+    expect(mocks.sync).not.toHaveBeenCalled();
+    expect(mocks.share).not.toHaveBeenCalled();
+    expect(mocks.syncContract).not.toHaveBeenCalled();
+});
+
 it('never retries stale contract terms against another contract owned by the same profile', async () => {
     const job = enqueuePendingContractSync({
         profileDid: 'did:example:learner',

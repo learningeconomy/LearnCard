@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- LC-2371: Retry failed credential sharing, including consent discovery, through the persisted contract-sync queue without failing successful saves. Keep retries scoped to the saving account and exact contract terms.
+- LC-2371: Retry failed credential sharing, including consent discovery, through the persisted contract-sync queue without failing successful saves. Keep retries scoped to the saving account and exact contract terms. Cancel a queued credential retry if its saved category has changed, so the previous category's consent is not reused.
 
 ## 0.8.1
 

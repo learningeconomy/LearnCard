@@ -163,7 +163,9 @@ export const usePendingContractSync = (enabled = true): void => {
                 if (job.kind === 'credential') {
                     const source = job.record;
                     const records = await wallet.index.LearnCloud.get({ id: source.id });
-                    if (!records.some(record => record.uri === source.uri)) {
+                    const current = records.find(record => record.uri === source.uri);
+                    // Recategorization changes which consent applies; never replay the old grant.
+                    if (!current || current.category !== job.category) {
                         pendingContractSyncStore.set.markDone(job.id);
                         return;
                     }
