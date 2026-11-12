@@ -16,10 +16,19 @@ const mocks = vi.hoisted(() => ({
 vi.mock('./useWallet', () => ({
     useWallet: () => ({ initWallet: mocks.initWallet, syncCredentialToContracts: mocks.sync }),
 }));
-vi.mock('../stores/walletStore', () => ({
-    walletStore: { use: { wallet: () => ({ id: { did: () => mocks.activeDid } }) } },
-    switchedProfileStore: { use: { switchedDid: () => undefined } },
-}));
+vi.mock('../stores/walletStore', () => {
+    const wallet = { id: { did: () => mocks.activeDid } };
+    return {
+        walletStore: {
+            use: { wallet: () => wallet },
+            get: { wallet: () => wallet },
+        },
+        switchedProfileStore: {
+            use: { switchedDid: () => undefined },
+            get: { switchedDid: () => undefined },
+        },
+    };
+});
 vi.mock('./useConsentedContracts', () => ({ getOrFetchConsentedContracts: mocks.contracts }));
 vi.mock('./useSharedUrisInTerms', () => ({ getOrCreateSharedUriForWallet: mocks.share }));
 vi.mock('./consentAudience', () => ({
@@ -90,7 +99,8 @@ it('persists a failed credential for reload and retries it only under its saving
     expect(mocks.sync).toHaveBeenCalledWith(
         { record: source, category: 'Achievement' },
         expect.objectContaining({ id: expect.anything() }),
-        expect.any(Set)
+        expect.any(Set),
+        expect.any(Function)
     );
 });
 
@@ -108,6 +118,82 @@ it('retains a failed retry and wakes after the existing backoff', async () => {
     });
     expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done');
     expect(mocks.sync).toHaveBeenCalledTimes(2);
+});
+
+it('persists each acknowledged term before failure and restores it on a reloaded retry', async () => {
+    vi.useFakeTimers();
+    const job = enqueue();
+    mocks.sync.mockImplementationOnce(async (_input, _wallet, completed, acknowledge) => {
+        expect(completed).toEqual(new Set());
+        acknowledge('terms-a');
+        throw new Error('terms-b unavailable');
+    });
+    const hook = mount();
+    await act(async () => {});
+    hook.unmount();
+    const persisted = JSON.parse(localStorage.getItem('pendingContractSyncStore')!);
+    expect(persisted.state.jobs[job.id]).toMatchObject({
+        status: 'error',
+        syncedTermsUris: ['terms-a'],
+    });
+    pendingContractSyncStore.set.jobs(persisted.state.jobs);
+    mocks.sync.mockImplementationOnce(async (_input, _wallet, completed, acknowledge) => {
+        expect(completed).toEqual(new Set(['terms-a']));
+        acknowledge('terms-b');
+        return true;
+    });
+    await act(async () => {
+        mount();
+        await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
+        status: 'done',
+        syncedTermsUris: ['terms-a', 'terms-b'],
+    });
+    expect(mocks.sync).toHaveBeenCalledTimes(2);
+});
+
+it('waits without spending a retry or spinning when initialization returns a stale wallet', async () => {
+    const job = enqueue();
+    mocks.initWallet.mockResolvedValueOnce({ id: { did: () => 'did:example:other' } });
+    const hook = mount();
+    await act(async () => {});
+    expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
+        status: 'queued',
+        retryCount: 0,
+    });
+    expect(mocks.initWallet).toHaveBeenCalledTimes(1);
+    expect(mocks.sync).not.toHaveBeenCalled();
+    mocks.activeDid = 'did:example:other';
+    hook.rerender();
+    mocks.activeDid = 'did:example:learner';
+    hook.rerender();
+    await waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
+    expect(mocks.initWallet).toHaveBeenCalledTimes(2);
+});
+
+it('leaves the job queued if the active account changes while initialization is pending', async () => {
+    const job = enqueue();
+    let resolveWallet!: (wallet: { id: { did: () => string } }) => void;
+    mocks.initWallet.mockReturnValueOnce(
+        new Promise(resolve => {
+            resolveWallet = resolve;
+        })
+    );
+    const hook = mount();
+    mocks.activeDid = 'did:example:other';
+    hook.rerender();
+    await act(async () => {
+        resolveWallet({ id: { did: () => 'did:example:learner' } });
+    });
+    expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
+        status: 'queued',
+        retryCount: 0,
+    });
+    expect(mocks.sync).not.toHaveBeenCalled();
+    mocks.activeDid = 'did:example:learner';
+    hook.rerender();
+    await waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
 });
 
 it('does not share a saved credential removed before retry', async () => {

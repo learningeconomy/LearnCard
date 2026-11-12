@@ -1345,6 +1345,7 @@ export function useLearnCardMessageHandlers({
                                               {
                                                   title: topicCredential.name || 'AI Topic',
                                                   networkUri: topicCredentialUri as string,
+                                                  deferContractSync: true,
                                               },
                                               'LearnCloud',
                                               true
@@ -1366,6 +1367,7 @@ export function useLearnCardMessageHandlers({
                                               {
                                                   title: sessionCredential.name || 'AI Session',
                                                   networkUri: sessionCredentialUri as string,
+                                                  deferContractSync: true,
                                               },
                                               'LearnCloud',
                                               true

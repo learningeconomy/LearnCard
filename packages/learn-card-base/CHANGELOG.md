@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- LC-2371: Retry failed credential sharing, including consent discovery, through the persisted contract-sync queue without failing successful saves. Keep retries scoped to the saving account and exact contract terms. Cancel a queued credential retry if its saved category has changed, so the previous category's consent is not reused.
+- LC-2371: Shared store/add/bulk-save callers retain successful saves when consent discovery or sharing fails. Persist account-scoped retries and acknowledged terms so retries do not repeat successful contract mutations. Queue Partner Connect delivery before returning, pause stale-account attempts without consuming retries, and cancel retries after recategorization. Automatic sharing remains limited to LearnCloud-indexed credentials; the audience-copy cache and retry worker do not support SQLite-only sources.
 
 ## 0.8.1
 

@@ -790,15 +790,16 @@ it('retries failed contracts without repeating acknowledged contract mutations',
         return true;
     });
     const hooks = useWallet();
-    const completed = new Set<string>();
     const input: Parameters<typeof hooks.syncCredentialToContracts>[0] = {
         record: { id: 'record', uri: 'credential', category: 'Achievement' },
         category: 'Achievement',
     };
-    await expect(hooks.syncCredentialToContracts(input, undefined, completed)).rejects.toThrow(
-        'Some consented contracts could not be synced'
-    );
-    expect(completed).toEqual(new Set(['terms-a']));
+    await expect(hooks.syncCredentialToContracts(input)).resolves.toBe(false);
+    const [job] = Object.values(pendingContractSyncStore.get.jobs());
+    expect(job.kind).toBe('credential');
+    if (job.kind !== 'credential') throw new Error('Expected a credential retry');
+    expect(job.syncedTermsUris).toEqual(['terms-a']);
+    const completed = new Set(job.syncedTermsUris);
     expect(mocks.syncContract).toHaveBeenCalledTimes(2);
     mocks.syncContract.mockResolvedValue(true);
     await expect(hooks.syncCredentialToContracts(input, undefined, completed)).resolves.toBe(true);
@@ -839,10 +840,11 @@ it('does not mark unavailable shared credentials as successfully synced', async 
     expect(completed).toEqual(new Set(['terms-a']));
 });
 
-it('syncs Partner Connect saves only after a confirmed index write and preserves save success on failure', async () => {
-    mocks.getConsentedContracts.mockRejectedValueOnce(new Error('network unavailable'));
+it('queues Partner Connect sharing after the index write without waiting for network delivery', async () => {
+    mocks.getConsentedContracts.mockImplementationOnce(() => new Promise(() => {}));
     const saved = await useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true);
     expect(saved).toMatchObject({ result: true, credentialUri: 'encrypted-uri' });
+    expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
     expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
         expect.objectContaining({
             profileDid: 'did:example:claiming-account',
@@ -859,6 +861,18 @@ it('syncs Partner Connect saves only after a confirmed index write and preserves
     });
     expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
     expect(pendingContractSyncStore.get.jobs()).toEqual({});
+});
+
+it('does not queue automatic sharing when a caller explicitly defers it', async () => {
+    const saved = await useWallet().storeAndAddVCToWallet(
+        credential,
+        { deferContractSync: true },
+        'LearnCloud',
+        true
+    );
+    expect(saved).toMatchObject({ result: true });
+    expect(pendingContractSyncStore.get.jobs()).toEqual({});
+    expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
 });
 
 it('queues an unavailable shared copy without expanding beyond live category-wide consent', async () => {

@@ -93,4 +93,25 @@ describe('pendingContractSyncStore', () => {
         expect(retriedJob.failedCredentials).toBe(0);
         expect(retriedJob.syncedSharedUrisByCategory).toEqual({});
     });
+
+    it('keeps acknowledged terms when an unfinished credential is re-enqueued', () => {
+        const input = {
+            kind: 'credential' as const,
+            profileDid: JOB_INPUT.profileDid,
+            record: { id: 'saved', uri: 'credential', category: 'Achievement' as const },
+            category: 'Achievement' as const,
+        };
+        const job = enqueuePendingContractSync(input);
+        pendingContractSyncStore.set.recordTermsSynced(job.id, 'terms-a');
+        pendingContractSyncStore.set.recordTermsSynced(job.id, 'terms-a');
+        pendingContractSyncStore.set.markError(job.id, 'terms-b unavailable');
+        const retry = enqueuePendingContractSync({ ...input, syncedTermsUris: ['terms-b'] });
+        expect(retry.kind === 'credential' && retry.syncedTermsUris).toEqual([
+            'terms-a',
+            'terms-b',
+        ]);
+        pendingContractSyncStore.set.markDone(job.id);
+        const fresh = enqueuePendingContractSync(input);
+        expect(fresh.kind === 'credential' && fresh.syncedTermsUris).toEqual([]);
+    });
 });

@@ -20,6 +20,8 @@ type PendingContractSyncInput =
           /** Retry discovery as well as delivery when the consent lookup itself failed. */
           record: LCR;
           category: CredentialCategory;
+          /** Terms mutations acknowledged before a partial failure or reload. */
+          syncedTermsUris?: string[];
           contractUri?: never;
           termsUri?: never;
           ownerDid?: never;
@@ -113,7 +115,19 @@ export const pendingContractSyncStore = createStore(
 
         const job: PendingContractSyncJob = {
             id,
-            ...input,
+            ...(input.kind === 'credential'
+                ? {
+                      ...input,
+                      syncedTermsUris: [
+                          ...new Set([
+                              ...(existing?.kind === 'credential' && existing.status !== 'done'
+                                  ? (existing.syncedTermsUris ?? [])
+                                  : []),
+                              ...(input.syncedTermsUris ?? []),
+                          ]),
+                      ],
+                  }
+                : input),
             status: existing?.status === 'running' ? 'running' : 'queued',
             retryCount: existing?.status === 'running' ? existing.retryCount : 0,
             totalCredentials: existing?.status === 'running' ? existing.totalCredentials : 0,
@@ -146,6 +160,19 @@ export const pendingContractSyncStore = createStore(
 
         set.jobs({ ...prunedJobs, [id]: job });
         return job;
+    },
+    recordTermsSynced: (id: string, termsUri: string) => {
+        const jobs = get.jobs();
+        const job = jobs[id];
+        if (!job || job.kind !== 'credential') return;
+        set.jobs({
+            ...jobs,
+            [id]: {
+                ...job,
+                syncedTermsUris: [...new Set([...(job.syncedTermsUris ?? []), termsUri])],
+                updatedAt: now(),
+            },
+        });
     },
     markRunning: (id: string) => {
         const jobs = get.jobs();

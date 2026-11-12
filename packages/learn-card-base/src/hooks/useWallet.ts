@@ -309,14 +309,20 @@ export const useWallet = () => {
         }
     };
 
+    /**
+     * Materializes sharing from LearnCloud-indexed sources; SQLite-only records are
+     * not supported by the audience-copy cache or the persisted retry worker.
+     */
     const syncCredentialToContracts = async (
         { record, category }: { record: LCR; category: CredentialCategory },
         wallet?: BespokeLearnCard,
         // Owned by one claim attempt (one actor, credential and network), not a global cache.
         // Supplying this also makes partial failures visible to the recovery UI.
-        completedTerms?: Set<string>
+        completedTerms?: Set<string>,
+        onTermsSynced?: (termsUri: string) => void
     ) => {
         const learnCard = wallet ?? (await getWallet());
+        const syncedTerms = completedTerms ?? new Set<string>();
         try {
             // Fetch and cache all consented contracts for the user
             const allContracts = await getOrFetchConsentedContracts(queryClient, learnCard);
@@ -328,7 +334,7 @@ export const useWallet = () => {
             // Batch sync credentials to contracts, respecting share settings
             const outcomes = await Promise.allSettled(
                 allContracts.map(async ({ contract, terms, uri: termsUri, status }) => {
-                    if (status !== 'live' || completedTerms?.has(termsUri)) return;
+                    if (status !== 'live' || syncedTerms.has(termsUri)) return;
 
                     const categoryInfo = terms.read.credentials.categories[category];
 
@@ -376,7 +382,8 @@ export const useWallet = () => {
                                 audience.audienceVersion
                             );
                             // Remember the acknowledged mutation before any cache/refresh work.
-                            completedTerms?.add(termsUri);
+                            syncedTerms.add(termsUri);
+                            onTermsSynced?.(termsUri);
                             logWalletSync('syncCredentialsToContract completed', {
                                 ownerDid: contract.owner.did,
                                 contractUri: contract.uri,
@@ -446,6 +453,7 @@ export const useWallet = () => {
                 profileDid: learnCard.id.did(),
                 record: { id: record.id, uri: record.uri, category },
                 category,
+                syncedTermsUris: [...syncedTerms],
             });
             logWalletSyncError('Credential sharing queued for retry', error, {
                 recordUri: record.uri,
@@ -639,7 +647,13 @@ export const useWallet = () => {
                 returnUri = uri2;
                 if (result) void recordCredentialClaim(wallet, uri2, vc, category);
                 if (result && !deferContractSync) {
-                    await syncCredentialToContracts({ record, category }, wallet);
+                    // Persist before returning; the singleton worker owns network delivery.
+                    enqueuePendingContractSync({
+                        kind: 'credential',
+                        profileDid: wallet.id.did(),
+                        record,
+                        category,
+                    });
                 }
             }
 
