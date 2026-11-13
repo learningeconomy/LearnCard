@@ -9,12 +9,14 @@ import {
 } from './fileExtraction';
 import type { FileExtractionAttempt } from './fileExtraction';
 
-const { fetchMock, scopeState } = vi.hoisted(() => ({
+const { fetchMock, reservationMock, scopeState } = vi.hoisted(() => ({
     fetchMock: vi.fn(),
+    reservationMock: vi.fn(),
     scopeState: { controller: new AbortController() },
 }));
 vi.mock('./aiPassportAuth', () => ({
-    aiPassportFetch: fetchMock,
+    aiPassportFetch: (url: string, init: RequestInit, did: string) =>
+        url.includes('/reservations') ? reservationMock(url, init, did) : fetchMock(url, init, did),
     createAiPassportRequestScope: () => ({
         signal: scopeState.controller.signal,
         dispose: () => {},
@@ -57,6 +59,17 @@ const respond = (body: unknown, status = 200) =>
 beforeEach(() => {
     vi.restoreAllMocks();
     fetchMock.mockReset();
+    reservationMock.mockReset().mockImplementation(async (_url, init) =>
+        init.method === 'DELETE'
+            ? Response.json({ released: true })
+            : Response.json(
+                  {
+                      token: 'a'.repeat(43),
+                      expiresAt: Date.now() + 15000,
+                  },
+                  { status: 201 }
+              )
+    );
     scopeState.controller = new AbortController();
     configureLoggerContext({
         bugReportsEnabled: true,
@@ -74,7 +87,7 @@ describe('file extraction outcomes', () => {
             const attempt = createFileExtractionAttempt();
             const waiting = vi.fn();
             const onAttempt = vi.fn();
-            fetchMock.mockResolvedValueOnce(
+            reservationMock.mockResolvedValueOnce(
                 Response.json(
                     { code: 'upload_capacity_exceeded' },
                     { status: 503, headers: { 'Retry-After': '0' } }
@@ -91,17 +104,14 @@ describe('file extraction outcomes', () => {
             });
             await vi.runAllTimersAsync();
             expect((await pending).processing.outcome).toBe('empty');
-            const first = JSON.parse(fetchMock.mock.calls[0][1].body).diagnostics;
-            const second = JSON.parse(fetchMock.mock.calls[1][1].body).diagnostics;
-            expect(second.operationId).toBe(first.operationId);
-            expect(second.attemptId).toBe(first.attemptId);
-            expect(second.attempt).toBe(first.attempt);
-            expect(onAttempt).toHaveBeenCalledTimes(2);
-            expect(onAttempt).toHaveBeenLastCalledWith({
-                operationId: second.operationId,
-                attemptId: second.attemptId,
-                attempt: second.attempt,
-            });
+            expect(reservationMock).toHaveBeenCalledTimes(2);
+            expect(reservationMock.mock.calls.every(([, init]) => init.body === undefined)).toBe(
+                true
+            );
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            const sent = JSON.parse(fetchMock.mock.calls[0][1].body).diagnostics;
+            expect(sent).toMatchObject(attempt);
+            expect(onAttempt).toHaveBeenCalledExactlyOnceWith(attempt);
             expect(waiting).toHaveBeenCalledWith(true);
             expect(waiting).toHaveBeenLastCalledWith(false);
         } finally {
@@ -113,7 +123,7 @@ describe('file extraction outcomes', () => {
         vi.useFakeTimers();
         try {
             const attempt = { ...createFileExtractionAttempt(), attempt: 100 };
-            fetchMock.mockResolvedValueOnce(
+            reservationMock.mockResolvedValueOnce(
                 Response.json(
                     { code: 'upload_capacity_exceeded' },
                     { status: 503, headers: { 'Retry-After': '5' } }
@@ -123,7 +133,7 @@ describe('file extraction outcomes', () => {
             const pending = extractFileCredentials(input(attempt));
             await vi.runAllTimersAsync();
             expect((await pending).processing.attempt).toBe(100);
-            expect(fetchMock).toHaveBeenCalledTimes(2);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
         } finally {
             vi.useRealTimers();
         }
@@ -133,7 +143,7 @@ describe('file extraction outcomes', () => {
         vi.useFakeTimers();
         try {
             let attempt = createFileExtractionAttempt();
-            fetchMock.mockImplementation(async () =>
+            reservationMock.mockImplementation(async () =>
                 Response.json(
                     { code: 'upload_capacity_exceeded' },
                     { status: 503, headers: { 'Retry-After': '5' } }
@@ -152,6 +162,15 @@ describe('file extraction outcomes', () => {
                 );
             }
             expect(attempt.attempt).toBe(6);
+            reservationMock.mockReset().mockImplementation(async () =>
+                Response.json(
+                    {
+                        token: 'a'.repeat(43),
+                        expiresAt: Date.now() + 15000,
+                    },
+                    { status: 201 }
+                )
+            );
             fetchMock.mockReset();
             const next = createFileExtractionAttempt(attempt);
             respond({ vcs: [], processing: metadata(next) });
@@ -194,14 +213,17 @@ describe('file extraction outcomes', () => {
         vi.useFakeTimers();
         try {
             const attempt = createFileExtractionAttempt();
-            respond({ code: 'upload_capacity_exceeded' }, 503);
+            reservationMock.mockImplementation(async () =>
+                Response.json({ code: 'upload_capacity_exceeded' }, { status: 503 })
+            );
             const pending = expect(extractFileCredentials(input(attempt))).rejects.toMatchObject({
                 code: 'UPLOAD_BUSY',
                 statusCode: 503,
             });
             await vi.runAllTimersAsync();
             await pending;
-            const finalAttempt = JSON.parse(fetchMock.mock.calls.at(-1)![1].body).diagnostics;
+            const finalAttempt = attempt;
+            expect(fetchMock).not.toHaveBeenCalled();
             expect(
                 getDiagnosticLogs().filter(entry => entry.message === 'file.extraction.completed')
             ).toMatchObject([
