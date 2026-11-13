@@ -101,7 +101,7 @@
         "multiformats": "^11.0.1",
         "node-forge": "^1.4.0",
         "openai": "6.47.0",
-        "postmark": "^4.0.5",
+        "postmark": "^5.1.0",
         "trpc-to-openapi": "^3.1.0",
         "uuid": "^14.0.0",
         "zod": "4.6.6",
