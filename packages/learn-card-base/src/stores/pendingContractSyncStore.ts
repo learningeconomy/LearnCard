@@ -1,13 +1,36 @@
+import type { LCR } from '../types/credential-records';
+import type { CredentialCategory } from '../types/credentials';
 import { createStore } from '@udecode/zustood';
 
 export type PendingContractSyncStatus = 'queued' | 'running' | 'done' | 'error';
 
-export type PendingContractSyncJob = {
+type PendingContractSyncInput =
+    | {
+          kind?: 'contract';
+          profileDid: string;
+          contractUri: string;
+          termsUri: string;
+          ownerDid: string;
+          record?: never;
+          category?: never;
+      }
+    | {
+          kind: 'credential';
+          profileDid: string;
+          /** Retry discovery as well as delivery when the consent lookup itself failed. */
+          record: LCR;
+          category: CredentialCategory;
+          /** Terms mutations acknowledged before a partial failure or reload. */
+          syncedTermsUris?: string[];
+          /** Destinations that failed in the latest completed discovery pass. */
+          failedContractUris?: string[];
+          contractUri?: never;
+          termsUri?: never;
+          ownerDid?: never;
+      };
+
+export type PendingContractSyncJob = PendingContractSyncInput & {
     id: string;
-    profileDid: string;
-    contractUri: string;
-    termsUri: string;
-    ownerDid: string;
     status: PendingContractSyncStatus;
     retryCount: number;
     totalCredentials: number;
@@ -81,13 +104,11 @@ export const pendingContractSyncStore = createStore(
     { jobs: {} },
     { persist: { name: 'pendingContractSyncStore', enabled: true } }
 ).extendActions((set, get) => ({
-    enqueueContractSyncJob: (input: {
-        profileDid: string;
-        contractUri: string;
-        termsUri: string;
-        ownerDid: string;
-    }) => {
-        const id = getPendingContractSyncJobId(input); // get id
+    enqueueContractSyncJob: (input: PendingContractSyncInput) => {
+        const id =
+            input.kind === 'credential'
+                ? ['credential', input.profileDid, input.category, input.record.uri].join('::')
+                : getPendingContractSyncJobId(input);
 
         const jobs = get.jobs(); // get existing jobs
         const existing = jobs[id]; // look up existing job
@@ -96,7 +117,24 @@ export const pendingContractSyncStore = createStore(
 
         const job: PendingContractSyncJob = {
             id,
-            ...input,
+            ...(input.kind === 'credential'
+                ? {
+                      ...input,
+                      syncedTermsUris: [
+                          ...new Set([
+                              ...(existing?.kind === 'credential' && existing.status !== 'done'
+                                  ? (existing.syncedTermsUris ?? [])
+                                  : []),
+                              ...(input.syncedTermsUris ?? []),
+                          ]),
+                      ],
+                      failedContractUris:
+                          input.failedContractUris ??
+                          (existing?.kind === 'credential' && existing.status !== 'done'
+                              ? existing.failedContractUris
+                              : undefined),
+                  }
+                : input),
             status: existing?.status === 'running' ? 'running' : 'queued',
             retryCount: existing?.status === 'running' ? existing.retryCount : 0,
             totalCredentials: existing?.status === 'running' ? existing.totalCredentials : 0,
@@ -129,6 +167,32 @@ export const pendingContractSyncStore = createStore(
 
         set.jobs({ ...prunedJobs, [id]: job });
         return job;
+    },
+    recordTermsSynced: (id: string, termsUri: string) => {
+        const jobs = get.jobs();
+        const job = jobs[id];
+        if (!job || job.kind !== 'credential') return;
+        set.jobs({
+            ...jobs,
+            [id]: {
+                ...job,
+                syncedTermsUris: [...new Set([...(job.syncedTermsUris ?? []), termsUri])],
+                updatedAt: now(),
+            },
+        });
+    },
+    setFailedContractUris: (id: string, contractUris: string[]) => {
+        const jobs = get.jobs();
+        const job = jobs[id];
+        if (!job || job.kind !== 'credential') return;
+        set.jobs({
+            ...jobs,
+            [id]: {
+                ...job,
+                failedContractUris: [...new Set(contractUris)],
+                updatedAt: now(),
+            },
+        });
     },
     markRunning: (id: string) => {
         const jobs = get.jobs();

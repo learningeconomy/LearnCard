@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConsentFlowTerms } from '@learncard/types';
+import type { LCR } from '../types/credential-records';
 
 import { useWallet } from './useWallet';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
@@ -16,6 +17,7 @@ import {
     MAX_JOB_RETRIES,
 } from '../stores/pendingContractSyncStore';
 import { getLogger } from '../logging/logger';
+import { switchedProfileStore, walletStore } from '../stores/walletStore';
 
 const log = getLogger('pending-contract-sync');
 
@@ -64,10 +66,13 @@ const runWithConcurrency = async <T>(
  * two workers race on the same jobs.
  */
 export const usePendingContractSync = (enabled = true): void => {
-    const { initWallet } = useWallet();
+    const { initWallet, syncCredentialToContracts } = useWallet();
     const queryClient = useQueryClient();
 
     const jobs = usePendingContractSyncJobs(); // get all jobs
+    const activeWallet = walletStore.use.wallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+    const activeDid = switchedDid ?? activeWallet?.id.did();
 
     const processingJobIdRef = useRef<string | null>(null); // track currently processing job
     const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,10 +93,15 @@ export const usePendingContractSync = (enabled = true): void => {
     }, [enabled]);
 
     useEffect(() => {
-        if (!enabled || processingJobIdRef.current) return;
+        if (!enabled || !activeDid || processingJobIdRef.current) return;
 
         const pendingJobs = Object.values(jobs)
-            .filter(job => job.status !== 'done' && job.retryCount < MAX_JOB_RETRIES)
+            .filter(
+                job =>
+                    job.profileDid === activeDid &&
+                    job.status !== 'done' &&
+                    job.retryCount < MAX_JOB_RETRIES
+            )
             .sort((a, b) => a.createdAt - b.createdAt);
 
         const nextJob = pendingJobs.find(job => isJobReadyToProcess(job));
@@ -130,19 +140,53 @@ export const usePendingContractSync = (enabled = true): void => {
             failedCredentials: nextJob.failedCredentials,
         });
 
+        let shouldWake = true;
         const processJob = async (job: PendingContractSyncJob): Promise<void> => {
-            pendingContractSyncStore.set.markRunning(job.id); // mark job as running
-            log.info('Starting pending contract sync job', {
-                contractUri: job.contractUri,
-                termsUri: job.termsUri,
-                ownerDid: job.ownerDid,
-                retryCount: job.retryCount,
-                completedCredentials: job.completedCredentials,
-                failedCredentials: job.failedCredentials,
-            });
-
             try {
                 const wallet = await initWallet();
+                const currentDid =
+                    switchedProfileStore.get.switchedDid() ?? walletStore.get.wallet()?.id.did();
+                // A stale wallet is not a failed delivery. Wait for identity state to settle.
+                if (wallet.id.did() !== job.profileDid || currentDid !== job.profileDid) {
+                    // No self-wake for an unchanged snapshot: the next job or identity
+                    // store update resumes processing without spinning on a stale wallet.
+                    shouldWake =
+                        currentDid !== activeDid || walletStore.get.wallet() !== activeWallet;
+                    return;
+                }
+                pendingContractSyncStore.set.markRunning(job.id);
+                await queryClient.invalidateQueries({
+                    queryKey: ['useConsentedContracts'],
+                    refetchType: 'none',
+                });
+                if (job.kind === 'credential') {
+                    const source = job.record;
+                    const records = await wallet.index.LearnCloud.get({ id: source.id });
+                    const current = records.find(record => record.uri === source.uri);
+                    // Recategorization changes which consent applies; never replay the old grant.
+                    if (!current || current.category !== job.category) {
+                        pendingContractSyncStore.set.markDone(job.id);
+                        return;
+                    }
+                    pendingContractSyncStore.set.setTotals(job.id, 1);
+                    await syncCredentialToContracts(
+                        { record: job.record, category: job.category },
+                        wallet,
+                        new Set(job.syncedTermsUris ?? []),
+                        {
+                            onTermsSynced: termsUri =>
+                                pendingContractSyncStore.set.recordTermsSynced(job.id, termsUri),
+                            onContractsFailed: contractUris =>
+                                pendingContractSyncStore.set.setFailedContractUris(
+                                    job.id,
+                                    contractUris
+                                ),
+                        }
+                    );
+                    pendingContractSyncStore.set.recordCredentialProcessed(job.id);
+                    pendingContractSyncStore.set.markDone(job.id);
+                    return;
+                }
                 log.info('Loaded wallet for contract sync job', {
                     contractUri: job.contractUri,
                     termsUri: job.termsUri,
@@ -150,8 +194,8 @@ export const usePendingContractSync = (enabled = true): void => {
                 const contracts = await getOrFetchConsentedContracts(queryClient, wallet);
                 const consentedContract = contracts.find(
                     contract =>
-                        contract.uri === job.termsUri ||
-                        contract.contract.uri === job.contractUri ||
+                        contract.uri === job.termsUri &&
+                        contract.contract.uri === job.contractUri &&
                         contract.contract.owner.did === job.ownerDid
                 );
 
@@ -182,7 +226,7 @@ export const usePendingContractSync = (enabled = true): void => {
                         const credentialCategory =
                             contractCategoryNameToCategoryMetadata(categoryName)?.credentialType ??
                             categoryName;
-                        const records = await wallet.index.LearnCloud.get({
+                        const records: LCR[] = await wallet.index.LearnCloud.get({
                             category: credentialCategory,
                         });
                         log.info('Loaded contract sync credentials for category', {
@@ -193,14 +237,11 @@ export const usePendingContractSync = (enabled = true): void => {
                             credentialCount: records.length,
                         });
 
-                        return records.map(
-                            record =>
-                                ({
-                                    categoryName,
-                                    credentialCategory,
-                                    sourceUri: record.uri,
-                                }) as SyncCredentialTask
-                        );
+                        return records.map((record): SyncCredentialTask => ({
+                            categoryName,
+                            credentialCategory,
+                            sourceUri: record.uri,
+                        }));
                     })
                 );
 
@@ -352,7 +393,16 @@ export const usePendingContractSync = (enabled = true): void => {
 
         processJob(nextJob).finally(() => {
             processingJobIdRef.current = null;
-            setWorkerTick(tick => tick + 1);
+            if (shouldWake) setWorkerTick(tick => tick + 1);
         });
-    }, [enabled, initWallet, jobs, queryClient, workerTick]);
+    }, [
+        enabled,
+        activeDid,
+        activeWallet,
+        initWallet,
+        syncCredentialToContracts,
+        jobs,
+        queryClient,
+        workerTick,
+    ]);
 };

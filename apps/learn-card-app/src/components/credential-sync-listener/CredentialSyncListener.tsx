@@ -14,7 +14,11 @@ const CredentialSyncListener: React.FC = () => {
     const activeContractSyncJob = useMemo(
         () =>
             Object.values(pendingContractSyncJobs)
-                .filter(job => job.status === 'queued' || job.status === 'running')
+                .filter(
+                    job =>
+                        job.kind !== 'credential' &&
+                        (job.status === 'queued' || job.status === 'running')
+                )
                 .sort((a, b) => a.createdAt - b.createdAt)[0],
         [pendingContractSyncJobs]
     );
@@ -26,7 +30,7 @@ const CredentialSyncListener: React.FC = () => {
 
     useEffect(() => {
         const newestDoneJob = Object.values(pendingContractSyncJobs)
-            .filter(job => job.status === 'done' && job.finishedAt)
+            .filter(job => job.kind !== 'credential' && job.status === 'done' && job.finishedAt)
             .sort((a, b) => (b.finishedAt ?? 0) - (a.finishedAt ?? 0))[0];
 
         if (!newestDoneJob || completedContractSyncJobIdRef.current === newestDoneJob.id) {
@@ -60,7 +64,10 @@ const CredentialSyncListener: React.FC = () => {
     }, [completedContractSyncJob]);
 
     useEffect(() => {
-        const jobs = Object.values(pendingContractSyncJobs);
+        // Credential discovery jobs have no single contract identity.
+        const jobs = Object.values(pendingContractSyncJobs).filter(
+            job => job.kind !== 'credential'
+        );
         if (!jobs.length) return;
 
         const newestJob = jobs.sort((a, b) => b.updatedAt - a.updatedAt)[0];
