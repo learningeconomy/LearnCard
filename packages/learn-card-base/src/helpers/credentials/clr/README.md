@@ -72,6 +72,9 @@ credential and every signed embedded occurrence, returning progressive immutable
 snapshots. `records` uses canonical record IDs; duplicate source credential IDs
 never share a verdict. Descendant results retain source paths and do not replace
 the containing record's own signer or signature result.
+Unmapped signed occurrences still qualify verification summaries. Only occurrences
+with a canonical record owner receive record-detail navigation; do not invent a
+navigation target for ambiguous or otherwise unmapped source data.
 
 Keep proof, lifecycle, subject binding and registry trust separate. A valid
 publisher signature does not validate a district signature, and a valid district

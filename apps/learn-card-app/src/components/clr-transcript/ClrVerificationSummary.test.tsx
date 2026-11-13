@@ -281,6 +281,7 @@ describe('CLR verification presentation', () => {
         render(
             <ClrVerificationSummary
                 publisherDid={publisher}
+                onSelectRecord={vi.fn()}
                 snapshot={snapshot(
                     {},
                     {
@@ -293,6 +294,13 @@ describe('CLR verification presentation', () => {
             'Unconfirmed signatures: 1'
         );
         expect(screen.getByText('Signature could not be confirmed')).toBeInTheDocument();
+        const details = screen.getByRole('group', { name: 'Verification details for District A' });
+        fireEvent.click(within(details).getByText('District A', { exact: true }));
+        expect(details).toHaveAttribute('open');
+        expect(within(details).getByText('Included record')).toBeInTheDocument();
+        expect(
+            within(details).queryByRole('button', { name: 'Included record' })
+        ).not.toBeInTheDocument();
     });
 
     it('explains a same-publisher failed record independently of the outer signature', () => {

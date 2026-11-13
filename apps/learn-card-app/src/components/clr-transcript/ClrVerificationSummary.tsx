@@ -214,6 +214,7 @@ const RegistryLabel = ({
 interface IssuerRecord {
     id: string;
     ownerId: string;
+    hasCanonicalOwner: boolean;
     name: string;
     node: ClrCredentialVerification;
 }
@@ -238,7 +239,12 @@ export const ClrVerificationSummary = ({
     const entries: IssuerRecord[] = [];
     const canonicalRecords = new Map(model?.canonical.records.map(record => [record.id, record]));
     const seenPaths = new Set<string>();
-    const visit = (ownerId: string, node: ClrCredentialVerification, descendant = false): void => {
+    const visit = (
+        ownerId: string,
+        node: ClrCredentialVerification,
+        descendant = false,
+        hasCanonicalOwner = true
+    ): void => {
         if (seenPaths.has(node.occurrencePath)) return;
         seenPaths.add(node.occurrencePath);
         if (node.proof !== 'unsigned' && node.occurrencePath !== '') {
@@ -246,6 +252,7 @@ export const ClrVerificationSummary = ({
             entries.push({
                 id: descendant ? `${ownerId}::${node.occurrencePath}` : ownerId,
                 ownerId,
+                hasCanonicalOwner,
                 name:
                     record?.name?.value ??
                     record?.credentialName?.value ??
@@ -253,11 +260,11 @@ export const ClrVerificationSummary = ({
                 node,
             });
         }
-        node.descendants.forEach(child => visit(ownerId, child, true));
+        node.descendants.forEach(child => visit(ownerId, child, true, hasCanonicalOwner));
     };
     Object.entries(snapshot.records).forEach(([id, node]) => visit(id, node));
     snapshot.outer.descendants.forEach(node => {
-        if (!seenPaths.has(node.occurrencePath)) visit(node.occurrencePath, node, true);
+        if (!seenPaths.has(node.occurrencePath)) visit(node.occurrencePath, node, true, false);
     });
     const differentIssuers = new Map<string, IssuerRecord[]>();
     for (const entry of entries) {
@@ -462,7 +469,7 @@ export const ClrVerificationSummary = ({
                                     <ul className="max-h-80 overflow-y-auto space-y-2">
                                         {records.map(entry => (
                                             <li key={entry.id}>
-                                                {onSelectRecord ? (
+                                                {onSelectRecord && entry.hasCanonicalOwner ? (
                                                     <button
                                                         type="button"
                                                         className="text-start underline"
