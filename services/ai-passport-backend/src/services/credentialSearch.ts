@@ -27,6 +27,7 @@ import { serializeModelSafeCredentialProjection } from '../credentials/projectio
 import {
     isCredentialItemFailure,
     isConfirmedInvalidCredentialFailure,
+    isPermanentCredentialFailure,
     isKnownBadCredential,
     knownBadCredentialKind,
     logCredentialSkip,
@@ -82,6 +83,12 @@ export type CredentialSearchOptions = {
      */
     preferStoredText?: boolean;
     onMetrics?: (metrics: CredentialSearchMetrics) => void;
+    /**
+     * Called before a result returns when a credential with no verified stored
+     * text was skipped for a transient reason (its live verify gave way, a read
+     * failed, the verifier timed out): a longer search may still load it.
+     */
+    onIncomplete?: () => void;
 };
 
 const SEARCH_DIMENSIONS = [
@@ -329,6 +336,7 @@ const searchCredentialContextsPinned = async (
         deadlineAt,
         preferStoredText = false,
         onMetrics,
+        onIncomplete,
     } = options;
     const overallStartedAt = performance.now();
     let embeddingTextsFromCache = false;
@@ -385,8 +393,8 @@ const searchCredentialContextsPinned = async (
     // Known-bad credentials (a permanent failure in the last few minutes) are
     // left out of the search itself, so they cannot take the top-k slots from
     // credentials that may still verify. The exception is an unverifiable one
-    // (not confirmed invalid) with stored ingest-time text: that text is what
-    // the walk will use for it, so it stays searchable.
+    // (not confirmed invalid) with stored ingest-verified text: that text is
+    // what the walk will use for it, so it stays searchable.
     const unverifiableUris = receipt.credentialUris.filter(
         uri => knownBadCredentialKind(did, uri) === 'unverifiable'
     );
@@ -394,8 +402,11 @@ const searchCredentialContextsPinned = async (
     const knownBadWithStoredText = new Set(
         unverifiableUris.length
             ? (await db.getCredentialAiContexts(did, unverifiableUris)).flatMap(
-                  ({ uri, aiContext }) =>
-                      unverifiable.has(uri) && typeof aiContext === 'string' && aiContext.trim()
+                  ({ uri, aiContext, verified }) =>
+                      verified === true &&
+                      unverifiable.has(uri) &&
+                      typeof aiContext === 'string' &&
+                      aiContext.trim()
                           ? [uri]
                           : []
               )
@@ -507,8 +518,12 @@ const searchCredentialContextsPinned = async (
     );
     const ranked = rankedCandidates
         .flatMap((candidate): TopicSearchContext[] => {
-            const context = storedByUri.get(candidate.uri)?.aiContext;
-            if (typeof context !== 'string') return [];
+            const row = storedByUri.get(candidate.uri);
+            if (typeof row?.aiContext !== 'string') return [];
+            // Stored text stands in for a live verify only when its stored
+            // verification and projection validate. Any other row is walked
+            // with no stored text: live verify decides, with no fallback.
+            const context = row.verified === true ? row.aiContext : '';
             // A known-bad credential is walked only for its stored text.
             if (isKnownBadCredential(did, candidate.uri) && !context.trim()) return [];
             return [{ ...candidate, context }];
@@ -571,17 +586,28 @@ const searchCredentialContextsPinned = async (
     // same credentials), and a context of stored text beats no context. The
     // reserve is at most half of what is left, so a short budget still tries.
     // Giving way is transient: it never marks the credential known-bad.
+    // A credential with no verified stored text gives way too and is skipped, so
+    // one hung verify can't hold its window past the deadline and discard what
+    // already loaded. When every verify gave way and nothing loaded, the search
+    // rejects as a timeout before the deadline: the opening context then stays
+    // pending for the deferred live search instead of settling empty.
     const liveVerifyDeadlineAt =
         deadlineAt === undefined
             ? undefined
             : deadlineAt -
               Math.min(STORED_TEXT_RESERVE_MS, Math.max(0, deadlineAt - performance.now()) / 2);
+    const gaveWay = new WeakSet<CredentialVerificationUnavailableError>();
+    let incomplete = false;
     const verifyLive = (result: TopicSearchContext) => {
-        if (liveVerifyDeadlineAt === undefined || !result.context.trim())
+        if (liveVerifyDeadlineAt === undefined)
             return resolveVerifiedCredentialProjection(did, result.uri, receipt);
 
         const verifyBudgetMs = liveVerifyDeadlineAt - performance.now();
-        const giveWay = () => new CredentialVerificationUnavailableError('sdk_timeout');
+        const giveWay = () => {
+            const error = new CredentialVerificationUnavailableError('sdk_timeout');
+            gaveWay.add(error);
+            return error;
+        };
 
         if (verifyBudgetMs <= 0) return Promise.reject(giveWay());
 
@@ -631,8 +657,15 @@ const searchCredentialContextsPinned = async (
                                 !isCredentialItemFailure(error, { signal, deadlineAt }) ||
                                 isConfirmedInvalidCredentialFailure(error) ||
                                 !result.context.trim()
-                            )
+                            ) {
+                                // A transient skip may still load later; a permanent one won't.
+                                if (
+                                    isCredentialItemFailure(error, { signal, deadlineAt }) &&
+                                    !isPermanentCredentialFailure(error)
+                                )
+                                    incomplete = true;
                                 throw error;
+                            }
                             const fallback = await useStoredText(result);
                             logCredentialSkip('context', start + offset, ranked.length, error);
                             return fallback;
@@ -655,18 +688,24 @@ const searchCredentialContextsPinned = async (
             } catch (error) {
                 // Keep what loaded when a later window fails per credential only.
                 if (loaded.length && isCredentialItemFailure(error, { signal, deadlineAt })) break;
+                if (error instanceof CredentialVerificationUnavailableError && gaveWay.has(error))
+                    throw new DOMException('Credential verification gave way', 'TimeoutError');
                 throw error;
             }
             loaded.push(...window);
         }
         return loaded.slice(0, limit);
     };
+    const complete = (contexts: TopicSearchContext[]) => {
+        if (incomplete) onIncomplete?.();
+        return contexts;
+    };
     throwIfCancelled(signal, deadlineAt);
     try {
-        return await raceCancellation(project(), signal, deadlineAt);
+        return complete(await raceCancellation(project(), signal, deadlineAt));
     } catch (error) {
         if (loaded.length && error instanceof Error && error.name === 'TimeoutError')
-            return loaded.slice(0, limit);
+            return complete(loaded.slice(0, limit));
         throw error;
     }
 };

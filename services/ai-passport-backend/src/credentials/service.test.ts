@@ -870,6 +870,30 @@ test('fetchCredentials treats a busy source-cleanup lease as a skippable invalid
     expect(dbMock.storeCredentialVerification).toHaveBeenCalled();
 });
 
+test('invalid-credential cleanup deletes the stored row before it pulls thread copies', async () => {
+    learnCardMocks.verifyCredential.mockResolvedValue({
+        checks: [],
+        errors: ['Invalid signature'],
+        warnings: [],
+    });
+    // A deferred chat context checks the row with its thread write; pulling the
+    // thread copy first would let it restore the credential after the pull.
+    const order: string[] = [];
+    dbMock.deleteVCsByUris.mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        order.push('row');
+        return 1;
+    });
+    dbMock.removeThreadCredentialsByUris.mockImplementation(async () => {
+        order.push('threads');
+        return 0;
+    });
+
+    await fetchCredentials('did:example:learner').catch(() => undefined);
+
+    expect(order).toEqual(['row', 'threads']);
+});
+
 test('fetchCredentials loads siblings when invalid-credential cleanup is busy', async () => {
     consentFlowResponse = {
         ...activeConsentFlowResponse,

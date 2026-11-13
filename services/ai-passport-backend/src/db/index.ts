@@ -2296,9 +2296,10 @@ export class ChatDB {
      * would have stored: its stored projection, serialized, when that projection
      * passed verification at ingest. `fromProjection` marks those.
      * `verified` marks a row whose stored projection and ingest-time
-     * verification validate now (valid, proof-checked). A row without it may
-     * still carry legacy text: only callers that accept unverified stored text
-     * (the chat's fallback) should use that.
+     * verification validate now (valid, proof-checked). Its text is always that
+     * projection, serialized, never the stored `aiContext`: legacy repair writes
+     * the projection and verification but leaves older text in place. A row
+     * without `verified` may still carry that legacy text; don't trust it.
      */
     public async getCredentialAiContexts(
         did: string,
@@ -2343,15 +2344,15 @@ export class ChatDB {
             } catch {
                 stored = undefined;
             }
-            const category = stored ? { category: stored.category, verified: true as const } : {};
-            if (typeof aiContext === 'string' && aiContext.trim())
-                return { uri, aiContext, ...category };
             if (stored)
                 return {
                     uri,
                     aiContext: serializeModelSafeCredentialProjection(stored),
-                    ...category,
-                    fromProjection: true as const,
+                    category: stored.category,
+                    verified: true as const,
+                    ...(typeof aiContext === 'string' && aiContext.trim()
+                        ? {}
+                        : { fromProjection: true as const }),
                 };
             return { uri, ...(typeof aiContext === 'string' ? { aiContext } : {}) };
         });
@@ -3009,24 +3010,48 @@ export class ChatDB {
     }
 
     /* --------------------- thread credential embeddings --------------- */
-    public async storeThreadCredentials(
+    /**
+     * With `fill`, `creds` keep their order and the provisional credentials fill
+     * what's left up to `limit`, in their own order, but only while their stored
+     * row still exists. Confirmed-invalid cleanup deletes that row (in an owner
+     * transaction) before it pulls thread copies; this read and write share one
+     * owner transaction, so a concurrent invalidation either lands first and the
+     * credential is skipped, or pulls it after this write. Returns what was stored.
+     */
+    public async storeThreadCredentials<Context extends ThreadCredentialContext>(
         did: string,
         threadId: string,
-        creds: ThreadCredentialContext[]
-    ) {
+        creds: Context[],
+        fill?: { provisional: Context[]; limit: number }
+    ): Promise<Context[]> {
         return this.withOwnerWrite(did, async () => {
             await this.init();
-            const credentialState = creds.length > 0 ? 'ready' : 'empty';
+            let credentials = creds;
+            if (fill?.provisional.length) {
+                const rows = await this.credentials
+                    .find(
+                        { did, uri: { $in: fill.provisional.map(({ uri }) => uri) } },
+                        { projection: { _id: 0, uri: 1 }, session: this.session }
+                    )
+                    .toArray();
+                const stored = new Set(rows.map(({ uri }) => uri));
+                credentials = [
+                    ...creds,
+                    ...fill.provisional.filter(({ uri }) => stored.has(uri)),
+                ].slice(0, fill.limit);
+            }
+            const credentialState = credentials.length > 0 ? 'ready' : 'empty';
             await this.threads.updateOne(
                 { did, id: threadId },
                 {
                     $set: {
-                        credentials: creds,
+                        credentials,
                         credentialContextStatus: credentialState,
                     },
                 },
                 { session: this.session }
             );
+            return credentials;
         });
     }
 

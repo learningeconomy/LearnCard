@@ -32,21 +32,34 @@ const db = {
     }),
     getCredentialAiContexts: mock(defaultAiContexts),
 };
-async function defaultAiContexts(_did: string, _uris: readonly string[]) {
+type StoredAiContextRow = {
+    uri: string;
+    aiContext?: string;
+    category?: string;
+    fromProjection?: true;
+    verified?: true;
+};
+async function defaultAiContexts(
+    _did: string,
+    _uris: readonly string[]
+): Promise<StoredAiContextRow[]> {
     return [
         {
             uri: 'lc:credential:1',
             category: 'Achievement',
+            verified: true as const,
             aiContext: 'Budgeting achievement context',
         },
         {
             uri: 'lc:credential:weak',
             category: 'Achievement',
+            verified: true as const,
             aiContext: 'Unrelated context',
         },
         {
             uri: 'lc:credential:strong',
             category: 'Achievement',
+            verified: true as const,
             aiContext: 'Directly relevant context',
         },
     ];
@@ -123,6 +136,7 @@ const {
     clearKnownBadCredentials,
     isKnownBadCredential,
     markCredentialItemFailure,
+    markCredentialReadFailure,
     recordCredentialOutcome,
 } = await import('../credentials/batch');
 const twoStrongResults = async () => [
@@ -399,6 +413,7 @@ describe('credential search pipeline', () => {
                 {
                     uri: 'lc:credential:1',
                     category: 'Achievement',
+                    verified: true as const,
                     aiContext: 'Budgeting achievement context',
                 },
             ];
@@ -472,23 +487,30 @@ describe('credential search pipeline', () => {
         }
     });
 
-    it('a deadline mid-batch is a timeout even when one credential already failed', async () => {
+    it('a hung verify with no stored text gives way before the deadline and keeps the fallback that loaded', async () => {
         searchSimilar.mockImplementation(twoStrongResults);
         withoutStoredText('lc:credential:strong');
         resolveVerifiedCredentialProjection.mockImplementation(async (_did, uri) => {
             if (uri === 'lc:credential:1') throw jsonLdFailure();
             return new Promise<never>(() => {});
         });
-        const outcome = await settleWithin(
-            searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
-                expandQueries: false,
-                deadlineAt: performance.now() + 1_100,
-            }),
-            2_500
+        let results: { uri: string }[] = [];
+        const deadlineAt = performance.now() + 1_100;
+        const outcome = await withQuietWarn(() =>
+            settleWithin(
+                searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                    expandQueries: false,
+                    deadlineAt,
+                }).then(contexts => {
+                    results = contexts;
+                }),
+                2_500
+            )
         );
 
-        expect(outcome.state).toBe('rejected');
-        expect(outcome.error).toMatchObject({ name: 'TimeoutError' });
+        expect(outcome.state).toBe('resolved');
+        expect(performance.now()).toBeLessThan(deadlineAt);
+        expect(results.map(({ uri }) => uri)).toEqual(['lc:credential:1']);
     });
 
     it('an abort mid-batch is not a skip, even if a verifier reports it', async () => {
@@ -595,6 +617,7 @@ describe('credential search pipeline', () => {
             rankedUris.map(uri => ({
                 uri,
                 category: 'Achievement',
+                verified: true as const,
                 aiContext: 'stored context',
             }))
         );
@@ -605,6 +628,7 @@ describe('credential search pipeline', () => {
             rankedUris.map(uri => ({
                 uri,
                 category: 'Achievement',
+                verified: true as const,
                 aiContext: uris.includes(uri) ? '' : 'stored context',
             }))
         );
@@ -797,6 +821,7 @@ describe('credential search pipeline', () => {
             rankedUris.map(uri => ({
                 uri,
                 category: 'Achievement',
+                verified: true as const,
                 aiContext: 'projection text',
                 fromProjection: true as const,
             }))
@@ -815,6 +840,7 @@ describe('credential search pipeline', () => {
             rankedUris.map(uri => ({
                 uri,
                 category: 'Stored Category',
+                verified: true as const,
                 aiContext: `stored ${uri}`,
             }))
         );
@@ -990,15 +1016,229 @@ describe('credential search pipeline', () => {
     // v198 Math: without remote contexts every live verify hung until it gave
     // way, so the 2s opening budget ran out and only the deferred search (~14s)
     // delivered. The opening uses the stored text without waiting on the verifier.
+    // Legacy rows with no verification metadata, and rows whose stored
+    // verification or projection fails, come back without `verified`.
+    const withUnverifiedStoredText = (...uris: string[]) =>
+        db.getCredentialAiContexts.mockImplementation(async () =>
+            rankedUris.map(uri =>
+                uris.includes(uri)
+                    ? { uri, aiContext: `UNVERIFIED ${uri}` }
+                    : {
+                          uri,
+                          category: 'Achievement',
+                          verified: true as const,
+                          aiContext: 'stored context',
+                      }
+            )
+        );
+    const liveProjection = (uri: string) => ({
+        ...currentProjection,
+        facts: [{ kind: 'skill', value: `live ${uri}` }],
+    });
+
+    it('preferStoredText uses only verified stored text; unverified rows are verified live with no fallback', async () => {
+        useRankedCandidates();
+        withUnverifiedStoredText('lc:credential:r0', 'lc:credential:r1', 'lc:credential:r2');
+        resolveVerifiedCredentialProjection.mockImplementation(async (_did, uri) => {
+            if (uri === 'lc:credential:r0') return liveProjection(uri);
+            if (uri === 'lc:credential:r1') throw jsonLdFailure();
+            throw undefinedTermFailure();
+        });
+        const results = await withQuietWarn(() =>
+            searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                expandQueries: false,
+                limit: 5,
+                preferStoredText: true,
+            })
+        );
+
+        expect(resolveVerifiedCredentialProjection.mock.calls.map(([, uri]) => uri)).toEqual([
+            'lc:credential:r0',
+            'lc:credential:r1',
+            'lc:credential:r2',
+        ]);
+        expect(results.map(({ uri }) => uri)).toEqual([
+            'lc:credential:r0',
+            'lc:credential:r3',
+            'lc:credential:r4',
+            'lc:credential:r5',
+            'lc:credential:r6',
+        ]);
+        expect(results[0]?.context).toContain('live lc:credential:r0');
+        expect(results.slice(1).every(({ context }) => context === 'stored context')).toBe(true);
+        expect(JSON.stringify(results)).not.toContain('UNVERIFIED');
+    });
+
+    it('a failed re-verify never falls back to unverified stored text', async () => {
+        useRankedCandidates();
+        withUnverifiedStoredText('lc:credential:r0');
+        resolveVerifiedCredentialProjection.mockImplementation(async (_did, uri) => {
+            if (uri === 'lc:credential:r0') throw jsonLdFailure();
+            return currentProjection;
+        });
+        const results = await withQuietWarn(() =>
+            searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                expandQueries: false,
+                limit: 5,
+            })
+        );
+
+        expect(results.map(({ uri }) => uri)).toEqual(rankedUris.slice(1, 6));
+        expect(JSON.stringify(results)).not.toContain('UNVERIFIED');
+    });
+
+    it('a known-bad credential with only unverified stored text is skipped, not read from storage', async () => {
+        useRankedCandidates();
+        withUnverifiedStoredText('lc:credential:r0');
+        recordCredentialOutcome('did:example:learner', 'lc:credential:r0', undefinedTermFailure());
+        const results = await searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+            expandQueries: false,
+            limit: 5,
+            preferStoredText: true,
+        });
+
+        expect(resolveVerifiedCredentialProjection).not.toHaveBeenCalledWith(
+            'did:example:learner',
+            'lc:credential:r0',
+            expect.anything()
+        );
+        expect(results.map(({ uri }) => uri)).toEqual(rankedUris.slice(1, 6));
+        expect(JSON.stringify(results)).not.toContain('UNVERIFIED');
+    });
+
+    it('a hung live verify of an unverified row gives way and keeps the verified stored text', async () => {
+        useRankedCandidates();
+        withUnverifiedStoredText('lc:credential:r1');
+        resolveVerifiedCredentialProjection.mockImplementation(() => new Promise<never>(() => {}));
+        let results: Awaited<ReturnType<typeof searchCredentialContextsByTopic>> = [];
+        const onIncomplete = mock(() => undefined);
+        const deadlineAt = performance.now() + 1_100;
+        const outcome = await withQuietWarn(() =>
+            settleWithin(
+                searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                    expandQueries: false,
+                    limit: 5,
+                    preferStoredText: true,
+                    deadlineAt,
+                    onIncomplete,
+                }).then(value => {
+                    results = value;
+                }),
+                2_500
+            )
+        );
+
+        expect(outcome.state).toBe('resolved');
+        expect(performance.now()).toBeLessThan(deadlineAt);
+        expect(resolveVerifiedCredentialProjection.mock.calls.map(([, uri]) => uri)).toEqual([
+            'lc:credential:r1',
+        ]);
+        expect(results.map(({ uri }) => uri)).toEqual([
+            'lc:credential:r0',
+            'lc:credential:r2',
+            'lc:credential:r3',
+            'lc:credential:r4',
+            'lc:credential:r5',
+        ]);
+        expect(results.every(({ context }) => context === 'stored context')).toBe(true);
+        // r1 was skipped, not settled: chat keeps this context retryable.
+        expect(onIncomplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('when every row is unverified and its verify hangs, the search defers as a timeout before the deadline', async () => {
+        useRankedCandidates();
+        withUnverifiedStoredText(...rankedUris);
+        resolveVerifiedCredentialProjection.mockImplementation(() => new Promise<never>(() => {}));
+        const deadlineAt = performance.now() + 1_100;
+        const outcome = await withQuietWarn(() =>
+            settleWithin(
+                searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                    expandQueries: false,
+                    limit: 5,
+                    preferStoredText: true,
+                    deadlineAt,
+                }),
+                2_500
+            )
+        );
+
+        // A timeout keeps the opening context pending for the deferred live search;
+        // an empty result would settle it as empty.
+        expect(outcome.state).toBe('rejected');
+        expect(outcome.error).toMatchObject({ name: 'TimeoutError' });
+        expect(performance.now()).toBeLessThan(deadlineAt);
+        expect(assertCredentialConsent).not.toHaveBeenCalled();
+    });
+
+    it('a fast transient skip in a mixed window marks the search incomplete', async () => {
+        useRankedCandidates();
+        withUnverifiedStoredText('lc:credential:r1', 'lc:credential:r2');
+        resolveVerifiedCredentialProjection.mockImplementation(async (_did, uri) => {
+            // Neither waits for the give-way: one read failure, one verifier timeout.
+            if (uri === 'lc:credential:r1')
+                throw markCredentialReadFailure(new Error('LearnCard read failed'));
+            if (uri === 'lc:credential:r2')
+                throw new CredentialVerificationUnavailableError('sdk_timeout');
+            return currentProjection;
+        });
+        const onIncomplete = mock(() => undefined);
+        const startedAt = performance.now();
+        const results = await withQuietWarn(() =>
+            searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                expandQueries: false,
+                limit: 5,
+                preferStoredText: true,
+                deadlineAt: startedAt + 5_000,
+                onIncomplete,
+            })
+        );
+
+        expect(performance.now() - startedAt).toBeLessThan(1_000);
+        expect(results.map(({ uri }) => uri)).not.toContain('lc:credential:r1');
+        expect(results.map(({ uri }) => uri)).not.toContain('lc:credential:r2');
+        expect(onIncomplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('a known-invalid or known-bad skip does not mark the search incomplete', async () => {
+        useRankedCandidates();
+        withUnverifiedStoredText('lc:credential:r1', 'lc:credential:r2', 'lc:credential:r3');
+        // Known invalid before the search: skipped without a verify.
+        recordCredentialOutcome(
+            'did:example:learner',
+            'lc:credential:r3',
+            confirmedInvalidFailure()
+        );
+        resolveVerifiedCredentialProjection.mockImplementation(async (_did, uri) => {
+            // Confirmed invalid now, and permanently unverifiable (known-bad from here on).
+            if (uri === 'lc:credential:r1') throw confirmedInvalidFailure();
+            if (uri === 'lc:credential:r2') throw undefinedTermFailure();
+            return currentProjection;
+        });
+        const onIncomplete = mock(() => undefined);
+        await withQuietWarn(() =>
+            searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
+                expandQueries: false,
+                limit: 5,
+                preferStoredText: true,
+                deadlineAt: performance.now() + 5_000,
+                onIncomplete,
+            })
+        );
+
+        expect(onIncomplete).not.toHaveBeenCalled();
+    });
+
     it('v198: preferStoredText uses stored text without a live verify', async () => {
         useRankedCandidates();
         resolveVerifiedCredentialProjection.mockImplementation(() => new Promise<never>(() => {}));
         const startedAt = performance.now();
+        const onIncomplete = mock(() => undefined);
         const results = await searchCredentialContextsByTopic('Budgeting', 'did:example:learner', {
             expandQueries: false,
             limit: 5,
             preferStoredText: true,
             deadlineAt: startedAt + 2_000,
+            onIncomplete,
         });
 
         // Well before the live verify would have given way (deadline - 1s).
@@ -1007,6 +1247,7 @@ describe('credential search pipeline', () => {
         expect(results.every(({ context }) => context === 'stored context')).toBe(true);
         expect(resolveVerifiedCredentialProjection).not.toHaveBeenCalled();
         expect(assertCredentialConsent).toHaveBeenCalledTimes(5);
+        expect(onIncomplete).not.toHaveBeenCalled();
     });
 
     it('preferStoredText still verifies live a credential with no stored text', async () => {
