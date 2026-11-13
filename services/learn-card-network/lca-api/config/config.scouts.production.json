@@ -7,6 +7,6 @@
     "POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS": "sp-recovery-email-verification",
     "POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS": "recovery-key-backup",
     "SA_SEED_ALLOW_LEGACY_READ": "true",
-    "SA_SEED_ENCRYPT_WRITES": "false",
+    "SA_SEED_ENCRYPT_WRITES": "true",
     "SENTRY_ENV": "lca-api-production"
 }
