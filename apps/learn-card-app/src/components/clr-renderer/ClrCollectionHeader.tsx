@@ -1,17 +1,20 @@
 import React from 'react';
-import type { VC, VerificationItem } from '@learncard/types';
-import ClrVerificationPills from '../clr-transcript/ClrVerificationPills';
+import type { VC } from '@learncard/types';
+import { ClrCredentialValidity } from '../clr-transcript/ClrVerificationPills';
+import ClrTranscriptTrustBadge from '../clr-transcript/ClrTranscriptTrustBadge';
+import ClrIssuerAddress from '../clr-transcript/ClrIssuerAddress';
+import { hasSignedClrCredentials } from 'learn-card-base/helpers/credentials/clr/verification';
 import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 import {
     formatClrDate,
     type ClrRecordSection,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { ClrLayoutKind } from 'learn-card-base/helpers/credentials/clr/layout';
-import ClrTranscriptTrustBadge from '../clr-transcript/ClrTranscriptTrustBadge';
-import ClrIssuerAddress from '../clr-transcript/ClrIssuerAddress';
-import { getClrLayoutLabel, getClrSectionLabel } from './labels';
 import * as m from '../../paraglide/messages.js';
+import type { ClrVerificationSnapshot } from 'learn-card-base/helpers/credentials/clr/verification.types';
+import { ClrVerificationSummary } from '../clr-transcript/ClrVerificationSummary';
 
+import { getClrLayoutLabel, getClrSectionLabel } from './labels';
 export const ClrCollectionHeader = ({
     model,
     layout,
@@ -19,7 +22,9 @@ export const ClrCollectionHeader = ({
     actions,
     compact = false,
     boost,
-    verificationItems,
+    verification,
+    onRetryVerification,
+    onSelectRecord,
 }: {
     model: ClrTranscriptDisplayModel;
     layout: Exclude<ClrLayoutKind, 'academic'>;
@@ -27,7 +32,9 @@ export const ClrCollectionHeader = ({
     actions?: React.ReactNode;
     compact?: boolean;
     boost?: VC;
-    verificationItems?: VerificationItem[];
+    verification?: ClrVerificationSnapshot;
+    onRetryVerification?: () => void;
+    onSelectRecord?: (recordId: string) => void;
 }) => {
     const military = layout === 'military';
     const collection = model.canonical.collection;
@@ -176,11 +183,24 @@ export const ClrCollectionHeader = ({
                 <ClrTranscriptTrustBadge
                     verification={model.verification}
                     evidenceCount={model.evidence.length}
-                    hideStatus={Boolean(boost && model.verification.credentialSigned)}
+                    hideStatus={Boolean(verification && hasSignedClrCredentials(verification))}
                 />
-                {boost && (
-                    <ClrVerificationPills boost={boost} verificationItems={verificationItems} />
-                )}
+                {boost && <ClrCredentialValidity boost={boost} />}
+                <ClrVerificationSummary
+                    snapshot={verification}
+                    retry={onRetryVerification}
+                    publisherDid={model.canonical.collection.publisher?.id?.value}
+                    issuerNames={Object.fromEntries(
+                        model.canonical.records.flatMap(record => {
+                            const issuer = record.provenance.issuer;
+                            return issuer?.id?.value && issuer.name?.value
+                                ? [[issuer.id.value, issuer.name.value]]
+                                : [];
+                        })
+                    )}
+                    model={model}
+                    onSelectRecord={onSelectRecord}
+                />
             </div>
         </header>
     );

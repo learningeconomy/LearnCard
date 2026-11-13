@@ -35,7 +35,11 @@ type FixtureKey = keyof typeof FIXTURES;
 const ClrTranscriptRendererDemo = () => {
     const locale = useLocale();
     const changeLocale = useChangeLocale();
-    const [fixture, setFixture] = useState<FixtureKey>('westbridge');
+    const [fixture, setFixture] = useState<FixtureKey>(() =>
+        typeof window !== 'undefined' && window.__CLR_VERIFICATION_FIXTURE__
+            ? 'multiIssuerVerification'
+            : 'westbridge'
+    );
     const [viewer, setViewer] = useState<ClrTranscriptViewer>('student');
     const [surface, setSurface] = useState<ClrTranscriptSurface>(ClrTranscriptSurface.Full);
 

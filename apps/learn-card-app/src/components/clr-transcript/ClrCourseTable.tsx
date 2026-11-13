@@ -23,6 +23,8 @@ import type {
     CompetencyDisplayModel,
     AssociationDisplayModel,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
+import type { ClrVerificationSnapshot } from 'learn-card-base/helpers/credentials/clr/verification.types';
+import { ClrRecordVerification } from './ClrVerificationSummary';
 
 // Size against the transcript, which may be narrower than the viewport in a panel.
 // Share the tracks between headings and rows so outcome columns stay aligned.
@@ -38,6 +40,8 @@ const ClrCourseTable: React.FC<{
     adminMode?: boolean;
     competencies?: CompetencyDisplayModel[];
     associations?: AssociationDisplayModel[];
+    verification?: ClrVerificationSnapshot;
+    publisherDid?: string;
 }> = ({
     courses,
     onSelectCourse,
@@ -45,6 +49,8 @@ const ClrCourseTable: React.FC<{
     adminMode = false,
     competencies = [],
     associations = [],
+    verification,
+    publisherDid,
 }) => {
     const groups = groupByTerm(courses);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -156,6 +162,16 @@ const ClrCourseTable: React.FC<{
                                                         {course.name?.value ?? 'Course'}
                                                     </span>
                                                 </div>
+                                                <ClrRecordVerification
+                                                    node={
+                                                        verification?.records[
+                                                            course.sourceCredentialId
+                                                        ]
+                                                    }
+                                                    recordId={course.sourceCredentialId}
+                                                    recordName={course.name?.value ?? 'Course'}
+                                                    publisherDid={publisherDid}
+                                                />
                                                 {adminMode && course.earnedAt?.value && (
                                                     <p className="text-[10px] text-grayscale-400 mt-0.5">
                                                         {formatClrDate(course.earnedAt.value)}

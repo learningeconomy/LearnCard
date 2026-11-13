@@ -9,6 +9,8 @@ import type {
     CompetencyDisplayModel,
     RelationshipDisplayModel,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { ClrRecordVerificationDetails } from './ClrVerificationSummary';
+import type { ClrCredentialVerification } from 'learn-card-base/helpers/credentials/clr/verification.types';
 
 const ClrCompetencyBlock: React.FC<{
     competency: CompetencyDisplayModel;
@@ -16,7 +18,17 @@ const ClrCompetencyBlock: React.FC<{
     relationships?: RelationshipDisplayModel[];
     onSelectRecord?: (recordId: string) => void;
     adminMode?: boolean;
-}> = ({ competency, record, relationships = [], onSelectRecord, adminMode = false }) => {
+    verificationNode?: ClrCredentialVerification;
+    publisherDid?: string;
+}> = ({
+    competency,
+    record,
+    relationships = [],
+    onSelectRecord,
+    adminMode = false,
+    verificationNode,
+    publisherDid,
+}) => {
     const primaryAlignment = competency.alignments[0];
 
     return (
@@ -39,6 +51,12 @@ const ClrCompetencyBlock: React.FC<{
                         </div>
                     ) : undefined
                 }
+            />
+            <ClrRecordVerificationDetails
+                node={verificationNode}
+                recordId={competency.sourceCredentialId}
+                recordName={competency.name?.value ?? 'Competency'}
+                publisherDid={publisherDid}
             />
             <ClrRecordDetails record={record} />
             <ClrResultWithScaleList results={competency.results} showResultType={adminMode} />

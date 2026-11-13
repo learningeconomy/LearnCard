@@ -172,6 +172,26 @@ describe('Query API', () => {
         expect(() => getFixture('nonexistent/fixture')).toThrow('not found');
     });
 
+    it('registers the multi-issuer CLR verification blueprint with issuer logo metadata', () => {
+        const fixture = getFixture('clr/multi-issuer-verification');
+        expect(isCredentialFixture(fixture)).toBe(true);
+        if (!isCredentialFixture(fixture)) throw new Error('Expected CLR W3C credential fixture');
+        expect(fixture.spec).toBe('clr-v2');
+        expect(fixture.validity).toBe('valid');
+        expect(getFixtures({ spec: 'clr-v2' }).map(item => item.id)).toContain(fixture.id);
+        const publisher = fixture.credential.issuer as Record<string, unknown>;
+        expect(publisher.name).toBe('State Education Records Office (Fictional)');
+        expect(publisher.image).toMatchObject({ type: 'Image' });
+        expect((publisher.image as Record<string, unknown>).id).toMatch(/^data:image\/svg\+xml,/);
+        const subject = fixture.credential.credentialSubject as Record<string, unknown>;
+        const children = subject.verifiableCredential as Record<string, unknown>[];
+        expect(children).toHaveLength(3);
+        expect(children[0]?.issuer).toMatchObject({
+            name: 'North Valley School District (Fictional)',
+            image: { type: 'Image' },
+        });
+    });
+
     // -----------------------------------------------------------------------
     // Provisional transcript fixture (LC-2117 / LC-2135 / LC-2136)
     // -----------------------------------------------------------------------

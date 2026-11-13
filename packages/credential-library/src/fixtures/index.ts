@@ -51,6 +51,7 @@ import { clrMilitaryTrainingRecord } from './clr/military-training-record';
 import { clrProfessionalOrganizationRecord } from './clr/professional-organization-record';
 import { clrLicensingRegulatoryRecord } from './clr/licensing-regulatory-record';
 import { clrMixedCareerRecord } from './clr/mixed-career-record';
+import { clrMultiIssuerVerification } from './clr/multi-issuer-verification';
 
 // LearnCard Boosts
 import { boostBasic } from './boost/basic';
@@ -153,6 +154,7 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     clrProfessionalOrganizationRecord,
     clrLicensingRegulatoryRecord,
     clrMixedCareerRecord,
+    clrMultiIssuerVerification,
 
     // Boosts
     boostBasic,
@@ -247,6 +249,7 @@ export {
     clrProfessionalOrganizationRecord,
     clrLicensingRegulatoryRecord,
     clrMixedCareerRecord,
+    clrMultiIssuerVerification,
     boostCommunityAward,
     boostDelegate,
     vcV1AlumniCredential,

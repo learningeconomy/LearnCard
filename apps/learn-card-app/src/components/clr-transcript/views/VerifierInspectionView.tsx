@@ -32,14 +32,6 @@ const VerifierInspectionView: React.FC<{
                     programs: model.programs,
                 })}
             />
-            <div className="bg-white border border-grayscale-200 rounded-xl p-3">
-                <p className="text-xs text-grayscale-600">
-                    Signed nested credentials: {model.verification.nestedCredentialSignedCount}
-                </p>
-                <p className="text-xs text-grayscale-600">
-                    Unsigned nested credentials: {model.verification.nestedCredentialUnsignedCount}
-                </p>
-            </div>
         </div>
     );
 };

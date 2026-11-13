@@ -17,6 +17,7 @@ import ClrAlignmentList from './ClrAlignmentList';
 import ClrRelationshipChips from './ClrRelationshipChips';
 import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
 import { ClrCreditValues } from './ClrCreditValues';
+import { ClrRecordVerificationDetails } from './ClrVerificationSummary';
 
 /** Source-backed details for qualifications and mixed records reached through CLR associations. */
 const ClrGenericRecordDetailPanel = ({
@@ -53,6 +54,12 @@ const ClrGenericRecordDetailPanel = ({
                     <h2 className="wrap-break-word text-xl font-semibold text-grayscale-900">
                         {record.name?.value ?? m['clrTranscript.details.recordDetails']()}
                     </h2>
+                    <ClrRecordVerificationDetails
+                        node={model.verification.snapshot?.records[record.sourceCredentialId]}
+                        recordId={record.sourceCredentialId}
+                        recordName={record.name?.value}
+                        publisherDid={model.canonical.collection.publisher?.id?.value}
+                    />
                     {!!canonical?.achievementTypes.length && (
                         <p className="mt-1 text-sm text-grayscale-600">
                             {canonical.achievementTypes

@@ -2,9 +2,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { VC, VerificationCheck } from '@learncard/types';
 import { decryptSharePayload } from 'learn-card-base/helpers/share-links';
+import { createVerificationBudget } from 'learn-card-base/helpers/credentials/clr/verification';
 import {
     classifySharePublication,
-    createVerificationBudget,
     mapWithConcurrency,
     parseSavedShareLinkMetadata,
     prepareShare,
@@ -342,7 +342,7 @@ describe('recipient validation', () => {
         const wallet = mockWallet();
         vi.mocked(wallet.invoke.verifyCredential)
             .mockResolvedValueOnce({ checks: ['proof'], warnings: [], errors: [] })
-            .mockResolvedValueOnce({ checks: [], warnings: [], errors: ['bad'] });
+            .mockResolvedValueOnce({ checks: [], warnings: [], errors: ['invalid signature'] });
         expect(
             await verifyCredentialTree(
                 wallet,

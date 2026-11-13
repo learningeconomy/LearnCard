@@ -58,6 +58,14 @@ export type {
     MaterializedSdJwtVcFixture,
 } from './materialize-sd-jwt-vc';
 // Persona bundles
+export {
+    materializeMultiIssuerClrVerificationFixture,
+    materializeClrVerificationScaleFixture,
+    type ClrVerificationFixtureOptions,
+    type ClrVerificationScaleFixtureOptions,
+    type ClrVerificationSigner,
+} from './materialize-clr-verification';
+
 export * from './bundles';
 
 // Fixtures — importing this module registers all fixtures in the registry

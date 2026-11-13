@@ -93,9 +93,18 @@ const initialNode = (
     binding: ClrSubjectBinding
 ): ClrCredentialVerification => {
     const proofs = Array.isArray(credential.proof) ? credential.proof : [credential.proof];
+    const profile = object(credential.issuer) ? credential.issuer : undefined;
+    const image =
+        typeof profile?.image === 'string'
+            ? profile.image
+            : object(profile?.image)
+              ? profile.image.id
+              : undefined;
     return {
         occurrencePath,
         issuerDid: issuerId(credential),
+        issuerName: typeof profile?.name === 'string' ? profile.name : undefined,
+        issuerImage: typeof image === 'string' ? image : undefined,
         verificationMethods: proofs.flatMap(proof =>
             object(proof) && typeof proof.verificationMethod === 'string'
                 ? [proof.verificationMethod]
@@ -211,9 +220,10 @@ export const createUnavailableClrVerificationSnapshot = (
 // Only positive cryptographic failure evidence is red. Resolver/status errors can also
 // arrive in errors[] instead of throwing; unknown error text remains inconclusive.
 const INVALID_PROOF =
-    /invalid signature|signature verification (?:failed|error)|proof verification failed|invalid proof|invalid jws|invalid jwt signature|signature mismatch|not authorized|unauthorized verification method|issuer.*(?:does not match|mismatch)/i;
+    /invalid signature|signature verification (?:failed|error)|verification equation was not satisfied|proof verification failed|invalid proof|invalid jws|invalid jwt signature|signature mismatch|not authorized|unauthorized verification method|issuer.*(?:does not match|mismatch)/i;
 const STATUS_FAILURE =
     /credential (?:is |has been )?(?:revoked|suspended)|revocation check failed|suspension check failed/i;
+const INCONCLUSIVE_PROOF = /resolv|network|fetch|timed? out|timeout|connection|http [45]\d\d/i;
 
 export const classifyClrVerification = (
     initial: ClrCredentialVerification,
@@ -243,7 +253,9 @@ export const classifyClrVerification = (
                     status.every(entry => !entry.isSet)
                   ? 'active'
                   : 'unavailable';
-    const invalid = result.errors.some(error => INVALID_PROOF.test(error));
+    const invalid =
+        !result.errors.some(error => INCONCLUSIVE_PROOF.test(error)) &&
+        result.errors.some(error => INVALID_PROOF.test(error));
     const proof = invalid
         ? 'invalid'
         : result.checks.includes('proof') && !statusErrors.length && !result.warnings.length
@@ -259,6 +271,27 @@ export const classifyClrVerification = (
         status,
     };
 };
+
+/** Signature presence, including signed descendants beneath otherwise unsigned containers. */
+export const hasSignedClrCredentials = (snapshot: ClrVerificationSnapshot): boolean => {
+    const occurrences = [snapshot.outer];
+    while (occurrences.length) {
+        const node = occurrences.pop()!;
+        if (node.proof !== 'unsigned') return true;
+        occurrences.push(...node.descendants);
+    }
+    return false;
+};
+
+/** The publisher's own required checks, independent of any district/descendant verdict. */
+export const isClrPublisherVerified = (snapshot?: ClrVerificationSnapshot): boolean =>
+    Boolean(
+        snapshot?.complete &&
+        snapshot.outer.proof === 'verified' &&
+        snapshot.outer.lifecycle !== 'revoked' &&
+        snapshot.outer.lifecycle !== 'suspended' &&
+        snapshot.outer.lifecycle !== 'unavailable'
+    );
 
 /** Whether this occurrence and all signed descendants have a complete, attributable all-clear. */
 export const isClrRecordConfirmed = (node: ClrCredentialVerification): boolean =>

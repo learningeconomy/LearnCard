@@ -17,6 +17,8 @@ export interface VerificationBudget {
 export interface ClrCredentialVerification {
     occurrencePath: string;
     issuerDid?: string;
+    issuerName?: string;
+    issuerImage?: string;
     verificationMethods: string[];
     proof: ClrProofState;
     lifecycle: ClrLifecycleState;

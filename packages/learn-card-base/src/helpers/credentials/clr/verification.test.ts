@@ -6,6 +6,7 @@ import {
     createClrVerificationSnapshot,
     createVerificationBudget,
     isClrRecordConfirmed,
+    isClrPublisherVerified,
     verifyClrCredentialTree,
     type ClrVerificationSnapshot,
 } from './verification';
@@ -58,6 +59,23 @@ describe('CLR occurrence verification', () => {
         expect(result.records[model.records[2].id].issuerDid).toBe('did:web:state.example');
         expect(result.outer.proof).toBe('verified');
         expect(isClrRecordConfirmed(result.outer)).toBe(false);
+        expect(isClrPublisherVerified(result)).toBe(true);
+    });
+
+    it('recognizes DIDKit’s observed tampered-signature result without requiring a proof-success check', async () => {
+        const result = await verifyClrCredentialTree(
+            collection([signed('child')]),
+            async credential =>
+                credential.id === 'child'
+                    ? {
+                          checks: ['expiration'],
+                          warnings: [],
+                          errors: ['signature error: Verification equation was not satisfied'],
+                      }
+                    : success
+        );
+        expect(result.records.child.proof).toBe('invalid');
+        expect(result.outer.proof).toBe('verified');
     });
 
     it('skips unsigned and definition-only credentials without losing signed descendants', async () => {
@@ -83,6 +101,7 @@ describe('CLR occurrence verification', () => {
         'Unable to resolve DID',
         'status list request timed out',
         'unrecognized verifier error',
+        'proof verification failed: unable to resolve DID',
     ])('does not classify inconclusive returned errors as invalid: %s', async error => {
         const model = collection([signed('child')]);
         const result = await verifyClrCredentialTree(model, async credential =>

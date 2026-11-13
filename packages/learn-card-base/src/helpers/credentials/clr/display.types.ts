@@ -1,3 +1,4 @@
+import type { ClrVerificationSnapshot } from './verification.types';
 import type {
     ClrNormalizedModel,
     ClrNormalizedRecord,
@@ -21,7 +22,6 @@ export type DisplayWarningCode =
     | 'MISSING_GPA'
     | 'MISSING_CREDITS'
     | 'UNSIGNED_CREDENTIAL'
-    | 'NESTED_UNSIGNED_CREDENTIALS'
     | 'AMBIGUOUS_RECORD'
     | 'LARGE_INLINE_EVIDENCE'
     | 'PARTIAL_CLR'
@@ -40,11 +40,10 @@ export type DisplayWarning = {
 export type VerificationSummary = {
     credentialSigned: boolean;
     credentialVerified: boolean;
-    nestedCredentialSignedCount: number;
-    nestedCredentialUnsignedCount: number;
     status: 'verified' | 'signed-unverified' | 'unsigned' | 'unknown';
     hasCredentialStatus: boolean;
     credentialStatusType?: string;
+    snapshot?: ClrVerificationSnapshot;
 };
 
 /** One level of a rubric criterion (`ResultDescription.rubricCriterionLevel[]`). */

@@ -13,13 +13,29 @@ import {
     clrProvisionalTranscript,
     clrMultiAchievement,
     clrDemoIsdDiplomaAssessments,
+    clrMultiIssuerVerification,
     clrStudentOfficialAcademicTranscript,
 } from '@learncard/credential-library';
 
 import { clrAcademicProvenanceDemo } from './clrAcademicProvenance.fixture';
 
-/** Source-backed examples for all CLR layouts. */
+declare global {
+    interface Window {
+        __CLR_VERIFICATION_FIXTURE__?: Record<string, unknown>;
+    }
+}
+
+const injectedVerificationFixture =
+    typeof window !== 'undefined' ? window.__CLR_VERIFICATION_FIXTURE__ : undefined;
+
+/** Source-backed examples plus an optional Playwright-supplied real signed VC. */
 export const CLR_TRANSCRIPT_DEMO_FIXTURES = {
+    multiIssuerVerification: {
+        label: injectedVerificationFixture
+            ? 'Multi-issuer verification (signed test)'
+            : 'Multi-Issuer Learner Record — Verification Scenario',
+        credential: injectedVerificationFixture ?? clrMultiIssuerVerification.credential,
+    },
     military: {
         label: 'Military — Comprehensive',
         credential: clrMilitaryComprehensiveRecord.credential,

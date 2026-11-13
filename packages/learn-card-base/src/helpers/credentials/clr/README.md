@@ -79,6 +79,14 @@ signature does not establish that its learner matches the CLR learner. Binding
 uses exact subject IDs; missing or ambiguous subjects remain unconfirmed. Registry
 lookup is per exact issuer DID, never inherited from the publisher.
 
+`isClrPublisherVerified(snapshot)` reflects only the settled outer credential.
+`isClrRecordConfirmed(node)` also requires its signed descendants, lifecycle and
+learner binding to be confirmed. Never use the latter to relabel a valid publisher
+as invalid because one district record failed. Passing a snapshot to
+`createClrTranscriptDisplayModel(canonical, snapshot)` keeps this distinction.
+Snapshots retain each occurrence's own issuer name, image and verification methods;
+these are display metadata, not registry trust.
+
 Use one `createVerificationBudget()` per pass (30 seconds), including a share's
 holder presentation and selected members. Work is bounded to four credential
 checks at once. Cancellation stops new checks and discards late results; the
@@ -98,6 +106,12 @@ Run `vitest run src/helpers/credentials/clr` from `packages/learn-card-base`, an
 the `clrRenderer` suites plus `src/components/clr-transcript` from
 `apps/learn-card-app`. The app corpus suite verifies both canonical preservation
 and display parity against every registered CLR fixture.
+
+`tests/clr-verification.mocked.spec.ts` exercises actual DIDKit signatures, a real
+revoked bitstring list, tampering and duplicate IDs on desktop/mobile. It staggers
+issuer responses to check stable geometry, checks English/Spanish/French/Arabic
+status labels, and proves exactly five cold DID-document requests for 50 records.
+Only registry discovery is isolated; signature and status verification are real.
 
 ## Collection layouts (LC-2215)
 

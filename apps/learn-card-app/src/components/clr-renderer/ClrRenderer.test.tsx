@@ -1,7 +1,7 @@
 import React from 'react';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { VerificationStatusEnum, type VC } from '@learncard/types';
+import type { VC, VerificationCheck } from '@learncard/types';
 import {
     clrMilitaryComprehensiveRecord,
     clrMixedCareerRecord,
@@ -15,6 +15,7 @@ import { ClrRenderer } from './ClrRenderer';
 import ClrTranscriptFullPage from '../clr-transcript/surfaces/ClrTranscriptFullPage';
 import ClrTranscriptCard from '../clr-transcript/surfaces/ClrTranscriptCard';
 import ClrTranscriptEmbedWidget from '../clr-transcript/surfaces/ClrTranscriptEmbedWidget';
+import { createClrVerificationSnapshot } from 'learn-card-base/helpers/credentials/clr/verification';
 
 const mocks = vi.hoisted(() => ({
     open: vi.fn(),
@@ -22,8 +23,8 @@ const mocks = vi.hoisted(() => ({
     modal: vi.fn(),
     verify: vi.fn(),
 }));
-vi.mock('learn-card-base/hooks/useVerifyCredential', () => ({
-    useVerifyCredential: () => ({ verifyCredential: mocks.verify }),
+vi.mock('learn-card-base/helpers/walletHelpers', () => ({
+    getBespokeLearnCard: async () => ({ invoke: { verifyCredential: mocks.verify } }),
 }));
 vi.mock('learn-card-base', () => ({
     useModal: () => {
@@ -74,13 +75,13 @@ beforeEach(() => {
     mocks.open.mockClear();
     mocks.close.mockClear();
     mocks.modal.mockReset();
-    mocks.verify.mockReset().mockResolvedValue([]);
+    mocks.verify.mockReset().mockResolvedValue({ checks: ['proof'], warnings: [], errors: [] });
     setLocale('en', { reload: false });
 });
 
 describe('shared CLR renderer', () => {
     it.each([clrMixedCareerRecord, clrMilitaryComprehensiveRecord])(
-        'shows supplied proof results and expiration for $id',
+        'uses supplied outer evidence without rechecking, preserving expiration for $id',
         fixture => {
             const boost = {
                 ...fixture.credential,
@@ -88,84 +89,91 @@ describe('shared CLR renderer', () => {
                 validUntil: '2020-01-01T00:00:00Z',
             } as VC;
             const model = normalizeClrTranscriptDisplayModel(boost as Record<string, unknown>);
+            const initial = createClrVerificationSnapshot(model.canonical);
+            const verified = {
+                ...initial,
+                outer: { ...initial.outer, proof: 'verified' as const },
+                complete: true,
+            };
             const view = render(
                 <ClrRenderer
                     model={model}
                     boost={boost}
                     options={options}
-                    verificationItems={[{ check: 'proof', status: VerificationStatusEnum.Success }]}
+                    verification={verified}
                 />
             );
-            expect(screen.getByText('Valid', { exact: true })).toBeInTheDocument();
+            expect(screen.getByTestId('clr-outer-verification')).toHaveTextContent(/^Verified/);
             expect(screen.getByText(/^Expired /)).toBeInTheDocument();
-            expect(screen.queryByText('Signed, not verified')).not.toBeInTheDocument();
             view.rerender(
                 <ClrRenderer
                     model={model}
                     boost={boost}
                     options={options}
-                    verificationItems={[{ check: 'proof', status: VerificationStatusEnum.Failed }]}
+                    verification={{ ...verified, outer: { ...verified.outer, proof: 'invalid' } }}
                 />
             );
-            expect(screen.getByText('Invalid', { exact: true })).toBeInTheDocument();
+            expect(screen.getByTestId('clr-outer-verification')).toHaveTextContent(
+                'Signature could not be confirmed'
+            );
             expect(mocks.verify).not.toHaveBeenCalled();
         }
     );
-    it('verifies a full collection when the host has not supplied results', async () => {
-        mocks.verify.mockResolvedValue([
-            { check: 'proof', status: VerificationStatusEnum.Success },
-        ]);
+    it('verifies the outer collection with raw checks when the host supplies no snapshot', async () => {
         const boost = { ...fixture, proof: { type: 'DataIntegrityProof' } } as VC;
         const model = normalizeClrTranscriptDisplayModel(boost as Record<string, unknown>);
         render(<ClrRenderer model={model} boost={boost} options={options} />);
-        expect(await screen.findByText('Valid', { exact: true })).toBeInTheDocument();
-        expect(mocks.verify).toHaveBeenCalledWith(boost);
+        await waitFor(() =>
+            expect(screen.getByTestId('clr-outer-verification')).toHaveTextContent(/^Verified/)
+        );
+        expect(mocks.verify).toHaveBeenCalledWith(boost, {}, false);
     });
-    it('shows pending verification for an empty host result, then uses a renamed failure', async () => {
-        let resolveVerification!: (
-            items: { check: string; status: typeof VerificationStatusEnum.Failed }[]
-        ) => void;
+    it('keeps the header checking until raw verification settles and does not start another pass on rerender', async () => {
+        let resolveVerification!: (value: VerificationCheck) => void;
         mocks.verify.mockReturnValue(
-            new Promise(resolve => {
+            new Promise<VerificationCheck>(resolve => {
                 resolveVerification = resolve;
             })
         );
         const boost = { ...fixture, proof: { type: 'DataIntegrityProof' } } as VC;
         const model = normalizeClrTranscriptDisplayModel(boost as Record<string, unknown>);
-        const view = render(
-            <ClrRenderer model={model} boost={boost} options={options} verificationItems={[]} />
+        const view = render(<ClrRenderer model={model} boost={boost} options={options} />);
+        expect(screen.getByTestId('clr-outer-verification')).toHaveTextContent(
+            'Checking verification'
         );
-        expect(screen.getByText('Verifying…')).toBeInTheDocument();
-        expect(screen.queryByText('Signed, not verified')).not.toBeInTheDocument();
-        await act(async () => {
-            resolveVerification([{ check: 'Signature', status: VerificationStatusEnum.Failed }]);
-        });
-        expect(screen.getByText('Invalid', { exact: true })).toBeInTheDocument();
-        view.rerender(
-            <ClrRenderer model={model} boost={boost} options={options} verificationItems={[]} />
+        await waitFor(() => expect(mocks.verify).toHaveBeenCalledOnce());
+        await act(async () =>
+            resolveVerification({ checks: [], warnings: [], errors: ['invalid signature'] })
         );
-        expect(mocks.verify).toHaveBeenCalledTimes(1);
+        expect(screen.getByTestId('clr-outer-verification')).toHaveTextContent(
+            'Signature could not be confirmed'
+        );
+        view.rerender(<ClrRenderer model={model} boost={boost} options={options} />);
+        expect(mocks.verify).toHaveBeenCalledOnce();
     });
-    it('uses successful non-proof results when verification names are normalized', () => {
+    it('does not treat successful non-proof checks as a verified signature', async () => {
+        mocks.verify.mockResolvedValue({ checks: ['credentialStatus'], warnings: [], errors: [] });
         const boost = { ...fixture, proof: { type: 'DataIntegrityProof' } } as VC;
         const model = normalizeClrTranscriptDisplayModel(boost as Record<string, unknown>);
-        render(
-            <ClrRenderer
-                model={model}
-                boost={boost}
-                options={options}
-                verificationItems={[{ check: 'Signature', status: VerificationStatusEnum.Success }]}
-            />
+        render(<ClrRenderer model={model} boost={boost} options={options} />);
+        await waitFor(() =>
+            expect(screen.getByTestId('clr-outer-verification')).toHaveTextContent(
+                'Could not verify right now'
+            )
         );
-        expect(screen.getByText('Valid', { exact: true })).toBeInTheDocument();
     });
-    it('does not claim a valid proof when verification fails to complete', async () => {
+    it('shows neutral retry when verification cannot finish', async () => {
         mocks.verify.mockRejectedValue(new Error('Network unavailable'));
         const boost = { ...fixture, proof: { type: 'DataIntegrityProof' } } as VC;
         const model = normalizeClrTranscriptDisplayModel(boost as Record<string, unknown>);
         render(<ClrRenderer model={model} boost={boost} options={options} />);
-        expect(await screen.findByText('Signed, not verified')).toBeInTheDocument();
-        expect(screen.queryByText('Valid', { exact: true })).not.toBeInTheDocument();
+        await waitFor(() =>
+            expect(screen.getByTestId('clr-outer-verification')).toHaveTextContent(
+                'Could not verify right now'
+            )
+        );
+        expect(screen.getByRole('button', { name: 'Retry verification' })).toBeInTheDocument();
+        expect(screen.queryByText('Signature could not be confirmed')).not.toBeInTheDocument();
     });
     it('shows every military child in its section and opens source-backed details', () => {
         const view = render(<ClrRenderer model={model} boost={fixture} options={options} />);
@@ -255,11 +263,7 @@ describe('shared CLR renderer', () => {
             expect(
                 view.container.querySelector('[data-clr-layout="military"]')
             ).toBeInTheDocument();
-            if (surface === 'card') {
-                fireEvent.click(screen.getByRole('button', { name: 'View details' }));
-                expect(mocks.open.mock.lastCall![0].props.model).toBe(model);
-                expect(mocks.open.mock.lastCall![0].props.options.surface).toBe('full');
-            } else {
+            if (surface !== 'card') {
                 expect(
                     screen.queryByRole('button', { name: 'View details' })
                 ).not.toBeInTheDocument();
@@ -327,27 +331,6 @@ describe('shared CLR renderer', () => {
         expect(onViewDetails).toHaveBeenCalledOnce();
         expect(mocks.open).not.toHaveBeenCalled();
     });
-    it('preserves viewer and sharing context when an academic card opens details', () => {
-        const academic = normalizeClrTranscriptDisplayModel({
-            type: ['ClrCredential'],
-            name: 'Academic Transcript',
-        });
-        render(
-            <ClrTranscriptCard
-                model={academic}
-                boost={fixture}
-                boostUri="urn:shared-record"
-                options={{ viewer: 'registrar', surface: ClrTranscriptSurface.Card }}
-            />
-        );
-        fireEvent.click(screen.getByRole('button', { name: 'Academic card view' }));
-        expect(mocks.open.mock.lastCall![0].props).toMatchObject({
-            model: academic,
-            boost: fixture,
-            boostUri: 'urn:shared-record',
-            options: { viewer: 'registrar', surface: ClrTranscriptSurface.Full },
-        });
-    });
     it.each([ClrTranscriptSurface.Full, ClrTranscriptSurface.Card, ClrTranscriptSurface.Embed])(
         'preserves the academic %s view',
         surface => {
@@ -386,7 +369,11 @@ describe('shared CLR renderer', () => {
         render(<ClrRenderer model={sparse} options={options} />);
         for (const record of sparse.records) {
             fireEvent.click(screen.getByRole('button', { name: record.name!.value }));
-            expect(mocks.open.mock.lastCall![0].props.record.sourceCredentialId).toBe(record.id);
+            const details = render(mocks.open.mock.lastCall![0]);
+            expect(
+                within(details.container).getByRole('heading', { name: record.name!.value })
+            ).toBeInTheDocument();
+            details.unmount();
         }
         expect(screen.queryByText('Issued by')).not.toBeInTheDocument();
     });

@@ -1,4 +1,6 @@
-import type { VC, VerificationItem } from '@learncard/types';
+import type { VC } from '@learncard/types';
+import type { ClrVerificationSnapshot } from 'learn-card-base/helpers/credentials/clr/verification.types';
+import type { ClrVerificationSession } from '../clr-transcript/useClrVerification';
 import type {
     ClrTranscriptDisplayModel,
     ClrLayoutKind,
@@ -12,8 +14,10 @@ export interface ClrRendererProps {
     options: ViewOptions;
     boost?: VC;
     boostUri?: string;
-    verificationItems?: VerificationItem[];
+    verification?: ClrVerificationSnapshot;
+    onRetryVerification?: () => void;
     insetTop?: boolean;
+    verificationSession?: ClrVerificationSession;
     onViewDetails?: () => void;
 }
 

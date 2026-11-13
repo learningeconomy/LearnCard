@@ -222,9 +222,8 @@ const courseCredential = {
 } as unknown as VC;
 
 describe('NonBoostPreview', () => {
-    it('passes computed proof results to the full CLR renderer', async () => {
-        const verificationItems = [{ check: 'proof', status: VerificationStatusEnum.Failed }];
-        mocks.verify.mockResolvedValue(verificationItems);
+    it('leaves CLR verification to the shared renderer rather than running a second generic check', async () => {
+        mocks.verify.mockClear();
         render(
             <NonBoostPreview
                 credential={credential}
@@ -238,9 +237,8 @@ describe('NonBoostPreview', () => {
                 isClrCredential
             />
         );
-        await waitFor(() =>
-            expect(mocks.fullPage.mock.lastCall?.[0].verificationItems).toEqual(verificationItems)
-        );
+        await waitFor(() => expect(mocks.fullPage).toHaveBeenCalled());
+        expect(mocks.verify).not.toHaveBeenCalled();
     });
     it('only exposes credential options through the preview footer', () => {
         const handleCloseModal = vi.fn();

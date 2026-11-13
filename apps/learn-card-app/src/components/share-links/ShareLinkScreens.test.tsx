@@ -111,6 +111,12 @@ vi.mock('./CredentialPreviewButton', () => ({
     CredentialPreviewButton: () => null,
     default: () => null,
 }));
+// Generic share screens isolate the CLR tree, whose real proofs have separate coverage.
+vi.mock('../clr-renderer/ClrRenderer', () => ({
+    ClrRenderer: () => {
+        throw new Error('A generic share fixture must not enter the CLR renderer');
+    },
+}));
 vi.mock('learn-card-base/helpers/share-links', async importOriginal => ({
     ...(await importOriginal<object>()),
     isShareLinkError: () => false,
