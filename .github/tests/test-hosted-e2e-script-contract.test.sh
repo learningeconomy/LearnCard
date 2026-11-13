@@ -42,6 +42,10 @@ perl -0ne 'exit !/--shard=\$\{E2E_SHARD\}\/\$\{E2E_SHARD_TOTAL\}/s' "$SERVICE_SC
 grep -Fq 'vitest run $E2E_VITEST_ARGS' "$REPO_ROOT/tests/e2e/package.json" \
     || { echo 'tests/e2e test:e2e script must accept injected vitest args' >&2; exit 1; }
 grep -Fq 'docker compose down --remove-orphans -v' "$SERVICE_SCRIPT"
+# The background SDK build must not overlap the bake (its context includes
+# learn-cloud-service/generated/), and must overlap stack startup.
+perl -0ne 'exit !/^e2e_timed docker_buildx_bake build_service_images\n(?:.*\n)*?^start_shared_sdk_preparation\n(?:.*\n)*?^e2e_timed service_compose_start/m' "$SERVICE_SCRIPT" \
+    || { echo 'SDK preparation must start after the bake and before Compose startup' >&2; exit 1; }
 
 BAKE_JSON="$(docker buildx bake --file "$BAKE_FILE" --print browser service)"
 ruby -rjson -e '

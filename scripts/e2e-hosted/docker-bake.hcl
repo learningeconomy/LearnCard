@@ -1,3 +1,15 @@
+# Cache writers. A cache written from a merge-queue ref is unreadable by every
+# other ref, and a PR-ref cache only by later runs of that PR, so e2e.yml exports
+# from one job per scope on pull requests, never from merge groups, and
+# e2e-cache-warm.yml refreshes the scopes every ref can read from main.
+variable "E2E_EXPORT_BROWSER_CACHE" {
+  default = "true"
+}
+
+variable "E2E_EXPORT_BACKEND_CACHE" {
+  default = "true"
+}
+
 # Export only the dependency stage. Exporting the source image with mode=max
 # also uploads source-bearing intermediate layers that change on every commit.
 # This cache-only target supplies the browser app build.
@@ -9,7 +21,7 @@ target "dependency-cache" {
   target     = "dependencies"
   output     = ["type=cacheonly"]
   cache-from = ["type=gha,scope=e2e-monorepo-dependencies"]
-  cache-to   = ["type=gha,scope=e2e-monorepo-dependencies,mode=min"]
+  cache-to   = E2E_EXPORT_BROWSER_CACHE == "true" ? ["type=gha,scope=e2e-monorepo-dependencies,mode=min"] : []
 }
 
 # The app still needs the complete build environment, but it is never loaded.
@@ -27,7 +39,7 @@ target "backend-dependency-cache" {
   target     = "backend-dependencies"
   output     = ["type=cacheonly"]
   cache-from = ["type=gha,scope=e2e-backend-dependencies"]
-  cache-to   = ["type=gha,scope=e2e-backend-dependencies,mode=min"]
+  cache-to   = E2E_EXPORT_BACKEND_CACHE == "true" ? ["type=gha,scope=e2e-backend-dependencies,mode=min"] : []
 }
 
 target "browser-base" {
@@ -55,7 +67,7 @@ target "browser-delete" {
   dockerfile = "Dockerfile"
   tags       = ["learn-card-e2e-delete-service"]
   cache-from = ["type=gha,scope=e2e-browser-delete"]
-  cache-to   = ["type=gha,scope=e2e-browser-delete,mode=max"]
+  cache-to   = E2E_EXPORT_BROWSER_CACHE == "true" ? ["type=gha,scope=e2e-browser-delete,mode=max"] : []
 }
 
 group "browser" {

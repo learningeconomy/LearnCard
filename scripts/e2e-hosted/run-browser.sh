@@ -25,8 +25,14 @@ collect_browser_artifacts() {
         [[ ! -e "$path" ]] || cp -R "$path" "$E2E_ARTIFACT_DIR/"
     done
     e2e_snapshot before-cleanup
-    e2e_timed stack_teardown docker compose down --remove-orphans -v
-    e2e_snapshot after-cleanup
+    # A GitHub-hosted VM is discarded after the job, so tearing the stack down
+    # (and re-measuring disk) only delayed the result by ~30s.
+    if [[ "${RUNNER_ENVIRONMENT:-}" == github-hosted ]]; then
+        echo 'Skipping stack teardown on an ephemeral GitHub-hosted runner.'
+    else
+        e2e_timed stack_teardown docker compose down --remove-orphans -v
+        e2e_snapshot after-cleanup
+    fi
     e2e_render_summary
     exit "$status"
 }
