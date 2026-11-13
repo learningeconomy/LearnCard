@@ -64,6 +64,34 @@ available in details but are excluded from learner display names.
 
 Proof presence is metadata, not successful cryptographic verification.
 
+## Occurrence verification
+
+`verification.ts` shares CLR verification between wallet and share viewers.
+`verifyClrCredentialTree(model, verify, budget, onUpdate)` checks the outer
+credential and every signed embedded occurrence, returning progressive immutable
+snapshots. `records` uses canonical record IDs; duplicate source credential IDs
+never share a verdict. Descendant results retain source paths and do not replace
+the containing record's own signer or signature result.
+
+Keep proof, lifecycle, subject binding and registry trust separate. A valid
+publisher signature does not validate a district signature, and a valid district
+signature does not establish that its learner matches the CLR learner. Binding
+uses exact subject IDs; missing or ambiguous subjects remain unconfirmed. Registry
+lookup is per exact issuer DID, never inherited from the publisher.
+
+Use one `createVerificationBudget()` per pass (30 seconds), including a share's
+holder presentation and selected members. Work is bounded to four credential
+checks at once. Cancellation stops new checks and discards late results; the
+SDK verification promise itself cannot be aborted. Resolution/transport failures,
+missing status evidence and exhausted budgets remain unavailable, not invalid.
+Reuse DIDKit's existing DID-web document cache; never cache credential proof
+results merely by issuer DID or raw credential ID.
+
+Unsigned children and successful same-publisher children need no extra UI.
+Signed-child exceptions must still qualify the summary, including same-publisher
+failures. Do not equate status-list presence with an active status or registry
+membership with signature validity.
+
 ## Regression coverage
 
 Run `vitest run src/helpers/credentials/clr` from `packages/learn-card-base`, and
