@@ -552,7 +552,7 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
                     style: 'primary',
                     action: {
                         type: 'externalLink',
-                        url: 'https://www.learncard.com/learncard-privacy-policy',
+                        url: 'https://learncard.com/privacy-policy',
                     },
                 },
                 { label: 'Done', style: 'dismiss', action: { type: 'dismiss' } },
