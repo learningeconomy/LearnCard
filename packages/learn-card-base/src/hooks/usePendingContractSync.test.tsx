@@ -100,7 +100,10 @@ it('persists a failed credential for reload and retries it only under its saving
         { record: source, category: 'Achievement' },
         expect.objectContaining({ id: expect.anything() }),
         expect.any(Set),
-        expect.any(Function)
+        expect.objectContaining({
+            onTermsSynced: expect.any(Function),
+            onContractsFailed: expect.any(Function),
+        })
     );
 });
 
@@ -123,9 +126,10 @@ it('retains a failed retry and wakes after the existing backoff', async () => {
 it('persists each acknowledged term before failure and restores it on a reloaded retry', async () => {
     vi.useFakeTimers();
     const job = enqueue();
-    mocks.sync.mockImplementationOnce(async (_input, _wallet, completed, acknowledge) => {
+    mocks.sync.mockImplementationOnce(async (_input, _wallet, completed, callbacks) => {
         expect(completed).toEqual(new Set());
-        acknowledge('terms-a');
+        callbacks.onTermsSynced('terms-a');
+        callbacks.onContractsFailed(['contract-b']);
         throw new Error('terms-b unavailable');
     });
     const hook = mount();
@@ -135,11 +139,13 @@ it('persists each acknowledged term before failure and restores it on a reloaded
     expect(persisted.state.jobs[job.id]).toMatchObject({
         status: 'error',
         syncedTermsUris: ['terms-a'],
+        failedContractUris: ['contract-b'],
     });
     pendingContractSyncStore.set.jobs(persisted.state.jobs);
-    mocks.sync.mockImplementationOnce(async (_input, _wallet, completed, acknowledge) => {
+    mocks.sync.mockImplementationOnce(async (_input, _wallet, completed, callbacks) => {
         expect(completed).toEqual(new Set(['terms-a']));
-        acknowledge('terms-b');
+        callbacks.onTermsSynced('terms-b');
+        callbacks.onContractsFailed([]);
         return true;
     });
     await act(async () => {
@@ -149,6 +155,7 @@ it('persists each acknowledged term before failure and restores it on a reloaded
     expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
         status: 'done',
         syncedTermsUris: ['terms-a', 'terms-b'],
+        failedContractUris: [],
     });
     expect(mocks.sync).toHaveBeenCalledTimes(2);
 });

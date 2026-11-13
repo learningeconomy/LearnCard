@@ -22,6 +22,8 @@ type PendingContractSyncInput =
           category: CredentialCategory;
           /** Terms mutations acknowledged before a partial failure or reload. */
           syncedTermsUris?: string[];
+          /** Destinations that failed in the latest completed discovery pass. */
+          failedContractUris?: string[];
           contractUri?: never;
           termsUri?: never;
           ownerDid?: never;
@@ -126,6 +128,11 @@ export const pendingContractSyncStore = createStore(
                               ...(input.syncedTermsUris ?? []),
                           ]),
                       ],
+                      failedContractUris:
+                          input.failedContractUris ??
+                          (existing?.kind === 'credential' && existing.status !== 'done'
+                              ? existing.failedContractUris
+                              : undefined),
                   }
                 : input),
             status: existing?.status === 'running' ? 'running' : 'queued',
@@ -170,6 +177,19 @@ export const pendingContractSyncStore = createStore(
             [id]: {
                 ...job,
                 syncedTermsUris: [...new Set([...(job.syncedTermsUris ?? []), termsUri])],
+                updatedAt: now(),
+            },
+        });
+    },
+    setFailedContractUris: (id: string, contractUris: string[]) => {
+        const jobs = get.jobs();
+        const job = jobs[id];
+        if (!job || job.kind !== 'credential') return;
+        set.jobs({
+            ...jobs,
+            [id]: {
+                ...job,
+                failedContractUris: [...new Set(contractUris)],
                 updatedAt: now(),
             },
         });

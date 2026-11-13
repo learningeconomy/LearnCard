@@ -173,7 +173,15 @@ export const usePendingContractSync = (enabled = true): void => {
                         { record: job.record, category: job.category },
                         wallet,
                         new Set(job.syncedTermsUris ?? []),
-                        termsUri => pendingContractSyncStore.set.recordTermsSynced(job.id, termsUri)
+                        {
+                            onTermsSynced: termsUri =>
+                                pendingContractSyncStore.set.recordTermsSynced(job.id, termsUri),
+                            onContractsFailed: contractUris =>
+                                pendingContractSyncStore.set.setFailedContractUris(
+                                    job.id,
+                                    contractUris
+                                ),
+                        }
                     );
                     pendingContractSyncStore.set.recordCredentialProcessed(job.id);
                     pendingContractSyncStore.set.markDone(job.id);

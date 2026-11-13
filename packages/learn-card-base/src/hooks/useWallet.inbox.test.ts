@@ -799,10 +799,17 @@ it('retries failed contracts without repeating acknowledged contract mutations',
     expect(job.kind).toBe('credential');
     if (job.kind !== 'credential') throw new Error('Expected a credential retry');
     expect(job.syncedTermsUris).toEqual(['terms-a']);
+    expect(job.failedContractUris).toEqual(['contract-terms-b']);
     const completed = new Set(job.syncedTermsUris);
     expect(mocks.syncContract).toHaveBeenCalledTimes(2);
     mocks.syncContract.mockResolvedValue(true);
-    await expect(hooks.syncCredentialToContracts(input, undefined, completed)).resolves.toBe(true);
+    const failedDestinations = vi.fn();
+    await expect(
+        hooks.syncCredentialToContracts(input, undefined, completed, {
+            onContractsFailed: failedDestinations,
+        })
+    ).resolves.toBe(true);
+    expect(failedDestinations).toHaveBeenCalledWith([]);
     expect(completed).toEqual(new Set(['terms-a', 'terms-b']));
     expect(mocks.syncContract.mock.calls.map(([uri]) => uri)).toEqual([
         'terms-a',

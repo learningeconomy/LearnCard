@@ -22,9 +22,14 @@ export const getPendingSyncStatus = (
     const jobs = Object.values(pendingContractSyncStore.get.jobs()).filter(job => {
         if (job.profileDid !== profileDid) return false;
         if (!contractUri) return true;
-        // Discovery has not identified the destination contracts yet. Keep every
-        // unfinished delivery for this account relevant rather than claiming ready.
-        if (job.kind === 'credential') return job.status !== 'done';
+        // Unknown destinations delay readiness only while delivery is active.
+        // Terminal failures belong to the contracts that actually failed, not every partner.
+        if (job.kind === 'credential') {
+            return (
+                !isJobTerminal(job) ||
+                (job.status === 'error' && Boolean(job.failedContractUris?.includes(contractUri)))
+            );
+        }
         return job.contractUri === contractUri;
     });
     const activeJobs = jobs.filter(

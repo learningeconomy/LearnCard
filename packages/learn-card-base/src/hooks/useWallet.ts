@@ -319,10 +319,15 @@ export const useWallet = () => {
         // Owned by one claim attempt (one actor, credential and network), not a global cache.
         // Supplying this also makes partial failures visible to the recovery UI.
         completedTerms?: Set<string>,
-        onTermsSynced?: (termsUri: string) => void
+        callbacks?: {
+            onTermsSynced?: (termsUri: string) => void;
+            /** Replaces the failed destinations after a completed discovery pass. */
+            onContractsFailed?: (contractUris: string[]) => void;
+        }
     ) => {
         const learnCard = wallet ?? (await getWallet());
         const syncedTerms = completedTerms ?? new Set<string>();
+        let failedContractUris: string[] | undefined;
         try {
             // Fetch and cache all consented contracts for the user
             const allContracts = await getOrFetchConsentedContracts(queryClient, learnCard);
@@ -383,7 +388,7 @@ export const useWallet = () => {
                             );
                             // Remember the acknowledged mutation before any cache/refresh work.
                             syncedTerms.add(termsUri);
-                            onTermsSynced?.(termsUri);
+                            callbacks?.onTermsSynced?.(termsUri);
                             logWalletSync('syncCredentialsToContract completed', {
                                 ownerDid: contract.owner.did,
                                 contractUri: contract.uri,
@@ -432,13 +437,17 @@ export const useWallet = () => {
                     }
                 })
             );
-            if (outcomes.some(outcome => outcome.status === 'rejected')) {
-                throw new AggregateError(
-                    outcomes.flatMap(outcome =>
-                        outcome.status === 'rejected' ? [outcome.reason] : []
-                    ),
-                    'Some consented contracts could not be synced'
-                );
+            const failures: unknown[] = [];
+            const failedContracts: string[] = [];
+            outcomes.forEach((outcome, index) => {
+                if (outcome.status !== 'rejected') return;
+                failures.push(outcome.reason);
+                failedContracts.push(allContracts[index].contract.uri);
+            });
+            failedContractUris = failedContracts;
+            callbacks?.onContractsFailed?.(failedContracts);
+            if (failures.length > 0) {
+                throw new AggregateError(failures, 'Some consented contracts could not be synced');
             }
             logWalletSync('Finished credential sync to contracts', {
                 recordUri: record.uri,
@@ -454,6 +463,7 @@ export const useWallet = () => {
                 record: { id: record.id, uri: record.uri, category },
                 category,
                 syncedTermsUris: [...syncedTerms],
+                failedContractUris,
             });
             logWalletSyncError('Credential sharing queued for retry', error, {
                 recordUri: record.uri,

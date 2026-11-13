@@ -6,6 +6,7 @@
 
 - LC-2371: Sync uploaded, pasted, and Partner Connect credentials to existing live consent contracts. Return Partner Connect saves after queuing delivery without waiting for sharing. Preserve AI Topic/Session saves' previous sharing opt-out and keep credential discovery jobs from masking contract telemetry.
 - LC-2371: Keep background credential discovery out of contract-sync banners. Partner sync status waits for the active account's queued credential deliveries, including retry backoff, before reporting a configured contract ready.
+- LC-2371: Scope exhausted credential-delivery errors to contracts that actually failed, so unrelated partner apps remain usable. Keep unattributed failures in account-wide status.
 
 ## 1.101.1
 

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import {
     enqueuePendingContractSync,
+    DONE_JOB_TTL_MS,
     MAX_JOB_RETRIES,
     pendingContractSyncStore,
 } from 'learn-card-base/stores/pendingContractSyncStore';
@@ -60,13 +61,17 @@ it('excludes other profiles and unrelated contract jobs from scoped status', () 
     expect(getPendingSyncStatus(undefined).status).toBe('ready');
 });
 
-it('reports exhausted credential delivery as an error rather than ready', () => {
+it('keeps unattributed exhausted delivery errors global without poisoning scoped partners', async () => {
     const job = enqueueCredential();
     exhaustRetries(job.id);
-    expect(getPendingSyncStatus(LEARNER, CONTRACT)).toMatchObject({
+    expect(getPendingSyncStatus(LEARNER)).toMatchObject({
         status: 'error',
         lastError: 'Sharing failed',
-        progress: { retryCount: MAX_JOB_RETRIES },
+    });
+    expect(getPendingSyncStatus(LEARNER, CONTRACT).status).toBe('ready');
+    expect(getPendingSyncStatus(LEARNER, 'unrelated-contract').status).toBe('ready');
+    expect(await waitForPendingSync(LEARNER, 'unrelated-contract')).toMatchObject({
+        status: 'ready',
     });
 });
 
@@ -101,4 +106,45 @@ it('returns syncing when the wait deadline expires without delivery', async () =
     const waiting = waitForPendingSync(LEARNER, CONTRACT, 1000);
     await vi.advanceTimersByTimeAsync(1000);
     expect(await waiting).toMatchObject({ status: 'syncing' });
+});
+
+it('restores failed destinations and reports terminal errors only to the affected partner', async () => {
+    const job = enqueueCredential();
+    pendingContractSyncStore.set.setFailedContractUris(job.id, [CONTRACT]);
+    exhaustRetries(job.id);
+    const persisted = JSON.parse(localStorage.getItem('pendingContractSyncStore')!);
+    pendingContractSyncStore.set.jobs(persisted.state.jobs);
+    expect(getPendingSyncStatus(LEARNER, CONTRACT)).toMatchObject({
+        status: 'error',
+        lastError: 'Sharing failed',
+        progress: { retryCount: MAX_JOB_RETRIES },
+    });
+    expect(getPendingSyncStatus(LEARNER, 'unrelated-contract').status).toBe('ready');
+    expect(await waitForPendingSync(LEARNER, 'unrelated-contract')).toMatchObject({
+        status: 'ready',
+    });
+    expect(getPendingSyncStatus(LEARNER).status).toBe('error');
+});
+
+it('does not retain a recovered destination in a later failed discovery snapshot', () => {
+    const job = enqueueCredential();
+    pendingContractSyncStore.set.setFailedContractUris(job.id, [CONTRACT]);
+    pendingContractSyncStore.set.setFailedContractUris(job.id, ['contract-b']);
+    exhaustRetries(job.id);
+    expect(getPendingSyncStatus(LEARNER, CONTRACT).status).toBe('ready');
+    expect(getPendingSyncStatus(LEARNER, 'contract-b').status).toBe('error');
+});
+
+it('keeps an unrelated partner ready after newer completed contract jobs are pruned', () => {
+    const failed = enqueueCredential();
+    pendingContractSyncStore.set.setFailedContractUris(failed.id, [CONTRACT]);
+    exhaustRetries(failed.id);
+    vi.setSystemTime(2000);
+    const unrelated = enqueueContract('contract-b');
+    pendingContractSyncStore.set.markDone(unrelated.id);
+    vi.setSystemTime(2000 + DONE_JOB_TTL_MS + 1);
+    pendingContractSyncStore.set.pruneDoneJobs();
+    expect(pendingContractSyncStore.get.jobs()[failed.id].status).toBe('error');
+    expect(getPendingSyncStatus(LEARNER, 'contract-b').status).toBe('ready');
+    expect(getPendingSyncStatus(LEARNER, CONTRACT).status).toBe('error');
 });
