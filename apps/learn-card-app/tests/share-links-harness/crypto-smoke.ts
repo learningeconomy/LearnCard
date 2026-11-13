@@ -4,11 +4,11 @@ import { readFile } from 'node:fs/promises';
 import { initLearnCard } from '@learncard/init';
 import {
     prepareShare,
-    createVerificationBudget,
     shareWallet,
     verifyCredentialTree,
     verifySharedPresentation,
 } from '../../src/components/share-links/shareLinkFlow';
+import { createVerificationBudget } from '../../../../packages/learn-card-base/src/helpers/credentials/clr/verification';
 import {
     decryptSharePayload,
     validateShareManifest,
