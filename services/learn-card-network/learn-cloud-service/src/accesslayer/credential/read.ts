@@ -10,10 +10,22 @@ export const getCredentialById = async (_id: string) => {
     }
 };
 
-export const getCredentialsById = async (_ids: string[]) => {
-    try {
-        const ids = _ids.map(id => new ObjectId(id));
+/** True only for 24-char hex ids. ObjectId.isValid also accepts 12-byte strings. */
+export const isMongoObjectIdString = (id: string): boolean => /^[a-fA-F0-9]{24}$/.test(id);
 
+export const getCredentialsById = async (_ids: string[]) => {
+    const ids: ObjectId[] = [];
+    for (const id of _ids) {
+        if (!isMongoObjectIdString(id)) continue;
+        try {
+            ids.push(new ObjectId(id));
+        } catch {
+            // Skip a malformed id so it cannot fail the rest of the $in lookup.
+        }
+    }
+    if (ids.length === 0) return [];
+
+    try {
         return await Credentials.find({ _id: { $in: ids } }).toArray();
     } catch (e) {
         console.error(e);
