@@ -51,8 +51,8 @@ The deploy workflow bakes it into every function from the matrix leg's `tenant`
 (ScoutPass legs set `scouts`). A named tenant **fails closed**: a missing
 `config.<tenant>.<stage>.json` stops startup instead of loading LearnCard's or the
 base settings. ScoutPass files were generated from the live ScoutPass Lambdas;
-ScoutPass production keeps `SA_SEED_ALLOW_LEGACY_READ=true` /
-`SA_SEED_ENCRYPT_WRITES=false` until its seed migration is confirmed complete.
+ScoutPass production enables `SA_SEED_ENCRYPT_WRITES=true` and keeps
+`SA_SEED_ALLOW_LEGACY_READ=true` until its seed migration is confirmed complete.
 To add a tenant, add its stage files to each service and register them in
 `src/config/stageConfig.ts`.
 
