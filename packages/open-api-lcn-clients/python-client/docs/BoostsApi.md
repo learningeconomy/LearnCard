@@ -9,6 +9,7 @@ All URIs are relative to _/api_
 | [**boost_allocate_credential_status**](BoostsApi.md#boost_allocate_credential_status)                                     | **POST** /boost/status/allocate                        | Allocate Bitstring credential status entries        |
 | [**boost_attach_framework_to_boost**](BoostsApi.md#boost_attach_framework_to_boost)                                       | **POST** /boost/attach-framework                       | Attach framework to boost                           |
 | [**boost_claim_boost_with_link**](BoostsApi.md#boost_claim_boost_with_link)                                               | **POST** /boost/claim                                  | Claim a boost using a claim link                    |
+| [**boost_claim_boost_with_link_status**](BoostsApi.md#boost_claim_boost_with_link_status)                                 | **POST** /boost/claim/status                           | Reconcile claim-link request status                 |
 | [**boost_count_boost_children**](BoostsApi.md#boost_count_boost_children)                                                 | **POST** /boost/children/count                         | Count boost children                                |
 | [**boost_count_boost_parents**](BoostsApi.md#boost_count_boost_parents)                                                   | **POST** /boost/parents/count                          | Count boost parents                                 |
 | [**boost_count_boost_siblings**](BoostsApi.md#boost_count_boost_siblings)                                                 | **POST** /boost/siblings/count                         | Count boost siblings                                |
@@ -433,6 +434,87 @@ with openapi_client.ApiClient(configuration) as api_client:
 ### Return type
 
 **str**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **boost_claim_boost_with_link_status**
+
+> BoostClaimBoostWithLinkStatus200Response boost_claim_boost_with_link_status(boost_claim_boost_with_link_status_request)
+
+Reconcile claim-link request status
+
+Checks an authenticated claim-link operation and may finish acceptance and capacity accounting for its existing credential.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_claim_boost_with_link_status200_response import BoostClaimBoostWithLinkStatus200Response
+from openapi_client.models.boost_claim_boost_with_link_status_request import BoostClaimBoostWithLinkStatusRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    boost_claim_boost_with_link_status_request = openapi_client.BoostClaimBoostWithLinkStatusRequest() # BoostClaimBoostWithLinkStatusRequest |
+
+    try:
+        # Reconcile claim-link request status
+        api_response = api_instance.boost_claim_boost_with_link_status(boost_claim_boost_with_link_status_request)
+        print("The response of BoostsApi->boost_claim_boost_with_link_status:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_claim_boost_with_link_status: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                           | Type                                                                                | Description | Notes |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------- | ----------- | ----- |
+| **boost_claim_boost_with_link_status_request** | [**BoostClaimBoostWithLinkStatusRequest**](BoostClaimBoostWithLinkStatusRequest.md) |             |
+
+### Return type
+
+[**BoostClaimBoostWithLinkStatus200Response**](BoostClaimBoostWithLinkStatus200Response.md)
 
 ### Authorization
 

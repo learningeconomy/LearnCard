@@ -36,7 +36,8 @@ class TestBoostClaimBoostWithLinkRequest(unittest.TestCase):
         if include_optional:
             return BoostClaimBoostWithLinkRequest(
                 boost_uri = '',
-                challenge = ''
+                challenge = '',
+                request_id = '0'
             )
         else:
             return BoostClaimBoostWithLinkRequest(

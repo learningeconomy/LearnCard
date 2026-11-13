@@ -2,12 +2,15 @@
 
 All URIs are relative to _/api_
 
-| Method                                                                                                                             | HTTP request                          | Description                                   |
-| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------- |
-| [**credential_refresh_allocate_credential_refresh**](CredentialRefreshApi.md#credential_refresh_allocate_credential_refresh)       | **POST** /credential-refresh/allocate | Allocate a managed credential refresh service |
-| [**credential_refresh_get_credential_refresh_history**](CredentialRefreshApi.md#credential_refresh_get_credential_refresh_history) | **GET** /credential-refresh/history   | Get managed credential refresh history        |
-| [**credential_refresh_publish_credential_refresh**](CredentialRefreshApi.md#credential_refresh_publish_credential_refresh)         | **POST** /credential-refresh/publish  | Publish a managed credential refresh version  |
-| [**credential_refresh_send_refreshable_credential**](CredentialRefreshApi.md#credential_refresh_send_refreshable_credential)       | **POST** /credential-refresh/send     | Send a refreshable credential                 |
+| Method                                                                                                                                         | HTTP request                                          | Description                                                        |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------ |
+| [**credential_refresh_allocate_credential_refresh**](CredentialRefreshApi.md#credential_refresh_allocate_credential_refresh)                   | **POST** /credential-refresh/allocate                 | Allocate a managed credential refresh service                      |
+| [**credential_refresh_get_credential_refresh_history**](CredentialRefreshApi.md#credential_refresh_get_credential_refresh_history)             | **GET** /credential-refresh/history                   | Get managed credential refresh history                             |
+| [**credential_refresh_get_encryption_recipients**](CredentialRefreshApi.md#credential_refresh_get_encryption_recipients)                       | **GET** /credential-refresh/encryption-recipients     | Get the current holder-mode encryption recipients                  |
+| [**credential_refresh_publish_credential_refresh**](CredentialRefreshApi.md#credential_refresh_publish_credential_refresh)                     | **POST** /credential-refresh/publish                  | Publish a managed credential refresh version                       |
+| [**credential_refresh_publish_holder_encrypted_refreshable**](CredentialRefreshApi.md#credential_refresh_publish_holder_encrypted_refreshable) | **POST** /credential-refresh/publish-holder-encrypted | Publish a holder-mode (student-only encrypted) refresh version     |
+| [**credential_refresh_send_holder_encrypted_refreshable**](CredentialRefreshApi.md#credential_refresh_send_holder_encrypted_refreshable)       | **POST** /credential-refresh/send-holder-encrypted    | Send a holder-mode (student-only encrypted) refreshable credential |
+| [**credential_refresh_send_refreshable_credential**](CredentialRefreshApi.md#credential_refresh_send_refreshable_credential)                   | **POST** /credential-refresh/send                     | Send a refreshable credential                                      |
 
 # **credential_refresh_allocate_credential_refresh**
 
@@ -175,6 +178,87 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **credential_refresh_get_encryption_recipients**
+
+> CredentialRefreshGetEncryptionRecipients200Response credential_refresh_get_encryption_recipients(refresh_id)
+
+Get the current holder-mode encryption recipients
+
+Returns the current key-agreement verification-method ids (holder + managers) a holder-mode handoff must encrypt to. Used after a RECIPIENTS_CHANGED conflict.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.credential_refresh_get_encryption_recipients200_response import CredentialRefreshGetEncryptionRecipients200Response
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.CredentialRefreshApi(api_client)
+    refresh_id = 'refresh_id_example' # str |
+
+    try:
+        # Get the current holder-mode encryption recipients
+        api_response = api_instance.credential_refresh_get_encryption_recipients(refresh_id)
+        print("The response of CredentialRefreshApi->credential_refresh_get_encryption_recipients:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling CredentialRefreshApi->credential_refresh_get_encryption_recipients: %s\n" % e)
+```
+
+### Parameters
+
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **refresh_id** | **str** |             |
+
+### Return type
+
+[**CredentialRefreshGetEncryptionRecipients200Response**](CredentialRefreshGetEncryptionRecipients200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **credential_refresh_publish_credential_refresh**
 
 > CredentialRefreshPublishCredentialRefresh200Response credential_refresh_publish_credential_refresh(credential_refresh_publish_credential_refresh_request)
@@ -234,6 +318,168 @@ with openapi_client.ApiClient(configuration) as api_client:
 ### Return type
 
 [**CredentialRefreshPublishCredentialRefresh200Response**](CredentialRefreshPublishCredentialRefresh200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **credential_refresh_publish_holder_encrypted_refreshable**
+
+> CredentialRefreshPublishCredentialRefresh200Response credential_refresh_publish_holder_encrypted_refreshable(credential_refresh_publish_holder_encrypted_refreshable_request)
+
+Publish a holder-mode (student-only encrypted) refresh version
+
+Publishes a new immutable version from an already-encrypted handoff and atomically advances the refresh head. `notify` replaces server-inferred materiality.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.credential_refresh_publish_credential_refresh200_response import CredentialRefreshPublishCredentialRefresh200Response
+from openapi_client.models.credential_refresh_publish_holder_encrypted_refreshable_request import CredentialRefreshPublishHolderEncryptedRefreshableRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.CredentialRefreshApi(api_client)
+    credential_refresh_publish_holder_encrypted_refreshable_request = openapi_client.CredentialRefreshPublishHolderEncryptedRefreshableRequest() # CredentialRefreshPublishHolderEncryptedRefreshableRequest |
+
+    try:
+        # Publish a holder-mode (student-only encrypted) refresh version
+        api_response = api_instance.credential_refresh_publish_holder_encrypted_refreshable(credential_refresh_publish_holder_encrypted_refreshable_request)
+        print("The response of CredentialRefreshApi->credential_refresh_publish_holder_encrypted_refreshable:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling CredentialRefreshApi->credential_refresh_publish_holder_encrypted_refreshable: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                                                | Type                                                                                                                          | Description | Notes |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **credential_refresh_publish_holder_encrypted_refreshable_request** | [**CredentialRefreshPublishHolderEncryptedRefreshableRequest**](CredentialRefreshPublishHolderEncryptedRefreshableRequest.md) |             |
+
+### Return type
+
+[**CredentialRefreshPublishCredentialRefresh200Response**](CredentialRefreshPublishCredentialRefresh200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **credential_refresh_send_holder_encrypted_refreshable**
+
+> CredentialRefreshSendHolderEncryptedRefreshable200Response credential_refresh_send_holder_encrypted_refreshable(credential_refresh_send_holder_encrypted_refreshable_request)
+
+Send a holder-mode (student-only encrypted) refreshable credential
+
+Binds an already-encrypted handoff to its allocated refresh aggregate. The server never decrypts or processes the credential.
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.credential_refresh_send_holder_encrypted_refreshable200_response import CredentialRefreshSendHolderEncryptedRefreshable200Response
+from openapi_client.models.credential_refresh_send_holder_encrypted_refreshable_request import CredentialRefreshSendHolderEncryptedRefreshableRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.CredentialRefreshApi(api_client)
+    credential_refresh_send_holder_encrypted_refreshable_request = openapi_client.CredentialRefreshSendHolderEncryptedRefreshableRequest() # CredentialRefreshSendHolderEncryptedRefreshableRequest |
+
+    try:
+        # Send a holder-mode (student-only encrypted) refreshable credential
+        api_response = api_instance.credential_refresh_send_holder_encrypted_refreshable(credential_refresh_send_holder_encrypted_refreshable_request)
+        print("The response of CredentialRefreshApi->credential_refresh_send_holder_encrypted_refreshable:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling CredentialRefreshApi->credential_refresh_send_holder_encrypted_refreshable: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                                             | Type                                                                                                                    | Description | Notes |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **credential_refresh_send_holder_encrypted_refreshable_request** | [**CredentialRefreshSendHolderEncryptedRefreshableRequest**](CredentialRefreshSendHolderEncryptedRefreshableRequest.md) |             |
+
+### Return type
+
+[**CredentialRefreshSendHolderEncryptedRefreshable200Response**](CredentialRefreshSendHolderEncryptedRefreshable200Response.md)
 
 ### Authorization
 

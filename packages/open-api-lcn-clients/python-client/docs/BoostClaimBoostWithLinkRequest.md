@@ -2,10 +2,11 @@
 
 ## Properties
 
-| Name          | Type    | Description | Notes |
-| ------------- | ------- | ----------- | ----- |
-| **boost_uri** | **str** |             |
-| **challenge** | **str** |             |
+| Name           | Type    | Description | Notes      |
+| -------------- | ------- | ----------- | ---------- |
+| **boost_uri**  | **str** |             |
+| **challenge**  | **str** |             |
+| **request_id** | **str** |             | [optional] |
 
 ## Example
 

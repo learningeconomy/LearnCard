@@ -42,7 +42,8 @@ class TestCredentialRefreshGetCredentialRefreshHistory200Response(unittest.TestC
                         effective_at = '', 
                         etag = '', 
                         signing_mode = 'issuer-signed', 
-                        update_summary = '', )
+                        update_summary = '', 
+                        update_reason = 'corrected', )
                     ],
                 has_more = True,
                 cursor = ''
@@ -56,7 +57,8 @@ class TestCredentialRefreshGetCredentialRefreshHistory200Response(unittest.TestC
                         effective_at = '', 
                         etag = '', 
                         signing_mode = 'issuer-signed', 
-                        update_summary = '', )
+                        update_summary = '', 
+                        update_reason = 'corrected', )
                     ],
                 has_more = True,
         )

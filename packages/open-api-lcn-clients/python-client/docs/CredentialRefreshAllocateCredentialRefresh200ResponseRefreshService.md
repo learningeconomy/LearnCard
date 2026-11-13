@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name              | Type                                                                                                                              | Description | Notes |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **id**            | **str**                                                                                                                           |             |
-| **type**          | **str**                                                                                                                           |             |
-| **authorization** | [**BoostSend200ResponseInboxRefreshRefreshServiceAuthorization**](BoostSend200ResponseInboxRefreshRefreshServiceAuthorization.md) |             |
+| Name              | Type                                                                                                                                        | Description | Notes |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **id**            | **str**                                                                                                                                     |             |
+| **type**          | **str**                                                                                                                                     |             |
+| **authorization** | [**BoostSend200ResponseInboxRefreshRefreshServiceAnyOfAuthorization**](BoostSend200ResponseInboxRefreshRefreshServiceAnyOfAuthorization.md) |             |
 
 ## Example
 

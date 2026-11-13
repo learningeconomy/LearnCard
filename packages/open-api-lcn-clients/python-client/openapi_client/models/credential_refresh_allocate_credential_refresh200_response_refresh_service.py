@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List
 from typing_extensions import Annotated
-from openapi_client.models.boost_send200_response_inbox_refresh_refresh_service_authorization import BoostSend200ResponseInboxRefreshRefreshServiceAuthorization
+from openapi_client.models.boost_send200_response_inbox_refresh_refresh_service_any_of_authorization import BoostSend200ResponseInboxRefreshRefreshServiceAnyOfAuthorization
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -31,7 +31,7 @@ class CredentialRefreshAllocateCredentialRefresh200ResponseRefreshService(BaseMo
     """ # noqa: E501
     id: Annotated[str, Field(min_length=1, strict=True)]
     type: StrictStr
-    authorization: BoostSend200ResponseInboxRefreshRefreshServiceAuthorization
+    authorization: BoostSend200ResponseInboxRefreshRefreshServiceAnyOfAuthorization
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "type", "authorization"]
 
@@ -104,7 +104,7 @@ class CredentialRefreshAllocateCredentialRefresh200ResponseRefreshService(BaseMo
         _values = {
             "id": obj.get("id"),
             "type": obj.get("type"),
-            "authorization": BoostSend200ResponseInboxRefreshRefreshServiceAuthorization.from_dict(obj["authorization"]) if obj.get("authorization") is not None else None
+            "authorization": BoostSend200ResponseInboxRefreshRefreshServiceAnyOfAuthorization.from_dict(obj["authorization"]) if obj.get("authorization") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

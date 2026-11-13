@@ -61,6 +61,13 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_claim_boost_with_link_status(self) -> None:
+        """Test case for boost_claim_boost_with_link_status
+
+        Reconcile claim-link request status
+        """
+        pass
+
     def test_boost_count_boost_children(self) -> None:
         """Test case for boost_count_boost_children
 

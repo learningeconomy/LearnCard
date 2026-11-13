@@ -38,6 +38,7 @@ class TestCredentialRefreshPublishCredentialRefreshRequestOneOf(unittest.TestCas
                 refresh_id = '0',
                 notify_holder = True,
                 update_summary = '',
+                update_reason = 'corrected',
                 idempotency_key = '',
                 mode = 'issuer-signed',
                 signed_credential = {

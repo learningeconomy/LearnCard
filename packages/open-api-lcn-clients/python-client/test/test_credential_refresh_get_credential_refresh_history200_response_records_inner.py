@@ -40,7 +40,8 @@ class TestCredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(un
                 effective_at = '',
                 etag = '',
                 signing_mode = 'issuer-signed',
-                update_summary = ''
+                update_summary = '',
+                update_reason = 'corrected'
             )
         else:
             return CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(
