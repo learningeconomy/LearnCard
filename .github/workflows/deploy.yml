@@ -2126,7 +2126,10 @@ jobs:
             - name: Create Release Pull Request
               uses: changesets/action@v1
               with:
-                  version: bunx changeset version
+                  # Also adds a patch changeset for @learncard/cli when a package it bundles
+                  # is being released (scripts/release-bundled-dependents.mjs); Changesets
+                  # alone only bumps dependents whose declared range is left.
+                  version: bun run changeset:version
                   commit: 'chore(release): version packages'
                   title: 'chore(release): version packages'
               env:

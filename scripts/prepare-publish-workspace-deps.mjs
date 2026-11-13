@@ -133,6 +133,48 @@ const bundledPrivateDependencies = new Map(
     ].map(name => [name, new Set(['@learncard/service-config'])])
 );
 
+// Packages published as a single bundled file. Their workspace manifest keeps `dependencies`
+// so Changesets still releases them when a dependency changes, but nothing in that list is
+// needed at install time, so the published manifest omits it. Require build evidence first.
+const selfContainedPackages = new Map([
+    [
+        '@learncard/cli',
+        {
+            entry: 'dist/index.js',
+            // Written by the package's bundler: every non-builtin module the bundle still loads.
+            externals: 'dist/bundle-externals.json',
+            // Nothing may be left for the installer to provide.
+            allowedExternals: new Set(),
+        },
+    ],
+]);
+
+const verifySelfContainedBuild = (packageJsonPath, { entry, externals, allowedExternals }) => {
+    const dir = path.dirname(packageJsonPath);
+    for (const file of [entry, externals]) {
+        if (!fs.existsSync(path.join(dir, file))) {
+            throw new Error(
+                'Self-contained build missing: ' + path.relative(root, path.join(dir, file))
+            );
+        }
+    }
+    const loaded = readJson(path.join(dir, externals));
+    if (!Array.isArray(loaded)) {
+        throw new Error(
+            'Invalid externals list: ' + path.relative(root, path.join(dir, externals))
+        );
+    }
+    const unexpected = loaded.filter(name => !allowedExternals.has(name));
+    if (unexpected.length > 0) {
+        throw new Error(
+            path.relative(root, path.join(dir, entry)) +
+                ' still loads ' +
+                unexpected.join(', ') +
+                ' at runtime; it is not self-contained.'
+        );
+    }
+};
+
 const declarationReferencesDependency = (file, dependencyName, dependencyDir, options) => {
     const source = ts.createSourceFile(
         file,
@@ -325,6 +367,27 @@ for (const [packageJsonPath, packageJson] of packageJsonByPath.entries()) {
             });
         }
     }
+}
+
+for (const [packageJsonPath, packageJson] of packageJsonByPath.entries()) {
+    const selfContained = selfContainedPackages.get(packageJson.name);
+    if (!selfContained) continue;
+    if (selectedPackages.size > 0 && !selectedPackages.has(packageJson.name)) continue;
+    if (!packageJson.dependencies || Object.keys(packageJson.dependencies).length === 0) continue;
+
+    verifySelfContainedBuild(packageJsonPath, selfContained);
+
+    for (const [dependencyName, spec] of Object.entries(packageJson.dependencies)) {
+        changes.push({
+            packageJsonPath,
+            packageName: packageJson.name,
+            field: 'dependencies',
+            dependencyName,
+            from: spec,
+            to: '(bundled; omitted from published dependencies)',
+        });
+    }
+    delete packageJson.dependencies;
 }
 
 if (changes.length === 0) {

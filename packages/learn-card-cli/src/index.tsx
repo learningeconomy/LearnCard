@@ -1,4 +1,3 @@
-import fs from 'fs/promises';
 import dns from 'node:dns';
 import { createInterface } from 'node:readline/promises';
 import { Writable } from 'node:stream';
@@ -11,13 +10,14 @@ import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
 import * as types from '@learncard/types';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import gradient from 'gradient-string';
-import figlet from 'figlet';
 import clipboard from 'clipboardy';
 
 import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
 import { getRenderMethodPlugin } from '@learncard/render-method-plugin';
 
 import { generateRandomSeed } from './random';
+import { readDidkitWasm } from './didkit-wasm';
+import { BANNER } from './banner';
 import {
     createLearnCardBundle,
     exportLearnCardBundle as writeLearnCardBundle,
@@ -331,9 +331,7 @@ const runRepl = async (_seed: string = generateRandomSeed()) => {
     const seedInput = envSeed ?? _seed;
     const seed = seedInput.padStart(64, '0');
 
-    console.log(
-        gradient(['cyan', 'green'])(figlet.textSync('Learn Card', { font: 'Big Money-ne' }))
-    );
+    console.log(gradient(['cyan', 'green'])(BANNER));
     console.log('Welcome to the Learn Card CLI!\n');
 
     console.log(`Your seed is ${seed}\n`);
@@ -350,9 +348,7 @@ const runRepl = async (_seed: string = generateRandomSeed()) => {
     cliGlobals.learnCardFromSeed = learnCardFromSeed;
     cliGlobals.initLearnCard = initLearnCard;
 
-    const didkit = fs.readFile(
-        require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
-    );
+    const didkit = readDidkitWasm();
 
     const _learnCard = await initLearnCard({
         seed,
