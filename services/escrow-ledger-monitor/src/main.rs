@@ -1,6 +1,11 @@
 use aws_lambda_events::event::dynamodb::Event;
-use escrow_ledger_monitor::authority::{AuthorityTrust, Config as AuthorityConfig};
-use escrow_ledger_monitor::{Error, Metric, Monitor, TrustedKeys, aws::Aws};
+use escrow_ledger_monitor::authority::{
+    AuthorityTrust, Config as AuthorityConfig, SweepOptions, deadline_from_epoch_ms,
+};
+use escrow_ledger_monitor::{
+    Error, Metric, Monitor, TrustedKeys,
+    aws::{Aws, dynamodb_config, sink_config},
+};
 use lambda_runtime::{LambdaEvent, service_fn};
 use serde_dynamo::AttributeValue;
 use serde_json::Value;
@@ -15,6 +20,8 @@ fn env(name: &str) -> Result<String, Error> {
 async fn handle(
     monitor: &Monitor<Aws>,
     authority: Option<&AuthorityConfig>,
+    concurrency: usize,
+    deadline_ms: u64,
     event: Value,
 ) -> Result<(), Error> {
     if event.get("source").and_then(Value::as_str) == Some("aws.events")
@@ -22,8 +29,14 @@ async fn handle(
     {
         return match authority {
             Some(config) => {
-                let (legacy, authority) =
-                    tokio::join!(monitor.sweep(), monitor.sweep_authority(config));
+                // The invocation deadline stops the authority sweep with a
+                // coverage failure instead of a silent Lambda timeout.
+                let options =
+                    SweepOptions::new(concurrency, Some(deadline_from_epoch_ms(deadline_ms)));
+                let (legacy, authority) = tokio::join!(
+                    monitor.sweep(),
+                    monitor.sweep_authority_with(config, &options)
+                );
                 legacy.and(authority)
             }
             None => monitor.sweep().await,
@@ -126,14 +139,19 @@ async fn main() -> Result<(), lambda_runtime::Error> {
             trust: AuthorityTrust::parse(&value)?,
         })
     };
+    let concurrency = SweepOptions::concurrency_from_env(
+        std::env::var("AUTHORITY_SWEEP_CONCURRENCY").ok().as_deref(),
+    )?;
+    // Alarm sinks time out well inside the deadline guard's abandon window.
+    let sinks = sink_config(&config);
     let monitor = Monitor {
         key,
         tenant: tenant.clone(),
         backend: Aws {
-            db: aws_sdk_dynamodb::Client::new(&config),
+            db: aws_sdk_dynamodb::Client::from_conf(dynamodb_config(&config)),
             s3: aws_sdk_s3::Client::new(&config),
-            cw: aws_sdk_cloudwatch::Client::new(&config),
-            sns: aws_sdk_sns::Client::new(&config),
+            cw: aws_sdk_cloudwatch::Client::new(&sinks),
+            sns: aws_sdk_sns::Client::new(&sinks),
             records: env("RECORDS_TABLE")?,
             heads: env("HEADS_TABLE")?,
             bucket: env("AUDIT_BUCKET")?,
@@ -141,8 +159,17 @@ async fn main() -> Result<(), lambda_runtime::Error> {
             tenant,
         },
     };
-    lambda_runtime::run(service_fn(|event: LambdaEvent<Value>| async {
-        match handle(&monitor, authority.as_ref(), event.payload).await {
+    let (monitor, authority) = (&monitor, authority.as_ref());
+    lambda_runtime::run(service_fn(move |event: LambdaEvent<Value>| async move {
+        match handle(
+            monitor,
+            authority,
+            concurrency,
+            event.context.deadline,
+            event.payload,
+        )
+        .await
+        {
             Err(Error::Integrity) => monitor.alarm(Metric::LedgerIntegrityFailure).await,
             result => result,
         }
