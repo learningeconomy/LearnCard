@@ -122,9 +122,9 @@ export const useCredentialCollection = (
                   : (names[record.uri]?.some(name => name.toLowerCase().includes(needle)) ?? false);
           })
         : visibleRecords;
-    const complete = Boolean(
-        reader && data?.pages.length && !hasNextPage && !isFetching && !isError
-    );
+    // Completeness comes from the cached walk, not fetch status: a refetch keeps the old pages
+    // until it settles and a failed refresh leaves them in place, so counts stay shown (LC-2412).
+    const complete = Boolean(reader && data?.pages.length && !hasNextPage);
     const load = useCallback(() => {
         if (reader && hasNextPage && !isFetching && !isError)
             return fetchNextPage({ cancelRefetch: false });
