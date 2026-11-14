@@ -32,6 +32,37 @@ const packageName = id =>
         .slice(0, id.startsWith('@') ? 2 : 1)
         .join('/');
 
+/** Collect package references from declaration syntax, including nested import types. */
+export const getDeclarationImports = (source, ts) => {
+    const file = ts.createSourceFile('client.d.ts', source, ts.ScriptTarget.Latest, true);
+    const imported = new Set();
+    const add = specifier => {
+        if (specifier && ts.isStringLiteral(specifier)) {
+            imported.add(isBare(specifier.text) ? packageName(specifier.text) : specifier.text);
+        }
+    };
+    const visit = node => {
+        if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+            add(node.moduleSpecifier);
+        } else if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) {
+            add(node.argument.literal);
+        } else if (
+            ts.isImportEqualsDeclaration(node) &&
+            ts.isExternalModuleReference(node.moduleReference)
+        ) {
+            add(node.moduleReference.expression);
+        }
+        ts.forEachChild(node, visit);
+    };
+    visit(file);
+    for (const reference of [...file.typeReferenceDirectives, ...file.referencedFiles]) {
+        imported.add(
+            isBare(reference.fileName) ? packageName(reference.fileName) : reference.fileName
+        );
+    }
+    return imported;
+};
+
 /**
  * @param {object} options
  * @param {Function} options.rollup `rollup` from the client's own devDependencies (>= 4).
@@ -83,11 +114,7 @@ export const bundleClientTypes = async ({
     await bundle.close();
 
     const source = await readFile(bundled, 'utf8');
-    const imported = new Set(
-        [...source.matchAll(/^(?:import|export)\b[^;]*?\bfrom\s+['"]([^'"]+)['"]/gm)].map(match =>
-            packageName(match[1])
-        )
-    );
+    const imported = getDeclarationImports(source, ts);
     const unexpected = [...imported].filter(name => !allowedExternals.includes(name));
 
     if (unexpected.length > 0) {

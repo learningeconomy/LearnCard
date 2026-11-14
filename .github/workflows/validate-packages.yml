@@ -49,6 +49,9 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Test client declaration dependency guard
+              run: node --test packages/learn-card-network/scripts/bundleClientTypes.test.mjs
+
             - name: Build publishable packages
               run: >
                   bunx nx run-many -t build -p
