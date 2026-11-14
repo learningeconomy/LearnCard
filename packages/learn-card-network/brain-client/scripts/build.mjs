@@ -1,29 +1,20 @@
 import path from 'path';
 
 import esbuild from 'esbuild';
-import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
 import fs from 'fs/promises';
 
-const nodeResolveExternal = NodeResolvePlugin({
-    extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
-    onResolved: resolved => {
-        if (resolved.includes('node_modules')) {
-            return {
-                external: true,
-            };
-        }
-        return resolved;
-    },
-});
-
+// Bundle helpers and their dependencies in every format. Externalizing node_modules
+// leaves the CJS bundle requiring helper dependencies that the client does not declare.
+// Default esbuild resolution selects the ESM helpers build and tree-shakes unused code.
+// Keep declared tRPC dependencies external in CJS, preserving their module identity.
 const configurations = [
     {
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
         tsconfig: 'tsconfig.json',
-        plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
+        external: ['@trpc/client', '@trpc/server'],
         format: 'cjs',
         outfile: 'dist/brain-client.cjs.development.cjs',
     },
@@ -32,9 +23,9 @@ const configurations = [
         bundle: true,
         sourcemap: 'external',
         tsconfig: 'tsconfig.json',
-        plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
         minify: true,
+        external: ['@trpc/client', '@trpc/server'],
         format: 'cjs',
         outfile: 'dist/brain-client.cjs.production.min.cjs',
     },
@@ -43,11 +34,6 @@ const configurations = [
         bundle: true,
         sourcemap: 'external',
         tsconfig: 'tsconfig.json',
-        // For the ESM build, rely on esbuild's default resolution and
-        // bundle dependencies like @learncard/helpers directly, so we
-        // don't end up importing the CJS helpers build that uses
-        // dynamic require('query-string') in the browser.
-        plugins: [],
         entryPoints: ['src/index.ts'],
         format: 'esm',
         outfile: 'dist/brain-client.esm.js',

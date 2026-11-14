@@ -99,3 +99,6 @@ jobs:
             # package (@learncard/network-brain-service, @learncard/learn-cloud-service) again.
             - name: Check published types as an external consumer
               run: node scripts/check-consumer-types.mjs
+
+            - name: Check isolated published clients in all export conditions
+              run: node scripts/check-client-packages.mjs
