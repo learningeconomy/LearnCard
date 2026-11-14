@@ -4,7 +4,7 @@
  * primary-profile useGetCredentials key ('' since LC-2383) and the skills aggregate.
  */
 import React from 'react';
-import { act, cleanup, renderHook } from '@testing-library/react';
+import { act, cleanup, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, QueryObserver } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
@@ -40,6 +40,17 @@ let client: QueryClient;
 const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
 );
+
+// Scouts pins @testing-library/react 11, which has no renderHook.
+const renderMutation = () => {
+    const mutation: { current?: ReturnType<typeof useAddCredentialToWallet> } = {};
+    const Harness = () => {
+        mutation.current = useAddCredentialToWallet();
+        return null;
+    };
+    render(<Harness />, { wrapper });
+    return mutation;
+};
 
 const observe = async (queryKey: unknown[]) => {
     const queryFn = vi.fn().mockResolvedValue([]);
@@ -78,10 +89,10 @@ it.each([
         ]);
         const skills = await observe(['useGetSkills', profileDid]);
         const ids = await observe(['useGetIDs', profileDid]);
-        const { result } = renderHook(() => useAddCredentialToWallet(), { wrapper });
+        const mutation = renderMutation();
 
         await act(async () => {
-            await result.current.mutateAsync({ uri: 'lc:cloud:uri-1' });
+            await mutation.current!.mutateAsync({ uri: 'lc:cloud:uri-1' });
         });
 
         await vi.waitFor(() => expect(credentials.queryFn).toHaveBeenCalledTimes(2));
