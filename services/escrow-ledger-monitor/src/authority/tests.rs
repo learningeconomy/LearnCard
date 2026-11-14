@@ -1708,6 +1708,33 @@ async fn an_account_still_reading_near_the_deadline_is_abandoned_and_the_failure
     assert_nothing_held(&m);
 }
 
+#[tokio::test(start_paused = true)]
+async fn a_last_account_finishing_after_the_stop_point_still_completes_the_sweep() {
+    // Every account is started before `stop_at`; one finishes between `stop_at`
+    // and the abandon point. Nothing was skipped, so the sweep completed.
+    let (mut m, pks) = concurrent_accounts(6);
+    let deadline = Instant::now() + std::time::Duration::from_secs(120);
+    let finishes_after_stop = deadline - DEADLINE_MARGIN + std::time::Duration::from_secs(10);
+    assert!(finishes_after_stop < deadline - DEADLINE_ABANDON);
+    // The fake applies the delay to each of the account's three reads.
+    m.backend.slow = Some((pks[3].clone(), (finishes_after_stop - Instant::now()) / 3));
+    let options = SweepOptions::new(16, Some(deadline));
+    assert_eq!(m.sweep_authority_with(&config(), &options).await, Ok(()));
+    assert!(Instant::now() >= deadline - DEADLINE_MARGIN);
+    assert_eq!(verified_accounts(&m), 6);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 1);
+    assert_eq!(count_metric(&m, Metric::AuthorityCoverageFailure), 0);
+    assert!(
+        !m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|d| matches!(d, Diagnostic::DeadlineReached { .. }))
+    );
+    assert_nothing_held(&m);
+}
+
 #[tokio::test]
 async fn partition_scan_bounds_and_malformed_keys_never_report_partial_success() {
     // More distinct partitions than the sanity bound.

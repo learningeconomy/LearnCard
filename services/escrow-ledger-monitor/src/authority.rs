@@ -776,12 +776,17 @@ impl<B: AuthorityBackend> Monitor<B> {
         let mut deadline_reached = false;
         loop {
             let now = Instant::now();
-            if !deadline_reached && stop_at.is_some_and(|t| now >= t) {
+            // The deadline only counts while unstarted work remains: a run whose
+            // last account finishes just after `stop_at` still completed.
+            let unstarted = !scan_done || !queued.is_empty();
+            if !deadline_reached && unstarted && stop_at.is_some_and(|t| now >= t) {
                 deadline_reached = true;
             }
-            if abandon_at.is_some_and(|t| now >= t) {
+            if abandon_at.is_some_and(|t| now >= t) && !accounts.is_empty() {
                 // Reads only: dropping them releases their bytes and the lane.
+                // Abandoned accounts were not verified, so coverage is incomplete.
                 accounts.clear();
+                deadline_reached = true;
             }
             if failure.is_some() || deadline_reached {
                 // Dropping an in-flight Scan request is only a read.
@@ -807,7 +812,10 @@ impl<B: AuthorityBackend> Monitor<B> {
             if scan.is_none() && accounts.is_empty() && deliveries.is_empty() {
                 break;
             }
-            let wake = if deadline_reached {
+            // Past `stop_at` the only remaining timer is the abandon point; waking
+            // on a `stop_at` already passed would spin instead of waiting.
+            let past_stop = stop_at.is_some_and(|t| now >= t);
+            let wake = if deadline_reached || past_stop {
                 abandon_at.filter(|_| !accounts.is_empty())
             } else {
                 stop_at
