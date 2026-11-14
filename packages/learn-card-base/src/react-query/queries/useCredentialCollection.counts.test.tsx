@@ -146,35 +146,39 @@ describe('Passport counts (LC-2412, LC-2413)', () => {
         expect(result.current).toEqual({ count: 30, loading: false, fetching: false });
     });
 
-    it('SavedCountShownAtLaunch: hydrated counts show once the wallet is ready, even while refetching', async () => {
-        makeWallet();
-        const { result: warm, unmount } = renderHook(useCounts, { wrapper });
-        await waitFor(() => expect(warm.current.count).toBe(30));
-        unmount();
-        const saved = dehydrate(client);
-        for (const query of saved.queries) {
-            // Saved last session: older than the stale window, so launch refetches.
-            query.state.dataUpdatedAt = Date.now() - CREDENTIAL_LIST_STALE_TIME - 1000;
+    it.each([
+        ['older than the stale window', () => Date.now() - CREDENTIAL_LIST_STALE_TIME - 1000],
+        // Inside the window but from an earlier page load: launch still revalidates once.
+        ['from the previous launch', () => performance.timeOrigin - 1000],
+    ])(
+        'SavedCountShownAtLaunch: a saved cache %s shows counts once the wallet is ready, while refetching',
+        async (_label, savedAt) => {
+            makeWallet();
+            const { result: warm, unmount } = renderHook(useCounts, { wrapper });
+            await waitFor(() => expect(warm.current.count).toBe(30));
+            unmount();
+            const saved = dehydrate(client);
+            for (const query of saved.queries) query.state.dataUpdatedAt = savedAt();
+
+            client = newClient();
+            hydrate(client, saved);
+            host.wallet = null;
+            const { result, rerender } = renderHook(useCountsWhileFetching, { wrapper });
+            expect(result.current.loading).toBe(true);
+
+            const getPage = makeWallet();
+            const held = Promise.withResolvers<Page>();
+            getPage.mockImplementationOnce(() => held.promise);
+            rerender();
+            await waitFor(() => expect(result.current.fetching).toBe(true));
+            expect(getPage).toHaveBeenCalledTimes(1);
+            expect(result.current).toEqual({ count: 30, loading: false, fetching: true });
+
+            await act(async () => held.resolve(servePage()));
+            await waitFor(() => expect(result.current.fetching).toBe(false));
+            expect(result.current).toEqual({ count: 30, loading: false, fetching: false });
         }
-
-        client = newClient();
-        hydrate(client, saved);
-        host.wallet = null;
-        const { result, rerender } = renderHook(useCountsWhileFetching, { wrapper });
-        expect(result.current.loading).toBe(true);
-
-        const getPage = makeWallet();
-        const held = Promise.withResolvers<Page>();
-        getPage.mockImplementationOnce(() => held.promise);
-        rerender();
-        await waitFor(() => expect(result.current.fetching).toBe(true));
-        expect(getPage).toHaveBeenCalledTimes(1);
-        expect(result.current).toEqual({ count: 30, loading: false, fetching: true });
-
-        await act(async () => held.resolve(servePage()));
-        await waitFor(() => expect(result.current.fetching).toBe(false));
-        expect(result.current).toEqual({ count: 30, loading: false, fetching: false });
-    });
+    );
 
     it('CachedCountKeptOnFailedRefresh: a failed background refresh never shows "—"', async () => {
         const getPage = makeWallet();
