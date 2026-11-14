@@ -1,5 +1,11 @@
 import { VC, VCValidator } from '@learncard/types';
-import { useWallet, CredentialCategory } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+    useWallet,
+    CredentialCategory,
+    invalidateCredentialIndexQueries,
+    switchedProfileStore,
+} from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
 
@@ -50,6 +56,11 @@ export interface AggregateUploadResult {
 
 export const useUploadVcFromText = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+
+    // Raw imports bypass the add mutations, so refresh the index-backed aggregates (skills, IDs, counts).
+    const refreshCredentialIndex = () =>
+        invalidateCredentialIndexQueries(queryClient, switchedProfileStore.get.switchedDid());
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const isOpenBadgeV2 = (obj: any) => {
@@ -254,6 +265,7 @@ export const useUploadVcFromText = () => {
         }
 
         const addedCount = results.filter(r => r.success).length;
+        if (addedCount > 0) await refreshCredentialIndex();
         const failedCount = results.length - addedCount;
         const errors = [
             ...extractionErrors,
@@ -307,6 +319,7 @@ export const useUploadVcFromText = () => {
                             uri: credentialUri,
                             category,
                         });
+                        await refreshCredentialIndex();
 
                         return {
                             success: true,

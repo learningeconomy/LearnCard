@@ -748,3 +748,32 @@ it('invalidates primary-profile useGetCredentials after addVCtoWallet', async ()
         observer.destroy();
     }
 });
+
+it('refreshes the unfiltered credential count for the claiming reader after addVCtoWallet', async () => {
+    // goblincore r4574770685: useProfileSnapshot reads useGetCredentialCount(undefined).
+    const total = vi.fn().mockResolvedValue(0);
+    const otherReaderTotal = vi.fn().mockResolvedValue(0);
+    const observers = [
+        new QueryObserver(mocks.queryClient!, {
+            queryKey: ['useGetCredentialCount', '', undefined, 'did:example:claiming-account'],
+            queryFn: total,
+            staleTime: 5 * 60 * 1000,
+        }),
+        new QueryObserver(mocks.queryClient!, {
+            queryKey: ['useGetCredentialCount', '', undefined, 'did:example:other-account'],
+            queryFn: otherReaderTotal,
+            staleTime: 5 * 60 * 1000,
+        }),
+    ];
+    const unsubscribes = observers.map(observer => observer.subscribe(() => undefined));
+    try {
+        await vi.waitFor(() => expect(total).toHaveBeenCalledTimes(1));
+        await vi.waitFor(() => expect(otherReaderTotal).toHaveBeenCalledTimes(1));
+        await useWallet().addVCtoWallet({ uri: 'existing-uri', skipSync: true });
+        await vi.waitFor(() => expect(total).toHaveBeenCalledTimes(2));
+        expect(otherReaderTotal).toHaveBeenCalledTimes(1);
+    } finally {
+        unsubscribes.forEach(unsubscribe => unsubscribe());
+        observers.forEach(observer => observer.destroy());
+    }
+});

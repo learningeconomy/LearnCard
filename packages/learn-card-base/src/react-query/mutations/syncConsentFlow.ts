@@ -9,6 +9,7 @@ import {
     contractCategoryNameToCategoryMetadata,
     syncProgressStore,
     walletStore,
+    switchedProfileStore,
 } from 'learn-card-base';
 import { getOrCreateSharedUriForWallet } from 'learn-card-base/hooks/useSharedUrisInTerms';
 import { loadContractAudience } from '../../hooks/consentAudience';
@@ -320,7 +321,7 @@ const rollBackIndexedRecord = async (
     await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] }),
         queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),
-        invalidateCredentialIndexQueries(queryClient),
+        invalidateCredentialIndexQueries(queryClient, switchedProfileStore.get.switchedDid()),
     ]);
 };
 

@@ -237,6 +237,11 @@ export const useWallet = () => {
             queryKey: [...listPrefix, '', readerDid],
             exact: true,
         });
+        // The unfiltered total (useProfileSnapshot) is not one of the category keys above.
+        void queryClient.invalidateQueries({
+            queryKey: ['useGetCredentialCount', profileDid, undefined, readerDid],
+            exact: true,
+        });
         // Do not await: index-query refetches should not hold up claim completion.
         void invalidateCredentialIndexQueries(queryClient, didWeb, { includeCount: false });
     };

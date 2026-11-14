@@ -9,6 +9,7 @@ import {
     switchedProfileStore,
     CredentialCategory,
     connectionPromptKeys,
+    invalidateCredentialIndexQueries,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { VC, Boost, CredentialRecord, VCValidator } from '@learncard/types';
@@ -141,7 +142,6 @@ export const useAddCredentialToWallet = () => {
                 didOverride === true
                     ? undefined
                     : didOverride || switchedProfileStore.get.switchedDid();
-            const didForCredentials = didWeb;
             const didForListsAndCounts = didWeb ?? '';
 
             await queryClient.cancelQueries({
@@ -164,28 +164,17 @@ export const useAddCredentialToWallet = () => {
 
             // Keep resume-builder selectors and wallet credential views in sync after any issuance.
             // Intentionally don't await these to keep this mutation fast.
-            queryClient.invalidateQueries({ queryKey: ['useGetCredentials', didForCredentials] });
+            // Shared invalidator: useGetCredentials (any primary key shape), skills, IDs, counts.
+            void invalidateCredentialIndexQueries(queryClient, didWeb);
             queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialList', didForListsAndCounts],
-            });
-            queryClient.invalidateQueries({
-                queryKey: ['useGetCredentialCount', didForListsAndCounts],
-            });
-            queryClient.invalidateQueries({
-                queryKey: ['useGetIDs', didForListsAndCounts],
             });
 
             queryClient.refetchQueries({
-                queryKey: ['useGetCredentials', didForCredentials, category],
-            });
-            queryClient.refetchQueries({
                 queryKey: ['useGetCredentialList', didForListsAndCounts],
             });
             queryClient.refetchQueries({
                 queryKey: ['useGetCredentialCount', didForListsAndCounts],
-            });
-            queryClient.refetchQueries({
-                queryKey: ['useGetIDs', didForListsAndCounts],
             });
 
             await syncCredentialToContracts({ record: data, category });

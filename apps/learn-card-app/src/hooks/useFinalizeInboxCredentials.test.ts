@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
     recover: vi.fn(),
     store: vi.fn(),
     invalidate: vi.fn(),
+    invalidateIndex: vi.fn(),
     syncing: vi.fn(),
     capture: vi.fn(),
     snapshotRef: { current: { credentialCount: 0 } },
@@ -24,7 +25,8 @@ vi.mock('learn-card-base', () => ({
     walletStore: { set: { setIsSyncing: mocks.syncing } },
     WalletSyncState: { Syncing: 'syncing', Completed: 'completed', NotSyncing: 'not-syncing' },
     connectionPromptKeys: { all: ['connection-prompts'] },
-    invalidateCredentialIndexQueries: vi.fn().mockResolvedValue(undefined),
+    invalidateCredentialIndexQueries: mocks.invalidateIndex,
+    switchedProfileStore: { get: { switchedDid: () => 'did:web:child' } },
 }));
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: () => ({ invalidateQueries: mocks.invalidate }),
@@ -47,6 +49,7 @@ import { clearFinalizeCache, useFinalizeInboxCredentials } from './useFinalizeIn
 
 beforeEach(() => {
     vi.clearAllMocks();
+    mocks.invalidateIndex.mockResolvedValue(undefined);
     clearFinalizeCache();
     mocks.finalize.mockResolvedValue({ verifiableCredentials: [], deliveries: [], errors: 0 });
     mocks.store.mockResolvedValue({ stored: 0, failed: 0 });
@@ -155,4 +158,14 @@ it('retries finalization after a direct save fails', async () => {
     first.unmount();
     renderHook(() => useFinalizeInboxCredentials());
     await waitFor(() => expect(mocks.finalize).toHaveBeenCalledTimes(2));
+});
+
+it('refreshes index queries for the switched profile, not the primary one', async () => {
+    // goblincore r4530368502
+    renderHook(() => useFinalizeInboxCredentials());
+    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('completed', 1));
+    expect(mocks.invalidateIndex).toHaveBeenCalledWith(
+        expect.objectContaining({ invalidateQueries: mocks.invalidate }),
+        'did:web:child'
+    );
 });

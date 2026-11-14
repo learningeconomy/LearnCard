@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet } from 'learn-card-base';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
+import { switchedProfileStore } from '../../stores/walletStore';
+import { invalidateCredentialIndexQueries } from '../queries/credentialIndexCache';
 
 import { getLogger } from '../../logging/logger';
 const log = getLogger('checklist');
@@ -27,6 +29,10 @@ export const useDeleteChecklistCredentialMutation = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['getChecklistCredentialCounts'] });
+            void invalidateCredentialIndexQueries(
+                queryClient,
+                switchedProfileStore.get.switchedDid()
+            );
         },
         onError: error => {
             log.error('Failed to delete checklist credential', error);
@@ -36,6 +42,7 @@ export const useDeleteChecklistCredentialMutation = () => {
 
 export const useUpdateChecklistItemCategoryMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({
             id,
@@ -57,6 +64,12 @@ export const useUpdateChecklistItemCategoryMutation = () => {
             } catch (error) {
                 log.error('Failed to update credential in newCredsStore', error);
             }
+        },
+        onSuccess: () => {
+            void invalidateCredentialIndexQueries(
+                queryClient,
+                switchedProfileStore.get.switchedDid()
+            );
         },
         onError: error => {
             log.error('Failed to update checklist credential', error);
