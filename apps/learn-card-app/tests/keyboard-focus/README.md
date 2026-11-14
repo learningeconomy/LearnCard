@@ -40,3 +40,36 @@ The review build can use a local frontend with the production tenant config.
 Sign-in and saved changes then use the production services. The standalone
 fixtures are available at `/tests/keyboard-focus/form.html` and
 `/tests/keyboard-focus/resume.html` on the local server.
+
+## Native keyboard animation
+
+`animation.html` is a backend-free native fixture with a full-height Ionic page,
+Search and Lower field inputs, and a Dismiss keyboard button. Load it from a
+local frontend in a Debug Simulator shell with Capgo auto-update disabled. Keep
+the software keyboard enabled. `?focusManager=0` disables only the shared focus
+manager for an A/B comparison with Capacitor's own resizing.
+
+For a repeatable native recording, with that Debug shell installed and pointing
+to the fixture, run from this app directory:
+
+```sh
+ruby tests/keyboard-focus/native/review.rb <Simulator-UDID> /tmp
+```
+
+This uses the CocoaPods `xcodeproj` gem to generate an isolated XCTest runner in
+a temporary directory, opens and dismisses the real software keyboard twice,
+and retains a native MP4 plus XCTest results there. No account is needed. Inspect
+the video at reduced speed: the page should fill the exposed space during both
+keyboard animations without the old half-second white rectangle. These checks
+exercise iOS itself; the browser script cannot prove native animation timing.
+The Swift test verifies keyboard interaction, not pixel correctness. Review the
+recording as well.
+
+The iOS fix is a version-specific Bun patch to `@capacitor/keyboard@8.0.6`.
+Native mode follows a UIKit animation guide on opening; dismissal restores the
+full WebView before the keyboard exposes it, avoiding WebKit's asynchronous
+paint lag during expansion. The shared focus manager still reveals covered
+fields, but does not impose a second host height in iOS native resize mode.
+Browser and native overlay mode retain their viewport sizing fallback. Revisit
+the patch when upgrading this dependency; it requires rebuilding the native
+binary and cannot be delivered by a frontend-only OTA update.

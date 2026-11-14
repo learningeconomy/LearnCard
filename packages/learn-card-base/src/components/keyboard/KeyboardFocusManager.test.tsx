@@ -7,10 +7,15 @@ import { KeyboardFocusManager } from './KeyboardFocusManager';
 const native = vi.hoisted(() => ({
     callbacks: new Map<string, (info: { keyboardHeight: number }) => void>(),
     remove: vi.fn(),
+    platform: 'android',
+    resizeMode: 'native',
 }));
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => true } }));
+vi.mock('@capacitor/core', () => ({
+    Capacitor: { isNativePlatform: () => true, getPlatform: () => native.platform },
+}));
 vi.mock('@capacitor/keyboard', () => ({
     Keyboard: {
+        getResizeMode: vi.fn(async () => ({ mode: native.resizeMode })),
         addListener: vi.fn(async (event, callback) => {
             native.callbacks.set(event, callback);
             return { remove: native.remove };
@@ -23,6 +28,8 @@ describe('KeyboardFocusManager', () => {
         vi.useFakeTimers();
         native.callbacks.clear();
         native.remove.mockClear();
+        native.platform = 'android';
+        native.resizeMode = 'native';
         vi.stubGlobal('innerHeight', 800);
         vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
             setTimeout(() => callback(0), 16)
@@ -97,10 +104,54 @@ describe('KeyboardFocusManager', () => {
         await settle();
         expect(document.documentElement.hasAttribute('data-lc-keyboard-open')).toBe(false);
         unmount();
-        expect(native.remove).toHaveBeenCalledTimes(3);
+        expect(native.remove).toHaveBeenCalledTimes(4);
         expect(
             document.documentElement.style.getPropertyValue('--lc-keyboard-viewport-height')
         ).toBe('');
+    });
+
+    it('lets iOS native resizing own host bounds through opening and dismissal', async () => {
+        native.platform = 'ios';
+        const { first, scroller } = form();
+        await settle();
+        first.focus({ preventScroll: true });
+        native.callbacks.get('keyboardWillShow')!({ keyboardHeight: 300 });
+        await settle();
+        const root = document.documentElement;
+        expect(root.hasAttribute('data-lc-keyboard-overlay')).toBe(false);
+        expect(root.style.getPropertyValue('--lc-keyboard-viewport-height')).toBe('');
+        expect(scroller.scrollTop).toBe(206);
+
+        vi.stubGlobal('innerHeight', 500);
+        native.callbacks.get('keyboardDidShow')!({ keyboardHeight: 300 });
+        await settle();
+        native.callbacks.get('keyboardWillHide')!({ keyboardHeight: 0 });
+        vi.stubGlobal('innerHeight', 800);
+        window.dispatchEvent(new Event('resize'));
+        await settle();
+        // Do not wait for keyboardDidHide to release the app's old height.
+        expect(root.hasAttribute('data-lc-keyboard-open')).toBe(false);
+        expect(root.style.getPropertyValue('--lc-keyboard-viewport-height')).toBe('');
+        expect(document.activeElement).toBe(first);
+    });
+
+    it('retains the overlay fallback on iOS when native resizing is disabled', async () => {
+        native.platform = 'ios';
+        native.resizeMode = 'none';
+        const { first, scroller } = form();
+        await settle();
+        first.focus({ preventScroll: true });
+        native.callbacks.get('keyboardWillShow')!({ keyboardHeight: 300 });
+        await settle();
+        expect(document.documentElement.hasAttribute('data-lc-keyboard-overlay')).toBe(true);
+        expect(
+            document.documentElement.style.getPropertyValue('--lc-keyboard-viewport-height')
+        ).toBe('500px');
+        expect(scroller.scrollTop).toBe(206);
+        first.blur();
+        native.callbacks.get('keyboardWillHide')!({ keyboardHeight: 0 });
+        await settle();
+        expect(document.documentElement.hasAttribute('data-lc-keyboard-open')).toBe(false);
     });
 
     it('leaves pinch zoom and panning alone, and resumes reveal when zoom ends', async () => {
