@@ -55,7 +55,8 @@ import { CREDENTIAL_LIST_PAGE_SIZE, CREDENTIAL_LIST_STALE_TIME } from './vcQueri
 
 /**
  * Probe's Passport-count breaks (LC-2412) and the bounded first walk (LC-2413).
- * A square shows `loading` when `!isComplete && !isError` and "—" when `!isComplete`
+ * A tile shows `loading` when `!isComplete && !isError`, and otherwise the unavailable state
+ * ("Count unavailable" in list view, "—" in grid) when `!isComplete`
  * (WalletPageItemWrapper, DashboardPage, CredentialPage), so those two flags are the contract.
  */
 let client: QueryClient;
@@ -180,7 +181,7 @@ describe('Passport counts (LC-2412, LC-2413)', () => {
         }
     );
 
-    it('CachedCountKeptOnFailedRefresh: a failed background refresh never shows "—"', async () => {
+    it('CachedCountKeptOnFailedRefresh: a failed background refresh never shows the unavailable state (Count unavailable / —)', async () => {
         const getPage = makeWallet();
         const { result } = renderHook(
             () => useCredentialCollection(undefined, { mode: 'complete' }),
@@ -196,7 +197,7 @@ describe('Passport counts (LC-2412, LC-2413)', () => {
         expect(view(result.current)).toEqual({ count: 30, loading: false });
     });
 
-    it('still shows a spinner, then "—", when a first walk fails mid-way', async () => {
+    it('shows the unavailable state (Count unavailable / —) when a first walk fails mid-way', async () => {
         const getPage = makeWallet();
         getPage.mockImplementation(async (_query, options) => {
             if (options?.cursor) throw new Error('offline');
