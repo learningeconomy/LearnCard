@@ -180,8 +180,11 @@ export const CAPABILITIES: readonly Capability[] = [
         summary:
             'Generate claim-link parameters (boostUri + challenge) for a template; your app turns them into a claim link. Treat the challenge as a secret.',
         cli: [],
-        call: ['generateClaimLink', 'claimBoostWithLink'],
-        api: { tag: 'Boosts', paths: ['/boost/generate-claim-link', '/boost/claim'] },
+        call: ['generateClaimLink', 'claimBoostWithLink', 'getClaimBoostWithLinkStatus'],
+        api: {
+            tag: 'Boosts',
+            paths: ['/boost/generate-claim-link', '/boost/claim', '/boost/claim/status'],
+        },
         docs: `${DOCS}/reference/learncard-core/construction#signing-authorities-and-claim-links`,
         notes: 'The template needs a registered signing authority (setup-signing).',
     },

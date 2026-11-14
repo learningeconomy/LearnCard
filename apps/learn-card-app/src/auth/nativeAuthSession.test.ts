@@ -4,6 +4,9 @@ type UrlListener = (event: { url: string }) => void;
 type VoidListener = () => void;
 
 const mocks = vi.hoisted(() => ({
+    pending: vi.fn(async () => ({})),
+    beginCallback: vi.fn(async () => ({ token: 'session-token' })),
+    endCallback: vi.fn(async () => undefined),
     platform: 'android' as string,
     pluginAvailable: false,
     webAuthStart: vi.fn(),
@@ -26,6 +29,14 @@ vi.mock('@capacitor/core', () => ({
         isPluginAvailable: () => mocks.pluginAvailable,
     },
     registerPlugin: () => ({ start: mocks.webAuthStart, cancel: mocks.webAuthCancel }),
+}));
+
+vi.mock('../native-digital-credentials/plugin', () => ({
+    nativeDigitalCredentials: {
+        getPendingRequest: mocks.pending,
+        beginAuthCallback: mocks.beginCallback,
+        endAuthCallback: mocks.endCallback,
+    },
 }));
 
 vi.mock('@capacitor/app', () => ({
@@ -59,6 +70,9 @@ describe('openNativeAuthSession', () => {
         mocks.webAuthStart.mockReset();
         mocks.webAuthCancel.mockReset().mockResolvedValue(undefined);
         vi.useFakeTimers();
+        mocks.pending.mockReset().mockResolvedValue({});
+        mocks.beginCallback.mockReset().mockResolvedValue({ token: 'session-token' });
+        mocks.endCallback.mockReset().mockResolvedValue(undefined);
         mocks.platform = 'android';
         mocks.pluginAvailable = false;
         mocks.appUrlOpenListener = undefined;
@@ -190,6 +204,70 @@ describe('openNativeAuthSession', () => {
             mocks.appUrlOpenListener?.({ url: `${CALLBACK_PREFIX}?code=abc&state=xyz` });
             await expect(promise).resolves.toBe(`${CALLBACK_PREFIX}?code=abc&state=xyz`);
             expect(mocks.webAuthStart).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Android provider browser callback ownership', () => {
+        beforeEach(() => {
+            mocks.pluginAvailable = true;
+            mocks.pending.mockResolvedValue({
+                isProvider: true,
+                authCallbackRouting: true,
+                pending: { requestId: 'original-request' },
+            });
+        });
+        it('registers callback ownership before opening Chrome and cleans up after delivery', async () => {
+            mocks.browserOpen.mockImplementationOnce(async () => {
+                expect(mocks.beginCallback).toHaveBeenCalledWith({
+                    requestId: 'original-request',
+                    callbackUrlPrefix: CALLBACK_PREFIX,
+                    timeoutMs: 300_000,
+                });
+                mocks.appUrlOpenListener?.({ url: `${CALLBACK_PREFIX}?code=test&state=state` });
+            });
+            await expect(
+                openNativeAuthSession(AUTHORIZE_URL, {
+                    callbackUrlPrefix: CALLBACK_PREFIX,
+                    callbackScheme: 'com.learncard.app',
+                })
+            ).resolves.toContain('?code=test');
+            expect(mocks.endCallback).toHaveBeenCalledWith({ token: 'session-token' });
+        });
+        it('releases ownership on browser cancellation', async () => {
+            const pending = openNativeAuthSession(AUTHORIZE_URL, {
+                callbackUrlPrefix: CALLBACK_PREFIX,
+                callbackScheme: 'com.learncard.app',
+            });
+            const assertion = expect(pending).rejects.toMatchObject({ reason: 'no_session' });
+            await vi.advanceTimersByTimeAsync(0);
+            mocks.browserFinishedListener?.();
+            await vi.advanceTimersByTimeAsync(750);
+            await assertion;
+            expect(mocks.endCallback).toHaveBeenCalledWith({ token: 'session-token' });
+        });
+        it('fails before opening a browser on a provider binary without callback routing', async () => {
+            mocks.pending.mockResolvedValue({
+                isProvider: true,
+                pending: { requestId: 'original-request' },
+            });
+            await expect(
+                openNativeAuthSession(AUTHORIZE_URL, {
+                    callbackUrlPrefix: CALLBACK_PREFIX,
+                    callbackScheme: 'com.learncard.app',
+                })
+            ).rejects.toMatchObject({ reason: 'no_session' });
+            expect(mocks.browserOpen).not.toHaveBeenCalled();
+        });
+        it('keeps normal main-activity sign-in on its existing callback path', async () => {
+            mocks.pending.mockResolvedValue({ isProvider: false });
+            const pending = openNativeAuthSession(AUTHORIZE_URL, {
+                callbackUrlPrefix: CALLBACK_PREFIX,
+                callbackScheme: 'com.learncard.app',
+            });
+            await vi.advanceTimersByTimeAsync(0);
+            mocks.appUrlOpenListener?.({ url: `${CALLBACK_PREFIX}?code=normal` });
+            await expect(pending).resolves.toContain('code=normal');
+            expect(mocks.beginCallback).not.toHaveBeenCalled();
         });
     });
 

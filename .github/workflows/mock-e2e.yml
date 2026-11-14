@@ -10,6 +10,12 @@ on:
     pull_request:
         types: [opened, synchronize, reopened]
     workflow_dispatch:
+        inputs:
+            workers:
+                description: Playwright workers for this manual full-suite run
+                type: choice
+                options: ['2', '3', '4']
+                default: '2'
 
 concurrency:
     group: mock-e2e-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.head_ref || github.ref }}
@@ -65,6 +71,8 @@ jobs:
 
             - name: Run full mocked E2E
               if: ${{ steps.eligibility.outputs.run_e2e == 'true' }}
+              env:
+                  PW_MOCK_WORKERS: ${{ github.event_name == 'workflow_dispatch' && inputs.workers || '2' }}
               run: bunx nx run learn-card-app:test-mock
 
             - name: Upload Playwright report

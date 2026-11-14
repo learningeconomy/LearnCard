@@ -233,7 +233,14 @@ describe('persistent owner boundaries', () => {
             await asOwner(() =>
                 database.getCredentialAiContexts(owner, ['lc:alice:credential', 'lc:alice:missing'])
             )
-        ).toEqual([{ uri: 'lc:alice:credential', aiContext: 'Calculus', category: 'Achievement' }]);
+        ).toEqual([
+            {
+                uri: 'lc:alice:credential',
+                aiContext: 'Calculus',
+                category: 'Achievement',
+                verified: true,
+            },
+        ]);
         expect(await asOwner(() => database.getCredentialAiContexts(owner, []))).toEqual([]);
     });
 
@@ -250,6 +257,7 @@ describe('persistent owner boundaries', () => {
                 uri: stored.uri,
                 aiContext: serializeModelSafeCredentialProjection(stored.projection!),
                 category: 'Achievement',
+                verified: true,
                 fromProjection: true,
             },
         ]);
@@ -261,6 +269,29 @@ describe('persistent owner boundaries', () => {
         expect(await asOwner(() => database.getCredentialAiContexts(owner, [stored.uri]))).toEqual([
             { uri: stored.uri },
         ]);
+    });
+
+    // MCP context trusts stored text only with `verified`: legacy or failed rows keep their
+    // text for the chat's fallback but never get the mark.
+    test('stored text without a valid stored verification and projection is not marked verified', async () => {
+        const stored = record();
+        await asOwner(() => database.storeVC(owner, stored));
+        const read = () => asOwner(() => database.getCredentialAiContexts(owner, [stored.uri]));
+        const credentials = persisted.collection('credentials');
+        const filter = { did: owner, uri: stored.uri };
+
+        await credentials.updateOne(filter, { $unset: { verification: '' } });
+        expect(await read()).toEqual([{ uri: stored.uri, aiContext: 'Calculus' }]);
+
+        await credentials.updateOne(filter, {
+            $set: { verification: { ...stored.verification, checks: [] } },
+        });
+        expect(await read()).toEqual([{ uri: stored.uri, aiContext: 'Calculus' }]);
+
+        await credentials.updateOne(filter, {
+            $set: { verification: stored.verification, projection: { schemaVersion: '0' } },
+        });
+        expect(await read()).toEqual([{ uri: stored.uri, aiContext: 'Calculus' }]);
     });
 
     test('expired generated originals become cache misses, but live vault corruption fails closed', async () => {

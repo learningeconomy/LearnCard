@@ -2,6 +2,8 @@ import type { VerificationCheck } from '@learncard/types';
 import type { DidDocument } from '@learncard/types';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import type { JWK } from 'jose';
+import { base64url } from 'jose';
+import { base58 } from '@scure/base';
 
 import { sha256Hasher } from './hasher';
 import { randomSalt } from './salt';
@@ -45,12 +47,6 @@ const findVerificationMethod = (
 
     if (!kid) {
         const first = methods[0]!;
-        if (!first.publicKeyJwk) {
-            throw new SdJwtVcError(
-                'verification_method_not_found',
-                `First verificationMethod for issuer "${issuerDid}" has no publicKeyJwk`
-            );
-        }
         return first;
     }
 
@@ -118,7 +114,37 @@ const resolveIssuerJwk = async (
 
     const kid = typeof parsed.header.kid === 'string' ? parsed.header.kid : undefined;
     const method = findVerificationMethod(doc, kid, issuerDid);
-    if (!method.publicKeyJwk) {
+    let publicKeyJwk = method.publicKeyJwk;
+    if (!publicKeyJwk && parsed.header.alg === 'EdDSA') {
+        try {
+            let bytes: Uint8Array;
+            if (
+                method.type === 'Ed25519VerificationKey2020' &&
+                typeof method.publicKeyMultibase === 'string' &&
+                method.publicKeyMultibase.startsWith('z')
+            ) {
+                const encoded = base58.decode(method.publicKeyMultibase.slice(1));
+                // ed25519-pub multicodec varint (0xed), followed by exactly 32 public-key bytes.
+                if (encoded.length !== 34 || encoded[0] !== 0xed || encoded[1] !== 0x01)
+                    throw new Error('Unsupported key codec');
+                bytes = encoded.slice(2);
+            } else if (
+                method.type === 'Ed25519VerificationKey2018' &&
+                typeof method.publicKeyBase58 === 'string'
+            ) {
+                bytes = base58.decode(method.publicKeyBase58);
+                if (bytes.length !== 32) throw new Error('Invalid key length');
+            } else throw new Error('Unsupported verification method');
+            publicKeyJwk = { kty: 'OKP', crv: 'Ed25519', x: base64url.encode(bytes) };
+        } catch (cause) {
+            throw new SdJwtVcError(
+                'verification_method_not_found',
+                'Could not decode issuer Ed25519 verification method',
+                { cause }
+            );
+        }
+    }
+    if (!publicKeyJwk) {
         throw new SdJwtVcError(
             'verification_method_not_found',
             `Verification method for "${issuerDid}" / kid "${kid ?? '(none)'}" has no publicKeyJwk`
@@ -132,7 +158,7 @@ const resolveIssuerJwk = async (
         );
     }
 
-    const jwk = method.publicKeyJwk as unknown as JWK;
+    const jwk = publicKeyJwk as unknown as JWK;
     // header.alg is enforced as a non-empty string by parseSdJwtVc, so it is
     // the load-bearing source here; the JWK.alg and 'EdDSA' floors are purely
     // defensive against malformed inputs that bypass parse.
@@ -146,11 +172,7 @@ const errorToMessage = (e: unknown): string => {
     return String(e);
 };
 
-const ensureNotExpired = (
-    expiresAt: Date | undefined,
-    now: Date,
-    errors: string[]
-): void => {
+const ensureNotExpired = (expiresAt: Date | undefined, now: Date, errors: string[]): void => {
     if (expiresAt && expiresAt.getTime() + CLOCK_SKEW_MS <= now.getTime()) {
         errors.push(`expired: Credential expired at ${expiresAt.toISOString()}`);
     }

@@ -16,6 +16,7 @@ import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 import { applyNativeViewportRestrictions } from './helpers/applyNativeViewportRestrictions';
 import { getLaunchDarklyConfig } from './constants/runtimeLaunchDarkly';
 import App from './App';
+import { markStartupPhase } from './helpers/startupDiagnostics';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
@@ -32,6 +33,8 @@ applyNativeViewportRestrictions(Capacitor.isNativePlatform());
 // visible on desktop. Must run before React renders (sets CSS vars on <html>).
 installInsetSimulator();
 
+markStartupPhase('entry');
+
 (async () => {
     // Native analytics can collect independently of React. On web this call
     // would itself initialize analytics through getAnalytics().
@@ -44,6 +47,7 @@ installInsetSimulator();
     // Resolve and bootstrap TenantConfig before anything else.
     // This sets up Firebase, auth config, network store, Sentry, and Userflow.
     const tenantConfig = await bootstrapTenantConfig();
+    markStartupPhase('tenant');
 
     // Seed the locale-detection cache so the LocaleProvider's sync initializer
     // can fall through to the tenant default when no localStorage entry exists
@@ -65,6 +69,8 @@ installInsetSimulator();
             // non-blocking
         }
     }
+
+    markStartupPhase('updater');
 
     // DEV access to assistant routes/debug tools is handled by their consumers.
     // An object bootstrap here makes the React SDK prefer those defaults over
@@ -96,9 +102,11 @@ installInsetSimulator();
         ...ldOptions,
     });
 
+    markStartupPhase('flags');
     const container = document.getElementById('root');
     if (container) {
         const root = createRoot(container);
+        markStartupPhase('react');
         root.render(
             <TenantConfigProvider config={tenantConfig}>
                 <LocaleProvider>

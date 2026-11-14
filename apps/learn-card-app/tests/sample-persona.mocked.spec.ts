@@ -5,7 +5,7 @@ import { expect, test } from './fixtures/mocked-test';
 
 import { TEST_USER_PROFILE_ID, TEST_USER_SEED } from './constants';
 import { installNetwork } from './mocks/network';
-import type { BrainOutputs } from './mocks/trpc';
+import type { BrainOutputs, CloudOutputs } from './mocks/trpc';
 import { mockLaunchDarkly } from './route.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
 
@@ -104,6 +104,13 @@ test.describe('Sample persona @mocked', () => {
         const trpc = await installNetwork(page);
         let hasSample = false;
 
+        // The HAR only recorded this identity read alongside user.getDids.
+        // It can also batch with index.get while sample setup or reload is in flight.
+        trpc.on(
+            'utilities.getDid',
+            () => 'did:web:localhost%3A4100' satisfies CloudOutputs['utilities']['getDid']
+        );
+
         const userProfile = {
             profileId: TEST_USER_PROFILE_ID,
             did: testUserDid,
@@ -115,6 +122,7 @@ test.describe('Sample persona @mocked', () => {
         } satisfies BrainOutputs['profile']['getProfile'];
         trpc.on('profile.getProfile', () => userProfile);
         trpc.on('profile.updateProfile', () => true);
+        trpc.on('campaigns.isAdmin', () => false satisfies BrainOutputs['campaigns']['isAdmin']);
         // Reload batches consent reads with these dashboard queries. The tRPC mock
         // falls back for the whole batch if any procedure is missing, and the HAR
         // cannot replay the new batch with this test's persisted sample state.
@@ -249,7 +257,12 @@ test.describe('Sample persona @mocked', () => {
         const removeButton = sampleCard.getByRole('button', {
             name: 'Remove sample credentials',
         });
-        await expect(removeButton).toBeVisible({ timeout: 30_000 });
+
+        // Consent makes Remove visible before credential synchronization finishes.
+        // The add flow closes this dialog only after synchronization has completed.
+        await expect(page.getByRole('dialog', { name: 'Build My LearnCard' })).not.toBeVisible({
+            timeout: 30_000,
+        });
 
         // The button below proves app readiness; unrelated resources need not finish loading.
         await page.reload({ waitUntil: 'commit' });
@@ -260,6 +273,7 @@ test.describe('Sample persona @mocked', () => {
         await expect(page.getByRole('heading', { name: 'Sample LearnCard' })).toBeVisible({
             timeout: 30_000,
         });
+        await expect(removeButton).toBeVisible({ timeout: 30_000 });
         await removeButton.click();
         await page
             .getByRole('dialog')

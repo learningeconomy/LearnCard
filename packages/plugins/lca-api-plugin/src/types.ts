@@ -389,6 +389,8 @@ export type LCAPluginMethods = {
             status: 'requested' | 'none_yet' | 'failed';
             /** ISO 8601 string — tRPC serializes Dates to strings (no superjson transformer). */
             requestedAt: string;
+            /** ISO 8601 time the issuer expects to deliver a `requested` transcript, if known. */
+            expectedBy?: string;
         };
     }>;
     transcriptsMarkReceived: (args: { requestId: string }) => Promise<{ success: true }>;
@@ -397,6 +399,8 @@ export type LCAPluginMethods = {
         status: 'requested' | 'none_yet' | 'failed';
         /** ISO 8601 string — tRPC serializes Dates to strings (no superjson transformer). */
         requestedAt: string;
+        /** ISO 8601 time the issuer expects to deliver the transcript, if it gave one. */
+        expectedBy?: string;
     }>;
     getProofOfLoginVp: (
         token: string

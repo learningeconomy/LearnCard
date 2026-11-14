@@ -25,6 +25,15 @@ import { getTranscriptCategory } from './transcriptCategory';
 import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/display';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import * as m from '../../paraglide/messages.js';
+import { getLocale } from '../../paraglide/runtime.js';
+import { TranscriptDeliveryProgress } from './TranscriptDeliveryProgress';
+import {
+    formatExpectedDelivery,
+    getDeliveryPace,
+    getStaleAt,
+    isTimedBarCurrent,
+} from './transcriptDelivery';
+import { useDeliveryClock } from './useDeliveryClock';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import { Capacitor } from '@capacitor/core';
 import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
@@ -43,6 +52,7 @@ type RequestResult = {
     status: 'requested' | 'none_yet' | 'failed';
     requestedAt: string;
     requestId?: string;
+    expectedBy?: string;
     receivedAt?: string;
 };
 
@@ -194,6 +204,7 @@ export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source
 
 const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source, variant }) => {
     const history = useHistory();
+    const locale = getLocale();
     const { track } = useAnalytics();
 
     const status = useTranscriptStatus(true);
@@ -217,6 +228,10 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
         requestedAt: latest?.requestedAt,
         receivedAt: latest?.receivedAt,
     });
+    useDeliveryClock(
+        latest?.status === 'requested' && !latest.receivedAt ? latest : undefined,
+        TRANSCRIPT_STALE_AFTER_MS
+    );
 
     // A FORBIDDEN/NOT_FOUND response means the signed-in user isn't a ClassLink
     // user at all, so the card must hide silently rather than show an error.
@@ -395,8 +410,19 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                 />
             );
         } else if (latest?.status === 'requested') {
-            const elapsed = Date.now() - new Date(latest.requestedAt).getTime();
-            const isStale = isPollingExhausted || elapsed > TRANSCRIPT_STALE_AFTER_MS;
+            const now = Date.now();
+            const { requestedAt, expectedBy } = latest;
+            // Not stale before the issuer's own estimate, even if this session stopped polling.
+            const estimatePassed = !expectedBy || now >= Date.parse(expectedBy);
+            const isStale =
+                (isPollingExhausted && estimatePassed) ||
+                now >= getStaleAt(requestedAt, expectedBy, TRANSCRIPT_STALE_AFTER_MS);
+            const pace = getDeliveryPace(requestedAt, expectedBy);
+            // A missed short estimate falls back to the plain waiting state, never a stuck bar.
+            const timedExpectedBy =
+                pace === 'timed' && !isStale && expectedBy && isTimedBarCurrent(expectedBy, now)
+                    ? expectedBy
+                    : undefined;
             const isUntrackable = !data.issuerDid || !data.issuerProfileId;
 
             if (isUntrackable) {
@@ -424,9 +450,16 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                 content = (
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full flex items-center gap-1">
+                            <span
+                                data-testid="transcript-optin-waiting"
+                                className="px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full flex items-center gap-1"
+                            >
                                 <IonIcon icon={timeOutline} className="text-amber-500" />
-                                {m['transcriptOptIn.waiting']()}
+                                {pace === 'later' && expectedBy && !estimatePassed
+                                    ? m['transcriptOptIn.delivery.expectedLabel']({
+                                          when: formatExpectedDelivery(expectedBy, now, locale),
+                                      })
+                                    : m['transcriptOptIn.waiting']()}
                             </span>
                         </div>
                         <h2 className="text-xl font-semibold text-grayscale-900">
@@ -460,9 +493,20 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                             </div>
                         ) : (
                             <div className="mt-4">
-                                <div className="w-full h-1 bg-grayscale-200 rounded-full overflow-hidden mb-4">
-                                    <div className="h-full bg-amber-400 w-full animate-pulse" />
-                                </div>
+                                {timedExpectedBy ? (
+                                    <div className="mb-4">
+                                        <TranscriptDeliveryProgress
+                                            requestedAt={requestedAt}
+                                            expectedBy={timedExpectedBy}
+                                            received={false}
+                                            stage={m['transcriptOptIn.flow.preparing']()}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="w-full h-1 bg-grayscale-200 rounded-full overflow-hidden mb-4">
+                                        <div className="h-full bg-amber-400 w-full animate-pulse" />
+                                    </div>
+                                )}
                                 <button
                                     type="button"
                                     onClick={recheck}

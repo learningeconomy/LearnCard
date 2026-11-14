@@ -18,7 +18,7 @@ import { sendTimingEvent } from '../utils/timing';
 import { searchSimilar } from '../db/qdrant';
 import { assertCurrentAiConsent, getCurrentAiSubject } from '../ai/privacy';
 import { AiConsentError } from '../learncard/consent';
-import { runWithLearnCardRequestScope } from '../learncard/requestScope';
+import { joinLearnCardRequestScope } from '../learncard/requestScope';
 import {
     assertCredentialConsent,
     resolveVerifiedCredentialProjection,
@@ -30,6 +30,7 @@ import {
     isKnownBadCredential,
     knownBadCredentialKind,
     logCredentialSkip,
+    CREDENTIAL_BATCH_MAX_CONCURRENCY,
     markCredentialItemFailure,
     settleCredentialBatch,
 } from '../credentials/batch';
@@ -167,7 +168,7 @@ export const warmCredentialTopicExpansion = (
     options: { signal?: AbortSignal } = {}
 ): Promise<void> =>
     withSearchGeneration(() =>
-        runWithLearnCardRequestScope({ signal: options.signal }, async () => {
+        joinLearnCardRequestScope({ signal: options.signal }, async () => {
             if (getCurrentAiSubject() !== did) throw new AiConsentError();
             const receipt = await assertCurrentAiConsent('model-inference', {
                 signal: options.signal,
@@ -300,7 +301,7 @@ export const searchCredentialContextsByTopic = (
     return withSearchGeneration(() =>
         // One request: LearnCard calls inherit the search signal, and the consent
         // contract is read once instead of once per check per credential.
-        runWithLearnCardRequestScope({ signal: options.signal }, () =>
+        joinLearnCardRequestScope({ signal: options.signal }, () =>
             searchCredentialContextsPinned(topic, did, options)
         )
     );
@@ -642,7 +643,14 @@ const searchCredentialContextsPinned = async (
                             context: serializeModelSafeCredentialProjection(projection),
                         };
                     }),
-                    { signal, deadlineAt, allowEmpty: true }
+                    {
+                        signal,
+                        deadlineAt,
+                        allowEmpty: true,
+                        // One window is `limit` results (5 or 10 from chat and MCP) that
+                        // share one live-verify deadline; keep them in parallel, capped.
+                        concurrency: Math.min(limit, CREDENTIAL_BATCH_MAX_CONCURRENCY),
+                    }
                 ));
             } catch (error) {
                 // Keep what loaded when a later window fails per credential only.
@@ -674,7 +682,7 @@ export const enrichCredentialTitles = async (
             throwIfCancelled(options.signal, undefined);
 
             if (getCurrentAiSubject() !== did) throw new AiConsentError();
-            const receipt = await assertCurrentAiConsent('model-inference');
+            const receipt = await assertCurrentAiConsent('model-inference', { fresh: true });
             const contextHash = createHmac('sha256', getPrivacyKeyMaterial().reference)
                 .update(JSON.stringify([did, receipt.revision, result.context]))
                 .digest('hex');
@@ -697,7 +705,7 @@ export const searchCredentialsByTopic = async (
     did: string,
     options: CredentialSearchOptions = {}
 ): Promise<TopicSearchResult[]> =>
-    runWithLearnCardRequestScope({ signal: options.signal }, async () => {
+    joinLearnCardRequestScope({ signal: options.signal }, async () => {
         const contexts = await searchCredentialContextsByTopic(topic, did, options);
 
         return enrichCredentialTitles(contexts, did, options);

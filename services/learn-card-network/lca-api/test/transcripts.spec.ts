@@ -349,6 +349,33 @@ describe('transcript requests', () => {
             });
         }
     );
+    it('stores and returns the issuer delivery estimate for an accepted request', async () => {
+        vi.mocked(axios.post).mockResolvedValue({
+            status: 202,
+            data: { status: 'accepted', expectedInSeconds: 90 },
+        });
+        const before = Date.now();
+        const result = await caller().request({ consent: true });
+        const expectedAt = Date.parse(result.expectedBy ?? '');
+        expect(expectedAt - before).toBeGreaterThanOrEqual(89_000);
+        expect(expectedAt - before).toBeLessThan(95_000);
+        expect((await getTranscriptRequestsCollection().findOne({}))?.expectedBy).toBeInstanceOf(
+            Date
+        );
+        expect((await caller().getStatus()).latest?.expectedBy).toBe(result.expectedBy);
+        // A deduplicated retry reports the same estimate.
+        expect((await caller().request({ consent: true })).expectedBy).toBe(result.expectedBy);
+    });
+    it('omits the delivery estimate when the issuer gives none or an unusable one', async () => {
+        vi.mocked(axios.post).mockResolvedValue({
+            status: 202,
+            data: { status: 'accepted', expectedBy: 'not-a-date' },
+        });
+        const result = await caller().request({ consent: true });
+        expect(result.status).toBe('requested');
+        expect(result.expectedBy).toBeUndefined();
+        expect((await caller().getStatus()).latest?.expectedBy).toBeUndefined();
+    });
     it('maps none_yet and enforces five attempts per hour atomically', async () => {
         vi.mocked(axios.post).mockResolvedValue({ status: 200, data: { status: 'none_yet' } });
         for (let i = 0; i < 5; i++)

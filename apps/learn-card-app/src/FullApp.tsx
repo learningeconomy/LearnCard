@@ -15,6 +15,7 @@ import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';
+import NativeDigitalCredentialsListener from './native-digital-credentials/NativeDigitalCredentialsListener';
 import {
     sqliteInit,
     PushNotificationListener,
@@ -40,6 +41,7 @@ import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGloba
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
 import ModalAccessibilityManager from 'learn-card-base/components/modals/ModalAccessibilityManager';
+import { KeyboardFocusManager } from 'learn-card-base/components/keyboard/KeyboardFocusManager';
 import { getConnectionPromptCopy } from './helpers/connectionPromptCopy';
 
 // Install `window.__pathwaysDev` at the app-root level rather than
@@ -218,6 +220,7 @@ const FullApp: React.FC = () => {
                                     <IonApp>
                                         <div id="modal-mid-root"></div>
                                         <ModalAccessibilityManager />
+                                        <KeyboardFocusManager />
                                         <Toast />
                                         <SdkActivityIndicator />
                                         <NetworkListener />
@@ -225,6 +228,7 @@ const FullApp: React.FC = () => {
                                         <PushNotificationListener />
                                         <PresentVcModalListener />
                                         <CredentialSyncListener />
+                                        <NativeDigitalCredentialsListener />
                                         {/* Foreground refresh of stale refreshable
                                             credentials; gated by the LaunchDarkly
                                             credentialRefreshForegroundEnabled flag. */}

@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1
 
 # Bun pin matches the LearnCard monorepo (root package.json packageManager).
-ARG BUN_VERSION=1.4.2
+ARG BUN_VERSION=1.4.4
 
 # `start:mcp` runs TypeScript from src/ (`bun --conditions=development src/mcp-server/index.ts`),
 # the same way `start` runs the API. There is no admin UI or `dist/privacy` compile step, so this

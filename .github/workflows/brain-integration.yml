@@ -46,7 +46,7 @@ jobs:
                   RUN_CAMPAIGNS: ${{ inputs.run_campaigns }}
               run: |
                   case "$GROUP" in
-                    graph|share-links|profile-search|boost-recipients|inbox)
+                    graph|share-links|claim-links|profile-search|boost-recipients|inbox)
                       [[ "$RUN_BRAIN" == true ]] || exit 1 ;;
                     campaigns)
                       [[ "$RUN_CAMPAIGNS" == true ]] || exit 1 ;;
@@ -79,6 +79,11 @@ jobs:
               if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.run_brain && contains(fromJSON('["graph","share-links"]'), inputs.group) }}
               working-directory: services/learn-card-network/brain-service
               run: bunx vitest run --config vitest.share-links-neo4j.config.ts
+
+            - name: Run claim-link receipts
+              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && inputs.run_brain && contains(fromJSON('["graph","claim-links"]'), inputs.group) }}
+              working-directory: services/learn-card-network/brain-service
+              run: bunx vitest run --config vitest.claim-links.config.ts
 
             # Keep Nx's dependency ordering/parallelism, but request the common
             # build graph only once. No new cross-run caching is enabled.

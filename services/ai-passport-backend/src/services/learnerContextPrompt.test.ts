@@ -53,6 +53,7 @@ const providerInputs: string[] = [];
 const answerInputs: string[] = [];
 let searchResults: TopicSearchResult[] = [];
 let duringSearch: (() => void) | undefined;
+let projectionFailure: unknown;
 const searchCredentialsByTopic = mock(async () => {
     duringSearch?.();
     return searchResults;
@@ -79,22 +80,28 @@ const aiStubs = {
 // Load the real error class before replacing consent I/O. Production modules
 // below load only after Bun's module mocks have been registered.
 const { AiConsentError } = await import('../learncard/consent');
+const { CredentialVerificationUnavailableError } = await import('../credentials/verification');
 mock.module('../learncard/consent', () => ({
     AiConsentError,
     loadActiveAiConsentData: async (_learnCard: unknown, did: string) => {
         if (revoked || !currentReceipt.guardian.approved) throw new AiConsentError();
         if (!bindAiConsentRevision(did, currentReceipt.revision)) throw new AiConsentError();
+        const cloned = structuredClone(currentReceipt);
         return {
             records: [{ personal: { name: personalName } }],
-            receipt: structuredClone(currentReceipt),
+            receipt: { ...cloned, credentialUris: currentReceipt.credentialUris },
         };
     },
 }));
 mock.module('../learncard', () => ({ getLearnCard: async () => ({}) }));
 mock.module('../credentials/service', () => ({
+    assertCredentialScope: () => undefined,
+    // Every shared URI is located; the projection mock ignores the location.
+    consentCredentialLocations: () => ({ get: (uri: string) => ({ uri }) }),
     resolveVerifiedCredentialProjection: async (_did: string, uri: string) => {
+        if (projectionFailure) throw projectionFailure;
         const projection = projections.get(uri);
-        if (!projection) throw new Error('private source dependency detail');
+        if (!projection) throw new CredentialVerificationUnavailableError('read_empty');
         return projection;
     },
 }));
@@ -162,6 +169,7 @@ beforeEach(() => {
     duringInference = undefined;
     duringCacheRead = undefined;
     duringPseudonymization = undefined;
+    projectionFailure = undefined;
 });
 
 describe('selection-only learner context', () => {
@@ -444,11 +452,38 @@ describe('MCP answer/context consistency', () => {
         expect(answerInputs).toHaveLength(1);
     });
 
-    it('does not replace unavailable background evidence with retrieval-only success', async () => {
+    it('skips one unavailable shared-context credential and still returns the rest', async () => {
         addBackgroundEvidence();
         projections.delete('lc:network:design');
         searchResults = [arithmetic];
-        await expect(answer()).rejects.toMatchObject({ code: 'learner_context_unavailable' });
+        const context = await runWithAiPrivacyContext(OWNER, () => getLatestUserSummary(OWNER));
+        expect(context).toContain('AI Summary: experienced in visual design');
+        expect(context).toContain('TypeScript Foundations');
+        expect(context).not.toContain('Product design background');
+        await answer();
+        expect(answerInputs).toHaveLength(1);
+        expect(answerInputs[0]).toContain('AI Summary: experienced in visual design');
+        expect(answerInputs[0]).not.toContain('Product design background');
+    });
+
+    it('fails shared context when every consented credential is unavailable', async () => {
+        currentReceipt = {
+            ...receipt,
+            credentialUris: ['lc:network:bad-1', 'lc:network:bad-2'],
+        };
+        projections.clear();
+        await expect(
+            runWithAiPrivacyContext(OWNER, () => getLatestUserSummary(OWNER))
+        ).rejects.toMatchObject({ code: 'learner_context_unavailable' });
+        expect(answerInputs).toHaveLength(0);
+    });
+
+    it('fails shared context on an unmarked projection Error instead of skipping it', async () => {
+        addBackgroundEvidence();
+        projectionFailure = new Error('consent snapshot reuse failed');
+        await expect(
+            runWithAiPrivacyContext(OWNER, () => getLatestUserSummary(OWNER))
+        ).rejects.toMatchObject({ code: 'learner_context_unavailable' });
         expect(answerInputs).toHaveLength(0);
     });
 

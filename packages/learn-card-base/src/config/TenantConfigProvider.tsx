@@ -35,11 +35,7 @@ export interface TenantConfigProviderProps {
 }
 
 export const TenantConfigProvider: React.FC<TenantConfigProviderProps> = ({ config, children }) => {
-    return (
-        <TenantConfigContext.Provider value={config}>
-            {children}
-        </TenantConfigContext.Provider>
-    );
+    return <TenantConfigContext.Provider value={config}>{children}</TenantConfigContext.Provider>;
 };
 
 // -----------------------------------------------------------------
@@ -59,6 +55,9 @@ export const useTenantConfig = (): TenantConfig => {
     return config;
 };
 
+/** Access the TenantConfig when available; returns null outside <TenantConfigProvider>. */
+export const useOptionalTenantConfig = (): TenantConfig | null => useContext(TenantConfigContext);
+
 /** API endpoint configuration */
 export const useApiConfig = (): TenantApiConfig => useTenantConfig().apis;
 
@@ -72,7 +71,8 @@ export const useBrandingConfig = (): TenantBrandingConfig => useTenantConfig().b
 export const useFeatureConfig = (): TenantFeatureConfig => useTenantConfig().features;
 
 /** Observability (Sentry, analytics) configuration */
-export const useObservabilityConfig = (): TenantObservabilityConfig => useTenantConfig().observability;
+export const useObservabilityConfig = (): TenantObservabilityConfig =>
+    useTenantConfig().observability;
 
 /** Raw links config (prefer useTenantLinks for resolved defaults) */
 export const useLinksConfig = (): TenantLinksConfig => useTenantConfig().links;
@@ -147,4 +147,3 @@ export const useLoginRedirectUrl = (): string => {
 
     return `${baseUrl}${path}`;
 };
-

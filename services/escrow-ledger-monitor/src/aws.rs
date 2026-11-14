@@ -1,7 +1,5 @@
 //! SDK errors are deliberately discarded: they may include keys, bodies or identifiers.
-use crate::authority::{
-    AuthorityBackend, MAX_ACCOUNT_BYTES, MAX_ACCOUNT_ROWS, MAX_PARTITIONS, Row,
-};
+use crate::authority::{AccountBudget, AuthorityBackend, MAX_ACCOUNT_ROWS, MAX_PARTITIONS, Row};
 use crate::{Backend, Error, Head, Metric, Monitor, Result, chain_from_pk};
 use aws_sdk_cloudwatch::types::{Dimension, MetricDatum, StandardUnit};
 use aws_sdk_dynamodb::types::AttributeValue as A;
@@ -61,7 +59,7 @@ impl AuthorityBackend for Aws {
                 authority_pk(pk)?;
                 partitions.insert(pk.to_owned());
                 if partitions.len() > MAX_PARTITIONS {
-                    return Err(Error::Unavailable);
+                    return Err(Error::Capacity);
                 }
             }
             cursor = page.last_evaluated_key;
@@ -69,7 +67,7 @@ impl AuthorityBackend for Aws {
                 return Ok(partitions.into_iter().collect());
             }
         }
-        Err(Error::Unavailable)
+        Err(Error::Capacity)
     }
     async fn authority_account(&self, table: &str, pk: &str) -> Result<Option<Vec<u8>>> {
         authority_pk(pk)?;
@@ -98,7 +96,7 @@ impl AuthorityBackend for Aws {
         authority_pk(pk)?;
         let mut cursor = None;
         let mut rows = Vec::new();
-        let mut bytes = 0;
+        let mut budget = AccountBudget::default();
         for _ in 0..=MAX_ACCOUNT_ROWS {
             let page = self
                 .db
@@ -117,10 +115,9 @@ impl AuthorityBackend for Aws {
                 if row.pk != pk {
                     return Err(Error::Integrity);
                 }
-                bytes += row.payload.len();
-                if rows.len() >= MAX_ACCOUNT_ROWS || bytes > MAX_ACCOUNT_BYTES {
-                    return Err(Error::Unavailable);
-                }
+                // Exceeding the bound isolates this account (Capacity), it is
+                // not a read failure of the whole sweep.
+                budget.admit(row.payload.len())?;
                 rows.push(row);
             }
             cursor = page.last_evaluated_key;

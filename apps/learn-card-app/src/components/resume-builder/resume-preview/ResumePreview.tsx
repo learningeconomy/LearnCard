@@ -28,6 +28,7 @@ const ResumePreview = forwardRef<
         qrCodeValue?: string;
         profileDid?: string;
         onOpenCredentialPanel?: (sectionKey?: ResumeSectionKey) => void;
+        scrollable?: boolean;
     }
 >(function ResumePreview(
     {
@@ -37,6 +38,7 @@ const ResumePreview = forwardRef<
         qrCodeValue,
         profileDid,
         onOpenCredentialPanel,
+        scrollable = true,
     },
     ref
 ) {
@@ -89,8 +91,8 @@ const ResumePreview = forwardRef<
         : 'w-full max-w-[760px] mx-auto bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-lg p-10 font-sans';
 
     return (
-        <div className="relative w-full h-full">
-            <div className="w-full h-full overflow-y-auto">
+        <div className={`relative w-full ${scrollable ? 'h-full' : ''}`}>
+            <div className={`w-full ${scrollable ? 'h-full overflow-y-auto' : ''}`}>
                 <div
                     ref={previewCardRef}
                     data-pdf-card

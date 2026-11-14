@@ -650,11 +650,24 @@ struct Fake {
     /// Further accounts' rows, each bound to its own partition (see `rows_as`).
     others: Vec<Vec<Row>>,
     reads: AtomicUsize,
-    /// Account-row reads after which the fence appears changed (None: stable).
+    /// Account-row reads (global count) from which the fence appears changed;
+    /// each such read returns a distinct value, modelling continuous writes
+    /// (None: stable).
     change_after: Option<usize>,
+    /// Exclusive end of the changing window: later reads are stable again.
+    change_until: Option<usize>,
+    /// A partition whose fence changes on every read, independent of the above.
+    unstable: Option<String>,
     unavailable: bool,
+    /// A partition whose row read returns a malformed row (Integrity).
+    malformed: Option<String>,
+    /// A metric whose publication fails (models a CloudWatch/SNS outage).
+    failing_metric: Option<Metric>,
     metrics: Mutex<Vec<Metric>>,
     gauges: Mutex<Vec<(Metric, u64)>>,
+    diagnostics: Mutex<Vec<Diagnostic>>,
+    /// Row reads per partition, to prove each account was (re)read.
+    row_reads: Mutex<BTreeMap<String, usize>>,
 }
 impl Fake {
     fn account_rows(&self, pk: &str) -> &[Row] {
@@ -677,6 +690,9 @@ impl Backend for Fake {
         Err(Error::Unavailable)
     }
     async fn metric(&self, m: Metric) -> Result<()> {
+        if self.failing_metric == Some(m) {
+            return Err(Error::Unavailable);
+        }
         self.metrics.lock().unwrap().push(m);
         Ok(())
     }
@@ -706,16 +722,31 @@ impl AuthorityBackend for Fake {
             .iter()
             .find(|r| r.sk == "ENROLLMENT")
             .map(|r| r.payload.clone());
-        if self
-            .change_after
-            .is_some_and(|n| self.reads.fetch_add(1, Ordering::SeqCst) >= n)
+        let read = self.reads.fetch_add(1, Ordering::SeqCst);
+        if self.change_after.is_some_and(|n| read >= n)
+            && self.change_until.is_none_or(|n| read < n)
+            || self.unstable.as_deref() == Some(pk)
         {
-            row = Some(vec![1]);
+            row = Some(read.to_le_bytes().to_vec());
         }
         Ok(row)
     }
     async fn authority_rows(&self, _: &str, pk: &str) -> Result<Vec<Row>> {
-        Ok(self.account_rows(pk).to_vec())
+        *self.row_reads.lock().unwrap().entry(pk.into()).or_default() += 1;
+        if self.malformed.as_deref() == Some(pk) {
+            return Err(Error::Integrity);
+        }
+        // Same shared budget (and boundary) as the DynamoDB backend.
+        let mut budget = AccountBudget::default();
+        let mut rows = Vec::new();
+        for row in self.account_rows(pk) {
+            budget.admit(row.payload.len())?;
+            rows.push(row.clone());
+        }
+        Ok(rows)
+    }
+    fn diagnose(&self, diagnostic: Diagnostic) {
+        self.diagnostics.lock().unwrap().push(diagnostic);
     }
 }
 fn monitor(changing: bool, unavailable: bool) -> Monitor<Fake> {
@@ -727,9 +758,15 @@ fn monitor(changing: bool, unavailable: bool) -> Monitor<Fake> {
             others: vec![],
             reads: AtomicUsize::new(0),
             change_after: changing.then_some(1),
+            change_until: None,
+            unstable: None,
             unavailable,
+            malformed: None,
+            failing_metric: None,
             metrics: Mutex::new(vec![]),
             gauges: Mutex::new(vec![]),
+            diagnostics: Mutex::new(vec![]),
+            row_reads: Mutex::new(BTreeMap::new()),
         },
     }
 }
@@ -975,4 +1012,296 @@ async fn incomplete_sweeps_never_emit_the_repeated_pin_clear_gauge() {
     assert!(!metrics.contains(&Metric::AuthorityRepeatedPinClearAccounts));
     assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
     assert!(m.backend.gauges.lock().unwrap().is_empty());
+}
+
+/// Six accounts that each verify as repeated-PIN-clear (so every verified
+/// account emits one deprecated per-account datum), plus their sorted keys.
+fn many_accounts() -> (Monitor<Fake>, Vec<String>) {
+    let now = now_ms();
+    let chain = || pin_clear_chain([now - 60_000, now - 1_000]);
+    let mut m = monitor(false, false);
+    m.backend.rows = rows(&chain());
+    m.backend.others = (2..=6)
+        .map(|n| rows_as(&other_account(n), &chain()))
+        .collect();
+    let mut pks: Vec<String> = std::iter::once(binding().partition_key().unwrap())
+        .chain(m.backend.others.iter().map(|r| r[0].pk.clone()))
+        .collect();
+    pks.sort();
+    (m, pks)
+}
+fn account_mut<'a>(m: &'a mut Monitor<Fake>, pk: &str) -> &'a mut Vec<Row> {
+    if pk == binding().partition_key().unwrap() {
+        &mut m.backend.rows
+    } else {
+        m.backend.others.iter_mut().find(|r| r[0].pk == pk).unwrap()
+    }
+}
+fn verified_accounts(m: &Monitor<Fake>) -> usize {
+    m.backend
+        .metrics
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|&&metric| metric == Metric::AuthorityRepeatedPinClear)
+        .count()
+}
+/// The first partition in sweep order is padded past a bound by `pad`; the
+/// last carries a planted integrity defect that must still be found.
+async fn assert_over_capacity_account_is_isolated(pad: impl FnOnce(&mut Vec<Row>)) {
+    let (mut m, pks) = many_accounts();
+    pad(account_mut(&mut m, &pks[0]));
+    account_mut(&mut m, &pks[5]).retain(|r| r.sk != "ENROLLMENT");
+    // Permanent and already alarmed: the invocation succeeds (no pointless
+    // Lambda retries), but without the completion heartbeat.
+    assert_eq!(m.sweep_authority(&config()).await, Ok(()));
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert_eq!(
+        metrics
+            .iter()
+            .filter(|&&x| x == Metric::AuthorityAccountOverCapacity)
+            .count(),
+        1
+    );
+    assert_eq!(metrics[0], Metric::AuthorityAccountOverCapacity);
+    assert!(metrics.contains(&Metric::AuthorityIntegrityFailure));
+    assert_eq!(metrics.last(), Some(&Metric::AuthorityCoverageFailure));
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+    // The four healthy accounts after the oversized one were all verified.
+    assert_eq!(verified_accounts(&m), 4);
+    assert_eq!(m.backend.row_reads.lock().unwrap().len(), 6);
+    assert_eq!(
+        *m.backend.diagnostics.lock().unwrap(),
+        vec![
+            Diagnostic::AccountOverCapacity,
+            Diagnostic::Incomplete {
+                partitions: 6,
+                over_capacity: 1,
+                fence_unstable: 0
+            }
+        ]
+    );
+}
+#[tokio::test]
+async fn an_over_capacity_account_is_isolated_and_every_other_account_is_still_verified() {
+    assert_over_capacity_account_is_isolated(|big| {
+        let pk = big[0].pk.clone();
+        for i in big.len()..=MAX_ACCOUNT_ROWS {
+            big.push(Row {
+                pk: pk.clone(),
+                sk: format!("PAD#{i}"),
+                payload: vec![0],
+            });
+        }
+    })
+    .await;
+}
+#[tokio::test]
+async fn an_account_over_the_byte_bound_with_few_rows_is_isolated_the_same_way() {
+    assert_over_capacity_account_is_isolated(|big| {
+        let pk = big[0].pk.clone();
+        let rows_before = big.len();
+        for i in 0..2 {
+            big.push(Row {
+                pk: pk.clone(),
+                sk: format!("PAD#{i}"),
+                payload: vec![0; MAX_ACCOUNT_BYTES / 2],
+            });
+        }
+        assert!(big.len() < MAX_ACCOUNT_ROWS);
+        assert!(big.len() == rows_before + 2);
+    })
+    .await;
+}
+#[tokio::test]
+async fn a_fence_that_changes_once_is_retried_and_the_sweep_completes() {
+    let (mut m, pks) = many_accounts();
+    // Read 0 is the first account's `before`, read 1 its `after` (changed);
+    // the retry (reads 2 and 3) is stable.
+    m.backend.change_after = Some(1);
+    m.backend.change_until = Some(2);
+    m.sweep_authority(&config()).await.unwrap();
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert!(!metrics.contains(&Metric::AuthorityCoverageFailure));
+    assert!(!metrics.contains(&Metric::AuthorityIntegrityFailure));
+    assert_eq!(metrics.last(), Some(&Metric::AuthoritySweepCompleted));
+    assert_eq!(
+        *m.backend.gauges.lock().unwrap(),
+        vec![(Metric::AuthorityRepeatedPinClearAccounts, 6)]
+    );
+    assert_eq!(verified_accounts(&m), 6);
+    assert_eq!(m.backend.row_reads.lock().unwrap()[&pks[0]], 2);
+    assert_eq!(
+        *m.backend.diagnostics.lock().unwrap(),
+        vec![Diagnostic::Completed { partitions: 6 }]
+    );
+}
+#[tokio::test]
+async fn a_fence_that_keeps_changing_is_bounded_and_other_accounts_are_still_verified() {
+    let (mut m, pks) = many_accounts();
+    m.backend.unstable = Some(pks[0].clone());
+    account_mut(&mut m, &pks[5]).retain(|r| r.sk != "ENROLLMENT");
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    assert_eq!(m.backend.row_reads.lock().unwrap()[&pks[0]], FENCE_ATTEMPTS);
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    // A moving fence is never a tamper alarm by itself; the planted defect is.
+    assert_eq!(
+        metrics
+            .iter()
+            .filter(|&&x| x == Metric::AuthorityIntegrityFailure)
+            .count(),
+        1
+    );
+    assert_eq!(metrics.last(), Some(&Metric::AuthorityCoverageFailure));
+    assert!(!metrics.contains(&Metric::AuthorityAccountOverCapacity));
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+    assert_eq!(verified_accounts(&m), 4);
+    assert_eq!(
+        *m.backend.diagnostics.lock().unwrap(),
+        vec![
+            Diagnostic::FenceChangedAfterRetries,
+            Diagnostic::Incomplete {
+                partitions: 6,
+                over_capacity: 0,
+                fence_unstable: 1
+            }
+        ]
+    );
+}
+#[test]
+fn account_budget_accepts_exactly_the_limits_and_rejects_one_more() {
+    let mut budget = AccountBudget::default();
+    for _ in 0..MAX_ACCOUNT_ROWS {
+        budget.admit(1).unwrap();
+    }
+    assert_eq!(budget.admit(1), Err(Error::Capacity));
+    // A rejected row is not counted.
+    assert_eq!(budget.rows, MAX_ACCOUNT_ROWS);
+    let mut budget = AccountBudget {
+        rows: 0,
+        bytes: MAX_ACCOUNT_BYTES - 10,
+    };
+    budget.admit(10).unwrap();
+    assert_eq!(budget.admit(1), Err(Error::Capacity));
+    assert_eq!(budget.bytes, MAX_ACCOUNT_BYTES);
+    assert_eq!(
+        AccountBudget::default().admit(MAX_ACCOUNT_BYTES + 1),
+        Err(Error::Capacity)
+    );
+}
+#[test]
+fn verify_account_applies_the_same_boundary_before_any_other_check() {
+    let pk = binding().partition_key().unwrap();
+    let filler = |n: usize| -> Vec<Row> {
+        (0..n)
+            .map(|i| Row {
+                pk: pk.clone(),
+                sk: format!("PAD#{i}"),
+                payload: vec![0],
+            })
+            .collect()
+    };
+    // Exactly at the bound the rows are admitted (and then fail as malformed).
+    assert_eq!(verify(&filler(MAX_ACCOUNT_ROWS)), Err(Error::Integrity));
+    assert_eq!(verify(&filler(MAX_ACCOUNT_ROWS + 1)), Err(Error::Capacity));
+}
+#[tokio::test]
+async fn sweep_failures_write_only_fixed_reason_lines() {
+    let m = monitor(false, true);
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    assert_eq!(
+        *m.backend.diagnostics.lock().unwrap(),
+        vec![Diagnostic::PartitionScanFailed]
+    );
+    let pk = binding().partition_key().unwrap();
+    let digits = pk.trim_start_matches("ACCOUNT#");
+    for diagnostic in [
+        Diagnostic::PartitionScanFailed,
+        Diagnostic::PartitionScanOverCapacity,
+        Diagnostic::AccountReadFailed,
+        Diagnostic::AccountReadMalformed,
+        Diagnostic::AccountOverCapacity,
+        Diagnostic::FenceChangedAfterRetries,
+        Diagnostic::DeliveryFailed,
+        Diagnostic::Completed { partitions: 85 },
+        Diagnostic::Incomplete {
+            partitions: 85,
+            over_capacity: 1,
+            fence_unstable: 2,
+        },
+    ] {
+        let line = diagnostic.to_string();
+        assert!(line.starts_with("authority sweep: "), "{line}");
+        assert!(!line.contains('\n') && !line.contains(digits) && line.len() < 100);
+        assert!(
+            line.bytes()
+                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b" :=_".contains(&b)),
+            "{line}"
+        );
+    }
+    assert_eq!(
+        Diagnostic::Incomplete {
+            partitions: 85,
+            over_capacity: 1,
+            fence_unstable: 0
+        }
+        .to_string(),
+        "authority sweep: incomplete partitions=85 over_capacity=1 fence_unstable=0"
+    );
+    assert_eq!(
+        Metric::AuthorityAccountOverCapacity.name(),
+        "AuthorityAccountOverCapacity"
+    );
+    assert_eq!(Error::Capacity.to_string(), "monitor capacity exceeded");
+}
+#[tokio::test]
+async fn a_malformed_account_read_alarms_and_every_other_account_is_still_verified() {
+    let (mut m, pks) = many_accounts();
+    m.backend.malformed = Some(pks[0].clone());
+    // An integrity finding, like a failed history check: alarmed, and the sweep
+    // still covers (and completes over) every other account.
+    assert_eq!(m.sweep_authority(&config()).await, Ok(()));
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert_eq!(metrics[0], Metric::AuthorityIntegrityFailure);
+    assert_eq!(verified_accounts(&m), 5);
+    assert_eq!(metrics.last(), Some(&Metric::AuthoritySweepCompleted));
+    assert!(
+        m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .contains(&Diagnostic::AccountReadMalformed)
+    );
+}
+#[tokio::test]
+async fn a_failed_per_account_alarm_does_not_stop_the_rest_of_the_sweep() {
+    let (mut m, pks) = many_accounts();
+    let pk = pks[0].clone();
+    let big = account_mut(&mut m, &pk);
+    for i in big.len()..=MAX_ACCOUNT_ROWS {
+        big.push(Row {
+            pk: pk.clone(),
+            sk: format!("PAD#{i}"),
+            payload: vec![0],
+        });
+    }
+    account_mut(&mut m, &pks[5]).retain(|r| r.sk != "ENROLLMENT");
+    m.backend.failing_metric = Some(Metric::AuthorityAccountOverCapacity);
+    // The run still fails (and is retried), but only after every other account
+    // was verified and the planted integrity defect was found.
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert_eq!(verified_accounts(&m), 4);
+    assert!(metrics.contains(&Metric::AuthorityIntegrityFailure));
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+    assert!(
+        m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .contains(&Diagnostic::DeliveryFailed)
+    );
 }

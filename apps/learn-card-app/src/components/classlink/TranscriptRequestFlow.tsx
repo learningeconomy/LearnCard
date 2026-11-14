@@ -1,15 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { checkmark, documentTextOutline, hourglassOutline, ribbonOutline } from 'ionicons/icons';
+import {
+    checkmark,
+    documentTextOutline,
+    hourglassOutline,
+    notificationsOutline,
+    paperPlaneOutline,
+    ribbonOutline,
+} from 'ionicons/icons';
 import { useRequestTranscript, useTranscriptStatus, getLogger } from 'learn-card-base';
 import { formatClrGpa } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 import * as m from '../../paraglide/messages.js';
+import { getLocale } from '../../paraglide/runtime.js';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { useTranscriptArrival } from '../../hooks/useTranscriptArrival';
 import { useReceivedTranscript } from '../../hooks/useReceivedTranscript';
 import BoostEarnedCard from '../boost/boost-earned-card/BoostEarnedCard';
 import { getTranscriptCategory } from './transcriptCategory';
+import { TranscriptDeliveryProgress } from './TranscriptDeliveryProgress';
+import { ESTIMATE_GRACE_MS, formatExpectedDelivery, getDeliveryPace } from './transcriptDelivery';
 import {
     TranscriptConsentCheckbox,
     TranscriptErrorBanner,
@@ -20,11 +30,14 @@ const log = getLogger('transcript-request-flow');
 
 /** After this long without arrival, the flow lets the student move on. */
 export const TRANSCRIPT_FLOW_PATIENCE_MS = 90_000;
+/** Extra time past a timed estimate before the flow lets the student move on. */
+export const TRANSCRIPT_FLOW_ESTIMATE_GRACE_MS = ESTIMATE_GRACE_MS;
 
 type RequestOutcome = {
     status: 'requested' | 'none_yet' | 'failed';
     requestedAt: string;
     requestId?: string;
+    expectedBy?: string;
 };
 
 export type TranscriptRequestFlowProps = {
@@ -138,6 +151,7 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
     onDone,
 }) => {
     const { track } = useAnalytics();
+    const locale = getLocale();
     const requestTranscript = useRequestTranscript();
     const status = useTranscriptStatus(true);
     const [consent, setConsent] = useState(false);
@@ -167,22 +181,36 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
         enabled: Boolean(receivedAt),
     });
 
-    const step: 'ask' | 'onTheWay' | 'arrived' | 'longer' | 'noneYet' =
+    const pace = outcome ? getDeliveryPace(outcome.requestedAt, outcome.expectedBy) : 'quick';
+    const step: 'ask' | 'onTheWay' | 'timed' | 'later' | 'arrived' | 'longer' | 'noneYet' =
         outcome?.status === 'none_yet'
             ? 'noneYet'
             : outcome?.status === 'requested'
               ? model
                   ? 'arrived'
-                  : outOfPatience || isPollingExhausted
-                    ? 'longer'
-                    : 'onTheWay'
+                  : pace === 'later'
+                    ? 'later'
+                    : outOfPatience || isPollingExhausted
+                      ? 'longer'
+                      : pace === 'timed'
+                        ? 'timed'
+                        : 'onTheWay'
               : 'ask';
 
+    const isWaiting = step === 'onTheWay' || step === 'timed';
+    const timedEstimate = pace === 'timed' ? outcome?.expectedBy : undefined;
+
     useEffect(() => {
-        if (step !== 'onTheWay') return;
-        const timer = setTimeout(() => setOutOfPatience(true), TRANSCRIPT_FLOW_PATIENCE_MS);
+        if (!isWaiting) return;
+        const patienceMs = timedEstimate
+            ? Math.max(
+                  TRANSCRIPT_FLOW_PATIENCE_MS,
+                  Date.parse(timedEstimate) - Date.now() + TRANSCRIPT_FLOW_ESTIMATE_GRACE_MS
+              )
+            : TRANSCRIPT_FLOW_PATIENCE_MS;
+        const timer = setTimeout(() => setOutOfPatience(true), patienceMs);
         return () => clearTimeout(timer);
-    }, [step]);
+    }, [isWaiting, timedEstimate]);
 
     // Move focus with the step so screen readers and keyboards follow the story.
     useEffect(() => {
@@ -307,6 +335,57 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
                         {m['transcriptOptIn.flow.continue']()}
                     </button>
                 </div>
+            </div>
+        );
+    } else if (step === 'timed' && outcome?.expectedBy) {
+        content = (
+            <div data-testid="transcript-flow-timed" className="motion-safe:animate-fade-in-up">
+                <Hero icon={documentTextOutline} tone="emerald" motion="working" />
+                {heading(m['transcriptOptIn.flow.onTheWayTitle']())}
+                <p className="text-sm text-grayscale-600 mb-6">
+                    {m['transcriptOptIn.delivery.notifyYou']()}
+                </p>
+                <div className="rounded-[20px] border border-grayscale-200 bg-white/90 backdrop-blur-md p-5 mb-6 shadow-sm">
+                    <TranscriptDeliveryProgress
+                        requestedAt={outcome.requestedAt}
+                        expectedBy={outcome.expectedBy}
+                        received={Boolean(receivedAt)}
+                        stage={m['transcriptOptIn.flow.preparing']()}
+                    />
+                </div>
+            </div>
+        );
+    } else if (step === 'later' && outcome?.expectedBy) {
+        content = (
+            <div data-testid="transcript-flow-later" className="motion-safe:animate-fade-in-up">
+                <Hero icon={paperPlaneOutline} tone="emerald" motion="arrived" />
+                {heading(m['transcriptOptIn.delivery.requestedTitle']())}
+                <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
+                    {m['transcriptOptIn.delivery.expectedWhen']({
+                        when: formatExpectedDelivery(outcome.expectedBy, Date.now(), locale),
+                    })}
+                </p>
+                <div className="flex items-center gap-3 rounded-[20px] border border-grayscale-200 bg-white/90 backdrop-blur-md p-4 mb-8 text-left shadow-sm motion-safe:animate-reveal-card">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                        <IonIcon
+                            icon={notificationsOutline}
+                            className="text-xl"
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <p className="text-sm text-grayscale-700 leading-snug">
+                        {m['transcriptOptIn.delivery.notifyYou']()}
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    data-testid="transcript-flow-continue"
+                    className={primaryButton}
+                    onClick={() => void finish(true)}
+                    disabled={isFinishing}
+                >
+                    {m['transcriptOptIn.flow.continue']()}
+                </button>
             </div>
         );
     } else if (step === 'onTheWay') {
