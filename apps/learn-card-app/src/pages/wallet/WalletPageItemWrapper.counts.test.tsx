@@ -8,9 +8,10 @@ import type { BespokeLearnCard } from '../../../../../packages/learn-card-base/s
 import * as m from '../../paraglide/messages.js';
 
 /**
- * Passport tiles over the real useCredentialCollection + useGetCredentialList (LC-2412).
- * With index.get failing, prod list view shows "Count unavailable" and grid shows "—";
- * both come from `count === null` in WalletPageItemWrapper.
+ * Passport tiles over the real useVisibleCredentialCount (LC-2412, LC-2413): the index count
+ * once the account's visibility backfill is done, the full list walk before that. With the
+ * index failing, prod list view shows "Count unavailable" and grid shows "—"; both come from
+ * `count === null` in WalletPageItemWrapper.
  */
 const host = vi.hoisted(() => ({
     wallet: null as BespokeLearnCard | null,
@@ -23,8 +24,8 @@ vi.mock('learn-card-base', async () => {
     return {
         useWallet: () => ({ initWallet: host.init }),
         switchedProfileStore: { use: { switchedDid: () => undefined } },
-        useCredentialCollection: (...args: Parameters<typeof useCredentialCollection>) =>
-            useCredentialCollection(...args),
+        useVisibleCredentialCount: (...args: Parameters<typeof useVisibleCredentialCount>) =>
+            useVisibleCredentialCount(...args),
         CredentialCategoryEnum,
         newCredsStore: { use: { hasNewCredentials: () => false } },
         useGetCredentialsForSkills: () => ({ isLoading: false }),
@@ -40,6 +41,9 @@ vi.mock('../../../../../packages/learn-card-base/src/stores/walletStore', () => 
         use: { switchedDid: () => undefined },
         get: { switchedDid: () => undefined },
     },
+}));
+vi.mock('../../../../../packages/learn-card-base/src/stores/NetworkStore', () => ({
+    networkStore: { use: { cloudUrl: () => 'cloud' } },
 }));
 vi.mock('learn-card-base/hooks/useWallet', () => ({ getCategoryForCredential: vi.fn() }));
 vi.mock(
@@ -81,7 +85,11 @@ vi.mock('../../stores/passportPageStore', () => ({
 vi.mock('../../hooks/useAlignments', () => ({ default: () => ({ alignments: [] }) }));
 vi.mock('../ai-insights/ai-insights.helpers', () => ({ quantifyInsights: () => 0 }));
 
-import { useCredentialCollection } from '../../../../../packages/learn-card-base/src/react-query/queries/useCredentialCollection';
+import { useVisibleCredentialCount } from '../../../../../packages/learn-card-base/src/react-query/queries/useVisibleCredentialCount';
+import {
+    getCredentialVisibilityBackfillKey,
+    resetCredentialVisibilityBackfillForTests,
+} from '../../../../../packages/learn-card-base/src/helpers/credentialVisibilityBackfill';
 import WalletPageItemWrapper from './WalletPageItemWrapper';
 
 const LIST = 1;
@@ -92,18 +100,42 @@ const ROWS = Array.from(
         ({ id: String(i), uri: `uri-${i}`, title: `Badge ${i}`, category: 'Social Badge' }) as LCR
 );
 const LIST_KEY = ['useGetCredentialList', '', '', 'account-a'];
+const COUNT_KEY = ['useGetCredentialCount', '', 'Social Badge', 'account-a', 'visible'];
 type Page = { records: LCR[]; hasMore: boolean; cursor: string };
 const allRows = (): Page => ({ records: ROWS, hasMore: false, cursor: '3' });
 
 let client: QueryClient;
+type Source = 'walk' | 'count';
+let source: Source = 'walk';
+/** The index call that feeds the tile in this mode, as a mock that resolves to all rows. */
 const makeWallet = () => {
     const getPage = vi.fn(async (): Promise<Page> => allRows());
+    const getCount = vi.fn(async (): Promise<number> => ROWS.length);
     host.wallet = {
         id: { did: () => 'account-a' },
-        index: { LearnCloud: { getPage } },
+        index: { LearnCloud: { getPage, getCount } },
     } as unknown as BespokeLearnCard;
-    return getPage;
+    if (source === 'count') {
+        window.localStorage.setItem(
+            getCredentialVisibilityBackfillKey('account-a', 'cloud'),
+            'complete'
+        );
+    }
+    const feed = source === 'walk' ? getPage : getCount;
+    return {
+        feed,
+        hold: () => {
+            const held = Promise.withResolvers<void>();
+            feed.mockImplementationOnce((async () => {
+                await held.promise;
+                return source === 'walk' ? allRows() : ROWS.length;
+            }) as never);
+            return held;
+        },
+        others: source === 'walk' ? getCount : getPage,
+    };
 };
+const feedKey = () => (source === 'walk' ? LIST_KEY : COUNT_KEY);
 const renderTile = () =>
     render(
         <QueryClientProvider client={client}>
@@ -124,6 +156,8 @@ const unavailable = (viewMode: number) => (viewMode === LIST ? UNAVAILABLE() : '
 beforeEach(() => {
     client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
     host.wallet = null;
+    window.localStorage.clear();
+    resetCredentialVisibilityBackfillForTests();
     host.init.mockImplementation(async () => host.wallet);
 });
 afterEach(() => {
@@ -133,43 +167,47 @@ afterEach(() => {
 });
 
 describe.each([
-    ['list', LIST],
-    ['grid', GRID],
-])('WalletPageItemWrapper %s view', (_label, viewMode) => {
+    ['list', LIST, 'walk'],
+    ['grid', GRID, 'walk'],
+    ['list', LIST, 'count'],
+    ['grid', GRID, 'count'],
+] as const)('WalletPageItemWrapper %s view from the %s', (_label, viewMode, from) => {
     beforeEach(() => {
         host.viewMode = viewMode;
+        source = from;
     });
 
-    it('keeps the cached count, not a spinner, while a complete walk refetches', async () => {
-        const getPage = makeWallet();
+    it('keeps the cached count, not a spinner, while it refetches', async () => {
+        const { hold, others } = makeWallet();
         renderTile();
         await screen.findByText(shown(viewMode));
 
-        const held = Promise.withResolvers<Page>();
-        getPage.mockImplementationOnce(() => held.promise);
+        const held = hold();
         await act(async () => {
-            void client.refetchQueries({ queryKey: LIST_KEY });
+            void client.refetchQueries({ queryKey: feedKey() });
         });
-        await waitFor(() => expect(client.isFetching({ queryKey: LIST_KEY })).toBe(1));
+        await waitFor(() => expect(client.isFetching({ queryKey: feedKey() })).toBe(1));
         await act(async () => {
             await new Promise(resolve => setTimeout(resolve, 20));
         });
         expect(screen.getByText(shown(viewMode))).toBeTruthy();
         expect(screen.queryByRole('status')).toBeNull();
+        // The count path never walks the index, and the walk never asks for a count.
+        expect(others).not.toHaveBeenCalled();
 
-        await act(async () => held.resolve(allRows()));
+        await act(async () => held.resolve());
     });
 
     it('keeps the cached count, not the unavailable state, after a failed refresh', async () => {
-        const getPage = makeWallet();
+        const { feed } = makeWallet();
         renderTile();
         await screen.findByText(shown(viewMode));
 
-        getPage.mockRejectedValue(new Error('index.get blocked'));
+        feed.mockRejectedValue(new Error('index blocked'));
         await act(async () => {
-            await client.invalidateQueries({ queryKey: LIST_KEY }).catch(() => undefined);
+            await client.invalidateQueries({ queryKey: feedKey() }).catch(() => undefined);
         });
-        await waitFor(() => expect(client.getQueryState(LIST_KEY)?.status).toBe('error'));
+        await waitFor(() => expect(client.getQueryState(feedKey())?.status).toBe('error'));
         await act(async () => {
             await new Promise(resolve => setTimeout(resolve, 20));
         });
@@ -177,9 +215,9 @@ describe.each([
         expect(screen.queryByText(unavailable(viewMode))).toBeNull();
     });
 
-    it('shows the unavailable state when no walk has completed and the index fails', async () => {
-        const getPage = makeWallet();
-        getPage.mockRejectedValue(new Error('index.get blocked'));
+    it('shows the unavailable state when there is no count yet and the index fails', async () => {
+        const { feed } = makeWallet();
+        feed.mockRejectedValue(new Error('index blocked'));
         renderTile();
         await screen.findByText(unavailable(viewMode));
         expect(screen.queryByRole('status')).toBeNull();

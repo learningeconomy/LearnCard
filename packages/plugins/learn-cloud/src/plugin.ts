@@ -18,6 +18,7 @@ import { LearnCloudPluginDependentMethods, LearnCloudPlugin } from './types';
 import {
     generateEncryptedRecord,
     generateEncryptedFieldsArray,
+    generateIndexQuery,
     generateJWE,
     decryptJWE,
     hash,
@@ -609,28 +610,16 @@ export const getLearnCloudPlugin = async (
 
                 _learnCard.debug?.('LearnCloud index.get (query)');
 
-                const fields = await generateEncryptedFieldsArray(
-                    _learnCard,
-                    query,
-                    unencryptedFields
-                );
+                const serverQuery = await generateIndexQuery(_learnCard, query, unencryptedFields);
 
-                _learnCard.debug?.('LearnCloud index.get (query fields)', fields);
-
-                const unencryptedEntries = Object.fromEntries(
-                    Object.entries(query).filter(([key]) => unencryptedFields.includes(key))
-                );
-
-                _learnCard.debug?.(
-                    'LearnCloud index.get (query unencryptedEntries)',
-                    unencryptedEntries
-                );
+                _learnCard.debug?.('LearnCloud index.get (query filter)', serverQuery);
 
                 const jwe: JWE = (await currentClient.index.get.query({
-                    query: await generateJWE(_learnCard, await getLearnCloudDid(currentClient), {
-                        ...unencryptedEntries,
-                        ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
-                    }),
+                    query: await generateJWE(
+                        _learnCard,
+                        await getLearnCloudDid(currentClient),
+                        serverQuery
+                    ),
                     ...options,
                 })) as any;
 
@@ -674,28 +663,16 @@ export const getLearnCloudPlugin = async (
 
                 _learnCard.debug?.('LearnCloud index.getCount (query)');
 
-                const fields = await generateEncryptedFieldsArray(
-                    _learnCard,
-                    query,
-                    unencryptedFields
-                );
+                const serverQuery = await generateIndexQuery(_learnCard, query, unencryptedFields);
 
-                _learnCard.debug?.('LearnCloud index.getCount (query fields)', fields);
-
-                const unencryptedEntries = Object.fromEntries(
-                    Object.entries(query).filter(([key]) => unencryptedFields.includes(key))
-                );
-
-                _learnCard.debug?.(
-                    'LearnCloud index.getCount (query unencryptedEntries)',
-                    unencryptedEntries
-                );
+                _learnCard.debug?.('LearnCloud index.getCount (query filter)', serverQuery);
 
                 const jwe = await currentClient.index.count.query({
-                    query: await generateJWE(_learnCard, await getLearnCloudDid(currentClient), {
-                        ...unencryptedEntries,
-                        ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
-                    }),
+                    query: await generateJWE(
+                        _learnCard,
+                        await getLearnCloudDid(currentClient),
+                        serverQuery
+                    ),
                 });
 
                 _learnCard.debug?.('LearnCloud index.count (query response)', jwe);

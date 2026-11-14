@@ -41,6 +41,10 @@ import type {
     RawArtifactCredential,
 } from 'learn-card-base/types/file-extraction';
 import { addCertificateAttachment } from './certificateAttachment';
+import {
+    isInternalCredentialCategory,
+    withInternalCategoryHidden,
+} from 'learn-card-base/helpers/credentialCollection';
 
 // Weak keys preserve IDs through manager remounts without retaining discarded draft data.
 const fileDraftIds = new WeakMap<UnsignedVC, string>();
@@ -561,15 +565,21 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 currentResume?.uri && uploadType === UploadTypesEnum.Resume
                     ? await wallet.index.LearnCloud.update(currentResume.id, {
                           uri: prepared.credentialUri,
+                          ...(isInternalCredentialCategory(currentResume.category) && {
+                              hidden: true,
+                          }),
                       })
-                    : await wallet.index.LearnCloud.add({
-                          id: recordId,
-                          uri: prepared.credentialUri,
-                          category: uploadType,
-                      });
+                    : await wallet.index.LearnCloud.add(
+                          withInternalCategoryHidden({
+                              id: recordId,
+                              uri: prepared.credentialUri,
+                              category: uploadType,
+                          })
+                      );
             if (indexed !== true) throw new Error('The uploaded document could not be indexed.');
             // The cached list walk stays fresh for minutes; a new artifact must refresh it (LC-2412).
             void queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] });
+            void queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] });
             if (cacheKey) savedArtifactUris.current.set(cacheKey, prepared.credentialUri);
             const attempt = cacheKey ? extractionAttempts.current.get(cacheKey) : undefined;
             if (attempt)
