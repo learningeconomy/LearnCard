@@ -54,15 +54,17 @@ the protected table** for receipt existence, not on treating a proposal signatur
 as post-commit proof. Clients separately verify RPC signatures and nonces.
 
 Each account is read before and after paginated history collection. A changed fence
-retries as coverage failure, not a false tampering alarm. Orphan rows are discovered
+is retried (at most three reads of that account, 250 ms apart), never a false
+tampering alarm. Orphan rows are discovered
 because the scan projects partition keys from **all** row types, not just accounts.
-Bounds: 100 items/page, 10,000 scan pages, 50,000 partitions, 4096 rows/32 MiB per
-account, and the Lambda's 900-second limit. Exceeding a bound never reports partial
-success: it raises coverage failure/missing heartbeat and requires capacity review
-or a separately reviewed sharded/checkpoint design before further rollout.
+Bounds: 100 items/page, 10,000 scan pages, 50,000 partitions, 16,384 rows/128 MiB per
+account (see "Capacity note" below), and the Lambda's 900-second limit. Exceeding a
+bound never reports partial success: it raises coverage failure/missing heartbeat.
+Per-account problems are **isolated** (see "Per-account isolation" below): every
+other account is still verified before the sweep reports coverage failure.
 
 Fixed metrics/notifications are `AuthorityIntegrityFailure`,
-`AuthorityCoverageFailure`, `AuthoritySweepCompleted`, and (metric only)
+`AuthorityCoverageFailure`, `AuthorityAccountOverCapacity`, `AuthoritySweepCompleted`, and (metric only)
 `AuthorityRepeatedPinClearAccounts` plus the deprecated `AuthorityRepeatedPinClear`,
 with only operator-owned
 Tenant dimensions. A separate authority heartbeat alarm treats missing data as
@@ -84,10 +86,11 @@ With `enable_enrollment_authority`, the scheduled invocation also independently
 scans the authority table. It projects **all partition keys**, not only account
 rows, so retained executions cannot hide behind a missing account. It then queries
 each partition with strongly consistent reads bracketed by identical account-row
-reads. Every legitimate transition changes that row; a changed fence fails with
-`AuthorityCoverageFailure` and no authority heartbeat, rather than a false tamper
-alarm. Scheduled retries repeat the whole sweep; no write permission or volatile
-checkpoint is needed. Periodic scans were chosen because immutable execution rows
+reads. Every legitimate transition changes that row; a changed fence is retried for
+that account (bounded), and if it never settles that account is reported as
+incomplete (`AuthorityCoverageFailure`, no authority heartbeat) after every other
+account was verified, rather than a false tamper alarm. The next scheduled sweep
+re-reads everything; no write permission or volatile checkpoint is needed. Periodic scans were chosen because immutable execution rows
 retain every phase (including abandoned reservations), without a stream-expiry or
 checkpoint dependency. This is bounded periodic detection, not real-time alerting.
 
@@ -152,13 +155,151 @@ an automatic one, and the metrics have only the Tenant dimension; find the accou
 from the authority table.
 
 Limits: 10,000 scan pages of at most 100 items, 50,000 distinct partitions,
-4,096 rows / 32 MiB per account, and the shared 900-second Lambda deadline.
+16,384 rows / 128 MiB per account, and the shared 900-second Lambda deadline.
 Capacity/read failures alarm `AuthorityCoverageFailure`; incomplete sweeps never
 emit `AuthoritySweepCompleted`. Its missing-heartbeat alarm uses two 30-minute
 periods. A completed sweep can still have integrity findings: heartbeat means
 coverage, not clean data. Before these bounds are approached, implement durable
-partitioned coverage; do not increase limits blindly. The legacy sweep runs
-alongside this one and keeps its own heartbeat and stream handling.
+partitioned coverage; do not increase limits blindly (re-run the capacity probe
+and redo the arithmetic below). The legacy sweep runs alongside this one and keeps
+its own heartbeat and stream handling.
+
+### Per-account isolation
+
+One account must not blind the monitor to every other account. Within a sweep:
+
+| Per-account condition                                      | What happens to that account                                                      | Rest of the sweep     | Sweep result                                       |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------- | -------------------------------------------------- |
+| Integrity finding (`verify_account`, current-row mismatch) | `AuthorityIntegrityFailure` (metric + SNS)                                        | continues (unchanged) | completes if nothing else failed                   |
+| Over the row/byte bound                                    | skipped; `AuthorityAccountOverCapacity` (metric + SNS), one per oversized account | continues             | `AuthorityCoverageFailure`, no heartbeat, no gauge |
+| Fence still changing after 3 attempts                      | skipped; diagnostic line only                                                     | continues             | `AuthorityCoverageFailure`, no heartbeat, no gauge |
+| Malformed row returned by a read (bad key/shape)           | sweep aborts                                                                      | stops (unchanged)     | `AuthorityIntegrityFailure`, no heartbeat          |
+| Read/SDK failure (throttle after SDK retries)              | sweep aborts                                                                      | stops (unchanged)     | `AuthorityCoverageFailure`, no heartbeat           |
+
+`AuthoritySweepCompleted` and the `AuthorityRepeatedPinClearAccounts` gauge are
+emitted only when **every** partition was fully verified. A skipped account means
+coverage is incomplete, so the sweep still fails (and Lambda's async retries
+repeat it); the difference is that the failure is reported _after_ everyone else
+was checked, so integrity findings in other accounts are not hidden.
+
+An oversized account is **either legitimate growth or deliberate padding**, and
+the operator must decide which. Rows are append-only and legitimate traffic grows
+an account permanently (~8 rows per PIN recovery; ~16 rows/day for a canary
+account at one recovery every 12 hours). But the read path only checks that a row
+is well formed and in the right partition before counting it against the bound; it
+checks no signatures. Anything that can write the table (for example a compromised
+writer) can therefore pad one account with well-formed junk until it is skipped,
+and tampering inside a skipped account is never verified. Treat it as **suspected
+tampering** (page security, preserve DynamoDB PITR, stream and CloudTrail evidence)
+if the account is not a known canary or high-traffic account, if its row count
+jumped instead of growing at the expected rate, or if its rows do not look like
+enclave records. Either way the account remains unverified until the bound is
+raised (with the arithmetic below) or a sharded/checkpointed design lands.
+
+Alert volume while an account stays over capacity: it cannot shrink, so every
+scheduled run (every 15 minutes, plus up to 2 Lambda async retries of the failed
+invocation) sends one direct `AuthorityAccountOverCapacity` and one direct
+`AuthorityCoverageFailure` SNS message, i.e. up to ~6 messages per 15 minutes
+(~576/day), and the CloudWatch alarms (60 s period, missing data not breaching)
+return to OK between sweeps and re-fire each sweep. This is expected and repeats
+until the account is resolved. Do not mute the shared monitor topic to quiet it:
+integrity alarms use the same topic. A follow-up should give a known
+over-capacity account one persistent alarm state instead of repeated messages.
+
+An account whose fence never settles is skipped with only a diagnostic line and
+the end-of-sweep `AuthorityCoverageFailure` (no dedicated metric). Someone able to
+drive legitimate writes to one account often enough could keep it unverified, so
+investigate `fence_unstable` > 0 on consecutive sweeps as possibly induced.
+
+### Capacity note
+
+Measured on staging: ~7.3 KB per authority row (an account of ~4,100 rows was
+~30 MB); successful sweeps of ~8,700 rows / ~85 partitions took ~12 s and peaked
+at ~84 MB Lambda memory (1024 MiB configured, 900 s timeout). Memory is per
+account: rows are read, verified and dropped before the next partition, so peak
+memory is set by the largest single account, not the table.
+
+`tests/capacity.rs` (ignored by default) builds one synthetic account at the
+bound with ~8 KB validly signed rows and measures heap with a counting allocator.
+The synthetic history is not a valid sequence: it fails the transition check,
+which runs only after every row is parsed, so the probe measures the parse phase
+(where rows and parsed structures are both held) but not the later state tracking
+a valid history would go through. The headroom below is meant to cover that gap:
+
+```sh
+cargo test --release --test capacity -- --ignored --nocapture
+```
+
+Result on the change that set these limits (developer macOS hardware, release
+build; not yet confirmed on the Lambda's ~0.58 vCPU x86/glibc runtime): 16,383 rows, 124.5
+MiB payload, 130.9 MiB heap while holding the rows, 207.3 MiB peak during
+`verify_account` (+76 MiB of parsed structures), 1.7 s to verify. Arithmetic:
+
+- Rows bound: 16,384 x 7.3 KB = ~114 MiB, so at the measured mean row size the row
+  bound binds first. The byte bound (128 MiB) caps accounts of larger rows (up
+  to 64 KiB items: 2,048 rows).
+- Peak heap scales at ~1.66x payload: 128 MiB -> ~213 MiB. Add ~35 MB runtime
+  baseline (84 MB staging peak minus ~1.66 x 30 MB), the in-flight DynamoDB page
+  (100 items, < 1 MB parsed twice) and allocator overhead (budget 1.5x on heap):
+  ~355 MB worst case, about 2.9x headroom inside 1024 MiB. No Lambda memory
+  change is needed. The legacy sweep runs concurrently but is bounded per chain
+  (64 x 8 KiB).
+- Time, one account: verification is ~0.1 ms/row on developer hardware (expect
+  3-5x slower on the Lambda) plus one strongly consistent Query per 100 rows; a
+  full account adds seconds to tens of seconds, well inside 900 s.
+- Time, whole sweep (the real deadline): the sweep is serial. Staging measured
+  ~12 s for ~85 partitions / ~8,700 rows, ~0.14 s per partition (one Scan page
+  per 100 rows, two GetItem calls and at least one Query per partition), sharing
+  the 900 s timeout with the concurrent legacy sweep. At that rate 900 s is
+  reached around ~6,000-12,000 partitions, far below `MAX_PARTITIONS` = 50,000.
+  The partition Scan is also bounded at 10,000 pages x 100 items, i.e. ~1,000,000
+  rows across the whole table. A timed-out invocation writes no diagnostic line
+  and sends no `AuthorityCoverageFailure`; the only signal is the missing-heartbeat
+  alarm. This whole-sweep bound, not the per-account bound, sets the deadline for
+  the sharded/checkpointed design: watch the monitor Lambda's `Duration` against
+  900 s as authority enrollment grows.
+- Read cost: each sweep reads the whole table twice with strongly consistent reads
+  (the Scan is charged on full item size even with a key projection, then the
+  per-partition Query), about 2 x table bytes / 4 KB RRU. Staging's ~63 MB is
+  ~31k RRU per sweep, ~3M RRU/day at 96 sweeps. A failed sweep is retried up to 2
+  more times by Lambda (x3). An over-capacity account is still read up to its bound
+  on every invocation before it is skipped (~2 x account bytes / 4 KB, ~58k RRU at
+  ~114 MiB). Cost grows linearly with total table size regardless of the
+  per-account limits.
+- Growth: with the PIN canary at one recovery per account every 12 hours
+  (~16 rows/day), the staging canary account (~4,300 rows on 2026-11-13) reaches
+  16,384 rows in roughly two years. Production's largest accounts are ~2,700 rows
+  (inferred). Watch `AuthorityAccountOverCapacity`; the long-term answer for
+  unbounded per-account history is still a separately reviewed
+  sharded/checkpointed design, not repeated limit increases.
+
+### Diagnostic lines
+
+There is still no tracing subscriber and SDK error text is still discarded. The
+authority sweep writes one fixed-vocabulary line to stderr (CloudWatch Logs)
+per notable event. Only these constant strings and aggregate counts are ever
+written, never partition keys, account hashes, payloads, DIDs or SDK errors:
+
+| Line                                                                        | Meaning                                                             |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `authority sweep: partition scan failed`                                    | listing partitions failed (SDK/throttle after SDK retries)          |
+| `authority sweep: partition scan over capacity`                             | more than 50,000 partitions or 10,000 scan pages                    |
+| `authority sweep: account read failed`                                      | an account GetItem/Query failed; sweep aborted                      |
+| `authority sweep: account read malformed`                                   | a read returned a malformed row; sweep aborted as integrity failure |
+| `authority sweep: account over capacity`                                    | one account skipped (row/byte bound)                                |
+| `authority sweep: fence changed after retries`                              | one account skipped (fence never settled)                           |
+| `authority sweep: alarm delivery failed`                                    | CloudWatch or SNS publication failed                                |
+| `authority sweep: completed partitions=N`                                   | every partition verified; heartbeat emitted                         |
+| `authority sweep: incomplete partitions=N over_capacity=A fence_unstable=F` | every other partition verified; coverage failure follows            |
+
+Find them with a Logs Insights query on the monitor log group, e.g.
+`filter @message like /^authority sweep:/`.
+
+Operator note: the `AuthorityAccountOverCapacity` CloudWatch alarm is defined in
+`infra/escrow-enclave/authority-audit.tf` (same `authority_integrity` alarm set,
+Sum > 0 over 60 s, same SNS topic). Apply that Terraform with the monitor build
+that emits the metric; until then the monitor's direct SNS message and
+`AuthorityCoverageFailure` still notify.
 
 The observer receives only `GetItem`, `Query`, `Scan` on the exact authority table
 and `GetParameter` on `/${name_prefix}/authority-monitor-trust`. Both Organizations
@@ -233,7 +374,8 @@ configuration, never a record-supplied DID, chain ID, hold ID, request ID, or ha
 All eight signed event types (including `Carried`) are counted. Delivery is **at least once**: Lambda
 retries can duplicate both metrics and SNS alarms; hourly thresholds are signals,
 not billing or exact forensic counts. No payloads, raw SDK errors, or record
-identifiers are logged; returned errors and alarm messages are fixed strings.
+identifiers are logged; returned errors, alarm messages and the authority
+sweep's diagnostic lines are fixed strings (plus aggregate counts).
 CloudTrail SNS messages are also constant, not full management-event payloads.
 DLQs may contain source payloads/metadata: restrict operator access accordingly.
 
@@ -310,17 +452,18 @@ rate alarm, DLQ path, timeout/heartbeat, email confirmation and KMS event delive
 
 ## Operator runbook
 
-| Signal                                       | Meaning / first response                                                                                                                                                                                                                                                                                                                                                                        |
-| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| LedgerIntegrityFailure                       | Mutation, invalid encoding/signature/link/transition, changed image, wrong tenant/key/chain, or head inconsistency. Page security immediately; preserve DynamoDB PITR, stream and CloudTrail evidence, compare immutable S3 versions. Treat as suspected tampering, not a retryable business failure.                                                                                           |
-| AuditMismatch                                | Missing or different exact signed S3 bytes. Check host AuditUnavailable, S3/KMS availability and commit/upload timing. Recheck next sweep; persistent absence or differing bytes needs security containment. Never repair by overwriting ledger history.                                                                                                                                        |
-| Released / PinAttemptFailed hourly threshold | Possible mass recovery/guessing or duplicate processing. Compare legitimate traffic and stream retries; investigate identities only in access-controlled evidence systems, not metric dimensions.                                                                                                                                                                                               |
-| Lambda errors / DLQ depth                    | Verification may not be running. Check permissions, SSM key format, service health, throttling and packaging. Restore detection promptly. Stream retries are capped at 5 with batch bisection; SQS retains failures 14 days, but stream records expire after 24 hours. DLQ metadata is not a durable full copy of the stream; preserve evidence before expiry.                                  |
-| Missing SweepCompleted                       | No successful full sweep for two 30-minute periods. Check EventBridge delivery, Lambda duration/errors, and ledger growth; do not interpret absent integrity metrics as health.                                                                                                                                                                                                                 |
-| EscrowKmsGovernanceChange                    | PutKeyPolicy, CreateGrant, ScheduleKeyDeletion or DisableKey on the escrow CMK, including denied attempts. Immediately reconcile CloudTrail actor/action with approved two-person change records. Unapproved policy/grant activity is a security incident (D10).                                                                                                                                |
-| EscrowPrivateLinkChange                      | Endpoint-service permission, configuration, notification or acceptance change (account-wide, including denied calls). The page carries eventName, eventID and eventTime; look up the eventID in CloudTrail for caller and request. Reconcile with the change record; an unexpected acceptance or principal change is a security incident: reject the connection and restore allowed principals. |
-| Endpoint connection notification             | Raw `vpce` notice (ServiceId, VpcEndpointId, VpcEndpointOwner, EndpointState) on Connect/Accept/Reject/Delete. Accept only the reviewed lca-api endpoint ID from the expected owner; reject anything else. An unplanned Delete means lca-api lost its path to the enclave.                                                                                                                      |
-| <prefix>-nlb-healthy-hosts                   | Fewer healthy NLB targets than the ASG minimum for 5 minutes (or no registered targets). Check ASG activity, instance refresh, target health and host/enclave logs. Expected during staging's single-host roll; in production it means lost redundancy or capacity. OK notifies recovery.                                                                                                       |
+| Signal                                       | Meaning / first response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LedgerIntegrityFailure                       | Mutation, invalid encoding/signature/link/transition, changed image, wrong tenant/key/chain, or head inconsistency. Page security immediately; preserve DynamoDB PITR, stream and CloudTrail evidence, compare immutable S3 versions. Treat as suspected tampering, not a retryable business failure.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| AuditMismatch                                | Missing or different exact signed S3 bytes. Check host AuditUnavailable, S3/KMS availability and commit/upload timing. Recheck next sweep; persistent absence or differing bytes needs security containment. Never repair by overwriting ledger history.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Released / PinAttemptFailed hourly threshold | Possible mass recovery/guessing or duplicate processing. Compare legitimate traffic and stream retries; investigate identities only in access-controlled evidence systems, not metric dimensions.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Lambda errors / DLQ depth                    | Verification may not be running. Check permissions, SSM key format, service health, throttling and packaging. Restore detection promptly. Stream retries are capped at 5 with batch bisection; SQS retains failures 14 days, but stream records expire after 24 hours. DLQ metadata is not a durable full copy of the stream; preserve evidence before expiry.                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| AuthorityAccountOverCapacity                 | One authority account exceeded the per-account row/byte bound and was skipped; every other account was still verified, and the sweep also reports AuthorityCoverageFailure with no authority heartbeat. Legitimate growth or deliberate padding: identify the account from the authority table in access-controlled tooling and decide which. Unknown account, sudden jump instead of ~8 rows per PIN recovery, or rows that do not look like enclave records: treat as suspected tampering (page security, preserve PITR/stream/CloudTrail evidence). Known canary/high-traffic growth: follow the README capacity note (re-run the probe before raising bounds). Repeats every 15 minutes (up to 3x per run with retries) until resolved; do not mute the shared topic. That account is unaudited until resolved. |
+| Missing SweepCompleted                       | No successful full sweep for two 30-minute periods. Check EventBridge delivery, Lambda duration/errors, and ledger growth; do not interpret absent integrity metrics as health.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| EscrowKmsGovernanceChange                    | PutKeyPolicy, CreateGrant, ScheduleKeyDeletion or DisableKey on the escrow CMK, including denied attempts. Immediately reconcile CloudTrail actor/action with approved two-person change records. Unapproved policy/grant activity is a security incident (D10).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| EscrowPrivateLinkChange                      | Endpoint-service permission, configuration, notification or acceptance change (account-wide, including denied calls). The page carries eventName, eventID and eventTime; look up the eventID in CloudTrail for caller and request. Reconcile with the change record; an unexpected acceptance or principal change is a security incident: reject the connection and restore allowed principals.                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Endpoint connection notification             | Raw `vpce` notice (ServiceId, VpcEndpointId, VpcEndpointOwner, EndpointState) on Connect/Accept/Reject/Delete. Accept only the reviewed lca-api endpoint ID from the expected owner; reject anything else. An unplanned Delete means lca-api lost its path to the enclave.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| <prefix>-nlb-healthy-hosts                   | Fewer healthy NLB targets than the ASG minimum for 5 minutes (or no registered targets). Check ASG activity, instance refresh, target health and host/enclave logs. Expected during staging's single-host roll; in production it means lost redundancy or capacity. OK notifies recovery.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 1. Acknowledge/page the security incident owner. Preserve evidence before replaying
    failed batches; do not delete records, reset PIN budgets, regenerate keys, or

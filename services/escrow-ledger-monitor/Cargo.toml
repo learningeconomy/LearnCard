@@ -26,7 +26,7 @@ aws-sdk-cloudwatch = { version = "=1.116.0", default-features = false, features 
 aws-sdk-sns = { version = "=1.104.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
 aws-sdk-ssm = { version = "=1.113.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
 async-trait = "0.1"
-tokio = { version = "~1.53.1", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "~1.53.1", features = ["macros", "rt-multi-thread", "time"] }
 serde_json = "~1.0.151"
 serde_dynamo = "4"
 p256 = { version = "~0.14.0", features = ["ecdsa"] }
