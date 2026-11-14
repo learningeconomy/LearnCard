@@ -15,9 +15,109 @@ use escrow_enclave::authority::{
 use p256::ecdsa::VerifyingKey;
 use std::collections::{BTreeMap, BTreeSet};
 
-pub const MAX_ACCOUNT_ROWS: usize = 4096;
-pub const MAX_ACCOUNT_BYTES: usize = 32 * 1024 * 1024;
+/// Per-account bounds. Rows are append-only (no TTL, never deleted), so a single
+/// account grows by ~8 rows per PIN recovery forever. Sized from measured staging
+/// rows (~7.3 KB each) against the 1024 MiB Lambda: see the README capacity note
+/// before changing either value. At the measured ~7.3 KB/row the row bound is
+/// hit first (~114 MiB); the byte bound caps worst-case memory for larger rows.
+pub const MAX_ACCOUNT_ROWS: usize = 16_384;
+pub const MAX_ACCOUNT_BYTES: usize = 128 * 1024 * 1024;
 pub const MAX_PARTITIONS: usize = 50_000;
+/// Reads of one account's bracketed history (1 + retries) before its fence is
+/// reported unstable. A legitimate write between the two account reads changes
+/// the fence; a retry normally lands after it.
+pub const FENCE_ATTEMPTS: usize = 3;
+const FENCE_RETRY_DELAY: std::time::Duration = std::time::Duration::from_millis(250);
+
+/// Running per-account row/byte budget, shared by every backend that reads rows
+/// so the bound (and its exact boundary) is enforced in one place.
+#[derive(Debug, Default)]
+pub struct AccountBudget {
+    pub(crate) rows: usize,
+    pub(crate) bytes: usize,
+}
+impl AccountBudget {
+    /// Admit one more row of `payload_len` bytes. Exactly `MAX_ACCOUNT_ROWS`
+    /// rows and `MAX_ACCOUNT_BYTES` bytes are accepted; one more is `Capacity`.
+    pub fn admit(&mut self, payload_len: usize) -> Result<()> {
+        let rows = self.rows + 1;
+        let bytes = self.bytes.saturating_add(payload_len);
+        if rows > MAX_ACCOUNT_ROWS || bytes > MAX_ACCOUNT_BYTES {
+            return Err(Error::Capacity);
+        }
+        self.rows = rows;
+        self.bytes = bytes;
+        Ok(())
+    }
+}
+
+/// Fixed-vocabulary diagnostic line for the Lambda log. Only these constant
+/// strings and aggregate counts are ever written: never partition keys, account
+/// hashes, payloads, DIDs or SDK error text. There is still no tracing subscriber.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Diagnostic {
+    /// Listing partitions failed (SDK/throttle error after SDK retries).
+    PartitionScanFailed,
+    /// Listing partitions exceeded MAX_PARTITIONS or the page bound.
+    PartitionScanOverCapacity,
+    /// A strongly consistent account read failed (SDK/throttle error).
+    AccountReadFailed,
+    /// A read returned a malformed row; the sweep aborts as an integrity failure.
+    AccountReadMalformed,
+    /// One account exceeded MAX_ACCOUNT_ROWS/MAX_ACCOUNT_BYTES; others continue.
+    AccountOverCapacity,
+    /// One account's fence changed on every attempt; others continue.
+    FenceChangedAfterRetries,
+    /// A metric, gauge or SNS publication failed.
+    DeliveryFailed,
+    /// Every partition was fully verified.
+    Completed { partitions: usize },
+    /// Every other partition was verified, but these accounts were not.
+    Incomplete {
+        partitions: usize,
+        over_capacity: usize,
+        fence_unstable: usize,
+    },
+}
+impl std::fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Self::PartitionScanFailed => f.write_str("authority sweep: partition scan failed"),
+            Self::PartitionScanOverCapacity => {
+                f.write_str("authority sweep: partition scan over capacity")
+            }
+            Self::AccountReadFailed => f.write_str("authority sweep: account read failed"),
+            Self::AccountReadMalformed => f.write_str("authority sweep: account read malformed"),
+            Self::AccountOverCapacity => f.write_str("authority sweep: account over capacity"),
+            Self::FenceChangedAfterRetries => {
+                f.write_str("authority sweep: fence changed after retries")
+            }
+            Self::DeliveryFailed => f.write_str("authority sweep: alarm delivery failed"),
+            Self::Completed { partitions } => {
+                write!(f, "authority sweep: completed partitions={partitions}")
+            }
+            Self::Incomplete {
+                partitions,
+                over_capacity,
+                fence_unstable,
+            } => write!(
+                f,
+                "authority sweep: incomplete partitions={partitions} \
+                 over_capacity={over_capacity} fence_unstable={fence_unstable}"
+            ),
+        }
+    }
+}
+
+/// Outcome of reading one account's bracketed history.
+enum AccountRead {
+    Stable {
+        account: Option<Vec<u8>>,
+        rows: Vec<Row>,
+    },
+    OverCapacity,
+    FenceUnstable,
+}
 /// P9.1 (attack C): must match the enclave's own RELEASE_WARNING_MIN_GAP_MS
 /// (policy/authority.rs) — the monitor independently re-derives this gate
 /// from signed events rather than trusting the stored HoldItem's own fields.
@@ -160,7 +260,12 @@ impl AuthorityTrust {
 pub trait AuthorityBackend: Backend {
     async fn authority_partitions(&self, table: &str) -> Result<Vec<String>>;
     async fn authority_account(&self, table: &str, pk: &str) -> Result<Option<Vec<u8>>>;
+    /// Must enforce `AccountBudget` and return `Error::Capacity` when exceeded.
     async fn authority_rows(&self, table: &str, pk: &str) -> Result<Vec<Row>>;
+    /// One fixed-vocabulary line to the Lambda log (stderr). See `Diagnostic`.
+    fn diagnose(&self, diagnostic: Diagnostic) {
+        eprintln!("{diagnostic}");
+    }
 }
 
 impl<B: AuthorityBackend> Monitor<B> {
@@ -168,34 +273,144 @@ impl<B: AuthorityBackend> Monitor<B> {
         let result = self.sweep_authority_inner(config).await;
         match result {
             Err(Error::Integrity) => {
-                self.alarm(Metric::AuthorityIntegrityFailure).await?;
+                self.deliver(self.alarm(Metric::AuthorityIntegrityFailure))
+                    .await?;
                 Err(Error::Unavailable)
             }
+            // Over capacity is permanent and already alarmed per account: report
+            // coverage failure and withhold the heartbeat, but do not fail the
+            // invocation, so Lambda does not retry a sweep that cannot succeed.
+            Err(Error::Capacity) => {
+                self.deliver(self.alarm(Metric::AuthorityCoverageFailure))
+                    .await
+            }
             Err(error) => {
-                self.alarm(Metric::AuthorityCoverageFailure).await?;
+                self.deliver(self.alarm(Metric::AuthorityCoverageFailure))
+                    .await?;
                 Err(error)
             }
             Ok(()) => Ok(()),
         }
     }
-    async fn sweep_authority_inner(&self, config: &Config) -> Result<()> {
-        let partitions = self.backend.authority_partitions(&config.table).await?;
-        if partitions.len() > MAX_PARTITIONS {
-            return Err(Error::Unavailable);
+
+    /// Sink failures (CloudWatch/SNS) still fail the invocation, but are logged
+    /// with a fixed reason so they are distinguishable from read failures.
+    async fn deliver(&self, sink: impl std::future::Future<Output = Result<()>>) -> Result<()> {
+        sink.await
+            .inspect_err(|_| self.backend.diagnose(Diagnostic::DeliveryFailed))
+    }
+
+    fn read_failed(&self, error: Error) -> Error {
+        self.backend.diagnose(if error == Error::Integrity {
+            Diagnostic::AccountReadMalformed
+        } else {
+            Diagnostic::AccountReadFailed
+        });
+        error
+    }
+
+    /// Strongly consistent history bracketed by identical account-row reads.
+    /// A Query is NOT a snapshot; every legitimate write changes the account row,
+    /// so a changed fence is retried (bounded), never treated as tampering.
+    async fn read_account(&self, config: &Config, pk: &str) -> Result<AccountRead> {
+        for attempt in 0..FENCE_ATTEMPTS {
+            if attempt > 0 {
+                tokio::time::sleep(FENCE_RETRY_DELAY).await;
+            }
+            let before = self
+                .backend
+                .authority_account(&config.table, pk)
+                .await
+                .map_err(|e| self.read_failed(e))?;
+            let rows = match self.backend.authority_rows(&config.table, pk).await {
+                Err(Error::Capacity) => return Ok(AccountRead::OverCapacity),
+                rows => rows.map_err(|e| self.read_failed(e))?,
+            };
+            let after = self
+                .backend
+                .authority_account(&config.table, pk)
+                .await
+                .map_err(|e| self.read_failed(e))?;
+            if before == after {
+                return Ok(AccountRead::Stable {
+                    account: after,
+                    rows,
+                });
+            }
         }
+        Ok(AccountRead::FenceUnstable)
+    }
+
+    async fn sweep_authority_inner(&self, config: &Config) -> Result<()> {
+        let partitions = self
+            .backend
+            .authority_partitions(&config.table)
+            .await
+            .inspect_err(|e| {
+                self.backend.diagnose(match e {
+                    Error::Capacity => Diagnostic::PartitionScanOverCapacity,
+                    _ => Diagnostic::PartitionScanFailed,
+                })
+            })?;
+        if partitions.len() > MAX_PARTITIONS {
+            self.backend.diagnose(Diagnostic::PartitionScanOverCapacity);
+            return Err(Error::Capacity);
+        }
+        let partitions = partitions.into_iter().collect::<BTreeSet<_>>();
         let now = now_ms();
         let mut repeated_pin_clear_accounts: u64 = 0;
-        for pk in partitions.into_iter().collect::<BTreeSet<_>>() {
-            // A Query/Scan is NOT a snapshot. Every legitimate write increments
-            // the account revision. A changed fence yields retry, not tampering.
-            let before = self.backend.authority_account(&config.table, &pk).await?;
-            let rows = self.backend.authority_rows(&config.table, &pk).await?;
-            let after = self.backend.authority_account(&config.table, &pk).await?;
-            if before != after {
-                return Err(Error::Unavailable);
-            }
-            match verify_account(&self.tenant, &config.generation, &pk, &rows, &config.trust) {
-                Err(Error::Integrity) => self.alarm(Metric::AuthorityIntegrityFailure).await?,
+        // Accounts that could not be fully verified this sweep. Each is isolated:
+        // every other partition is still verified, then the sweep reports
+        // coverage failure instead of completion.
+        let mut over_capacity = 0;
+        let mut fence_unstable = 0;
+        // A failed per-account alarm must not stop the remaining accounts from
+        // being verified; the sweep still fails (no heartbeat) once it finishes.
+        let mut delivery_failed = false;
+        for pk in &partitions {
+            let (after, rows) = match self.read_account(config, pk).await {
+                Ok(AccountRead::Stable { account, rows }) => (account, rows),
+                // A malformed or foreign row is an integrity finding for this
+                // account, not a reason to stop auditing every later account.
+                Err(Error::Integrity) => {
+                    delivery_failed |= self
+                        .deliver(self.alarm(Metric::AuthorityIntegrityFailure))
+                        .await
+                        .is_err();
+                    continue;
+                }
+                Err(error) => return Err(error),
+                Ok(AccountRead::OverCapacity) => {
+                    over_capacity += 1;
+                    self.backend.diagnose(Diagnostic::AccountOverCapacity);
+                    delivery_failed |= self
+                        .deliver(self.alarm(Metric::AuthorityAccountOverCapacity))
+                        .await
+                        .is_err();
+                    continue;
+                }
+                Ok(AccountRead::FenceUnstable) => {
+                    fence_unstable += 1;
+                    self.backend.diagnose(Diagnostic::FenceChangedAfterRetries);
+                    continue;
+                }
+            };
+            match verify_account(&self.tenant, &config.generation, pk, &rows, &config.trust) {
+                Err(Error::Integrity) => {
+                    delivery_failed |= self
+                        .deliver(self.alarm(Metric::AuthorityIntegrityFailure))
+                        .await
+                        .is_err();
+                }
+                // Defence in depth: a backend that under-enforced the budget.
+                Err(Error::Capacity) => {
+                    over_capacity += 1;
+                    self.backend.diagnose(Diagnostic::AccountOverCapacity);
+                    delivery_failed |= self
+                        .deliver(self.alarm(Metric::AuthorityAccountOverCapacity))
+                        .await
+                        .is_err();
+                }
                 Err(error) => return Err(error),
                 Ok(audit) => {
                     if rows
@@ -204,31 +419,54 @@ impl<B: AuthorityBackend> Monitor<B> {
                         .map(|r| &r.payload)
                         != after.as_ref()
                     {
-                        self.alarm(Metric::AuthorityIntegrityFailure).await?;
+                        delivery_failed |= self
+                            .deliver(self.alarm(Metric::AuthorityIntegrityFailure))
+                            .await
+                            .is_err();
                     } else if audit.repeated_pin_clear(now) {
                         repeated_pin_clear_accounts += 1;
                         // Deprecated per-account datum (no longer alarmed on), kept for one
                         // release so dashboards keep working during the switch to
                         // AuthorityRepeatedPinClearAccounts. Remove next release.
-                        self.backend
-                            .metric(Metric::AuthorityRepeatedPinClear)
+                        self.deliver(self.backend.metric(Metric::AuthorityRepeatedPinClear))
                             .await?;
                     }
                 }
             }
         }
+        if delivery_failed {
+            // Already logged as DeliveryFailed; no heartbeat, and retry the run.
+            return Err(Error::Unavailable);
+        }
+        if over_capacity > 0 || fence_unstable > 0 {
+            // Coverage is incomplete: no completion heartbeat and no gauge (a
+            // partial count, or a misleading 0, is never reported).
+            self.backend.diagnose(Diagnostic::Incomplete {
+                partitions: partitions.len(),
+                over_capacity,
+                fence_unstable,
+            });
+            return Err(if fence_unstable > 0 {
+                Error::Unavailable
+            } else {
+                Error::Capacity
+            });
+        }
         // Metric only (no SNS): the CloudWatch alarm compares this account count
         // with an operator threshold, so a new account is visible while a known
         // one is still inside its window. Emitted (including 0) only after every
-        // partition was read, immediately before the completion heartbeat: an
-        // incomplete sweep returns early above and never reports a misleading 0.
-        self.backend
-            .gauge(
-                Metric::AuthorityRepeatedPinClearAccounts,
-                repeated_pin_clear_accounts,
-            )
+        // partition was fully verified, immediately before the completion heartbeat.
+        self.deliver(self.backend.gauge(
+            Metric::AuthorityRepeatedPinClearAccounts,
+            repeated_pin_clear_accounts,
+        ))
+        .await?;
+        self.deliver(self.backend.metric(Metric::AuthoritySweepCompleted))
             .await?;
-        self.backend.metric(Metric::AuthoritySweepCompleted).await
+        self.backend.diagnose(Diagnostic::Completed {
+            partitions: partitions.len(),
+        });
+        Ok(())
     }
 }
 
@@ -241,10 +479,9 @@ pub fn verify_account(
     rows: &[Row],
     trust: &AuthorityTrust,
 ) -> Result<AccountAudit> {
-    if rows.len() > MAX_ACCOUNT_ROWS
-        || rows.iter().map(|r| r.payload.len()).sum::<usize>() > MAX_ACCOUNT_BYTES
-    {
-        return Err(Error::Unavailable);
+    let mut budget = AccountBudget::default();
+    for row in rows {
+        budget.admit(row.payload.len())?;
     }
     check(
         !rows.is_empty()
