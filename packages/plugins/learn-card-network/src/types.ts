@@ -867,7 +867,9 @@ export type LearnCardNetworkPluginMethods = {
     syncCredentialsToContract: (
         termsUri: string,
         categories: Record<string, string[]>,
-        audienceVersion?: number
+        audienceVersion?: number,
+        /** Require current category-wide consent for automatic delivery. Omit for explicit selections. */
+        automatic?: boolean
     ) => Promise<boolean>;
 
     deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{

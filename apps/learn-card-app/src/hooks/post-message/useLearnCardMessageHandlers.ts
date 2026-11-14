@@ -755,7 +755,8 @@ export function useLearnCardMessageHandlers({
                                     {
                                         [category]: [sharedUri],
                                     },
-                                    audience.audienceVersion
+                                    audience.audienceVersion,
+                                    true
                                 );
                             }
                         }

@@ -1822,6 +1822,8 @@ export const contractsRouter = t.router({
         .input(
             z.object({
                 termsUri: z.string(),
+                // Omitted for backwards-compatible, explicitly selected credential sharing.
+                automatic: z.boolean().optional(),
                 audienceVersion: z.number().int().nonnegative().optional(),
                 categories: z.record(z.string(), z.string().array()),
             })
@@ -1829,7 +1831,7 @@ export const contractsRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { termsUri, categories, audienceVersion } = input;
+            const { termsUri, categories, audienceVersion, automatic } = input;
 
             // Verify the terms exist and belong to this profile
             const relationship = await getContractTermsByUri(termsUri);
@@ -1913,7 +1915,8 @@ export const contractsRouter = t.router({
                 relationship,
                 categories,
                 audienceVersion,
-                ctx.domain
+                ctx.domain,
+                automatic
             );
 
             return result;

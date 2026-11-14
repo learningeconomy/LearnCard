@@ -1,4 +1,8 @@
-import { renderHook } from '@testing-library/react';
+import {
+    pendingContractSyncStore,
+    enqueuePendingContractSync,
+} from '../../../../packages/learn-card-base/src/stores/pendingContractSyncStore';
+import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -12,6 +16,8 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: mocks.initWallet, syncCredentialToContracts: mocks.sync }),
+    enqueuePendingContractSync: (input: Parameters<typeof enqueuePendingContractSync>[0]) =>
+        enqueuePendingContractSync(input),
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: () => 'Achievement',
@@ -43,7 +49,9 @@ const credential = {
 };
 beforeEach(() => {
     vi.clearAllMocks();
+    pendingContractSyncStore.set.jobs({});
     mocks.wallet = {
+        id: { did: () => 'did:example:upload-account' },
         store: { LearnCloud: { uploadEncrypted: mocks.upload } },
         index: { LearnCloud: { add: mocks.add } },
         addPlugin: mocks.addPlugin,
@@ -58,8 +66,7 @@ beforeEach(() => {
 });
 
 describe('useUploadVcFromText contract synchronization', () => {
-    it('syncs a single upload with its persisted metadata under the original account', async () => {
-        const originalWallet = mocks.wallet;
+    it('queues a single upload with its persisted metadata under the original account', async () => {
         mocks.add.mockImplementationOnce(async () => {
             mocks.initWallet.mockResolvedValue({ id: { did: () => 'other-account' } });
             return true;
@@ -79,34 +86,46 @@ describe('useUploadVcFromText contract synchronization', () => {
             fileName: 'credential.json',
             uploadType: 'file',
         });
-        expect(mocks.sync).toHaveBeenCalledWith(
-            { record, category: 'Achievement' },
-            originalWallet
+        expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+            expect.objectContaining({
+                record: { id: record.id, uri: record.uri, category: record.category },
+                category: 'Achievement',
+                profileDid: 'did:example:upload-account',
+            }),
+        ]);
+        expect(mocks.sync).not.toHaveBeenCalled();
+        const persisted = JSON.parse(localStorage.getItem('pendingContractSyncStore')!);
+        expect(Object.values(persisted.state.jobs)).toEqual(
+            Object.values(pendingContractSyncStore.get.jobs())
         );
     });
 
-    it('syncs only successfully saved credentials in a partially failed bulk upload', async () => {
+    it('queues only successfully saved credentials in a partially failed bulk upload', async () => {
         const { result } = renderHook(() => useUploadVcFromText());
         mocks.add.mockResolvedValueOnce(true).mockRejectedValueOnce(new Error('index failed'));
         const response = await result.current.uploadVcFromText(
             JSON.stringify([credential, { ...credential, id: 'second' }])
         );
         expect(response).toMatchObject({ success: true, addedCount: 1, failedCount: 1 });
-        expect(mocks.sync).toHaveBeenCalledOnce();
+        expect(Object.values(pendingContractSyncStore.get.jobs())).toHaveLength(1);
+        expect(mocks.sync).not.toHaveBeenCalled();
     });
 
     it('preserves a successful paste save when sharing is queued for retry', async () => {
         const { result } = renderHook(() => useUploadVcFromText());
-        mocks.sync.mockResolvedValueOnce(false);
+        mocks.sync.mockImplementation(() => new Promise(() => {}));
         const response = await result.current.uploadVcFromTextAndAddToWallet(credential);
         expect(response?.success).toBe(true);
-        expect(mocks.sync).toHaveBeenCalledWith(
-            { record: mocks.add.mock.calls[0][0], category: 'Achievement' },
-            mocks.wallet
-        );
+        expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+            expect.objectContaining({
+                record: expect.objectContaining({ uri: 'credential-uri', category: 'Achievement' }),
+                category: 'Achievement',
+            }),
+        ]);
+        expect(mocks.sync).not.toHaveBeenCalled();
     });
 
-    it('syncs the wrapped OpenBadgeV2 credential after indexing', async () => {
+    it('queues the wrapped OpenBadgeV2 credential after indexing', async () => {
         const { result } = renderHook(() => useUploadVcFromText());
         const response = await result.current.uploadVcFromText(
             JSON.stringify({
@@ -115,13 +134,76 @@ describe('useUploadVcFromText contract synchronization', () => {
             })
         );
         expect(response.results[0].success).toBe(true);
-        expect(mocks.sync).toHaveBeenCalledWith(
-            { record: mocks.add.mock.calls[0][0], category: 'Achievement' },
-            mocks.wallet
-        );
+        expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+            expect.objectContaining({
+                record: expect.objectContaining({ uri: 'credential-uri', category: 'Achievement' }),
+                category: 'Achievement',
+            }),
+        ]);
+        expect(mocks.sync).not.toHaveBeenCalled();
     });
 
-    it('does not sync failed or URI-less saves', async () => {
+    it.each(['single', 'bulk', 'openbadge', 'paste'] as const)(
+        'persists the %s handoff only after indexing succeeds',
+        async path => {
+            const index = Promise.withResolvers<boolean>();
+            mocks.add.mockReturnValue(index.promise);
+            const { result } = renderHook(() => useUploadVcFromText());
+            const saving =
+                path === 'paste'
+                    ? result.current.uploadVcFromTextAndAddToWallet(credential)
+                    : result.current.uploadVcFromText(
+                          JSON.stringify(
+                              path === 'openbadge'
+                                  ? {
+                                        '@context': 'https://openbadges.org/openbadges/v2',
+                                        name: 'badge',
+                                    }
+                                  : path === 'bulk'
+                                    ? [credential, { ...credential, id: 'second' }]
+                                    : credential
+                          )
+                      );
+            await waitFor(() => expect(mocks.add).toHaveBeenCalled());
+            expect(pendingContractSyncStore.get.jobs()).toEqual({});
+            expect(mocks.sync).not.toHaveBeenCalled();
+            index.resolve(true);
+            await saving;
+            const jobs = Object.values(pendingContractSyncStore.get.jobs());
+            expect(jobs.length).toBeGreaterThan(0);
+            expect(
+                Object.values(
+                    JSON.parse(localStorage.getItem('pendingContractSyncStore')!).state.jobs
+                )
+            ).toEqual(jobs);
+            expect(mocks.sync).not.toHaveBeenCalled();
+        }
+    );
+
+    it.each(['openbadge', 'paste'] as const)(
+        'does not queue a failed %s index write',
+        async path => {
+            mocks.add.mockResolvedValue(false);
+            const { result } = renderHook(() => useUploadVcFromText());
+            if (path === 'paste') {
+                expect(
+                    (await result.current.uploadVcFromTextAndAddToWallet(credential))?.success
+                ).toBe(false);
+            } else {
+                const response = await result.current.uploadVcFromText(
+                    JSON.stringify({
+                        '@context': 'https://openbadges.org/openbadges/v2',
+                        name: 'badge',
+                    })
+                );
+                expect(response.results[0].success).toBe(false);
+            }
+            expect(pendingContractSyncStore.get.jobs()).toEqual({});
+            expect(mocks.sync).not.toHaveBeenCalled();
+        }
+    );
+
+    it('does not queue failed or URI-less saves', async () => {
         const { result } = renderHook(() => useUploadVcFromText());
         mocks.add.mockResolvedValueOnce(false);
         const failed = await result.current.uploadVcFromText(JSON.stringify(credential));
@@ -131,5 +213,6 @@ describe('useUploadVcFromText contract synchronization', () => {
         const missing = await result.current.uploadVcFromText(JSON.stringify(credential));
         expect(missing.results[0].success).toBe(false);
         expect(mocks.sync).not.toHaveBeenCalled();
+        expect(pendingContractSyncStore.get.jobs()).toEqual({});
     });
 });

@@ -1,5 +1,5 @@
 import { VC, VCValidator } from '@learncard/types';
-import { useWallet, CredentialCategory } from 'learn-card-base';
+import { useWallet, CredentialCategory, enqueuePendingContractSync } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
 
@@ -49,7 +49,7 @@ export interface AggregateUploadResult {
 }
 
 export const useUploadVcFromText = () => {
-    const { initWallet, syncCredentialToContracts } = useWallet();
+    const { initWallet } = useWallet();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const isOpenBadgeV2 = (obj: any) => {
@@ -152,7 +152,13 @@ export const useUploadVcFromText = () => {
                         fileInfo: fileInfo || {},
                     };
                 }
-                await syncCredentialToContracts({ record, category: categoryObvV2 }, wallet);
+                // Persist the handoff before any network delivery; the account-scoped worker owns it.
+                enqueuePendingContractSync({
+                    kind: 'credential',
+                    profileDid: wallet.id.did(),
+                    record: { id: record.id, uri: record.uri, category: record.category },
+                    category: categoryObvV2,
+                });
                 return {
                     success: true,
                     credentialUri: credURI,
@@ -210,7 +216,13 @@ export const useUploadVcFromText = () => {
                                 fileInfo: fileInfo || {},
                             };
                         }
-                        await syncCredentialToContracts({ record, category }, wallet);
+                        // Persist the handoff before any network delivery; the account-scoped worker owns it.
+                        enqueuePendingContractSync({
+                            kind: 'credential',
+                            profileDid: wallet.id.did(),
+                            record: { id: record.id, uri: record.uri, category: record.category },
+                            category,
+                        });
 
                         return {
                             success: true,
@@ -342,7 +354,13 @@ export const useUploadVcFromText = () => {
                                 category,
                             };
                         }
-                        await syncCredentialToContracts({ record, category }, wallet);
+                        // Persist the handoff before any network delivery; the account-scoped worker owns it.
+                        enqueuePendingContractSync({
+                            kind: 'credential',
+                            profileDid: wallet.id.did(),
+                            record: { id: record.id, uri: record.uri, category: record.category },
+                            category,
+                        });
 
                         return {
                             success: true,

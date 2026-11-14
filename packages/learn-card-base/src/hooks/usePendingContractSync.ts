@@ -345,7 +345,8 @@ export const usePendingContractSync = (enabled = true): void => {
                     await wallet.invoke.syncCredentialsToContract(
                         job.termsUri,
                         categoriesToSync,
-                        audience.audienceVersion
+                        audience.audienceVersion,
+                        true
                     );
                     queryClient.invalidateQueries({
                         queryKey: ['useTermsTransactions', job.termsUri],

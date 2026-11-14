@@ -425,6 +425,60 @@ describe('contract data recipients', () => {
         }
     );
 
+    it.each(['selective', 'disabled', 'expired', 'missing'] as const)(
+        'refuses automatic delivery after current category consent becomes %s',
+        async state => {
+            const uri = await create();
+            const { termsUri } = await accept(uri);
+            const terms = structuredClone(normalFullTerms);
+            const category = terms.read.credentials.categories.Achievement!;
+            if (state === 'selective') category.shareAll = false;
+            if (state === 'disabled') category.sharing = false;
+            if (state === 'expired') category.shareUntil = '2000-01-01T00:00:00Z';
+            if (state === 'missing') delete terms.read.credentials.categories.Achievement;
+            await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms,
+            });
+            const before = (await getContractTermsByUri(termsUri))!;
+            await expect(
+                learner.clients.fullAuth.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: { Achievement: ['urn:synthetic:automatic-delivery'] },
+                    automatic: true,
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            const after = (await getContractTermsByUri(termsUri))!;
+            expect(after.terms).toEqual(before.terms);
+        }
+    );
+
+    it('accepts automatic delivery with current consent and explicit selective delivery', async () => {
+        const uri = await create();
+        const { termsUri } = await accept(uri);
+        await expect(
+            learner.clients.fullAuth.contracts.syncCredentialsToContract({
+                termsUri,
+                categories: { Achievement: ['urn:synthetic:automatic'] },
+                automatic: true,
+            })
+        ).resolves.toBe(true);
+        const terms = structuredClone(normalFullTerms);
+        terms.read.credentials.categories.Achievement!.shareAll = false;
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms,
+        });
+        await expect(
+            learner.clients.fullAuth.contracts.syncCredentialsToContract({
+                termsUri,
+                categories: { Achievement: ['urn:synthetic:explicit-selection'] },
+            })
+        ).resolves.toBe(true);
+        const data = await owner.clients.fullAuth.contracts.getConsentedDataForContract({ uri });
+        expect(JSON.stringify(data)).toContain('urn:synthetic:explicit-selection');
+    });
+
     it('rejects a sync snapshot prepared before a consent edit, without restoring disabled sharing', async () => {
         const uri = await create([recipient.profileId]);
         const { termsUri } = await accept(uri, 1);
@@ -437,7 +491,13 @@ describe('contract data recipients', () => {
             audienceVersion: 1,
         });
         await expect(
-            syncCredentialsToContract(snapshot, { Achievement: ['urn:stale:snapshot'] }, 1)
+            syncCredentialsToContract(
+                snapshot,
+                { Achievement: ['urn:stale:snapshot'] },
+                1,
+                undefined,
+                true
+            )
         ).rejects.toMatchObject({ code: 'CONFLICT' });
         const current = (await getContractTermsByUri(termsUri))!;
         expect(current.terms.terms.read.credentials.categories.Achievement!.sharing).toBe(false);

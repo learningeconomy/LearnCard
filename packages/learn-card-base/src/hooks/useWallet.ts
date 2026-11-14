@@ -384,7 +384,8 @@ export const useWallet = () => {
                                 {
                                     [category]: [sharedUri],
                                 },
-                                audience.audienceVersion
+                                audience.audienceVersion,
+                                true
                             );
                             // Remember the acknowledged mutation before any cache/refresh work.
                             syncedTerms.add(termsUri);

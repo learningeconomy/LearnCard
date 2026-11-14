@@ -246,3 +246,32 @@ it('never retries stale contract terms against another contract owned by the sam
     expect(mocks.share).not.toHaveBeenCalled();
     expect(mocks.syncContract).not.toHaveBeenCalled();
 });
+
+it('marks contract-wide background delivery as automatic at the server boundary', async () => {
+    const job = enqueuePendingContractSync({
+        profileDid: 'did:example:learner',
+        contractUri: 'contract-original',
+        termsUri: 'terms-original',
+        ownerDid: 'did:example:owner',
+    });
+    mocks.contracts.mockResolvedValue([
+        {
+            uri: 'terms-original',
+            status: 'live',
+            contract: { uri: 'contract-original', owner: { did: 'did:example:owner' } },
+            terms: {
+                read: {
+                    credentials: { categories: { Achievement: { shareAll: true, sharing: true } } },
+                },
+            },
+        },
+    ]);
+    mount();
+    await waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
+    expect(mocks.syncContract).toHaveBeenCalledWith(
+        'terms-original',
+        { Achievement: ['shared-uri'] },
+        2,
+        true
+    );
+});

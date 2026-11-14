@@ -802,6 +802,7 @@ it('retries failed contracts without repeating acknowledged contract mutations',
     expect(job.failedContractUris).toEqual(['contract-terms-b']);
     const completed = new Set(job.syncedTermsUris);
     expect(mocks.syncContract).toHaveBeenCalledTimes(2);
+    expect(mocks.syncContract.mock.calls.every(call => call[3] === true)).toBe(true);
     mocks.syncContract.mockResolvedValue(true);
     const failedDestinations = vi.fn();
     await expect(

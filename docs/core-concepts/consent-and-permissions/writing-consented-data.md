@@ -68,6 +68,8 @@ The consenting user calls `syncCredentialsToContract(termsUri, categories)`, whe
 
 The terms must belong to the caller, remain live, and not be expired. Categories must exist in the contract's read definition. Sync adds and deduplicates URIs in the shared arrays, records a `sync` transaction, and returns a boolean.
 
+Automatic delivery calls `syncCredentialsToContract(termsUri, categories, audienceVersion, true)` (the HTTP input field is `automatic: true`). The server checks that every category still has `sharing` and `shareAll` enabled and an unexpired `shareUntil` at the database write. A changed consent snapshot is rejected without appending credentials. Refresh consent before retrying. Omit the fourth argument for intentionally selected credentials; selective sharing does not require `shareAll`.
+
 ### The send convenience method
 
 `send()` supports a **top-level** `contractUri` alongside `type: 'boost'`, `recipient`, and the template or signed credential. `SendOptionsValidator` has **no** `contractUri` field: do not put it inside `options`.
