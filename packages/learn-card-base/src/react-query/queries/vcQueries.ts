@@ -156,6 +156,17 @@ export const CREDENTIAL_LIST_PAGE_SIZE = 100;
  * Writers still refetch or invalidate these keys, and a new launch revalidates (LC-2412). */
 export const CREDENTIAL_LIST_STALE_TIME = 5 * 60 * 1000;
 
+/** When the server walk behind these pages last succeeded, or undefined when any page did not
+ * come from the list queryFn (optimistic placeholders from insertItem/refreshCredentialCaches).
+ * Cache-only writers spread existing pages, so they keep the stamp without refreshing it. */
+export const getCredentialListWalkedAt = (data?: {
+    pages?: ({ walkedAt?: number } | undefined)[];
+}): number | undefined => {
+    const stamps = (data?.pages ?? []).map(page => page?.walkedAt);
+    if (!stamps.length || stamps.some(stamp => typeof stamp !== 'number')) return undefined;
+    return Math.min(...(stamps as number[]));
+};
+
 // Returns an array of stored idx credentials
 export const useGetCredentialList = (category?: CredentialCategory, enabled: boolean = true) => {
     const { initWallet } = useWallet();
@@ -194,6 +205,7 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                         ...record,
                         ...(record.__v && { __v: Number(record.__v) }),
                     })),
+                    walkedAt: Date.now(),
                 };
             } catch (error: unknown) {
                 log.error(error);
@@ -204,14 +216,16 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
         getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage?.cursor : undefined),
         enabled: enabled && Boolean(reader),
         staleTime: query => {
+            const data = query.state.data;
             // A malformed restore is never fresh, so mount refetches instead of reading it (LC-2330).
-            if (!isInfiniteData(query.state.data)) return 0;
-            // A walk restored from an earlier launch revalidates once; counts stay shown meanwhile.
-            if (query.state.dataUpdatedAt < performance.timeOrigin) return 0;
+            if (!isInfiniteData(data)) return 0;
             // Keep the delete mutation's temporary Infinity hold (setQueryDefaults) effective.
-            return queryClient.getQueryDefaults(queryKey).staleTime === Infinity
-                ? Infinity
-                : CREDENTIAL_LIST_STALE_TIME;
+            if (queryClient.getQueryDefaults(queryKey).staleTime === Infinity) return Infinity;
+            // Freshness follows the last server walk, not cache-only writes (backfills, inserts).
+            // Placeholders and walks from an earlier launch revalidate; counts stay shown meanwhile.
+            const walkedAt = getCredentialListWalkedAt(data);
+            if (walkedAt === undefined || walkedAt < performance.timeOrigin) return 0;
+            return Math.max(0, walkedAt + CREDENTIAL_LIST_STALE_TIME - query.state.dataUpdatedAt);
         },
     });
 };

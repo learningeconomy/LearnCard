@@ -230,6 +230,7 @@ describe('insertItem on a list with more pages', () => {
                 records: [{ id: 'new', uri: 'uri-new' }, { uri: 'uri-1' }],
                 hasMore: true,
                 cursor: 'next',
+                walkedAt: expect.any(Number),
             },
         ]);
         expect(result.current.data?.pageParams).toHaveLength(1);

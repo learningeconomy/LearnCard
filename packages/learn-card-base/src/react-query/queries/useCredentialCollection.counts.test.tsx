@@ -19,7 +19,13 @@ const host = vi.hoisted(() => ({
 }));
 vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: host.init }),
-    switchedProfileStore: { use: { switchedDid: () => host.switchedDid } },
+    switchedProfileStore: {
+        use: { switchedDid: () => host.switchedDid },
+        get: { switchedDid: () => host.switchedDid },
+    },
+}));
+vi.mock('learn-card-base/stores/newCredsStore', () => ({
+    newCredsStore: { set: { removeCreds: vi.fn(), addNewCreds: vi.fn() } },
 }));
 vi.mock('../../stores/walletStore', () => ({
     walletStore: { use: { wallet: () => host.wallet } },
@@ -50,8 +56,14 @@ vi.mock('learn-card-base/hooks/useConsentedContracts', () => ({
 vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
     getOrFetchCredentialRecordForBoost: vi.fn(),
 }));
+import type { VC } from '@learncard/types';
 import { useCredentialCollection } from './useCredentialCollection';
-import { CREDENTIAL_LIST_PAGE_SIZE, CREDENTIAL_LIST_STALE_TIME } from './vcQueries';
+import { CREDENTIAL_LIST_PAGE_SIZE } from './vcQueries';
+import { backfillResolvedCredentialRecord } from '../../helpers/backfills';
+import {
+    useDeleteChecklistCredentialMutation,
+    useUpdateChecklistItemCategoryMutation,
+} from '../mutations/checklist';
 
 /**
  * Probe's Passport-count breaks (LC-2412) and the bounded first walk (LC-2413).
@@ -95,6 +107,19 @@ const useCountsWhileFetching = () => {
     return { ...view(collection), fetching: collection.isFetching };
 };
 const listKey = ['useGetCredentialList', '', '', 'account-a'];
+/** A persisted snapshot whose walk (and cache write) happened at `at`. */
+const stampSaved = (saved: ReturnType<typeof dehydrate>, at: number) => {
+    for (const query of saved.queries) {
+        query.state.dataUpdatedAt = at;
+        const data = query.state.data as { pages?: { walkedAt?: number }[] } | undefined;
+        for (const page of data?.pages ?? []) page.walkedAt = at;
+    }
+};
+/** What insertItem / refreshCredentialCaches write when a key has no list yet. */
+const placeholder = () => ({
+    pages: [{ hasMore: false, records: [record(99)] }],
+    pageParams: [undefined],
+});
 
 beforeEach(() => {
     client = newClient();
@@ -148,7 +173,7 @@ describe('Passport counts (LC-2412, LC-2413)', () => {
     });
 
     it.each([
-        ['older than the stale window', () => Date.now() - CREDENTIAL_LIST_STALE_TIME - 1000],
+        ['older than the stale window', () => Date.now() - 5 * 60 * 1000 - 1000],
         // Inside the window but from an earlier page load: launch still revalidates once.
         ['from the previous launch', () => performance.timeOrigin - 1000],
     ])(
@@ -159,7 +184,7 @@ describe('Passport counts (LC-2412, LC-2413)', () => {
             await waitFor(() => expect(warm.current.count).toBe(30));
             unmount();
             const saved = dehydrate(client);
-            for (const query of saved.queries) query.state.dataUpdatedAt = savedAt();
+            stampSaved(saved, savedAt());
 
             client = newClient();
             hydrate(client, saved);
@@ -221,4 +246,124 @@ describe('Passport counts (LC-2412, LC-2413)', () => {
             CREDENTIAL_LIST_PAGE_SIZE,
         ]);
     });
+});
+
+describe('Optimistic placeholders and cache-only writes (LC-2412 review)', () => {
+    it('PlaceholderNotComplete: an optimistic placeholder shows a spinner while its refetch runs, not a false count', async () => {
+        const getPage = makeWallet();
+        const held = Promise.withResolvers<Page>();
+        getPage.mockImplementationOnce(() => held.promise);
+        client.setQueryData(listKey, placeholder());
+        const { result } = renderHook(useCountsWhileFetching, { wrapper });
+        await waitFor(() => expect(result.current.fetching).toBe(true));
+        expect(result.current).toEqual({ count: null, loading: true, fetching: true });
+
+        await act(async () => held.resolve(servePage({ limit: 12 })));
+        await waitFor(() => expect(result.current.count).toBe(30));
+    });
+
+    it('PlaceholderNotComplete: an optimistic placeholder with a failed refetch shows the unavailable state, not a false count', async () => {
+        const getPage = makeWallet();
+        getPage.mockRejectedValue(new Error('index.get blocked'));
+        client.setQueryData(listKey, placeholder());
+        const { result } = renderHook(
+            () => useCredentialCollection(undefined, { mode: 'complete' }),
+            { wrapper }
+        );
+        await waitFor(() => expect(result.current.isError).toBe(true));
+        expect(view(result.current)).toEqual({ count: null, loading: false });
+    });
+
+    it('a record inserted into a finished walk keeps the walk complete', async () => {
+        makeWallet();
+        const { result } = renderHook(useCounts, { wrapper });
+        await waitFor(() => expect(result.current.count).toBe(30));
+        await act(async () => {
+            client.setQueryData<{ pages: Page[]; pageParams: unknown[] }>(listKey, data =>
+                data
+                    ? {
+                          ...data,
+                          pages: [
+                              {
+                                  ...data.pages[0]!,
+                                  records: [record(99), ...data.pages[0]!.records],
+                              },
+                              ...data.pages.slice(1),
+                          ],
+                      }
+                    : data
+            );
+        });
+        await waitFor(() => expect(result.current).toEqual({ count: 31, loading: false }));
+    });
+
+    it('BackfillKeepsLaunchRevalidation: a restored list touched by a backfill write still revalidates once', async () => {
+        makeWallet();
+        const { result: warm, unmount } = renderHook(useCounts, { wrapper });
+        await waitFor(() => expect(warm.current.count).toBe(30));
+        unmount();
+        const saved = dehydrate(client);
+        stampSaved(saved, performance.timeOrigin - 1000);
+        client = newClient();
+        hydrate(client, saved);
+
+        const getPage = makeWallet();
+        const update = vi.fn(async () => true);
+        (
+            host.wallet as unknown as { index: { LearnCloud: { update: typeof update } } }
+        ).index.LearnCloud.update = update;
+        await backfillResolvedCredentialRecord(client, host.wallet!, 'uri-0', {
+            boostId: 'boost-0',
+        } as unknown as VC);
+        expect(update).toHaveBeenCalledOnce();
+        expect(client.getQueryState(listKey)!.dataUpdatedAt).toBeGreaterThan(
+            performance.timeOrigin
+        );
+
+        const { result } = renderHook(useCountsWhileFetching, { wrapper });
+        await waitFor(() => expect(getPage).toHaveBeenCalled());
+        expect(result.current.count).toBe(30);
+    });
+});
+
+describe('Index writers refresh the cached walk (LC-2412 review)', () => {
+    it.each([
+        [
+            'checklist delete',
+            () => {
+                const mutation = useDeleteChecklistCredentialMutation();
+                return () => mutation.mutateAsync({ id: '0', uri: 'uri-0' });
+            },
+        ],
+        [
+            'checklist recategorize',
+            () => {
+                const mutation = useUpdateChecklistItemCategoryMutation();
+                return () => mutation.mutateAsync({ id: '0', uri: 'uri-0', category: 'Skill' });
+            },
+        ],
+    ])(
+        'WriterInvalidatesList: %s refetches the list inside the stale window',
+        async (_label, useWriter) => {
+            const getPage = makeWallet();
+            Object.assign(
+                (host.wallet as unknown as { index: { LearnCloud: object } }).index.LearnCloud,
+                {
+                    remove: vi.fn(async () => true),
+                    update: vi.fn(async () => true),
+                }
+            );
+            const { result } = renderHook(() => ({ counts: useCounts(), write: useWriter() }), {
+                wrapper,
+            });
+            await waitFor(() => expect(result.current.counts.count).toBe(30));
+            const calls = getPage.mock.calls.length;
+
+            await act(async () => {
+                await result.current.write();
+            });
+            await waitFor(() => expect(getPage.mock.calls.length).toBeGreaterThan(calls));
+            expect(result.current.counts.count).toBe(30);
+        }
+    );
 });

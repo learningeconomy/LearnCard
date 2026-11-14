@@ -27,6 +27,7 @@ import {
     recordFilePersistenceDiagnostic,
     type FileExtractionAttempt,
 } from 'learn-card-base/helpers/fileExtraction';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUploadVcFromText } from './useUploadVcFromText';
 import { useAiInsightCredentialMutation } from 'learn-card-base/hooks/useAiInsightCredential';
 import type { UnsignedVC } from '@learncard/types';
@@ -152,6 +153,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     const { isAiEnabled, isLoading: aiGateLoading } = useAiFeatureGate();
 
     const { uploadVcFromText } = useUploadVcFromText();
+    const queryClient = useQueryClient();
 
     // state for single file upload
     const [file, setFile] = useState<{ type: string; size: string; name: string } | null>(null);
@@ -566,6 +568,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                           category: uploadType,
                       });
             if (indexed !== true) throw new Error('The uploaded document could not be indexed.');
+            // The cached list walk stays fresh for minutes; a new artifact must refresh it (LC-2412).
+            void queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] });
             if (cacheKey) savedArtifactUris.current.set(cacheKey, prepared.credentialUri);
             const attempt = cacheKey ? extractionAttempts.current.get(cacheKey) : undefined;
             if (attempt)
