@@ -19,8 +19,11 @@ not implied by passing offline tests.
   enrollment and the configured authority generation. **Both steps exist**;
   no not-implemented metric or new API route is needed. `/v1/hold-state` is a
   host protocol endpoint, not the appropriate read-only enrollment probe.
-- **Tier 2**, every 30 minutes: select PIN A/B by the scheduled UTC half-hour
-  slot modulo two. Both accounts run once per hour. Start with empty memory
+- **Tier 2**, `cron(5,35 0,12 * * ? *)`: select PIN A/B by the scheduled UTC
+  half-hour slot modulo two, so :05 runs PIN A and :35 runs PIN B and each account
+  recovers every 12 hours (was every hour until 2026-11-14: each recovery appends
+  ~8 permanent authority rows, and hourly runs filled the ledger monitor's
+  per-account row limit in about three weeks). Start with empty memory
   storage and call `executeRecovery({ input: { method: 'escrow-pin', ... } })`.
   The SDK creates/verifies a fresh PIN hold, releases and reconstructs the key,
   then keeps the account: it stores the released share at the current version
@@ -228,7 +231,8 @@ not be manually reset to force retries.
   and allowlisted `Reason`. Logging projects only those fields: no error bodies,
   IDs, email addresses, tokens, private keys, PINs or device shares.
 - Tier 1: Minimum Success < 1, 2 of 3 × 60s. Tier 2: **per-account** 2 of 2 ×
-  3600s, matching each account's hourly cadence. Success alarms retain
+  43200s, matching each account's 12-hour cadence (a broken PIN path pages within
+  about 24 hours; tier 1 still covers availability every minute). Success alarms retain
   missing=breaching; a healthy alternating account cannot clear a broken account.
   Every handled failure emits Success=0, including configuration/initialization,
   secret reads/validation, stale events and auth (allowlisted `Reason` values
