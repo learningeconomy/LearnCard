@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.101.1
+
+### Patch Changes
+
+- [#2005](https://github.com/learningeconomy/LearnCard/pull/2005) [`439a7115220eff2d221ae5dd63d7c5306f7cc778`](https://github.com/learningeconomy/LearnCard/commit/439a7115220eff2d221ae5dd63d7c5306f7cc778) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Recover from malformed persisted infinite-query cache entries (LC-2352). A shared restore-boundary guard drops known infinite-query roots that are not valid `{ pages, pageParams }` InfiniteData before hydrate (unknown keys, including credentials with a `pages` extension, are left alone), and every `useInfiniteQuery` hook (including managed boosts) drops a bad in-memory entry and refetches instead of crashing on `pages.length`.
+
+- [#2004](https://github.com/learningeconomy/LearnCard/pull/2004) [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c) Thanks [@rhen92](https://github.com/rhen92)! - Track the outcome of account-level guardian approval emails (LC-2289). Adds `getGuardianApprovalStatus` (sending / accepted / failed / unknown, plus resend availability) and an additive `status: 'accepted'` field on the `sendGuardianApprovalEmail` response. `sendGuardianApprovalEmail` is now serialized and rate-limited: it returns `CONFLICT` while a send is in flight and `TOO_MANY_REQUESTS` during the resend cooldown or once the hourly attempt limit is reached, and it returns `BAD_REQUEST` for profiles that are not awaiting guardian approval. Each new approval email invalidates links from earlier sends, so `approveGuardianRequest` rejects superseded tokens with `BAD_REQUEST`. The app validates the guardian address format during onboarding and in the resend modal, says so on the onboarding completion screen when the email could not be sent, and shows the pending-approval banner in the dashboard recovery-banner slot (taking priority over it) with the real email status plus resend and email correction through the existing consent modal. The banner clears itself once the guardian approves.
+
+- [#2029](https://github.com/learningeconomy/LearnCard/pull/2029) [`928d25ea984d27626a7de6a2a421d66136e1f470`](https://github.com/learningeconomy/LearnCard/commit/928d25ea984d27626a7de6a2a421d66136e1f470) Thanks [@rhen92](https://github.com/rhen92)! - LC-2254: Route OpenSALT issuer-registry lookups through an allowlisted same-origin Netlify edge proxy (`/api/registry-proxy`) on web and native, so OpenSALT-listed issuers no longer show as unknown because of CORS. Falls back to the direct request, and never marks an issuer trusted on failure.
+
+- [#1983](https://github.com/learningeconomy/LearnCard/pull/1983) [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2288] Recover credential claims in place without false expiration errors or duplicate issuance, preserving confirmed save and refresh progress.
+
+    Expose claim reconciliation in CLI method and capability discovery, and require `call --write` because reconciliation can finish acceptance and usage accounting.
+
+- [#2025](https://github.com/learningeconomy/LearnCard/pull/2025) [`7f430656d7ff8c780b375f109e870dd07b5b9bf2`](https://github.com/learningeconomy/LearnCard/commit/7f430656d7ff8c780b375f109e870dd07b5b9bf2) Thanks [@Custard7](https://github.com/Custard7)! - Transcript issuers can say how long delivery will take. An accepted transcript request response may include `expectedInSeconds` or an ISO 8601 `expectedBy`; lca-api stores it and returns it as an additive `expectedBy` field from `transcripts.request` and `transcripts.getStatus` (and the plugin's `transcriptsRequest` / `transcriptsGetStatus` types). Malformed, past or more than 30-day estimates are ignored. The app keeps its live steps for estimates of 30 seconds or less, shows a progress bar with the time left for estimates up to 5 minutes, and for longer ones confirms the request and when to expect it. The School Connect card shows the same estimate and only offers manual recovery once the estimate has passed.
+
+- [#2004](https://github.com/learningeconomy/LearnCard/pull/2004) [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2289] Show accurate guardian approval email status and support resend during onboarding
+
+- Updated dependencies [[`3b23133f37568730dc3bc5274b36b18de84a6536`](https://github.com/learningeconomy/LearnCard/commit/3b23133f37568730dc3bc5274b36b18de84a6536), [`7f430656d7ff8c780b375f109e870dd07b5b9bf2`](https://github.com/learningeconomy/LearnCard/commit/7f430656d7ff8c780b375f109e870dd07b5b9bf2)]:
+    - @learncard/openid4vc-plugin@0.4.0
+    - @learncard/sd-jwt-vc-plugin@0.2.23
+    - @learncard/lca-api-plugin@2.1.0
+    - @learncard/credential-library@2.1.8
+    - @learncard/helpers@1.8.1
+    - @learncard/network-brain-client@2.7.1
+    - @learncard/ler-rs-plugin@0.1.36
+    - @learncard/open-badge-v2-plugin@1.1.46
+    - @learncard/render-method-plugin@14.0.0
+    - @learncard/react@3.0.6
+    - @learncard/sss-key-manager@0.3.1
+
 ## 1.101.0
 
 ### Minor Changes

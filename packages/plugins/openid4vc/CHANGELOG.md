@@ -1,5 +1,20 @@
 # @learncard/openid4vc-plugin
 
+## 0.4.0
+
+### Minor Changes
+
+- [#1835](https://github.com/learningeconomy/LearnCard/pull/1835) [`3b23133f37568730dc3bc5274b36b18de84a6536`](https://github.com/learningeconomy/LearnCard/commit/3b23133f37568730dc3bc5274b36b18de84a6536) Thanks [@goblincore](https://github.com/goblincore)! - LC-2159: Add transport-neutral Digital Credentials API request parsing and response creation for the unsigned OpenID4VP SD-JWT profile. Responses enforce explicit request-bounded disclosures and bind holder proofs to the trusted origin and nonce without HTTP submission. Existing URI/direct-post transports are preserved.
+
+    Support portable Ed25519 signing and verification on older Android WebViews while retaining JWK operation restrictions. Preserve JOSE verification for other supported issuer curves, including Ed448.
+
+### Patch Changes
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/core@9.4.45
+    - @learncard/vc-plugin@1.7.1
+
 ## 0.3.17
 
 ### Patch Changes
