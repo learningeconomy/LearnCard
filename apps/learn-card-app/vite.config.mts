@@ -267,7 +267,6 @@ export default defineConfig(async ({ mode, command }) => {
                 '@learncard/lca-api-plugin > @learncard/lca-api-client > @trpc/client',
                 '@learncard/core > core-js/actual/promise',
                 '@learncard/core > abort-controller/dist/abort-controller.js',
-                '@learncard/core > isomorphic-webcrypto',
                 '@learncard/chapi-plugin > credential-handler-polyfill',
                 '@learncard/chapi-plugin > web-credential-handler',
                 '@learncard/sd-jwt-vc-plugin > @sd-jwt/sd-jwt-vc',

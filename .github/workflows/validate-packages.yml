@@ -93,3 +93,9 @@ jobs:
 
             - name: Validate package contracts
               run: bun scripts/validate-packages.mjs
+
+            # Type-check a fixture consumer with only each package's declared dependencies
+            # installed and skipLibCheck off. Fails if published client types need a server
+            # package (@learncard/network-brain-service, @learncard/learn-cloud-service) again.
+            - name: Check published types as an external consumer
+              run: node scripts/check-consumer-types.mjs
