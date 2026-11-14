@@ -2,13 +2,13 @@
 
 /**
  * Cold-installs @learncard/cli the way an agent or developer does (`npx` with an empty cache),
- * runs it, and enforces an install budget.
+ * runs it (including a real credential verification), and enforces an install budget.
  *
  *   node scripts/check-cli-install.mjs --package=@learncard/cli@4.1.0
  *   node scripts/check-cli-install.mjs --package=file:/abs/path/learncard-cli-4.1.0.tgz
  *
  * Fails when the install exceeds the budget, prints an EBADENGINE or deprecation warning,
- * or the CLI does not run. Budget overrides: --max-mb=<n> --max-packages=<n>.
+ * or the CLI does not run and verify a signed credential. Budget overrides: --max-mb=<n> --max-packages=<n>.
  * Install time is reported but never fails the check (runners vary).
  */
 
@@ -80,6 +80,31 @@ const npx = (...cliArgs) => {
     };
 };
 
+/**
+ * A credential signed by a throwaway did:key (seed "aaaa…"), with no expiry. Verifying it needs
+ * no network, and exercises the didkit WASM that ships next to the bundle.
+ */
+const SIGNED_CREDENTIAL = {
+    '@context': ['https://www.w3.org/ns/credentials/v2'],
+    'id': 'urn:uuid:adffb183-204f-4620-b7db-859c41513bff',
+    'type': ['VerifiableCredential'],
+    'credentialSubject': {
+        'id': 'did:example:d23dd687a7dc6787646f2eb98d0',
+    },
+    'issuer': 'did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzii7Uh4aHoqH',
+    'proof': {
+        'type': 'DataIntegrityProof',
+        'proofPurpose': 'assertionMethod',
+        'proofValue':
+            'z38AzfTWRfQ35QrFs3iWePRqdSw9VfR76P4rpeVMVx1NMj6pybzDU8bzW2fH1pMWXntvjezXNwQEEhKSx3bdsScgw',
+        'verificationMethod':
+            'did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzii7Uh4aHoqH#z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzii7Uh4aHoqH',
+        'created': '2026-11-14T17:21:37.566Z',
+        'cryptosuite': 'eddsa-rdfc-2022',
+    },
+    'validFrom': '2026-11-14T17:21:37.564Z',
+};
+
 const failures = [];
 
 try {
@@ -105,6 +130,25 @@ try {
         );
     }
 
+    fs.writeFileSync(
+        path.join(workDirectory, 'credential.json'),
+        JSON.stringify(SIGNED_CREDENTIAL)
+    );
+    const verify = npx('verify', 'credential.json', '--json');
+    let verified = false;
+    try {
+        verified = JSON.parse(verify.stdout).verified === true;
+    } catch {
+        // reported below
+    }
+    if (!verified) {
+        failures.push(
+            `\`learncard verify\` did not verify the signed fixture: ${
+                verify.stdout.trim() || verify.stderr.trim()
+            }`
+        );
+    }
+
     const npxRoot = path.join(cache, '_npx');
     const npxDirectory = fs.existsSync(npxRoot)
         ? fs
@@ -120,9 +164,11 @@ try {
         coldInstallSeconds,
         installedBytes: 0,
         installedPackages: 0,
+        // Only the first npx call installs, so only its stderr carries npm's warnings.
         engineWarnings: (version.stderr.match(/EBADENGINE\s+package:/g) ?? []).length,
         deprecationWarnings: (version.stderr.match(/npm warn deprecated/gi) ?? []).length,
         commandCount,
+        verifiedFixture: verified,
         budget: { maxBytes, maxPackages },
     };
 

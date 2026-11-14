@@ -1,3 +1,4 @@
+import { writeSync } from 'node:fs';
 import { Command, Option, type CommanderError } from 'commander';
 
 import { out } from './out';
@@ -138,8 +139,10 @@ export interface UsageErrorIo {
 }
 
 const defaultIo: UsageErrorIo = {
+    // Synchronous on purpose: `exit` follows immediately, and process.exit() drops output
+    // still buffered for a pipe (see outputFlushed).
     write: line => {
-        process.stdout.write(line);
+        writeSync(process.stdout.fd, line);
     },
     exit: code => process.exit(code),
 };

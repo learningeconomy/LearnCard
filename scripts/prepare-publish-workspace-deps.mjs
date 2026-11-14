@@ -5,6 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
+import { SELF_CONTAINED_PACKAGES } from './self-contained-packages.mjs';
+
 const ts = createRequire(import.meta.url)('typescript');
 
 const PACKAGE_DEPENDENCY_FIELDS = [
@@ -136,18 +138,7 @@ const bundledPrivateDependencies = new Map(
 // Packages published as a single bundled file. Their workspace manifest keeps `dependencies`
 // so Changesets still releases them when a dependency changes, but nothing in that list is
 // needed at install time, so the published manifest omits it. Require build evidence first.
-const selfContainedPackages = new Map([
-    [
-        '@learncard/cli',
-        {
-            entry: 'dist/index.js',
-            // Written by the package's bundler: every non-builtin module the bundle still loads.
-            externals: 'dist/bundle-externals.json',
-            // Nothing may be left for the installer to provide.
-            allowedExternals: new Set(),
-        },
-    ],
-]);
+const selfContainedPackages = SELF_CONTAINED_PACKAGES;
 
 const verifySelfContainedBuild = (packageJsonPath, { entry, externals, allowedExternals }) => {
     const dir = path.dirname(packageJsonPath);

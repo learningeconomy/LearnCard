@@ -22,8 +22,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Keep in sync with `selfContainedPackages` in prepare-publish-workspace-deps.mjs.
-export const SELF_CONTAINED_PACKAGES = ['@learncard/cli'];
+import { SELF_CONTAINED_PACKAGES } from './self-contained-packages.mjs';
 
 const RUNTIME_DEPENDENCY_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencies'];
 
@@ -73,7 +72,7 @@ const released = new Map(
         .map(release => [release.name, release.type])
 );
 
-for (const name of SELF_CONTAINED_PACKAGES) {
+for (const name of SELF_CONTAINED_PACKAGES.keys()) {
     if (!manifestsByName.has(name)) continue;
 
     if (released.has(name)) {
@@ -100,7 +99,15 @@ for (const name of SELF_CONTAINED_PACKAGES) {
         '',
     ].join('\n');
 
-    if (!dryRun) fs.writeFileSync(file, contents);
+    if (fs.existsSync(file)) {
+        // The CLI is not in the release plan, so this file is not one we wrote earlier.
+        throw new Error(
+            `${path.relative(root, file)} already exists but does not release ${name}. ` +
+                'Rename or remove it.'
+        );
+    }
+
+    if (!dryRun) fs.writeFileSync(file, contents, { flag: 'wx' });
 
     console.log(
         `${dryRun ? 'Would add' : 'Added'} ${path.relative(root, file)}: ${name} bundles ` +

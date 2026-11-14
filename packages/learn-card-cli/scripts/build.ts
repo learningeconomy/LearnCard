@@ -8,13 +8,18 @@
  *
  * Pass `--metafile` to also write `dist/meta.json` for bundle-size analysis.
  */
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { copyFile, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire, isBuiltin } from 'node:module';
-import { dirname, join, resolve, sep } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { build, type Plugin } from 'esbuild';
+
+import {
+    bundledThirdPartyPackages,
+    disallowedPackages,
+    renderLicenseNotices,
+} from './third-party-licenses';
 
 export const DIDKIT_WASM_FILENAME = 'didkit_wasm_bg.wasm';
 export const BUNDLE_EXTERNALS_FILENAME = 'bundle-externals.json';
@@ -73,86 +78,6 @@ const singleFilePlugin: Plugin = {
     },
 };
 
-type ThirdPartyPackage = { name: string; version: string; license: string; text?: string };
-
-const LICENSE_FILE = /^(licen[sc]e|copying|notice)(\..*)?$/i;
-
-/** The installed package that owns a bundled file, or undefined for workspace source. */
-const owningPackageDirectory = (file: string): string | undefined => {
-    const marker = `node_modules${sep}`;
-    const index = file.lastIndexOf(marker);
-
-    if (index === -1) return undefined;
-
-    const [scopeOrName, maybeName] = file.slice(index + marker.length).split(/[\\/]/);
-
-    if (!scopeOrName) return undefined;
-
-    const name = scopeOrName.startsWith('@') ? join(scopeOrName, maybeName ?? '') : scopeOrName;
-
-    return join(file.slice(0, index + marker.length), name);
-};
-
-const describePackage = (directory: string): ThirdPartyPackage | undefined => {
-    const manifestPath = join(directory, 'package.json');
-
-    if (!existsSync(manifestPath)) return undefined;
-
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-    const licenseFile = readdirSync(directory)
-        .filter(entry => LICENSE_FILE.test(entry))
-        .sort()[0];
-
-    return {
-        name: manifest.name,
-        version: manifest.version,
-        license: typeof manifest.license === 'string' ? manifest.license : 'UNKNOWN',
-        ...(licenseFile && { text: readFileSync(join(directory, licenseFile), 'utf8').trim() }),
-    };
-};
-
-/**
- * The bundle redistributes third-party code without its package folders (and esbuild strips
- * legal comments), so their licence notices are collected into one file shipped beside it.
- */
-const thirdPartyLicenses = (bundledFiles: string[], extraDirectories: string[]): string => {
-    const directories = new Set(extraDirectories);
-
-    for (const file of bundledFiles) {
-        const directory = owningPackageDirectory(resolve(packageRoot, file));
-
-        if (directory) directories.add(directory);
-    }
-
-    const described = new Map<string, ThirdPartyPackage>();
-
-    for (const directory of directories) {
-        const thirdParty = describePackage(directory);
-
-        if (thirdParty) described.set(`${thirdParty.name}@${thirdParty.version}`, thirdParty);
-    }
-
-    const sections = [...described.entries()]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([id, { license, text }]) =>
-            [
-                '-'.repeat(80),
-                id,
-                `License: ${license}`,
-                '',
-                text ?? '(This package does not ship a licence file; see its repository.)',
-            ].join('\n')
-        );
-
-    return [
-        '@learncard/cli bundles the following third-party packages.',
-        'Each is redistributed under its own licence, reproduced below.',
-        '',
-        ...sections,
-        '',
-    ].join('\n');
-};
-
 const run = async (): Promise<void> => {
     await rm(outdir, { recursive: true, force: true });
     await mkdir(outdir, { recursive: true });
@@ -167,6 +92,9 @@ const run = async (): Promise<void> => {
         target: 'node20',
         conditions: ['development'],
         minify: true,
+        // The published file has no source map; keep function and class names so a stack
+        // trace in a bug report is still readable.
+        keepNames: true,
         legalComments: 'none',
         metafile: true,
         logOverride: {
@@ -209,10 +137,29 @@ const run = async (): Promise<void> => {
         `${JSON.stringify(externals, null, 4)}\n`
     );
 
+    // clipboardy is listed explicitly: its helper binaries are copied, not bundled.
+    const thirdParty = bundledThirdPartyPackages(
+        Object.keys(result.metafile.inputs).map(file => resolve(packageRoot, file)),
+        [clipboardyRoot]
+    );
+    const disallowed = disallowedPackages(thirdParty);
+
+    if (disallowed.length > 0) {
+        throw new Error(
+            [
+                'Bundled packages with a licence that is not allowed in the CLI bundle:',
+                ...disallowed.map(
+                    ({ name, version, license }) => `  ${name}@${version}: ${license}`
+                ),
+                'Remove the dependency from the bundle, or add the licence to ALLOWED_LICENSES or the',
+                'package to LICENSE_EXCEPTIONS in scripts/third-party-licenses.ts with a reason.',
+            ].join('\n')
+        );
+    }
+
     await writeFile(
         resolve(outdir, THIRD_PARTY_LICENSES_FILENAME),
-        // clipboardy is listed explicitly: its helper binaries are copied, not bundled.
-        thirdPartyLicenses(Object.keys(result.metafile.inputs), [clipboardyRoot])
+        renderLicenseNotices(thirdParty)
     );
 
     if (process.argv.includes('--metafile')) {
