@@ -63,6 +63,12 @@ pub const DEADLINE_MARGIN: Duration = Duration::from_secs(60);
 /// and every already-queued alarm are still delivered. Alarm deliveries are
 /// never abandoned.
 pub const DEADLINE_ABANDON: Duration = Duration::from_secs(20);
+/// Time the success path needs after the last account: the gauge and then the
+/// completion heartbeat, each one bounded delivery. With less left, the sweep
+/// reports coverage failure instead (a single delivery). Alarms cannot start
+/// after the abandon point, so the loop ends by `DEADLINE_ABANDON` minus one
+/// delivery, which always leaves room for that one coverage alarm.
+pub const FINAL_DELIVERIES: Duration = crate::aws::SINK_OPERATION_TIMEOUT.saturating_mul(2);
 
 /// Worst-case row payload held by in-flight accounts at `concurrency`: every
 /// account outside the lane at the threshold plus one page, and the single
@@ -963,6 +969,19 @@ impl<B: AuthorityBackend> Monitor<B> {
             } else {
                 Error::Capacity
             });
+        }
+        if options
+            .deadline
+            .is_some_and(|d| Instant::now() + FINAL_DELIVERIES > d)
+        {
+            // Every account was checked, but the gauge and heartbeat may not both
+            // land before Lambda stops the invocation: report the (time-bound)
+            // coverage failure, which needs one delivery, rather than time out.
+            self.backend.diagnose(Diagnostic::DeadlineReached {
+                partitions,
+                verified,
+            });
+            return Err(Error::Capacity);
         }
         // Metric only (no SNS): the CloudWatch alarm compares this account count
         // with an operator threshold, so a new account is visible while a known

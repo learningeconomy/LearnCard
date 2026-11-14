@@ -758,6 +758,9 @@ impl Backend for Fake {
         Ok(())
     }
     async fn gauge(&self, m: Metric, value: u64) -> Result<()> {
+        if let Some(delay) = self.delivery_latency {
+            tokio::time::sleep(delay).await;
+        }
         self.metrics.lock().unwrap().push(m);
         self.gauges.lock().unwrap().push((m, value));
         Ok(())
@@ -1733,6 +1736,44 @@ async fn a_last_account_finishing_after_the_stop_point_still_completes_the_sweep
             .any(|d| matches!(d, Diagnostic::DeadlineReached { .. }))
     );
     assert_nothing_held(&m);
+}
+
+#[tokio::test(start_paused = true)]
+async fn slow_final_deliveries_after_a_late_last_account_still_report_before_the_deadline() {
+    // The last account (with an integrity finding, so an alarm is pending)
+    // finishes just before the abandon point, and every delivery takes the full
+    // sink timeout. Gauge + heartbeat would overrun; the sweep must still report
+    // something (here coverage failure) before the invocation deadline.
+    let (mut m, pks) = concurrent_accounts(6);
+    account_mut(&mut m, &pks[3]).retain(|r| r.sk != "ENROLLMENT");
+    let deadline = Instant::now() + std::time::Duration::from_secs(120);
+    let finishes = deadline - DEADLINE_ABANDON - std::time::Duration::from_secs(1);
+    // The fake applies the delay to each of the account's three reads.
+    m.backend.slow = Some((pks[3].clone(), (finishes - Instant::now()) / 3));
+    m.backend.delivery_latency = Some(crate::aws::SINK_OPERATION_TIMEOUT);
+    let options = SweepOptions::new(16, Some(deadline));
+    assert_eq!(m.sweep_authority_with(&config(), &options).await, Ok(()));
+    assert!(Instant::now() <= deadline);
+    assert_eq!(count_metric(&m, Metric::AuthorityIntegrityFailure), 1);
+    assert_eq!(count_metric(&m, Metric::AuthorityCoverageFailure), 1);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 0);
+    assert!(
+        m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .contains(&Diagnostic::DeadlineReached {
+                partitions: 6,
+                verified: 6
+            })
+    );
+}
+#[test]
+fn the_final_deliveries_fit_after_the_abandon_point() {
+    // Loop end (abandon point + one pending alarm) leaves room for the single
+    // coverage alarm; the success path is only taken with room for two.
+    assert!(crate::aws::SINK_OPERATION_TIMEOUT * 2 <= DEADLINE_ABANDON);
+    assert_eq!(FINAL_DELIVERIES, crate::aws::SINK_OPERATION_TIMEOUT * 2);
 }
 
 #[tokio::test]

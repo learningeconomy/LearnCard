@@ -196,7 +196,10 @@ fence retry, abandoned). See the capacity note for the Lambda memory arithmetic.
 Deadline: the Lambda passes its invocation deadline. Once less than 60 s remain the
 sweep starts no new account or Scan page; in-flight accounts finish and their
 alarms are delivered. Account reads still running 20 s before the deadline are
-abandoned (they only read; alarm deliveries are never abandoned). The sweep then
+abandoned (they only read; alarm deliveries are never abandoned). The success
+path needs two more deliveries (the gauge, then the heartbeat, up to 8 s each);
+if every account was checked but less than that remains, the sweep takes the
+deadline path below instead, which needs one. The sweep then
 writes `authority sweep: deadline reached partitions=N verified=M` (N keys
 discovered, M accounts fully checked including those that raised an integrity
 alarm), sends `AuthorityCoverageFailure`, withholds the heartbeat and the gauge,
