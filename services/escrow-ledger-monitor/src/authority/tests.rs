@@ -1771,9 +1771,33 @@ async fn slow_final_deliveries_after_a_late_last_account_still_report_before_the
 #[test]
 fn the_final_deliveries_fit_after_the_abandon_point() {
     // Loop end (abandon point + one pending alarm) leaves room for the single
-    // coverage alarm; the success path is only taken with room for two.
-    assert!(crate::aws::SINK_OPERATION_TIMEOUT * 2 <= DEADLINE_ABANDON);
-    assert_eq!(FINAL_DELIVERIES, crate::aws::SINK_OPERATION_TIMEOUT * 2);
+    // coverage alarm and the return slack; the success path is only taken with
+    // room for gauge + heartbeat + the fallback coverage alarm + slack.
+    let sink = crate::aws::SINK_OPERATION_TIMEOUT;
+    assert!(DEADLINE_ABANDON - sink >= sink + RETURN_SLACK);
+    assert_eq!(FINAL_DELIVERIES, sink * 3 + RETURN_SLACK);
+}
+#[tokio::test(start_paused = true)]
+async fn a_failed_heartbeat_after_a_late_clean_last_account_still_reports_before_the_deadline() {
+    // The last account and its own (per-account) delivery both finish just
+    // before the abandon point, leaving ~21 s. If the success path were taken,
+    // gauge (8 s) + a heartbeat that fails (8 s) + the fallback coverage alarm
+    // (8 s) would run past the deadline.
+    let (mut m, pks) = concurrent_accounts(6);
+    let deadline = Instant::now() + std::time::Duration::from_secs(120);
+    let finishes = deadline
+        - DEADLINE_ABANDON
+        - crate::aws::SINK_OPERATION_TIMEOUT
+        - std::time::Duration::from_secs(1);
+    // The fake applies the delay to each of the account's three reads.
+    m.backend.slow = Some((pks[3].clone(), (finishes - Instant::now()) / 3));
+    m.backend.delivery_latency = Some(crate::aws::SINK_OPERATION_TIMEOUT);
+    m.backend.failing_metric = Some(Metric::AuthoritySweepCompleted);
+    let options = SweepOptions::new(16, Some(deadline));
+    let _ = m.sweep_authority_with(&config(), &options).await;
+    assert!(Instant::now() + RETURN_SLACK <= deadline);
+    assert_eq!(count_metric(&m, Metric::AuthorityCoverageFailure), 1);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 0);
 }
 
 #[tokio::test]

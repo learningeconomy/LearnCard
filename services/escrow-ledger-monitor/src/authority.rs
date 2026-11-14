@@ -63,12 +63,18 @@ pub const DEADLINE_MARGIN: Duration = Duration::from_secs(60);
 /// and every already-queued alarm are still delivered. Alarm deliveries are
 /// never abandoned.
 pub const DEADLINE_ABANDON: Duration = Duration::from_secs(20);
-/// Time the success path needs after the last account: the gauge and then the
-/// completion heartbeat, each one bounded delivery. With less left, the sweep
-/// reports coverage failure instead (a single delivery). Alarms cannot start
-/// after the abandon point, so the loop ends by `DEADLINE_ABANDON` minus one
-/// delivery, which always leaves room for that one coverage alarm.
-pub const FINAL_DELIVERIES: Duration = crate::aws::SINK_OPERATION_TIMEOUT.saturating_mul(2);
+/// Time for the runtime to return after the last delivery.
+pub const RETURN_SLACK: Duration = Duration::from_secs(2);
+/// Time the success path needs after the last account, worst case: the gauge,
+/// the completion heartbeat and, if either fails, the fallback
+/// `AuthorityCoverageFailure` in `sweep_authority_with`, each one bounded
+/// delivery, plus return slack. With less left, the sweep reports coverage
+/// failure instead (a single delivery). Alarms cannot start after the abandon
+/// point, so the loop ends by `DEADLINE_ABANDON` minus one delivery, which
+/// always leaves room for that one coverage alarm and the slack.
+pub const FINAL_DELIVERIES: Duration = crate::aws::SINK_OPERATION_TIMEOUT
+    .saturating_mul(3)
+    .saturating_add(RETURN_SLACK);
 
 /// Worst-case row payload held by in-flight accounts at `concurrency`: every
 /// account outside the lane at the threshold plus one page, and the single
@@ -974,9 +980,10 @@ impl<B: AuthorityBackend> Monitor<B> {
             .deadline
             .is_some_and(|d| Instant::now() + FINAL_DELIVERIES > d)
         {
-            // Every account was checked, but the gauge and heartbeat may not both
-            // land before Lambda stops the invocation: report the (time-bound)
-            // coverage failure, which needs one delivery, rather than time out.
+            // Every account was checked, but the gauge, the heartbeat and (if one
+            // of them fails) the fallback coverage alarm may not all land before
+            // Lambda stops the invocation: report the (time-bound) coverage
+            // failure now, which needs one delivery, rather than time out.
             self.backend.diagnose(Diagnostic::DeadlineReached {
                 partitions,
                 verified,
