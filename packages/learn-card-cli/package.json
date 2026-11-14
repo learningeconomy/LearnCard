@@ -18,9 +18,10 @@
     },
     "scripts": {
         "start": "bun scripts/embed-snippets.ts && bun --conditions=development src/index.tsx",
-        "start:built": "bun run build && node --enable-source-maps dist/index.js",
+        "start:built": "bun run build && node dist/index.js",
         "dev": "bun run start",
-        "build": "bun scripts/embed-snippets.ts && rollup -c",
+        "build": "bun scripts/embed-snippets.ts && bun scripts/build.ts",
+        "build:binary": "bun run build && bun scripts/build-binary.ts",
         "test": "bun scripts/embed-snippets.ts && vitest run",
         "test:watch": "bun scripts/embed-snippets.ts && vitest",
         "test:coverage": "bun scripts/embed-snippets.ts && vitest run --coverage"
@@ -42,7 +43,6 @@
         "@learncard/types": "workspace:*",
         "clipboardy": "^4.0.0",
         "commander": "^9.3.0",
-        "figlet": "^1.5.2",
         "gradient-string": "^2.0.1",
         "pretty-repl": "^3.1.1",
         "yaml": "^2.9.1",
@@ -50,13 +50,10 @@
     },
     "devDependencies": {
         "@learncard/credential-library": "workspace:*",
-        "@rollup/plugin-json": "^4.1.0",
         "@types/cors": "^2.8.12",
-        "@types/figlet": "^1.5.4",
         "@types/node": "^18.0.0",
+        "esbuild": "^0.27.1",
         "nodemon": "^2.0.16",
-        "rollup": "^2.80.0",
-        "rollup-plugin-esbuild": "^4.9.1",
         "ts-node": "^10.8.1",
         "vitest": "4.1.11"
     },
