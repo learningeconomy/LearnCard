@@ -230,12 +230,16 @@ alongside it in the same invocation without a deadline of its own; if it were to
 run past 900 s the invocation would still time out with only a missing
 heartbeat.
 
-Throttling: the DynamoDB client (shared by both sweeps) uses adaptive retry, 8
+Throttling: the DynamoDB client (shared by both sweeps) uses standard retry, 8
 attempts, 200 ms initial / 8 s maximum backoff with jitter (at most ~21 s of
-backoff), a 10 s per-attempt and 35 s per-request timeout. Adaptive mode adds a
-client-side rate limiter shared by all concurrent reads, so a throttle slows the
-whole sweep (the SDK default of 3 attempts once failed a production sweep on a
-Scan throttle). The client uses its own retry partition with an unlimited retry
+backoff), a 10 s per-attempt and 35 s per-request timeout (the SDK default of 3
+attempts once failed a production sweep on a Scan throttle). Throttles come from
+hot partitions (large canary accounts read at speed), so each throttled request
+backs off on its own; adaptive mode's shared client-side rate limiter slowed every
+concurrent read after any throttle (measured 2026-11-14 in staging: 14-18 s per
+sweep with adaptive, 10.6-11.3 s with standard). The trade-off is more throttled
+reads (~37 vs ~4 per sweep), all retried and all on hot canary partitions; real
+accounts are small and do not create hot partitions. The client uses its own retry partition with an unlimited retry
 quota: the SDK default is one 500-token bucket per process (5 tokens per retry,
 replaced permits never returned), which ~100 throttled retries across 16
 concurrent accounts would drain, after which every throttled request fails on
@@ -376,7 +380,7 @@ MiB payload, 130.9 MiB heap while holding the rows, 207.3 MiB peak during
   `AuthorityCoverageFailure`) instead of timing out silently. Watch `Duration`
   against 900 s as authority enrollment grows.
 - Read cost (unchanged by concurrency; it only compresses the same reads into a
-  shorter window, which is why the adaptive retry above matters): each sweep reads
+  shorter window, which is why the retry policy above matters): each sweep reads
   the whole table twice with strongly consistent reads
   (the Scan is charged on full item size even with a key projection, then the
   per-partition Query), about 2 x table bytes / 4 KB RRU. Staging's ~63 MB is

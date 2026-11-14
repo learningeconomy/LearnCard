@@ -148,7 +148,7 @@ pub const DYNAMODB_INITIAL_BACKOFF: Duration = Duration::from_millis(200);
 pub const DYNAMODB_MAX_BACKOFF: Duration = Duration::from_secs(8);
 /// One attempt; a hung connection is retried rather than waited on.
 pub const DYNAMODB_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(10);
-/// One request including every retry and adaptive rate-limit wait. One
+/// One request including every retry and backoff wait. One
 /// request fits inside `DEADLINE_MARGIN - DEADLINE_ABANDON`; an account makes
 /// several requests in sequence, so an account still reading at the abandon
 /// point is dropped there (the abandon point, not this, bounds an account).
@@ -157,10 +157,14 @@ const CONNECT_TIMEOUT: Duration = Duration::from_millis(3100);
 /// This client's own retry partition (see `dynamodb_config`).
 pub const DYNAMODB_RETRY_PARTITION: &str = "escrow-ledger-monitor-dynamodb";
 
-/// DynamoDB client configuration for both sweeps. Adaptive retry adds a
-/// client-side rate limiter shared by every concurrent account read, so a
-/// throttle slows the whole sweep down. Backoff (with jitter) sums to at most
-/// ~21 s over 8 attempts, and the operation timeout bounds each request.
+/// DynamoDB client configuration for both sweeps. Standard retry: each throttled
+/// request backs off on its own (jitter), so a hot partition (a large canary
+/// account) slows only its own reads. Adaptive mode's shared client-side rate
+/// limiter slowed every concurrent read after any throttle (measured 2026-11-14:
+/// staging sweeps 14-18 s with adaptive vs 10.6-11.3 s with standard, at the cost
+/// of more throttled-and-retried reads, ~37 vs ~4 per sweep, all on hot canary
+/// partitions). Backoff sums to at most ~21 s over 8 attempts, and the operation
+/// timeout bounds each request.
 ///
 /// Retry quota: the SDK default is one 500-token bucket per process for the
 /// `dynamodb` partition, 5 tokens per retry and permits of replaced attempts
@@ -168,8 +172,8 @@ pub const DYNAMODB_RETRY_PARTITION: &str = "escrow-ledger-monitor-dynamodb";
 /// retries) drains it, after which every throttled request fails on its first
 /// attempt whatever `max_attempts` says, for the rest of the warm container.
 /// This client therefore gets its own partition with an unlimited bucket:
-/// attempts, backoff, the adaptive rate limiter and the operation timeout
-/// already bound every request, and the sweep's deadline bounds the run.
+/// attempts, backoff and the operation timeout already bound every request,
+/// and the sweep's deadline bounds the run.
 pub fn dynamodb_config(sdk: &aws_config::SdkConfig) -> aws_sdk_dynamodb::Config {
     aws_sdk_dynamodb::config::Builder::from(sdk)
         .retry_partition(
@@ -178,7 +182,7 @@ pub fn dynamodb_config(sdk: &aws_config::SdkConfig) -> aws_sdk_dynamodb::Config 
                 .build(),
         )
         .retry_config(
-            RetryConfig::adaptive()
+            RetryConfig::standard()
                 .with_max_attempts(DYNAMODB_MAX_ATTEMPTS)
                 .with_initial_backoff(DYNAMODB_INITIAL_BACKOFF)
                 .with_max_backoff(DYNAMODB_MAX_BACKOFF),
@@ -509,14 +513,14 @@ mod tests {
     use aws_sdk_dynamodb::config::retry::RetryMode;
 
     #[test]
-    fn dynamodb_client_retries_throttles_adaptively_within_the_deadline_margin() {
+    fn dynamodb_client_retries_throttles_within_the_deadline_margin() {
         let sdk = aws_config::SdkConfig::builder()
             .behavior_version(aws_config::BehaviorVersion::latest())
             .region(aws_config::Region::new("us-east-1"))
             .build();
         let config = dynamodb_config(&sdk);
         let retry = config.retry_config().unwrap();
-        assert_eq!(retry.mode(), RetryMode::Adaptive);
+        assert_eq!(retry.mode(), RetryMode::Standard);
         assert_eq!(retry.max_attempts(), DYNAMODB_MAX_ATTEMPTS);
         assert!(retry.max_attempts() > 3, "more than the SDK default");
         assert_eq!(retry.initial_backoff(), DYNAMODB_INITIAL_BACKOFF);
