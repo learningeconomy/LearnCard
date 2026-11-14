@@ -168,19 +168,23 @@ its own heartbeat and stream handling.
 
 One account must not blind the monitor to every other account. Within a sweep:
 
-| Per-account condition                                      | What happens to that account                                                      | Rest of the sweep     | Sweep result                                       |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------- | -------------------------------------------------- |
-| Integrity finding (`verify_account`, current-row mismatch) | `AuthorityIntegrityFailure` (metric + SNS)                                        | continues (unchanged) | completes if nothing else failed                   |
-| Over the row/byte bound                                    | skipped; `AuthorityAccountOverCapacity` (metric + SNS), one per oversized account | continues             | `AuthorityCoverageFailure`, no heartbeat, no gauge |
-| Fence still changing after 3 attempts                      | skipped; diagnostic line only                                                     | continues             | `AuthorityCoverageFailure`, no heartbeat, no gauge |
-| Malformed row returned by a read (bad key/shape)           | sweep aborts                                                                      | stops (unchanged)     | `AuthorityIntegrityFailure`, no heartbeat          |
-| Read/SDK failure (throttle after SDK retries)              | sweep aborts                                                                      | stops (unchanged)     | `AuthorityCoverageFailure`, no heartbeat           |
+| Per-account condition                                      | What happens to that account                                                      | Rest of the sweep     | Sweep result                                                                       |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------- |
+| Integrity finding (`verify_account`, current-row mismatch) | `AuthorityIntegrityFailure` (metric + SNS)                                        | continues (unchanged) | completes if nothing else failed                                                   |
+| Over the row/byte bound                                    | skipped; `AuthorityAccountOverCapacity` (metric + SNS), one per oversized account | continues             | `AuthorityCoverageFailure`, no heartbeat, no gauge; invocation succeeds (no retry) |
+| Fence still changing after 3 attempts                      | skipped; diagnostic line only                                                     | continues             | `AuthorityCoverageFailure`, no heartbeat, no gauge                                 |
+| Malformed row returned by a read (bad key/shape)           | `AuthorityIntegrityFailure` (metric + SNS)                                        | continues             | completes if nothing else failed                                                   |
+| Read/SDK failure (throttle after SDK retries)              | sweep aborts                                                                      | stops (unchanged)     | `AuthorityCoverageFailure`, no heartbeat                                           |
 
 `AuthoritySweepCompleted` and the `AuthorityRepeatedPinClearAccounts` gauge are
 emitted only when **every** partition was fully verified. A skipped account means
-coverage is incomplete, so the sweep still fails (and Lambda's async retries
-repeat it); the difference is that the failure is reported _after_ everyone else
-was checked, so integrity findings in other accounts are not hidden.
+coverage is incomplete, so the sweep reports coverage failure and withholds the
+heartbeat; the difference is that this is reported _after_ everyone else was
+checked, so integrity findings in other accounts are not hidden. Over capacity is
+permanent, so it does not fail the invocation (Lambda would only retry a sweep that
+cannot succeed); an unstable fence or a read failure does, so Lambda retries it. A
+failed per-account alarm publication does not stop the remaining accounts either:
+the sweep finishes, then fails the invocation without a heartbeat.
 
 An oversized account is **either legitimate growth or deliberate padding**, and
 the operator must decide which. Rows are append-only and legitimate traffic grows
@@ -197,10 +201,9 @@ enclave records. Either way the account remains unverified until the bound is
 raised (with the arithmetic below) or a sharded/checkpointed design lands.
 
 Alert volume while an account stays over capacity: it cannot shrink, so every
-scheduled run (every 15 minutes, plus up to 2 Lambda async retries of the failed
-invocation) sends one direct `AuthorityAccountOverCapacity` and one direct
-`AuthorityCoverageFailure` SNS message, i.e. up to ~6 messages per 15 minutes
-(~576/day), and the CloudWatch alarms (60 s period, missing data not breaching)
+scheduled run (every 15 minutes; not retried) sends one direct
+`AuthorityAccountOverCapacity` and one direct `AuthorityCoverageFailure` SNS
+message, i.e. 2 messages per 15 minutes (~192/day), and the CloudWatch alarms (60 s period, missing data not breaching)
 return to OK between sweeps and re-fire each sweep. This is expected and repeats
 until the account is resolved. Do not mute the shared monitor topic to quiet it:
 integrity alarms use the same topic. A follow-up should give a known
@@ -280,17 +283,17 @@ authority sweep writes one fixed-vocabulary line to stderr (CloudWatch Logs)
 per notable event. Only these constant strings and aggregate counts are ever
 written, never partition keys, account hashes, payloads, DIDs or SDK errors:
 
-| Line                                                                        | Meaning                                                             |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `authority sweep: partition scan failed`                                    | listing partitions failed (SDK/throttle after SDK retries)          |
-| `authority sweep: partition scan over capacity`                             | more than 50,000 partitions or 10,000 scan pages                    |
-| `authority sweep: account read failed`                                      | an account GetItem/Query failed; sweep aborted                      |
-| `authority sweep: account read malformed`                                   | a read returned a malformed row; sweep aborted as integrity failure |
-| `authority sweep: account over capacity`                                    | one account skipped (row/byte bound)                                |
-| `authority sweep: fence changed after retries`                              | one account skipped (fence never settled)                           |
-| `authority sweep: alarm delivery failed`                                    | CloudWatch or SNS publication failed                                |
-| `authority sweep: completed partitions=N`                                   | every partition verified; heartbeat emitted                         |
-| `authority sweep: incomplete partitions=N over_capacity=A fence_unstable=F` | every other partition verified; coverage failure follows            |
+| Line                                                                        | Meaning                                                           |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `authority sweep: partition scan failed`                                    | listing partitions failed (SDK/throttle after SDK retries)        |
+| `authority sweep: partition scan over capacity`                             | more than 50,000 partitions or 10,000 scan pages                  |
+| `authority sweep: account read failed`                                      | an account GetItem/Query failed; sweep aborted                    |
+| `authority sweep: account read malformed`                                   | a read returned a malformed row; integrity alarm, account skipped |
+| `authority sweep: account over capacity`                                    | one account skipped (row/byte bound)                              |
+| `authority sweep: fence changed after retries`                              | one account skipped (fence never settled)                         |
+| `authority sweep: alarm delivery failed`                                    | CloudWatch or SNS publication failed                              |
+| `authority sweep: completed partitions=N`                                   | every partition verified; heartbeat emitted                       |
+| `authority sweep: incomplete partitions=N over_capacity=A fence_unstable=F` | every other partition verified; coverage failure follows          |
 
 Find them with a Logs Insights query on the monitor log group, e.g.
 `filter @message like /^authority sweep:/`.

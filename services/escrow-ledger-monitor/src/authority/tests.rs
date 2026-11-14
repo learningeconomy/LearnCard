@@ -659,6 +659,10 @@ struct Fake {
     /// A partition whose fence changes on every read, independent of the above.
     unstable: Option<String>,
     unavailable: bool,
+    /// A partition whose row read returns a malformed row (Integrity).
+    malformed: Option<String>,
+    /// A metric whose publication fails (models a CloudWatch/SNS outage).
+    failing_metric: Option<Metric>,
     metrics: Mutex<Vec<Metric>>,
     gauges: Mutex<Vec<(Metric, u64)>>,
     diagnostics: Mutex<Vec<Diagnostic>>,
@@ -686,6 +690,9 @@ impl Backend for Fake {
         Err(Error::Unavailable)
     }
     async fn metric(&self, m: Metric) -> Result<()> {
+        if self.failing_metric == Some(m) {
+            return Err(Error::Unavailable);
+        }
         self.metrics.lock().unwrap().push(m);
         Ok(())
     }
@@ -726,6 +733,9 @@ impl AuthorityBackend for Fake {
     }
     async fn authority_rows(&self, _: &str, pk: &str) -> Result<Vec<Row>> {
         *self.row_reads.lock().unwrap().entry(pk.into()).or_default() += 1;
+        if self.malformed.as_deref() == Some(pk) {
+            return Err(Error::Integrity);
+        }
         // Same shared budget (and boundary) as the DynamoDB backend.
         let mut budget = AccountBudget::default();
         let mut rows = Vec::new();
@@ -751,6 +761,8 @@ fn monitor(changing: bool, unavailable: bool) -> Monitor<Fake> {
             change_until: None,
             unstable: None,
             unavailable,
+            malformed: None,
+            failing_metric: None,
             metrics: Mutex::new(vec![]),
             gauges: Mutex::new(vec![]),
             diagnostics: Mutex::new(vec![]),
@@ -1040,7 +1052,9 @@ async fn assert_over_capacity_account_is_isolated(pad: impl FnOnce(&mut Vec<Row>
     let (mut m, pks) = many_accounts();
     pad(account_mut(&mut m, &pks[0]));
     account_mut(&mut m, &pks[5]).retain(|r| r.sk != "ENROLLMENT");
-    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Capacity));
+    // Permanent and already alarmed: the invocation succeeds (no pointless
+    // Lambda retries), but without the completion heartbeat.
+    assert_eq!(m.sweep_authority(&config()).await, Ok(()));
     let metrics = m.backend.metrics.lock().unwrap().clone();
     assert_eq!(
         metrics
@@ -1241,4 +1255,53 @@ async fn sweep_failures_write_only_fixed_reason_lines() {
         "AuthorityAccountOverCapacity"
     );
     assert_eq!(Error::Capacity.to_string(), "monitor capacity exceeded");
+}
+#[tokio::test]
+async fn a_malformed_account_read_alarms_and_every_other_account_is_still_verified() {
+    let (mut m, pks) = many_accounts();
+    m.backend.malformed = Some(pks[0].clone());
+    // An integrity finding, like a failed history check: alarmed, and the sweep
+    // still covers (and completes over) every other account.
+    assert_eq!(m.sweep_authority(&config()).await, Ok(()));
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert_eq!(metrics[0], Metric::AuthorityIntegrityFailure);
+    assert_eq!(verified_accounts(&m), 5);
+    assert_eq!(metrics.last(), Some(&Metric::AuthoritySweepCompleted));
+    assert!(
+        m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .contains(&Diagnostic::AccountReadMalformed)
+    );
+}
+#[tokio::test]
+async fn a_failed_per_account_alarm_does_not_stop_the_rest_of_the_sweep() {
+    let (mut m, pks) = many_accounts();
+    let pk = pks[0].clone();
+    let big = account_mut(&mut m, &pk);
+    for i in big.len()..=MAX_ACCOUNT_ROWS {
+        big.push(Row {
+            pk: pk.clone(),
+            sk: format!("PAD#{i}"),
+            payload: vec![0],
+        });
+    }
+    account_mut(&mut m, &pks[5]).retain(|r| r.sk != "ENROLLMENT");
+    m.backend.failing_metric = Some(Metric::AuthorityAccountOverCapacity);
+    // The run still fails (and is retried), but only after every other account
+    // was verified and the planted integrity defect was found.
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert_eq!(verified_accounts(&m), 4);
+    assert!(metrics.contains(&Metric::AuthorityIntegrityFailure));
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+    assert!(
+        m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .contains(&Diagnostic::DeliveryFailed)
+    );
 }

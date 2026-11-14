@@ -277,6 +277,13 @@ impl<B: AuthorityBackend> Monitor<B> {
                     .await?;
                 Err(Error::Unavailable)
             }
+            // Over capacity is permanent and already alarmed per account: report
+            // coverage failure and withhold the heartbeat, but do not fail the
+            // invocation, so Lambda does not retry a sweep that cannot succeed.
+            Err(Error::Capacity) => {
+                self.deliver(self.alarm(Metric::AuthorityCoverageFailure))
+                    .await
+            }
             Err(error) => {
                 self.deliver(self.alarm(Metric::AuthorityCoverageFailure))
                     .await?;
@@ -357,17 +364,32 @@ impl<B: AuthorityBackend> Monitor<B> {
         // coverage failure instead of completion.
         let mut over_capacity = 0;
         let mut fence_unstable = 0;
+        // A failed per-account alarm must not stop the remaining accounts from
+        // being verified; the sweep still fails (no heartbeat) once it finishes.
+        let mut delivery_failed = false;
         for pk in &partitions {
-            let (after, rows) = match self.read_account(config, pk).await? {
-                AccountRead::Stable { account, rows } => (account, rows),
-                AccountRead::OverCapacity => {
-                    over_capacity += 1;
-                    self.backend.diagnose(Diagnostic::AccountOverCapacity);
-                    self.deliver(self.alarm(Metric::AuthorityAccountOverCapacity))
-                        .await?;
+            let (after, rows) = match self.read_account(config, pk).await {
+                Ok(AccountRead::Stable { account, rows }) => (account, rows),
+                // A malformed or foreign row is an integrity finding for this
+                // account, not a reason to stop auditing every later account.
+                Err(Error::Integrity) => {
+                    delivery_failed |= self
+                        .deliver(self.alarm(Metric::AuthorityIntegrityFailure))
+                        .await
+                        .is_err();
                     continue;
                 }
-                AccountRead::FenceUnstable => {
+                Err(error) => return Err(error),
+                Ok(AccountRead::OverCapacity) => {
+                    over_capacity += 1;
+                    self.backend.diagnose(Diagnostic::AccountOverCapacity);
+                    delivery_failed |= self
+                        .deliver(self.alarm(Metric::AuthorityAccountOverCapacity))
+                        .await
+                        .is_err();
+                    continue;
+                }
+                Ok(AccountRead::FenceUnstable) => {
                     fence_unstable += 1;
                     self.backend.diagnose(Diagnostic::FenceChangedAfterRetries);
                     continue;
@@ -375,15 +397,19 @@ impl<B: AuthorityBackend> Monitor<B> {
             };
             match verify_account(&self.tenant, &config.generation, pk, &rows, &config.trust) {
                 Err(Error::Integrity) => {
-                    self.deliver(self.alarm(Metric::AuthorityIntegrityFailure))
-                        .await?
+                    delivery_failed |= self
+                        .deliver(self.alarm(Metric::AuthorityIntegrityFailure))
+                        .await
+                        .is_err();
                 }
                 // Defence in depth: a backend that under-enforced the budget.
                 Err(Error::Capacity) => {
                     over_capacity += 1;
                     self.backend.diagnose(Diagnostic::AccountOverCapacity);
-                    self.deliver(self.alarm(Metric::AuthorityAccountOverCapacity))
-                        .await?;
+                    delivery_failed |= self
+                        .deliver(self.alarm(Metric::AuthorityAccountOverCapacity))
+                        .await
+                        .is_err();
                 }
                 Err(error) => return Err(error),
                 Ok(audit) => {
@@ -393,8 +419,10 @@ impl<B: AuthorityBackend> Monitor<B> {
                         .map(|r| &r.payload)
                         != after.as_ref()
                     {
-                        self.deliver(self.alarm(Metric::AuthorityIntegrityFailure))
-                            .await?;
+                        delivery_failed |= self
+                            .deliver(self.alarm(Metric::AuthorityIntegrityFailure))
+                            .await
+                            .is_err();
                     } else if audit.repeated_pin_clear(now) {
                         repeated_pin_clear_accounts += 1;
                         // Deprecated per-account datum (no longer alarmed on), kept for one
@@ -405,6 +433,10 @@ impl<B: AuthorityBackend> Monitor<B> {
                     }
                 }
             }
+        }
+        if delivery_failed {
+            // Already logged as DeliveryFailed; no heartbeat, and retry the run.
+            return Err(Error::Unavailable);
         }
         if over_capacity > 0 || fence_unstable > 0 {
             // Coverage is incomplete: no completion heartbeat and no gauge (a
