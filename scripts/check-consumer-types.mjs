@@ -20,6 +20,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { prepareClientExports } from './client-package-exports.mjs';
+
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 
@@ -170,6 +172,10 @@ const install = (name, fromDirectory, requiredBy) => {
             path.join(workspace.directory, 'package.json'),
             path.join(target, 'package.json')
         );
+
+        const publishedManifest = structuredClone(workspace.manifest);
+        prepareClientExports(publishedManifest, target);
+        fs.writeFileSync(path.join(target, 'package.json'), JSON.stringify(publishedManifest));
 
         for (const field of INSTALLED_FIELDS) {
             for (const dependency of Object.keys(workspace.manifest[field] ?? {})) {

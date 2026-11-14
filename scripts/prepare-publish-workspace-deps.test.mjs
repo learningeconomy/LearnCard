@@ -341,3 +341,55 @@ test('rejects a self-contained package whose build still loads a dependency', t 
         assert.equal(f.read('cli').dependencies.commander, '^9.3.0');
     }
 });
+
+const clientFixture = (t, name) => {
+    const f = fixture(t, 'devDependencies');
+    const manifest = f.read('a-public');
+    manifest.name = name;
+    manifest.exports = {
+        '.': {
+            development: './src/index.ts',
+            import: { types: './dist/index.d.ts', default: './dist/client.js' },
+            require: { types: './dist/index.d.cts', default: './dist/index.cjs' },
+        },
+    };
+    writeFileSync(join(f.root, 'a-public/package.json'), JSON.stringify(manifest));
+    mkdirSync(join(f.root, 'a-public/dist'));
+    for (const file of ['index.d.ts', 'index.d.cts', 'client.js', 'index.cjs']) {
+        writeFileSync(join(f.root, 'a-public/dist', file), '');
+    }
+    return f;
+};
+
+for (const name of ['@learncard/network-brain-client', '@learncard/learn-cloud-client']) {
+    test(`publishes built exports while preserving workspace source during dry-run: ${name}`, t => {
+        const f = clientFixture(t, name);
+        const scope = '--package=' + name;
+        assert.equal(f.run(scope, '--dry-run').status, 0);
+        const original = f.read('a-public').exports['.'];
+        assert.equal(original.development, './src/index.ts');
+        const result = f.run(scope);
+        assert.equal(result.status, 0, result.stderr);
+        assert.deepEqual(f.read('a-public').exports['.'], {
+            import: original.import,
+            require: original.require,
+        });
+        assert.equal(f.run(scope).status, 0, 'preparing an already prepared client is idempotent');
+    });
+
+    for (const missing of ['index.d.ts', 'index.d.cts', 'client.js', 'index.cjs']) {
+        test(`rejects incomplete ${name} publish before rewriting any manifests: ${missing}`, t => {
+            const f = clientFixture(t, name);
+            rmSync(join(f.root, 'a-public/dist', missing));
+            const result = f.run();
+            assert.equal(result.status, 1);
+            assert.match(result.stderr, /Client publish target missing/);
+            assert.equal(f.read('a-public').exports['.'].development, './src/index.ts');
+            assert.equal(f.read('a-public').dependencies['@learncard/public'], 'workspace:^');
+            assert.equal(
+                f.read('service').devDependencies['@learncard/service-config'],
+                'workspace:*'
+            );
+        });
+    }
+}

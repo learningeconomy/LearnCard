@@ -3,7 +3,7 @@
 /**
  * Exercise each published client alone, without init or monorepo hoisting supplying
  * undeclared dependencies. Run after building both clients and @learncard/types.
- * Uses actual npm tarballs (including published source), a fresh dependency install,
+ * Uses release-prepared npm tarballs, a fresh dependency install,
  * and default/development export conditions for runtime, bundler and type checks.
  */
 import assert from 'node:assert/strict';
@@ -14,6 +14,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
+
+import { prepareClientExports } from './client-package-exports.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
@@ -60,11 +62,26 @@ for (const client of clients) {
             );
             const directory = path.join(root, relative);
             assert(fs.existsSync(path.join(directory, 'dist')), `Build ${packageName} first`);
+            // Stage exactly npm's publish file list, then apply the same export rewrite as
+            // the release. Never mutate the working checkout to test a published package.
+            const [listing] = JSON.parse(
+                run('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], directory)
+            );
+            const staged = path.join(fixture, 'staged', packageName);
+            for (const { path: file } of listing.files) {
+                const target = path.join(staged, file);
+                fs.mkdirSync(path.dirname(target), { recursive: true });
+                fs.copyFileSync(path.join(directory, file), target);
+            }
+            const stagedManifestPath = path.join(staged, 'package.json');
+            const stagedManifest = JSON.parse(fs.readFileSync(stagedManifestPath, 'utf8'));
+            prepareClientExports(stagedManifest, staged);
+            fs.writeFileSync(stagedManifestPath, JSON.stringify(stagedManifest));
             const [pack] = JSON.parse(
                 run(
                     'npm',
                     ['pack', '--ignore-scripts', '--json', '--pack-destination', fixture],
-                    directory
+                    staged
                 )
             );
             const unpacked = path.join(fixture, 'unpacked', packageName);

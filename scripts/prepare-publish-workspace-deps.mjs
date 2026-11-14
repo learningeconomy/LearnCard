@@ -5,6 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
+import { prepareClientExports } from './client-package-exports.mjs';
+
 import { SELF_CONTAINED_PACKAGES } from './self-contained-packages.mjs';
 
 const ts = createRequire(import.meta.url)('typescript');
@@ -31,9 +33,7 @@ const dryRun = args.has('--dry-run');
 // Discover all workspace versions, but validate and rewrite only the packages
 // this publish job built. Omit --package to prepare the full registry release.
 const selectedPackages = new Set(
-    [...args]
-        .filter(arg => arg.startsWith('--package='))
-        .map(arg => arg.slice('--package='.length))
+    [...args].filter(arg => arg.startsWith('--package=')).map(arg => arg.slice('--package='.length))
 );
 const rootArg = process.argv.find(arg => arg.startsWith('--root='));
 const root = path.resolve(
@@ -312,6 +312,17 @@ for (const [packageJsonPath, packageJson] of packageJsonByPath.entries()) {
     if (packageJson.private) continue;
     if (typeof packageJson.name !== 'string' || !packageJson.name.startsWith('@learncard/'))
         continue;
+
+    if (prepareClientExports(packageJson, path.dirname(packageJsonPath))) {
+        changes.push({
+            packageJsonPath,
+            packageName: packageJson.name,
+            field: 'exports',
+            dependencyName: '.development',
+            from: './src/index.ts',
+            to: '(omitted; published clients use built import/require entries)',
+        });
+    }
 
     for (const field of PACKAGE_DEPENDENCY_FIELDS) {
         const dependencies = packageJson[field];
