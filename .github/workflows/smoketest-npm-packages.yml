@@ -351,6 +351,37 @@ jobs:
               if: always()
               run: rm -rf "${TESTDIR:-/tmp/lc-smoketest-nonexistent}"
 
+    cli-install-budget:
+        # `npx @learncard/cli` is the first thing an agent or developer runs, so the
+        # published CLI must cold-install quickly and cleanly on every supported Node
+        # version (engines.node >=20). It is published as one self-contained file:
+        # this job fails if it starts pulling in dependencies again, prints an
+        # EBADENGINE or deprecation warning, or does not run.
+        name: CLI cold install (Node ${{ matrix.node }})
+        runs-on: ubuntu-latest
+        needs: resolve-versions
+        timeout-minutes: 15
+        env:
+            SMOKE_PACKAGE_VERSIONS: ${{ needs.resolve-versions.outputs.package-versions }}
+        strategy:
+            fail-fast: false
+            matrix:
+                node: [20, 22, 24]
+        steps:
+            - name: Checkout smoke tools
+              uses: actions/checkout@v7
+
+            - name: Set up Node.js ${{ matrix.node }}
+              uses: actions/setup-node@v6
+              with:
+                  node-version: ${{ matrix.node }}
+
+            - name: Cold install, run, and check the install budget
+              run: |
+                  set -euo pipefail
+                  CLI_VERSION=$(node -e "process.stdout.write(JSON.parse(process.env.SMOKE_PACKAGE_VERSIONS)['@learncard/cli'])")
+                  node scripts/check-cli-install.mjs --package="@learncard/cli@$CLI_VERSION"
+
     bundler-smoketest:
         # Many consumers import @learncard/init via a bundler (Vite, webpack,
         # esbuild, Next.js) rather than raw Node. Bundler resolution honors
