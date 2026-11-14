@@ -26,7 +26,8 @@ aws-sdk-cloudwatch = { version = "=1.116.0", default-features = false, features 
 aws-sdk-sns = { version = "=1.104.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
 aws-sdk-ssm = { version = "=1.113.0", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }
 async-trait = "0.1"
-tokio = { version = "~1.53.1", features = ["macros", "rt-multi-thread", "time"] }
+tokio = { version = "~1.53.1", features = ["macros", "rt-multi-thread", "sync", "time"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["std"] }
 serde_json = "~1.0.151"
 serde_dynamo = "4"
 p256 = { version = "~0.14.0", features = ["ecdsa"] }
@@ -35,6 +36,8 @@ base64 = "~0.23.1"
 thiserror = "~2.0.21"
 
 [dev-dependencies]
+# Paused virtual time for the deadline/concurrency tests only.
+tokio = { version = "~1.53.1", features = ["test-util"] }
 escrow-enclave = { path = "../escrow-enclave-app", default-features = false, features = ["fake-ledger", "fake-time", "fake-kms", "fake-nsm"] }
 
 [profile.release]

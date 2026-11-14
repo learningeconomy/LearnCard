@@ -1,11 +1,16 @@
 //! SDK errors are deliberately discarded: they may include keys, bodies or identifiers.
-use crate::authority::{AccountBudget, AuthorityBackend, MAX_ACCOUNT_ROWS, MAX_PARTITIONS, Row};
+use crate::authority::{AuthorityBackend, PAGE_ITEMS, Page, Row};
 use crate::{Backend, Error, Head, Metric, Monitor, Result, chain_from_pk};
 use aws_sdk_cloudwatch::types::{Dimension, MetricDatum, StandardUnit};
+use aws_sdk_dynamodb::config::{
+    retry::{RetryConfig, RetryPartition, TokenBucket},
+    timeout::TimeoutConfig,
+};
 use aws_sdk_dynamodb::types::AttributeValue as A;
 use escrow_enclave::authority::state::MAX_ITEM_BYTES;
 use escrow_enclave::ledger::{MAX_CHAIN_RECORDS, MAX_RECORD_BYTES};
 use std::collections::HashMap;
+use std::time::Duration;
 
 fn authority_pk(pk: &str) -> Result<()> {
     let value = pk.strip_prefix("ACCOUNT#").ok_or(Error::Integrity)?;
@@ -37,37 +42,43 @@ fn authority_row(item: &HashMap<String, A>) -> Result<Row> {
     })
 }
 
+type Key = HashMap<String, A>;
+fn next_key(key: Option<Key>) -> Option<Key> {
+    key.filter(|k| !k.is_empty())
+}
+
 #[async_trait::async_trait]
 impl AuthorityBackend for Aws {
-    async fn authority_partitions(&self, table: &str) -> Result<Vec<String>> {
-        let mut cursor = None;
-        let mut partitions = std::collections::BTreeSet::new();
-        for _ in 0..10_000 {
-            let page = self
-                .db
-                .scan()
-                .table_name(table)
-                .consistent_read(true)
-                .projection_expression("pk")
-                .limit(100)
-                .set_exclusive_start_key(cursor)
-                .send()
-                .await
-                .map_err(|_| Error::Unavailable)?;
-            for item in page.items() {
+    type Cursor = Key;
+    async fn authority_partition_page(
+        &self,
+        table: &str,
+        cursor: Option<Key>,
+    ) -> Result<Page<String, Key>> {
+        let page = self
+            .db
+            .scan()
+            .table_name(table)
+            .consistent_read(true)
+            .projection_expression("pk")
+            .limit(PAGE_ITEMS as i32)
+            .set_exclusive_start_key(cursor)
+            .send()
+            .await
+            .map_err(|_| Error::Unavailable)?;
+        let items = page
+            .items()
+            .iter()
+            .map(|item| {
                 let pk = text(item, "pk")?;
                 authority_pk(pk)?;
-                partitions.insert(pk.to_owned());
-                if partitions.len() > MAX_PARTITIONS {
-                    return Err(Error::Capacity);
-                }
-            }
-            cursor = page.last_evaluated_key;
-            if cursor.as_ref().is_none_or(HashMap::is_empty) {
-                return Ok(partitions.into_iter().collect());
-            }
-        }
-        Err(Error::Capacity)
+                Ok(pk.to_owned())
+            })
+            .collect::<Result<_>>()?;
+        Ok(Page {
+            items,
+            next: next_key(page.last_evaluated_key),
+        })
     }
     async fn authority_account(&self, table: &str, pk: &str) -> Result<Option<Vec<u8>>> {
         authority_pk(pk)?;
@@ -92,41 +103,116 @@ impl AuthorityBackend for Aws {
             })
             .transpose()
     }
-    async fn authority_rows(&self, table: &str, pk: &str) -> Result<Vec<Row>> {
+    async fn authority_rows_page(
+        &self,
+        table: &str,
+        pk: &str,
+        cursor: Option<Key>,
+    ) -> Result<Page<Row, Key>> {
         authority_pk(pk)?;
-        let mut cursor = None;
-        let mut rows = Vec::new();
-        let mut budget = AccountBudget::default();
-        for _ in 0..=MAX_ACCOUNT_ROWS {
-            let page = self
-                .db
-                .query()
-                .table_name(table)
-                .consistent_read(true)
-                .key_condition_expression("pk = :pk")
-                .expression_attribute_values(":pk", A::S(pk.into()))
-                .limit(100)
-                .set_exclusive_start_key(cursor)
-                .send()
-                .await
-                .map_err(|_| Error::Unavailable)?;
-            for item in page.items() {
+        let page = self
+            .db
+            .query()
+            .table_name(table)
+            .consistent_read(true)
+            .key_condition_expression("pk = :pk")
+            .expression_attribute_values(":pk", A::S(pk.into()))
+            .limit(PAGE_ITEMS as i32)
+            .set_exclusive_start_key(cursor)
+            .send()
+            .await
+            .map_err(|_| Error::Unavailable)?;
+        let items = page
+            .items()
+            .iter()
+            .map(|item| {
                 let row = authority_row(item)?;
                 if row.pk != pk {
                     return Err(Error::Integrity);
                 }
-                // Exceeding the bound isolates this account (Capacity), it is
-                // not a read failure of the whole sweep.
-                budget.admit(row.payload.len())?;
-                rows.push(row);
-            }
-            cursor = page.last_evaluated_key;
-            if cursor.as_ref().is_none_or(HashMap::is_empty) {
-                return Ok(rows);
-            }
-        }
-        Err(Error::Unavailable)
+                Ok(row)
+            })
+            .collect::<Result<_>>()?;
+        Ok(Page {
+            items,
+            next: next_key(page.last_evaluated_key),
+        })
     }
+}
+
+/// DynamoDB attempts per request (first try + retries). Scan/Query throttles
+/// are seen on every run; the SDK default (3 attempts) once let one Scan
+/// throttle fail a production sweep.
+pub const DYNAMODB_MAX_ATTEMPTS: u32 = 8;
+pub const DYNAMODB_INITIAL_BACKOFF: Duration = Duration::from_millis(200);
+pub const DYNAMODB_MAX_BACKOFF: Duration = Duration::from_secs(8);
+/// One attempt; a hung connection is retried rather than waited on.
+pub const DYNAMODB_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(10);
+/// One request including every retry and adaptive rate-limit wait. One
+/// request fits inside `DEADLINE_MARGIN - DEADLINE_ABANDON`; an account makes
+/// several requests in sequence, so an account still reading at the abandon
+/// point is dropped there (the abandon point, not this, bounds an account).
+pub const DYNAMODB_OPERATION_TIMEOUT: Duration = Duration::from_secs(35);
+const CONNECT_TIMEOUT: Duration = Duration::from_millis(3100);
+/// This client's own retry partition (see `dynamodb_config`).
+pub const DYNAMODB_RETRY_PARTITION: &str = "escrow-ledger-monitor-dynamodb";
+
+/// DynamoDB client configuration for both sweeps. Adaptive retry adds a
+/// client-side rate limiter shared by every concurrent account read, so a
+/// throttle slows the whole sweep down. Backoff (with jitter) sums to at most
+/// ~21 s over 8 attempts, and the operation timeout bounds each request.
+///
+/// Retry quota: the SDK default is one 500-token bucket per process for the
+/// `dynamodb` partition, 5 tokens per retry and permits of replaced attempts
+/// never returned. With 16 accounts in flight one throttle storm (~100
+/// retries) drains it, after which every throttled request fails on its first
+/// attempt whatever `max_attempts` says, for the rest of the warm container.
+/// This client therefore gets its own partition with an unlimited bucket:
+/// attempts, backoff, the adaptive rate limiter and the operation timeout
+/// already bound every request, and the sweep's deadline bounds the run.
+pub fn dynamodb_config(sdk: &aws_config::SdkConfig) -> aws_sdk_dynamodb::Config {
+    aws_sdk_dynamodb::config::Builder::from(sdk)
+        .retry_partition(
+            RetryPartition::custom(DYNAMODB_RETRY_PARTITION)
+                .token_bucket(TokenBucket::unlimited())
+                .build(),
+        )
+        .retry_config(
+            RetryConfig::adaptive()
+                .with_max_attempts(DYNAMODB_MAX_ATTEMPTS)
+                .with_initial_backoff(DYNAMODB_INITIAL_BACKOFF)
+                .with_max_backoff(DYNAMODB_MAX_BACKOFF),
+        )
+        .timeout_config(
+            TimeoutConfig::builder()
+                .connect_timeout(CONNECT_TIMEOUT)
+                .operation_attempt_timeout(DYNAMODB_ATTEMPT_TIMEOUT)
+                .operation_timeout(DYNAMODB_OPERATION_TIMEOUT)
+                .build(),
+        )
+        .build()
+}
+
+/// One CloudWatch/SNS attempt, and one delivery including SDK retries.
+/// Alarm deliveries are never abandoned at the deadline, so they must finish
+/// well inside `DEADLINE_ABANDON`: queued per-account alarms (concurrently)
+/// and then the final coverage alarm take at most twice this.
+pub const SINK_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(3);
+pub const SINK_OPERATION_TIMEOUT: Duration = Duration::from_secs(8);
+
+/// SDK configuration for the CloudWatch and SNS clients (alarm sinks). A hung
+/// sink call fails (Err, so Lambda retries) instead of running past the
+/// invocation deadline into a silent timeout.
+pub fn sink_config(sdk: &aws_config::SdkConfig) -> aws_config::SdkConfig {
+    sdk.to_builder()
+        .timeout_config(
+            TimeoutConfig::builder()
+                .connect_timeout(CONNECT_TIMEOUT)
+                .operation_attempt_timeout(SINK_ATTEMPT_TIMEOUT)
+                .operation_timeout(SINK_OPERATION_TIMEOUT)
+                .build(),
+        )
+        .build()
 }
 
 pub const NAMESPACE: &str = "LearnCard/EscrowLedger";
@@ -414,5 +500,84 @@ impl Monitor<Aws> {
             }
         }
         Err(Error::Unavailable)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use aws_sdk_dynamodb::config::retry::RetryMode;
+
+    #[test]
+    fn dynamodb_client_retries_throttles_adaptively_within_the_deadline_margin() {
+        let sdk = aws_config::SdkConfig::builder()
+            .behavior_version(aws_config::BehaviorVersion::latest())
+            .region(aws_config::Region::new("us-east-1"))
+            .build();
+        let config = dynamodb_config(&sdk);
+        let retry = config.retry_config().unwrap();
+        assert_eq!(retry.mode(), RetryMode::Adaptive);
+        assert_eq!(retry.max_attempts(), DYNAMODB_MAX_ATTEMPTS);
+        assert!(retry.max_attempts() > 3, "more than the SDK default");
+        assert_eq!(retry.initial_backoff(), DYNAMODB_INITIAL_BACKOFF);
+        assert_eq!(retry.max_backoff(), DYNAMODB_MAX_BACKOFF);
+        let timeout = config.timeout_config().unwrap();
+        assert_eq!(
+            timeout.operation_timeout(),
+            Some(DYNAMODB_OPERATION_TIMEOUT)
+        );
+        assert_eq!(
+            timeout.operation_attempt_timeout(),
+            Some(DYNAMODB_ATTEMPT_TIMEOUT)
+        );
+        assert_eq!(timeout.connect_timeout(), Some(CONNECT_TIMEOUT));
+        // Its own partition (unlimited bucket), not the process-wide default
+        // `dynamodb` quota that concurrent throttled retries would drain.
+        let partition = config.retry_partition().unwrap();
+        assert_eq!(
+            partition,
+            &RetryPartition::custom(DYNAMODB_RETRY_PARTITION).build()
+        );
+        assert_ne!(partition, &RetryPartition::new("dynamodb"));
+        // Worst-case backoff over every retry fits inside one operation, and one
+        // operation fits between the deadline stop and the abandon point.
+        let backoff: Duration = (0..DYNAMODB_MAX_ATTEMPTS - 1)
+            .map(|n| (DYNAMODB_INITIAL_BACKOFF * 2u32.pow(n)).min(DYNAMODB_MAX_BACKOFF))
+            .sum();
+        assert!(backoff < DYNAMODB_OPERATION_TIMEOUT, "{backoff:?}");
+        assert!(
+            DYNAMODB_OPERATION_TIMEOUT
+                < crate::authority::DEADLINE_MARGIN - crate::authority::DEADLINE_ABANDON
+        );
+    }
+
+    #[test]
+    fn alarm_sinks_time_out_well_inside_the_deadline_abandon_window() {
+        let sdk = aws_config::SdkConfig::builder()
+            .behavior_version(aws_config::BehaviorVersion::latest())
+            .region(aws_config::Region::new("us-east-1"))
+            .build();
+        let sink = sink_config(&sdk);
+        let timeout = sink.timeout_config().unwrap();
+        assert_eq!(timeout.operation_timeout(), Some(SINK_OPERATION_TIMEOUT));
+        assert_eq!(
+            timeout.operation_attempt_timeout(),
+            Some(SINK_ATTEMPT_TIMEOUT)
+        );
+        assert_eq!(timeout.connect_timeout(), Some(CONNECT_TIMEOUT));
+        assert_eq!(sink.region(), sdk.region());
+        // Queued alarms, then the final coverage alarm, after the abandon point.
+        assert!(2 * SINK_OPERATION_TIMEOUT < crate::authority::DEADLINE_ABANDON);
+        // The clients built in main.rs carry it.
+        let cw = aws_sdk_cloudwatch::Config::from(&sink);
+        assert_eq!(
+            cw.timeout_config().unwrap().operation_timeout(),
+            Some(SINK_OPERATION_TIMEOUT)
+        );
+        let sns = aws_sdk_sns::Config::from(&sink);
+        assert_eq!(
+            sns.timeout_config().unwrap().operation_timeout(),
+            Some(SINK_OPERATION_TIMEOUT)
+        );
     }
 }

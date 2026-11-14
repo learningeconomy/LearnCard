@@ -57,9 +57,12 @@ Each account is read before and after paginated history collection. A changed fe
 is retried (at most three reads of that account, 250 ms apart), never a false
 tampering alarm. Orphan rows are discovered
 because the scan projects partition keys from **all** row types, not just accounts.
-Bounds: 100 items/page, 10,000 scan pages, 50,000 partitions, 16,384 rows/128 MiB per
-account (see "Capacity note" below), and the Lambda's 900-second limit. Exceeding a
-bound never reports partial success: it raises coverage failure/missing heartbeat.
+Accounts are checked concurrently (16 at a time by default) as Scan pages arrive;
+see "Concurrency, deadline and throttling" below. Bounds: 100 items/page,
+16,384 rows/128 MiB per account (see "Capacity note" below), the invocation
+deadline, and hard sanity bounds of 500,000 scan pages / 500,000 partitions.
+Exceeding a bound never reports partial success: it raises coverage
+failure/missing heartbeat.
 Per-account problems are **isolated** (see "Per-account isolation" below): every
 other account is still verified before the sweep reports coverage failure.
 
@@ -154,27 +157,112 @@ within the window is unusual. Signed records cannot tell a user-initiated clear 
 an automatic one, and the metrics have only the Tenant dimension; find the accounts
 from the authority table.
 
-Limits: 10,000 scan pages of at most 100 items, 50,000 distinct partitions,
-16,384 rows / 128 MiB per account, and the shared 900-second Lambda deadline.
-Capacity/read failures alarm `AuthorityCoverageFailure`; incomplete sweeps never
-emit `AuthoritySweepCompleted`. Its missing-heartbeat alarm uses two 30-minute
-periods. A completed sweep can still have integrity findings: heartbeat means
-coverage, not clean data. Before these bounds are approached, implement durable
-partitioned coverage; do not increase limits blindly (re-run the capacity probe
-and redo the arithmetic below). The legacy sweep runs alongside this one and keeps
-its own heartbeat and stream handling.
+Limits: 16,384 rows / 128 MiB per account, the shared 900-second Lambda deadline
+(the operative whole-sweep limit; the sweep stops itself 60 s before it), and hard
+sanity bounds of 500,000 scan pages of at most 100 items and 500,000 distinct
+partitions. Capacity/read/deadline failures alarm `AuthorityCoverageFailure`;
+incomplete sweeps never emit `AuthoritySweepCompleted`. Its missing-heartbeat
+alarm uses two 30-minute periods. A completed sweep can still have integrity
+findings: heartbeat means coverage, not clean data. Do not increase limits
+blindly (re-run the capacity probe and the sweep benchmark, and redo the
+arithmetic below). The legacy sweep runs alongside this one and keeps its own
+heartbeat and stream handling.
+
+### Concurrency, deadline and throttling
+
+The sweep is stateless and read-only, as before; only scheduling changed. Partition
+keys are streamed from the Scan into at most `AUTHORITY_SWEEP_CONCURRENCY` accounts
+in flight (default 16, accepted 1-32, anything else fails cold start; Terraform
+does not set it). Each account still uses the same bracketed fence reads, the same
+`verify_account` and the same alarms. Keys are deduplicated exactly (a partition
+appears once per row, possibly on several pages), and the next Scan page is
+fetched while accounts are checked, so at most one page plus 16 keys are queued.
+Full coverage is declared only when the Scan returned no `LastEvaluatedKey`, no
+account was skipped and the deadline was not reached. Account futures only read;
+the sweep driver delivers every per-account alarm and waits for all of them
+before the final coverage alarm or heartbeat. While 16 alarm deliveries are
+pending no new account starts, so a run with many findings sends at most ~32
+CloudWatch/SNS alarms at once (the serial sweep sent one at a time). Alarm order
+across accounts now varies from run to run; none is dropped.
+
+Memory is bounded by bytes, not only by account count. An account may hold up to
+1 MiB of rows (`LARGE_ACCOUNT_BYTES`) before it must take the single large-account
+lane, which it keeps until its rows are verified and dropped; lane accounts verify
+on a blocking thread so other accounts' reads keep moving. In-flight row payload is
+therefore at most `C x (1 MiB + one 1 MB page) + 128 MiB` (160 MiB at C = 16,
+192 MiB at the maximum 32), released on every path (verified, skipped, failed,
+fence retry, abandoned). See the capacity note for the Lambda memory arithmetic.
+
+Deadline: the Lambda passes its invocation deadline. Once less than 60 s remain the
+sweep starts no new account or Scan page; in-flight accounts finish and their
+alarms are delivered. Account reads still running 20 s before the deadline are
+abandoned (they only read; alarm deliveries are never abandoned). The sweep then
+writes `authority sweep: deadline reached partitions=N verified=M` (N keys
+discovered, M accounts fully checked including those that raised an integrity
+alarm), sends `AuthorityCoverageFailure`, withholds the heartbeat and the gauge,
+and the invocation **succeeds** (no Lambda retry). This follows the #2042
+over-capacity reasoning: a sweep that ran out of time would run out of time again,
+and two retries of a 15-minute run would overlap the next scheduled runs and add
+DynamoDB load (and throttles) to a table that is already too large for one
+invocation. A transient cause (for example a throttle storm) is retried anyway by
+the next scheduled run 15 minutes later. Per-account delivery failures and read
+failures still fail the invocation (retried), unchanged, and a failed
+per-account alarm also outranks a Scan sanity bound reached later in the same run
+(accounts are now checked while the Scan streams), so a lost alarm is always
+retried. Over-capacity and fence-unstable counts are logged (`incomplete ...`)
+whatever ends the sweep, including a deadline stop.
+
+**A recurring deadline stop is an incident, not noise.** DynamoDB returns Scan
+keys in a stable hash order, so once the table outgrows one invocation the
+deadline skips the _same_ tail of accounts on every run: those accounts are never
+audited, and anyone who can create accounts can grow the table to push others
+into that tail. It is loud (`deadline reached`, `AuthorityCoverageFailure` by
+SNS, missing heartbeat on every run), but silencing it removes all assurance for
+the skipped accounts. Respond with the next step in the capacity note (Streams,
+or a lower `AUTHORITY_SWEEP_CONCURRENCY` only if throttling is the cause), not by
+muting the alarm. Nothing rotates the Scan order today.
+
+The deadline guard covers the authority sweep only. The legacy sweep runs
+alongside it in the same invocation without a deadline of its own; if it were to
+run past 900 s the invocation would still time out with only a missing
+heartbeat.
+
+Throttling: the DynamoDB client (shared by both sweeps) uses adaptive retry, 8
+attempts, 200 ms initial / 8 s maximum backoff with jitter (at most ~21 s of
+backoff), a 10 s per-attempt and 35 s per-request timeout. Adaptive mode adds a
+client-side rate limiter shared by all concurrent reads, so a throttle slows the
+whole sweep (the SDK default of 3 attempts once failed a production sweep on a
+Scan throttle). The client uses its own retry partition with an unlimited retry
+quota: the SDK default is one 500-token bucket per process (5 tokens per retry,
+replaced permits never returned), which ~100 throttled retries across 16
+concurrent accounts would drain, after which every throttled request fails on
+its first attempt for the rest of the warm container. Attempts, backoff, the
+rate limiter and the request timeout bound each request instead. One 35 s
+request fits between the deadline stop (60 s) and the abandon point (20 s); an
+account makes several requests in sequence, so an account still reading at the
+abandon point is dropped there. A read that still fails after its retries stops
+the sweep exactly as before (`account read failed` / `partition scan failed`,
+coverage failure, retried).
+
+The CloudWatch and SNS clients (alarm sinks, shared with the legacy sweep and
+the stream handler) have a 3 s per-attempt and 8 s per-request timeout. Alarm
+deliveries are never abandoned at the deadline, so this keeps the queued alarms
+plus the final coverage alarm (at most ~16 s) inside the 20 s abandon window; a
+hung sink call now fails the invocation (retried) instead of running into a
+silent timeout.
 
 ### Per-account isolation
 
 One account must not blind the monitor to every other account. Within a sweep:
 
-| Per-account condition                                      | What happens to that account                                                      | Rest of the sweep     | Sweep result                                                                       |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------- |
-| Integrity finding (`verify_account`, current-row mismatch) | `AuthorityIntegrityFailure` (metric + SNS)                                        | continues (unchanged) | completes if nothing else failed                                                   |
-| Over the row/byte bound                                    | skipped; `AuthorityAccountOverCapacity` (metric + SNS), one per oversized account | continues             | `AuthorityCoverageFailure`, no heartbeat, no gauge; invocation succeeds (no retry) |
-| Fence still changing after 3 attempts                      | skipped; diagnostic line only                                                     | continues             | `AuthorityCoverageFailure`, no heartbeat, no gauge                                 |
-| Malformed row returned by a read (bad key/shape)           | `AuthorityIntegrityFailure` (metric + SNS)                                        | continues             | completes if nothing else failed                                                   |
-| Read/SDK failure (throttle after SDK retries)              | sweep aborts                                                                      | stops (unchanged)     | `AuthorityCoverageFailure`, no heartbeat                                           |
+| Per-account condition                                      | What happens to that account                                                      | Rest of the sweep                                | Sweep result                                                                       |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Integrity finding (`verify_account`, current-row mismatch) | `AuthorityIntegrityFailure` (metric + SNS)                                        | continues (unchanged)                            | completes if nothing else failed                                                   |
+| Over the row/byte bound                                    | skipped; `AuthorityAccountOverCapacity` (metric + SNS), one per oversized account | continues                                        | `AuthorityCoverageFailure`, no heartbeat, no gauge; invocation succeeds (no retry) |
+| Fence still changing after 3 attempts                      | skipped; diagnostic line only                                                     | continues                                        | `AuthorityCoverageFailure`, no heartbeat, no gauge                                 |
+| Malformed row returned by a read (bad key/shape)           | `AuthorityIntegrityFailure` (metric + SNS)                                        | continues                                        | completes if nothing else failed                                                   |
+| Read/SDK failure (throttle after SDK retries)              | sweep aborts                                                                      | no new accounts; in-flight ones finish and alarm | `AuthorityCoverageFailure`, no heartbeat                                           |
+| Invocation deadline (less than 60 s left)                  | not started (or abandoned 20 s before the deadline)                               | no new accounts; in-flight ones finish and alarm | `AuthorityCoverageFailure`, no heartbeat, no gauge; invocation succeeds (no retry) |
 
 `AuthoritySweepCompleted` and the `AuthorityRepeatedPinClearAccounts` gauge are
 emitted only when **every** partition was fully verified. A skipped account means
@@ -198,7 +286,8 @@ tampering** (page security, preserve DynamoDB PITR, stream and CloudTrail eviden
 if the account is not a known canary or high-traffic account, if its row count
 jumped instead of growing at the expected rate, or if its rows do not look like
 enclave records. Either way the account remains unverified until the bound is
-raised (with the arithmetic below) or a sharded/checkpointed design lands.
+raised (with the arithmetic below) or per-account history is checkpointed (see the
+growth note below).
 
 Alert volume while an account stays over capacity: it cannot shrink, so every
 scheduled run (every 15 minutes; not retried) sends one direct
@@ -216,11 +305,13 @@ investigate `fence_unstable` > 0 on consecutive sweeps as possibly induced.
 
 ### Capacity note
 
-Measured on staging: ~7.3 KB per authority row (an account of ~4,100 rows was
-~30 MB); successful sweeps of ~8,700 rows / ~85 partitions took ~12 s and peaked
-at ~84 MB Lambda memory (1024 MiB configured, 900 s timeout). Memory is per
-account: rows are read, verified and dropped before the next partition, so peak
-memory is set by the largest single account, not the table.
+Measured on staging with the serial sweep: ~7.3 KB per authority row (an account
+of ~4,100 rows was ~30 MB); successful sweeps of ~8,700 rows / ~85 partitions took
+~12 s and peaked at ~84 MB Lambda memory (1024 MiB configured, 900 s timeout).
+After #2042 (still serial): staging 85 partitions ~11.3 s / 89 MB, production 18
+partitions ~8.9 s / 68 MB. With concurrency, rows are still read, verified and
+dropped per account, but up to C accounts are in flight: peak memory is set by
+the largest account (in the lane) plus C small accounts, not by the table.
 
 `tests/capacity.rs` (ignored by default) builds one synthetic account at the
 bound with ~8 KB validly signed rows and measures heap with a counting allocator.
@@ -241,27 +332,49 @@ MiB payload, 130.9 MiB heap while holding the rows, 207.3 MiB peak during
 - Rows bound: 16,384 x 7.3 KB = ~114 MiB, so at the measured mean row size the row
   bound binds first. The byte bound (128 MiB) caps accounts of larger rows (up
   to 64 KiB items: 2,048 rows).
-- Peak heap scales at ~1.66x payload: 128 MiB -> ~213 MiB. Add ~35 MB runtime
-  baseline (84 MB staging peak minus ~1.66 x 30 MB), the in-flight DynamoDB page
-  (100 items, < 1 MB parsed twice) and allocator overhead (budget 1.5x on heap):
-  ~355 MB worst case, about 2.9x headroom inside 1024 MiB. No Lambda memory
-  change is needed. The legacy sweep runs concurrently but is bounded per chain
-  (64 x 8 KiB).
+- Peak heap scales at ~1.66x payload: 128 MiB -> ~213 MiB for the one lane
+  account. The other C - 1 in-flight accounts hold at most 1 MiB + one page each
+  (~2.06 MiB, ~3.4 MiB with parsing): ~51 MiB at C = 16, ~105 MiB at C = 32. The
+  dedupe set (`HashSet<[u8; 32]>`, 33 B per bucket) is ~1.3 MiB at 20,000 and
+  ~33 MiB at the 500,000 sanity bound (~50 MiB while the last resize holds both
+  tables). Add ~35 MB runtime baseline (84 MB staging peak minus ~1.66 x 30 MB)
+  and allocator overhead (budget 1.5x on heap): ~(213 + 51 + 50) x 1.5 + 35 =
+  ~510 MB worst case at C = 16 (~590 MB at C = 32), about 2x headroom inside
+  1024 MiB. No Lambda memory change is needed. One uncounted case: a lane
+  account abandoned at the deadline while it verifies on its blocking thread
+  keeps that thread (and up to ~213 MiB) alive, possibly into the next warm
+  invocation; adding it gives ~830 MB at C = 16 (~910 MB at C = 32), still
+  inside 1024 MiB. It needs a lane account in flight in the last 20 s of a run
+  that is already reporting a deadline coverage failure. The legacy sweep runs concurrently
+  but is bounded per chain (64 x 8 KiB).
 - Time, one account: verification is ~0.1 ms/row on developer hardware (expect
   3-5x slower on the Lambda) plus one strongly consistent Query per 100 rows; a
   full account adds seconds to tens of seconds, well inside 900 s.
-- Time, whole sweep (the real deadline): the sweep is serial. Staging measured
-  ~12 s for ~85 partitions / ~8,700 rows, ~0.14 s per partition (one Scan page
-  per 100 rows, two GetItem calls and at least one Query per partition), sharing
-  the 900 s timeout with the concurrent legacy sweep. At that rate 900 s is
-  reached around ~6,000-12,000 partitions, far below `MAX_PARTITIONS` = 50,000.
-  The partition Scan is also bounded at 10,000 pages x 100 items, i.e. ~1,000,000
-  rows across the whole table. A timed-out invocation writes no diagnostic line
-  and sends no `AuthorityCoverageFailure`; the only signal is the missing-heartbeat
-  alarm. This whole-sweep bound, not the per-account bound, sets the deadline for
-  the sharded/checkpointed design: watch the monitor Lambda's `Duration` against
-  900 s as authority enrollment grows.
-- Read cost: each sweep reads the whole table twice with strongly consistent reads
+- Time, whole sweep (the real deadline): each small account costs two GetItem
+  calls and one Query (plus one Scan page per 100 rows, now overlapped with
+  account work), ~20-140 ms serially. Staging's serial ~0.13 s per partition is
+  skewed by the ~4,300-row canary. The serial sweep therefore reached 900 s
+  somewhere between ~6,000 and ~45,000 accounts, and a timeout was silent.
+  `tests/sweep_bench.rs` (ignored; fake backend, 8 ms per request, 20,000
+  three-row accounts, real verification; developer macOS, release) measured
+  625.5 s at C = 1 (31.3 ms per account: three reads that each
+  sleep ~10 ms in practice, plus amortized Scan pages) and 45.0 s at C = 16 (2.25 ms
+  per account, 13.9x). At C = 16 the 840 s usable budget covers roughly
+  370,000 (C = 1: ~27,000) small accounts on that model. That is an I/O-model
+  ceiling, not a capacity: the fake has no SDK CPU (TLS, SigV4 signing, JSON and
+  base64 parsing for ~3 requests per account), no real DynamoDB latency or
+  throttling, and all verification and polling share one driver task (with the
+  legacy sweep, through `join!`) on the Lambda's ~0.58 vCPU (verification is
+  ~0.1 ms/row on developer hardware, expect 3-5x slower). Repeated runs also vary
+  noticeably at higher concurrency. Lambda `Duration` after deployment is the
+  source of truth. The scan and
+  partition sanity bounds (500,000 each) are far above what fits the deadline.
+  When the deadline is reached the sweep now says so (`deadline reached`,
+  `AuthorityCoverageFailure`) instead of timing out silently. Watch `Duration`
+  against 900 s as authority enrollment grows.
+- Read cost (unchanged by concurrency; it only compresses the same reads into a
+  shorter window, which is why the adaptive retry above matters): each sweep reads
+  the whole table twice with strongly consistent reads
   (the Scan is charged on full item size even with a key projection, then the
   per-partition Query), about 2 x table bytes / 4 KB RRU. Staging's ~63 MB is
   ~31k RRU per sweep, ~3M RRU/day at 96 sweeps. A failed sweep is retried up to 2
@@ -272,9 +385,16 @@ MiB payload, 130.9 MiB heap while holding the rows, 207.3 MiB peak during
 - Growth: with the PIN canary at one recovery per account every 12 hours
   (~16 rows/day), the staging canary account (~4,300 rows on 2026-11-13) reaches
   16,384 rows in roughly two years. Production's largest accounts are ~2,700 rows
-  (inferred). Watch `AuthorityAccountOverCapacity`; the long-term answer for
-  unbounded per-account history is still a separately reviewed
-  sharded/checkpointed design, not repeated limit increases.
+  (inferred). Watch `AuthorityAccountOverCapacity`; unbounded per-account
+  history needs per-account checkpointing eventually, not repeated limit
+  increases.
+- Next step for table growth: stateless concurrent full sweeps suffice for now.
+  When the deadline line appears, or `Duration` regularly exceeds ~600 s (about
+  two thirds of the budget), move to DynamoDB Streams on the authority table:
+  verify each changed account from its stream record and keep the full sweep as a
+  slower periodic backstop. That needs its own reviewed design (stream
+  retention/DLQ, ordering, IAM); no sharded or checkpointed sweep is required
+  before then.
 
 ### Diagnostic lines
 
@@ -286,14 +406,15 @@ written, never partition keys, account hashes, payloads, DIDs or SDK errors:
 | Line                                                                        | Meaning                                                           |
 | --------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `authority sweep: partition scan failed`                                    | listing partitions failed (SDK/throttle after SDK retries)        |
-| `authority sweep: partition scan over capacity`                             | more than 50,000 partitions or 10,000 scan pages                  |
-| `authority sweep: account read failed`                                      | an account GetItem/Query failed; sweep aborted                    |
+| `authority sweep: partition scan over capacity`                             | more than 500,000 partitions or 500,000 scan pages (sanity bound) |
+| `authority sweep: account read failed`                                      | an account GetItem/Query failed; no new accounts, sweep fails     |
 | `authority sweep: account read malformed`                                   | a read returned a malformed row; integrity alarm, account skipped |
 | `authority sweep: account over capacity`                                    | one account skipped (row/byte bound)                              |
 | `authority sweep: fence changed after retries`                              | one account skipped (fence never settled)                         |
 | `authority sweep: alarm delivery failed`                                    | CloudWatch or SNS publication failed                              |
 | `authority sweep: completed partitions=N`                                   | every partition verified; heartbeat emitted                       |
-| `authority sweep: incomplete partitions=N over_capacity=A fence_unstable=F` | every other partition verified; coverage failure follows          |
+| `authority sweep: incomplete partitions=N over_capacity=A fence_unstable=F` | accounts skipped; coverage failure follows (logged on every path) |
+| `authority sweep: deadline reached partitions=N verified=M`                 | stopped near the invocation deadline; coverage failure follows    |
 
 Find them with a Logs Insights query on the monitor log group, e.g.
 `filter @message like /^authority sweep:/`.
@@ -462,7 +583,7 @@ rate alarm, DLQ path, timeout/heartbeat, email confirmation and KMS event delive
 | Released / PinAttemptFailed hourly threshold | Possible mass recovery/guessing or duplicate processing. Compare legitimate traffic and stream retries; investigate identities only in access-controlled evidence systems, not metric dimensions.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Lambda errors / DLQ depth                    | Verification may not be running. Check permissions, SSM key format, service health, throttling and packaging. Restore detection promptly. Stream retries are capped at 5 with batch bisection; SQS retains failures 14 days, but stream records expire after 24 hours. DLQ metadata is not a durable full copy of the stream; preserve evidence before expiry.                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | AuthorityAccountOverCapacity                 | One authority account exceeded the per-account row/byte bound and was skipped; every other account was still verified, and the sweep also reports AuthorityCoverageFailure with no authority heartbeat. Legitimate growth or deliberate padding: identify the account from the authority table in access-controlled tooling and decide which. Unknown account, sudden jump instead of ~8 rows per PIN recovery, or rows that do not look like enclave records: treat as suspected tampering (page security, preserve PITR/stream/CloudTrail evidence). Known canary/high-traffic growth: follow the README capacity note (re-run the probe before raising bounds). Repeats every 15 minutes (up to 3x per run with retries) until resolved; do not mute the shared topic. That account is unaudited until resolved. |
-| Missing SweepCompleted                       | No successful full sweep for two 30-minute periods. Check EventBridge delivery, Lambda duration/errors, and ledger growth; do not interpret absent integrity metrics as health.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Missing SweepCompleted                       | No successful full sweep for two 30-minute periods. Check EventBridge delivery, Lambda duration/errors, and ledger growth; do not interpret absent integrity metrics as health. For the authority sweep, `authority sweep: deadline reached` in the monitor log means the table outgrew one invocation (see the capacity note's next step); the same accounts are skipped on every run, so treat it as an incident, never as tolerated noise.                                                                                                                                                                                                                                                                                                                                                                       |
 | EscrowKmsGovernanceChange                    | PutKeyPolicy, CreateGrant, ScheduleKeyDeletion or DisableKey on the escrow CMK, including denied attempts. Immediately reconcile CloudTrail actor/action with approved two-person change records. Unapproved policy/grant activity is a security incident (D10).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | EscrowPrivateLinkChange                      | Endpoint-service permission, configuration, notification or acceptance change (account-wide, including denied calls). The page carries eventName, eventID and eventTime; look up the eventID in CloudTrail for caller and request. Reconcile with the change record; an unexpected acceptance or principal change is a security incident: reject the connection and restore allowed principals.                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Endpoint connection notification             | Raw `vpce` notice (ServiceId, VpcEndpointId, VpcEndpointOwner, EndpointState) on Connect/Accept/Reject/Delete. Accept only the reviewed lca-api endpoint ID from the expected owner; reject anything else. An unplanned Delete means lca-api lost its path to the enclave.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
