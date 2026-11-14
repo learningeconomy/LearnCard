@@ -1,5 +1,11 @@
 # @welibraryos/lca-api-service
 
+## 1.8.1
+
+### Patch Changes
+
+- [#2039](https://github.com/learningeconomy/LearnCard/pull/2039) [`4c980dd2eeac86a00dc58603f1076de2d92df4c4`](https://github.com/learningeconomy/LearnCard/commit/4c980dd2eeac86a00dc58603f1076de2d92df4c4) Thanks [@gerardopar](https://github.com/gerardopar)! - fix(scouts): enable production signing-authority seed encryption
+
 ## 1.8.0
 
 ### Minor Changes
