@@ -1,5 +1,11 @@
 # @learncard/escrow-canary
 
+## 0.3.4
+
+### Patch Changes
+
+- [#2041](https://github.com/learningeconomy/LearnCard/pull/2041) [`5e377bc5b99dc2582b0ffc2372c8ba6ef3b4ff50`](https://github.com/learningeconomy/LearnCard/commit/5e377bc5b99dc2582b0ffc2372c8ba6ef3b4ff50) Thanks [@Custard7](https://github.com/Custard7)! - Run tier 2 every 12 hours per account (`cron(5,35 0,12 * * ? *)`, 12-hour alarm periods): hourly PIN recoveries filled the escrow ledger monitor's per-account row limit.
+
 ## 0.3.3
 
 ### Patch Changes
