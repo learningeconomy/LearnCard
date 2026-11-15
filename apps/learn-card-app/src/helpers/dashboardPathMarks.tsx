@@ -18,6 +18,9 @@ export type DashboardPathStep =
     | 'routes_commit' // Routes committed
     | 'root_redirect' // `/` rendered its logged-in redirect
     | 'root_redirect_login' // `/` rendered its logged-out redirect
+    | 'page_chunk_start' // DashboardPage's chunk was first requested (preload or lazy render)
+    | 'page_chunk_loaded' // ...and its module promise resolved
+    | 'page_direct' // /dashboard mounted DashboardPage without suspending (chunk already loaded)
     | 'dashboard_commit' // DashboardPage committed
     | 'root_fallback_shown' // FullApp's root Suspense fallback committed
     | 'root_fallback_hidden' // ...and was replaced by content
