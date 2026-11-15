@@ -256,3 +256,17 @@ f947b4cbd vs baseline 52c8b0afd, alternating, n=20 per build per scenario, local
 - Slow groups: URL flip 3/20 → 0/20 full, 0 → 0 UMTS. Commit mark on f947b4cbd: 8/20 full, 8/20 UMTS (the
   walletReady+~110 ms long task, still open).
 - Stalls: baseline 1/40 (nav→entry 23.3 s on UMTS, consistent with the FluentEmoji @import H10 removed); f947b4cbd 0/40.
+
+## The long task, identified (Roadie CDP trace, 3 cold launches of f947b4cbd, full)
+
+- **Measured:** one 125–133 ms task under tracing (110–120 ms untraced), starting 92–114 ms after walletReady. It is the
+  native bridge result (`androidBridge.onmessage` → `returnResult`) resuming `restoreClient` (in the `useLogout-*` chunk):
+  the TanStack Query persisted-cache restore. It reads native storage, JSON-parses, then
+  `persistQueryClientRestore` → `hydrate`.
+- **Measured:** ~97 ms of self time is `setTimeout`. Main stack: `setTimeout` < Sentry's setTimeout wrapper < `scheduleGc`
+  < `QueryCache.build` < `hydrate` (~90 ms). About 1,720 GC timers per launch (~1,080 at 5 min gcTime, 641 at 7 days).
+- **Fix options (inferred, not benched):** persist less (`shouldDehydrateQuery` / `dehydrateOptions`, `maxAge`); defer the
+  restore until after the first dashboard commit (must not show stale or another user's data); keep Sentry from
+  wrapping these timers. This is now next idea #1 and should remove most of the 8/20 commit-mark slow group.
+- Before/after clip (UMTS): FrenchFry `~/roadie-scratch/lca-bench/clips/merged-vs-final.mp4` (baseline take 2260 ms,
+  final take 1928 ms). Traces: `~/roadie-scratch/lca-bench/traces/f947b4cbd-longtask.md`.
