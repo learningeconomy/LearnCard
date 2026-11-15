@@ -69,8 +69,7 @@ import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerif
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import { useTranscriptPrompt } from './hooks/useTranscriptPrompt';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
-import { reconcileQualificationCategories } from 'learn-card-base/helpers/qualificationCategoryBackfill';
-import { reconcileCredentialVisibility } from 'learn-card-base/helpers/credentialVisibilityBackfill';
+import { runCredentialIndexBackfills } from 'learn-card-base/helpers/credentialVisibilityBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 
 const log = getLogger('app-router');
@@ -168,13 +167,11 @@ const AppRouter: React.FC = () => {
     const cloudUrl = networkStore.use.cloudUrl();
 
     useEffect(() => {
-        if (!walletReady || !isLoggedIn || isShareViewer || !activeWallet) return;
-        // Sequential: both read-modify-write index records.
-        void reconcileQualificationCategories(activeWallet, queryClient, cloudUrl)
-            .catch(error => log.warn('Wallet category reconciliation failed', error))
-            .then(() => reconcileCredentialVisibility(activeWallet, queryClient, cloudUrl))
-            .catch(error => log.warn('Wallet visibility reconciliation failed', error));
-    }, [walletReady, isLoggedIn, isShareViewer, activeWallet, queryClient, cloudUrl]);
+        // The signed-in wallet, not walletReady: the demo login sets the wallet store without
+        // the auth coordinator, so walletReady stays false for that whole session.
+        if (!isLoggedIn || isShareViewer || !activeWallet) return;
+        void runCredentialIndexBackfills(activeWallet, queryClient, cloudUrl);
+    }, [isLoggedIn, isShareViewer, activeWallet, queryClient, cloudUrl]);
 
     useEffect(() => {
         if (

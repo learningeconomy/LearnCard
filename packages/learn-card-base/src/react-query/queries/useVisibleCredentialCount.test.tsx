@@ -225,13 +225,17 @@ describe('Counts leave hidden records out (LC-2413 count endpoint)', () => {
     });
 
     it('before the backfill, Passport and Home counts come from one index read and equal the visible records', async () => {
-        const { getPage } = makeWallet();
+        const { getPage, learnCloudCreate } = makeWallet();
+        // The counts start the backfill; hold its marker write so this stays before it.
+        learnCloudCreate.mockImplementation(() => new Promise(() => undefined));
         const { result } = renderHook(useAllCounts, { wrapper });
 
         await waitFor(() => expect(values(result.current)).toEqual(expectedValues()));
+        await waitFor(() => expect(learnCloudCreate).toHaveBeenCalled());
         expect(values(result.current)).toEqual({ home: 6, tiles: [3, 2, 1] });
         expect(result.current.home.source).toBe('walk');
-        // No marker, so the raw counts are not shown; one 1000-record read replaces the walk.
+        // No marker, so the raw counts are not shown; one 1000-record read replaces the walk,
+        // and the backfill reuses it.
         expect(getPage).toHaveBeenCalledTimes(1);
         expect(getPage).toHaveBeenCalledWith({}, { cursor: undefined, limit: 1000 });
     });
@@ -326,13 +330,16 @@ describe('Counts leave hidden records out (LC-2413 count endpoint)', () => {
 
     it('a failed backfill write leaves the account on the walk, so counts stay exact', async () => {
         const { update, learnCloudCreate } = makeWallet();
-        update.mockImplementationOnce(async () => false);
+        update.mockImplementation(async () => false);
         await reconcileCredentialVisibility(host.wallet!, client, 'cloud');
         expect(isCredentialVisibilityBackfillComplete(backfillKey)).toBe(false);
         expect(learnCloudCreate).not.toHaveBeenCalled();
 
         const { result } = renderHook(useAllCounts, { wrapper });
         await waitFor(() => expect(values(result.current)).toEqual(expectedValues()));
+        await new Promise(resolve => setTimeout(resolve, 50));
+        // The counts retried the backfill; it failed again, so still no marker.
+        expect(learnCloudCreate).not.toHaveBeenCalled();
         expect(result.current.home.source).toBe('walk');
     });
 

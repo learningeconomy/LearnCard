@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { LCR } from 'learn-card-base/types/credential-records';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { isCredentialCollectionRecordVisible } from './credentialCollection';
+import { reconcileQualificationCategories } from './qualificationCategoryBackfill';
 import { getLogger } from '../logging/logger';
 
 const log = getLogger('credential-visibility-backfill');
@@ -9,6 +10,7 @@ const log = getLogger('credential-visibility-backfill');
 const completed = new Set<string>();
 const listeners = new Set<() => void>();
 const runs = new Map<string, Promise<void>>();
+const backfillRuns = new Map<string, Promise<void>>();
 
 export const getCredentialVisibilityBackfillKey = (did: string, cloudUrl = '') =>
     `credential-visibility-backfill:v1:${cloudUrl}:${did}`;
@@ -54,8 +56,9 @@ const markerReads = new Map<string, Promise<boolean>>();
 /**
  * True once any device has finished this account's backfill. Reads the LearnCloud marker,
  * unless this device already knows, and remembers a marker it finds. Callers in the same
- * tick share one read, so it goes out in the same batched request as the counts. A failed
- * read counts as no marker.
+ * tick share one read, so it goes out in the same batched request as their counts; a caller
+ * in a later tick (a page mounted after that request went out) sends its own read with its
+ * own counts instead of waiting on another request. A failed read counts as no marker.
  */
 export const readCredentialVisibilityMarker = (
     wallet: BespokeLearnCard,
@@ -76,8 +79,13 @@ export const readCredentialVisibilityMarker = (
             // No marker: the caller falls back to reading the index.
         }
         return false;
-    })().finally(() => markerReads.delete(key));
+    })();
+    const forget = () => {
+        if (markerReads.get(key) === read) markerReads.delete(key);
+    };
     markerReads.set(key, read);
+    setTimeout(forget, 0);
+    void read.finally(forget);
     return read;
 };
 
@@ -85,15 +93,25 @@ export const readCredentialVisibilityMarker = (
 export const CREDENTIAL_INDEX_SNAPSHOT_LIMIT = 1000;
 
 const snapshotLoads = new Map<string, Promise<LCR[]>>();
+const lastSnapshots = new Map<string, { loadedAt: number; records: LCR[] }>();
+
+/** How old a finished read the backfill reuses, so it doesn't read the index right after the counts did. */
+export const CREDENTIAL_INDEX_SNAPSHOT_REUSE_MS = 60_000;
 
 /**
  * Every index record, in 1000-record pages. Concurrent callers (the counts' fallback and the
- * backfill) share one read. Rejects if any page fails or a page can't be continued.
+ * backfill) share one read. With `maxAgeMs`, a finished read at most that old is reused.
+ * Rejects if any page fails or a page can't be continued.
  */
-export const loadCredentialIndexSnapshot = (wallet: BespokeLearnCard): Promise<LCR[]> => {
+export const loadCredentialIndexSnapshot = (
+    wallet: BespokeLearnCard,
+    { maxAgeMs = 0 }: { maxAgeMs?: number } = {}
+): Promise<LCR[]> => {
     const key = wallet.id.did();
     const existing = snapshotLoads.get(key);
     if (existing) return existing;
+    const last = lastSnapshots.get(key);
+    if (last && Date.now() - last.loadedAt <= maxAgeMs) return Promise.resolve(last.records);
     type Page = { records?: LCR[]; hasMore?: boolean; cursor?: string };
     const load = (async () => {
         const records: LCR[] = [];
@@ -107,6 +125,7 @@ export const loadCredentialIndexSnapshot = (wallet: BespokeLearnCard): Promise<L
             records.push(...(page.records ?? []));
             cursor = page.hasMore ? page.cursor : undefined;
         } while (cursor);
+        lastSnapshots.set(key, { loadedAt: Date.now(), records });
         return records;
     })().finally(() => snapshotLoads.delete(key));
     snapshotLoads.set(key, load);
@@ -119,6 +138,8 @@ export const resetCredentialVisibilityBackfillForTests = () => {
     runs.clear();
     markerReads.clear();
     snapshotLoads.clear();
+    lastSnapshots.clear();
+    backfillRuns.clear();
 };
 
 /** The change, if any, that makes a record's stored metadata say what the collection shows. */
@@ -154,7 +175,10 @@ export const reconcileCredentialVisibility = async (
 
         let records: LCR[];
         try {
-            records = await loadCredentialIndexSnapshot(wallet);
+            // Usually the read the counts just made on this device.
+            records = await loadCredentialIndexSnapshot(wallet, {
+                maxAgeMs: CREDENTIAL_INDEX_SNAPSHOT_REUSE_MS,
+            });
         } catch (error) {
             log.warn('Failed to scan wallet index for visibility backfill', error);
             return;
@@ -201,7 +225,11 @@ export const reconcileCredentialVisibility = async (
                           }),
                       ]
                     : []),
-                queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),
+                // Not the 1000-record read: the counts stop using it once the marker exists.
+                queryClient.invalidateQueries({
+                    queryKey: ['useGetCredentialCount'],
+                    predicate: query => query.queryKey[4] !== 'index-snapshot',
+                }),
             ]).catch(error => log.warn('Failed to invalidate credential caches', error));
         }
     })();
@@ -211,4 +239,27 @@ export const reconcileCredentialVisibility = async (
         .finally(() => runs.delete(key));
     runs.set(key, safeRun);
     await safeRun;
+};
+
+/**
+ * Both wallet index backfills, once per account/cloud per app session, one after the other
+ * (both read-modify-write index records). Visibility goes first, since the Passport/Home
+ * counts wait on its marker. The app shell starts it, and so do the counts when the marker
+ * is missing, so a sign-in that skips the auth coordinator (the demo login) still runs it.
+ */
+export const runCredentialIndexBackfills = (
+    wallet: BespokeLearnCard,
+    queryClient?: QueryClient,
+    cloudUrl = ''
+): Promise<void> => {
+    const key = getCredentialVisibilityBackfillKey(wallet.id.did(), cloudUrl);
+    const existing = backfillRuns.get(key);
+    if (existing) return existing;
+    // Neither backfill rejects; each one handles its own failures.
+    const run = reconcileCredentialVisibility(wallet, queryClient, cloudUrl)
+        .catch(() => undefined)
+        .then(() => reconcileQualificationCategories(wallet, queryClient, cloudUrl))
+        .catch(() => undefined);
+    backfillRuns.set(key, run);
+    return run;
 };

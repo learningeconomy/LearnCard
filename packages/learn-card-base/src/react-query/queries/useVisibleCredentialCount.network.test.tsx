@@ -108,12 +108,15 @@ const procedures: Record<string, (input: any) => unknown> = {
     },
 };
 
+/** Server round trip, so a later mount can start while an earlier request is in flight. */
+let responseDelayMs = 0;
 const fakeFetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
     const { pathname } = new globalThis.URL(String(url));
     const paths = decodeURIComponent(pathname.replace('/trpc/', '')).split(',');
     const inputs = JSON.parse(String(init?.body ?? '{}'));
     const calls: Call[] = paths.map((path, i) => ({ path, input: inputs[i] }));
     if (!paths.every(path => path.startsWith('utilities.'))) requests.push(calls);
+    if (responseDelayMs) await new Promise(resolve => setTimeout(resolve, responseDelayMs));
     const body = calls.map(({ path, input }) => {
         const handler = procedures[path];
         if (!handler) throw new Error(`unexpected procedure ${path}`);
@@ -148,12 +151,22 @@ const seed = async (records: LCR[]) => {
     );
 };
 
-const makeWallet = async () => {
+/**
+ * In the browser each field hash is an awaited crypto call that settles in a later task, so a
+ * query with more fields is ready later. `slowHash` models that; an instant hash hides batch
+ * splits (LC-2413 acceptance run).
+ */
+const slowHash = async (message: string) => {
+    await new Promise(resolve => setTimeout(resolve, 0));
+    return hashOf(message);
+};
+
+const makeWallet = async ({ realisticHash = false } = {}) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the minimal LearnCard the plugin binds to
     const learnCard: any = {
         id: { did: () => 'did:key:holder' },
         invoke: {
-            hash: hashOf,
+            hash: realisticHash ? slowHash : hashOf,
             createDagJwe: async (value: unknown) => value,
             decryptDagJwe: async (value: unknown) => value,
             getDidAuthVp: async () => 'did-auth-jwt',
@@ -214,6 +227,7 @@ const freshDevice = () => {
 
 beforeEach(async () => {
     vi.stubGlobal('fetch', fakeFetch);
+    responseDelayMs = 0;
     freshDevice();
     documents = [];
     requests = [];
@@ -266,7 +280,7 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
         ]);
     });
 
-    it('marker absent: one batched request, then one index.get at limit 1000; hidden left out, uris deduped', async () => {
+    it('marker absent: one batched request, then one index.get at limit 1000; hidden left out, uris deduped; then the counts start the backfill', async () => {
         const records = [
             ...FIXTURE,
             // An existing duplicate-uri row: the walk shows it once.
@@ -275,16 +289,102 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
         await seed(records);
         host.wallet = await makeWallet();
 
-        const { result } = renderHook(useAllCounts, { wrapper });
-        await waitFor(() => expect(values(result.current)).toEqual(expected(records)));
+        const shown: { source: string; home: number | null; tiles: (number | null)[] }[] = [];
+        const { result } = renderHook(
+            () => {
+                const counts = useAllCounts();
+                shown.push({ source: counts.home.source, ...values(counts) });
+                return counts;
+            },
+            { wrapper }
+        );
+        await waitFor(() => expect(documents).toHaveLength(1));
+        await waitFor(() => expect(result.current.home.source).toBe('count'));
+        await waitFor(() => expect(result.current.home.count).not.toBeNull());
         await new Promise(resolve => setTimeout(resolve, 50));
 
-        expect(values(result.current)).toEqual({ home: 5, tiles: [2, 2, 1] });
-        expect(result.current.home.source).toBe('walk');
-        expect(procedureNames()).toEqual([
+        // Before the marker: the 1000-record read, filtered and deduped on the client.
+        expect(shown).toContainEqual({ source: 'walk', ...expected(records) });
+        expect(expected(records)).toEqual({ home: 5, tiles: [2, 2, 1] });
+        // Then the backfill starts: its own marker read, after that read.
+        expect(procedureNames().slice(0, 3)).toEqual([
             ['customStorage.count', 'index.count', 'index.count', 'index.count', 'index.count'],
             ['index.get'],
+            ['customStorage.count'],
         ]);
         expect(requests[1]![0]!.input).toMatchObject({ limit: 1000 });
+        // The backfill reused that read, marked the hidden rows and left the marker.
+        const calls = requests.flat();
+        expect(calls.filter(call => call.input?.limit === 1000)).toHaveLength(1);
+        expect(calls.filter(call => call.path === 'index.update').length).toBeGreaterThan(0);
+        expect(calls.filter(call => call.path === 'customStorage.create')).toHaveLength(1);
+        // After it: the index count, where an existing duplicate-uri row counts once per row.
+        expect(values(result.current)).toEqual({ home: 6, tiles: [2, 3, 1] });
+    });
+
+    it('with real hashing time, the marker read and the counts still go in one request', async () => {
+        await reconcileCredentialVisibility(await makeWallet(), client, 'cloud');
+        freshDevice();
+        host.wallet = await makeWallet({ realisticHash: true });
+
+        const { result } = renderHook(useAllCounts, { wrapper });
+        await waitFor(() => expect(values(result.current)).toEqual(expected(FIXTURE)));
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(result.current.home.source).toBe('count');
+        expect(procedureNames()).toEqual([
+            ['customStorage.count', 'index.count', 'index.count', 'index.count', 'index.count'],
+        ]);
+    });
+
+    it('Home, then Passport while the first request is in flight: each count request carries its own marker read, and no index.get', async () => {
+        await reconcileCredentialVisibility(await makeWallet(), client, 'cloud');
+        freshDevice();
+        host.wallet = await makeWallet({ realisticHash: true });
+        responseDelayMs = 400;
+
+        const home = renderHook(() => useVisibleCredentialCount(), { wrapper });
+        await waitFor(() => expect(requests.length).toBe(1));
+        const passport = renderHook(() => TILES.map(tile => useVisibleCredentialCount(tile)), {
+            wrapper,
+        });
+        await waitFor(() => expect(home.result.current.count).toBe(walkCount(FIXTURE)));
+        await waitFor(() =>
+            expect(passport.result.current.map(tile => tile.count)).toEqual(
+                TILES.map(tile => walkCount(FIXTURE, tile))
+            )
+        );
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        expect(procedureNames()).toEqual([
+            ['customStorage.count', 'index.count'],
+            ['customStorage.count', 'index.count', 'index.count', 'index.count'],
+        ]);
+    });
+
+    it('marker absent, counts shown with no app-level backfill: the counts start it, and it writes the marker even when no record needs an update', async () => {
+        // Every record the collection hides is already marked, so the scan has nothing to update.
+        const marked = FIXTURE.map(record =>
+            isCredentialCollectionRecordVisible(record) || record.category === 'Hidden'
+                ? record
+                : { ...record, hidden: true }
+        ) as LCR[];
+        await seed(marked);
+        host.wallet = await makeWallet({ realisticHash: true });
+
+        const { result } = renderHook(useAllCounts, { wrapper });
+        await waitFor(() => expect(values(result.current)).toEqual(expected(marked)));
+        await waitFor(() => expect(documents).toHaveLength(1), { timeout: 3000 });
+        await waitFor(() => expect(result.current.home.source).toBe('count'));
+        await waitFor(() => expect(values(result.current)).toEqual(expected(marked)));
+
+        const calls = requests.flat().map(call => call.path);
+        expect(calls.filter(path => path === 'customStorage.create')).toHaveLength(1);
+        expect(calls.filter(path => path === 'index.update')).toHaveLength(0);
+        // One shared 1000-record read serves the fallback counts and the backfill scan.
+        const scans = requests
+            .flat()
+            .filter(call => call.path === 'index.get' && call.input?.limit === 1000);
+        expect(scans).toHaveLength(1);
     });
 });

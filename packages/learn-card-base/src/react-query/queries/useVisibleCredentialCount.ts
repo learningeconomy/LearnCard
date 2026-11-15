@@ -11,6 +11,7 @@ import {
     isCredentialVisibilityBackfillComplete,
     loadCredentialIndexSnapshot,
     readCredentialVisibilityMarker,
+    runCredentialIndexBackfills,
     subscribeCredentialVisibilityBackfill,
 } from '../../helpers/credentialVisibilityBackfill';
 import { walletStore, switchedProfileStore } from '../../stores/walletStore';
@@ -131,9 +132,13 @@ export const useVisibleCredentialCount = (
     const snapshot = useQuery({
         // Under the count prefix, so every writer's count invalidation reaches it.
         queryKey: ['useGetCredentialCount', switchedDid ?? '', '', readerDid, 'index-snapshot'],
-        queryFn: () => {
+        queryFn: async () => {
             if (!reader) throw new Error('Credential reader changed');
-            return loadCredentialIndexSnapshot(reader);
+            const records = await loadCredentialIndexSnapshot(reader);
+            // Start the backfill here too, reusing this read: the app shell only starts it after
+            // an auth coordinator sign-in, so other sign-ins would never write the marker.
+            void runCredentialIndexBackfills(reader, queryClient, cloudUrl);
+            return records;
         },
         enabled: enabled && Boolean(reader) && needsSnapshot,
         staleTime: CREDENTIAL_LIST_STALE_TIME,
