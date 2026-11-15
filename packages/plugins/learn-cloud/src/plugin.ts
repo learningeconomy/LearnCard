@@ -129,6 +129,32 @@ export const getLearnCloudPlugin = async (
         }
     };
 
+    /**
+     * The index count can't dedupe by uri: the server only sees it encrypted and as an
+     * unlabelled field hash. So a uri that's already indexed isn't added again (LC-2413).
+     * A failed lookup adds as before.
+     */
+    const isUriIndexed = async (
+        _learnCard: typeof initialLearnCard,
+        currentClient: LearnCloudClient,
+        uri: unknown
+    ): Promise<boolean> => {
+        if (typeof uri !== 'string' || !uri) return false;
+        try {
+            const jwe = await currentClient.index.count.query({
+                query: await generateJWE(
+                    _learnCard,
+                    await getLearnCloudDid(currentClient),
+                    await generateIndexQuery(_learnCard, { uri }, unencryptedFields)
+                ),
+            });
+            const count = isEncrypted(jwe) ? await decryptJWE<number>(_learnCard, jwe) : jwe;
+            return Number(count) > 0;
+        } catch {
+            return false;
+        }
+    };
+
     let updateQueue = Promise.resolve();
 
     const updateLearnCard = (
@@ -687,6 +713,9 @@ export const getLearnCloudPlugin = async (
             },
             add: async (_learnCard, record) => {
                 const currentClient = await updateLearnCard(_learnCard);
+
+                // Already indexed: nothing to add, and callers treat it as stored.
+                if (await isUriIndexed(_learnCard, currentClient, record.uri)) return true;
 
                 const id = record.id || _learnCard.invoke.crypto().randomUUID();
 
