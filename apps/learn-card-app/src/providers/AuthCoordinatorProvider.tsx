@@ -1002,7 +1002,7 @@ const AuthSessionManager: React.FC<{
                 const resolved = await resolveMigrationKey({
                     fetchArchivedKey: async () => {
                         if (!coordinator.keyDerivation.fetchArchivedKey) return null;
-                        const token = await authProvider.getIdToken();
+                        const token = await authProvider.getIdToken(true);
                         return coordinator.keyDerivation.fetchArchivedKey(
                             token,
                             authProvider.getProviderType()
@@ -1020,6 +1020,7 @@ const AuthSessionManager: React.FC<{
                     isCurrentAttempt,
                 });
                 if (!resolved) {
+                    if (!isCurrentAttempt()) return;
                     emitAuthError('web3auth:migration_key', 'No sign-in session available');
                     fallBack();
                     return;
