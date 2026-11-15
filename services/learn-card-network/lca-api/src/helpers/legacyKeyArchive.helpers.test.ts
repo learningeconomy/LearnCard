@@ -108,6 +108,9 @@ describe('archived legacy key release', () => {
     it('rejects a primary DID mismatch', async () => {
         expect(await releaseArchivedKey(uid, 'did:key:zOther')).toBeNull();
     });
+    it('treats an empty recorded primary DID as unknown', async () => {
+        expect(await releaseArchivedKey(uid, '')).toEqual({ privateKey, did });
+    });
     it('rejects a different KMS key', async () => {
         mocks.kms.mockResolvedValueOnce({ KeyId: 'wrong', Plaintext: plaintext });
         expect(await releaseArchivedKey(uid)).toBeNull();
@@ -125,8 +128,15 @@ describe('archived legacy key release', () => {
             { Key: 'state', Value: 'released' },
             { Key: 'releasedAt', Value: expect.any(String) },
         ]);
+        expect(mocks.s3.mock.calls[0]?.[1]?.abortSignal).toBeInstanceOf(AbortSignal);
         mocks.s3.mockRejectedValueOnce(new Error('sensitive failure'));
         await expect(markArchivedKeyReleased(uid)).resolves.toBeUndefined();
+    });
+    it('does not tag when the archive is disabled', async () => {
+        mocks.environment.LEGACY_KEY_ARCHIVE_ENABLED = false;
+        await markArchivedKeyExhausted(uid);
+        await markArchivedKeyReleased(uid);
+        expect(mocks.s3).not.toHaveBeenCalled();
     });
     it.each(['s3', 'kms'] as const)('sanitizes unexpected %s failures', async service => {
         mocks[service].mockRejectedValueOnce(new Error('sensitive failure'));

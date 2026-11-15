@@ -7,14 +7,19 @@ import { environment } from '@environment';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import admin from 'firebase-admin';
-import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'crypto';
+import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import type { TenantBranding } from '@learncard/email-templates';
 
 import { t, openRoute, didRoute, didAndChallengeRoute, type Context } from '@routes';
 import { getDeliveryService, getFrom } from '../services/delivery';
 import { getEscrowBlobStaleReason, notifyEscrowHoldEvent } from '../services/escrow-enclave';
 import { cancelHoldInEnclave } from '../services/escrow-enclave/cancellation';
-import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
+import {
+    verifyAuthToken,
+    getContactMethodFromUser,
+    AuthProviderType,
+    type VerifyTokenOptions,
+} from '@helpers/auth.helpers';
 import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import { maskEmail } from '@helpers/maskEmail';
 import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
@@ -192,15 +197,18 @@ const sendRecoveryKeyToEscrowRelay = async (
     }
 };
 
-export async function verifyAndGetContactMethod(input: {
-    authToken: string;
-    providerType: AuthProviderType;
-}): Promise<{
+export async function verifyAndGetContactMethod(
+    input: {
+        authToken: string;
+        providerType: AuthProviderType;
+    },
+    options: VerifyTokenOptions = {}
+): Promise<{
     user: { id: string; email?: string; phone?: string; providerType: string };
     contactMethod: ContactMethod;
     authProvider: AuthProviderMapping;
 }> {
-    const user = await verifyAuthToken(input.authToken, input.providerType);
+    const user = await verifyAuthToken(input.authToken, input.providerType, options);
 
     const contactMethod = getContactMethodFromUser(user);
     if (!contactMethod) {
@@ -1645,7 +1653,8 @@ export const keysRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             if (!isLegacyKeyArchiveEnabled()) return { available: false };
             if (input.providerType !== 'firebase') return { available: false };
-            const { authProvider } = await verifyAndGetContactMethod(input);
+            // Releases a durable key, so a revoked session or disabled user must not pass.
+            const { authProvider } = await verifyAndGetContactMethod(input, { checkRevoked: true });
             const allowed = await Promise.all([
                 checkRateLimit(`archived-key:uid:${authProvider.id}`, 20, 3600),
                 checkRateLimit(`archived-key:ip:${ctx.clientIp ?? 'unknown'}`, 200, 3600),
@@ -1725,19 +1734,7 @@ export const keysRouter = t.router({
                 });
             }
 
-            if (isLegacyKeyArchiveEnabled() && authProvider.type === 'firebase') {
-                try {
-                    await markArchivedKeyExhausted(authProvider.id);
-                } catch {
-                    console.warn({
-                        event: 'archived_key_exhaustion_failed',
-                        uidHash: createHash('sha256')
-                            .update(authProvider.id)
-                            .digest('hex')
-                            .slice(0, 16),
-                    });
-                }
-            }
+            if (authProvider.type === 'firebase') await markArchivedKeyExhausted(authProvider.id);
 
             return { success: true };
         }),

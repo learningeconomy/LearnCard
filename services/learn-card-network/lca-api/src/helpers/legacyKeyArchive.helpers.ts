@@ -45,6 +45,8 @@ const isMissing = (error: unknown): boolean => {
 export const isLegacyKeyArchiveEnabled = (): boolean =>
     environment.LEGACY_KEY_ARCHIVE_ENABLED === true;
 
+const TAG_BUDGET_MS = 1_500;
+
 const tagArchivedKey = async (uid: string, state: 'released' | 'exhausted'): Promise<void> => {
     try {
         await getClients().s3.send(
@@ -57,7 +59,8 @@ const tagArchivedKey = async (uid: string, state: 'released' | 'exhausted'): Pro
                         { Key: `${state}At`, Value: new Date().toISOString() },
                     ],
                 },
-            })
+            }),
+            { abortSignal: AbortSignal.timeout(TAG_BUDGET_MS) }
         );
     } catch (error) {
         if (state !== 'exhausted' || !isMissing(error)) warn(uid, 'archived_key_tag_failed');
@@ -137,10 +140,7 @@ export const releaseArchivedKey = async (
             return null;
         }
         const did = (await getEphemeralLearnCard(privateKey)).id.did();
-        if (
-            did !== record.did ||
-            (expectedPrimaryDid !== undefined && did !== expectedPrimaryDid)
-        ) {
+        if (did !== record.did || (expectedPrimaryDid && did !== expectedPrimaryDid)) {
             warn(uid, 'archived_key_identity_mismatch');
             return null;
         }

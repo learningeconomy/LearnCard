@@ -119,7 +119,9 @@ describe('getArchivedKey', () => {
             privateKey: 'a'.repeat(64),
             did,
         });
-        expect(mocks.verify).toHaveBeenCalledWith(input.authToken, 'firebase');
+        expect(mocks.verify).toHaveBeenCalledWith(input.authToken, 'firebase', {
+            checkRevoked: true,
+        });
         expect(mocks.find).toHaveBeenCalledWith('firebase', uid);
         expect(mocks.release).toHaveBeenCalledWith(uid, record?.primaryDid);
         expect(mocks.released).toHaveBeenCalledWith(uid);
@@ -172,6 +174,34 @@ describe('getArchivedKey', () => {
         await expect(caller.getArchivedKey(input)).rejects.toThrow();
         expect(mocks.release).not.toHaveBeenCalled();
     });
+    it('verifies with revocation and disabled-user checks', async () => {
+        await caller.getArchivedKey(input);
+        expect(mocks.verify).toHaveBeenCalledWith(input.authToken, 'firebase', {
+            checkRevoked: true,
+        });
+    });
+    it.each(['auth/id-token-revoked', 'auth/user-disabled'])(
+        'never touches the archive for a %s token',
+        async code => {
+            mocks.verify.mockRejectedValueOnce(Object.assign(new Error('rejected'), { code }));
+            await expect(caller.getArchivedKey(input)).rejects.toThrow();
+            expect(mocks.find).not.toHaveBeenCalled();
+            expect(mocks.release).not.toHaveBeenCalled();
+            expect(mocks.released).not.toHaveBeenCalled();
+        }
+    );
+    it('releases to a legacy account, then refuses once that login is active SSS', async () => {
+        mocks.find.mockResolvedValueOnce({ keyProvider: null, primaryDid: did });
+        expect(await caller.getArchivedKey(input)).toMatchObject({ available: true });
+        mocks.release.mockClear();
+        mocks.find.mockResolvedValueOnce({
+            keyProvider: 'sss',
+            sssActivationState: 'active',
+            primaryDid: did,
+        });
+        expect(await caller.getArchivedKey(input)).toEqual({ available: false });
+        expect(mocks.release).not.toHaveBeenCalled();
+    });
 });
 
 describe('activate archive exhaustion', () => {
@@ -190,23 +220,12 @@ describe('activate archive exhaustion', () => {
             mocks.exhausted.mock.invocationCallOrder[0]!
         );
     });
-    it('preserves success when tagging throws', async () => {
-        mocks.exhausted.mockRejectedValueOnce(new Error('sensitive failure'));
-        expect(await caller.activate(input)).toEqual({ success: true });
-        expect(console.warn).toHaveBeenCalledWith({
-            event: 'archived_key_exhaustion_failed',
-            uidHash: expect.stringMatching(/^[a-f0-9]{16}$/),
-        });
-    });
     it('does not tag a failed activation', async () => {
         mocks.activate.mockResolvedValue(false);
         await expect(caller.activate(input)).rejects.toMatchObject({ code: 'CONFLICT' });
         expect(mocks.exhausted).not.toHaveBeenCalled();
     });
-    it('does not tag when disabled or for another provider', async () => {
-        mocks.enabled.mockReturnValue(false);
-        await caller.activate(input);
-        mocks.enabled.mockReturnValue(true);
+    it('does not tag for another provider', async () => {
         await caller.activate({ ...input, providerType: 'oidc' });
         expect(mocks.exhausted).not.toHaveBeenCalled();
     });
