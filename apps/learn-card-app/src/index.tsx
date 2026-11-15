@@ -1,3 +1,5 @@
+// First: replace Capacitor's payload-logging bridge hooks before any plugin call.
+import './nativeBridgeLogging';
 import './constants/sentry';
 import { LocaleProvider } from './i18n';
 import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
