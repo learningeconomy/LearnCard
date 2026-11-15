@@ -311,6 +311,7 @@ resources:
                         - Effect: Allow
                           Action:
                               - s3:GetObject
+                              - s3:GetObjectTagging
                               - s3:PutObjectTagging
                           Resource: 'arn:aws:s3:::${env:LEGACY_KEY_ARCHIVE_BUCKET, ""}/uid/*'
                         # Lets S3 answer 404 (no archive) rather than 403 for missing objects.

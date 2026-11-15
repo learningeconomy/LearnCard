@@ -25,7 +25,11 @@ vi.mock('@aws-sdk/client-kms', async importOriginal => ({
     },
 }));
 
-import { GetObjectCommand, PutObjectTaggingCommand } from '@aws-sdk/client-s3';
+import {
+    GetObjectCommand,
+    GetObjectTaggingCommand,
+    PutObjectTaggingCommand,
+} from '@aws-sdk/client-s3';
 import {
     markArchivedKeyExhausted,
     markArchivedKeyReleased,
@@ -80,14 +84,25 @@ describe('archived legacy key release', () => {
             mocks.kms.mock.calls[0]?.[0].input.CiphertextBlob.every((byte: number) => byte === 0)
         ).toBe(true);
     });
-    it.each([{ name: 'NoSuchKey' }, { $metadata: { httpStatusCode: 404 } }])(
-        'returns unavailable for missing objects',
-        async error => {
-            mocks.s3.mockRejectedValueOnce(error);
-            expect(await releaseArchivedKey(uid)).toBeNull();
-            expect(mocks.kms).not.toHaveBeenCalled();
-        }
-    );
+    it('returns unavailable for a missing object', async () => {
+        mocks.s3.mockRejectedValueOnce({ name: 'NoSuchKey' });
+        expect(await releaseArchivedKey(uid)).toBeNull();
+        expect(mocks.kms).not.toHaveBeenCalled();
+    });
+    it.each([
+        { name: 'NoSuchBucket', $metadata: { httpStatusCode: 404 } },
+        { name: 'AccessDenied', $metadata: { httpStatusCode: 403 } },
+    ])('surfaces storage misconfiguration $name as an error with a safe log', async error => {
+        mocks.s3.mockRejectedValueOnce(error);
+        await expect(releaseArchivedKey(uid)).rejects.toMatchObject({
+            code: 'INTERNAL_SERVER_ERROR',
+        });
+        expect(console.warn).toHaveBeenCalledWith({
+            event: 'archived_key_release_failed',
+            uidHash: expect.stringMatching(/^[a-f0-9]{16}$/),
+            errorName: error.name,
+        });
+    });
     it.each([{ uid: 'different-user' }, { version: 1 }, { ciphertextB64: '!' }])(
         'rejects invalid records %j',
         async patch => {
@@ -123,12 +138,15 @@ describe('archived legacy key release', () => {
     });
     it('tags a released key best-effort', async () => {
         await markArchivedKeyReleased(uid);
-        expect(mocks.s3.mock.calls[0]?.[0]).toBeInstanceOf(PutObjectTaggingCommand);
-        expect(mocks.s3.mock.calls[0]?.[0].input.Tagging.TagSet).toEqual([
+        expect(mocks.s3.mock.calls[0]?.[0]).toBeInstanceOf(GetObjectTaggingCommand);
+        expect(mocks.s3.mock.calls[1]?.[0]).toBeInstanceOf(PutObjectTaggingCommand);
+        expect(mocks.s3.mock.calls[1]?.[0].input.Tagging.TagSet).toEqual([
             { Key: 'state', Value: 'released' },
             { Key: 'releasedAt', Value: expect.any(String) },
         ]);
-        expect(mocks.s3.mock.calls[0]?.[1]?.abortSignal).toBeInstanceOf(AbortSignal);
+        const signal = mocks.s3.mock.calls[0]?.[1]?.abortSignal;
+        expect(signal).toBeInstanceOf(AbortSignal);
+        expect(mocks.s3.mock.calls[1]?.[1]?.abortSignal).toBe(signal);
         mocks.s3.mockRejectedValueOnce(new Error('sensitive failure'));
         await expect(markArchivedKeyReleased(uid)).resolves.toBeUndefined();
     });
@@ -145,12 +163,27 @@ describe('archived legacy key release', () => {
             cause: undefined,
         });
     });
-    it('tags exhaustion best-effort and silently ignores missing objects', async () => {
+    it('merges exhaustion into existing tags instead of replacing them', async () => {
+        mocks.s3.mockImplementation(async command =>
+            command instanceof GetObjectTaggingCommand
+                ? {
+                      TagSet: [
+                          { Key: 'state', Value: 'released' },
+                          { Key: 'releasedAt', Value: '2026-11-01T00:00:00.000Z' },
+                          { Key: 'retention', Value: 'keep' },
+                      ],
+                  }
+                : {}
+        );
         await markArchivedKeyExhausted(uid);
-        expect(mocks.s3.mock.calls[0]?.[0].input.Tagging.TagSet).toEqual([
+        expect(mocks.s3.mock.calls[1]?.[0].input.Tagging.TagSet).toEqual([
+            { Key: 'releasedAt', Value: '2026-11-01T00:00:00.000Z' },
+            { Key: 'retention', Value: 'keep' },
             { Key: 'state', Value: 'exhausted' },
             { Key: 'exhaustedAt', Value: expect.any(String) },
         ]);
+    });
+    it('tags exhaustion best-effort and silently ignores missing objects', async () => {
         mocks.s3.mockRejectedValueOnce({ name: 'NoSuchKey' });
         await expect(markArchivedKeyExhausted(uid)).resolves.toBeUndefined();
         expect(console.warn).not.toHaveBeenCalled();

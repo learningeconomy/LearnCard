@@ -174,6 +174,16 @@ describe('getArchivedKey', () => {
         await expect(caller.getArchivedKey(input)).rejects.toThrow();
         expect(mocks.release).not.toHaveBeenCalled();
     });
+    it('applies only the per-login limit when the client IP is unknown', async () => {
+        const noIpCaller = keysRouter.createCaller({
+            domain: 'localhost',
+            tenant: { id: 'learncard', emailBranding: {}, resolvedVia: 'default' },
+            user: { did, isChallengeValid: true },
+        } as Parameters<typeof keysRouter.createCaller>[0]);
+        expect(await noIpCaller.getArchivedKey(input)).toMatchObject({ available: true });
+        expect(mocks.rate).toHaveBeenCalledTimes(1);
+        expect(mocks.rate).toHaveBeenCalledWith(`archived-key:uid:${uid}`, 20, 3600);
+    });
     it('verifies with revocation and disabled-user checks', async () => {
         await caller.getArchivedKey(input);
         expect(mocks.verify).toHaveBeenCalledWith(input.authToken, 'firebase', {

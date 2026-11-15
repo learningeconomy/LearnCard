@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 import { DecryptCommand, KMSClient } from '@aws-sdk/client-kms';
-import { GetObjectCommand, PutObjectTaggingCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+    GetObjectCommand,
+    GetObjectTaggingCommand,
+    PutObjectTaggingCommand,
+    S3Client,
+} from '@aws-sdk/client-s3';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -33,14 +38,19 @@ const getClients = (): { s3: S3Client; kms: KMSClient } => {
     return { s3, kms };
 };
 
-const warn = (uid: string, event: string): void => {
-    console.warn({ event, uidHash: createHash('sha256').update(uid).digest('hex').slice(0, 16) });
+const errorName = (error: unknown): string =>
+    (error as { name?: unknown } | null)?.name?.toString() ?? 'unknown';
+
+const warn = (uid: string, event: string, error?: unknown): void => {
+    console.warn({
+        event,
+        uidHash: createHash('sha256').update(uid).digest('hex').slice(0, 16),
+        ...(error === undefined ? {} : { errorName: errorName(error) }),
+    });
 };
 
-const isMissing = (error: unknown): boolean => {
-    const failure = error as { name?: string; $metadata?: { httpStatusCode?: number } } | null;
-    return failure?.name === 'NoSuchKey' || failure?.$metadata?.httpStatusCode === 404;
-};
+// Only a missing object means "no archive"; NoSuchBucket and other 404s are misconfiguration.
+const isMissing = (error: unknown): boolean => errorName(error) === 'NoSuchKey';
 
 export const isLegacyKeyArchiveEnabled = (): boolean =>
     environment.LEGACY_KEY_ARCHIVE_ENABLED === true;
@@ -48,22 +58,29 @@ export const isLegacyKeyArchiveEnabled = (): boolean =>
 const TAG_BUDGET_MS = 1_500;
 
 const tagArchivedKey = async (uid: string, state: 'released' | 'exhausted'): Promise<void> => {
+    const object = { Bucket: environment.LEGACY_KEY_ARCHIVE_BUCKET, Key: `uid/${uid}.json` };
+    const abortSignal = AbortSignal.timeout(TAG_BUDGET_MS);
     try {
-        await getClients().s3.send(
+        const { s3: client } = getClients();
+        // PutObjectTagging replaces the whole set, so merge to keep earlier lifecycle timestamps.
+        const { TagSet = [] } = await client.send(new GetObjectTaggingCommand(object), {
+            abortSignal,
+        });
+        const updates = { state, [`${state}At`]: new Date().toISOString() };
+        await client.send(
             new PutObjectTaggingCommand({
-                Bucket: environment.LEGACY_KEY_ARCHIVE_BUCKET,
-                Key: `uid/${uid}.json`,
+                ...object,
                 Tagging: {
                     TagSet: [
-                        { Key: 'state', Value: state },
-                        { Key: `${state}At`, Value: new Date().toISOString() },
+                        ...TagSet.filter(tag => !tag.Key || !(tag.Key in updates)),
+                        ...Object.entries(updates).map(([Key, Value]) => ({ Key, Value })),
                     ],
                 },
             }),
-            { abortSignal: AbortSignal.timeout(TAG_BUDGET_MS) }
+            { abortSignal }
         );
     } catch (error) {
-        if (state !== 'exhausted' || !isMissing(error)) warn(uid, 'archived_key_tag_failed');
+        if (state !== 'exhausted' || !isMissing(error)) warn(uid, 'archived_key_tag_failed', error);
     }
 };
 
@@ -145,7 +162,8 @@ export const releaseArchivedKey = async (
             return null;
         }
         return { privateKey, did };
-    } catch {
+    } catch (error) {
+        warn(uid, 'archived_key_release_failed', error);
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'The archived key is unavailable. Please try again.',

@@ -1657,7 +1657,10 @@ export const keysRouter = t.router({
             const { authProvider } = await verifyAndGetContactMethod(input, { checkRevoked: true });
             const allowed = await Promise.all([
                 checkRateLimit(`archived-key:uid:${authProvider.id}`, 20, 3600),
-                checkRateLimit(`archived-key:ip:${ctx.clientIp ?? 'unknown'}`, 200, 3600),
+                // Without a resolved IP the per-login limit still applies; never pool callers.
+                ctx.clientIp
+                    ? checkRateLimit(`archived-key:ip:${ctx.clientIp}`, 200, 3600)
+                    : Promise.resolve(true),
             ]);
             if (allowed.some(value => !value)) {
                 throw new TRPCError({
