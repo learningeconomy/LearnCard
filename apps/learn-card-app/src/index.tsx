@@ -1,5 +1,6 @@
 import './constants/sentry';
-import { LocaleProvider } from './i18n';
+import { LocaleProvider, resolveInitialLocale } from './i18n';
+import { loadLocaleMessages } from './i18n/localeMessages';
 import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
 import { createRoot } from 'react-dom/client';
 import { Buffer } from 'buffer';
@@ -96,6 +97,11 @@ startNativeSQLiteInit();
     // LaunchDarkly does not gate the first render (see getLaunchDarklyProviderProps).
     // The mark keeps startup timings on the same phase names.
     markStartupPhase('flags');
+
+    // Production builds split non-base locales out of the startup bundle: load the one the first
+    // render uses (no-op for the base locale and in dev). On failure, render with base strings.
+    await loadLocaleMessages(resolveInitialLocale()).catch(() => undefined);
+
     const container = document.getElementById('root');
     if (container) {
         const root = createRoot(container);

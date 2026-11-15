@@ -16,6 +16,7 @@ import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
+import { paraglideLazyLocales } from './src/i18n/paraglideLazyLocales';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
 import { registryProxyDevServer } from '../../packages/learn-card-base/src/registry-proxy/registryProxyDevServer';
 
@@ -198,6 +199,13 @@ export default defineConfig(async ({ mode, command }) => {
                 outdir: './src/paraglide',
                 outputStructure: 'locale-modules',
             }),
+            // Only the active language's strings load at startup (production builds).
+            paraglideLazyLocales(
+                JSON.parse(
+                    readFileSync(path.join(__dirname, 'project.inlang/settings.json'), 'utf8')
+                ).baseLocale,
+                path.join(__dirname, 'src/paraglide/messages')
+            ),
             ...(environment.ANALYZE
                 ? [
                       visualizer({
