@@ -4,7 +4,7 @@ import {
     forgetSQLiteSchema,
 } from 'learn-card-base/SQL/connection';
 import React, { useEffect, useState } from 'react';
-import { SQLiteHook, useSQLite } from 'learn-card-base/react-sqlite-hook';
+import { SQLiteHook, createSQLiteDriver, useSQLite } from 'learn-card-base/react-sqlite-hook';
 import { SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { UserInfo } from '@web3auth/base';
 import { Capacitor } from '@capacitor/core';
@@ -169,6 +169,39 @@ const initializeNativeDatabase = async (sqlite: SQLiteHook): Promise<NativeDatab
     });
     return { db, sqlite };
 };
+
+/**
+ * Starts native SQLite initialization, or joins the one in flight. Safe to call before React
+ * mounts: index.tsx calls it at entry so the connection + schema pass (a chain of native bridge
+ * round trips) overlaps loading the app shell instead of starting after its first commit. The
+ * cached-key read on the auth critical path waits for this (`waitForSQLiteReady`).
+ *
+ * Each attempt publishes the handle and releases boot waiters once. A failed attempt is cleared
+ * so the next caller (e.g. the `sqliteInit` mount) retries.
+ */
+export const startNativeSQLiteInit = (driver?: SQLiteHook): Promise<NativeDatabase> | undefined => {
+    if (Capacitor.getPlatform() === 'web') return undefined;
+    if (nativeInitialization) return nativeInitialization;
+    const sqlite = driver ?? createSQLiteDriver();
+    if (!sqlite.isAvailable) return undefined;
+    const attempt = initializeNativeDatabase(sqlite);
+    nativeInitialization = attempt;
+    void attempt
+        .then(({ db, sqlite: driverForDb }) => {
+            sqliteStore.set.db(db);
+            sqliteStore.set.sqlite(driverForDb);
+        })
+        .catch(error => {
+            if (nativeInitialization === attempt) nativeInitialization = undefined;
+            log.error('Failed to initialize SQLite database:', error);
+        })
+        .finally(() => {
+            // Failure still releases boot waiters; never store a false DB handle.
+            markSQLiteReady();
+        });
+    return attempt;
+};
+
 /** Native connection initialization is shared by remounts and account consumers. */
 export const sqliteInit = () => {
     const nativeSqlite = useSQLite();
@@ -176,27 +209,16 @@ export const sqliteInit = () => {
     useEffect(() => {
         if (Capacitor.getPlatform() === 'web' || !nativeSqlite.isAvailable) return;
         let stopped = false;
-        nativeInitialization ??= initializeNativeDatabase(nativeSqlite).catch(error => {
-            nativeInitialization = undefined;
-            throw error;
-        });
-        void nativeInitialization
-            .then(({ db, sqlite }) => {
-                sqliteStore.set.db(db);
-                sqliteStore.set.sqlite(sqlite);
+        // Usually joins the attempt index.tsx started at entry; retries if that one failed.
+        void startNativeSQLiteInit(nativeSqlite)
+            ?.then(() => {
                 if (!stopped) setExistConnection(true);
             })
-            .catch(error => {
-                log.error('Failed to initialize SQLite database:', error);
-            })
-            .finally(() => {
-                // Failure still releases boot waiters; never store a false DB handle.
-                markSQLiteReady();
-            });
+            .catch(() => undefined);
         return () => {
             stopped = true;
         };
-        // The first hook owns the connection; later remounts reuse its promise/driver.
+        // The first caller owns the connection; later remounts reuse its promise/driver.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [nativeSqlite.isAvailable]);
     return { existingConnection, setExistConnection };
