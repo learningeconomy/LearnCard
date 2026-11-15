@@ -108,3 +108,31 @@ walletReady → dashboard is bimodal: ~45–60 ms or ~240–290 ms. Builds befor
 (Fisher p=1e-5, measured). Inferred: once coordinator_ready lands earlier, the dashboard often waits ~200 ms on some
 other async dependency, so part of H1's gain moves downstream. From here, iterations are judged on
 coordinator_ready / walletReady p50 plus the slow-mode count; dashboard p50 at n≤20 is session-sensitive.
+
+### 3. H3: one native execute for the startup schema, reuse the connection for the key read
+
+- **Commit:** 558fb66c1 (cherry-pick of 24a6b0346)
+- **Numbers (measured, Roadie A/B vs 58ae71d62, full n=20, UMTS n=10 vs 9; one stalled UMTS run excluded, cause unrelated, see below):**
+  run `20261115T014841-ab-58ae71d62-vs-558fb66c1` (ab-report.md, ab-report-nostall.md).
+
+    | metric             | full ctrl |   full H3 | Δp50 (p)    | UMTS ctrl |   UMTS H3 | Δp50 (p)                   |
+    | ------------------ | --------: | --------: | ----------- | --------: | --------: | -------------------------- |
+    | auth transition #1 | 1924/1967 | 1888/1931 | −35 (0.006) | 1917/1946 | 1857/1917 | −61 (0.007)                |
+    | coordinator_ready  | 2056/2105 | 2004/2059 | −52 (5e-4)  | 2048/2095 | 1976/2041 | −72 (0.014)                |
+    | walletReady        | 2061/2106 | 2005/2062 | −56 (5e-4)  | 2050/2100 | 1978/2042 | −71 (0.014)                |
+    | dashboard          | 2216/2361 | 2107/2329 | −108 (0.09) | 2107/2375 | 2235/2287 | +128 (0.46, slow-mode mix) |
+
+    FCP → transition #1: 54 → 6 ms (full), 60 → 3 ms (UMTS). Native bridge calls through the first query 14 → 5
+    (logcat). Slow mode: no shift (pooled p=0.44).
+
+- **Kept/reverted:** **kept** on coordinator_ready/walletReady (the agreed metric since run #2); no p90 regression there.
+
+### Found along the way (not hillclimb changes)
+
+- **Blocking font import:** `apps/learn-card-app/src/index.scss` `@import`s
+  `https://tetunori.github.io/fluent-emoji-webfont/dist/FluentEmojiFlat.css`. One UMTS run waited 30,042 ms on it
+  (p50 13 ms over 163 runs). Rare, but it can freeze startup on a bad network. Candidate H10: self-host or load
+  non-blocking.
+- **Debug build logs SQLite results, including the stored privateKey, to the console (logcat).** Roadie redacted saved
+  logs. Being traced; needs gating regardless of perf.
+- **~8 identical `SELECT DISTINCT privateKey FROM users`** in one startup burst (control). Candidate: dedupe.
