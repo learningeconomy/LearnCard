@@ -47,6 +47,8 @@ vi.mock('@helpers/shareEncryption.helpers', () => ({
     decryptAuthShare: vi.fn(),
 }));
 vi.mock('@cache', () => ({ default: {} }));
+vi.mock('@helpers/classlinkDeletion.helpers', () => ({ deleteClassLinkDataForAccount: vi.fn() }));
+vi.mock('@helpers/classlinkContext.helpers', () => ({ pinClassLinkIdentitiesToAccount: vi.fn() }));
 vi.mock('@cache/challenges', () => ({ setValidChallengeForDid: vi.fn() }));
 vi.mock('@cache/recoverySessions', () => ({ MAX_RECOVERY_OTP_ATTEMPTS: 5 }));
 vi.mock('../services/delivery', () => ({ getDeliveryService: vi.fn(), getFrom: vi.fn() }));
