@@ -72,7 +72,7 @@ it('starts native SQLite before React mounts and the app-shell hook joins that o
 
     expect(entryDriver.createConnection).toHaveBeenCalledOnce();
     expect(hookDriver.createConnection).not.toHaveBeenCalled();
-    expect(db.execute).toHaveBeenCalledTimes(8);
+    expect(db.execute).toHaveBeenCalledOnce();
     expect(mocks.setDb).toHaveBeenCalledOnce();
     hook.unmount();
 });
@@ -106,4 +106,22 @@ it('does nothing on web (the web store has its own initializer)', async () => {
     expect(startNativeSQLiteInit()).toBeUndefined();
     expect(entryDriver.createConnection).not.toHaveBeenCalled();
     expect(mocks.ready).not.toHaveBeenCalled();
+});
+
+it('keeps the startup connection open so the cached-key read reuses it, then closes it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const db = makeDb();
+    mocks.entryDriver = makeDriver(db);
+    const { startNativeSQLiteInit, NATIVE_STARTUP_CONNECTION_HOLD_MS } = await load();
+    const { withSQLiteDatabase } = await import('../../SQL/connection');
+
+    await startNativeSQLiteInit();
+    // The cached-key read (getPlatformPrivateKey) uses the same lease helper.
+    await withSQLiteDatabase(db, async () => 'key');
+    expect(db.open).toHaveBeenCalledOnce();
+    expect(db.close).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(NATIVE_STARTUP_CONNECTION_HOLD_MS);
+    expect(db.close).toHaveBeenCalledOnce();
+    vi.useRealTimers();
 });

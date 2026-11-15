@@ -1,7 +1,9 @@
 import {
     withSQLiteDatabase,
     ensureSQLiteSchema,
+    ensureSQLiteSchemas,
     forgetSQLiteSchema,
+    type SQLiteSchema,
 } from 'learn-card-base/SQL/connection';
 import React, { useEffect, useState } from 'react';
 import { SQLiteHook, createSQLiteDriver, useSQLite } from 'learn-card-base/react-sqlite-hook';
@@ -21,11 +23,9 @@ export { clearUserData, PRESERVED_TABLES } from '../SQL/clearUserData';
 import { getLogger } from '../logging/logger';
 const log = getLogger('use-sqlite-storage');
 
-export const ensureUserTableExists = (db: SQLiteDBConnection): Promise<void> =>
-    ensureSQLiteSchema(
-        db,
-        'ensureUserTableExists',
-        `
+const userTableSchema: SQLiteSchema = {
+    name: 'ensureUserTableExists',
+    statements: `
                     CREATE TABLE IF NOT EXISTS users(
                         email TEXT,
                         name TEXT,
@@ -45,62 +45,67 @@ export const ensureUserTableExists = (db: SQLiteDBConnection): Promise<void> =>
                         authProviderName TEXT,
                         token TEXT
                     );
-`
-    );
+`,
+};
 
-export const ensureReactQueryTableExists = (db: SQLiteDBConnection): Promise<void> =>
-    ensureSQLiteSchema(
-        db,
-        'ensureReactQueryTableExists',
-        `
+export const ensureUserTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, userTableSchema.name, userTableSchema.statements);
+
+const reactQueryTableSchema: SQLiteSchema = {
+    name: 'ensureReactQueryTableExists',
+    statements: `
                     CREATE TABLE IF NOT EXISTS reactQuery(
                         id TEXT PRIMARY KEY,
                         cache TEXT
                     );
-`
-    );
+`,
+};
 
-export const ensureCredentialsTableExists = (db: SQLiteDBConnection): Promise<void> =>
-    ensureSQLiteSchema(
-        db,
-        'ensureCredentialsTableExists',
-        `
+export const ensureReactQueryTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, reactQueryTableSchema.name, reactQueryTableSchema.statements);
+
+const credentialsTableSchema: SQLiteSchema = {
+    name: 'ensureCredentialsTableExists',
+    statements: `
                     CREATE TABLE IF NOT EXISTS credentials(
                         id INTEGER PRIMARY KEY,
                         credential TEXT
                     );
-`
-    );
+`,
+};
 
-export const ensureIndexTableExists = (db: SQLiteDBConnection): Promise<void> =>
-    ensureSQLiteSchema(
-        db,
-        'ensureIndexTableExists',
-        `
+export const ensureCredentialsTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, credentialsTableSchema.name, credentialsTableSchema.statements);
+
+const indexTableSchema: SQLiteSchema = {
+    name: 'ensureIndexTableExists',
+    statements: `
                     CREATE TABLE IF NOT EXISTS indexRecords(
                         did TEXT PRIMARY KEY,
                         records TEXT
                     );
-`
-    );
+`,
+};
 
-export const ensureCredentialCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
-    ensureSQLiteSchema(
-        db,
-        'ensureCredentialCacheTableExists',
-        `
+export const ensureIndexTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, indexTableSchema.name, indexTableSchema.statements);
+
+const credentialCacheTableSchema: SQLiteSchema = {
+    name: 'ensureCredentialCacheTableExists',
+    statements: `
                     CREATE TABLE IF NOT EXISTS credentialsCache(
                         uri TEXT PRIMARY KEY,
                         credential TEXT
                     );
-`
-    );
+`,
+};
 
-export const ensureIndexCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
-    ensureSQLiteSchema(
-        db,
-        'ensureIndexCacheTableExists',
-        `
+export const ensureCredentialCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, credentialCacheTableSchema.name, credentialCacheTableSchema.statements);
+
+const indexCacheTableSchema: SQLiteSchema = {
+    name: 'ensureIndexCacheTableExists',
+    statements: `
                     CREATE TABLE IF NOT EXISTS indexCache(
                         did TEXT NOT NULL,
                         name TEXT NOT NULL,
@@ -108,14 +113,15 @@ export const ensureIndexCacheTableExists = (db: SQLiteDBConnection): Promise<voi
                         records TEXT,
                         PRIMARY KEY (did, name, indexQuery)
                     );
-`
-    );
+`,
+};
 
-export const ensureIndexPageCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
-    ensureSQLiteSchema(
-        db,
-        'ensureIndexPageCacheTableExists',
-        `
+export const ensureIndexCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, indexCacheTableSchema.name, indexCacheTableSchema.statements);
+
+const indexPageCacheTableSchema: SQLiteSchema = {
+    name: 'ensureIndexPageCacheTableExists',
+    statements: `
                     CREATE TABLE IF NOT EXISTS indexPageCache(
                         did TEXT NOT NULL,
                         name TEXT NOT NULL,
@@ -124,14 +130,15 @@ export const ensureIndexPageCacheTableExists = (db: SQLiteDBConnection): Promise
                         result TEXT,
                         PRIMARY KEY (did, name, indexQuery, paginationOptions)
                     );
-`
-    );
+`,
+};
 
-export const ensureIndexCountCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
-    ensureSQLiteSchema(
-        db,
-        'ensureIndexCountCacheTableExists',
-        `
+export const ensureIndexPageCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, indexPageCacheTableSchema.name, indexPageCacheTableSchema.statements);
+
+const indexCountCacheTableSchema: SQLiteSchema = {
+    name: 'ensureIndexCountCacheTableExists',
+    statements: `
                     CREATE TABLE IF NOT EXISTS indexCountCache(
                         did TEXT NOT NULL,
                         name TEXT NOT NULL,
@@ -139,14 +146,32 @@ export const ensureIndexCountCacheTableExists = (db: SQLiteDBConnection): Promis
                         count INTEGER,
                         PRIMARY KEY (did, name, indexQuery)
                     );
-`
-    );
+`,
+};
+
+export const ensureIndexCountCacheTableExists = (db: SQLiteDBConnection): Promise<void> =>
+    ensureSQLiteSchema(db, indexCountCacheTableSchema.name, indexCountCacheTableSchema.statements);
 
 export const ensureWriteAheadLogging = async (db: SQLiteDBConnection) => {
     return await withSQLiteDatabase(db, async () => {
         await db.execute('PRAGMA journal_mode = WAL;', false);
     });
 };
+
+/** Every table the app expects at startup, created in one native `execute`. */
+const NATIVE_STARTUP_SCHEMAS: readonly SQLiteSchema[] = [
+    userTableSchema,
+    credentialsTableSchema,
+    indexTableSchema,
+    credentialCacheTableSchema,
+    indexCacheTableSchema,
+    indexPageCacheTableSchema,
+    indexCountCacheTableSchema,
+    reactQueryTableSchema,
+];
+
+/** How long native init keeps its connection open for the startup reads that follow. */
+export const NATIVE_STARTUP_CONNECTION_HOLD_MS = 2_000;
 
 type NativeDatabase = { db: SQLiteDBConnection; sqlite: SQLiteHook };
 let nativeInitialization: Promise<NativeDatabase> | undefined;
@@ -157,15 +182,20 @@ const initializeNativeDatabase = async (sqlite: SQLiteHook): Promise<NativeDatab
         consistent && connected
             ? await sqlite.retrieveConnection('learncardDB', false)
             : await sqlite.createConnection('learncardDB', false, 'no-encryption', 1, false);
-    await withSQLiteDatabase(db, async () => {
-        await ensureUserTableExists(db);
-        await ensureCredentialsTableExists(db);
-        await ensureIndexTableExists(db);
-        await ensureCredentialCacheTableExists(db);
-        await ensureIndexCacheTableExists(db);
-        await ensureIndexPageCacheTableExists(db);
-        await ensureIndexCountCacheTableExists(db);
-        await ensureReactQueryTableExists(db);
+    await new Promise<void>((resolve, reject) => {
+        void withSQLiteDatabase(db, async () => {
+            try {
+                await ensureSQLiteSchemas(db, NATIVE_STARTUP_SCHEMAS);
+            } catch (error) {
+                reject(error);
+                return;
+            }
+            resolve();
+            // Keep this lease (and so the connection) open briefly: the cached-key read on the
+            // auth cold-start path follows within a few hundred ms and reuses it instead of
+            // paying another close + open. Released after the hold like any other lease.
+            await new Promise(release => setTimeout(release, NATIVE_STARTUP_CONNECTION_HOLD_MS));
+        }).catch(reject);
     });
     return { db, sqlite };
 };
