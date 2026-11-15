@@ -156,3 +156,19 @@ coordinator_ready / walletReady p50 plus the slow-mode count; dashboard p50 at n
 - **Next target (measured):** the Routes Suspense fallback is up in 30/30 runs, ~30 → ~245 ms after walletReady,
   waiting on whatever DashboardPage suspends on (inferred: its lazy chunk or a data read). ~210 ms.
 - Stalls: 1/10 UMTS per build, both the FluentEmojiFlat.css @import (22.9 s, 30.1 s). H10 is next.
+
+### 5. H10: bundle the Fluent Emoji font CSS and load it after first render
+
+- **Commit:** b621bb588 (cherry-pick of 1bdd594a4). CSS is MIT (tetunori/fluent-emoji-webfont); font files still load
+  from that host on demand.
+- **Forced hang (measured, Roadie, SNI blackhole proxy on the font host, 3 cold launches each, no warm-ups):** control
+  froze ~30 s on all 3 (FCP 31,477 / 34,939 / 31,590 ms); candidate FCP 1,877 / 1,924 / 1,841 ms and made no request
+  to that host before the dashboard. Run `20261115T033244-hang2-3eb1f99c6-vs-b621bb588`.
+- **Why it matters (inferred from Roadie's fetch log):** the CSS has max-age=600, so any cold start >10 min after the
+  last one hits the network. 15 of 585 fetches tonight went to the network; the 3 that landed on UMTS runs are exactly
+  the 3 natural stalls.
+- **No-hang A/B (measured, full n=20, UMTS n=10, 0 stalls):** dash_dashboard_commit −43 full (p=0.24), −110 UMTS
+  (p=0.36); full coordinator_ready −27 (p=0.042) but that gain sits in webview_nav_start, before any JS/CSS, so read as
+  session noise. Neutral. Run `20261115T025701-ab-3eb1f99c6-vs-b621bb588`.
+- Emoji render as Fluent glyphs on /skills (screenshots: `~/roadie-scratch/lca-bench/clips/emoji/`).
+- **Kept/reverted:** **kept** as a correctness/robustness fix: it removes a 30 s startup freeze, neutral otherwise.
