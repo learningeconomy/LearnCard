@@ -103,6 +103,7 @@ import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createDeviceShareStorage } from 'learn-card-base/security/deviceShareStorage';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
+import { deriveDidKeyFromPrivateKey } from './didFromPrivateKey';
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import {
     withDeadline,
@@ -915,13 +916,9 @@ const AuthSessionManager: React.FC<{
     }, [showRecoverySetup, authProvider, refreshAuthSession]);
 
     // --- DID derivation (shared between auto-setup and recovery) ---
-    // Uses getSigningLearnCard (no network) so lc.id.did() returns did:key,
-    // which is deterministic and directly tied to the private key.
-    // Must match the server's stored primaryDid (also did:key, from VP auth).
-    const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getSigningLearnCard(privateKey);
-        return lc?.id.did() || '';
-    }, []);
+    // did:key is deterministic and tied to the private key; it must match the
+    // server's stored primaryDid (also did:key, from VP auth).
+    const didFromPrivateKey = useCallback(deriveDidKeyFromPrivateKey, []);
 
     // --- DID-Auth VP signing (for recovery setup write ops) ---
     // Uses getSigningLearnCard (no network) so lc.id.did() returns did:key,
@@ -2326,11 +2323,8 @@ const AuthCoordinatorSessionProvider: React.FC<AppAuthCoordinatorProviderProps> 
     const clearDBRef = useRef(clearDB);
     clearDBRef.current = clearDB;
 
-    // DID derivation helper — uses getSigningLearnCard (no network) for deterministic did:key
-    const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getSigningLearnCard(privateKey);
-        return lc?.id.did() || '';
-    }, []);
+    // DID derivation helper: deterministic did:key, no wallet or WASM (cold-start path)
+    const didFromPrivateKey = useCallback(deriveDidKeyFromPrivateKey, []);
 
     // Confirms a legacy key belongs to this account before migration writes it.
     const verifyMigrationIdentity = useMemo(
