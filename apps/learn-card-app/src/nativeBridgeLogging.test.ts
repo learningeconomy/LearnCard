@@ -57,6 +57,19 @@ describe('bridge log redaction', () => {
         expect(JSON.stringify(summarizeBridgeCall(keyInsertCall))).not.toContain(SECRET);
     });
 
+    it('blanks literals inlined into logged SQL', () => {
+        const call = {
+            options: {
+                statement: `UPDATE users SET privateKey = '${SECRET}' WHERE id = "a""b"`,
+                set: [{ statement: `INSERT INTO t VALUES ('${SECRET}', 'it''s')` }],
+            },
+        };
+        expect(summarizeBridgeCall(call)).toMatchObject({
+            statement: 'UPDATE users SET privateKey = ? WHERE id = ?',
+            statements: ['INSERT INTO t VALUES (?, ?)'],
+        });
+    });
+
     it('logs only key names for other plugins and nothing from errors', () => {
         expect(
             summarizeBridgeResult({ success: true, data: { value: SECRET, token: SECRET } })

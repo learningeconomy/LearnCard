@@ -38,15 +38,22 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const keyNames = (value: unknown): string[] => (isRecord(value) ? Object.keys(value).sort() : []);
 
+/** A SQL statement with its quoted literals blanked, so values inlined into the SQL never get logged. */
+export const redactStatement = (statement: string): string =>
+    statement.replace(/'(?:[^']|'')*'|"(?:[^"]|"")*"/g, '?');
+
 /** What may be logged about a plugin call's options: SQL statements and key names, no values. */
 export const summarizeBridgeCall = (call: BridgeCall): Record<string, unknown> => {
     const options = call.options;
     const summary: Record<string, unknown> = { keys: keyNames(options) };
     if (isRecord(options)) {
-        if (typeof options.statement === 'string') summary.statement = options.statement;
+        if (typeof options.statement === 'string')
+            summary.statement = redactStatement(options.statement);
         if (Array.isArray(options.set)) {
             summary.statements = options.set.map(entry =>
-                isRecord(entry) && typeof entry.statement === 'string' ? entry.statement : '?'
+                isRecord(entry) && typeof entry.statement === 'string'
+                    ? redactStatement(entry.statement)
+                    : '?'
             );
         }
         if (Array.isArray(options.values)) summary.valueCount = options.values.length;
