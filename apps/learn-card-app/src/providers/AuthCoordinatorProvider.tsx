@@ -1009,6 +1009,14 @@ const AuthSessionManager: React.FC<{
                         );
                     },
                     deriveLegacyKey: () => deriveLegacyMigrationKey(authProvider),
+                    getExistingExpectedDid: () => {
+                        const latestState = migrationCoordinatorRef.current.state;
+                        const expectedDid =
+                            latestState.status === 'needs_migration'
+                                ? latestState.migrationData?.expectedDid
+                                : undefined;
+                        return typeof expectedDid === 'string' ? expectedDid : undefined;
+                    },
                     isCurrentAttempt,
                 });
                 if (!resolved) {
@@ -1019,16 +1027,13 @@ const AuthSessionManager: React.FC<{
 
                 // A sign-out or completed upgrade may occur while this tab waits.
                 const latestCoordinator = migrationCoordinatorRef.current;
-                const latestState = latestCoordinator.state;
-                if (!isCurrentAttempt() || latestState.status !== 'needs_migration') return;
+                if (!isCurrentAttempt()) return;
                 if (resolved.source === 'archive') {
                     emitAuthSuccess('web3auth:migration_key', 'Account upgrade key restored');
                     latestCoordinator.setMigrationData({
                         web3AuthKey: resolved.privateKey,
                         source: 'archive',
-                        ...(latestState.migrationData?.expectedDid
-                            ? {}
-                            : { expectedDid: resolved.expectedDid }),
+                        expectedDid: resolved.expectedDid,
                     });
                     return;
                 }

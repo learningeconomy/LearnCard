@@ -1,7 +1,8 @@
 interface MigrationKeyDependencies {
     fetchArchivedKey: () => Promise<{ privateKey: string; did: string } | null>;
     deriveLegacyKey: () => Promise<string | null>;
-    existingExpectedDid?: string;
+    /** Read after the archive lookup so a server DID that arrives meanwhile still wins. */
+    getExistingExpectedDid?: () => string | undefined;
     isCurrentAttempt?: () => boolean;
 }
 
@@ -15,7 +16,7 @@ type MigrationKey = {
 export const resolveMigrationKey = async ({
     fetchArchivedKey,
     deriveLegacyKey,
-    existingExpectedDid,
+    getExistingExpectedDid = () => undefined,
     isCurrentAttempt = () => true,
 }: MigrationKeyDependencies): Promise<MigrationKey | null> => {
     try {
@@ -25,7 +26,7 @@ export const resolveMigrationKey = async ({
             return {
                 privateKey: archived.privateKey,
                 source: 'archive',
-                expectedDid: existingExpectedDid || archived.did,
+                expectedDid: getExistingExpectedDid() || archived.did,
             };
         }
     } catch {

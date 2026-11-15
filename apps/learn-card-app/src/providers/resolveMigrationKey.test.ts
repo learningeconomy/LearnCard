@@ -41,9 +41,31 @@ describe('resolveMigrationKey', () => {
             await resolveMigrationKey({
                 fetchArchivedKey: async () => archived,
                 deriveLegacyKey: vi.fn(),
-                existingExpectedDid: 'did:key:zServer',
+                getExistingExpectedDid: () => 'did:key:zServer',
             })
         ).toMatchObject({ expectedDid: 'did:key:zServer' });
+    });
+
+    it('reads the server expected DID after the archive lookup, not before', async () => {
+        let serverDid: string | undefined;
+        const result = await resolveMigrationKey({
+            fetchArchivedKey: async () => {
+                serverDid = 'did:key:zArrivedLater';
+                return archived;
+            },
+            deriveLegacyKey: vi.fn(),
+            getExistingExpectedDid: () => serverDid,
+        });
+        expect(result).toMatchObject({ source: 'archive', expectedDid: 'did:key:zArrivedLater' });
+    });
+
+    it('anchors to the archive DID when the server has none', async () => {
+        expect(
+            await resolveMigrationKey({
+                fetchArchivedKey: async () => archived,
+                deriveLegacyKey: vi.fn(),
+            })
+        ).toMatchObject({ source: 'archive', expectedDid: archived.did });
     });
 
     it('preserves null and throwing legacy derivation outcomes', async () => {
