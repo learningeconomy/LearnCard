@@ -1,0 +1,20 @@
+{
+    "name": "@learncard/app-store-demo-duck-jones",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Duck Jones and the Temple of the Golden Quack - a three.js runner that issues a Golden Quack badge through Partner Connect",
+    "scripts": {
+        "assets": "blender --background --factory-startup --python blender/build_assets.py -- src/public/models",
+        "build": "vite build",
+        "dev": "vite --host 127.0.0.1",
+        "preview": "vite preview --host 127.0.0.1"
+    },
+    "dependencies": {
+        "@learncard/partner-connect": "workspace:*",
+        "three": "^0.181.2"
+    },
+    "devDependencies": {
+        "vite": "^6.4.3"
+    }
+}

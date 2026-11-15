@@ -471,6 +471,17 @@
         "tailwindcss": "^4.3.3",
       },
     },
+    "examples/app-store-apps/7-duck-jones-game": {
+      "name": "@learncard/app-store-demo-duck-jones",
+      "version": "0.0.0",
+      "dependencies": {
+        "@learncard/partner-connect": "workspace:*",
+        "three": "^0.181.2",
+      },
+      "devDependencies": {
+        "vite": "^6.4.3",
+      },
+    },
     "examples/consent-flow-test": {
       "name": "consent-flow-test",
       "version": "1.0.45",
@@ -3600,6 +3611,8 @@
     "@learncard/app-store-demo-basic-launchpad": ["@learncard/app-store-demo-basic-launchpad@workspace:examples/app-store-apps/1-basic-launchpad-app"],
 
     "@learncard/app-store-demo-basic-sync": ["@learncard/app-store-demo-basic-sync@workspace:examples/app-store-apps/6-basic-sync-app"],
+
+    "@learncard/app-store-demo-duck-jones": ["@learncard/app-store-demo-duck-jones@workspace:examples/app-store-apps/7-duck-jones-game"],
 
     "@learncard/app-store-demo-lore-card": ["@learncard/app-store-demo-lore-card@workspace:examples/app-store-apps/2-lore-card-app"],
 
@@ -9618,6 +9631,8 @@
     "thenify-all": ["thenify-all@1.6.0", "", { "dependencies": { "thenify": ">= 3.1.0 < 4" } }, "sha512-RNxQH/qI8/t3thXJDwcstUO4zeqo64+Uy/+sNVRBx4Xn2OX+OZ9oP+iJnNFqplFra2ZUVeKCSa2oVWi3T4uVmA=="],
 
     "thread-stream": ["thread-stream@4.2.0", "", { "dependencies": { "real-require": "^1.0.0" } }, "sha512-e2zZ96wSChazBsbENf/Pcm/4swHt2cEKQ92rhUjkL9GCKiTDJIaTBenjE/m9DXi0QBmTMDkFDdOomUy20A1tDQ=="],
+
+    "three": ["three@0.181.2", "", {}, "sha512-k/CjiZ80bYss6Qs7/ex1TBlPD11whT9oKfT8oTGiHa34W4JRd1NiH/Tr1DbHWQ2/vMUypxksLnF2CfmlmM5XFQ=="],
 
     "throat": ["throat@5.0.0", "", {}, "sha512-fcwX4mndzpLQKBS1DVYhGAcYaYt7vsHNIvQV+WXMvnow5cgjPphq5CaayLaGsjRdSCKZFNGt7/GYAuXaNOiYCA=="],
 

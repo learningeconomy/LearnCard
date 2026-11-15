@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+        />
+        <meta name="theme-color" content="#2a1a10" />
+        <title>Duck Jones and the Temple of the Golden Quack</title>
+        <link rel="icon" href="./favicon.png" />
+        <link rel="stylesheet" href="./style.css" />
+    </head>
+    <body>
+        <canvas id="c"></canvas>
+
+        <div id="hud" class="hidden">
+            <div class="hud-row">
+                <div id="hearts" class="pill" aria-label="health"></div>
+                <div class="pill"><span class="ico coin-ico"></span><span id="coins">0</span></div>
+                <div class="pill">
+                    <span class="ico gem-ico"></span><span id="relics">0/5</span>
+                </div>
+                <div class="pill"><span id="time">0.0</span>s</div>
+                <div class="pill score"><span id="score">0</span></div>
+                <button id="pauseBtn" class="pill btn-mini" aria-label="pause">II</button>
+            </div>
+            <div id="progress">
+                <div id="bar"></div>
+                <div id="pin"></div>
+                <div id="goal"></div>
+            </div>
+            <div id="danger">BOULDER!</div>
+        </div>
+
+        <div id="touch" class="hidden">
+            <button data-act="left" aria-label="left">&#9664;</button>
+            <button data-act="jump" aria-label="jump">&#9650;</button>
+            <button data-act="right" aria-label="right">&#9654;</button>
+        </div>
+
+        <section id="title" class="screen">
+            <div class="card">
+                <img src="./duck-badge.png" alt="Duck Jones" class="badge" />
+                <h1>DUCK JONES</h1>
+                <h2>and the Temple of the Golden Quack</h2>
+                <p class="blurb">
+                    Grab the coins, snag the 5 teal relics, and reach the Golden Quack idol before
+                    the boulder flattens you.
+                </p>
+                <button id="startBtn" class="big">Start adventure</button>
+                <div class="controls">
+                    <div>
+                        <b>Keys</b> &larr; &rarr; / A D switch lanes &middot; Space / W / &uarr;
+                        jump &middot; P pause
+                    </div>
+                    <div><b>Touch</b> swipe left/right, swipe up or tap to jump</div>
+                </div>
+                <div id="loading">Loading temple&hellip;</div>
+            </div>
+        </section>
+
+        <section id="end" class="screen hidden">
+            <div class="card">
+                <h1 id="endTitle">IT BELONGS IN A MUSEUM!</h1>
+                <p id="endSub"></p>
+                <div id="stats"></div>
+                <button id="againBtn" class="big">Play again</button>
+                <div class="controls">Press Enter or R to restart</div>
+            </div>
+        </section>
+
+        <section id="pause" class="screen hidden">
+            <div class="card small">
+                <h1>Paused</h1>
+                <button id="resumeBtn" class="big">Resume</button>
+            </div>
+        </section>
+
+        <button id="muteBtn" aria-label="mute">&#128266;</button>
+        <script type="module" src="./js/main.js"></script>
+    </body>
+</html>
