@@ -80,8 +80,10 @@ import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
+import { useDashboardPathMark } from '../../helpers/dashboardPathMarks';
 
 const DashboardPage: React.FC = () => {
+    useDashboardPathMark('dashboard_commit');
     const history = useHistory();
     const { track } = useAnalytics();
     const {
