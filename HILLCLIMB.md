@@ -193,3 +193,19 @@ coordinator_ready / walletReady p50 plus the slow-mode count; dashboard p50 at n
 - **Remaining slow group (measured):** commits ~205 ms after the page chunk loads even when page_direct fired, so
   something below DashboardPage suspends. Slow runs are exactly those where Routes resolves late (~20 ms before
   walletReady instead of ~100 ms). Inferred: a DashboardPage child suspends on something requested alongside Routes.
+
+### 7. H4: load only the active locale's messages
+
+- **Commit:** f6fb610cb (cherry-pick of 5ec8f065e)
+- **Size (measured, debug APK build):** entry 13,769,109 → 12,580,440 B (−1,188,669, −8.6%); es 438 KB, fr 464 KB,
+  ar 544 KB lazy chunks.
+- **Numbers (measured, Roadie A/B vs 74b0703b3, en, full n=20, UMTS n=10, 0 stalls):** run
+  `20261115T041751-ab-74b0703b3-vs-f6fb610cb`. Δp50 full / UMTS, all significant: nav→entry −54 / −62, react −53 / −49,
+  FCP −44 / −80, coordinator_ready −37 / −74, walletReady −39 / −74, am TotalTime −43 / −71.
+- **dash_dashboard_commit did not follow:** +103 full (p=0.22), −111 UMTS (p=0.07). Slow group on full 1/20 → 12/20
+  (Fisher p=4e-4); UMTS 4/10 → 4/10. Within each group H4 is faster (fast 2031 → 2000, slow 2246 → 2207).
+  Inferred (Roadie): walletReady now overtakes the Routes/page chunk more often, so more runs hit the slow path.
+- **es check (measured, 3 launches):** Spanish UI, es chunk fetched, same console errors as en, commit 2034–2069 ms.
+  flags → react cost: +1–2 ms en, ~17–19 ms es.
+- **Kept/reverted:** **kept, provisional.** It meets the agreed metric (coordinator_ready / walletReady, all
+  significant) but the slow-mode count got worse. The dashboard gain depends on fixing the slow path (attempt 8).
