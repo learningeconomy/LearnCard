@@ -136,3 +136,23 @@ coordinator_ready / walletReady p50 plus the slow-mode count; dashboard p50 at n
 - **Debug build logs SQLite results, including the stored privateKey, to the console (logcat).** Roadie redacted saved
   logs. Being traced; needs gating regardless of perf.
 - **~8 identical `SELECT DISTINCT privateKey FROM users`** in one startup burst (control). Candidate: dedupe.
+
+### 4. dashfix: mount Routes without the root Suspense round trip
+
+- **Commits:** 7628a84f0 (debug-only `learncard:startup:dash_*` marks, no behavior change), 3eb1f99c6 (fix).
+- **Cause (measured, control 7628a84f0, full, 10 slow vs 10 fast):** the root fallback stays up 203 ms in slow runs vs
+  32 ms in fast (tracks walletReady → dashboard, r=0.95). The Routes module is ready ~60 ms after walletReady but Routes
+  renders at ~224 ms in slow runs (inferred: the delayed Suspense retry).
+- **Numbers (measured, Roadie A/B vs 7628a84f0, full n=20, UMTS n=10):** run `20261115T021911-ab-7628a84f0-vs-3eb1f99c6`.
+    - Slow mode: full 10/20 → 0/20 (p=4e-4); UMTS 4/10 → 0/10 (p=0.09). root_fallback_shown fires 0/30 (control 30/30).
+    - walletReady → URL flip p50/p90: full 178/281 → 37/72 (p=1e-6); UMTS 111/283 → 37/78 (p=9e-4).
+    - `dashboard` (URL flip) from tap: full 2242/2329 → 2058/2265 (−184, p=0.003); UMTS 2191 → 2024 (−167, n.s.).
+    - Real render, dash_dashboard_commit from tap: full 2334 → 2252 (−81, p=0.02); from walletReady full −52 (p=2e-4),
+      UMTS −8 (n.s.).
+    - coordinator_ready / walletReady / react: flat (n.s.), as expected.
+- **Kept/reverted:** **kept.** Removes the slow mode; real render gain −52 ms on full.
+- **Metric change:** the bench `dashboard` metric is the URL flip, not DashboardPage's render. From here Roadie leads
+  with dash_dashboard_commit.
+- **Next target (measured):** the Routes Suspense fallback is up in 30/30 runs, ~30 → ~245 ms after walletReady,
+  waiting on whatever DashboardPage suspends on (inferred: its lazy chunk or a data read). ~210 ms.
+- Stalls: 1/10 UMTS per build, both the FluentEmojiFlat.css @import (22.9 s, 30.1 s). H10 is next.
