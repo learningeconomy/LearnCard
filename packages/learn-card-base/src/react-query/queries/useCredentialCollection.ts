@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueries, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
-import { useGetCredentialList } from './vcQueries';
+import { getCredentialListWalkedAt, useGetCredentialList } from './vcQueries';
 import { resolvedCredentialQueryOptions } from './credentialResolution';
 import type { CredentialCategory } from '../../types/credentials';
 import type { LCR } from '../../types/credential-records';
@@ -122,8 +122,14 @@ export const useCredentialCollection = (
                   : (names[record.uri]?.some(name => name.toLowerCase().includes(needle)) ?? false);
           })
         : visibleRecords;
+    // Completeness comes from a finished server walk, not fetch status: a refetch keeps the old
+    // pages until it settles and a failed refresh leaves them in place, so counts stay shown.
+    // Optimistic placeholder pages carry no walk stamp and never count as complete (LC-2412).
     const complete = Boolean(
-        reader && data?.pages.length && !hasNextPage && !isFetching && !isError
+        reader &&
+        data?.pages.length &&
+        !hasNextPage &&
+        getCredentialListWalkedAt(data) !== undefined
     );
     const load = useCallback(() => {
         if (reader && hasNextPage && !isFetching && !isError)

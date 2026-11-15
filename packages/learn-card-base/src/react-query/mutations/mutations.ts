@@ -1,4 +1,5 @@
 import { InfiniteData, useMutation, useQueryClient } from '@tanstack/react-query';
+import { invalidateVisibleCredentialCounts } from '../visibleCredentialCountKeys';
 import { useWallet } from 'learn-card-base';
 import { switchedProfileStore } from '../../stores/walletStore';
 import { LCR } from '../../types/credential-records';
@@ -579,6 +580,7 @@ export const useDeleteCredentialRecord = () => {
                 queryClient.invalidateQueries({
                     queryKey: ['useGetCredentialCount', didWeb ?? '', category],
                 });
+                void invalidateVisibleCredentialCounts(queryClient, didWeb ?? '');
             }
 
             if (result.deferPostDeleteCleanup) {
@@ -619,6 +621,7 @@ export const useDeleteCredentialRecord = () => {
                 queryClient.invalidateQueries({
                     queryKey: ['useGetCredentialList', didWeb ?? ''],
                 });
+                void invalidateVisibleCredentialCounts(queryClient, didWeb ?? '');
                 queryClient.invalidateQueries({
                     queryKey: ['boosts'],
                 });
