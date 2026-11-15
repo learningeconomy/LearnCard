@@ -172,3 +172,24 @@ coordinator_ready / walletReady p50 plus the slow-mode count; dashboard p50 at n
   session noise. Neutral. Run `20261115T025701-ab-3eb1f99c6-vs-b621bb588`.
 - Emoji render as Fluent glyphs on /skills (screenshots: `~/roadie-scratch/lca-bench/clips/emoji/`).
 - **Kept/reverted:** **kept** as a correctness/robustness fix: it removes a 30 s startup freeze, neutral otherwise.
+
+### 6. dashpage: skill-profile wizard off the dashboard's cold path; direct DashboardPage mount
+
+- **Commits:** fd832f7e5 (lazy SkillProfileModal, warmed 3 s after mount), 74b0703b3 (direct mount + dash_page_* marks).
+- **Size (measured, built assets):** dashboard chunk graph beyond entry + FullApp 1,032,951 → 352,444 B; the 620 KB
+  SelectFrameworkToManageModal / emoji-mart chunk is off the cold path.
+- **Numbers (measured, Roadie A/B vs b621bb588, full n=20, UMTS n=10, 0 stalls):** run
+  `20261115T035353-ab-b621bb588-vs-74b0703b3`.
+
+    | metric                | full ctrl | full cand | Δp50 (p)   | UMTS ctrl | UMTS cand | Δp50 (p)     |
+    | --------------------- | --------: | --------: | ---------- | --------: | --------: | ------------ |
+    | dash_dashboard_commit | 2111/2238 | 2057/2260 | −55 (0.12) | 2176/2282 | 2039/2197 | −138 (0.049) |
+    | coordinator_ready     | 1989/2032 | 1971/2039 | −18 (0.40) | 1972/2021 | 1963/1997 | −8 (0.36)    |
+    | walletReady           | 1993/2032 | 1973/2040 | −20 (0.40) | 1973/2023 | 1964/1998 | −9 (0.33)    |
+
+    Page chunk loads 72–105 ms; dash_page_direct fires 30/30. Fewer slow runs (13/30 → 8/30, p=0.28).
+
+- **Kept/reverted:** **kept.** UMTS −138 (p=0.049), full −55 (n.s.), no regressions.
+- **Remaining slow group (measured):** commits ~205 ms after the page chunk loads even when page_direct fired, so
+  something below DashboardPage suspends. Slow runs are exactly those where Routes resolves late (~20 ms before
+  walletReady instead of ~100 ms). Inferred: a DashboardPage child suspends on something requested alongside Routes.
