@@ -392,7 +392,8 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
 
 /** Every record the backfill has to mark in FIXTURE. */
 const NEEDS_UPDATE = FIXTURE.filter(
-    record => !isCredentialCollectionRecordVisible(record) && record.category !== 'Hidden'
+    record =>
+        !isCredentialCollectionRecordVisible(record) && (record.category as string) !== 'Hidden'
 );
 const callsTo = (path: string) => requests.flat().filter(call => call.path === path);
 const updatedIds = () =>
