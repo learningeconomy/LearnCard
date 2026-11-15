@@ -22,7 +22,7 @@ import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
 const CampaignsPage = lazyWithRetry(() => import('./pages/campaigns/CampaignsPage'));
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
-const DashboardPage = lazyWithRetry(() => import('./pages/dashboard/DashboardPage'));
+import { DashboardPageRoute, preloadDashboardPage } from './pages/dashboard/DashboardPageRoute';
 const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
 const MyAppsLanding = lazyWithRetry(() => import('./pages/myApps/MyAppsLanding'));
 const EmbedAppFullScreen = lazyWithRetry(() => import('./pages/launchPad/EmbedAppFullScreen'));
@@ -290,7 +290,7 @@ export const Routes: React.FC = () => {
                             path="/share-creds/:uri/:seed"
                             component={ViewCredsBundle}
                         />
-                        <PrivateRoute exact path="/dashboard" component={DashboardPage} />
+                        <PrivateRoute exact path="/dashboard" component={DashboardPageRoute} />
                         <PrivateRoute exact path="/home" component={WalletPage} />
                         <PrivateRoute exact path="/wallet" component={WalletPage} />
                         <PrivateRoute exact path="/passport" component={WalletPage} />
@@ -512,7 +512,7 @@ const AI_GATED_PATHS = new Set([
  * chunk is in memory.
  */
 export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
-    '/dashboard': () => DashboardPage.preload(),
+    '/dashboard': preloadDashboardPage,
     // Wallet (Passport) — same chunk for all three aliases.
     '/passport': () => WalletPage.preload(),
     '/wallet': () => WalletPage.preload(),
