@@ -26,7 +26,7 @@ in the same PR.
 | --- | -------------------------------------------- | ------------------------------------- | ------------------------- | ----------------------------------------------------------------------- |
 | D10 | Accept KMS key-admin policy rewrite residual | 100% switch (ROLLOUT.md item 4)       | Jackson Smith             | Accepted (A) for 100%, 2026-11-05                                       |
 | RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver (all stages)  | Jackson Smith             | Accepted (A), up to 100%; hardening by 2026-12-31                       |
-| RT  | Roughtime sources for production volume      | 100% switch (ROLLOUT.md item 1)       | Jackson Smith             | Accepted (A), stage 1; 100% pending (owner deferred measurements)       |
+| RT  | Roughtime sources for production volume      | 100% switch (ROLLOUT.md item 1)       | Jackson Smith             | Accepted (A) for 100%, 2026-11-06; measured count deferred              |
 | CNL | Bearer-only vault cancellation               | Not a listed blocker; security call   | Jackson Smith             | Accepted (A) + D post-launch                                            |
 | P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker    | Jackson Smith             | Accepted (C)                                                            |
 | P-b | Email backup share default                   | Product/security call                 | Jackson Smith             | Off at launch                                                           |
@@ -313,7 +313,14 @@ time.txryan.com have acknowledged LearnCard's use (operator-reported by Jackson
 Smith; store the replies with this record). Still to attach before stage 2: the
 measured per-operation request count from staging and the volume forecast.
 
-`Owner: Jackson Smith` · `Decision: Accepted (option A) for stage 1; operator acknowledgments received; stage 2 needs the measured count and forecast` · `Approver/date: Jackson Smith, 2026-10-30`
+**Update (2026-11-06): accepted for the 100% switch** (operator-reported by Jackson
+Smith). The measured per-operation count and the forecast remain deferred by the
+owner: the 2026-11-06 staging measurement run (LC-2364) could not count Roughtime
+requests, because the enclave makes them, so the per-operation estimate above
+stands. Since 2026-11-14 the PIN canary recovers each account every 12 hours
+instead of hourly, which lowers the canary's share.
+
+`Owner: Jackson Smith` · `Decision: Accepted (option A) for 100%; operator acknowledgments received; measured count and forecast deferred` · `Approver/date: Jackson Smith, 2026-11-06`
 
 **Proposed amendment for the 100% launch (2026-11-05): A for full exposure.** Keep
 the three pinned sources (2-of-3) for all LearnCard and VetPass production users. The
@@ -546,7 +553,7 @@ depends on the old page.
 At 100% every active user is silently auto-enrolled at the switch, so the short in-app
 notice is a switch prerequisite (ROLLOUT.md, "100% launch").
 
-`Owner: Legal` · `Decision: Policy text approved and published (learncard.com/privacy-policy); the app links it from #1875; in-app notice pending` · `Approver/date: Yas (Legal), 2026-10-26, reported by Jackson Smith`
+`Owner: Legal` · `Decision: Policy text approved and published (learncard.com/privacy-policy); the app links it from #1875; in-app notice shipped (#1991)` · `Approver/date: Yas (Legal), 2026-10-26, reported by Jackson Smith`
 
 ---
 
