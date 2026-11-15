@@ -2,6 +2,12 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Sfx } from './sfx.js';
+import {
+    claimGoldenQuack,
+    learnCardState,
+    onLearnCardChange,
+    preloadLearnCard,
+} from './learncard.js';
 
 // ---------- config ----------
 const params = new URLSearchParams(location.search);
@@ -535,6 +541,8 @@ function endRun(won, why) {
     G.result = { won, why };
     G.endT = 0;
     if (won) G.score += 1000 + G.hearts * 300;
+    if (won) claimGoldenQuack();
+    renderLearnCard(learnCardState());
     G.sfx.music(false);
     if (won) G.sfx.win();
     else G.sfx.lose();
@@ -561,6 +569,25 @@ function endRun(won, why) {
         won ? 1600 : 1300
     );
 }
+// ---------- LearnCard badge status (end screen) ----------
+const LC_TEXT = {
+    claiming: 'Sending your Golden Quack badge to LearnCard\u2026',
+    issued: 'Golden Quack badge earned! Check your LearnCard wallet.',
+    already: 'The Golden Quack badge is already in your LearnCard wallet.',
+    unavailable: 'Play Duck Jones inside LearnCard to earn the Golden Quack badge.',
+};
+function renderLearnCard(lc) {
+    const box = document.getElementById('lcStatus');
+    const won = G.result && G.result.won;
+    const text =
+        lc.status === 'failed'
+            ? 'Couldn\u2019t send the Golden Quack badge. ' + ((lc.error && lc.error.message) || '')
+            : LC_TEXT[lc.status];
+    box.className = 'lc lc-' + lc.status + (won && text ? '' : ' hidden');
+    document.getElementById('lcText').textContent = text || '';
+    document.getElementById('lcRetry').classList.toggle('hidden', lc.status !== 'failed');
+}
+onLearnCardChange(renderLearnCard);
 function setPaused(p) {
     if (p && G.state === 'play') {
         G.state = 'paused';
@@ -916,6 +943,10 @@ for (const b of document.querySelectorAll('#touch button'))
     });
 document.getElementById('startBtn').addEventListener('click', start);
 document.getElementById('againBtn').addEventListener('click', start);
+document.getElementById('lcRetry').addEventListener('click', e => {
+    e.stopPropagation();
+    claimGoldenQuack();
+});
 document.getElementById('resumeBtn').addEventListener('click', () => setPaused(false));
 document.getElementById('pauseBtn').addEventListener('click', () => setPaused(true));
 const muteBtn = document.getElementById('muteBtn');
@@ -975,9 +1006,11 @@ window.__duck = {
         autopilot = !!v;
     },
     pause: setPaused,
+    learncard: learnCardState,
 };
 
 resize();
+preloadLearnCard();
 Promise.all([load('./models/duck.glb'), load('./models/props.glb')])
     .then(([d, p]) => {
         buildWorld(d, p);

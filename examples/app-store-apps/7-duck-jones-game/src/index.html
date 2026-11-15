@@ -9,6 +9,7 @@
         <meta name="theme-color" content="#2a1a10" />
         <title>Duck Jones and the Temple of the Golden Quack</title>
         <link rel="icon" href="./favicon.png" />
+        <link rel="apple-touch-icon" href="./duck-badge.png" />
         <link rel="stylesheet" href="./style.css" />
     </head>
     <body>
@@ -65,6 +66,10 @@
                 <h1 id="endTitle">IT BELONGS IN A MUSEUM!</h1>
                 <p id="endSub"></p>
                 <div id="stats"></div>
+                <div id="lcStatus" class="lc hidden" role="status" aria-live="polite">
+                    <span id="lcText"></span>
+                    <button id="lcRetry" class="hidden" type="button">Try again</button>
+                </div>
                 <button id="againBtn" class="big">Play again</button>
                 <div class="controls">Press Enter or R to restart</div>
             </div>
