@@ -100,6 +100,11 @@ const ApproveAccount = lazyWithRetry(() => import('./pages/approveAccount/Approv
 const SocialBadgesPage = lazyWithRetry(() => import('./pages/socialBadgesPage/SocialBadgesPage'));
 
 import { LoadingPage2 } from './pages/loadingPage/LoadingPage';
+import {
+    FallbackMarker,
+    markDashboardPath,
+    useDashboardPathMark,
+} from './helpers/dashboardPathMarks';
 const AccomplishmentsPage = lazyWithRetry(
     () => import('./pages/accomplishments/AccomplishmentsPage')
 );
@@ -216,6 +221,8 @@ const PublishFromManifestRoute: React.FC = () => {
 };
 
 export const Routes: React.FC = () => {
+    markDashboardPath('routes_render');
+    useDashboardPathMark('routes_commit');
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
     const flags = useFlags();
@@ -238,9 +245,11 @@ export const Routes: React.FC = () => {
         <ChunkBoundary>
             <Suspense
                 fallback={
-                    <DelayedFallback delayMs={200}>
-                        <RouteTransitionLoader />
-                    </DelayedFallback>
+                    <FallbackMarker boundary="routes">
+                        <DelayedFallback delayMs={200}>
+                            <RouteTransitionLoader />
+                        </DelayedFallback>
+                    </FallbackMarker>
                 }
             >
                 <GenericErrorBoundary>
@@ -455,13 +464,16 @@ export const Routes: React.FC = () => {
                         <SentryRoute
                             exact
                             path="/"
-                            render={() =>
-                                isLoggedIn ? (
+                            render={() => {
+                                markDashboardPath(
+                                    isLoggedIn ? 'root_redirect' : 'root_redirect_login'
+                                );
+                                return isLoggedIn ? (
                                     <Redirect to={dashboardAsHome ? '/dashboard' : '/wallet'} />
                                 ) : (
                                     <Redirect to="/login" />
-                                )
-                            }
+                                );
+                            }}
                         />
 
                         <SentryRoute exact path="/verify-email" component={UserVerifyEmail} />

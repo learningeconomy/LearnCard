@@ -15,6 +15,7 @@ import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';
+import { FallbackMarker } from './helpers/dashboardPathMarks';
 import NativeDigitalCredentialsListener from './native-digital-credentials/NativeDigitalCredentialsListener';
 import {
     sqliteInit,
@@ -212,7 +213,13 @@ const FullApp: React.FC = () => {
                 <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
                 {/* <ReactQueryDevtools /> */}
                 <IonReactRouter history={history}>
-                    <Suspense fallback={<LoadingPageDumb />}>
+                    <Suspense
+                        fallback={
+                            <FallbackMarker boundary="root">
+                                <LoadingPageDumb />
+                            </FallbackMarker>
+                        }
+                    >
                         <AuthCoordinatorProvider>
                             <ThemeInitializer />
                             <ExternalAuthServiceProvider>

@@ -22,9 +22,13 @@ import {
     lazyWithRetry,
 } from 'learn-card-base';
 
-const Routes = lazyWithRetry(() =>
-    import('../../Routes').then(module => ({ default: module.Routes }))
-);
+const Routes = lazyWithRetry(() => {
+    markDashboardPath('routes_lazy_read');
+    return import('../../Routes').then(module => {
+        markDashboardPath('routes_module');
+        return { default: module.Routes };
+    });
+});
 
 import useTheme from '../../theme/hooks/useTheme';
 import { IconSetEnum, NavbarIcons } from '../../theme/icons';
@@ -33,6 +37,7 @@ import { ColorSetEnum } from '../../theme/colors';
 import * as m from '../../paraglide/messages.js';
 import { getNavBarLinkLabel } from './mobileNavBarI18n';
 import { NATIVE_CREDENTIAL_PATH } from '../../native-digital-credentials/types';
+import { markDashboardPath } from '../../helpers/dashboardPathMarks';
 
 export enum MobileNavBarLinks {
     dashboard = 'dashboard',

@@ -71,6 +71,7 @@ import { useTranscriptPrompt } from './hooks/useTranscriptPrompt';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
 import { runCredentialIndexBackfills } from 'learn-card-base/helpers/credentialVisibilityBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
+import { useDashboardPathMark } from './helpers/dashboardPathMarks';
 
 const log = getLogger('app-router');
 
@@ -117,6 +118,7 @@ const AppRouter: React.FC = () => {
             coordinatorState.status === 'needs_recovery' ||
             coordinatorState.status === 'error'
         );
+    useDashboardPathMark('shell_commit', !showOfflineBootGate && !initLoading);
 
     // Native splash bridge. The Capacitor splash is configured with
     // launchAutoHide=false so it stays visible during the entire JS bootstrap
