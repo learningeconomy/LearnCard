@@ -1,5 +1,14 @@
 # consent-referral-demo
 
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/init@2.5.12
+    - @learncard/lca-api-plugin@2.1.1
+
 ## 0.0.10
 
 ### Patch Changes
