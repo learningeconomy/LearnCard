@@ -80,3 +80,31 @@ the `learn-card-base` barrel. `FullApp` adds 7.2 MB more (`useOpenNotifications`
 
 - **Kept/reverted:** **kept.** Dashboard p50 −66 (full) and −160 (UMTS), both ≥ 50 ms; p90 improved in both
   (2552 → 2426, 2462 → 2370). The full-network dashboard gain is not significant at n=10.
+
+### 2. H5: lazy-load filestack-js and html2canvas
+
+- **Change:** filestack-js loads on the first Filestack upload (once per provider; a failed load resets); html2canvas
+  loads on the first feedback screenshot, inside the existing screenshot deadline.
+- **Commit:** 58ae71d62 (cherry-pick of d5f680528)
+- **Size (measured, same build script):** entry 14,568,621 → 13,767,369 B (−801,252 B raw, −182 KB gzip). Total JS
+  −17 KB: the code moved out of the entry, it was not removed.
+- **Numbers (measured, Roadie A/B vs H1 95ba11046, alternating blocks of 5, full n=20, UMTS n=10):**
+  run `20261115T011745-ab-95ba11046-vs-58ae71d62` (ab-report.md).
+
+    | metric            |   full H1 |  full +H5 | Δp50 (p)   |   UMTS H1 |  UMTS +H5 | Δp50 (p)                    |
+    | ----------------- | --------: | --------: | ---------- | --------: | --------: | --------------------------- |
+    | dashboard         | 2354/2493 | 2270/2419 | −84 (0.07) | 2356/2472 | 2117/2364 | −239 (0.007, slow-mode mix) |
+    | react             | 1631/1670 | 1574/1608 | −56 (2e-5) | 1644/1693 | 1566/1607 | −78 (0.002)                 |
+    | coordinator_ready | 2134/2188 | 2082/2117 | −52 (7e-5) | 2160/2187 | 2041/2075 | −120 (0.001)                |
+    | walletReady       | 2137/2191 | 2084/2118 | −53 (5e-5) | 2163/2188 | 2042/2077 | −122 (0.001)                |
+
+    nav → entry: −58 ms full (p=6e-8), −55 ms UMTS; every candidate block beat every control block. Other phases flat.
+
+- **Kept/reverted:** **kept.** Dashboard p50 ≥ 50 ms better on both; p90 better on both.
+
+### Dashboard slow mode (open)
+
+walletReady → dashboard is bimodal: ~45–60 ms or ~240–290 ms. Builds before H1: 11/60 runs slow; with H1: 44/80
+(Fisher p=1e-5, measured). Inferred: once coordinator_ready lands earlier, the dashboard often waits ~200 ms on some
+other async dependency, so part of H1's gain moves downstream. From here, iterations are judged on
+coordinator_ready / walletReady p50 plus the slow-mode count; dashboard p50 at n≤20 is session-sensitive.
