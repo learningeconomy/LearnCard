@@ -3883,7 +3883,10 @@ describe('AuthCoordinator', () => {
             });
             await coordinator.initialize();
             coordinator.setMigrationData({ web3AuthKey: 'archive-key', source: 'archive' });
-            expect(coordinator.getState().migrationData?.expectedDid).toBe('did:key:zServer');
+            expect(coordinator.getState()).toMatchObject({
+                status: 'needs_migration',
+                migrationData: { expectedDid: 'did:key:zServer' },
+            });
 
             const result = await coordinator.migrate('archive-key', 'did:key:zArchive');
             expect(result).toMatchObject({ status: 'error', canRetry: false });
