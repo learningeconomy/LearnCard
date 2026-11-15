@@ -49,7 +49,12 @@ describe('DashboardPageRoute', () => {
 
         expect(screen.getByText('dashboard')).toBeTruthy();
         expect(screen.queryByText('fallback')).toBeNull();
-        expect(marks.steps).toEqual(['page_chunk_start', 'page_chunk_loaded', 'page_direct']);
+        expect(marks.steps.filter(step => step !== 'page_route_render')).toEqual([
+            'page_chunk_start',
+            'page_chunk_loaded',
+            'page_direct',
+        ]);
+        expect(marks.steps).toContain('page_route_render');
     });
 
     it('falls back to the lazy path (suspending) when the chunk has not loaded yet', async () => {

@@ -81,12 +81,13 @@ import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
-import { useDashboardPathMark } from '../../helpers/dashboardPathMarks';
+import { markDashboardPath, useDashboardPathMark } from '../../helpers/dashboardPathMarks';
 
 /** The activity card lists at most three passive records. */
 const RECENT_ACTIVITY_RECORDS = 3;
 
 const DashboardPage: React.FC = () => {
+    markDashboardPath('page_body_render', true);
     useDashboardPathMark('dashboard_commit');
     const history = useHistory();
     const { track } = useAnalytics();

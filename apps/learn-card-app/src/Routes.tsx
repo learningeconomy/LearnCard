@@ -105,6 +105,7 @@ import {
     markDashboardPath,
     useDashboardPathMark,
 } from './helpers/dashboardPathMarks';
+const markRoutesFallbackTimer = () => markDashboardPath('routes_fallback_timer', true);
 const AccomplishmentsPage = lazyWithRetry(
     () => import('./pages/accomplishments/AccomplishmentsPage')
 );
@@ -246,7 +247,7 @@ export const Routes: React.FC = () => {
             <Suspense
                 fallback={
                     <FallbackMarker boundary="routes">
-                        <DelayedFallback delayMs={200}>
+                        <DelayedFallback delayMs={200} onShow={markRoutesFallbackTimer}>
                             <RouteTransitionLoader />
                         </DelayedFallback>
                     </FallbackMarker>
