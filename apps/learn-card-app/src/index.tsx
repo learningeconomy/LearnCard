@@ -20,6 +20,7 @@ import { getLaunchDarklyProviderProps } from './constants/runtimeLaunchDarkly';
 import App from './App';
 import { markStartupPhase } from './helpers/startupDiagnostics';
 import { prewarmDidKit } from 'learn-card-base/helpers/walletHelpers';
+import { startNativeSQLiteInit } from 'learn-card-base/hooks/useSQLiteStorage';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
@@ -40,6 +41,10 @@ markStartupPhase('entry');
 
 // Warm DIDKit's WASM while tenant config and flags load; the wallet build awaits the same init.
 prewarmDidKit();
+
+// Open native SQLite now, not after the lazy app shell's first commit: the cached-key read that
+// gates auth:coordinator_ready waits for it. No-op on web; sqliteInit() joins or retries it.
+startNativeSQLiteInit();
 
 (async () => {
     // Native analytics can collect independently of React. On web this call
