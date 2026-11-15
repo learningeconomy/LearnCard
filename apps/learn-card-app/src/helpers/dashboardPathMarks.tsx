@@ -13,6 +13,7 @@ export type DashboardPathStep =
     | 'shell_commit' // AppRouter swapped the boot loader for the app shell
     | 'routes_lazy_read' // React first asked MobileNavBar's lazy Routes for its module
     | 'routes_module' // that module promise resolved
+    | 'routes_direct' // Routes mounted without suspending (module already loaded)
     | 'routes_render' // Routes rendered (may still suspend below)
     | 'routes_commit' // Routes committed
     | 'root_redirect' // `/` rendered its logged-in redirect
