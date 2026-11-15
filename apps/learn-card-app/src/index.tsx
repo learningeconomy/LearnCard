@@ -19,6 +19,7 @@ import App from './App';
 import { markStartupPhase } from './helpers/startupDiagnostics';
 import { prewarmDidKit } from 'learn-card-base/helpers/walletHelpers';
 import { startNativeSQLiteInit } from 'learn-card-base/hooks/useSQLiteStorage';
+import { loadFluentEmojiFont } from './fluentEmojiFont';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
@@ -109,6 +110,9 @@ startNativeSQLiteInit();
             </TenantConfigProvider>
         );
     }
+
+    // Emoji font rules load after the first render is queued, off the critical path.
+    loadFluentEmojiFont();
 
     // If you want your app to work offline and load faster, you can change
     // unregister() to register() below. Note this comes with some pitfalls.
