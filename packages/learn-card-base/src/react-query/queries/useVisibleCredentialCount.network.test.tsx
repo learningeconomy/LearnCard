@@ -48,6 +48,7 @@ import {
     CREDENTIAL_VISIBILITY_MARKER,
     reconcileCredentialVisibility,
     resetCredentialVisibilityBackfillForTests,
+    runCredentialIndexBackfills,
 } from '../../helpers/credentialVisibilityBackfill';
 
 /**
@@ -306,12 +307,12 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
         // Before the marker: the 1000-record read, filtered and deduped on the client.
         expect(shown).toContainEqual({ source: 'walk', ...expected(records) });
         expect(expected(records)).toEqual({ home: 5, tiles: [2, 2, 1] });
-        // Then the backfill starts: its own marker read, after that read.
-        expect(procedureNames().slice(0, 3)).toEqual([
+        // Then the backfill starts, reusing the counts' marker read and that index read.
+        expect(procedureNames().slice(0, 2)).toEqual([
             ['customStorage.count', 'index.count', 'index.count', 'index.count', 'index.count'],
             ['index.get'],
-            ['customStorage.count'],
         ]);
+        expect(requests.flat().filter(call => call.path === 'customStorage.count')).toHaveLength(1);
         expect(requests[1]![0]!.input).toMatchObject({ limit: 1000 });
         // The backfill reused that read, marked the hidden rows and left the marker.
         const calls = requests.flat();
@@ -337,7 +338,7 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
         ]);
     });
 
-    it('Home, then Passport while the first request is in flight: each count request carries its own marker read, and no index.get', async () => {
+    it('Home, then Passport while the first request is in flight: one marker read for both, and no index.get', async () => {
         await reconcileCredentialVisibility(await makeWallet(), client, 'cloud');
         freshDevice();
         host.wallet = await makeWallet({ realisticHash: true });
@@ -358,7 +359,7 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
 
         expect(procedureNames()).toEqual([
             ['customStorage.count', 'index.count'],
-            ['customStorage.count', 'index.count', 'index.count', 'index.count'],
+            ['index.count', 'index.count', 'index.count'],
         ]);
     });
 
@@ -386,5 +387,162 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
             .flat()
             .filter(call => call.path === 'index.get' && call.input?.limit === 1000);
         expect(scans).toHaveLength(1);
+    });
+});
+
+/** Every record the backfill has to mark in FIXTURE. */
+const NEEDS_UPDATE = FIXTURE.filter(
+    record => !isCredentialCollectionRecordVisible(record) && record.category !== 'Hidden'
+);
+const callsTo = (path: string) => requests.flat().filter(call => call.path === path);
+const updatedIds = () =>
+    callsTo('index.update').map(call => (call.input as unknown as { id: string }).id);
+const settle = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const markerDocument = async (id: string): Promise<Row> => ({
+    id,
+    fields: [
+        await hashOf(
+            `credentialVisibilityBackfill:${JSON.stringify(
+                CREDENTIAL_VISIBILITY_MARKER.credentialVisibilityBackfill
+            )}`
+        ),
+    ],
+    encryptedRecord: { ...CREDENTIAL_VISIBILITY_MARKER },
+});
+
+/** Passport's 8 squares (passportCategories.ts) and Home's 2 totals (DashboardPage.tsx). */
+const PASSPORT_CATEGORIES = [
+    'Social Badge',
+    'Achievement',
+    'Learning History',
+    'Accomplishment',
+    'Accommodation',
+    'Work History',
+    'ID',
+    'Qualifications',
+] as const;
+const useHomeAndPassport = () => [
+    useVisibleCredentialCount(),
+    useVisibleCredentialCount('Skill'),
+    useVisibleCredentialCount(PASSPORT_CATEGORIES[0]),
+    useVisibleCredentialCount(PASSPORT_CATEGORIES[1]),
+    useVisibleCredentialCount(PASSPORT_CATEGORIES[2]),
+    useVisibleCredentialCount(PASSPORT_CATEGORIES[3]),
+    useVisibleCredentialCount(PASSPORT_CATEGORIES[4]),
+    useVisibleCredentialCount(PASSPORT_CATEGORIES[5]),
+    useVisibleCredentialCount(PASSPORT_CATEGORIES[6]),
+    useVisibleCredentialCount(PASSPORT_CATEGORIES[7]),
+];
+
+describe('One backfill per wallet per app session, whatever starts it (LC-2413 staging run)', () => {
+    it.each([
+        ['BackfillOnceSameTick', 'in the same tick', 0],
+        ['BackfillOnceAcrossTicks', 'a tick apart', 1],
+    ] as const)(
+        '%s: the app shell start and the counts fallback %s make one marker read, one scan, one update per record and one marker',
+        async (_name, _when, ticks) => {
+            const wallet = await makeWallet({ realisticHash: true });
+            host.wallet = wallet;
+
+            // AppRouter.tsx starts it at sign-in; the counts' 1000-record fallback starts it too.
+            void runCredentialIndexBackfills(wallet, client, 'cloud');
+            if (ticks) await settle(0);
+            const { result } = renderHook(useAllCounts, { wrapper });
+            await waitFor(() => expect(documents).toHaveLength(1), { timeout: 3000 });
+            await waitFor(() => expect(result.current.home.source).toBe('count'));
+            await settle(100);
+
+            expect(callsTo('customStorage.count')).toHaveLength(1);
+            expect(callsTo('index.get').filter(call => call.input?.limit === 1000)).toHaveLength(1);
+            expect(updatedIds()).toHaveLength(NEEDS_UPDATE.length);
+            expect(new Set(updatedIds()).size).toBe(NEEDS_UPDATE.length);
+            expect(callsTo('customStorage.create')).toHaveLength(1);
+        }
+    );
+
+    it('BackfillOnceAcrossDidChange: started at sign-in as did:key, then by the counts after the profile turns it into did:web, it still runs once', async () => {
+        const wallet = await makeWallet({ realisticHash: true });
+        host.wallet = wallet;
+        responseDelayMs = 80;
+
+        void runCredentialIndexBackfills(wallet, client, 'cloud');
+        await waitFor(() => expect(requests.length).toBeGreaterThan(0));
+        // The LearnCard Network plugin swaps did:key for the profile's did:web once it loads.
+        (wallet.id as unknown as { did: () => string }).did = () => 'did:web:holder';
+        const { result } = renderHook(useAllCounts, { wrapper });
+        await waitFor(() => expect(documents.length).toBeGreaterThan(0), { timeout: 5000 });
+        await waitFor(() => expect(result.current.home.source).toBe('count'), { timeout: 5000 });
+        await settle(800);
+
+        expect(updatedIds()).toHaveLength(NEEDS_UPDATE.length);
+        expect(new Set(updatedIds()).size).toBe(NEEDS_UPDATE.length);
+        expect(callsTo('customStorage.create')).toHaveLength(1);
+        expect(documents).toHaveLength(1);
+        expect(callsTo('customStorage.count')).toHaveLength(1);
+        // Later starts in the same session reuse the finished run.
+        await runCredentialIndexBackfills(wallet, client, 'cloud');
+        expect(callsTo('customStorage.create')).toHaveLength(1);
+    }, 15_000);
+
+    it('DuplicateMarkerSkipsBackfill: two markers (two devices finished together) still mean done', async () => {
+        documents = [await markerDocument('marker-a'), await markerDocument('marker-b')];
+        const wallet = await makeWallet({ realisticHash: true });
+        host.wallet = wallet;
+
+        void runCredentialIndexBackfills(wallet, client, 'cloud');
+        const { result } = renderHook(useAllCounts, { wrapper });
+        await waitFor(() => expect(result.current.home.source).toBe('count'));
+        await settle(100);
+
+        expect(procedureNames()).toEqual([
+            ['customStorage.count', 'index.count', 'index.count', 'index.count', 'index.count'],
+        ]);
+        expect(callsTo('index.update')).toHaveLength(0);
+        expect(callsTo('customStorage.create')).toHaveLength(0);
+        expect(documents).toHaveLength(2);
+    });
+
+    it('PartialBackfillLeavesNoMarker: a failed update writes no marker, and the next start retries and writes it once', async () => {
+        const wallet = await makeWallet();
+        const update = procedures['index.update']!;
+        let failNext = true;
+        procedures['index.update'] = input => {
+            if (failNext) {
+                failNext = false;
+                return false;
+            }
+            return update(input);
+        };
+        try {
+            await runCredentialIndexBackfills(wallet, client, 'cloud');
+            expect(callsTo('customStorage.create')).toHaveLength(0);
+            expect(documents).toHaveLength(0);
+
+            await runCredentialIndexBackfills(wallet, client, 'cloud');
+            expect(callsTo('customStorage.create')).toHaveLength(1);
+            expect(documents).toHaveLength(1);
+
+            await runCredentialIndexBackfills(wallet, client, 'cloud');
+            expect(callsTo('customStorage.create')).toHaveLength(1);
+        } finally {
+            procedures['index.update'] = update;
+        }
+    });
+
+    it('CountsBatchShape: Home and Passport mounted a tick after the app shell start: one request, one marker read and 10 counts', async () => {
+        await reconcileCredentialVisibility(await makeWallet(), client, 'cloud');
+        freshDevice();
+        const wallet = await makeWallet({ realisticHash: true });
+        host.wallet = wallet;
+
+        void runCredentialIndexBackfills(wallet, client, 'cloud');
+        await settle(0);
+        const { result } = renderHook(useHomeAndPassport, { wrapper });
+        await waitFor(() => expect(result.current.every(count => count.count !== null)).toBe(true));
+        await settle(100);
+
+        expect(procedureNames()).toEqual([
+            ['customStorage.count', ...Array(10).fill('index.count')],
+        ]);
     });
 });

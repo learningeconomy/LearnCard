@@ -7,8 +7,7 @@ import {
     isCredentialCollectionRecordVisible,
 } from '../../helpers/credentialCollection';
 import {
-    getCredentialVisibilityBackfillKey,
-    isCredentialVisibilityBackfillComplete,
+    isCredentialVisibilityBackfillCompleteFor,
     loadCredentialIndexSnapshot,
     readCredentialVisibilityMarker,
     runCredentialIndexBackfills,
@@ -95,10 +94,9 @@ export const useVisibleCredentialCount = (
     const cloudUrl = networkStore.use.cloudUrl();
     const reader = switchedDid && wallet?.id.did() !== switchedDid ? null : wallet;
     const readerDid = reader?.id.did() ?? '';
-    const backfillKey = getCredentialVisibilityBackfillKey(readerDid, cloudUrl);
     const backfilled = useSyncExternalStore(
         subscribeCredentialVisibilityBackfill,
-        () => Boolean(readerDid) && isCredentialVisibilityBackfillComplete(backfillKey),
+        () => !!reader && isCredentialVisibilityBackfillCompleteFor(reader, cloudUrl),
         () => false
     );
 
