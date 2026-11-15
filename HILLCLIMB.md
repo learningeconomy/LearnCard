@@ -270,3 +270,20 @@ f947b4cbd vs baseline 52c8b0afd, alternating, n=20 per build per scenario, local
   wrapping these timers. This is now next idea #1 and should remove most of the 8/20 commit-mark slow group.
 - Before/after clip (UMTS): FrenchFry `~/roadie-scratch/lca-bench/clips/merged-vs-final.mp4` (baseline take 2260 ms,
   final take 1928 ms). Traces: `~/roadie-scratch/lca-bench/traces/f947b4cbd-longtask.md`.
+
+### 9. H10b: self-host Poppins and Jacques Francois, defer Noto Sans (kept)
+
+- **Commit:** 45b71e671. Removes the blocking Google Fonts `@import`s, self-hosts the first-screen faces (23 faces, ~180 KB woff2, 3 preloaded), and injects Noto Sans after first render.
+- **Numbers (measured, Roadie, 45b71e671 vs 1e4be4c7e, cache wiped):**
+    - **Font hosts hung for 30 s (n=3):** control FCP 31.6 s; candidate FCP 1.69–1.90 s, dashboard commit 1.94–2.32 s.
+    - **Normal network, alternating (full n=20, UMTS n=10):** nothing significant.
+        - full: FCP +15 (p=0.45), commit −14 (p=0.83).
+        - UMTS: FCP −48 (p=0.059), commit −217 (p=0.096).
+    - Stalls 0/60. Slow group 10/20 vs 10/20 on full.
+    - Run dirs: `runs/20261115T081750-ab-1e4be4c7e-vs-45b71e671`, `runs/20261115T084759-hangfonts2-1e4be4c7e-vs-45b71e671`.
+- **Fonts (measured):**
+    - Screenshots of the dashboard and /skills are identical across builds; Fluent Emoji render with no tofu.
+    - No fallback flash in 14 early screencaps; first text is already Poppins.
+    - Noto Sans is injected at ~0.9–1.06 s, and its googleapis fetch is off the first-paint path.
+- **Kept:** this removes a 30 s first-paint freeze when Google Fonts is slow or blocked, and is neutral otherwise.
+- **Leftover (not done):** `packages/react-learn-card/src/assets/styles/main.css` still declares gstatic `@font-face` rules for Poppins 300, Jacques Francois 400, Montserrat, Mouse Memoirs and Sacramento. They are not on the first-paint path, but they are worth removing in a follow-up.
