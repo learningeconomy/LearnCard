@@ -81,6 +81,8 @@ export type BoostAndVCType = {
 };
 
 import { resolveCredentialForClaim } from '../helpers/ingestManagedCredential';
+import { withInternalCategoryHidden } from '../helpers/credentialCollection';
+import { invalidateVisibleCredentialCounts } from '../react-query/visibleCredentialCountKeys';
 
 type AddVCInput = Omit<LCR, 'id'>;
 /** Options for saving an existing credential, optionally deferring post-save work. */
@@ -245,6 +247,7 @@ export const useWallet = () => {
             queryKey: [...listPrefix, '', readerDid],
             exact: true,
         });
+        void invalidateVisibleCredentialCounts(queryClient, profileDid);
     };
 
     const getWallet = async (
@@ -608,7 +611,7 @@ export const useWallet = () => {
                 stage = 'upload';
                 const uri2 = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
                 if (!uri2) throw new Error('credential.upload.failed');
-                const record = {
+                const record = withInternalCategoryHidden({
                     id: _id,
                     uri: uri2,
                     category,
@@ -617,7 +620,7 @@ export const useWallet = () => {
                     ...(inboxDeliveryId ? { inboxDeliveryId } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
-                };
+                });
 
                 stage = 'index';
                 result = await wallet.index[location].add(record);
@@ -630,7 +633,7 @@ export const useWallet = () => {
                 const uri = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
                 if (!uri) throw new Error('credential.upload.failed');
 
-                const record = {
+                const record = withInternalCategoryHidden({
                     id: _id,
                     uri,
                     category,
@@ -639,7 +642,7 @@ export const useWallet = () => {
                     ...(inboxDeliveryId ? { inboxDeliveryId } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
-                };
+                });
 
                 stage = 'index';
                 result = await wallet.index[location].add(record);
@@ -770,7 +773,7 @@ export const useWallet = () => {
                 skipSync: Boolean(skipSync),
             });
 
-            const record = {
+            const record = withInternalCategoryHidden({
                 id: _id,
                 uri,
                 category,
@@ -791,7 +794,7 @@ export const useWallet = () => {
                           },
                       }
                     : {}),
-            };
+            });
 
             // get VC From stream given streamId
             // this does not return the added vc, it just adds the streamId to the wallet
