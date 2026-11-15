@@ -11,6 +11,7 @@ import SideMenu from './components/sidemenu/SideMenu';
 import NewMyData from './components/new-my-data/NewMyData';
 import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
 import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
+import { preloadRoutes } from './components/mobile-nav-bar/RoutesOutlet';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
@@ -417,6 +418,8 @@ const AppRouter: React.FC = () => {
     // routes: the default landing pages plus wherever the URL already points.
     const initialPathRef = useRef(window.location.pathname);
     useEffect(() => {
+        // Lets the shell mount Routes without suspending once the wallet is ready.
+        preloadRoutes().catch(() => undefined);
         import('./Routes')
             .then(m => {
                 void m.ROUTE_PRELOAD['/dashboard']?.();
