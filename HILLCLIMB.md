@@ -209,3 +209,28 @@ coordinator_ready / walletReady p50 plus the slow-mode count; dashboard p50 at n
   flags → react cost: +1–2 ms en, ~17–19 ms es.
 - **Kept/reverted:** **kept, provisional.** It meets the agreed metric (coordinator_ready / walletReady, all
   significant) but the slow-mode count got worse. The dashboard gain depends on fixing the slow path (attempt 8).
+
+### 8. EXPERIMENTAL routes-fallback nudge (rejected)
+
+- **Commits:** 9e19aac6e (debug-only marks, kept: no behavior change), 7d7807688 (nudge, **reverted** in the next commit).
+- **Numbers (measured, Roadie A/B 9e19aac6e vs 7d7807688, full n=20, UMTS n=10, 0 stalls):** run
+  `20261115T045620-ab-9e19aac6e-vs-7d7807688` (holdtable.py per-run table).
+  dash_dashboard_commit full 2027/2201 → 2144/2185 (+117, p=0.06), UMTS 2032/2188 → 2030/2217 (−2). Slow runs pooled
+  8/30 → 17/30 (Fisher p=0.035). Worse.
+- **Theories tested (measured):** nudge-releases-hold: no (commit lands 147–204 ms after the nudge). Timer hold: no
+  (dash_routes_fallback_timer fired 0/60). **Long task: yes.** Every slow run has a ~110–120 ms main-thread task
+  starting 100–115 ms after walletReady, then ~80 ms more; the last body render and the commit sit inside it. In fast
+  runs the same task starts ~40 ms after the commit.
+- **Mechanism (inferred):** a post-walletReady task, not the dashboard, decides the slow group. If the page chunk lands
+  within ~60 ms of walletReady the commit wins; otherwise it queues behind the task. That is also why H4 (earlier
+  walletReady, same chunk timing) grew the slow group.
+
+## Next ideas
+
+1. Identify the ~110 ms task that starts ~100 ms after walletReady (CDP trace on the emulator) and defer it until after
+   the first dashboard commit (post-commit effect / requestIdleCallback), if it is not needed for first paint. Expected:
+   most of the slow group (~200 ms on 8–16/30 runs) goes away, and H4's gain reaches the dashboard.
+2. Start the Routes + DashboardPage chunk fetch at entry so it lands before that task.
+3. H2 (modulepreload FullApp's static closure), H11 (dedupe ~8 concurrent privateKey reads), H10b (self-host
+   Poppins/Jacques Francois, drop the blocking Google Fonts @imports): prepared and host-verified, not benched.
+4. H6 (lazy wallet plugins: openid4vc 14%, render-method 9% of entry): not started, med–high risk.
