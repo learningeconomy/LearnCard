@@ -234,3 +234,25 @@ coordinator_ready / walletReady p50 plus the slow-mode count; dashboard p50 at n
 3. H2 (modulepreload FullApp's static closure), H11 (dedupe ~8 concurrent privateKey reads), H10b (self-host
    Poppins/Jacques Francois, drop the blocking Google Fonts @imports): prepared and host-verified, not benched.
 4. H6 (lazy wallet plugins: openid4vc 14%, render-method 9% of entry): not started, med–high risk.
+
+## Final confirm (measured, Roadie, emulator)
+
+f947b4cbd vs baseline 52c8b0afd, alternating, n=20 per build per scenario, locale en, Nov 15 05:23-05:46 PT
+(run `20261115T052328-ab-52c8b0afd-vs-f947b4cbd`; reused the 9e19aac6e APK, sha256 identical, diff is HILLCLIMB.md only).
+
+| metric               | full p50 Δ         | UMTS p50 Δ         | Mann-Whitney p |
+| -------------------- | ------------------ | ------------------ | -------------- |
+| dashboard (URL flip) | 2327 → 1990 (−337) | 2293 → 1992 (−302) | 6e-8 / 6e-8    |
+| am TotalTime         | 2352 → 2034 (−318) | 2342 → 2027 (−315) | 6e-8 / 9e-8    |
+| coordinator_ready    | −317               | −323               | 6e-8           |
+| walletReady          | −315               | −323               | 6e-8           |
+| FCP                  | −105               | −91                | 3e-4 / 3e-5    |
+| nav→entry            | −98                | −102               | 6e-8           |
+| react                | −88                | −99                | 5e-6 / 8e-8    |
+
+- dash_dashboard_commit has no baseline (52c8b0afd predates the marks). f947b4cbd: p50 2077 full, 2022 UMTS.
+- Biggest share: FCP → auth transition #1, about −205 ms. Auth transition #1 → #2 is about +75 ms slower (p≈0.04),
+  likely work that moved, not new work (inferred).
+- Slow groups: URL flip 3/20 → 0/20 full, 0 → 0 UMTS. Commit mark on f947b4cbd: 8/20 full, 8/20 UMTS (the
+  walletReady+~110 ms long task, still open).
+- Stalls: baseline 1/40 (nav→entry 23.3 s on UMTS, consistent with the FluentEmoji @import H10 removed); f947b4cbd 0/40.
