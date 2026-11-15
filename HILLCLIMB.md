@@ -61,5 +61,22 @@ the `learn-card-base` barrel. `FullApp` adds 7.2 MB more (`useOpenNotifications`
   when `getCachedPrivateKey` runs, leaving open + query + close. react→coordinator_ready −50 to −150 ms; dashboard
   moves by the same amount. No effect on web or on nav→entry.
 - **Commit:** 95ba11046
-- **Numbers:** pending (Roadie)
-- **Kept/reverted:** pending
+- **Numbers (measured, Roadie, n=10, vs same-session control 52c8b0afd n=10, Mann-Whitney p):**
+  runs `20261115T004743-hc-95ba11046-n10-full-umts` (H1) and `20261115T005312-hc-52c8b0afd-n10-full-umts` (control).
+  An emulator restart shifted absolute numbers by +20 to +50 ms, hence the same-session control.
+
+    | metric            | full control |   full H1 | Δp50 (p)         | UMTS control |   UMTS H1 | Δp50 (p)     |
+    | ----------------- | -----------: | --------: | ---------------- | -----------: | --------: | ------------ |
+    | dashboard         |    2338/2552 | 2272/2426 | −66 (0.15, n.s.) |    2310/2462 | 2150/2370 | −160 (0.008) |
+    | react             |    1616/1745 | 1611/1680 | −6 (n.s.)        |    1608/1679 | 1603/1632 | −4 (n.s.)    |
+    | coordinator_ready |    2250/2366 | 2092/2171 | −158 (2e-4)      |    2251/2340 | 2074/2123 | −177 (2e-4)  |
+    | walletReady       |    2255/2367 | 2094/2173 | −161 (2e-4)      |    2252/2343 | 2077/2124 | −175 (2e-4)  |
+
+    react → coordinator_ready p50: 631 → 492 ms (full), 638 → 476 ms (UMTS). Bundle load and pre-react phases flat.
+    Open question: walletReady → dashboard on full went 45 → 174 ms p50 (p90 322). A ~250–320 ms slow mode hit 5/10 H1
+    full runs vs 3/20 baseline. Guess: n=10 noise; alternative: the coordinator now finishes before something the
+    dashboard waits on, so part of the win moves downstream. Next stacked bench on full checks it.
+    Stalls 0/10 both scenarios.
+
+- **Kept/reverted:** **kept.** Dashboard p50 −66 (full) and −160 (UMTS), both ≥ 50 ms; p90 improved in both
+  (2552 → 2426, 2462 → 2370). The full-network dashboard gain is not significant at n=10.
