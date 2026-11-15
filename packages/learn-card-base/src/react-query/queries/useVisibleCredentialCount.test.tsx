@@ -54,6 +54,7 @@ import { isCredentialCollectionRecordVisible } from '../../helpers/credentialCol
 import {
     getCredentialVisibilityBackfillKey,
     isCredentialVisibilityBackfillComplete,
+    loadCredentialIndexSnapshot,
     reconcileCredentialVisibility,
     resetCredentialVisibilityBackfillForTests,
 } from '../../helpers/credentialVisibilityBackfill';
@@ -95,6 +96,8 @@ const FIXTURE = (): Stored[] =>
     ] as Stored[];
 
 let records: Stored[];
+/** LearnCloud custom documents (where the backfill marker lives). */
+let documents: Record<string, unknown>[];
 const fieldsOf = (record: Stored) => generateEncryptedFieldsArray(hasher, record);
 type ServerFilter = {
     fields?: { $in?: string[]; $nin?: string[] };
@@ -146,13 +149,25 @@ const makeWallet = (did = 'account-a') => {
         records = records.filter(record => record.id !== id);
         return true;
     });
+    const learnCloudCount = vi.fn(
+        async (query: Record<string, unknown>) =>
+            documents.filter(doc => Object.entries(query).every(([k, v]) => doc[k] === v)).length
+    );
+    const learnCloudCreate = vi.fn(async (doc: Record<string, unknown>) => {
+        documents.push(doc);
+        return true;
+    });
     host.wallet = {
         id: { did: () => did },
         index: { LearnCloud: { getPage, getCount, update, get, add, remove } },
-        invoke: { issueCredential: vi.fn(async (vc: object) => ({ ...vc, proof: {} })) },
+        invoke: {
+            issueCredential: vi.fn(async (vc: object) => ({ ...vc, proof: {} })),
+            learnCloudCount,
+            learnCloudCreate,
+        },
         store: { LearnCloud: { uploadEncrypted: vi.fn(async () => `u:${records.length}`) } },
     } as unknown as BespokeLearnCard;
-    return { getPage, getCount, update };
+    return { getPage, getCount, update, learnCloudCount, learnCloudCreate };
 };
 
 /** What the full list walk shows: visible, unique by uri, matched by exact category. */
@@ -188,6 +203,7 @@ const backfillKey = getCredentialVisibilityBackfillKey('account-a', 'cloud');
 beforeEach(() => {
     client = newClient();
     records = FIXTURE();
+    documents = [];
     window.localStorage.clear();
     resetCredentialVisibilityBackfillForTests();
     host.init.mockImplementation(async () => host.wallet);
@@ -208,14 +224,16 @@ describe('Counts leave hidden records out (LC-2413 count endpoint)', () => {
         expect(await getCount(getVisibleCredentialCountQuery())).not.toBe(walkCount());
     });
 
-    it('before the backfill, Passport and Home counts come from the walk and equal the visible records', async () => {
-        const { getCount } = makeWallet();
+    it('before the backfill, Passport and Home counts come from one index read and equal the visible records', async () => {
+        const { getPage } = makeWallet();
         const { result } = renderHook(useAllCounts, { wrapper });
 
         await waitFor(() => expect(values(result.current)).toEqual(expectedValues()));
         expect(values(result.current)).toEqual({ home: 6, tiles: [3, 2, 1] });
         expect(result.current.home.source).toBe('walk');
-        expect(getCount).not.toHaveBeenCalled();
+        // No marker, so the raw counts are not shown; one 1000-record read replaces the walk.
+        expect(getPage).toHaveBeenCalledTimes(1);
+        expect(getPage).toHaveBeenCalledWith({}, { cursor: undefined, limit: 1000 });
     });
 
     it('after the backfill, each count is one count request and equals the full walk on the same records', async () => {
@@ -285,16 +303,37 @@ describe('Counts leave hidden records out (LC-2413 count endpoint)', () => {
         expect(beforeIds).toEqual(['hid-1', 'hid-2']);
     });
 
+    it('the index read keeps paging at 1000 while hasMore, and callers in the same tick share it', async () => {
+        const { getPage } = makeWallet();
+        records = Array.from({ length: 1500 }, (_, i) => ({
+            id: `r-${i}`,
+            uri: `u:r-${i}`,
+            category: 'Achievement',
+        })) as Stored[];
+
+        const [first, second] = await Promise.all([
+            loadCredentialIndexSnapshot(host.wallet!),
+            loadCredentialIndexSnapshot(host.wallet!),
+        ]);
+
+        expect(first).toHaveLength(1500);
+        expect(second).toBe(first);
+        expect(getPage.mock.calls).toEqual([
+            [{}, { cursor: undefined, limit: 1000 }],
+            [{}, { cursor: '1000', limit: 1000 }],
+        ]);
+    });
+
     it('a failed backfill write leaves the account on the walk, so counts stay exact', async () => {
-        const { update, getCount } = makeWallet();
+        const { update, learnCloudCreate } = makeWallet();
         update.mockImplementationOnce(async () => false);
         await reconcileCredentialVisibility(host.wallet!, client, 'cloud');
         expect(isCredentialVisibilityBackfillComplete(backfillKey)).toBe(false);
+        expect(learnCloudCreate).not.toHaveBeenCalled();
 
         const { result } = renderHook(useAllCounts, { wrapper });
         await waitFor(() => expect(values(result.current)).toEqual(expectedValues()));
         expect(result.current.home.source).toBe('walk');
-        expect(getCount).not.toHaveBeenCalled();
     });
 
     it('switches from the walk to the count when the backfill finishes, with the same numbers', async () => {
@@ -309,7 +348,8 @@ describe('Counts leave hidden records out (LC-2413 count endpoint)', () => {
         await waitFor(() => {
             seen.push(values(result.current));
             expect(result.current.home.source).toBe('count');
-            expect(getCount).toHaveBeenCalledTimes(1 + TILES.length);
+            // Once untrusted (no marker yet), once more after the backfill left the marker.
+            expect(getCount).toHaveBeenCalledTimes(2 * (1 + TILES.length));
         });
         await waitFor(() => expect(values(result.current)).toEqual({ home: 6, tiles: [3, 2, 1] }));
         // No spinner on the way over: every render had numbers.

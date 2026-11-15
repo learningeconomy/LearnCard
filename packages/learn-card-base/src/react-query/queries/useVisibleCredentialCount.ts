@@ -1,6 +1,5 @@
 import { useMemo, useSyncExternalStore } from 'react';
 import { useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
-import { useCredentialCollection } from './useCredentialCollection';
 import { CREDENTIAL_LIST_STALE_TIME, getCredentialListWalkedAt } from './vcQueries';
 import type { LCR } from '../../types/credential-records';
 import {
@@ -10,6 +9,8 @@ import {
 import {
     getCredentialVisibilityBackfillKey,
     isCredentialVisibilityBackfillComplete,
+    loadCredentialIndexSnapshot,
+    readCredentialVisibilityMarker,
     subscribeCredentialVisibilityBackfill,
 } from '../../helpers/credentialVisibilityBackfill';
 import { walletStore, switchedProfileStore } from '../../stores/walletStore';
@@ -18,13 +19,31 @@ import { getVisibleCredentialCountKey } from '../visibleCredentialCountKeys';
 
 export * from '../visibleCredentialCountKeys';
 
-/** Index query for the records Passport (one category) or Home (all) shows. */
+/**
+ * Index query for the records Passport (one category) or Home (all) shows.
+ *
+ * Duplicate uri rows already in an index are counted once per row: the server only sees the
+ * uri encrypted, so it can't dedupe. New duplicates are blocked when they're added (the
+ * LearnCloud plugin's index.add), and the list walk still dedupes (LC-2413).
+ */
 export const getVisibleCredentialCountQuery = (category?: string) =>
     category
         ? { category, hidden: { $ne: true } }
         : { hidden: { $ne: true }, category: { $nin: [...UNCOUNTED_CATEGORY_VALUES] } };
 
 type ListPage = { records?: LCR[]; hasMore?: boolean; walkedAt?: number };
+
+/** What the list walk shows from these records: visible, first row per uri, then category. */
+const countVisibleRecords = (records: LCR[], category?: string) => {
+    const unique = new Map<string, LCR>();
+    for (const record of records) {
+        if (isCredentialCollectionRecordVisible(record) && !unique.has(record.uri))
+            unique.set(record.uri, record);
+    }
+    let count = 0;
+    for (const record of unique.values()) if (!category || record.category === category) count++;
+    return count;
+};
 
 /** Count from a finished server walk already in the cache, or null. */
 const countFinishedWalk = (data: InfiniteData<ListPage> | undefined, category?: string) => {
@@ -59,9 +78,10 @@ export type VisibleCredentialCount = {
 };
 
 /**
- * Passport/Home count from one index count request. Until this account's visibility
- * backfill has marked internal records `hidden`, the count endpoint cannot leave them out,
- * so the count falls back to the full list walk (which filters on the client).
+ * Passport/Home count from one index count request. The count only leaves internal records
+ * out once the account's visibility backfill has marked them, so a device that hasn't seen
+ * the backfill reads the LearnCloud marker alongside the counts (one batched request). With
+ * no marker, the count comes from one read of the whole index, filtered on the client.
  */
 export const useVisibleCredentialCount = (
     category?: string,
@@ -83,39 +103,51 @@ export const useVisibleCredentialCount = (
 
     const countQuery = useQuery({
         queryKey: getVisibleCredentialCountKey(switchedDid ?? '', category ?? '', readerDid),
-        queryFn: async ({ signal }) => {
+        // null: no device has finished the backfill yet, so this count can't be trusted.
+        queryFn: async ({ signal }): Promise<number | null> => {
             if (!reader) throw new Error('Credential reader changed');
-            const count = await reader.index.LearnCloud.getCount?.(
-                getVisibleCredentialCountQuery(category) as never
-            );
+            const [count, trusted] = await Promise.all([
+                reader.index.LearnCloud.getCount?.(
+                    getVisibleCredentialCountQuery(category) as never
+                ),
+                readCredentialVisibilityMarker(reader, cloudUrl),
+            ]);
             signal.throwIfAborted();
+            if (!trusted) return null;
             // didkit can decrypt numbers as BigInt.
             const value = Number(count);
             if (!Number.isFinite(value)) throw new Error('Count unavailable');
             return value;
         },
-        enabled: enabled && backfilled && Boolean(reader),
+        enabled: enabled && Boolean(reader),
         // Same freshness as the list walk; a count restored from an earlier launch revalidates once.
         staleTime: query =>
             query.state.dataUpdatedAt < performance.timeOrigin ? 0 : CREDENTIAL_LIST_STALE_TIME,
     });
 
-    const walk = useCredentialCollection(undefined, {
-        mode: 'complete',
-        enabled: enabled && !backfilled,
+    const needsSnapshot =
+        !backfilled &&
+        (countQuery.data === null || (countQuery.isError && countQuery.data === undefined));
+    const snapshot = useQuery({
+        // Under the count prefix, so every writer's count invalidation reaches it.
+        queryKey: ['useGetCredentialCount', switchedDid ?? '', '', readerDid, 'index-snapshot'],
+        queryFn: () => {
+            if (!reader) throw new Error('Credential reader changed');
+            return loadCredentialIndexSnapshot(reader);
+        },
+        enabled: enabled && Boolean(reader) && needsSnapshot,
+        staleTime: CREDENTIAL_LIST_STALE_TIME,
     });
-
-    const walkCount = useMemo(() => {
-        if (!walk.isComplete) return null;
-        return category
-            ? walk.records.filter(record => record.category === category).length
-            : walk.records.length;
-    }, [walk.isComplete, walk.records, category]);
+    const snapshotCount = useMemo(
+        () => (snapshot.data ? countVisibleRecords(snapshot.data, category) : null),
+        [snapshot.data, category]
+    );
 
     if (backfilled) {
-        // Right after the backfill finishes, keep the walk's number until the count lands.
+        // Right after the backfill finishes, keep the earlier number until the count lands.
         const count =
             countQuery.data ??
+            snapshotCount ??
             countFinishedWalk(
                 queryClient.getQueryData<InfiniteData<ListPage>>([
                     'useGetCredentialList',
@@ -136,12 +168,15 @@ export const useVisibleCredentialCount = (
         };
     }
     return {
-        count: walkCount,
-        loading: enabled && walkCount === null && !walk.isError,
-        unavailable: walkCount === null && walk.isError,
-        isError: walk.isError,
-        isFetching: walk.isFetching,
-        retry: walk.retry,
+        count: snapshotCount,
+        loading: enabled && snapshotCount === null && !snapshot.isError,
+        unavailable: snapshotCount === null && snapshot.isError,
+        isError: snapshot.isError,
+        isFetching: countQuery.isFetching || snapshot.isFetching,
+        retry: () =>
+            needsSnapshot
+                ? snapshot.refetch({ cancelRefetch: false })
+                : countQuery.refetch({ cancelRefetch: false }),
         source: 'walk',
     };
 };

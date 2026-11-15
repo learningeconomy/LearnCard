@@ -9,7 +9,7 @@ import * as m from '../../paraglide/messages.js';
 
 /**
  * Passport tiles over the real useVisibleCredentialCount (LC-2412, LC-2413): the index count
- * once the account's visibility backfill is done, the full list walk before that. With the
+ * once the account's visibility backfill is done, one read of the whole index before that. With the
  * index failing, prod list view shows "Count unavailable" and grid shows "—"; both come from
  * `count === null` in WalletPageItemWrapper.
  */
@@ -99,7 +99,7 @@ const ROWS = Array.from(
     (_, i) =>
         ({ id: String(i), uri: `uri-${i}`, title: `Badge ${i}`, category: 'Social Badge' }) as LCR
 );
-const LIST_KEY = ['useGetCredentialList', '', '', 'account-a'];
+const SNAPSHOT_KEY = ['useGetCredentialCount', '', '', 'account-a', 'index-snapshot'];
 const COUNT_KEY = ['useGetCredentialCount', '', 'Social Badge', 'account-a', 'visible'];
 type Page = { records: LCR[]; hasMore: boolean; cursor: string };
 const allRows = (): Page => ({ records: ROWS, hasMore: false, cursor: '3' });
@@ -135,7 +135,7 @@ const makeWallet = () => {
         others: source === 'walk' ? getCount : getPage,
     };
 };
-const feedKey = () => (source === 'walk' ? LIST_KEY : COUNT_KEY);
+const feedKey = () => (source === 'walk' ? SNAPSHOT_KEY : COUNT_KEY);
 const renderTile = () =>
     render(
         <QueryClientProvider client={client}>
@@ -192,8 +192,10 @@ describe.each([
         });
         expect(screen.getByText(shown(viewMode))).toBeTruthy();
         expect(screen.queryByRole('status')).toBeNull();
-        // The count path never walks the index, and the walk never asks for a count.
-        expect(others).not.toHaveBeenCalled();
+        // The count path never reads the index. Before the backfill, the untrusted count goes
+        // out with the marker read, and the index is read once at 1000 records.
+        if (source === 'count') expect(others).not.toHaveBeenCalled();
+        else expect(others).toHaveBeenCalledTimes(1);
 
         await act(async () => held.resolve());
     });
