@@ -8,20 +8,11 @@ type DashboardPageComponent = (typeof import('./DashboardPage'))['default'];
 
 let loadedDashboardPage: DashboardPageComponent | null = null;
 
-let resolveDashboardPageLoaded!: () => void;
-const dashboardPageLoaded = new Promise<void>(resolve => {
-    resolveDashboardPageLoaded = resolve;
-});
-
-/** Resolves once the dashboard chunk has loaded. Never starts a load and never rejects. */
-export const whenDashboardPageLoaded = (): Promise<void> => dashboardPageLoaded;
-
 const importDashboardPage = () => {
     markDashboardPath('page_chunk_start');
     return import('./DashboardPage').then(module => {
         markDashboardPath('page_chunk_loaded');
         loadedDashboardPage = module.default;
-        resolveDashboardPageLoaded();
         return module;
     });
 };

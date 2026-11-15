@@ -29,7 +29,6 @@ export type DashboardPathStep =
     | 'routes_fallback_shown' // Routes' own Suspense fallback committed
     | 'routes_fallback_hidden'
     | 'routes_fallback_timer' // Routes' DelayedFallback 200 ms timer fired (a state update in the fallback)
-    | 'routes_fallback_nudge' // the routes fallback re-rendered itself after the dashboard chunk loaded
     | 'longtask' // a main-thread long task started (PerformanceObserver; marked at its start time)
     | 'longtask_end'; // ...and ended (start time + duration)
 

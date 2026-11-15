@@ -42,16 +42,8 @@ beforeEach(() => {
 
 describe('DashboardPageRoute', () => {
     it('mounts DashboardPage without suspending once its chunk is preloaded', async () => {
-        const { DashboardPageRoute, preloadDashboardPage, whenDashboardPageLoaded } = await load();
-        let loaded = false;
-        void whenDashboardPageLoaded().then(() => {
-            loaded = true;
-        });
-        await Promise.resolve();
-        expect(loaded).toBe(false);
+        const { DashboardPageRoute, preloadDashboardPage } = await load();
         await preloadDashboardPage();
-        await whenDashboardPageLoaded();
-        expect(loaded).toBe(true);
 
         renderRoute(DashboardPageRoute);
 

@@ -43,7 +43,6 @@ const LearningHistoryPage = lazyWithRetry(
 );
 const WorkHistoryPage = lazyWithRetry(() => import('./pages/workhistory/WorkHistoryPage'));
 import DelayedFallback from './components/generic/DelayedFallback';
-import RoutesSuspenseFallback from './components/routes-fallback/RoutesSuspenseFallback';
 import RouteTransitionLoader from './components/generic/RouteTransitionLoader';
 
 const CurrenciesPage = lazyWithRetry(() => import('./pages/currencies/CurrenciesPage'));
@@ -101,7 +100,12 @@ const ApproveAccount = lazyWithRetry(() => import('./pages/approveAccount/Approv
 const SocialBadgesPage = lazyWithRetry(() => import('./pages/socialBadgesPage/SocialBadgesPage'));
 
 import { LoadingPage2 } from './pages/loadingPage/LoadingPage';
-import { markDashboardPath, useDashboardPathMark } from './helpers/dashboardPathMarks';
+import {
+    FallbackMarker,
+    markDashboardPath,
+    useDashboardPathMark,
+} from './helpers/dashboardPathMarks';
+const markRoutesFallbackTimer = () => markDashboardPath('routes_fallback_timer', true);
 const AccomplishmentsPage = lazyWithRetry(
     () => import('./pages/accomplishments/AccomplishmentsPage')
 );
@@ -242,9 +246,11 @@ export const Routes: React.FC = () => {
         <ChunkBoundary>
             <Suspense
                 fallback={
-                    <RoutesSuspenseFallback>
-                        <RouteTransitionLoader />
-                    </RoutesSuspenseFallback>
+                    <FallbackMarker boundary="routes">
+                        <DelayedFallback delayMs={200} onShow={markRoutesFallbackTimer}>
+                            <RouteTransitionLoader />
+                        </DelayedFallback>
+                    </FallbackMarker>
                 }
             >
                 <GenericErrorBoundary>
