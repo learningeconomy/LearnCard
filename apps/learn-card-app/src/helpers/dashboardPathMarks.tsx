@@ -21,11 +21,16 @@ export type DashboardPathStep =
     | 'page_chunk_start' // DashboardPage's chunk was first requested (preload or lazy render)
     | 'page_chunk_loaded' // ...and its module promise resolved
     | 'page_direct' // /dashboard mounted DashboardPage without suspending (chunk already loaded)
+    | 'page_route_render' // DashboardPageRoute rendered (marked every render)
+    | 'page_body_render' // DashboardPage's body rendered (marked every render; renders may be discarded)
     | 'dashboard_commit' // DashboardPage committed
     | 'root_fallback_shown' // FullApp's root Suspense fallback committed
     | 'root_fallback_hidden' // ...and was replaced by content
     | 'routes_fallback_shown' // Routes' own Suspense fallback committed
-    | 'routes_fallback_hidden';
+    | 'routes_fallback_hidden'
+    | 'routes_fallback_timer' // Routes' DelayedFallback 200 ms timer fired (a state update in the fallback)
+    | 'longtask' // a main-thread long task started (PerformanceObserver; marked at its start time)
+    | 'longtask_end'; // ...and ended (start time + duration)
 
 export const DASHBOARD_PATH_MARK_PREFIX = 'learncard:startup:dash_';
 
@@ -56,6 +61,35 @@ export const FallbackMarker: React.FC<{
         return () => markDashboardPath(`${boundary}_fallback_hidden`, true);
     }, [boundary]);
     return <>{children}</>;
+};
+
+let observingLongTasks = false;
+
+/**
+ * Debug only: marks every main-thread long task as `longtask` / `longtask_end` pairs at the task's own
+ * start and end times, so a startup trace can tell a blocked main thread from a held React commit.
+ * No-op where the `longtask` entry type is unsupported.
+ */
+export const observeDashboardLongTasks = (): void => {
+    if (observingLongTasks || !isDebugEnvironmentEnabled()) return;
+    if (typeof PerformanceObserver === 'undefined' || typeof performance?.mark !== 'function')
+        return;
+    if (!PerformanceObserver.supportedEntryTypes?.includes('longtask')) return;
+    observingLongTasks = true;
+    try {
+        new PerformanceObserver(list => {
+            for (const entry of list.getEntries()) {
+                performance.mark(`${DASHBOARD_PATH_MARK_PREFIX}longtask`, {
+                    startTime: entry.startTime,
+                });
+                performance.mark(`${DASHBOARD_PATH_MARK_PREFIX}longtask_end`, {
+                    startTime: entry.startTime + entry.duration,
+                });
+            }
+        }).observe({ type: 'longtask' });
+    } catch {
+        observingLongTasks = false;
+    }
 };
 
 /** Test-only: forget which steps were marked. */

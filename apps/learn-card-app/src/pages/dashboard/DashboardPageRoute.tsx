@@ -32,6 +32,7 @@ export const preloadDashboardPage = (): Promise<void> => LazyDashboardPage.prelo
  * exactly the old lazy behavior.
  */
 export const DashboardPageRoute: React.FC = () => {
+    markDashboardPath('page_route_render', true);
     const [Loaded] = useState(() => loadedDashboardPage);
     if (Loaded) {
         markDashboardPath('page_direct');

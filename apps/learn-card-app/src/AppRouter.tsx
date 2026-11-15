@@ -72,7 +72,7 @@ import { useTranscriptPrompt } from './hooks/useTranscriptPrompt';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
 import { reconcileQualificationCategories } from 'learn-card-base/helpers/qualificationCategoryBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
-import { useDashboardPathMark } from './helpers/dashboardPathMarks';
+import { observeDashboardLongTasks, useDashboardPathMark } from './helpers/dashboardPathMarks';
 
 const log = getLogger('app-router');
 
@@ -418,6 +418,7 @@ const AppRouter: React.FC = () => {
     // routes: the default landing pages plus wherever the URL already points.
     const initialPathRef = useRef(window.location.pathname);
     useEffect(() => {
+        observeDashboardLongTasks();
         // Lets the shell mount Routes without suspending once the wallet is ready.
         preloadRoutes().catch(() => undefined);
         import('./Routes')
