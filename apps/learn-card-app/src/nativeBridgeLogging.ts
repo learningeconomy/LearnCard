@@ -8,9 +8,9 @@ import { isDebugEnvironmentEnabled } from './config/environment';
  * Capacitor's native-bridge.js console-logs every plugin call and result in full when bridge logging
  * is on, which for CapacitorSQLite includes query rows (the stored private key) and bound values.
  * Native config now turns bridge logging off in every build. This module replaces the JS bridge's log
- * hooks in every build, so even if logging gets switched back on, only plugin/method names, SQL
- * statements, row counts and option/result key NAMES are logged, never values. Debug builds turn the
- * redacted log on.
+ * hooks in every build, so even if logging gets switched back on, only plugin/method names, the SQL
+ * operation keyword (never the statement text), value/row counts and option/result key NAMES are
+ * logged, never values. Debug builds turn the redacted log on.
  *
  * Imported first by src/index.tsx so it is in place before any plugin call.
  */
@@ -38,21 +38,52 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const keyNames = (value: unknown): string[] => (isRecord(value) ? Object.keys(value).sort() : []);
 
-/** A SQL statement with its quoted literals blanked, so values inlined into the SQL never get logged. */
-export const redactStatement = (statement: string): string =>
-    statement.replace(/'(?:[^']|'')*'|"(?:[^"]|"")*"/g, '?');
+const SQL_OPERATIONS = new Set([
+    'ALTER',
+    'ANALYZE',
+    'ATTACH',
+    'BEGIN',
+    'COMMIT',
+    'CREATE',
+    'DELETE',
+    'DETACH',
+    'DROP',
+    'END',
+    'EXPLAIN',
+    'INSERT',
+    'PRAGMA',
+    'REINDEX',
+    'RELEASE',
+    'REPLACE',
+    'ROLLBACK',
+    'SAVEPOINT',
+    'SELECT',
+    'UPDATE',
+    'VACUUM',
+    'WITH',
+]);
 
-/** What may be logged about a plugin call's options: SQL statements and key names, no values. */
+/**
+ * A SQL statement's leading keyword (SELECT, INSERT, PRAGMA, ...), or '?' if it isn't a known one.
+ * No other statement text is logged: a key or seed can sit anywhere in it (quoted, unquoted, hex,
+ * `PRAGMA key = ...`), so the text is dropped instead of pattern-matched.
+ */
+export const sqlOperation = (statement: string): string => {
+    const keyword = /^\s*([A-Za-z]+)/.exec(statement)?.[1]?.toUpperCase();
+    return keyword && SQL_OPERATIONS.has(keyword) ? keyword : '?';
+};
+
+/** What may be logged about a plugin call's options: SQL operation keywords and key names, no values. */
 export const summarizeBridgeCall = (call: BridgeCall): Record<string, unknown> => {
     const options = call.options;
     const summary: Record<string, unknown> = { keys: keyNames(options) };
     if (isRecord(options)) {
         if (typeof options.statement === 'string')
-            summary.statement = redactStatement(options.statement);
+            summary.operation = sqlOperation(options.statement);
         if (Array.isArray(options.set)) {
-            summary.statements = options.set.map(entry =>
+            summary.operations = options.set.map(entry =>
                 isRecord(entry) && typeof entry.statement === 'string'
-                    ? redactStatement(entry.statement)
+                    ? sqlOperation(entry.statement)
                     : '?'
             );
         }

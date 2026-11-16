@@ -12,6 +12,8 @@ import {
 
 // Fake material only; the assertions check it never reaches a log.
 const SECRET = 'f00dfeedf00dfeedf00dfeedf00dfeedf00dfeedf00dfeedf00dfeedf00dfeed';
+const FAKE_SEED_WORD = 'notaseedword';
+const FAKE_SEED = Array.from({ length: 12 }, (_, i) => `${FAKE_SEED_WORD}${i}`).join(' ');
 
 const keyQueryCall = {
     callbackId: '7',
@@ -43,7 +45,7 @@ const keyInsertCall = {
 afterEach(() => vi.restoreAllMocks());
 
 describe('bridge log redaction', () => {
-    it('logs the statement and row count of a key query, never the key', () => {
+    it('logs the operation and row count of a key query, never the key', () => {
         expect(summarizeBridgeResult(keyQueryResult)).toEqual({
             success: true,
             keys: ['values'],
@@ -51,23 +53,79 @@ describe('bridge log redaction', () => {
         });
         expect(summarizeBridgeCall(keyQueryCall)).toEqual({
             keys: ['database', 'statement', 'values'],
-            statement: 'SELECT DISTINCT privateKey FROM users WHERE uid = ?',
+            operation: 'SELECT',
             valueCount: 1,
         });
         expect(JSON.stringify(summarizeBridgeCall(keyInsertCall))).not.toContain(SECRET);
     });
 
-    it('blanks literals inlined into logged SQL', () => {
+    it('never logs SQL statement text or bound values, only the operation keyword', () => {
+        const statements = [
+            `PRAGMA key = ${SECRET}`,
+            `PRAGMA key = "x'${SECRET}'"`,
+            `INSERT INTO users (privateKey, seed) VALUES ('${SECRET}', '${FAKE_SEED}')`,
+            `UPDATE users SET privateKey = x'${SECRET}', seed = ${FAKE_SEED}`,
+            `/* ${FAKE_SEED} */ SELECT ${SECRET}`,
+            `${SECRET} ${FAKE_SEED}`,
+        ];
         const call = {
+            pluginId: 'CapacitorSQLite',
+            methodName: 'executeSet',
             options: {
-                statement: `UPDATE users SET privateKey = '${SECRET}' WHERE id = "a""b"`,
-                set: [{ statement: `INSERT INTO t VALUES ('${SECRET}', 'it''s')` }],
+                statement: statements[0],
+                values: [SECRET, FAKE_SEED],
+                set: statements.map(statement => ({ statement, values: [SECRET, FAKE_SEED] })),
             },
         };
-        expect(summarizeBridgeCall(call)).toMatchObject({
-            statement: 'UPDATE users SET privateKey = ? WHERE id = ?',
-            statements: ['INSERT INTO t VALUES (?, ?)'],
+        const summary = summarizeBridgeCall(call);
+        const logged = JSON.stringify(summary);
+        expect(logged).not.toContain(SECRET);
+        expect(logged).not.toContain(FAKE_SEED_WORD);
+        expect(summary).toEqual({
+            keys: ['set', 'statement', 'values'],
+            operation: 'PRAGMA',
+            operations: ['PRAGMA', 'PRAGMA', 'INSERT', 'UPDATE', '?', '?'],
+            valueCount: 2,
         });
+    });
+
+    it('logs nothing from a statement that fails, through the installed hooks', () => {
+        const output: unknown[] = [];
+        for (const method of ['log', 'debug', 'info', 'dir', 'warn', 'error'] as const) {
+            vi.spyOn(console, method).mockImplementation((...args: unknown[]) => {
+                output.push(args);
+            });
+        }
+        const bridge: Parameters<typeof installRedactedBridgeLogging>[0] = {};
+        installRedactedBridgeLogging(bridge, true);
+
+        bridge?.logToNative?.({
+            callbackId: '9',
+            pluginId: 'CapacitorSQLite',
+            methodName: 'run',
+            options: {
+                statement: `INSERT INTO users VALUES (${SECRET}, ${FAKE_SEED})`,
+                values: [SECRET, FAKE_SEED],
+            },
+        });
+        // SQLite errors quote the statement near the failure, e.g. `near "...": syntax error`.
+        bridge?.logFromNative?.({
+            callbackId: '9',
+            pluginId: 'CapacitorSQLite',
+            methodName: 'run',
+            success: false,
+            data: {
+                message: `Run: near "${SECRET}": syntax error in INSERT ... ${FAKE_SEED}`,
+                code: 'SQLITE_ERROR',
+                statement: `INSERT INTO users VALUES (${SECRET}, ${FAKE_SEED})`,
+            },
+        });
+
+        expect(output.length).toBe(2);
+        const logged = JSON.stringify(output);
+        expect(logged).not.toContain(SECRET);
+        expect(logged).not.toContain(FAKE_SEED_WORD);
+        expect(logged).toContain('INSERT');
     });
 
     it('logs only key names for other plugins and nothing from errors', () => {
