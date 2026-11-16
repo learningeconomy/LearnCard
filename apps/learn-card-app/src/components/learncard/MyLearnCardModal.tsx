@@ -9,6 +9,7 @@ import * as m from '../../paraglide/messages.js';
 
 import CaretListItem from './CaretListItem';
 import LearnCardIdView from './LearnCardIdView';
+import ProfileDeveloperProgram from './ProfileDeveloperProgram';
 import LearnCardFooter from './LearnCardFooter';
 import EmailIcon from 'learn-card-base/svgs/EmailIcon';
 import BlocksIcon from 'learn-card-base/svgs/Blocks';
@@ -178,6 +179,22 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         refetch();
     };
 
+    const handleOpenSettings = (): void => {
+        newModal(
+            <div className="h-full">
+                <UserProfileSetup
+                    title={m['profile.menu.settings']()}
+                    handleCloseModal={closeModal}
+                    handleLogout={() => handleLogout({ overrideRedirectUrl: '/login' })}
+                    showNetworkSettings={true}
+                    showNotificationsModal={false}
+                />
+            </div>,
+            {},
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+        );
+    };
+
     const rows: {
         id?: string;
         Icon: React.FC;
@@ -194,21 +211,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 title: m['profile.menu.settings'](),
                 Icon: OrangeProfileIcon,
                 caretText: '',
-                onClick: async () => {
-                    newModal(
-                        <div className="h-full">
-                            <UserProfileSetup
-                                title={m['profile.menu.settings']()}
-                                handleCloseModal={closeModal}
-                                handleLogout={() => handleLogout({ overrideRedirectUrl: '/login' })}
-                                showNetworkSettings={true}
-                                showNotificationsModal={false}
-                            />
-                        </div>,
-                        {},
-                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-                    );
-                },
+                onClick: handleOpenSettings,
             },
             {
                 title: m['profile.menu.emailAddresses'](),
@@ -805,6 +808,10 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     <div className="bg-white/70  backdrop-blur-[10px]">
                         <div className="p-[15px] flex flex-col gap-[10px]">
                             <LearnCardIdView user={user} />
+
+                            {viewMode === MyLearnCardModalViewModeEnum.guardian && (
+                                <ProfileDeveloperProgram />
+                            )}
 
                             <SwitchAccountButton
                                 handleAccountSwitcher={handleSwitchAccountsClick}
