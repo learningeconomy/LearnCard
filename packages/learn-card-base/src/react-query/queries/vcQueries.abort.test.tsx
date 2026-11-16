@@ -92,10 +92,11 @@ afterEach(() => {
 
 // React Query aborts a query's signal when its key changes or its last observer leaves.
 // LEARN-CARD-APP-M6W/M6T/M70: those cancellations reached Sentry as errors.
-describe.each([
+const readers: Array<[string, () => { isError: boolean }, 'getPage' | 'getCount']> = [
     ['useGetCredentialList', () => useGetCredentialList(CATEGORY), 'getPage'],
     ['useGetCredentialCount', () => useGetCredentialCount(CATEGORY), 'getCount'],
-] as const)('%s', (_, useHook, read) => {
+];
+describe.each(readers)('%s', (_, useHook, read) => {
     it('does not report a cancelled read as an error', async () => {
         const wallet = pendingWallet();
         const { unmount } = renderHook(useHook, { wrapper });
