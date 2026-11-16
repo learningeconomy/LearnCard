@@ -204,6 +204,9 @@ const flushCoalescedResolves = async (
     );
 
     const batchableWork = (async () => {
+        // Null-slot retries run beside later chunks so one slow read.get cannot stall them
+        // (goblincore r4589016504). Each URI still settles only when its own fallback finishes.
+        const nullSlotWork: Promise<void>[] = [];
         for (let offset = 0; offset < batchable.length; offset += CREDENTIAL_RESOLVE_BATCH_SIZE) {
             const chunk = batchable.slice(offset, offset + CREDENTIAL_RESOLVE_BATCH_SIZE);
             let results: (VC | null | undefined)[] | undefined;
@@ -237,9 +240,19 @@ const flushCoalescedResolves = async (
                 else misses.push(uri);
             });
             for (const { uri, credential } of hits) settleUri(uri, credential);
-            const recovered = await resolveNullSlotsViaRead(wallet, misses);
-            for (const uri of misses) settleUri(uri, recovered.get(uri));
+            if (misses.length === 0) continue;
+            nullSlotWork.push(
+                resolveNullSlotsViaRead(wallet, misses).then(
+                    recovered => {
+                        for (const uri of misses) settleUri(uri, recovered.get(uri));
+                    },
+                    error => {
+                        for (const uri of misses) settleUri(uri, undefined, error);
+                    }
+                )
+            );
         }
+        await Promise.all(nullSlotWork);
     })();
 
     await Promise.all([nonBatchableWork, batchableWork]);

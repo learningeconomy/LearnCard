@@ -664,6 +664,51 @@ describe('enqueueBatchedCredentialResolve (LC-2382)', () => {
         expect(read).toHaveBeenCalledWith('lc:cloud:evil.example/trpc:credential:stuck-flush');
         void remote;
     });
+
+    it('starts later batch chunks without waiting for a slow null-slot fallback (goblincore r4589016504)', async () => {
+        const uris = Array.from({ length: CREDENTIAL_RESOLVE_BATCH_SIZE + 1 }, (_, index) =>
+            cloudUri(`chunked-${index}`)
+        );
+        const slowUri = uris[0]!;
+        const lastUri = uris[CREDENTIAL_RESOLVE_BATCH_SIZE]!;
+        const recovered = { ...credential, credentialSubject: { id: 'recovered' } } as VC;
+        let releaseSlow!: (vc: VC) => void;
+        const batch = vi.fn(async (chunk: string[]) =>
+            chunk.map(uri => (uri === slowUri ? null : credential))
+        );
+        const read = vi.fn((uri: string) =>
+            uri === slowUri
+                ? new Promise<VC>(resolve => {
+                      releaseSlow = resolve;
+                  })
+                : Promise.resolve(credential)
+        );
+        const wallet = {
+            id: { did: () => 'account-a' },
+            read: { get: read },
+            invoke: { learnCloudBatchResolve: batch },
+            plugins: [],
+        } as unknown as BespokeLearnCard;
+
+        let slowSettled = false;
+        const pending = uris.map(uri => enqueueBatchedCredentialResolve(wallet, uri));
+        void pending[0]!.finally(() => {
+            slowSettled = true;
+        });
+
+        await vi.waitFor(() => expect(read).toHaveBeenCalledWith(slowUri));
+        await vi.waitFor(() => expect(batch).toHaveBeenCalledTimes(2));
+        expect(batch).toHaveBeenLastCalledWith([lastUri]);
+        await expect(pending[CREDENTIAL_RESOLVE_BATCH_SIZE]).resolves.toEqual(credential);
+        expect(slowSettled).toBe(false);
+
+        releaseSlow(recovered);
+        await expect(pending[0]).resolves.toEqual(recovered);
+        await expect(Promise.all(pending.slice(1))).resolves.toHaveLength(
+            CREDENTIAL_RESOLVE_BATCH_SIZE
+        );
+        expect(read).toHaveBeenCalledExactlyOnceWith(slowUri);
+    });
 });
 
 describe('processWithConcurrency', () => {
