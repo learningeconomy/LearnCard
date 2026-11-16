@@ -45,12 +45,12 @@ on:
                 required: false
                 default: 'latest'
             registry-wait-seconds:
-                description: 'Optional initial delay before checking registry readiness'
+                description: 'Optional initial delay before checking registry readiness (0-300 seconds)'
                 type: string
                 required: false
                 default: '0'
             registry-timeout-seconds:
-                description: 'Maximum time to retry packages pending npm publication'
+                description: 'Maximum time to retry packages pending npm publication (1-1200 seconds)'
                 type: string
                 required: false
                 default: '1200'
@@ -73,11 +73,11 @@ on:
                 required: false
                 default: 'latest'
             registry-wait-seconds:
-                description: 'Optional initial delay before checking registry readiness'
+                description: 'Optional initial delay before checking registry readiness (0-300 seconds)'
                 required: false
                 default: '0'
             registry-timeout-seconds:
-                description: 'Maximum time to retry packages pending npm publication'
+                description: 'Maximum time to retry packages pending npm publication (1-1200 seconds)'
                 required: false
                 default: '1200'
 
@@ -85,7 +85,9 @@ jobs:
     resolve-versions:
         name: Resolve exact package versions
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        # The timing validator caps the initial delay at 5 minutes and registry
+        # retry window at 20 minutes, leaving ten minutes for setup and teardown.
+        timeout-minutes: 35
         outputs:
             package-versions: ${{ steps.versions.outputs.package-versions }}
         steps:
@@ -95,6 +97,11 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version-file: .nvmrc
+            - name: Validate registry timing inputs
+              env:
+                  REGISTRY_WAIT_SECONDS: ${{ inputs.registry-wait-seconds || '0' }}
+                  REGISTRY_TIMEOUT_SECONDS: ${{ inputs.registry-timeout-seconds || '1200' }}
+              run: node scripts/smoketest-npm-packages.mjs validate-registry-timing
             - name: Wait for npm CDN propagation
               env:
                   WAIT: ${{ inputs.registry-wait-seconds || '0' }}
@@ -360,9 +367,12 @@ jobs:
         name: CLI cold install (Node ${{ matrix.node }})
         runs-on: ubuntu-latest
         needs: resolve-versions
-        timeout-minutes: 15
+        # The shared validator caps the retry window at 20 minutes, leaving ten
+        # minutes for runner setup and a final cold install on a stale CDN.
+        timeout-minutes: 30
         env:
             SMOKE_PACKAGE_VERSIONS: ${{ needs.resolve-versions.outputs.package-versions }}
+            REGISTRY_TIMEOUT_SECONDS: ${{ inputs.registry-timeout-seconds || '1200' }}
         strategy:
             fail-fast: false
             matrix:
@@ -380,7 +390,12 @@ jobs:
               run: |
                   set -euo pipefail
                   CLI_VERSION=$(node -e "process.stdout.write(JSON.parse(process.env.SMOKE_PACKAGE_VERSIONS)['@learncard/cli'])")
-                  node scripts/check-cli-install.mjs --package="@learncard/cli@$CLI_VERSION"
+                  # The resolver waits for the shared registry view first. A fresh
+                  # npx cache here additionally protects this runner from a lagging
+                  # metadata or tarball CDN without retrying real CLI regressions.
+                  node scripts/wait-for-cli-install.mjs \
+                      --package="@learncard/cli@$CLI_VERSION" \
+                      --timeout-seconds="$REGISTRY_TIMEOUT_SECONDS"
 
     bundler-smoketest:
         # Many consumers import @learncard/init via a bundler (Vite, webpack,
