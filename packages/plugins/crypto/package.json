@@ -1,6 +1,6 @@
 {
     "name": "@learncard/crypto-plugin",
-    "version": "1.1.45",
+    "version": "1.1.46",
     "description": "Exposes a standardized, isomorphic crypto object to LearnCard plugins.",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -47,8 +47,7 @@
     },
     "types": "./dist/index.d.ts",
     "dependencies": {
-        "@learncard/core": "workspace:*",
-        "isomorphic-webcrypto": "^2.3.8"
+        "@learncard/core": "workspace:*"
     },
     "sideEffects": false
 }

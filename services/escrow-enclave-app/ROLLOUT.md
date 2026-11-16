@@ -149,26 +149,46 @@ production host has run the brand-aware image since 2026-11-05 02:36Z (pins
 
 - [x] D10 100% amendment signed off (2026-11-05); RAR hardening target date
       recorded (2026-12-31); CNL and P-d decided (LAUNCH-DECISIONS.md).
-- [ ] RT 100% amendment signed off (measured count and forecast deferred by the
-      owner, 2026-11-05).
-- [ ] P-c: the privacy-policy page the app links shows the current (2026-10-27)
-      wording, and the legal approver is named (LAUNCH-DECISIONS.md P-c).
-- [ ] P-d fix merged (#1967).
-- [ ] Native force-update shipped, so old native builds cannot run Web3Auth
-      against migrated accounts.
-- [ ] In-app privacy notice shipped (auto-enrolment is silent; P-c).
-- [ ] Load test at 100% enrolment on staging.
+- [x] RT 100% amendment signed off (operator-reported by Jackson Smith,
+      2026-11-06; measured count and forecast deferred by the owner, 2026-11-05).
+      The 2026-11-06 measurement run could not count Roughtime requests (the
+      enclave makes them), so the per-operation count is still the RT-table estimate.
+- [x] P-c: the app links the current (2026-10-27) privacy policy
+      (https://learncard.com/privacy-policy, in #1875), and the legal approver is
+      named: Yas (Legal), 2026-10-26 (LAUNCH-DECISIONS.md P-c).
+- [x] P-d fix merged (#1967, 2026-11-05).
+- [x] Rollback guard live before the switch (replaces the native force-update):
+      lca-api with #1971 (`isWeb3AuthLogin`) and #1972 (startup retry) deployed to
+      production, and the app with #1971's client guard released on web and as the
+      native OTA bundle (production deploy `dc6df4b10`, 2026-11-07 02:30Z). After that, reverting the switch cannot run Web3Auth
+      against an SSS account; migrated accounts keep their Web3Auth login.
+- [x] In-app privacy notice shipped (auto-enrolment is silent; P-c): #1991, a note on
+      both PIN setup screens, in production deploy `dc6df4b10` (web and OTA).
+- [x] Capacity measurement on staging (replaces the full load test; LC-2364
+      plan in Confluence): run 1 on 2026-11-06, 41/41 enrolments, 0 errors, about
+      1.4 s of lca-api time per enrolment. Full-scale load testing is deferred until
+      growth calls for it; PIN-recovery measurement needs a catch-all inbox first.
+- [x] Uptime monitoring: production `GET /api/health-check` and
+      `GET /api/keys/escrow/attestation?nonce=…` (expects `"mode":"nitro"`) are
+      monitored, alongside the paging escrow canary alarms.
 - [x] Production alarm drill: denied-write and unexpected-write authority alarms
       fired and delivered (2026-11-05 ~17:10Z; LAUNCH-DECISIONS.md RAR condition).
-- [ ] Production canary clean, including the first production tier 3 release
-      (~2026-11-11).
+- [x] Production canary clean, including the first production tier 3 release:
+      `hold-01` started 2026-11-04 22:26Z, warning read 2026-11-10 22:46Z, released
+      and re-enrolled 2026-11-11 22:56Z; `hold-02` released 2026-11-12. Tier 1/2 at
+      100% and all canary alarms OK since 2026-11-06.
 - [x] `escrow-enclave-production-AuthorityRepeatedPinClear` (ALARM since
       2026-10-30) understood: the 2026-10-30 production pilot test on Jackson Smith's
       own account (`ACCOUNT#3ab64432…`, matched from his `did:key`; 13 authority
       writes 21:55–22:14Z). Threshold raised to 4 (#1965) on 2026-11-05; OK since
       16:55Z. Follow-up: deploy the account-count monitor build from #1965, set the
       threshold to 1, then to 0 after ~2026-11-29.
-- [ ] DMARC for `learncard.com` (production login mail is scored as spam by SES).
+- [x] DMARC for `learncard.com`: `_dmarc` record published (`p=none`, aggregate
+      reports to `dmarc@learningeconomy.io`); a login-code email on 2026-11-06 passed
+      SPF, DKIM (`learncard.com`) and DMARC at Gmail. The earlier SES spam verdict
+      on production login mail came with `dmarc=none` in both environments, so it may
+      be sending-pool reputation rather than DMARC; production canary provisioning
+      keeps `--allow-login-spam-fail` until a fresh production login mail scores PASS.
 - [ ] lca-api production deploy current with `main`.
 
 ### Switch

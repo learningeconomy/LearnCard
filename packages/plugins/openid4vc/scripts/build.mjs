@@ -8,7 +8,6 @@ const buildOptions = {
     sourcemap: true,
     external: [
         'isomorphic-fetch',
-        'isomorphic-webcrypto',
         '@learncard/core',
         '@learncard/didkit-plugin',
         '@learncard/vc-plugin',

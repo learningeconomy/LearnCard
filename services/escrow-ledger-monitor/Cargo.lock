@@ -1274,6 +1274,7 @@ dependencies = [
  "aws_lambda_events",
  "base64 0.23.1",
  "escrow-enclave",
+ "futures-util",
  "hex",
  "lambda_runtime",
  "p256",

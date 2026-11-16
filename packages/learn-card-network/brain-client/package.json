@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-client",
-    "version": "2.7.1",
+    "version": "2.7.2",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -24,7 +24,7 @@
         "src"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && node ./scripts/bundle-types.mjs",
         "test": "vitest run",
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage"
@@ -34,14 +34,17 @@
     "license": "MIT",
     "devDependencies": {
         "@learncard/helpers": "workspace:*",
-        "@learncard/types": "workspace:*",
+        "@learncard/network-brain-service": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.27.1",
+        "rollup": "^4.50.0",
+        "rollup-plugin-dts": "^6.2.0",
         "vitest": "4.1.11"
     },
     "dependencies": {
-        "@learncard/network-brain-service": "workspace:*",
-        "@trpc/client": "11.8.0"
+        "@learncard/types": "workspace:*",
+        "@trpc/client": "11.8.0",
+        "@trpc/server": "11.8.0"
     },
     "repository": {
         "type": "git",

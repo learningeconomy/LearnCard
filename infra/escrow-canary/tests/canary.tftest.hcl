@@ -38,19 +38,19 @@ run "monitoring_contract" {
   }
   assert {
     condition = alltrue([for account in ["pin-a", "pin-b"] :
-      aws_cloudwatch_metric_alarm.success["2-${account}"].period == 3600 &&
+      aws_cloudwatch_metric_alarm.success["2-${account}"].period == 43200 &&
       aws_cloudwatch_metric_alarm.success["2-${account}"].evaluation_periods == 2 &&
       aws_cloudwatch_metric_alarm.success["2-${account}"].datapoints_to_alarm == 2 &&
       aws_cloudwatch_metric_alarm.success["2-${account}"].dimensions == tomap({ Tier = "2", Environment = "staging", Account = account }) &&
-      aws_cloudwatch_metric_alarm.auth["2-${account}"].period == 3600 &&
+      aws_cloudwatch_metric_alarm.auth["2-${account}"].period == 43200 &&
       aws_cloudwatch_metric_alarm.auth["2-${account}"].dimensions == aws_cloudwatch_metric_alarm.success["2-${account}"].dimensions &&
       aws_cloudwatch_metric_alarm.auth["2-${account}"].evaluation_periods == 2 &&
       aws_cloudwatch_metric_alarm.auth["2-${account}"].datapoints_to_alarm == 2
     ])
-    error_message = "Each alternating account must independently page on two hourly failures, never the other account's success."
+    error_message = "Each alternating account must independently page on two 12-hourly failures, never the other account's success."
   }
   assert {
-    condition     = alltrue([for rule in aws_cloudwatch_event_rule.schedule : rule.state == "DISABLED"]) && aws_cloudwatch_event_rule.schedule["1"].schedule_expression == "rate(1 minute)" && aws_cloudwatch_event_rule.schedule["2"].schedule_expression == "rate(30 minutes)"
+    condition     = alltrue([for rule in aws_cloudwatch_event_rule.schedule : rule.state == "DISABLED"]) && aws_cloudwatch_event_rule.schedule["1"].schedule_expression == "rate(1 minute)" && aws_cloudwatch_event_rule.schedule["2"].schedule_expression == "cron(5,35 0,12 * * ? *)"
     error_message = "Schedules must be disabled until provisioning and use the required cadence."
   }
   assert {

@@ -1900,7 +1900,7 @@
             }
         },
         "transcript": {
-            "title": "Votre relevé de notes officiel, dans votre poche.",
+            "title": "Votre relevé de notes, dans votre poche.",
             "desc": "Recevez vos registres scolaires directement dans votre compte.",
             "get": "Obtenir Mon Relevé",
             "notNow": "Pas Maintenant",
@@ -10486,8 +10486,8 @@
         "connectWithClassLink": "Se connecter avec ClassLink",
         "notNow": "Pas maintenant",
         "heroTitle": "Vos dossiers scolaires, entre vos mains",
-        "heroSubhead": "Connectez votre compte scolaire pour accéder à vos dossiers officiels.",
-        "benefit1": "Demandez votre relevé de notes officiel",
+        "heroSubhead": "Connectez votre compte scolaire pour accéder à vos dossiers scolaires.",
+        "benefit1": "Demandez votre relevé de notes",
         "benefit2": "Partagez-le avec les universités et les employeurs",
         "benefit3": "Vous décidez qui le voit",
         "chooseProvider": "Choisissez comment votre école se connecte",

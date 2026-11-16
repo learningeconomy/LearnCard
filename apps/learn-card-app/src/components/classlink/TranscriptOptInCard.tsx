@@ -34,6 +34,7 @@ import {
     isTimedBarCurrent,
 } from './transcriptDelivery';
 import { useDeliveryClock } from './useDeliveryClock';
+import { getTranscriptBannerTitle } from './transcriptRecordType';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import { Capacitor } from '@capacitor/core';
 import { runClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
@@ -258,7 +259,7 @@ const TranscriptOptInCardContent: React.FC<TranscriptOptInCardProps> = ({ source
                         ? m['transcriptOptIn.preparingTranscript']()
                         : failed
                           ? m['transcriptOptIn.bannerFailed']()
-                          : m['transcriptOptIn.bannerTitle']()}
+                          : getTranscriptBannerTitle(data?.recordType)}
                 </p>
                 {!waiting && (
                     <button
