@@ -19,9 +19,27 @@ describe('getCrypto', () => {
         expect(() => getCrypto()).toThrow(/WebCrypto is not available/);
     });
 
-    it('rejects a partial implementation without SubtleCrypto', () => {
-        vi.stubGlobal('crypto', { getRandomValues: () => new Uint8Array() });
+    it('preserves random-byte access without SubtleCrypto in an insecure browser context', () => {
+        const getRandomValues = vi.fn((bytes: Uint8Array) => bytes.fill(42));
+        const browserCrypto = { getRandomValues };
+        vi.stubGlobal('crypto', browserCrypto);
 
-        expect(() => getCrypto()).toThrow(/globalThis\.crypto\.subtle is missing/);
+        expect(getCrypto()).toBe(browserCrypto);
+        const crypto = CryptoPlugin.methods.crypto({} as never);
+        expect(crypto).toBe(browserCrypto);
+        expect(crypto.subtle).toBeUndefined();
+        const bytes = new Uint8Array(4);
+        expect(crypto.getRandomValues(bytes)).toBe(bytes);
+        expect([...bytes]).toEqual([42, 42, 42, 42]);
+        expect(getRandomValues).toHaveBeenCalledWith(bytes);
     });
+
+    it.each([undefined, 'not callable'])(
+        'rejects missing or invalid randomness support: %s',
+        getRandomValues => {
+            vi.stubGlobal('crypto', { subtle: {}, getRandomValues });
+
+            expect(() => getCrypto()).toThrow(/globalThis\.crypto\.getRandomValues is missing/);
+        }
+    );
 });

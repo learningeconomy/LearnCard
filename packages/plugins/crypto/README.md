@@ -34,6 +34,11 @@ const crypto = cryptoLearnCard.invoke.crypto();
 
 This package exports a plugin object (`CryptoPlugin`), not a factory. Seed-based `initLearnCard` wallets already include it.
 
+The plugin returns the platform's `globalThis.crypto` and requires a callable `getRandomValues`.
+On plain-HTTP browser origins, random bytes remain available even when `crypto.subtle` is absent.
+Operations using SubtleCrypto require a secure context such as HTTPS or localhost. Environments
+without platform WebCrypto must load a suitable polyfill before using the plugin.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
