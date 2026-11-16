@@ -12,6 +12,7 @@ import {
     installPackages,
     parseRegistryTimingInputs,
     publicationPending,
+    requiresRegistryTiming,
     resolveVersions,
     verifyInstalledVersions,
     workspaceVersions,
@@ -60,6 +61,10 @@ test('bounds registry timing inputs to the workflow timeout envelope', () => {
         registryTimeoutSeconds: 1200,
     });
     assert.deepEqual(
+        parseRegistryTimingInputs({ registryWaitSeconds: ' ', registryTimeoutSeconds: '' }),
+        { registryWaitSeconds: 0, registryTimeoutSeconds: 1200 }
+    );
+    assert.deepEqual(
         parseRegistryTimingInputs({
             registryWaitSeconds: String(MAX_REGISTRY_WAIT_SECONDS),
             registryTimeoutSeconds: String(MAX_REGISTRY_TIMEOUT_SECONDS),
@@ -82,6 +87,14 @@ test('bounds registry timing inputs to the workflow timeout envelope', () => {
             /REGISTRY_TIMEOUT_SECONDS must be an integer between 1 and 1200 seconds/
         );
     }
+});
+
+test('only registry-backed commands parse registry timing inputs', () => {
+    assert.equal(requiresRegistryTiming('validate-registry-timing'), true);
+    assert.equal(requiresRegistryTiming('install'), true);
+    assert.equal(requiresRegistryTiming('versions'), true);
+    assert.equal(requiresRegistryTiming('versions', '--workspace'), false);
+    assert.equal(requiresRegistryTiming('unknown'), false);
 });
 
 test('Yarn Classic retries a missing published version with a fresh metadata cache', async t => {

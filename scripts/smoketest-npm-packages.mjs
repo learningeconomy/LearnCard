@@ -58,25 +58,34 @@ const parseRegistrySeconds = ({ value, name, minimum, maximum }) => {
     return seconds;
 };
 
+const normalizeRegistryTimingInput = value =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value;
+
 // GitHub Actions job timeouts are whole minutes, while these inputs are seconds.
 // Bound them here so the fixed job budgets always outlive the retry windows.
-export const parseRegistryTimingInputs = ({
-    registryWaitSeconds = '0',
-    registryTimeoutSeconds = '1200',
-} = {}) => ({
-    registryWaitSeconds: parseRegistrySeconds({
-        value: registryWaitSeconds,
-        name: 'REGISTRY_WAIT_SECONDS',
-        minimum: 0,
-        maximum: MAX_REGISTRY_WAIT_SECONDS,
-    }),
-    registryTimeoutSeconds: parseRegistrySeconds({
-        value: registryTimeoutSeconds,
-        name: 'REGISTRY_TIMEOUT_SECONDS',
-        minimum: 1,
-        maximum: MAX_REGISTRY_TIMEOUT_SECONDS,
-    }),
-});
+export const parseRegistryTimingInputs = ({ registryWaitSeconds, registryTimeoutSeconds } = {}) => {
+    const wait = normalizeRegistryTimingInput(registryWaitSeconds) ?? '0';
+    const timeout = normalizeRegistryTimingInput(registryTimeoutSeconds) ?? '1200';
+    return {
+        registryWaitSeconds: parseRegistrySeconds({
+            value: wait,
+            name: 'REGISTRY_WAIT_SECONDS',
+            minimum: 0,
+            maximum: MAX_REGISTRY_WAIT_SECONDS,
+        }),
+        registryTimeoutSeconds: parseRegistrySeconds({
+            value: timeout,
+            name: 'REGISTRY_TIMEOUT_SECONDS',
+            minimum: 1,
+            maximum: MAX_REGISTRY_TIMEOUT_SECONDS,
+        }),
+    };
+};
+
+export const requiresRegistryTiming = (command, manager) =>
+    command === 'validate-registry-timing' ||
+    command === 'install' ||
+    (command === 'versions' && manager !== '--workspace');
 
 export const validateVersions = versions => {
     for (const name of ALL_PACKAGES) {
@@ -395,10 +404,12 @@ export const installPackages = async ({
 
 const main = async () => {
     const [command, manager, group] = process.argv.slice(2);
-    const registryTiming = parseRegistryTimingInputs({
-        registryWaitSeconds: process.env.REGISTRY_WAIT_SECONDS,
-        registryTimeoutSeconds: process.env.REGISTRY_TIMEOUT_SECONDS,
-    });
+    const registryTiming = requiresRegistryTiming(command, manager)
+        ? parseRegistryTimingInputs({
+              registryWaitSeconds: process.env.REGISTRY_WAIT_SECONDS,
+              registryTimeoutSeconds: process.env.REGISTRY_TIMEOUT_SECONDS,
+          })
+        : undefined;
     if (command === 'validate-registry-timing') {
         console.log(
             `Registry timing inputs are valid: ${registryTiming.registryWaitSeconds}s initial wait, ` +
