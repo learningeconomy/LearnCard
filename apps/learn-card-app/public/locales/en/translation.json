@@ -1961,7 +1961,8 @@
             "confirmDescription": "Your current role will be replaced with Developer so you can explore developer tools.",
             "confirmAction": "Switch to Developer",
             "saving": "Switching...",
-            "saveError": "We couldn’t save your role. Please try again."
+            "saveError": "We couldn’t save your role. Please try again.",
+            "syncError": "Your role is now Developer, but we couldn’t refresh this device. Please try again."
         },
         "age": "Age:",
         "back": "Back",

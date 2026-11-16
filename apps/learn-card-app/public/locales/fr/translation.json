@@ -1915,7 +1915,8 @@
             "confirmDescription": "Votre rôle actuel sera remplacé par Développeur pour vous permettre de découvrir les outils de développement.",
             "confirmAction": "Passer à Développeur",
             "saving": "Modification...",
-            "saveError": "Impossible d’enregistrer votre rôle. Réessayez."
+            "saveError": "Impossible d’enregistrer votre rôle. Réessayez.",
+            "syncError": "Votre rôle est maintenant Développeur, mais nous n’avons pas pu actualiser cet appareil. Réessayez."
         },
         "title": "Mon compte",
         "editProfile": "Modifier le profil",

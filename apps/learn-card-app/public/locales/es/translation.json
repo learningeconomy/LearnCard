@@ -1915,7 +1915,8 @@
             "confirmDescription": "Tu rol actual se reemplazará por Desarrollador para que puedas explorar las herramientas de desarrollo.",
             "confirmAction": "Cambiar a Desarrollador",
             "saving": "Cambiando...",
-            "saveError": "No pudimos guardar tu rol. Inténtalo de nuevo."
+            "saveError": "No pudimos guardar tu rol. Inténtalo de nuevo.",
+            "syncError": "Tu rol ahora es Desarrollador, pero no pudimos actualizar este dispositivo. Inténtalo de nuevo."
         },
         "title": "Mi cuenta",
         "editProfile": "Editar perfil",
