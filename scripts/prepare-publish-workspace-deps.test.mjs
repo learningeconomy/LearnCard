@@ -346,6 +346,7 @@ const clientFixture = (t, name) => {
     const f = fixture(t, 'devDependencies');
     const manifest = f.read('a-public');
     manifest.name = name;
+    manifest.files = ['dist', 'src', 'README.md'];
     manifest.exports = {
         '.': {
             development: './src/index.ts',
@@ -368,12 +369,14 @@ for (const name of ['@learncard/network-brain-client', '@learncard/learn-cloud-c
         assert.equal(f.run(scope, '--dry-run').status, 0);
         const original = f.read('a-public').exports['.'];
         assert.equal(original.development, './src/index.ts');
+        assert.deepEqual(f.read('a-public').files, ['dist', 'src', 'README.md']);
         const result = f.run(scope);
         assert.equal(result.status, 0, result.stderr);
         assert.deepEqual(f.read('a-public').exports['.'], {
             import: original.import,
             require: original.require,
         });
+        assert.deepEqual(f.read('a-public').files, ['dist', 'README.md']);
         assert.equal(f.run(scope).status, 0, 'preparing an already prepared client is idempotent');
     });
 
@@ -385,6 +388,7 @@ for (const name of ['@learncard/network-brain-client', '@learncard/learn-cloud-c
             assert.equal(result.status, 1);
             assert.match(result.stderr, /Client publish target missing/);
             assert.equal(f.read('a-public').exports['.'].development, './src/index.ts');
+            assert.deepEqual(f.read('a-public').files, ['dist', 'src', 'README.md']);
             assert.equal(f.read('a-public').dependencies['@learncard/public'], 'workspace:^');
             assert.equal(
                 f.read('service').devDependencies['@learncard/service-config'],

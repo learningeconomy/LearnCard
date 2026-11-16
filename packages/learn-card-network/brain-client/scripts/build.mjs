@@ -6,7 +6,7 @@ import fs from 'fs/promises';
 // Bundle helpers and their dependencies in every format. Externalizing node_modules
 // leaves the CJS bundle requiring helper dependencies that the client does not declare.
 // Default esbuild resolution selects the ESM helpers build and tree-shakes unused code.
-// Keep declared tRPC dependencies external in CJS, preserving their module identity.
+// Keep declared tRPC dependencies external in every format, preserving their module identity.
 const configurations = [
     {
         keepNames: true,
@@ -36,6 +36,7 @@ const configurations = [
         tsconfig: 'tsconfig.json',
         entryPoints: ['src/index.ts'],
         format: 'esm',
+        external: ['@trpc/client', '@trpc/server'],
         outfile: 'dist/brain-client.esm.js',
     },
 ];

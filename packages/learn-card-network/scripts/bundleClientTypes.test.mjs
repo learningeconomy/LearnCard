@@ -81,3 +81,46 @@ test('does not mistake comments or string literal types for imports', () => {
 test('keeps relative imports visible to the self-containment guard', () => {
     assert.deepEqual([...getDeclarationImports("export * from './server';", ts)], ['./server']);
 });
+
+test('normalizes diagnostic paths and removes a rejected type bundle without replacing the entry', async () => {
+    const packageDir = await mkdtemp(path.join(os.tmpdir(), 'lc-type-check-'));
+    const dist = path.join(packageDir, 'dist');
+    const entry = path.join(dist, 'index.d.ts');
+    const bundled = path.join(dist, 'index.bundled.d.ts');
+    try {
+        await mkdir(dist);
+        await writeFile(entry, 'export type Original = string;');
+        await assert.rejects(
+            bundleClientTypes({
+                rollup: async () => ({
+                    write: async ({ file }) => writeFile(file, 'export type Broken = MissingType;'),
+                    close: async () => {},
+                }),
+                dts: () => ({ name: 'fixture' }),
+                ts: {
+                    ...ts,
+                    getPreEmitDiagnostics: program =>
+                        ts.getPreEmitDiagnostics(program).map(diagnostic => ({
+                            ...diagnostic,
+                            // TypeScript uses forward slashes, even on Windows. Also
+                            // exercise equivalent paths on POSIX rather than skipping there.
+                            file: diagnostic.file && {
+                                ...diagnostic.file,
+                                fileName: diagnostic.file.fileName
+                                    .replaceAll('\\', '/')
+                                    .replace('/index.bundled.d.ts', '/./index.bundled.d.ts'),
+                            },
+                        })),
+                },
+                packageDir,
+                inline: [],
+                allowedExternals: [],
+            }),
+            /Bundled client types do not type-check.*\n.*MissingType/s
+        );
+        assert.equal(await readFile(entry, 'utf8'), 'export type Original = string;');
+        await assert.rejects(access(bundled), { code: 'ENOENT' });
+    } finally {
+        await rm(packageDir, { recursive: true, force: true });
+    }
+});

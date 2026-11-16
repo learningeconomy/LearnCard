@@ -141,9 +141,13 @@ export const bundleClientTypes = async ({
     });
     const diagnostics = ts
         .getPreEmitDiagnostics(program)
-        .filter(diagnostic => diagnostic.file?.fileName === bundled);
+        .filter(
+            diagnostic =>
+                diagnostic.file && path.resolve(diagnostic.file.fileName) === path.resolve(bundled)
+        );
 
     if (diagnostics.length > 0) {
+        await rm(bundled, { force: true });
         const report = ts.formatDiagnostics(diagnostics.slice(0, 20), {
             getCanonicalFileName: fileName => fileName,
             getCurrentDirectory: () => process.cwd(),

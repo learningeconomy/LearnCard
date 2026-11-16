@@ -84,6 +84,12 @@ for (const client of clients) {
                     staged
                 )
             );
+            if (packageName === name) {
+                assert(
+                    !pack.files.some(({ path: file }) => file.startsWith('src/')),
+                    `${packageName} publishes unreachable workspace sources`
+                );
+            }
             const unpacked = path.join(fixture, 'unpacked', packageName);
             fs.mkdirSync(unpacked, { recursive: true });
             run(

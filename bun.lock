@@ -952,7 +952,7 @@
       "version": "6.1.0",
       "dependencies": {
         "zod": "^4.1.13",
-        "zod-openapi": "5.4.5",
+        "zod-openapi": "^5.4.5",
       },
       "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.2.2",

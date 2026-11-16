@@ -28,7 +28,14 @@ export const prepareClientExports = (manifest, directory) => {
             }
         }
     }
-    if (!Object.hasOwn(entry, 'development')) return false;
-    delete entry.development;
-    return true;
+    let changed = false;
+    if (Object.hasOwn(entry, 'development')) {
+        delete entry.development;
+        changed = true;
+    }
+    if (manifest.files?.includes('src')) {
+        manifest.files = manifest.files.filter(file => file !== 'src');
+        changed = true;
+    }
+    return changed;
 };
