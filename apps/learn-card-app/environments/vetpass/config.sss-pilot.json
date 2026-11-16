@@ -1,5 +1,5 @@
 {
-    "_comment": "Production Web3Auth -> SSS pilot for VetPass (web only; VetPass has no Capgo channel). Escrow stays off: the production enclave is provisioned for the learncard tenant. See the Confluence LC page 'Production Web3Auth SSS migration runbook'.",
+    "_comment": "Production Web3Auth -> SSS pilot for VetPass (web only; VetPass has no Capgo channel). Since the switch, escrow comes from the base config (D20: VetPass uses the learncard authority tenant). See the Confluence LC page 'Production Web3Auth SSS migration runbook'.",
     "stage": "production",
     "auth": {
         "keyDerivation": "sss"

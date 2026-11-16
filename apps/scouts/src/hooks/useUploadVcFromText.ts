@@ -1,5 +1,6 @@
 import { VCValidator } from '@learncard/types';
-import { useWallet, CredentialCategory } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
+import { useWallet, CredentialCategory, switchedProfileStore } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 export interface FileInfo {
@@ -34,8 +35,16 @@ export interface UploadOptions {
     uploadType?: string;
 }
 
+const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
 export const useUploadVcFromText = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    // Direct index writes must refresh the cached list walk; it stays fresh for minutes (LC-2412).
+    const invalidateCredentialList = () =>
+        queryClient.invalidateQueries({
+            queryKey: ['useGetCredentialList', switchedProfileStore.get.switchedDid() ?? ''],
+        });
 
     const validateTextVC = (vcText: string) => {
         if (!vcText) return undefined;
@@ -51,8 +60,8 @@ export const useUploadVcFromText = () => {
 
                 return allErrors;
             }
-        } catch (error: any) {
-            return [error.message];
+        } catch (error) {
+            return [errorMessage(error)];
         }
 
         return undefined;
@@ -102,6 +111,7 @@ export const useUploadVcFromText = () => {
                             fileType: fileInfo?.type,
                             uploadType,
                         });
+                        void invalidateCredentialList();
 
                         return {
                             success: true,
@@ -113,24 +123,24 @@ export const useUploadVcFromText = () => {
                     } catch (error) {
                         return {
                             success: false,
-                            error: `Failed to add credential to index: ${error.message}`,
+                            error: `Failed to add credential to index: ${errorMessage(error)}`,
                             category,
                             fileInfo: fileInfo || {},
                         };
                     }
                 }
-            } catch (error: any) {
+            } catch (error) {
                 return {
                     success: false,
-                    error: `Failed to upload credential: ${error.message}`,
+                    error: `Failed to upload credential: ${errorMessage(error)}`,
                     category,
                     fileInfo: fileInfo || {},
                 };
             }
-        } catch (error: any) {
+        } catch (error) {
             return {
                 success: false,
-                error: `Invalid credential format: ${error.message}`,
+                error: `Invalid credential format: ${errorMessage(error)}`,
                 fileInfo: fileInfo || {},
             };
         }

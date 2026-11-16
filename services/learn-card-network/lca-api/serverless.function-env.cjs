@@ -37,7 +37,14 @@ const API_SECRETS = [
 ];
 
 // Non-secret operator toggles are forwarded in both bundle and fallback modes.
-const API_TOGGLES = ['ESCROW_ENCLAVE_MODE', 'ESCROW_RELEASE_KILL_SWITCH', 'BEDROCK_BASE_URL'];
+const API_TOGGLES = [
+    'ESCROW_ENCLAVE_MODE',
+    'ESCROW_RELEASE_KILL_SWITCH',
+    'BEDROCK_BASE_URL',
+    'LEGACY_KEY_ARCHIVE_ENABLED',
+    'LEGACY_KEY_ARCHIVE_BUCKET',
+    'LEGACY_KEY_ARCHIVE_KMS_KEY_ARN',
+];
 
 // Serverless v3 supplies CLI options to file functions and preserves CF intrinsics.
 // No stage-file values are forwarded from the deployment environment.

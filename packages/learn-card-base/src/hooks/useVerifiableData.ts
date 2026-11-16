@@ -116,6 +116,7 @@ const storeVerifiableData = async <T>(
             uri,
             category,
             title: `VerifiableData: ${key}`,
+            hidden: true,
             verifiableData: data as any,
             issuanceDate,
             sharedUris: {},
@@ -127,6 +128,7 @@ const storeVerifiableData = async <T>(
             id: indexId,
             category,
             title: `VerifiableData: ${key}`,
+            hidden: true,
             verifiableData: data,
             issuanceDate,
         });

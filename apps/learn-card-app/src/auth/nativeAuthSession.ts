@@ -3,6 +3,7 @@ import type { URLOpenListenerEvent } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { nativeDigitalCredentials } from '../native-digital-credentials/plugin';
 import { AuthSessionError } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 
@@ -115,6 +116,8 @@ const openViaSystemBrowser = async (
     let finishedListener: PluginListenerHandle | undefined;
     let overallTimer: ReturnType<typeof setTimeout> | undefined;
     let graceTimer: ReturnType<typeof setTimeout> | undefined;
+    let providerCallbackToken: string | undefined;
+    let stopped = false;
 
     const result = new Promise<string>((resolve, reject) => {
         overallTimer = setTimeout(() => {
@@ -134,7 +137,36 @@ const openViaSystemBrowser = async (
                     );
                 }, BROWSER_FINISHED_GRACE_MS);
             });
-            await Browser.open({ url, toolbarColor: '#FFFFFF' });
+            if (
+                Capacitor.getPlatform() === 'android' &&
+                Capacitor.isPluginAvailable('NativeDigitalCredentials')
+            ) {
+                const context = await nativeDigitalCredentials.getPendingRequest();
+                if (stopped) return;
+                if (context.isProvider) {
+                    // Older native binaries cannot deliver this callback into the provider.
+                    // Fail before opening a browser rather than stranding the selected request.
+                    if (!context.pending || !context.authCallbackRouting) {
+                        throw new AuthSessionError(
+                            'Sign-in unavailable. Please try again.',
+                            'no_session'
+                        );
+                    }
+                    const registration = await nativeDigitalCredentials.beginAuthCallback({
+                        requestId: context.pending.requestId,
+                        callbackUrlPrefix,
+                        timeoutMs,
+                    });
+                    if (stopped) {
+                        await nativeDigitalCredentials.endAuthCallback({
+                            token: registration.token,
+                        });
+                        return;
+                    }
+                    providerCallbackToken = registration.token;
+                }
+            }
+            if (!stopped) await Browser.open({ url, toolbarColor: '#FFFFFF' });
         };
 
         setup().catch(reject);
@@ -143,6 +175,7 @@ const openViaSystemBrowser = async (
     try {
         return await result;
     } finally {
+        stopped = true;
         if (overallTimer !== undefined) clearTimeout(overallTimer);
         if (graceTimer !== undefined) clearTimeout(graceTimer);
         try {
@@ -154,6 +187,13 @@ const openViaSystemBrowser = async (
             await finishedListener?.remove();
         } catch (error) {
             log.debug('Failed to remove browserFinished listener', error);
+        }
+        if (providerCallbackToken) {
+            try {
+                await nativeDigitalCredentials.endAuthCallback({ token: providerCallbackToken });
+            } catch (error) {
+                log.debug('Failed to remove provider auth callback', error);
+            }
         }
         try {
             await Browser.close();

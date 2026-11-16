@@ -15,6 +15,8 @@ import {
     resolveVectorCollection,
 } from '../constants/collections';
 import { db } from '.';
+import { getLearnCardRequestSignal } from '../learncard/requestScope';
+import { isSourceCleanupLeaseBusyError, SOURCE_CLEANUP_PENDING_MESSAGE } from './source-cleanup';
 import { getCurrentAiSubject } from '../ai/privacy';
 import {
     assertOwnerOperationActive,
@@ -605,20 +607,45 @@ export async function recoverSourceVectorCleanup({
         tasksCompleted: 0,
     };
     for (; progress.units < limit; progress.units++) {
+        if (getLearnCardRequestSignal()?.aborted) break;
         const task = await database.getSourceCleanupTask(did);
         if (!task) break;
-        const scope = decryptCleanupScope(task);
-        await runWithAiPrivacyContext(scope.did, () =>
-            withOwnerOperation(scope.did, () =>
-                database.withSourceCleanupLease(scope.did, async assertLease => {
-                    await assertLease();
-                    // Nothing is sent on a fully completed retry. Capabilities are needed only for pending work.
-                    const rows = await database.getDeletedSourceVectorReferences(scope.did, 256);
-                    if (rows.length) {
-                        const collection = rows[0].collection;
-                        collectionOwnerField(collection);
-                        if ((await retiredState(collection, database)) === 'dropped') {
-                            // The explicit drop deleted this collection and its points.
+        try {
+            const scope = decryptCleanupScope(task);
+            await runWithAiPrivacyContext(scope.did, () =>
+                withOwnerOperation(scope.did, () =>
+                    database.withSourceCleanupLease(scope.did, async assertLease => {
+                        await assertLease();
+                        // Nothing is sent on a fully completed retry. Capabilities are needed only for pending work.
+                        const rows = await database.getDeletedSourceVectorReferences(
+                            scope.did,
+                            256
+                        );
+                        if (rows.length) {
+                            const collection = rows[0].collection;
+                            collectionOwnerField(collection);
+                            if ((await retiredState(collection, database)) === 'dropped') {
+                                // The explicit drop deleted this collection and its points.
+                                await assertLease();
+                                await database.acknowledgeSourceVectorFences(
+                                    scope.did,
+                                    collection,
+                                    rows.map(row => row.pointId)
+                                );
+                                progress.pointsFenced += rows.length;
+                                return;
+                            }
+                            await assertQdrantPrivacyCapabilities();
+                            if (!(await getQdrantClient().collectionExists(collection)).exists)
+                                throw new Error(
+                                    'Registered vector collection missing; restore before recovery'
+                                );
+                            await assertLease();
+                            await fencePoints(
+                                getQdrantClient(),
+                                collection,
+                                rows.map(row => row.pointId)
+                            );
                             await assertLease();
                             await database.acknowledgeSourceVectorFences(
                                 scope.did,
@@ -628,78 +655,65 @@ export async function recoverSourceVectorCleanup({
                             progress.pointsFenced += rows.length;
                             return;
                         }
+                        if (task.discoveryComplete) {
+                            await assertLease();
+                            if (await database.finishSourceCleanupTask(scope.did, task))
+                                progress.tasksCompleted += 1;
+                            return;
+                        }
+                        const collection = task.collections[task.collectionIndex];
+                        collectionOwnerField(collection);
                         await assertQdrantPrivacyCapabilities();
-                        if (!(await getQdrantClient().collectionExists(collection)).exists)
-                            throw new Error(
-                                'Registered vector collection missing; restore before recovery'
-                            );
+                        const client = getQdrantClient();
+                        let next: string | number | undefined;
+                        if ((await client.collectionExists(collection)).exists) {
+                            await assertLease();
+                            const page = await client.scroll(collection, {
+                                filter: ownerFilter(collection, scope.did, {
+                                    must: [
+                                        {
+                                            key: task.kind === 'credential' ? 'uri' : 'threadId',
+                                            match: { value: scope.key },
+                                        },
+                                    ],
+                                }),
+                                limit: 256,
+                                ...(task.offset === undefined ? {} : { offset: task.offset }),
+                                with_payload: metadataFields,
+                                with_vector: false,
+                            });
+                            const ids = page.points
+                                .filter(point => !point.payload?.sourceEpoch)
+                                .map(point => point.id);
+                            await assertLease();
+                            if (ids.length)
+                                await database.registerDeletedLegacyVectorPoints(
+                                    scope.did,
+                                    collection,
+                                    ids
+                                );
+                            const offset = page.next_page_offset;
+                            if (typeof offset === 'string' || typeof offset === 'number')
+                                next = offset;
+                        }
                         await assertLease();
-                        await fencePoints(
-                            getQdrantClient(),
-                            collection,
-                            rows.map(row => row.pointId)
-                        );
-                        await assertLease();
-                        await database.acknowledgeSourceVectorFences(
-                            scope.did,
-                            collection,
-                            rows.map(row => row.pointId)
-                        );
-                        progress.pointsFenced += rows.length;
-                        return;
-                    }
-                    if (task.discoveryComplete) {
-                        await assertLease();
-                        if (await database.finishSourceCleanupTask(scope.did, task))
-                            progress.tasksCompleted += 1;
-                        return;
-                    }
-                    const collection = task.collections[task.collectionIndex];
-                    collectionOwnerField(collection);
-                    await assertQdrantPrivacyCapabilities();
-                    const client = getQdrantClient();
-                    let next: string | number | undefined;
-                    if ((await client.collectionExists(collection)).exists) {
-                        await assertLease();
-                        const page = await client.scroll(collection, {
-                            filter: ownerFilter(collection, scope.did, {
-                                must: [
-                                    {
-                                        key: task.kind === 'credential' ? 'uri' : 'threadId',
-                                        match: { value: scope.key },
-                                    },
-                                ],
-                            }),
-                            limit: 256,
-                            ...(task.offset === undefined ? {} : { offset: task.offset }),
-                            with_payload: metadataFields,
-                            with_vector: false,
+                        const collectionIndex =
+                            next === undefined ? task.collectionIndex + 1 : task.collectionIndex;
+                        await database.advanceSourceCleanupTask(scope.did, task, {
+                            collectionIndex,
+                            offset: next,
+                            discoveryComplete: collectionIndex >= task.collections.length,
                         });
-                        const ids = page.points
-                            .filter(point => !point.payload?.sourceEpoch)
-                            .map(point => point.id);
-                        await assertLease();
-                        if (ids.length)
-                            await database.registerDeletedLegacyVectorPoints(
-                                scope.did,
-                                collection,
-                                ids
-                            );
-                        const offset = page.next_page_offset;
-                        if (typeof offset === 'string' || typeof offset === 'number') next = offset;
-                    }
-                    await assertLease();
-                    const collectionIndex =
-                        next === undefined ? task.collectionIndex + 1 : task.collectionIndex;
-                    await database.advanceSourceCleanupTask(scope.did, task, {
-                        collectionIndex,
-                        offset: next,
-                        discoveryComplete: collectionIndex >= task.collections.length,
-                    });
-                    progress.discoveryPages += 1;
-                })
-            )
-        );
+                        progress.discoveryPages += 1;
+                    })
+                )
+            );
+        } catch (error) {
+            // Another request or machine holds this owner's lease. Leave the
+            // queued work in place instead of failing the caller.
+            if (isSourceCleanupLeaseBusyError(error)) break;
+            throw error;
+        }
     }
     return { ...progress, ...(await database.sourceCleanupSummary(did)) };
 }
@@ -707,7 +721,7 @@ export async function recoverSourceVectorCleanup({
 export const fenceDeletedSourceVectors = async (did: string, database: ChatDB = db) => {
     const result = await recoverSourceVectorCleanup({ did, limit: 32, database });
     if (result.pendingTasks || result.pendingPoints)
-        throw new Error('Source vector cleanup pending; bounded recovery required');
+        throw new Error(SOURCE_CLEANUP_PENDING_MESSAGE);
     return result;
 };
 export const deleteCredentialEmbeddings = async (

@@ -39,6 +39,8 @@ const networkLearnCard = await verifyLearnCard.addPlugin(
 const profile = await networkLearnCard.invoke.getProfile();
 ```
 
+`getVerifyBoostPlugin` doesn't fetch the registry URL up front. It fetches it the first time a Boost needs a trust lookup, shares that request, and gives up after 5 seconds. If the fetch fails, times out, or returns something that isn't a registry, verification uses the built-in LearnCard Network entry and tries the URL again next time.
+
 Most apps don't wire this by hand: `initLearnCard({ seed, network: true })` (or `{ apiKey, network: true }`) adds both plugins and points at `https://network.learncard.com/trpc`. `getLearnCardNetworkPlugin` also takes an options object (e.g. `actAs`) or an API token as its third argument.
 
 ## Contributing

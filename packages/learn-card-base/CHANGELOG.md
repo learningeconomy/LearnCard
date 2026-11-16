@@ -1,5 +1,51 @@
 # learn-card-base
 
+## 0.8.2
+
+### Patch Changes
+
+- [#1875](https://github.com/learningeconomy/LearnCard/pull/1875) [`0cd204d5d1d9af393001a17b772339bfd9a5b6dd`](https://github.com/learningeconomy/LearnCard/commit/0cd204d5d1d9af393001a17b772339bfd9a5b6dd) Thanks [@Custard7](https://github.com/Custard7)! - Point Terms of Service and Privacy Policy links at https://learncard.com/terms-of-service and https://learncard.com/privacy-policy (LearnCard production config, tenant defaults used by VetPass, and fallback constants).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fresh-device Passport/Home counts: the counts start the visibility backfill when its marker is missing, so a sign-in that skips the auth coordinator still writes it, and the marker read goes in the same batched request as the counts (LC-2413).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCloud index `getPage`/`getCount` accept `$ne`, `$nin` and `$in` on encrypted fields (sent as `fields.$nin` / `fields.$in` hashes; equality-only queries are unchanged). Internal index records (verifiable data, Self-Assigned Skills, internal categories) are written with `hidden: true`, a one-time per-account client backfill marks existing ones, and Passport and Home counts come from one index count request per tile instead of walking the whole index once the backfill is done (LC-2412, LC-2413).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCloud `index.add` skips a record whose `uri` is already indexed (one count lookup per add, by the existing `uri` field hash) and returns `true`, so new duplicate uri rows can't inflate index counts. Passport and Home counts no longer wait for this device's visibility backfill: a finished backfill leaves a LearnCloud marker, a fresh device reads it in the same batched request as the counts, and accounts with no marker count from one 1000-record index read instead of the paged walk (LC-2413).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Keep Passport and Home counts visible from the cached index walk during background refetches and after a failed refresh (LC-2412), reuse the walk for 5 minutes, and take 100-record pages after the first page so the complete walk needs far fewer round trips (LC-2413).
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/sss-key-manager@0.3.2
+    - @learncard/helpers@1.8.2
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/lca-api-plugin@2.1.1
+    - @learncard/learn-card-plugin@1.2.46
+    - @learncard/ler-rs-plugin@0.1.37
+    - @learncard/render-method-plugin@14.0.1
+
+## 0.8.1
+
+### Patch Changes
+
+- [#2005](https://github.com/learningeconomy/LearnCard/pull/2005) [`439a7115220eff2d221ae5dd63d7c5306f7cc778`](https://github.com/learningeconomy/LearnCard/commit/439a7115220eff2d221ae5dd63d7c5306f7cc778) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Recover from malformed persisted infinite-query cache entries (LC-2352). A shared restore-boundary guard drops known infinite-query roots that are not valid `{ pages, pageParams }` InfiniteData before hydrate (unknown keys, including credentials with a `pages` extension, are left alone), and every `useInfiniteQuery` hook (including managed boosts) drops a bad in-memory entry and refetches instead of crashing on `pages.length`.
+
+- [#2029](https://github.com/learningeconomy/LearnCard/pull/2029) [`928d25ea984d27626a7de6a2a421d66136e1f470`](https://github.com/learningeconomy/LearnCard/commit/928d25ea984d27626a7de6a2a421d66136e1f470) Thanks [@rhen92](https://github.com/rhen92)! - LC-2254: Route OpenSALT issuer-registry lookups through an allowlisted same-origin Netlify edge proxy (`/api/registry-proxy`) on web and native, so OpenSALT-listed issuers no longer show as unknown because of CORS. Falls back to the direct request, and never marks an issuer trusted on failure.
+
+- [#1983](https://github.com/learningeconomy/LearnCard/pull/1983) [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2288] Recover credential claims in place without false expiration errors or duplicate issuance, preserving confirmed save and refresh progress.
+
+    Expose claim reconciliation in CLI method and capability discovery, and require `call --write` because reconciliation can finish acceptance and usage accounting.
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7f430656d7ff8c780b375f109e870dd07b5b9bf2`](https://github.com/learningeconomy/LearnCard/commit/7f430656d7ff8c780b375f109e870dd07b5b9bf2), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/types@6.1.0
+    - @learncard/lca-api-plugin@2.1.0
+    - @learncard/helpers@1.8.1
+    - @learncard/learn-card-plugin@1.2.45
+    - @learncard/ler-rs-plugin@0.1.36
+    - @learncard/render-method-plugin@14.0.0
+    - @learncard/sss-key-manager@0.3.1
+
 ## 0.8.0
 
 ### Minor Changes

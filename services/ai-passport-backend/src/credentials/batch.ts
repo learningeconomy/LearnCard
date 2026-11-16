@@ -17,6 +17,8 @@ type FailureCode = NonNullable<SafeLogMetrics['failureCode']>;
 export type CredentialBatchResult<Item> = {
     loaded: Item[];
     skipped: { index: number; code: FailureCode }[];
+    /** Tasks never started because `shouldStart` said the budget ran out. */
+    deferred: number;
 };
 
 const isObject = (value: unknown): value is object =>
@@ -30,6 +32,19 @@ export const markCredentialItemFailure = <Failure>(error: Failure, code?: Failur
     if (isObject(error)) itemFailures.set(error, code);
     return error;
 };
+
+const readFailures = new WeakSet<object>();
+
+/* Mark one credential's failed read: a skippable item failure, never retried. */
+export const markCredentialReadFailure = <Failure>(error: Failure, code?: FailureCode): Failure => {
+    if (!isObject(error)) return error;
+    itemFailures.set(error, code);
+    readFailures.add(error);
+    return error;
+};
+
+export const isCredentialReadFailure = (error: unknown): boolean =>
+    isObject(error) && readFailures.has(error);
 
 export const isCredentialItemFailure = (
     error: unknown,
@@ -221,16 +236,40 @@ export const logCredentialBatch = (
     });
 };
 
+/*
+ * How many credential tasks a batch runs at once when the caller does not say.
+ * Each task is a signed LearnCard read plus a verify, so an unbounded batch of
+ * hundreds of URIs fires them all together. Same knob and parsing as
+ * CREDENTIAL_PRELOAD_CONCURRENCY in constants/env (read here directly because
+ * tests of modules that load this one replace the env module): default 4, max 16.
+ */
+export const CREDENTIAL_BATCH_MAX_CONCURRENCY = 16;
+export const credentialBatchConcurrency = (): number => {
+    const parsed = Number(process.env.CREDENTIAL_PRELOAD_CONCURRENCY);
+    return Math.min(
+        CREDENTIAL_BATCH_MAX_CONCURRENCY,
+        Number.isInteger(parsed) && parsed > 0 ? parsed : 4
+    );
+};
+
 type BatchOptions = {
+    /* Defaults to credentialBatchConcurrency(); never tasks.length. */
     concurrency?: number;
     /* Resolve empty, not reject, when every failure is permanent. */
     allowEmpty?: boolean;
     signal?: AbortSignal;
     deadlineAt?: number;
+    /* Checked before each task starts; false stops new starts (budget spent).
+     * Tasks already running finish; the rest are counted as deferred. */
+    shouldStart?: () => boolean;
+    /* performance.now() time the batch returns by; running tasks are abandoned
+     * and counted as deferred. */
+    stopAt?: number;
 };
 type Settled<Item> = {
     results: ({ value: Item } | undefined)[];
     failures: { index: number; error: unknown }[];
+    started: number;
 };
 
 /* At most `concurrency` tasks at once; a fatal failure stops new starts. */
@@ -238,20 +277,34 @@ const runTasks = async <Item>(
     tasks: readonly (() => Promise<Item>)[],
     options: BatchOptions
 ): Promise<Settled<Item>> => {
-    const settled: Settled<Item> = { results: [], failures: [] };
+    const settled: Settled<Item> = { results: [], failures: [], started: 0 };
     const limit = Math.max(
         1,
-        Math.min(Math.floor(options.concurrency ?? tasks.length) || 1, tasks.length)
+        Math.min(Math.floor(options.concurrency ?? credentialBatchConcurrency()) || 1, tasks.length)
     );
     let nextIndex = 0;
     let failed = false;
+    let stopped = false;
+    // Set once the batch has returned: late results and errors are dropped.
+    let abandoned = false;
     const worker = async (): Promise<void> => {
-        while (!failed && nextIndex < tasks.length) {
+        while (!failed && !stopped && nextIndex < tasks.length) {
+            if (
+                (options.stopAt !== undefined && performance.now() >= options.stopAt) ||
+                (options.shouldStart && !options.shouldStart())
+            ) {
+                stopped = true;
+                break;
+            }
             const index = nextIndex;
             nextIndex += 1;
+            settled.started += 1;
             try {
-                settled.results[index] = { value: await tasks[index]!() };
+                const value = await tasks[index]!();
+                if (abandoned) return;
+                settled.results[index] = { value };
             } catch (error) {
+                if (abandoned) return;
                 if (!isCredentialItemFailure(error, options)) {
                     failed = true;
                     throw error;
@@ -260,8 +313,36 @@ const runTasks = async <Item>(
             }
         }
     };
-    await Promise.all(Array.from({ length: tasks.length ? limit : 0 }, worker));
-    return settled;
+    const workers = Promise.all(Array.from({ length: tasks.length ? limit : 0 }, worker));
+    if (options.stopAt === undefined) {
+        await workers;
+        return settled;
+    }
+    // The batch returns at stopAt with what settled. Tasks still running are
+    // abandoned (counted deferred) so a slow credential never holds the batch
+    // past its window; their late results and errors are dropped.
+    workers.catch(() => undefined);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = new Promise<'stop'>(resolve => {
+        if (options.stopAt !== undefined)
+            timer = setTimeout(
+                () => resolve('stop'),
+                Math.max(0, options.stopAt - performance.now())
+            );
+    });
+    try {
+        await Promise.race([workers, stop]);
+    } finally {
+        clearTimeout(timer);
+    }
+    stopped = true;
+    abandoned = true;
+    const done = settled.results.filter(Boolean).length + settled.failures.length;
+    return {
+        results: [...settled.results],
+        failures: [...settled.failures],
+        started: done,
+    };
 };
 
 /**
@@ -275,7 +356,8 @@ export const settleCredentialBatch = async <Item>(
     tasks: readonly (() => Promise<Item>)[],
     options: BatchOptions = {}
 ): Promise<CredentialBatchResult<Item>> => {
-    const { results, failures } = await runTasks(tasks, options);
+    const { results, failures, started } = await runTasks(tasks, options);
+    const deferred = tasks.length - started;
     failures.sort((left, right) => left.index - right.index);
     const skipped = failures.map(({ index, error }) => ({
         index,
@@ -283,13 +365,20 @@ export const settleCredentialBatch = async <Item>(
     }));
     const loaded = results.flatMap(result => (result ? [result.value] : []));
     logCredentialBatch(batch, loaded.length, skipped.length);
+    if (loaded.length === 0 && !failures[0] && deferred > 0) {
+        // The budget ran out before any credential loaded.
+        throw markCredentialItemFailure(
+            new Error('Credential budget exhausted'),
+            'credential_budget_exhausted'
+        );
+    }
     if (
         loaded.length === 0 &&
         failures[0] &&
         !(options.allowEmpty && failures.every(({ error }) => isPermanentCredentialFailure(error)))
     )
         throw failures[0].error;
-    return { loaded, skipped };
+    return { loaded, skipped, deferred };
 };
 
 /*
