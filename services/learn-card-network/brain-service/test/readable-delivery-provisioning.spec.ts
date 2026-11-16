@@ -4,6 +4,8 @@ import { getUser } from './helpers/getClient';
 import { normalContract, normalFullTerms } from './helpers/contract';
 import { createDeliveryRecipient, getDeliveryRecord } from '@accesslayer/readable-delivery';
 import { neogma } from '@instance';
+import { addRecipientToContract } from '@accesslayer/consentflowcontract/relationships/recipients';
+import { getUriParts } from '@helpers/uri.helpers';
 import type { DeliveryRecord } from '../src/types/readable-delivery';
 
 const domain = 'localhost%3A3000';
@@ -44,6 +46,35 @@ const setup = async () => {
 };
 
 describe('existing readable recipient atomic boundary', () => {
+    it('completes provisioning raced with add-recipient before first consent exactly once', async () => {
+        const { owner, contractUri, record } = await setup();
+        const before = await owner.clients.fullAuth.contracts.getConsentFlowContract({
+            uri: contractUri,
+        });
+        await Promise.all([
+            createDeliveryRecipient(record, 'unused', true),
+            ...Array.from({ length: 8 }, () =>
+                addRecipientToContract(getUriParts(contractUri).id, record.profileId)
+            ),
+        ]);
+        const after = await owner.clients.fullAuth.contracts.getConsentFlowContract({
+            uri: contractUri,
+        });
+        expect(after.audienceVersion).toBe(before.audienceVersion! + 1);
+        expect(after.recipients).toHaveLength(1);
+        expect(await getDeliveryRecord(record.profileId, domain)).toMatchObject(record);
+        const result = await neogma.queryRunner.run(
+            `MATCH (recipient:Profile {profileId:$profileId})-[r:MANAGED_BY]->(agent:Profile {profileId:$agentProfileId})
+             RETURN count(r) AS managers`,
+            record
+        );
+        expect(Number(result.records[0]?.get('managers'))).toBe(1);
+        const audit = await neogma.queryRunner.run(
+            "MATCH (a:ReadableDeliveryAudit {recipient:$profileId, action:'provision'}) RETURN count(a) AS count",
+            record
+        );
+        expect(Number(audit.records[0]?.get('count'))).toBe(1);
+    });
     it('preserves the organization identity, adds a co-manager, and rejects stale consent screens', async () => {
         const { owner, learner, contractUri, record } = await setup();
         const before = await owner.clients.fullAuth.contracts.getConsentFlowContract({

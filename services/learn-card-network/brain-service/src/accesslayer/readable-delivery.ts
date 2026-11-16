@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { neogma } from '@instance';
 import type { DeliveryRecord } from 'types/readable-delivery';
 import { TRPCError } from '@trpc/server';
+import { runAudienceMutation } from './consentflowcontract/relationships/recipients';
 
 let constraints: Promise<unknown> | undefined;
 const ensureConstraints = (): Promise<unknown> =>
@@ -49,8 +50,12 @@ export const createDeliveryRecipient = async (
     await ensureConstraints();
     // Existing profiles require direct management and no previous consent. Profile
     // and contract locks serialize this with audience creation and first consent.
-    const result = await neogma.queryRunner.run(
-        `
+    const result = await runAudienceMutation({
+        // Retry only the rolled-back atomic graph write, keeping the same key,
+        // recipient and provision identity across a deadlock with audience edits.
+        run: () =>
+            neogma.queryRunner.run(
+                `
         MATCH (owner:Profile {profileId:$ownerProfileId})
         ${
             existing
@@ -84,8 +89,15 @@ export const createDeliveryRecipient = async (
         CREATE (:ReadableDeliveryAudit {id:$auditId, actor:$ownerProfileId,
             recipient:$profileId, action:'provision', result:'allowed', at:$now, count:0})
         RETURN d.profileId AS id`,
-        { ...record, record, recipientDid, auditId: randomUUID(), now: new Date().toISOString() }
-    );
+                {
+                    ...record,
+                    record,
+                    recipientDid,
+                    auditId: randomUUID(),
+                    now: new Date().toISOString(),
+                }
+            ),
+    });
     if (!result.records.length)
         throw new TRPCError({
             code: 'CONFLICT',

@@ -11,7 +11,9 @@ export const lockContractAudience = (query: QueryBuilder, contractId: string): Q
         .with('contract');
 
 /** Retry only rolled-back transient transactions, before any notifications or issuance. */
-export const runAudienceMutation = async (query: QueryBuilder): ReturnType<QueryBuilder['run']> => {
+export const runAudienceMutation = async (
+    query: Pick<QueryBuilder, 'run'>
+): ReturnType<QueryBuilder['run']> => {
     for (let attempt = 0; ; attempt += 1) {
         try {
             return await query.run();

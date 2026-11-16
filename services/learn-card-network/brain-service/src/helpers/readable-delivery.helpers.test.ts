@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ConsentFlowContractDataForDidValidator, LCNProfileValidator } from '@learncard/types';
+import { randomBytes } from 'node:crypto';
+import {
+    ConsentFlowContractDataForDidValidator,
+    LCNProfileValidator,
+    UnsignedVCValidator,
+} from '@learncard/types';
+import { verifyDeliveryCredential } from './readable-delivery-verifier.helpers';
 
 const mocks = vi.hoisted(() => ({
     delivery: vi.fn(),
@@ -22,6 +28,7 @@ const mocks = vi.hoisted(() => ({
         READABLE_DELIVERY_ENABLED: true,
         IS_OFFLINE: true,
         NODE_ENV: 'test',
+        SKIP_DIDKIT_NAPI: true,
         NEO4J_URI: 'bolt://localhost:7687',
         NEO4J_USERNAME: 'neo4j',
         NEO4J_PASSWORD: 'synthetic',
@@ -155,6 +162,45 @@ beforeEach(() => {
 });
 
 describe('readable delivery authorization and projection', () => {
+    it('verifies the original signed nested extensions while returning only the summary', async () => {
+        const { getEmptyLearnCard } =
+            await vi.importActual<typeof import('./learnCard.helpers')>('./learnCard.helpers');
+        const wallet = await getEmptyLearnCard();
+        const key = wallet.invoke.generateEd25519KeyFromBytes(randomBytes(32));
+        const did = wallet.invoke.keyToDid('key', key);
+        const image = { id: 'https://example.com/logo.png', type: 'Image', width: 128 };
+        const signed = await wallet.invoke.issueCredential(
+            {
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                type: ['VerifiableCredential'],
+                issuer: { id: did, image },
+                validFrom: '2026-01-01T00:00:00Z',
+                credentialSubject: { id: input.did, privateField: 'not-in-summary' },
+            },
+            {
+                type: 'DataIntegrityProof',
+                cryptosuite: 'json-eddsa-2022',
+                proofPurpose: 'assertionMethod',
+                verificationMethod: await wallet.invoke.keyToVerificationMethod('key', key),
+            },
+            key
+        );
+        expect((await verifyDeliveryCredential(signed)).proof).toBe('valid');
+        expect((await verifyDeliveryCredential(UnsignedVCValidator.parse(signed))).proof).toBe(
+            'invalid'
+        );
+        mocks.decrypt.mockResolvedValue(signed);
+        mocks.verify.mockImplementation(async credential => ({
+            ...(await verifyDeliveryCredential(credential)),
+            label: 'verified',
+        }));
+        const result = await readReadableDelivery('recipient', domain, input);
+        expect(result.records[0]?.credential?.verification.proof).toBe('valid');
+        expect(mocks.verify.mock.calls[0]?.[0]).toBe(signed);
+        expect(result.records[0]?.credential?.issuer).toBe(did);
+        expect(JSON.stringify(result)).not.toContain('not-in-summary');
+        expect(JSON.stringify(result)).not.toContain('logo.png');
+    });
     it('fails closed while the feature is disabled', async () => {
         mocks.environment.READABLE_DELIVERY_ENABLED = false;
         await expect(readReadableDelivery('recipient', domain, input)).rejects.toMatchObject({

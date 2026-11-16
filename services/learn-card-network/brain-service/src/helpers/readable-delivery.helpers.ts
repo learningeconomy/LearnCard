@@ -9,6 +9,7 @@ import {
     type ReadableDeliveryReadInput,
     type ReadableDeliveryCredential,
     type ConsentFlowContractDataForDid,
+    type UnsignedVC,
 } from '@learncard/types';
 import { environment } from '@environment';
 import { getEmptyLearnCard } from './learnCard.helpers';
@@ -251,7 +252,14 @@ export const readReadableDelivery = async (
             records.push({ ...item, status: 'invalid' });
             continue;
         }
-        const verification = await verifyDeliveryOutcome(vc, trust, localOrigin, signal);
+        // Parsing validates the shape but may strip signed nested extensions.
+        // Verify the original payload; use the parsed value only for projection.
+        const verification = await verifyDeliveryOutcome(
+            plaintext as UnsignedVC,
+            trust,
+            localOrigin,
+            signal
+        );
         const text = (value: unknown): string | undefined =>
             typeof value === 'string' ? value.slice(0, 2048) : undefined;
         records.push({
