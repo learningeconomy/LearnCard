@@ -219,6 +219,8 @@ Supply the archive storage and KMS values in the deployment environment as well:
 `serverless.function-env.cjs` forwards all three non-empty values to the API functions
 in both runtime-bundle and fallback modes. Runtime-only bundle values do not provision IAM access.
 Archive enablement is rejected in offline or E2E authentication-bypass modes.
+Archive objects are SSE-KMS encrypted with the archive key, so the policy also lets S3 decrypt on
+the API's behalf (`kms:ViaService` S3, scoped to the archive bucket's encryption context).
 The policy includes listing on the archive bucket so a missing object returns 404 (no archive)
 rather than 403; any other storage or KMS failure returns a generic error and the client falls
 back to the legacy provider. A released key is tagged `state=released`; activation tags it
