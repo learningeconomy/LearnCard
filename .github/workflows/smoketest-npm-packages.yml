@@ -360,9 +360,12 @@ jobs:
         name: CLI cold install (Node ${{ matrix.node }})
         runs-on: ubuntu-latest
         needs: resolve-versions
-        timeout-minutes: 15
+        # The registry readiness gate normally makes this fast, but this must
+        # still accommodate its configured retry window on a stale runner CDN.
+        timeout-minutes: 30
         env:
             SMOKE_PACKAGE_VERSIONS: ${{ needs.resolve-versions.outputs.package-versions }}
+            REGISTRY_TIMEOUT_SECONDS: ${{ inputs.registry-timeout-seconds || '1200' }}
         strategy:
             fail-fast: false
             matrix:
@@ -380,7 +383,12 @@ jobs:
               run: |
                   set -euo pipefail
                   CLI_VERSION=$(node -e "process.stdout.write(JSON.parse(process.env.SMOKE_PACKAGE_VERSIONS)['@learncard/cli'])")
-                  node scripts/check-cli-install.mjs --package="@learncard/cli@$CLI_VERSION"
+                  # The resolver waits for the shared registry view first. A fresh
+                  # npx cache here additionally protects this runner from a lagging
+                  # metadata or tarball CDN without retrying real CLI regressions.
+                  node scripts/wait-for-cli-install.mjs \
+                      --package="@learncard/cli@$CLI_VERSION" \
+                      --timeout-seconds="$REGISTRY_TIMEOUT_SECONDS"
 
     bundler-smoketest:
         # Many consumers import @learncard/init via a bundler (Vite, webpack,

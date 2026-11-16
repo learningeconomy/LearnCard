@@ -89,7 +89,8 @@ export const workspaceVersions = root => {
 };
 
 // Nightly/manual runs resolve tags once, then share the same exact versions with
-// every manager. Post-publish runs use the publishing checkout's version map.
+// every manager. Post-publish runs use the publishing checkout's version map, then
+// wait until that exact snapshot is visible from npm before fanning out the matrix.
 export const resolveVersions = async ({
     releaseVersions = {},
     overrides = {},
@@ -99,10 +100,12 @@ export const resolveVersions = async ({
     now = Date.now,
     wait = sleep,
 } = {}) => {
+    const hasReleaseSnapshot = Object.keys(releaseVersions).length > 0;
     // A release snapshot is authoritative. Filling a partial snapshot from
     // latest could validate the previous release while npm scans the new one.
-    // Only manual/nightly runs with no snapshot resolve tags.
-    if (Object.keys(releaseVersions).length > 0) return validateVersions(releaseVersions);
+    // Validate it before making any registry requests, then poll its exact
+    // versions below until npm serves them.
+    if (hasReleaseSnapshot) validateVersions(releaseVersions);
     if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
         throw new Error('Registry resolution timeout must be a positive number');
     if (!Number.isFinite(pollIntervalMs) || pollIntervalMs <= 0)
@@ -111,8 +114,10 @@ export const resolveVersions = async ({
     const controller = new AbortController();
     const entries = await Promise.all(
         ALL_PACKAGES.map(async name => {
-            const requested = overrides[name] || 'latest';
-            if (EXACT_VERSION.test(requested)) return [name, requested];
+            const requested = hasReleaseSnapshot
+                ? releaseVersions[name]
+                : overrides[name] || 'latest';
+            const exactVersion = EXACT_VERSION.test(requested);
             while (true) {
                 if (controller.signal.aborted) throw controller.signal.reason;
                 const remaining = Math.floor(deadline - now());
@@ -135,6 +140,16 @@ export const resolveVersions = async ({
                         throw new Error(
                             'Timed out resolving published package ' + name + '@' + requested
                         );
+                    if (exactVersion && manifest.version !== requested) {
+                        throw new Error(
+                            'Registry returned ' +
+                                name +
+                                '@' +
+                                manifest.version +
+                                ' while waiting for exact version ' +
+                                requested
+                        );
+                    }
                     return [name, manifest.version];
                 }
                 if (response.status !== 404)
@@ -148,7 +163,13 @@ export const resolveVersions = async ({
                     );
                 // Keep stdout exclusively for the GITHUB_OUTPUT value.
                 console.error(
-                    'Registry tag is not ready: ' + name + '@' + requested + '; retrying'
+                    'Registry ' +
+                        (exactVersion ? 'package' : 'tag') +
+                        ' is not ready: ' +
+                        name +
+                        '@' +
+                        requested +
+                        '; retrying'
                 );
                 await wait(delay, undefined, { signal: controller.signal });
             }
