@@ -2,17 +2,19 @@ import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { codeSlashOutline } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
-import { ModalTypes, useGetCurrentUserRole, useModal } from 'learn-card-base';
+import { ModalTypes, switchedProfileStore, useGetProfile, useModal } from 'learn-card-base';
 
 import { LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
 import * as m from '../../paraglide/messages.js';
 import DeveloperRoleConfirmation from './DeveloperRoleConfirmation';
 
 const ProfileDeveloperProgram: React.FC = () => {
-    const role = useGetCurrentUserRole();
+    const { data: profile, isPending, isError } = useGetProfile();
+    const profileType = switchedProfileStore.use.profileType();
     const history = useHistory();
     const { closeAllModals, newModalWithToken, forceCloseModalByToken } = useModal();
-    const isDeveloper = role === LearnCardRolesEnum.developer;
+    const isDeveloper =
+        profile && 'role' in profile && profile.role === LearnCardRolesEnum.developer;
 
     const handleOpenProgram = (): void => {
         closeAllModals();
@@ -20,6 +22,8 @@ const ProfileDeveloperProgram: React.FC = () => {
     };
 
     const handleBecomeDeveloper = (): void => {
+        if (switchedProfileStore.get.profileType() === 'child' || profile?.type === 'child') return;
+        // Shared with the dialog: block duplicate submits synchronously and native dismissal while saving.
         const saving = { current: false };
         const token = newModalWithToken(
             <DeveloperRoleConfirmation
@@ -35,6 +39,10 @@ const ProfileDeveloperProgram: React.FC = () => {
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
+
+    if (profileType === 'child' || profile?.type === 'child' || isPending || isError || !profile) {
+        return null;
+    }
 
     return (
         <div className="w-full rounded-[20px] border border-white/80 bg-white/80 p-4 shadow-sm backdrop-blur-[10px] font-poppins">

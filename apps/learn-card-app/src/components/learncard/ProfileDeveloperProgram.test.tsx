@@ -11,11 +11,28 @@ vi.mock('./DeveloperRoleConfirmation', () => ({ default: () => null }));
 
 const state = vi.hoisted(() => ({
     role: null as string | null,
+    profileType: 'parent' as string | null,
+    type: undefined as string | undefined,
+    hasProfile: true,
+    pending: false,
+    error: false,
+    fetching: false,
     closeAllModals: vi.fn(),
     newModalWithToken: vi.fn(),
 }));
 vi.mock('learn-card-base', () => ({
-    useGetCurrentUserRole: () => state.role,
+    useGetProfile: () => ({
+        data: state.hasProfile
+            ? { profileId: 'alice', role: state.role, type: state.type }
+            : undefined,
+        isPending: state.pending,
+        isError: state.error,
+        isFetching: state.fetching,
+    }),
+    switchedProfileStore: {
+        use: { profileType: () => state.profileType },
+        get: { profileType: () => state.profileType },
+    },
     ModalTypes: { Center: 'center' },
     useModal: () => ({
         closeAllModals: state.closeAllModals,
@@ -28,6 +45,12 @@ afterEach(() => {
     cleanup();
     vi.clearAllMocks();
     state.role = null;
+    state.profileType = 'parent';
+    state.type = undefined;
+    state.hasProfile = true;
+    state.pending = false;
+    state.error = false;
+    state.fetching = false;
 });
 
 const renderEntry = (): void => {
@@ -40,6 +63,56 @@ const renderEntry = (): void => {
 };
 
 describe('profile Developer Program entry', () => {
+    it.each(['loading', 'error', 'missing'])(
+        'hides role actions when the profile is %s',
+        status => {
+            state.hasProfile = false;
+            state.pending = status === 'loading';
+            state.error = status === 'error';
+            renderEntry();
+            expect(screen.queryByRole('button')).toBeNull();
+            expect(screen.queryByText('Developer Program')).toBeNull();
+        }
+    );
+
+    it.each(['developer', 'learner'])(
+        'keeps the known %s content during background refetches',
+        role => {
+            state.role = role;
+            state.fetching = true;
+            renderEntry();
+            expect(
+                screen.getByRole('button', {
+                    name: role === 'developer' ? 'Developer Program' : 'Become a Developer',
+                })
+            ).toBeTruthy();
+        }
+    );
+
+    it.each(['developer', 'learner'])('hides every CTA for child accounts with role %s', role => {
+        state.role = role;
+        state.profileType = 'child';
+        renderEntry();
+        expect(screen.queryByRole('button')).toBeNull();
+        expect(screen.queryByText('Developer Program')).toBeNull();
+    });
+
+    it('also hides a child network profile before the switched-profile metadata catches up', () => {
+        state.type = 'child';
+        renderEntry();
+        expect(screen.queryByRole('button')).toBeNull();
+    });
+
+    it.each(['parent', 'service', null])(
+        'keeps the entry available for eligible profile type %s',
+        profileType => {
+            state.profileType = profileType;
+            state.role = 'developer';
+            renderEntry();
+            expect(screen.getByRole('button', { name: 'Developer Program' })).toBeTruthy();
+        }
+    );
+
     it('supports opening the portal using only the keyboard', async () => {
         state.role = 'developer';
         renderEntry();
