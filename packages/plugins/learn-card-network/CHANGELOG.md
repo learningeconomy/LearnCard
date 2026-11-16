@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 4.1.1
+
+### Patch Changes
+
+- [#2047](https://github.com/learningeconomy/LearnCard/pull/2047) [`3901b6263e8aafcc7aab5bdf179625a45e4a2ebc`](https://github.com/learningeconomy/LearnCard/commit/3901b6263e8aafcc7aab5bdf179625a45e4a2ebc) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - fix(network-plugin): load the trusted Boost registry lazily, once, with a 5 s timeout so it never blocks LearnCard init
+
+- Updated dependencies []:
+    - @learncard/core@9.4.46
+    - @learncard/helpers@1.8.2
+    - @learncard/network-brain-client@2.7.2
+
 ## 4.1.0
 
 ### Minor Changes

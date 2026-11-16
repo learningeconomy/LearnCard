@@ -147,6 +147,26 @@ export const useGetResolvedCredentials = (uris?: (string | undefined)[], enabled
     }).map((result, index) => ({ ...result, uri: uris?.[index] }));
 };
 
+/** First page stays small so lists and Recent paint fast (LC-2413). */
+export const CREDENTIAL_LIST_FIRST_PAGE_SIZE = 12;
+/** Later pages are larger so complete walks (Passport/Home counts) take ~N/100 round trips,
+ * not N/12. Cursor pagination, so mixed page sizes in one infinite query are safe (LC-2413). */
+export const CREDENTIAL_LIST_PAGE_SIZE = 100;
+/** Matches LC-2383's CREDENTIAL_INDEX_STALE_TIME: return/resume within the window reuses the walk.
+ * Writers still refetch or invalidate these keys, and a new launch revalidates (LC-2412). */
+export const CREDENTIAL_LIST_STALE_TIME = 5 * 60 * 1000;
+
+/** When the server walk behind these pages last succeeded, or undefined when any page did not
+ * come from the list queryFn (optimistic placeholders from insertItem/refreshCredentialCaches).
+ * Cache-only writers spread existing pages, so they keep the stamp without refreshing it. */
+export const getCredentialListWalkedAt = (data?: {
+    pages?: ({ walkedAt?: number } | undefined)[];
+}): number | undefined => {
+    const stamps = (data?.pages ?? []).map(page => page?.walkedAt);
+    if (!stamps.length || stamps.some(stamp => typeof stamp !== 'number')) return undefined;
+    return Math.min(...(stamps as number[]));
+};
+
 // Returns an array of stored idx credentials
 export const useGetCredentialList = (category?: CredentialCategory, enabled: boolean = true) => {
     const { initWallet } = useWallet();
@@ -169,7 +189,13 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                 signal.throwIfAborted();
                 const data = await wallet.index.LearnCloud.getPage<CredentialMetadata>?.(
                     category ? { category } : undefined,
-                    { cursor: pageParam, limit: 12, sort: 'newestFirst' }
+                    {
+                        cursor: pageParam,
+                        limit: pageParam
+                            ? CREDENTIAL_LIST_PAGE_SIZE
+                            : CREDENTIAL_LIST_FIRST_PAGE_SIZE,
+                        sort: 'newestFirst',
+                    }
                 );
                 signal.throwIfAborted();
                 if (!data) throw new Error('Credential index is unavailable');
@@ -179,6 +205,7 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                         ...record,
                         ...(record.__v && { __v: Number(record.__v) }),
                     })),
+                    walkedAt: Date.now(),
                 };
             } catch (error: unknown) {
                 log.error(error);
@@ -188,6 +215,18 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
         initialPageParam: undefined as undefined | string,
         getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage?.cursor : undefined),
         enabled: enabled && Boolean(reader),
+        staleTime: query => {
+            const data = query.state.data;
+            // A malformed restore is never fresh, so mount refetches instead of reading it (LC-2330).
+            if (!isInfiniteData(data)) return 0;
+            // Keep the delete mutation's temporary Infinity hold (setQueryDefaults) effective.
+            if (queryClient.getQueryDefaults(queryKey).staleTime === Infinity) return Infinity;
+            // Freshness follows the last server walk, not cache-only writes (backfills, inserts).
+            // Placeholders and walks from an earlier launch revalidate; counts stay shown meanwhile.
+            const walkedAt = getCredentialListWalkedAt(data);
+            if (walkedAt === undefined || walkedAt < performance.timeOrigin) return 0;
+            return Math.max(0, walkedAt + CREDENTIAL_LIST_STALE_TIME - query.state.dataUpdatedAt);
+        },
     });
 };
 

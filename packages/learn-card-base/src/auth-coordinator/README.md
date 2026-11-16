@@ -200,6 +200,15 @@ sequenceDiagram
 
 Called by `useAuthCoordinatorAutoSetup` when state is `needs_migration`.
 
+If the server holds an archived legacy key for the account, the upgrade uses it;
+otherwise the legacy provider derives it. The LearnCard App requests it through
+the coordinator's existing key-derivation strategy before legacy derivation.
+An archive result uses `source: 'archive'` and follows the same migration path as
+a freshly derived key. Any existing server-provided `expectedDid` is preserved;
+otherwise the archive's server-attested DID becomes `expectedDid`. The coordinator
+compares the key's derived DID directly with that anchor before storing shares,
+without invoking the legacy identity verifier.
+
 ```mermaid
 sequenceDiagram
     participant App as Auto-Setup Hook
@@ -363,7 +372,35 @@ Default implementation: `createFirebaseAuthProvider({ getAuth, user, onSignOut }
 
 ## Server API Contract
 
-`createAuthCoordinatorApi(serverUrl)` communicates with these endpoints:
+The coordinator delegates server calls to `KeyDerivationStrategy`;
+`createSSSStrategy` implements the optional `fetchArchivedKey(authToken, providerType)`
+method using the same server URL and tenant headers as its auth-share requests.
+
+### `POST /keys/archived-key` — Fetch legacy upgrade material
+
+**Request:**
+
+```json
+{ "authToken": "<idToken>", "providerType": "firebase" }
+```
+
+**Response (200, available):**
+
+```json
+{ "available": true, "privateKey": "<64-character hex private key>", "did": "did:key:z..." }
+```
+
+**Response (200, unavailable):**
+
+```json
+{ "available": false }
+```
+
+The client returns `null` for unavailable material, non-success HTTP responses,
+network errors, malformed JSON or fields, and an eight-second request timeout.
+It accepts only a 64-character hexadecimal private key and a `did:key:` DID.
+Lookup failures fall back to legacy derivation without logging response bodies
+or forwarding raw errors.
 
 ### `POST /keys/auth-share` — Fetch key status
 
