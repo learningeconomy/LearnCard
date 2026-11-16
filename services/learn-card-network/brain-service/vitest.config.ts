@@ -85,6 +85,7 @@ export default createVitestConfig(brainServicePreset, {
             'src/routes/skills-semantic-search.test.ts',
             // Opt-in, paid, real-AWS smoke test; skipped unless SKILL_EMBEDDING_BEDROCK_SMOKE=true.
             'src/helpers/bedrock-embedding.smoke.test.ts',
+            'src/hcp/**/*.test.ts',
         ],
     },
 });
