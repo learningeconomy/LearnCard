@@ -324,6 +324,16 @@ resources:
                           Condition:
                               StringEquals:
                                   kms:EncryptionContext:purpose: lc-w3a-key-backup
+                        # Archive objects are SSE-KMS with the same key: GetObject needs S3 to
+                        # decrypt on our behalf, scoped to S3 and this bucket's context only.
+                        - Effect: Allow
+                          Action: kms:Decrypt
+                          Resource: '${env:LEGACY_KEY_ARCHIVE_KMS_KEY_ARN, ""}'
+                          Condition:
+                              StringLike:
+                                  kms:ViaService: s3.*.amazonaws.com
+                              StringEquals:
+                                  kms:EncryptionContext:aws:s3:arn: 'arn:aws:s3:::${env:LEGACY_KEY_ARCHIVE_BUCKET, ""}'
         LcaDevBedrockGenerationPolicy:
             Type: AWS::IAM::Policy
             Condition: LcaDevBedrockGeneration
