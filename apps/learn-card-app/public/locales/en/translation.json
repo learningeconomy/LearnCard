@@ -1950,6 +1950,15 @@
         }
     },
     "profile": {
+        "developerProgram": {
+            "invitation": "Interested in building with LearnCard? Switch to the Developer role to explore developer tools.",
+            "chooseRole": "Become a Developer",
+            "confirmTitle": "Switch to Developer?",
+            "confirmDescription": "Your current role will be replaced with Developer so you can explore developer tools.",
+            "confirmAction": "Switch to Developer",
+            "saving": "Switching...",
+            "saveError": "We couldn’t save your role. Please try again."
+        },
         "age": "Age:",
         "back": "Back",
         "close": "Close",

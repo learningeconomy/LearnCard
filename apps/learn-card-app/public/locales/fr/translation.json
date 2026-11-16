@@ -1908,6 +1908,15 @@
         }
     },
     "profile": {
+        "developerProgram": {
+            "invitation": "Envie de créer avec LearnCard ? Passez au rôle Développeur pour découvrir les outils de développement.",
+            "chooseRole": "Devenir développeur",
+            "confirmTitle": "Passer au rôle Développeur ?",
+            "confirmDescription": "Votre rôle actuel sera remplacé par Développeur pour vous permettre de découvrir les outils de développement.",
+            "confirmAction": "Passer à Développeur",
+            "saving": "Modification...",
+            "saveError": "Impossible d’enregistrer votre rôle. Réessayez."
+        },
         "title": "Mon compte",
         "editProfile": "Modifier le profil",
         "exportSeedPhrase": "Phrase d'exportation de semences",

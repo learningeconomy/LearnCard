@@ -1908,6 +1908,15 @@
         }
     },
     "profile": {
+        "developerProgram": {
+            "invitation": "¿Te interesa crear con LearnCard? Cambia al rol de Desarrollador para explorar las herramientas de desarrollo.",
+            "chooseRole": "Convertirme en desarrollador",
+            "confirmTitle": "¿Cambiar a Desarrollador?",
+            "confirmDescription": "Tu rol actual se reemplazará por Desarrollador para que puedas explorar las herramientas de desarrollo.",
+            "confirmAction": "Cambiar a Desarrollador",
+            "saving": "Cambiando...",
+            "saveError": "No pudimos guardar tu rol. Inténtalo de nuevo."
+        },
         "title": "Mi cuenta",
         "editProfile": "Editar perfil",
         "exportSeedPhrase": "Exportar frase inicial",
