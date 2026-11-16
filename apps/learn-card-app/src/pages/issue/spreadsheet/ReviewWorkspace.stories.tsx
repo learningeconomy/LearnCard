@@ -217,10 +217,12 @@ export const ActiveCompletion: Story = {
             within(canvasElement).getByRole('button', { name: 'Send sample credentials' })
         );
         const body = within(document.body);
+        // The inline results repeat the completion dialog's title and delivery-status action.
+        const completion = within(await body.findByRole('complementary', {}, { timeout: 10000 }));
         await expect(
-            await body.findByRole('heading', { name: 'All credentials sent' }, { timeout: 10000 })
+            completion.getByRole('heading', { name: 'All credentials sent', level: 2 })
         ).toBeVisible();
-        await userEvent.click(body.getByRole('button', { name: 'View delivery status' }));
+        await userEvent.click(completion.getByRole('button', { name: 'View delivery status' }));
         await expect(await body.findByRole('heading', { name: 'Delivery status' })).toBeVisible();
         await userEvent.click(body.getByRole('button', { name: 'Close', exact: true }));
     },
