@@ -381,6 +381,8 @@ export type LCAPluginMethods = {
         issuerDid?: string;
         /** LearnCard Network profile ID the issuer sends transcripts from. */
         issuerProfileId?: string;
+        /** What kind of record the issuer sends; unset means unknown (use neutral wording). */
+        recordType?: 'official' | 'unofficial';
         reason?: 'no_state_id' | 'reauth_required' | 'not_enabled';
         stateDisplayName: string;
         latest?: {

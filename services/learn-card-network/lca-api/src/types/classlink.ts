@@ -4,6 +4,9 @@ import type { JWTPayload } from 'jose';
 /** Lowercase alphanumeric plus hyphens, 1-64 chars, starting with a letter or digit. */
 export const TRANSCRIPT_ISSUER_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
+export const TRANSCRIPT_RECORD_TYPES = ['official', 'unofficial'] as const;
+export type TranscriptRecordType = (typeof TRANSCRIPT_RECORD_TYPES)[number];
+
 export const TranscriptIssuerValidator = z
     .object({
         endpoint: z.string().url(),
@@ -19,6 +22,11 @@ export const TranscriptIssuerValidator = z
          * authenticated by profile ID, never by comparing a profile DID to `did`.
          */
         profileId: z.string().trim().min(1).max(256).optional(),
+        /**
+         * What kind of record this issuer sends, so the app can label it before and after the
+         * request. Unset means unknown, and the app uses neutral wording.
+         */
+        recordType: z.enum(TRANSCRIPT_RECORD_TYPES).optional(),
     })
     .strict();
 
@@ -40,6 +48,7 @@ export type ResolvedTranscriptIssuer = {
     audience: string;
     did?: string;
     profileId?: string;
+    recordType?: TranscriptRecordType;
 };
 
 export const ClassLinkTenantConfigValidator = z.object({
