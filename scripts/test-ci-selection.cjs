@@ -5,6 +5,7 @@ const { loadNxGraph, isProse, isConfigOrUnknownPath } = require('./mock-e2e-ci.c
 
 const brainTasks = [
     'test:integration',
+    'test:readable-delivery',
     'test:profile-search',
     'test:inbox:e2e',
     'test:boost-recipients',
@@ -25,7 +26,7 @@ const groups = {
 const graphArgs = [
     'run-many',
     '--projects=network-brain-service,lca-api-service',
-    '--targets=test:integration,test:profile-search,test:inbox:e2e,test:boost-recipients,test:campaigns',
+    '--targets=test:integration,test:readable-delivery,test:profile-search,test:inbox:e2e,test:boost-recipients,test:campaigns',
 ];
 const all = reason =>
     Object.fromEntries(Object.keys(groups).map(key => [key, { run: true, reason }]));

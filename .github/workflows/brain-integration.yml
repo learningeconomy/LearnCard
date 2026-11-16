@@ -46,7 +46,7 @@ jobs:
                   RUN_CAMPAIGNS: ${{ inputs.run_campaigns }}
               run: |
                   case "$GROUP" in
-                    graph|share-links|claim-links|profile-search|boost-recipients|inbox)
+                    graph|share-links|claim-links|readable-delivery|profile-search|boost-recipients|inbox)
                       [[ "$RUN_BRAIN" == true ]] || exit 1 ;;
                     campaigns)
                       [[ "$RUN_CAMPAIGNS" == true ]] || exit 1 ;;
@@ -93,9 +93,10 @@ jobs:
               run: bunx nx run network-brain-service:build:integration-dependencies
 
             - name: Run readable delivery provisioning
-              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && (!inputs.build_once || steps.builds.outcome == 'success') && inputs.run_brain && inputs.group == 'graph' }}
-              working-directory: services/learn-card-network/brain-service
-              run: bunx vitest run --config vitest.integration.config.ts test/readable-delivery-provisioning.spec.ts
+              if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && (!inputs.build_once || inputs.group != 'graph' || steps.builds.outcome == 'success') && inputs.run_brain && contains(fromJSON('["graph","readable-delivery"]'), inputs.group) }}
+              run: >-
+                  bunx nx run network-brain-service:test:readable-delivery
+                  ${{ inputs.build_once && inputs.group == 'graph' && '--excludeTaskDependencies' || '' }}
 
             - name: Run profile search
               if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.docker.outcome == 'success' && (!inputs.build_once || inputs.group != 'graph' || steps.builds.outcome == 'success') && inputs.run_brain && contains(fromJSON('["graph","profile-search"]'), inputs.group) }}

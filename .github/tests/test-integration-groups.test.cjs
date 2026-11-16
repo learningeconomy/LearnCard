@@ -58,6 +58,7 @@ const selected = (group, overrides = {}) =>
 const graph = [
     'Run share-link security',
     'Run claim-link receipts',
+    'Run readable delivery provisioning',
     'Run profile search',
     'Run boost recipients',
 ];
@@ -85,6 +86,10 @@ test('the two production groups cover every original suite once with one setup e
             [
                 'bunx vitest run --config vitest.claim-links.config.ts',
                 'services/learn-card-network/brain-service',
+            ],
+            [
+                "bunx nx run network-brain-service:test:readable-delivery ${{ inputs.build_once && inputs.group == 'graph' && '--excludeTaskDependencies' || '' }}",
+                undefined,
             ],
             [
                 "bunx nx run network-brain-service:test:profile-search ${{ inputs.build_once && inputs.group == 'graph' && '--excludeTaskDependencies' || '' }}",
@@ -152,6 +157,8 @@ test('actual group validation rejects unknown and empty selections before setup'
         ['share-links', true, false, 0],
         ['claim-links', true, false, 0],
         ['claim-links', false, true, 1],
+        ['readable-delivery', true, false, 0],
+        ['readable-delivery', false, true, 1],
         ['campaigns', false, true, 0],
         ['graph', false, true, 1],
         ['delivery', false, false, 1],
@@ -209,9 +216,9 @@ test('benchmark is opt-in and compares identical commands at one head in ABBA or
         assert.deepEqual(
             names.sort(),
             [...graph, ...delivery].sort(),
-            'same seven commands in every phase'
+            'same eight commands in every phase'
         );
-        assert.equal(phase.strategy.matrix.group.length, i === 0 || i === 3 ? 6 : 2);
+        assert.equal(phase.strategy.matrix.group.length, i === 0 || i === 3 ? 7 : 2);
     }
 });
 
@@ -240,7 +247,11 @@ test('only graph groups build once, and dependent suites cannot bypass a failed 
     for (const outcome of ['failure', 'cancelled', 'skipped']) {
         steps.builds.outcome = outcome;
         for (const step of suites.filter(s =>
-            ['Run profile search', 'Run boost recipients'].includes(s.name)
+            [
+                'Run readable delivery provisioning',
+                'Run profile search',
+                'Run boost recipients',
+            ].includes(s.name)
         )) {
             assert.equal(expression(step.if, { inputs, steps }), false);
             assert.equal(
@@ -257,7 +268,7 @@ test('only graph groups build once, and dependent suites cannot bypass a failed 
     const build = targets['build:integration-dependencies'];
     assert.equal(build.executor, 'nx:noop');
     assert.equal(build.cache, false);
-    for (const name of ['test:profile-search', 'test:boost-recipients']) {
+    for (const name of ['test:readable-delivery', 'test:profile-search', 'test:boost-recipients']) {
         assert.deepEqual(
             targets[name].dependsOn,
             build.dependsOn,
@@ -286,7 +297,7 @@ test('build benchmark isolates build-once with the same two groups in ABBA order
     }
 });
 
-test('native Nx builds transitive prerequisites once and still executes both uncached suites', t => {
+test('native Nx builds transitive prerequisites once and still executes all uncached suites', t => {
     const { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync } = require('node:fs');
     const { tmpdir } = require('node:os');
     const cwd = mkdtempSync(resolve(tmpdir(), 'learncard-integration-build-'));
@@ -333,7 +344,7 @@ test('native Nx builds transitive prerequisites once and still executes both unc
         )
     ).targets;
     const targets = { 'build:integration-dependencies': actual['build:integration-dependencies'] };
-    const names = ['test:profile-search', 'test:boost-recipients'];
+    const names = ['test:readable-delivery', 'test:profile-search', 'test:boost-recipients'];
     for (const name of names)
         targets[name] = { ...command(name), dependsOn: actual[name].dependsOn };
     mkdirSync(resolve(cwd, 'brain'));
