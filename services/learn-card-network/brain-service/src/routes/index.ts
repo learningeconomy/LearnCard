@@ -443,9 +443,9 @@ const withChallenge = (base: typeof didRoute) =>
 
 export const didAndChallengeRoute = withChallenge(didRoute);
 
-export const scopedRoute = didAndChallengeRoute.use(({ ctx, next, meta }) => {
+const requireMetaScope = t.middleware(({ ctx, next, meta }) => {
     if (!meta?.requiredScope) {
-        return next({ ctx });
+        return next();
     }
 
     const userScope = ctx.user?.scope || AUTH_GRANT_NO_ACCESS_SCOPE;
@@ -459,8 +459,10 @@ export const scopedRoute = didAndChallengeRoute.use(({ ctx, next, meta }) => {
         });
     }
 
-    return next({ ctx });
+    return next();
 });
+
+export const scopedRoute = didAndChallengeRoute.use(requireMetaScope);
 
 export const openProfileRoute = didRoute.use(async ({ ctx, next }) => {
     const { profile } = ctx.user;
@@ -511,16 +513,23 @@ export const didRouteWithoutInputCapture = withDid(openRouteWithoutInputCapture)
 export const didAndChallengeRouteWithoutInputCapture = withChallenge(didRouteWithoutInputCapture);
 export const profileRouteWithoutInputCapture = withProfile(didAndChallengeRouteWithoutInputCapture);
 
-/** Credential payloads need the same privacy/auth chain, not the share-link byte limit. */
-export const credentialProfileRoute = withProfile(
-    withChallenge(
-        withDid(
-            t.procedure
-                .use(t.middleware(sentryNoInputCaptureMiddleware))
-                .use(sentryTransactionNameMiddleware)
-        )
+/**
+ * DID + challenge auth on a base that never attaches RPC input to Sentry, without the
+ * share-link byte bound. For private payloads whose callers may have no profile.
+ */
+const privateDidAndChallengeRoute = withChallenge(
+    withDid(
+        t.procedure
+            .use(t.middleware(sentryNoInputCaptureMiddleware))
+            .use(sentryTransactionNameMiddleware)
     )
 );
+
+/** `privateDidAndChallengeRoute` that also enforces `meta.requiredScope` for API tokens. */
+export const privateScopedRoute = privateDidAndChallengeRoute.use(requireMetaScope);
+
+/** Credential payloads need the same privacy/auth chain, not the share-link byte limit. */
+export const credentialProfileRoute = withProfile(privateDidAndChallengeRoute);
 
 export const openProfileManagerRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });
