@@ -6,8 +6,11 @@ import test from 'node:test';
 
 import {
     CONSUMER_PACKAGES,
+    MAX_REGISTRY_TIMEOUT_SECONDS,
+    MAX_REGISTRY_WAIT_SECONDS,
     PLUGIN_PACKAGES,
     installPackages,
+    parseRegistryTimingInputs,
     publicationPending,
     resolveVersions,
     verifyInstalledVersions,
@@ -50,6 +53,36 @@ const classicMissingVersion = {
         data: 'Couldn\'t find any versions for "@learncard/cli" that matches "3.6.3"',
     }),
 };
+
+test('bounds registry timing inputs to the workflow timeout envelope', () => {
+    assert.deepEqual(parseRegistryTimingInputs(), {
+        registryWaitSeconds: 0,
+        registryTimeoutSeconds: 1200,
+    });
+    assert.deepEqual(
+        parseRegistryTimingInputs({
+            registryWaitSeconds: String(MAX_REGISTRY_WAIT_SECONDS),
+            registryTimeoutSeconds: String(MAX_REGISTRY_TIMEOUT_SECONDS),
+        }),
+        {
+            registryWaitSeconds: MAX_REGISTRY_WAIT_SECONDS,
+            registryTimeoutSeconds: MAX_REGISTRY_TIMEOUT_SECONDS,
+        }
+    );
+    assert.throws(
+        () =>
+            parseRegistryTimingInputs({
+                registryWaitSeconds: String(MAX_REGISTRY_WAIT_SECONDS + 1),
+            }),
+        /REGISTRY_WAIT_SECONDS must be an integer between 0 and 300 seconds/
+    );
+    for (const value of ['0', '1201', '1.5', 'not-a-number']) {
+        assert.throws(
+            () => parseRegistryTimingInputs({ registryTimeoutSeconds: value }),
+            /REGISTRY_TIMEOUT_SECONDS must be an integer between 1 and 1200 seconds/
+        );
+    }
+});
 
 test('Yarn Classic retries a missing published version with a fresh metadata cache', async t => {
     const cwd = fixture(t);

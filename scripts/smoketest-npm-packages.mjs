@@ -47,6 +47,36 @@ const ALL_PACKAGES = [...CONSUMER_PACKAGES, ...PLUGIN_PACKAGES];
 const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const REGISTRY = 'https://registry.npmjs.org/';
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+export const MAX_REGISTRY_WAIT_SECONDS = 5 * 60;
+export const MAX_REGISTRY_TIMEOUT_SECONDS = 20 * 60;
+
+const parseRegistrySeconds = ({ value, name, minimum, maximum }) => {
+    const seconds = Number(value);
+    if (!Number.isSafeInteger(seconds) || seconds < minimum || seconds > maximum) {
+        throw new Error(`${name} must be an integer between ${minimum} and ${maximum} seconds.`);
+    }
+    return seconds;
+};
+
+// GitHub Actions job timeouts are whole minutes, while these inputs are seconds.
+// Bound them here so the fixed job budgets always outlive the retry windows.
+export const parseRegistryTimingInputs = ({
+    registryWaitSeconds = '0',
+    registryTimeoutSeconds = '1200',
+} = {}) => ({
+    registryWaitSeconds: parseRegistrySeconds({
+        value: registryWaitSeconds,
+        name: 'REGISTRY_WAIT_SECONDS',
+        minimum: 0,
+        maximum: MAX_REGISTRY_WAIT_SECONDS,
+    }),
+    registryTimeoutSeconds: parseRegistrySeconds({
+        value: registryTimeoutSeconds,
+        name: 'REGISTRY_TIMEOUT_SECONDS',
+        minimum: 1,
+        maximum: MAX_REGISTRY_TIMEOUT_SECONDS,
+    }),
+});
 
 export const validateVersions = versions => {
     for (const name of ALL_PACKAGES) {
@@ -365,7 +395,16 @@ export const installPackages = async ({
 
 const main = async () => {
     const [command, manager, group] = process.argv.slice(2);
-    if (command === 'versions') {
+    const registryTiming = parseRegistryTimingInputs({
+        registryWaitSeconds: process.env.REGISTRY_WAIT_SECONDS,
+        registryTimeoutSeconds: process.env.REGISTRY_TIMEOUT_SECONDS,
+    });
+    if (command === 'validate-registry-timing') {
+        console.log(
+            `Registry timing inputs are valid: ${registryTiming.registryWaitSeconds}s initial wait, ` +
+                `${registryTiming.registryTimeoutSeconds}s retry window.`
+        );
+    } else if (command === 'versions') {
         const versions =
             manager === '--workspace'
                 ? workspaceVersions(ROOT)
@@ -376,7 +415,7 @@ const main = async () => {
                           '@learncard/init': process.env.INIT_VER,
                           '@learncard/partner-connect': process.env.PC_VER,
                       },
-                      timeoutMs: Number(process.env.REGISTRY_TIMEOUT_SECONDS || '1200') * 1000,
+                      timeoutMs: registryTiming.registryTimeoutSeconds * 1000,
                   });
         console.log('package-versions=' + JSON.stringify(versions));
     } else if (command === 'install') {
@@ -384,11 +423,12 @@ const main = async () => {
             manager,
             group,
             versions: JSON.parse(process.env.SMOKE_PACKAGE_VERSIONS || '{}'),
-            timeoutMs: Number(process.env.REGISTRY_TIMEOUT_SECONDS || '1200') * 1000,
+            timeoutMs: registryTiming.registryTimeoutSeconds * 1000,
         });
     } else {
         throw new Error(
-            'Usage: smoketest-npm-packages.mjs versions [--workspace] | install <manager> <group>'
+            'Usage: smoketest-npm-packages.mjs validate-registry-timing | versions [--workspace] | ' +
+                'install <manager> <group>'
         );
     }
 };
