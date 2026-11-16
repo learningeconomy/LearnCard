@@ -2,6 +2,7 @@ import type { VC } from '@learncard/types';
 import { getCategoryForCredential } from 'learn-card-base';
 import type { useWallet } from 'learn-card-base';
 import type { InboxDelivery } from '../pages/claim-from-request/inboxDelivery';
+import { withInternalCategoryHidden } from 'learn-card-base/helpers/credentialCollection';
 
 type Wallet = Awaited<ReturnType<ReturnType<typeof useWallet>['initWallet']>>;
 
@@ -25,12 +26,14 @@ export const storeInboxDeliveries = async (
             const category = await getCategoryForCredential(delivery.credential, wallet, false);
             const uri = await wallet.store.LearnCloud.uploadEncrypted?.(delivery.credential);
             if (!uri) throw new Error('Recovery upload did not return a URI');
-            const added = await wallet.index.LearnCloud.add({
-                id,
-                uri,
-                category,
-                inboxDeliveryId: delivery.id,
-            });
+            const added = await wallet.index.LearnCloud.add(
+                withInternalCategoryHidden({
+                    id,
+                    uri,
+                    category,
+                    inboxDeliveryId: delivery.id,
+                })
+            );
             if (!added) throw new Error('Recovery credential was not indexed');
             stored += 1;
             onStored(delivery.credential);

@@ -45,6 +45,11 @@ const errorMessage = (error: unknown) => (error instanceof Error ? error.message
 export const useUploadVcFromText = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+    // Direct index writes must refresh the cached list walk; it stays fresh for minutes (LC-2412).
+    const invalidateCredentialList = () =>
+        queryClient.invalidateQueries({
+            queryKey: ['useGetCredentialList', switchedProfileStore.get.switchedDid() ?? ''],
+        });
 
     const validateTextVC = (vcText: string) => {
         if (!vcText) return undefined;
@@ -111,6 +116,7 @@ export const useUploadVcFromText = () => {
                             fileType: fileInfo?.type,
                             uploadType,
                         });
+                        void invalidateCredentialList();
                         // Raw imports bypass the add mutations, so refresh index-backed aggregates.
                         await invalidateCredentialIndexQueries(
                             queryClient,

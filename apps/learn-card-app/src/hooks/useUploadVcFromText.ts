@@ -5,11 +5,13 @@ import {
     CredentialCategory,
     invalidateCredentialIndexQueries,
     switchedProfileStore,
+    invalidateVisibleCredentialCounts,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
 
 import { extractCredentialsFromText } from './extractCredentialsFromText';
+import { withInternalCategoryHidden } from 'learn-card-base/helpers/credentialCollection';
 
 export interface FileInfo {
     name?: string;
@@ -57,6 +59,13 @@ export interface AggregateUploadResult {
 export const useUploadVcFromText = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+    // Direct index writes must refresh the cached list walk and the Passport/Home counts;
+    // both stay fresh for minutes (LC-2412).
+    const invalidateCredentialList = () => {
+        const profileDid = switchedProfileStore.get.switchedDid() ?? '';
+        void invalidateVisibleCredentialCounts(queryClient, profileDid);
+        return queryClient.invalidateQueries({ queryKey: ['useGetCredentialList', profileDid] });
+    };
 
     // Raw imports bypass the add mutations, so refresh the index-backed aggregates (skills, IDs, counts).
     const refreshCredentialIndex = () =>
@@ -142,15 +151,17 @@ export const useUploadVcFromText = () => {
                 return {
                     success: true,
                     credentialUri: credURI,
-                    storedVC: await walletWithObv2.index.LearnCloud.add({
-                        id: id || crypto.randomUUID(),
-                        uri: credURI,
-                        category: categoryObvV2,
-                        fileName: name,
-                        fileSize: fileInfo?.size,
-                        fileType: fileInfo?.type,
-                        uploadType,
-                    }),
+                    storedVC: await walletWithObv2.index.LearnCloud.add(
+                        withInternalCategoryHidden({
+                            id: id || crypto.randomUUID(),
+                            uri: credURI,
+                            category: categoryObvV2,
+                            fileName: name,
+                            fileSize: fileInfo?.size,
+                            fileType: fileInfo?.type,
+                            uploadType,
+                        })
+                    ),
                     category: categoryObvV2,
                     fileInfo: fileInfo || {},
                 };
@@ -186,15 +197,17 @@ export const useUploadVcFromText = () => {
                             parsed?.credentialSubject?.achievement?.name ||
                             'JSON Credential';
 
-                        const storedVC = await wallet.index.LearnCloud.add({
-                            id: id || crypto.randomUUID(),
-                            uri: credentialUri,
-                            category,
-                            fileName: name,
-                            fileSize: fileInfo?.size,
-                            fileType: fileInfo?.type,
-                            uploadType,
-                        });
+                        const storedVC = await wallet.index.LearnCloud.add(
+                            withInternalCategoryHidden({
+                                id: id || crypto.randomUUID(),
+                                uri: credentialUri,
+                                category,
+                                fileName: name,
+                                fileSize: fileInfo?.size,
+                                fileType: fileInfo?.type,
+                                uploadType,
+                            })
+                        );
 
                         return {
                             success: true,
@@ -265,7 +278,10 @@ export const useUploadVcFromText = () => {
         }
 
         const addedCount = results.filter(r => r.success).length;
-        if (addedCount > 0) await refreshCredentialIndex();
+        if (addedCount > 0) {
+            void invalidateCredentialList();
+            await refreshCredentialIndex();
+        }
         const failedCount = results.length - addedCount;
         const errors = [
             ...extractionErrors,
@@ -314,11 +330,14 @@ export const useUploadVcFromText = () => {
                 if (credentialUri) {
                     // Add to index if credentialUri was successfully obtained
                     try {
-                        storedVC = await wallet.index.LearnCloud.add({
-                            id: crypto.randomUUID(),
-                            uri: credentialUri,
-                            category,
-                        });
+                        storedVC = await wallet.index.LearnCloud.add(
+                            withInternalCategoryHidden({
+                                id: crypto.randomUUID(),
+                                uri: credentialUri,
+                                category,
+                            })
+                        );
+                        void invalidateCredentialList();
                         await refreshCredentialIndex();
 
                         return {

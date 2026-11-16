@@ -23,7 +23,8 @@ import { tenantConfigSchema } from 'learn-card-base/config/tenantConfigSchema';
  * VetPass staging and production deploy separately (#1942). VetPass staging runs SSS with
  * escrow on the staging enclave; production and the sss-pilot overlay stay off until the SSS
  * switch turns them on together with LearnCard production (D20).
- * Local stages are excluded: LearnCard local runs a software enclave, VetPass local is off.
+ * Local stages: both apps run the local lca-api's software enclave with the same public-key
+ * pin, so VetPass local never inherits production's Nitro pins and 100% enrollment.
  */
 const ENVIRONMENTS = resolve(__dirname, '../../environments');
 
@@ -45,13 +46,14 @@ const STAGES: Array<[string | undefined, string | undefined]> = [
     [undefined, undefined],
     ['staging', 'staging'],
     ['sss-pilot', 'sss-pilot'],
+    ['local', 'local'],
 ];
 
 /**
  * VetPass stages whose escrow is deliberately still off. The SSS switch PR turns VetPass
  * escrow on with LearnCard production and empties this list; parity then applies everywhere.
  */
-const VETPASS_ESCROW_PENDING_SWITCH = new Set<string | undefined>([undefined, 'sss-pilot']);
+const VETPASS_ESCROW_PENDING_SWITCH = new Set<string | undefined>([]);
 
 describe('VetPass / LearnCard escrow parity', () => {
     it.each(STAGES)('vetpass %s matches learncard %s', (vetpassStage, learncardStage) => {

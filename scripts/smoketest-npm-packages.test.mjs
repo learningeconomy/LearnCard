@@ -6,9 +6,13 @@ import test from 'node:test';
 
 import {
     CONSUMER_PACKAGES,
+    MAX_REGISTRY_TIMEOUT_SECONDS,
+    MAX_REGISTRY_WAIT_SECONDS,
     PLUGIN_PACKAGES,
     installPackages,
+    parseRegistryTimingInputs,
     publicationPending,
+    requiresRegistryTiming,
     resolveVersions,
     verifyInstalledVersions,
     workspaceVersions,
@@ -50,6 +54,48 @@ const classicMissingVersion = {
         data: 'Couldn\'t find any versions for "@learncard/cli" that matches "3.6.3"',
     }),
 };
+
+test('bounds registry timing inputs to the workflow timeout envelope', () => {
+    assert.deepEqual(parseRegistryTimingInputs(), {
+        registryWaitSeconds: 0,
+        registryTimeoutSeconds: 1200,
+    });
+    assert.deepEqual(
+        parseRegistryTimingInputs({ registryWaitSeconds: ' ', registryTimeoutSeconds: '' }),
+        { registryWaitSeconds: 0, registryTimeoutSeconds: 1200 }
+    );
+    assert.deepEqual(
+        parseRegistryTimingInputs({
+            registryWaitSeconds: String(MAX_REGISTRY_WAIT_SECONDS),
+            registryTimeoutSeconds: String(MAX_REGISTRY_TIMEOUT_SECONDS),
+        }),
+        {
+            registryWaitSeconds: MAX_REGISTRY_WAIT_SECONDS,
+            registryTimeoutSeconds: MAX_REGISTRY_TIMEOUT_SECONDS,
+        }
+    );
+    assert.throws(
+        () =>
+            parseRegistryTimingInputs({
+                registryWaitSeconds: String(MAX_REGISTRY_WAIT_SECONDS + 1),
+            }),
+        /REGISTRY_WAIT_SECONDS must be an integer between 0 and 300 seconds/
+    );
+    for (const value of ['0', '1201', '1.5', 'not-a-number']) {
+        assert.throws(
+            () => parseRegistryTimingInputs({ registryTimeoutSeconds: value }),
+            /REGISTRY_TIMEOUT_SECONDS must be an integer between 1 and 1200 seconds/
+        );
+    }
+});
+
+test('only registry-backed commands parse registry timing inputs', () => {
+    assert.equal(requiresRegistryTiming('validate-registry-timing'), true);
+    assert.equal(requiresRegistryTiming('install'), true);
+    assert.equal(requiresRegistryTiming('versions'), true);
+    assert.equal(requiresRegistryTiming('versions', '--workspace'), false);
+    assert.equal(requiresRegistryTiming('unknown'), false);
+});
 
 test('Yarn Classic retries a missing published version with a fresh metadata cache', async t => {
     const cwd = fixture(t);
@@ -137,14 +183,33 @@ test('Yarn Classic authentication and engine errors are not pending publication'
     }
 });
 
-test('uses the release snapshot without consulting possibly stale latest tags', async () => {
+test('waits for the exact release snapshot without consulting possibly stale latest tags', async () => {
+    const requests = [];
+    const delays = [];
+    let time = 0;
+    let cliRequests = 0;
     const result = await resolveVersions({
         releaseVersions: versions,
-        fetchMetadata: () => {
-            throw new Error('Must not request latest');
+        timeoutMs: 1000,
+        pollIntervalMs: 10,
+        now: () => time,
+        wait: async delay => {
+            delays.push(delay);
+            time += delay;
+        },
+        fetchMetadata: async url => {
+            requests.push(url);
+            if (url.endsWith('%40learncard%2Fcli/9.8.7') && ++cliRequests === 1) {
+                return { ok: false, status: 404 };
+            }
+            return { ok: true, json: async () => ({ version: '9.8.7' }) };
         },
     });
     assert.deepEqual(result, versions);
+    assert.equal(cliRequests, 2);
+    assert.deepEqual(delays, [10]);
+    assert(requests.every(url => url.endsWith('/9.8.7')));
+    assert(!requests.some(url => url.endsWith('/latest')));
     await assert.rejects(
         resolveVersions({ releaseVersions: { '@learncard/init': 'latest' } }),
         /Missing exact/
@@ -167,20 +232,49 @@ test('rejects partial release snapshots without substituting older latest versio
     assert.equal(requests, 0);
 });
 
+test('fails a release snapshot on an inconsistent or permanent registry response', async () => {
+    for (const response of [
+        { ok: true, json: async () => ({ version: '9.8.6' }) },
+        { ok: false, status: 401 },
+    ]) {
+        let cliRequests = 0;
+        await assert.rejects(
+            resolveVersions({
+                releaseVersions: versions,
+                fetchMetadata: async url => {
+                    if (url.includes('%40learncard%2Fcli/')) {
+                        cliRequests += 1;
+                        return response;
+                    }
+                    return { ok: true, json: async () => ({ version: '9.8.7' }) };
+                },
+                wait: async () => {
+                    throw new Error('Must not retry a permanent registry response');
+                },
+            }),
+            response.ok ? /while waiting for exact version 9\.8\.7/ : /HTTP 401/
+        );
+        assert.equal(cliRequests, 1);
+    }
+});
+
 test('snapshots nightly tags once and preserves explicit manual versions', async () => {
     const requests = [];
     const result = await resolveVersions({
         overrides: { '@learncard/init': '8.7.6', '@learncard/cli': 'next' },
         fetchMetadata: async url => {
             requests.push(url);
-            return { ok: true, json: async () => ({ version: '9.8.7' }) };
+            return {
+                ok: true,
+                json: async () => ({ version: url.endsWith('/8.7.6') ? '8.7.6' : '9.8.7' }),
+            };
         },
     });
     assert.equal(result['@learncard/init'], '8.7.6');
     assert.equal(result['@learncard/cli'], '9.8.7');
-    assert.equal(requests.length, Object.keys(versions).length - 1);
+    assert.equal(requests.length, Object.keys(versions).length);
     assert(requests.some(url => url.endsWith('/next')));
-    assert(!requests.some(url => url.includes('init')));
+    assert(requests.some(url => url.endsWith('%40learncard%2Finit/8.7.6')));
     await assert.rejects(
         resolveVersions({ fetchMetadata: async () => ({ ok: false, status: 401 }) }),
         /HTTP 401/
@@ -226,8 +320,11 @@ test('bounds retries for a dist-tag that never becomes available', async () => {
                 delays.push(delay);
                 time += delay;
             },
-            fetchMetadata: async () => {
-                requests++;
+            fetchMetadata: async url => {
+                if (!url.includes('%40learncard%2Fcli/')) {
+                    return { ok: true, json: async () => ({ version: '9.8.7' }) };
+                }
+                requests += 1;
                 return { ok: false, status: 404 };
             },
         }),
@@ -243,8 +340,11 @@ test('tag resolution does not retry authentication or other non-404 responses', 
         await assert.rejects(
             resolveVersions({
                 overrides: { ...versions, '@learncard/cli': 'next' },
-                fetchMetadata: async () => {
-                    requests++;
+                fetchMetadata: async url => {
+                    if (!url.includes('%40learncard%2Fcli/')) {
+                        return { ok: true, json: async () => ({ version: '9.8.7' }) };
+                    }
+                    requests += 1;
                     return { ok: false, status };
                 },
                 wait: async () => {
@@ -262,7 +362,11 @@ test('a hard resolver failure cancels sibling dist-tag backoff', async () => {
     await assert.rejects(
         resolveVersions({
             overrides: { ...versions, '@learncard/cli': 'next', '@learncard/init': 'next' },
-            fetchMetadata: async url => ({ ok: false, status: url.includes('cli') ? 401 : 404 }),
+            fetchMetadata: async url => {
+                if (url.includes('%40learncard%2Fcli/')) return { ok: false, status: 401 };
+                if (url.includes('%40learncard%2Finit/')) return { ok: false, status: 404 };
+                return { ok: true, json: async () => ({ version: '9.8.7' }) };
+            },
             wait: (_delay, _value, { signal }) =>
                 new Promise((_resolve, reject) => {
                     signal.addEventListener(
@@ -287,8 +391,8 @@ test('rejects tag resolution success that arrives after the shared deadline', as
             overrides: { ...versions, '@learncard/cli': 'next' },
             timeoutMs: 100,
             now: () => time,
-            fetchMetadata: async () => {
-                time = 101;
+            fetchMetadata: async url => {
+                if (url.includes('%40learncard%2Fcli/')) time = 101;
                 return { ok: true, json: async () => ({ version: '9.8.7' }) };
             },
         }),

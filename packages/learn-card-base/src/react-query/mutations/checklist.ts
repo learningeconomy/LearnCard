@@ -1,11 +1,19 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useWallet } from 'learn-card-base';
+import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { switchedProfileStore, useWallet } from 'learn-card-base';
+import { isInternalCredentialCategory } from '../../helpers/credentialCollection';
+import { invalidateVisibleCredentialCounts } from '../visibleCredentialCountKeys';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
-import { switchedProfileStore } from '../../stores/walletStore';
 import { invalidateCredentialIndexQueries } from '../queries/credentialIndexCache';
 
 import { getLogger } from '../../logging/logger';
 const log = getLogger('checklist');
+
+// Index edits must refresh the cached list walk; it stays fresh for minutes (LC-2412).
+const invalidateCredentialList = (queryClient: QueryClient) => {
+    const profileDid = switchedProfileStore.get.switchedDid() ?? '';
+    void invalidateVisibleCredentialCounts(queryClient, profileDid);
+    return queryClient.invalidateQueries({ queryKey: ['useGetCredentialList', profileDid] });
+};
 
 export const useDeleteChecklistCredentialMutation = () => {
     const { initWallet } = useWallet();
@@ -29,6 +37,7 @@ export const useDeleteChecklistCredentialMutation = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['getChecklistCredentialCounts'] });
+            invalidateCredentialList(queryClient);
             void invalidateCredentialIndexQueries(
                 queryClient,
                 switchedProfileStore.get.switchedDid()
@@ -54,7 +63,11 @@ export const useUpdateChecklistItemCategoryMutation = () => {
             uri: string;
         }) => {
             const wallet = await initWallet();
-            await wallet.index.LearnCloud.update(id, { category, categorySource: 'manual' });
+            await wallet.index.LearnCloud.update(id, {
+                category,
+                categorySource: 'manual',
+                hidden: isInternalCredentialCategory(category),
+            });
 
             try {
                 newCredsStore.set.removeCreds([uri]);
@@ -70,6 +83,7 @@ export const useUpdateChecklistItemCategoryMutation = () => {
                 queryClient,
                 switchedProfileStore.get.switchedDid()
             );
+            return invalidateCredentialList(queryClient);
         },
         onError: error => {
             log.error('Failed to update checklist credential', error);

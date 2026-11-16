@@ -206,6 +206,24 @@ variables. For how the bundles are kept in sync and the per-stage cutover, see
 [Infisical → AWS secrets sync](#infisical--aws-secrets-sync). See
 [lca-api guidance](services/learn-card-network/lca-api/AGENTS.md#backend-configuration-model).
 
+The lca-api account upgrade optionally uses archived legacy keys:
+
+| Runtime variable                 | Purpose                                                                                                      |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `LEGACY_KEY_ARCHIVE_ENABLED`     | Enables archived legacy keys used by the account upgrade; defaults to false.                                 |
+| `LEGACY_KEY_ARCHIVE_BUCKET`      | Object storage location for the archive; required when enabled.                                              |
+| `LEGACY_KEY_ARCHIVE_KMS_KEY_ARN` | KMS key ARN used to decrypt the archive; required when enabled. Its region is used for both storage and KMS. |
+
+Supply the archive storage and KMS values in the deployment environment as well:
+`serverless.yml` uses them for a scoped IAM policy, omitted when either is absent.
+`serverless.function-env.cjs` forwards all three non-empty values to the API functions
+in both runtime-bundle and fallback modes. Runtime-only bundle values do not provision IAM access.
+Archive enablement is rejected in offline or E2E authentication-bypass modes.
+The policy includes listing on the archive bucket so a missing object returns 404 (no archive)
+rather than 403; any other storage or KMS failure returns a generic error and the client falls
+back to the legacy provider. A released key is tagged `state=released`; activation tags it
+`state=exhausted` for later retention-based cleanup.
+
 ```bash
 # 1. Install the Infisical CLI (one-time)
 #    macOS:

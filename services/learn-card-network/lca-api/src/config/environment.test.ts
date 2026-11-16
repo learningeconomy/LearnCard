@@ -8,6 +8,38 @@ import {
 
 afterEach(() => vi.unstubAllEnvs());
 
+describe('legacy key archive environment', () => {
+    it('defaults to disabled', () => {
+        expect(parseLcaApiEnvironment({ NODE_ENV: 'test' }).LEGACY_KEY_ARCHIVE_ENABLED).toBe(false);
+    });
+    it.each(['IS_OFFLINE', 'IS_E2E_TEST'])('rejects authentication bypass mode %s', flag => {
+        expect(() =>
+            parseLcaApiEnvironment({
+                NODE_ENV: 'test',
+                LEGACY_KEY_ARCHIVE_ENABLED: 'true',
+                LEGACY_KEY_ARCHIVE_BUCKET: 'archive-fixture',
+                LEGACY_KEY_ARCHIVE_KMS_KEY_ARN: `arn:aws:kms:us-east-1:${'0'.repeat(12)}:key/fixture`,
+                [flag]: 'true',
+            })
+        ).toThrow('requires verified authentication');
+    });
+    it('requires both storage and KMS configuration when enabled', () => {
+        const config = {
+            NODE_ENV: 'test',
+            LEGACY_KEY_ARCHIVE_ENABLED: 'true',
+            LEGACY_KEY_ARCHIVE_BUCKET: 'archive-fixture',
+            LEGACY_KEY_ARCHIVE_KMS_KEY_ARN: `arn:aws:kms:us-east-1:${'0'.repeat(12)}:key/fixture`,
+        };
+        expect(parseLcaApiEnvironment(config).LEGACY_KEY_ARCHIVE_ENABLED).toBe(true);
+        for (const field of ['LEGACY_KEY_ARCHIVE_BUCKET', 'LEGACY_KEY_ARCHIVE_KMS_KEY_ARN']) {
+            expect(() => parseLcaApiEnvironment({ ...config, [field]: '' })).toThrow();
+        }
+        expect(() =>
+            parseLcaApiEnvironment({ ...config, LEGACY_KEY_ARCHIVE_KMS_KEY_ARN: 'alias/archive' })
+        ).toThrow();
+    });
+});
+
 describe('live escrow release kill switch', () => {
     it.each(['1', 'true'])('blocks releases for %s', value => {
         vi.stubEnv('ESCROW_RELEASE_KILL_SWITCH', value);
