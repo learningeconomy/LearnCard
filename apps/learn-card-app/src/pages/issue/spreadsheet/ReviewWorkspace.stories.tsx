@@ -217,8 +217,13 @@ export const ActiveCompletion: Story = {
             within(canvasElement).getByRole('button', { name: 'Send sample credentials' })
         );
         const body = within(document.body);
+        // The completion dialog's h2 and the inline results' h3 share the same title.
         await expect(
-            await body.findByRole('heading', { name: 'All credentials sent' }, { timeout: 10000 })
+            await body.findByRole(
+                'heading',
+                { name: 'All credentials sent', level: 2 },
+                { timeout: 10000 }
+            )
         ).toBeVisible();
         await userEvent.click(body.getByRole('button', { name: 'View delivery status' }));
         await expect(await body.findByRole('heading', { name: 'Delivery status' })).toBeVisible();
