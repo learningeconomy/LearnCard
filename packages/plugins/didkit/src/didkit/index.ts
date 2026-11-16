@@ -13,28 +13,21 @@ export * from './pkg/didkit_wasm';
 export const DEFAULT_DIDKIT_WASM_URL =
     'https://assets.learncard.ai/didkit/sha256-ba3e2ec2208f6da57d94e47c332b3226f048e11d7a23093d50b184d849b6bc0b/didkit_wasm_bg.wasm';
 
-let initialized = false;
-let generating = false; // Mutex flag to allow first init call to acquire a lock
+// One shared WASM init. Concurrent and repeated callers await the same promise; a failed
+// init clears it so the next caller can retry instead of inheriting a poisoned rejection.
+let initPromise: Promise<void> | undefined;
 
-export const init = async (arg: InitInput | Promise<InitInput> = DEFAULT_DIDKIT_WASM_URL) => {
-    // Do not return until we are done generating!
-    while (generating) await new Promise(res => setTimeout(res, 250));
+export const init = (arg: InitInput | Promise<InitInput> = DEFAULT_DIDKIT_WASM_URL) => {
+    initPromise ??= _init({ module_or_path: arg }).then(
+        () => undefined,
+        error => {
+            initPromise = undefined;
 
-    // allow calling multiple times without reinitializing
-    if (initialized) return;
+            throw error;
+        }
+    );
 
-    try {
-        generating = true;
-
-        await _init({ module_or_path: arg });
-
-        generating = false;
-        initialized = true;
-    } catch (error) {
-        generating = false;
-
-        throw error;
-    }
+    return initPromise;
 };
 
 export default init;
