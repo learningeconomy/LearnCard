@@ -57,9 +57,8 @@ class ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -69,11 +68,6 @@ class ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if required (nullable) is None
-        # and model_fields_set contains the field
-        if self.required is None and "required" in self.model_fields_set:
-            _dict['required'] = None
-
         return _dict
 
     @classmethod

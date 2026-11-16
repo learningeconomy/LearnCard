@@ -155,6 +155,7 @@ const shouldCreateIndices =
 
 const indexQueries = [
     'CREATE CONSTRAINT campaign_id_unique IF NOT EXISTS FOR (c:Campaign) REQUIRE c.id IS UNIQUE',
+    'CREATE CONSTRAINT claim_link_request_id_unique IF NOT EXISTS FOR (r:ClaimLinkRequest) REQUIRE r.id IS UNIQUE',
     'CREATE INDEX campaign_status_idx IF NOT EXISTS FOR (c:Campaign) ON (c.status)',
     'CREATE CONSTRAINT consent_event_id IF NOT EXISTS FOR (e:ConsentFlowEvent) REQUIRE e.id IS UNIQUE',
     'CREATE CONSTRAINT consent_delivery_id IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) REQUIRE d.id IS UNIQUE',
@@ -183,6 +184,7 @@ const indexQueries = [
     'CREATE INDEX contract_updated_idx IF NOT EXISTS FOR (c:ConsentFlowContract) ON (c.updatedAt)',
     'CREATE INDEX terms_updated_idx IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.updatedAt)',
     'CREATE INDEX terms_status_idx IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.status)',
+    'CREATE INDEX consent_autoboost_claim_identity_idx IF NOT EXISTS FOR (c:ConsentFlowAutoBoostClaim) ON (c.termsId, c.boostId)',
     'CREATE INDEX claim_hook_updated_idx IF NOT EXISTS FOR (c:ClaimHook) ON (c.updatedAt)',
     'CREATE INDEX integration_id_idx IF NOT EXISTS FOR (i:Integration) ON (i.id)',
     'CREATE INDEX integration_publishablekey_idx IF NOT EXISTS FOR (i:Integration) ON (i.publishableKey)',
@@ -306,6 +308,7 @@ export * from './DidMetadata';
 export * from './SigningAuthority';
 export * from './ConsentFlowTerms';
 export * from './ConsentFlowContract';
+export * from './ConsentFlowContractVersion';
 export * from './ConsentFlowTransaction';
 export * from './ContactMethod';
 export * from './InboxCredential';

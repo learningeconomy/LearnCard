@@ -25,7 +25,12 @@ import ConsentFlowConfirmation from './ConsentFlowConfirmation';
 import ConsentFlowGetAnAdultPrompt from './ConsentFlowGetAnAdult';
 import AiPassportAppProfileConnectedView from '../../components/ai-passport-apps/AiPassportAppProfileConnectedView/AiPassportAppProfileConnectedView';
 
-import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
+import {
+    CONTRACT_APPROVAL_REQUIRED,
+    type ConsentFlowContractDetails,
+    type ConsentFlowTerms,
+    type LCNProfile,
+} from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import {
     AiPassportReauthenticationRequired,
@@ -90,7 +95,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const { initWallet } = useWallet();
     const [refreshedContract, setRefreshedContract] = useState<ConsentFlowContractDetails>();
     const contractDetails =
-        refreshedContract?.uri === initialContractDetails?.uri
+        refreshedContract && refreshedContract.uri === initialContractDetails?.uri
             ? refreshedContract
             : initialContractDetails;
     const { presentToast } = useToast();
@@ -289,7 +294,18 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 setStep(ConsentFlowStep.confirmation);
                 return;
             }
-
+            const isApprovalUpdateRequired =
+                data &&
+                typeof data === 'object' &&
+                'code' in data &&
+                data.code === 'FORBIDDEN' &&
+                'reason' in data &&
+                data.reason === CONTRACT_APPROVAL_REQUIRED;
+            if (isApprovalUpdateRequired && contractDetails?.uri) {
+                closeAllModals();
+                history.push(`/consent-flow/review?uri=${encodeURIComponent(contractDetails.uri)}`);
+                return;
+            }
             const isGuardianApprovalRequired =
                 data &&
                 typeof data === 'object' &&

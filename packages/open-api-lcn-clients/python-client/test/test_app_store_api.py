@@ -40,6 +40,13 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_apply_manifest_version(self) -> None:
+        """Test case for app_store_apply_manifest_version
+
+        Apply App Manifest Version
+        """
+        pass
+
     def test_app_store_associate_listing_with_signing_authority(self) -> None:
         """Test case for app_store_associate_listing_with_signing_authority
 
@@ -79,6 +86,13 @@ class TestAppStoreApi(unittest.TestCase):
         """Test case for app_store_delete_listing
 
         Delete App Store Listing
+        """
+        pass
+
+    def test_app_store_discard_listing_update(self) -> None:
+        """Test case for app_store_discard_listing_update
+
+        Discard Listing Update
         """
         pass
 
@@ -131,6 +145,27 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_get_manifest_diff(self) -> None:
+        """Test case for app_store_get_manifest_diff
+
+        Get App Manifest Diff
+        """
+        pass
+
+    def test_app_store_get_manifest_version(self) -> None:
+        """Test case for app_store_get_manifest_version
+
+        Get App Manifest Version
+        """
+        pass
+
+    def test_app_store_get_manifest_versions(self) -> None:
+        """Test case for app_store_get_manifest_versions
+
+        Get App Manifest Versions
+        """
+        pass
+
     def test_app_store_get_my_credentials_from_app(self) -> None:
         """Test case for app_store_get_my_credentials_from_app
 
@@ -180,10 +215,24 @@ class TestAppStoreApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_submit_app_manifest(self) -> None:
+        """Test case for app_store_submit_app_manifest
+
+        Submit App Manifest
+        """
+        pass
+
     def test_app_store_submit_for_review(self) -> None:
         """Test case for app_store_submit_for_review
 
         Submit Listing for Review
+        """
+        pass
+
+    def test_app_store_submit_listing_update(self) -> None:
+        """Test case for app_store_submit_listing_update
+
+        Submit Listing Update for Review
         """
         pass
 
@@ -205,6 +254,13 @@ class TestAppStoreApi(unittest.TestCase):
         """Test case for app_store_update_listing
 
         Update App Store Listing
+        """
+        pass
+
+    def test_app_store_withdraw_listing_update(self) -> None:
+        """Test case for app_store_withdraw_listing_update
+
+        Withdraw Listing Update from Review
         """
         pass
 

@@ -21,7 +21,7 @@ import useAutoConsentLearnCardAi from './hooks/useAutoConsentLearnCardAi';
 import {
     useIsLoggedIn,
     QRCodeScannerStore,
-    usePrefetchCredentials,
+    usePrefetchCredentialPage,
     useIsCollapsed,
     usePrefetchBoosts,
     useModal,
@@ -64,10 +64,12 @@ import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useRecordFeedbackSession } from './feedback/useRecordFeedbackSession';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { AI_ROUTES } from './constants/aiRoutes';
+import { NATIVE_CREDENTIAL_PATH } from './native-digital-credentials/types';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
+import { useTranscriptPrompt } from './hooks/useTranscriptPrompt';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
-import { reconcileQualificationCategories } from 'learn-card-base/helpers/qualificationCategoryBackfill';
+import { runCredentialIndexBackfills } from 'learn-card-base/helpers/credentialVisibilityBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 
 const log = getLogger('app-router');
@@ -154,10 +156,9 @@ const AppRouter: React.FC = () => {
     const isChapiInteraction = useIsChapiInteraction();
     const networkConsentMutation = useNetworkConsentMutation();
     const analytics = useAnalytics();
-    const { setEnabled: setAnalyticsEnabled } = analytics;
     const { isAiEnabled } = useAiFeatureGate();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
-    usePrivacyGate({ onAnalyticsChange: setAnalyticsEnabled });
+    usePrivacyGate();
 
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
@@ -166,11 +167,11 @@ const AppRouter: React.FC = () => {
     const cloudUrl = networkStore.use.cloudUrl();
 
     useEffect(() => {
-        if (!walletReady || !isLoggedIn || isShareViewer || !activeWallet) return;
-        void reconcileQualificationCategories(activeWallet, queryClient, cloudUrl).catch(error =>
-            log.warn('Wallet category reconciliation failed', error)
-        );
-    }, [walletReady, isLoggedIn, isShareViewer, activeWallet, queryClient, cloudUrl]);
+        // The signed-in wallet, not walletReady: the demo login sets the wallet store without
+        // the auth coordinator, so walletReady stays false for that whole session.
+        if (!isLoggedIn || isShareViewer || !activeWallet) return;
+        void runCredentialIndexBackfills(activeWallet, queryClient, cloudUrl);
+    }, [isLoggedIn, isShareViewer, activeWallet, queryClient, cloudUrl]);
 
     useEffect(() => {
         if (
@@ -228,6 +229,7 @@ const AppRouter: React.FC = () => {
 
     const hideSideMenu =
         isShareViewer ||
+        location.pathname === NATIVE_CREDENTIAL_PATH ||
         [
             '/consent-flow',
             '/consent-flow-login',
@@ -379,15 +381,15 @@ const AppRouter: React.FC = () => {
 
     const enablePrefetch = isLoggedIn && !isChapiInteraction;
 
-    usePrefetchCredentials('Social Badge', enablePrefetch);
-    usePrefetchCredentials('Achievement', enablePrefetch);
-    usePrefetchCredentials('Learning History', enablePrefetch);
-    usePrefetchCredentials('Work History', enablePrefetch);
-    usePrefetchCredentials('Skill', enablePrefetch);
-    usePrefetchCredentials('ID', enablePrefetch);
-    usePrefetchCredentials('Membership', enablePrefetch);
-    usePrefetchCredentials('AI Topic', enablePrefetch);
-    usePrefetchCredentials(undefined, enablePrefetch);
+    usePrefetchCredentialPage('Social Badge', enablePrefetch);
+    usePrefetchCredentialPage('Achievement', enablePrefetch);
+    usePrefetchCredentialPage('Learning History', enablePrefetch);
+    usePrefetchCredentialPage('Work History', enablePrefetch);
+    usePrefetchCredentialPage('Skill', enablePrefetch);
+    usePrefetchCredentialPage('ID', enablePrefetch);
+    usePrefetchCredentialPage('Membership', enablePrefetch);
+    usePrefetchCredentialPage('AI Topic', enablePrefetch);
+    usePrefetchCredentialPage(undefined, enablePrefetch);
     usePrefetchBoosts(enablePrefetch);
     useSyncConsentFlow(enablePrefetch);
     usePendingContractSync(enablePrefetch);
@@ -432,6 +434,7 @@ const AppRouter: React.FC = () => {
     useScreenView();
     useAutoVerifyContactMethodWithProofOfLogin();
     useFinalizeInboxCredentials();
+    useTranscriptPrompt();
 
     const saved_email = window.localStorage.getItem('emailForSignIn');
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import ModalLayout from '../../layout/ModalLayout';
 
@@ -11,6 +11,8 @@ const CategoryDescriptorModal: React.FC<{
     title?: string;
     category: CredentialCategoryEnum;
 }> = ({ handleCloseModal, title, category }) => {
+    const [failedImageSrc, setFailedImageSrc] = useState<string>();
+    const FallbackIcon = categoryMetadata[category].IconWithShape;
     const categoryTitle = title ?? categoryMetadata[category].title;
     const imgSrc =
         category === CredentialCategoryEnum.id
@@ -27,7 +29,18 @@ const CategoryDescriptorModal: React.FC<{
                 buttonText={m['wallet.categoryDescriptor.gotIt']()}
             >
                 <div className="p-[30px]">
-                    <img src={imgSrc} alt="" className="w-[100px] h-[100px] m-auto" />
+                    {failedImageSrc === imgSrc ? (
+                        <div aria-hidden="true" className="w-[100px] h-[100px] m-auto">
+                            <FallbackIcon className="w-full h-full" />
+                        </div>
+                    ) : (
+                        <img
+                            src={imgSrc}
+                            alt=""
+                            onError={() => setFailedImageSrc(imgSrc)}
+                            className="w-[100px] h-[100px] m-auto"
+                        />
+                    )}
                     <p className="text-center text-[22px] font-poppins font-normal leading-[130%] text-grayscale-900">
                         <strong>
                             {m['wallet.categoryDescriptor.about']({ name: categoryTitle })}

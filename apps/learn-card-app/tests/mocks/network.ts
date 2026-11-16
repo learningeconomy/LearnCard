@@ -46,6 +46,25 @@ export const installNetwork = async (page: Page): Promise<TrpcMock> => {
                 () => `mock-challenge-${++challenge}`
             ) satisfies BrainOutputs['utilities']['getChallenges'];
         });
+        // The global learner source can share a tRPC batch with boot/profile reads.
+        trpc.on(
+            'campaigns.getMyCampaigns',
+            () => [] satisfies BrainOutputs['campaigns']['getMyCampaigns']
+        );
+        // The telemetry-consent read (LC-2297) can share an LCA batch with notifications
+        // and other reads. A batch is only mocked when every procedure in it has a handler,
+        // so without this default a mixed batch falls through to the HAR, which never
+        // recorded it, and is aborted (e.g. the inbox silently keeps stale notifications).
+        // Same values the HAR recorded for standalone calls, so specs that relied on them see
+        // no change; specs can still override it with their own `mock.on`.
+        trpc.on('preferences.getPreferencesForDid', () => ({
+            aiEnabled: true,
+            aiAutoDisabled: false,
+            analyticsEnabled: true,
+            analyticsAutoDisabled: false,
+            bugReportsEnabled: true,
+            isMinor: false,
+        }));
         await trpc.install();
     }
 

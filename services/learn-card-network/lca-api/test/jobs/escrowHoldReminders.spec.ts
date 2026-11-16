@@ -209,15 +209,32 @@ describe('runEscrowHoldReminders', () => {
         await runEscrowHoldReminders({ now, limit: 200 });
         const firstRun = await Promise.all(holds.map(hold => findEscrowHoldById(hold._id)));
         expect(firstRun.map(hold => hold?.enclaveCancelAttempts).sort()).toEqual([0, 0, 1, 1]);
-        // UUIDs are ASCII: default string ordering matches Mongo's byte ordering.
-        const unattemptedId = firstRun
+        // UUIDs are ASCII: default string ordering matches Mongo's _id tie-breaker.
+        const unattemptedIds = firstRun
             .filter(hold => hold?.enclaveCancelAttempts === 0)
             .map(hold => hold!._id)
-            .sort()[0]!;
+            .sort();
         await runEscrowHoldReminders({ now, limit: 1 });
-        expect((await findEscrowHoldById(unattemptedId))?.enclaveCancelAttempts).toBe(1);
+        const secondRun = await Promise.all(holds.map(hold => findEscrowHoldById(hold._id)));
+        expect((await findEscrowHoldById(unattemptedIds[0]!))?.enclaveCancelAttempts).toBe(1);
+        // Only the first unattempted hold runs; previously attempted holds must not retry.
+        expect(
+            secondRun
+                .filter(hold => unattemptedIds.includes(hold!._id))
+                .map(hold => hold?.enclaveCancelAttempts)
+                .sort()
+        ).toEqual([0, 1]);
+        expect(
+            secondRun
+                .filter(hold => !unattemptedIds.includes(hold!._id))
+                .map(hold => hold?.enclaveCancelAttempts)
+        ).toEqual([1, 1]);
+
+        // The remaining unattempted cancellation must run before any retry, too.
+        await runEscrowHoldReminders({ now, limit: 1 });
         for (const hold of holds) {
             const stored = await findEscrowHoldById(hold._id);
+            expect(stored?.enclaveCancelAttempts).toBe(1);
             expect(stored?.enclaveCancelPendingAt).toBeInstanceOf(Date);
             expect(stored?.enclaveCancelConfirmedAt).toBeUndefined();
         }

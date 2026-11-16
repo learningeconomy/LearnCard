@@ -1,11 +1,15 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { dropMalformedInfiniteCacheEntry } from '../react-query/infiniteQueryGuard';
 import useWallet from './useWallet';
 
 export const useTermsTransactions = (uri?: string) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    const queryKey = ['useTermsTransactions', uri] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useTermsTransactions');
 
     return useInfiniteQuery({
-        queryKey: ['useTermsTransactions', uri],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             if (!uri) return;
 

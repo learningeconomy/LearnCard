@@ -7,7 +7,7 @@
 | **limit**  | **float**                                                                                           |             | [optional] [default to 25] |
 | **cursor** | **str**                                                                                             |             | [optional]                 |
 | **sort**   | **str**                                                                                             |             | [optional]                 |
-| **query**  | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md) |             | [optional]                 |
+| **query**  | [**BoostGetPaginatedBoostRecipientsRequestQuery**](BoostGetPaginatedBoostRecipientsRequestQuery.md) |             | [optional]                 |
 
 ## Example
 

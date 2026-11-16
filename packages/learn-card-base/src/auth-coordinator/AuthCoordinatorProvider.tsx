@@ -188,6 +188,12 @@ export interface AuthCoordinatorProviderProps {
     legacyAccountThresholdMs?: number;
 
     /**
+     * Deadline for the server key-status fetch.
+     * See AuthCoordinatorConfig.serverStatusTimeoutMs for details.
+     */
+    serverStatusTimeoutMs?: number;
+
+    /**
      * Confirms a legacy key belongs to the signed-in account before migration
      * writes it. See AuthCoordinatorConfig.verifyMigrationIdentity.
      */
@@ -230,6 +236,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     onDebugEvent,
     enabled = true,
     legacyAccountThresholdMs,
+    serverStatusTimeoutMs,
     verifyMigrationIdentity,
 }) => {
     // `idle` means storage/session restoration has finished without an account.
@@ -413,6 +420,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             onLogout,
             clearPendingEscrowRecovery,
             legacyAccountThresholdMs,
+            serverStatusTimeoutMs,
             verifyMigrationIdentity: verifyMigrationIdentityRef.current
                 ? check => verifyMigrationIdentityRef.current?.(check) ?? Promise.resolve('unknown')
                 : undefined,

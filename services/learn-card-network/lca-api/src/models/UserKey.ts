@@ -241,6 +241,15 @@ const MongoUserKeyBaseValidator = z.object({
 
     migratedFromWeb3Auth: z.boolean().default(false),
     migratedAt: z.date().optional(),
+    /**
+     * The login whose Web3Auth key this account was migrated from, recorded by
+     * `/keys/migrate` only when that login is the account's sole login at security
+     * epoch 0. Web3Auth derives a key from the login alone, so only this login
+     * still derives the account's key: a Web3Auth-mode client may sign in an SSS
+     * account only through it (see `isWeb3AuthLogin`). Absent means no login is
+     * known to be safe; migrations from before this field was added have none.
+     */
+    web3AuthLogin: AuthProviderMappingValidator.optional(),
 
     sssActivationState: z.enum(['provisional', 'active']).optional(),
     provisionalCreatedAt: z.date().optional(),
@@ -411,6 +420,11 @@ export const createUserKeysIndexes = async (): Promise<void> => {
 
     await runIndexMigrationOperation('create primary DID index', () =>
         collection.createIndex({ primaryDid: 1 })
+    );
+    // findUserKeyByDid ORs primaryDid with linkedDids; Mongo only uses indexes for an $or when
+    // every clause is indexed, so without this the hot preferences lock lookup scans the collection.
+    await runIndexMigrationOperation('create linked DID index', () =>
+        collection.createIndex({ linkedDids: 1 }, { name: 'linked_dids_lookup' })
     );
     await runIndexMigrationOperation('create verified recovery email index', () =>
         collection.createIndex(
@@ -818,6 +832,47 @@ export const addRecoveryMethodToUserKey = async (
 const getAuthProviderFilter = (authProvider: AuthProviderMapping): Filter<MongoUserKeyType> => ({
     authProviders: { $elemMatch: authProvider },
 });
+
+/**
+ * Whether Web3Auth, signing in through `authProvider`, derives this account's key.
+ * Web3Auth derives a key from the login alone, so this holds only for the login
+ * the account's key came from; any other login (added by PIN sign-in, recovery or
+ * a revoke) derives a different, empty identity. Web3Auth-mode clients stop every
+ * existing account for which this is false.
+ *
+ * - A recorded `web3AuthLogin` decides it: true only for that login, on a record
+ *   that is still Web3Auth (mid-migration) or finished migrating from it.
+ * - Without one, only a still-Web3Auth record (e.g. a migration that started
+ *   before logins were recorded) qualifies, and only through its sole login at
+ *   security epoch 0: the same evidence `/keys/migrate` requires to record it.
+ *   A migrated or SSS-native record without one is never confirmed.
+ */
+export const isWeb3AuthLogin = (
+    userKey: Pick<
+        MongoUserKeyType,
+        'keyProvider' | 'migratedFromWeb3Auth' | 'web3AuthLogin' | 'authProviders' | 'securityEpoch'
+    >,
+    authProvider: AuthProviderMapping
+): boolean => {
+    const isThisLogin = (login: AuthProviderMapping | undefined): boolean =>
+        login?.type === authProvider.type && login?.id === authProvider.id;
+    const stillWeb3Auth = (userKey.keyProvider ?? 'sss') === 'web3auth';
+
+    if (userKey.web3AuthLogin) {
+        return (
+            isThisLogin(userKey.web3AuthLogin) &&
+            (stillWeb3Auth || userKey.migratedFromWeb3Auth === true)
+        );
+    }
+
+    const logins = userKey.authProviders ?? [];
+    return (
+        stillWeb3Auth &&
+        logins.length === 1 &&
+        isThisLogin(logins[0]) &&
+        getSecurityEpoch(userKey) === 0
+    );
+};
 
 /** The account's security epoch; a legacy record without the field is at epoch 0. */
 export const getSecurityEpoch = (userKey: Pick<MongoUserKeyType, 'securityEpoch'>): number =>
@@ -1581,8 +1636,26 @@ export const markUserKeyMigrationProvisionalByAuthProvider = async (
             },
         }
     );
+    const marked = result.modifiedCount > 0 || result.matchedCount > 0;
 
-    return result.modifiedCount > 0 || result.matchedCount > 0;
+    if (marked) {
+        // Record the login that derived the legacy key, but only when it provably
+        // did: it is the account's sole login and no rebind/revoke has happened. A
+        // second login (PIN sign-in) holding the account key could otherwise claim
+        // it. Never replace a recorded login; when unsure, record nothing (Web3Auth
+        // clients then stop the account: a false negative, never a split).
+        await getUserKeysCollection().updateOne(
+            {
+                ...getAuthProviderFilter(authProvider),
+                authProviders: { $size: 1, $elemMatch: authProvider },
+                web3AuthLogin: { $exists: false },
+                ...getSecurityEpochFilter(0),
+            },
+            { $set: { web3AuthLogin: authProvider } }
+        );
+    }
+
+    return marked;
 };
 
 /**
@@ -1982,6 +2055,11 @@ export interface RevokeOtherDeviceSharesInput {
     /** The version the caller split from; any concurrent rotation makes the revoke miss. */
     expectedShareVersion: number;
     authShare: ServerEncryptedShare;
+    /**
+     * The exact login list the caller read (as stored). When set, a login linked or removed
+     * concurrently makes the revoke miss instead of unlinking a login the caller never saw.
+     */
+    expectedAuthProviders?: AuthProviderMapping[];
 }
 
 /**
@@ -2003,9 +2081,17 @@ export const revokeOtherDeviceShares = async (
 } | null> => {
     const collection = getUserKeysCollection();
     const filter = {
-        ...getAuthProviderFilter(input.authProvider),
-        primaryDid: input.primaryDid,
-        shareVersion: input.expectedShareVersion,
+        $and: [
+            getAuthProviderFilter(input.authProvider),
+            { primaryDid: input.primaryDid, shareVersion: input.expectedShareVersion },
+            // When the caller acted on a specific set of logins (e.g. pinned ClassLink
+            // identities to them), only commit while that set is unchanged: a login linked in
+            // between would otherwise be unlinked without that work. The miss surfaces as
+            // CONFLICT; retry. Added to, never replacing, the caller-login check above.
+            ...(input.expectedAuthProviders
+                ? [{ authProviders: input.expectedAuthProviders }]
+                : []),
+        ],
     };
     const existing = await collection.findOne(filter);
 

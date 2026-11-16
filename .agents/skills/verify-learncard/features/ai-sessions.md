@@ -29,5 +29,6 @@ Preconditions:
 - Never click the LearnCard AI tile. It consents to a contract that does not exist on the local network and starts a session that needs the ai-agent service.
 - The new-session icon button has no accessible name; the journey locates it relative to the Sessions count. Give it a name in the product and update the locator together.
 - Desktop renders the topic input twice; drive the visible one.
+- Keep the selector navigation after the new-topic step in the same browser context. This checks that the explicit URL selection overrides the persisted previous step when the modal opens; a fresh profile alone misses that regression.
 - App logos load from the Filestack CDN, which the network policy blocks, so tiles may render without images. Assert by text and accessible name, not image source.
 - The production branch of the "What app" picker, which shows other apps the learner has consented to, cannot run here. `aiPassport-apps.helpers.test.ts` asserts the catalog holds LearnCard AI alone.

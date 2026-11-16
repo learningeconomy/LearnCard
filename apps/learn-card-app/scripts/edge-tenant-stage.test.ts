@@ -38,7 +38,8 @@ describe('selectStage', () => {
     });
 
     test('a pin never leaks into another tenant', () => {
-        expect(selectStage('alpha.vetpass.app', 'vetpass', pinned)).toBe('alpha');
+        expect(selectStage('staging.vetpass.app', 'vetpass', pinned)).toBe('staging');
+        expect(selectStage('vetpass.app', 'vetpass', pinned)).toBeNull();
     });
 
     test('getStageFromHostname keeps its existing contract', () => {
@@ -86,12 +87,49 @@ describe('generate-edge-tenant-configs', () => {
         expect(config.stage).toBe('staging');
         expect(config.auth.provider).toBe('keycloak');
         expect(config.auth.keyDerivation).toBe('sss');
-        const vetpassAlpha = resolveTenantConfig('alpha.vetpass.app') as {
+        const vetpassStaging = resolveTenantConfig('staging.vetpass.app') as {
             tenantId: string;
             stage: string;
         };
-        expect(vetpassAlpha.tenantId).toBe('vetpass');
-        expect(vetpassAlpha.stage).toBe('staging');
+        expect(vetpassStaging.tenantId).toBe('vetpass');
+        expect(vetpassStaging.stage).toBe('staging');
+
+        expect(generate().status).toBe(0);
+    });
+
+    // CI's vetpass-app-staging leg pins vetpass/staging (deploy.yml "Generate edge tenant configs").
+    // Resolved in a fresh process: the resolver's generated-JSON import is module-cached here.
+    test('pinned vetpass staging serves staging config without touching LearnCard', () => {
+        expect(generate('--tenant', 'vetpass', '--stage', 'staging').status).toBe(0);
+        expect(readPinnedStage()).toEqual({ tenantId: 'vetpass', stage: 'staging' });
+
+        const result = spawnSync(
+            'bun',
+            [
+                '-e',
+                `const { resolveTenantConfig } = await import('./netlify/edge-functions/shared/tenant-resolver.ts');
+                console.log(JSON.stringify(['staging.vetpass.app', 'vetpass.app', 'learncard.app'].map(h => {
+                    const c = resolveTenantConfig(h);
+                    return { tenantId: c.tenantId, stage: c.stage ?? null, brainService: c.apis.brainService };
+                })));`,
+            ],
+            { cwd: APP_ROOT, encoding: 'utf-8' }
+        );
+        expect(result.status).toBe(0);
+        const [staging, apex, learncard] = JSON.parse(result.stdout.trim().split('\n').pop()!);
+
+        expect(staging).toEqual({
+            tenantId: 'vetpass',
+            stage: 'staging',
+            brainService: 'https://staging.network.learncard.com/trpc',
+        });
+        // The pin wins on every hostname for its own tenant (the staging site never serves the apex).
+        expect(apex.stage).toBe('staging');
+        expect(learncard).toEqual({
+            tenantId: 'learncard',
+            stage: null,
+            brainService: 'https://network.learncard.com/trpc',
+        });
 
         expect(generate().status).toBe(0);
     });

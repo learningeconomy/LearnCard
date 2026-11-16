@@ -1,5 +1,59 @@
 # learn-card-core
 
+## 2.4.0
+
+### Minor Changes
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCloud index `getPage`/`getCount` accept `$ne`, `$nin` and `$in` on encrypted fields (sent as `fields.$nin` / `fields.$in` hashes; equality-only queries are unchanged). Internal index records (verifiable data, Self-Assigned Skills, internal categories) are written with `hidden: true`, a one-time per-account client backfill marks existing ones, and Passport and Home counts come from one index count request per tile instead of walking the whole index once the backfill is done (LC-2412, LC-2413).
+
+### Patch Changes
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fresh-device Passport/Home counts: the counts start the visibility backfill when its marker is missing, so a sign-in that skips the auth coordinator still writes it, and the marker read goes in the same batched request as the counts (LC-2413).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCloud `index.add` skips a record whose `uri` is already indexed (one count lookup per add, by the existing `uri` field hash) and returns `true`, so new duplicate uri rows can't inflate index counts. Passport and Home counts no longer wait for this device's visibility backfill: a finished backfill leaves a LearnCloud marker, a fresh device reads it in the same batched request as the counts, and accounts with no marker count from one 1000-record index read instead of the paged walk (LC-2413).
+
+- Updated dependencies []:
+    - @learncard/core@9.4.46
+    - @learncard/helpers@1.8.2
+    - @learncard/learn-cloud-client@1.6.54
+    - @learncard/didkit-plugin@1.10.12
+
+## 2.3.53
+
+### Patch Changes
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/core@9.4.45
+    - @learncard/helpers@1.8.1
+    - @learncard/learn-cloud-client@1.6.53
+
+## 2.3.52
+
+### Patch Changes
+
+- [#1851](https://github.com/learningeconomy/LearnCard/pull/1851) [`83dad5258438dd7cbc1fba3035f1b009c703653e`](https://github.com/learningeconomy/LearnCard/commit/83dad5258438dd7cbc1fba3035f1b009c703653e) Thanks [@gerardopar](https://github.com/gerardopar)! - Normalize restored null pagination cursors before querying the LearnCloud index.
+
+- [#1871](https://github.com/learningeconomy/LearnCard/pull/1871) [`a7923d7deaf0baf7205bbae1f6fe132e846fed44`](https://github.com/learningeconomy/LearnCard/commit/a7923d7deaf0baf7205bbae1f6fe132e846fed44) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2294] Search complete credential collections, keep visible totals stable, and recover from incomplete loading without misleading empty states.
+
+    Keep searching other records and metadata pages when one legacy credential cannot load, while preserving an incomplete, retryable result. Scope shared-credential metadata caches to the reader account, and translate collection status and recovery feedback in LearnCard and ScoutPass with accessible dashboard contrast.
+
+    Search older wrapped credentials by displayed and achievement names, keep scrolling after collection totals finish, and refresh only the originating account's affected lists once per bulk save. Localize LearnCard's unavailable category counts with narrow, right-to-left-safe layouts, and preserve live ScoutPass managed-list localization.
+
+    Await optimistic list/count updates after saving without making claim completion or contract sync wait for background paginated rescans.
+
+- Updated dependencies [[`fea9c25ec76f230944a1713500a280c80e2a9cc0`](https://github.com/learningeconomy/LearnCard/commit/fea9c25ec76f230944a1713500a280c80e2a9cc0), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/helpers@1.8.0
+    - @learncard/core@9.4.44
+    - @learncard/learn-cloud-client@1.6.52
+    - @learncard/didkit-plugin@1.10.10
+
+## Unreleased
+
+### Patch Changes
+
+- Allow credential collection retries after failed service identity discovery (LC-2294). Keep successful and in-flight discovery shared, but discard rejected discovery promises so a restored connection can recover without restarting the account.
+
 ## 2.3.51
 
 ### Patch Changes

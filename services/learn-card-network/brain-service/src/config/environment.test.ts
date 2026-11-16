@@ -21,6 +21,29 @@ const REQUIRED_ENVIRONMENT = {
 };
 
 describe('credential refresh configuration', () => {
+    it.each(['invalid-json', '[]', 'null', '{"v1":123}'])(
+        'rejects invalid previous digest keys at startup: %s',
+        value => {
+            expect(() =>
+                parseBrainServiceEnvironment({
+                    ...REQUIRED_ENVIRONMENT,
+                    NODE_ENV: 'test',
+                    CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS: value,
+                })
+            ).toThrow(/Must be a JSON object mapping digest versions to string keys/);
+        }
+    );
+
+    it('transforms previous digest keys into a typed record at startup', () => {
+        expect(
+            parseBrainServiceEnvironment({
+                ...REQUIRED_ENVIRONMENT,
+                NODE_ENV: 'test',
+                CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS: '{"v1":"previous-test-key"}',
+            }).CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS
+        ).toEqual({ v1: 'previous-test-key' });
+    });
+
     it('parses typed defaults and explicit runtime values at call time', () => {
         const previousEnabled = process.env.CREDENTIAL_REFRESH_ENABLED;
         const previousSecret = process.env.CREDENTIAL_REFRESH_DIGEST_SECRET;
@@ -310,4 +333,33 @@ describe('LC-2206 skill embedding configuration', () => {
             ).not.toThrow();
         }
     );
+});
+
+describe('campaign dispatch configuration', () => {
+    it('defaults to 1000 recipients and 60 seconds, accepting an explicit zero delay', () => {
+        expect(
+            parseBrainServiceEnvironment({ ...REQUIRED_ENVIRONMENT, NODE_ENV: 'test' })
+        ).toMatchObject({
+            CAMPAIGN_DISPATCH_PAGE_SIZE: 1000,
+            CAMPAIGN_DISPATCH_DELAY_SECONDS: 60,
+        });
+        expect(
+            parseBrainServiceEnvironment({
+                ...REQUIRED_ENVIRONMENT,
+                NODE_ENV: 'test',
+                CAMPAIGN_DISPATCH_PAGE_SIZE: '25',
+                CAMPAIGN_DISPATCH_DELAY_SECONDS: '0',
+            })
+        ).toMatchObject({ CAMPAIGN_DISPATCH_PAGE_SIZE: 25, CAMPAIGN_DISPATCH_DELAY_SECONDS: 0 });
+    });
+    it.each([
+        { CAMPAIGN_DISPATCH_PAGE_SIZE: '0' },
+        { CAMPAIGN_DISPATCH_PAGE_SIZE: '1001' },
+        { CAMPAIGN_DISPATCH_DELAY_SECONDS: '901' },
+        { CAMPAIGN_DISPATCH_DELAY_SECONDS: '-1' },
+    ])('rejects unsupported queue settings %j', settings => {
+        expect(() =>
+            parseBrainServiceEnvironment({ ...REQUIRED_ENVIRONMENT, NODE_ENV: 'test', ...settings })
+        ).toThrow();
+    });
 });

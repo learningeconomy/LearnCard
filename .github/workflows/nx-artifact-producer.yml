@@ -1,0 +1,37 @@
+name: Nx main artifact producer
+
+# Deliberately manual: no paid backend or recurring warm-up workload.
+on:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: nx-main-artifact-producer
+    cancel-in-progress: false
+
+jobs:
+    producer:
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+            - uses: ./.github/actions/setup
+            - name: Build audited SDK targets and publish native task payloads
+              run: node scripts/nx-artifact-cache/run.mjs produce
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: nx-main-build-payloads
+                  path: ${{ runner.temp }}/nx-pilot-payloads
+                  if-no-files-found: error
+                  retention-days: 7
+            - uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: nx-pilot-producer-evidence
+                  path: ${{ runner.temp }}/nx-pilot/result.json
+                  retention-days: 7

@@ -1,4 +1,8 @@
-import { EscrowRequestError, type EscrowHoldStatus } from '@learncard/sss-key-manager';
+import {
+    EscrowEvidenceError,
+    EscrowRequestError,
+    type EscrowHoldStatus,
+} from '@learncard/sss-key-manager';
 import type { Config } from '../config';
 import { refreshIdentity, RunnerAuthError } from '../auth';
 import { safeReason, type Emit, type Step, type Tier3Metric } from '../metrics';
@@ -70,7 +74,13 @@ export const tier3Reason = (error: unknown): string => {
         if (error.status === 412 || error.status >= 500) return 'unavailable';
         return 'http_refusal';
     }
-    if (error instanceof Error && error.name === 'EscrowEvidenceError') return 'evidence';
+    // instanceof covers subclasses (EscrowAuthorityTenantMismatchError); the name check covers
+    // an error thrown from a second copy of the package.
+    if (
+        error instanceof EscrowEvidenceError ||
+        (error instanceof Error && error.name === 'EscrowEvidenceError')
+    )
+        return 'evidence';
     return safeReason(error);
 };
 

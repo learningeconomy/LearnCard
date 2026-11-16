@@ -1,4 +1,9 @@
-import { isServiceProfileExemptFromGuardianship } from '@helpers/profile.helpers';
+import { TRPCError } from '@trpc/server';
+import {
+    getConsentFlowContractVersionRecords,
+    getCumulativeContractUpdateById,
+    getCumulativeContractUpdates,
+} from '@accesslayer/consentflowcontract/versions';
 import { QueryBuilder, BindParam } from 'neogma';
 import mapValues from 'lodash/mapValues';
 import {
@@ -34,12 +39,14 @@ import {
     ConsentFlowTransactionsQuery,
     HolderExportMetadata,
     LCNProfile,
+    ConsentFlowContractDetails,
 } from '@learncard/types';
 import { ConsentFlowGuardianApprovalValidator } from '@learncard/types';
 import { FlatBoostType } from 'types/boost';
 import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
-import { shouldIncludeCategory } from '@helpers/contract.helpers';
+import { areTermsValid, shouldIncludeCategory } from '@helpers/contract.helpers';
+import { isServiceProfileExemptFromGuardianship } from '@helpers/profile.helpers';
 import { ProfileType } from 'types/profile';
 import { CredentialType } from 'types/credential';
 import { getBoostUri } from '@helpers/boost.helpers';
@@ -123,9 +130,16 @@ export const getContractDetailsById = async (
         profile: LCNProfile;
     }>(await query.return('contract, profile').run());
 
-    return result.length > 0
-        ? { contract: inflateObject(result[0]!.contract), contractOwner: result[0]!.profile }
-        : null;
+    if (!result.length) return null;
+    const rawContract = DbContractValidator.parse(inflateObject(result[0]!.contract));
+    return {
+        contract: {
+            ...rawContract,
+            version: Number(rawContract.currentVersion ?? 1),
+            status: rawContract.status ?? 'active',
+        },
+        contractOwner: result[0]!.profile,
+    };
 };
 
 export const getContractDetailsByUri = async (
@@ -172,6 +186,7 @@ export const getContractTermsById = async (
     consenter: LCNProfile;
     contract: DbContractType;
     contractOwner: LCNProfile;
+    cumulativeUpdate?: DbContractType['latestUpdate'];
 } | null> => {
     const result = convertQueryResultToPropertiesObjectArray<{
         consenter: LCNProfile;
@@ -195,14 +210,28 @@ export const getContractTermsById = async (
             .run()
     );
 
-    return result.length > 0
-        ? {
-              consenter: result[0]!.consenter,
-              terms: inflateObject(result[0]!.terms),
-              contract: inflateObject(result[0]!.contract),
-              contractOwner: result[0]!.contractOwner,
-          }
-        : null;
+    if (!result.length) return null;
+    const terms = DbTermsValidator.parse(inflateObject(result[0]!.terms));
+    const contract = DbContractValidator.parse(inflateObject(result[0]!.contract));
+    const acceptedVersion = Number(terms.lastReviewedVersion ?? terms.consentedVersion ?? 1);
+    const currentVersion = Number(contract.currentVersion ?? 1);
+    const cumulativeUpdate =
+        ['live', 'needs_reconsent', 'suspended'].includes(terms.status) &&
+        acceptedVersion < currentVersion
+            ? await getCumulativeContractUpdateById(
+                  contract.id,
+                  acceptedVersion,
+                  terms.status,
+                  terms.reconsentDeadline
+              )
+            : undefined;
+    return {
+        consenter: result[0]!.consenter,
+        terms,
+        contract,
+        contractOwner: result[0]!.contractOwner,
+        ...(cumulativeUpdate ? { cumulativeUpdate } : {}),
+    };
 };
 
 export const getContractTermsByUri = async (
@@ -212,6 +241,7 @@ export const getContractTermsByUri = async (
     consenter: LCNProfile;
     contract: DbContractType;
     contractOwner: LCNProfile;
+    cumulativeUpdate?: DbContractType['latestUpdate'];
 } | null> => {
     return getContractTermsById(getIdFromUri(uri));
 };
@@ -262,10 +292,17 @@ export const getConsentFlowContractsForProfile = async (
             .run()
     );
 
-    return results.map(({ contract, boost }) => ({
-        contract: inflateObject(contract),
-        autoBoosts: boost.map(boost => getBoostUri(boost.properties.id, domain)),
-    }));
+    return results.map(({ contract, boost }) => {
+        const details = DbContractValidator.parse(inflateObject(contract));
+        return {
+            contract: {
+                ...details,
+                version: Number(details.currentVersion ?? 1),
+                status: details.status ?? 'active',
+            },
+            autoBoosts: boost.map(boost => getBoostUri(boost.properties.id, domain)),
+        };
+    });
 };
 
 export const getConsentedContractsForProfile = async (
@@ -283,10 +320,16 @@ export const getConsentedContractsForProfile = async (
         terms: DbTermsType;
         autoBoosts: string[];
         recipients: ProfileType[];
+        cumulativeUpdate?: ConsentFlowContractDetails['latestUpdate'];
     }[]
 > => {
+    const decodedCursor = decodeConsentedDataCursor(cursor);
     let query = new QueryBuilder(
-        new BindParam({ params: flattenObject({ terms: matchQuery }), cursor })
+        new BindParam({
+            params: flattenObject({ terms: matchQuery }),
+            cursorDate: decodedCursor?.updatedAt,
+            cursorId: decodedCursor?.id,
+        })
     )
         .match({
             related: [
@@ -301,7 +344,11 @@ export const getConsentedContractsForProfile = async (
         })
         .where('all(key IN keys($params) WHERE terms[key] = $params[key])');
 
-    query = cursor ? query.raw('AND terms.updatedAt > $cursor') : query;
+    query = decodedCursor
+        ? query.raw(
+              "AND (coalesce(terms.updatedAt, terms.createdAt, '') > $cursorDate OR (coalesce(terms.updatedAt, terms.createdAt, '') = $cursorDate AND terms.id > $cursorId))"
+          )
+        : query;
 
     query = query.with('contract, owner, terms').match({
         optional: true,
@@ -330,18 +377,54 @@ export const getConsentedContractsForProfile = async (
                 ],
             })
             .return('contract, owner, terms, boost, COLLECT(DISTINCT recipient) as recipients')
-            .orderBy('terms.updatedAt')
+            .orderBy("coalesce(terms.updatedAt, terms.createdAt, '') ASC, terms.id ASC")
             .limit(limit)
             .run()
     );
 
-    return results.map(result => ({
-        ...result,
-        recipients: result.recipients.map(recipient => recipient.properties),
-        contract: inflateObject(result.contract),
-        terms: inflateObject(result.terms),
-        autoBoosts: result.boost.map(boost => getBoostUri(boost.properties.id, domain)),
+    const parsedResults = results.map(result => ({
+        result,
+        details: DbContractValidator.parse(inflateObject(result.contract)),
+        terms: DbTermsValidator.parse(inflateObject(result.terms)),
     }));
+    const updates = await getCumulativeContractUpdates(
+        parsedResults.flatMap(({ details, terms }, index) => {
+            const acceptedVersion = Number(
+                terms.lastReviewedVersion ?? terms.consentedVersion ?? 1
+            );
+            const currentVersion = Number(details.currentVersion ?? 1);
+            if (
+                !['live', 'needs_reconsent', 'suspended'].includes(terms.status) ||
+                acceptedVersion >= currentVersion
+            )
+                return [];
+            return [
+                {
+                    key: String(index),
+                    contractId: details.id,
+                    acceptedVersion,
+                    status: terms.status,
+                    reconsentDeadline: terms.reconsentDeadline,
+                },
+            ];
+        })
+    );
+
+    return parsedResults.map(({ result, details, terms }, index) => {
+        const cumulativeUpdate = updates.get(String(index));
+        return {
+            ...result,
+            recipients: result.recipients.map(recipient => recipient.properties),
+            contract: {
+                ...details,
+                version: Number(details.currentVersion ?? 1),
+                status: details.status ?? 'active',
+            },
+            terms,
+            ...(cumulativeUpdate ? { cumulativeUpdate } : {}),
+            autoBoosts: result.boost.map(boost => getBoostUri(boost.properties.id, domain)),
+        };
+    });
 };
 
 const HOLDER_EXPORT_PAGE_SIZE = 100;
@@ -397,8 +480,11 @@ export const getHolderExportMetadataForProfile = async (
                 );
 
                 transactionCursor =
-                    transactionResults.length > transactionLimit
-                        ? transactionPage.at(-1)?.date
+                    transactionResults.length > transactionLimit && transactionPage.length
+                        ? encodeConsentedDataCursor(
+                              transactionPage.at(-1)!.date,
+                              transactionPage.at(-1)!.id
+                          )
                         : undefined;
 
                 if (!transactionCursor) break;
@@ -411,11 +497,21 @@ export const getHolderExportMetadataForProfile = async (
                 );
             }
 
+            const cumulativeUpdate = record.cumulativeUpdate;
             consentRecords.push({
+                ...(cumulativeUpdate ? { cumulativeUpdate } : {}),
                 termsUri: constructUri('terms', record.terms.id, domain),
                 status: record.terms.status,
+                consentedVersion: record.terms.consentedVersion!,
+                ...(record.terms.reconsentDeadline
+                    ? { reconsentDeadline: record.terms.reconsentDeadline }
+                    : {}),
+                ...(record.terms.newOptionsUntil
+                    ? { newOptionsUntil: record.terms.newOptionsUntil }
+                    : {}),
                 contract: {
                     contract: record.contract.contract,
+                    version: Number(record.contract.currentVersion ?? 1),
                     name: record.contract.name,
                     subtitle: record.contract.subtitle,
                     description: record.contract.description,
@@ -446,7 +542,13 @@ export const getHolderExportMetadataForProfile = async (
             });
         }
 
-        cursor = records.length > pageLimit ? page.at(-1)?.terms.updatedAt : undefined;
+        cursor =
+            records.length > pageLimit && page.length
+                ? encodeConsentedDataCursor(
+                      page.at(-1)!.terms.updatedAt ?? page.at(-1)!.terms.createdAt ?? '',
+                      page.at(-1)!.terms.id
+                  )
+                : undefined;
 
         if (!cursor) break;
     }
@@ -493,7 +595,7 @@ const projectConsentedData = (
     query: ConsentFlowDataQuery,
     now: number
 ): ConsentFlowContractData => ({
-    date: term.updatedAt!,
+    date: term.updatedAt ?? term.createdAt ?? '',
     credentials: {
         categories: mapValues(term.terms.read.credentials?.categories ?? {}, (category, name) =>
             term.terms.read.credentials.sharing !== false &&
@@ -511,11 +613,49 @@ const projectConsentedData = (
  * Do not cap scanned candidates: doing so would silently hide valid matches later in a page.
  * Expiry and negative category filters still require the authoritative JS permission check.
  */
+const CONSENT_DATA_CURSOR_PREFIX = 'v1.';
+
+const decodeConsentedDataCursor = (
+    cursor?: string
+): { updatedAt: string; id: string } | undefined => {
+    if (!cursor) return undefined;
+    try {
+        if (!cursor.startsWith(CONSENT_DATA_CURSOR_PREFIX)) throw new Error('Invalid cursor');
+        const encoded = cursor.slice(CONSENT_DATA_CURSOR_PREFIX.length);
+        const decoded = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+        if (
+            !Array.isArray(decoded) ||
+            decoded.length !== 2 ||
+            typeof decoded[0] !== 'string' ||
+            typeof decoded[1] !== 'string' ||
+            (!Number.isFinite(Date.parse(decoded[0])) && decoded[0] !== '') ||
+            !decoded[1] ||
+            Buffer.from(JSON.stringify(decoded), 'utf8').toString('base64url') !== encoded
+        )
+            throw new Error('Invalid cursor');
+        return { updatedAt: decoded[0], id: decoded[1] };
+    } catch {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid consent cursor' });
+    }
+};
+
+export const encodeConsentedDataCursor = (updatedAt: string, id: string): string =>
+    `${CONSENT_DATA_CURSOR_PREFIX}${Buffer.from(JSON.stringify([updatedAt, id]), 'utf8').toString(
+        'base64url'
+    )}`;
+
+type ConsentedDataPage = {
+    records: ConsentFlowContractData[];
+    hasMore: boolean;
+    nextCursor?: string;
+};
+
 const getPermittedContractData = async (
     viewerProfileId: string,
     { query = {}, limit, cursor }: { query?: ConsentFlowDataQuery; limit: number; cursor?: string },
     contractId?: string
-): Promise<ConsentFlowContractData[]> => {
+): Promise<ConsentedDataPage> => {
+    const decodedCursor = decodeConsentedDataCursor(cursor);
     const now = Date.now();
     const records: ConsentFlowContractData[] = [];
     const personalFilters = Object.entries(query.personal ?? {}).map(([name, required]) => ({
@@ -532,7 +672,12 @@ const getPermittedContractData = async (
     let offset = 0;
     while (records.length < limit) {
         const dbQuery = new QueryBuilder(
-            new BindParam({ cursor, personalFilters, sharedCategories })
+            new BindParam({
+                cursorDate: decodedCursor?.updatedAt,
+                cursorId: decodedCursor?.id,
+                personalFilters,
+                sharedCategories,
+            })
         )
             .match({
                 related: [
@@ -548,8 +693,11 @@ const getPermittedContractData = async (
                 ],
             })
             .where(
-                "(terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true))" +
-                    (cursor ? ' AND terms.updatedAt < $cursor' : '') +
+                "(coalesce(contract.status, 'active') <> 'retired') AND " +
+                    "(terms.status IN ['live', 'needs_reconsent', 'suspended'] OR (terms.status = 'consumed' AND terms.oneTime = true))" +
+                    (decodedCursor
+                        ? " AND (coalesce(terms.updatedAt, terms.createdAt, '') < $cursorDate OR (coalesce(terms.updatedAt, terms.createdAt, '') = $cursorDate AND terms.id > $cursorId))"
+                        : '') +
                     ' AND all(filter IN $personalFilters WHERE filter.required = (terms[filter.key] IS NOT NULL))' +
                     ' AND (size($sharedCategories) = 0 OR coalesce(terms.`terms.read.credentials.sharing`, true) = true)' +
                     ' AND all(category IN $sharedCategories WHERE terms[category.sharingKey] = true AND' +
@@ -561,47 +709,91 @@ const getPermittedContractData = async (
         }>(
             await dbQuery
                 .return('DISTINCT terms, contract')
-                .orderBy('terms.updatedAt DESC, terms.id ASC')
+                .orderBy("coalesce(terms.updatedAt, terms.createdAt, '') DESC, terms.id ASC")
                 .skip(offset)
                 .limit(batchSize)
                 .run()
         );
-        for (const result of results) {
+        const validResults = results.flatMap((result, index) => {
             const term = DbTermsValidator.safeParse(inflateObject(result.terms));
             const contract = DbContractValidator.safeParse(inflateObject(result.contract));
             if (
                 !term.success ||
                 !contract.success ||
                 !isConsentExpiryActive(term.data.expiresAt, now) ||
-                !isConsentExpiryActive(contract.data.expiresAt, now) ||
                 !matchesConsentedDataQuery(term.data, query, now)
             )
-                continue;
-            records.push(projectConsentedData(term.data, query, now));
-            if (records.length >= limit) return records;
+                return [];
+            return [{ term: term.data, contract: contract.data, index }];
+        });
+        const acceptedVersions = await getConsentFlowContractVersionRecords(
+            validResults.map(({ term, contract }) => ({
+                contractId: contract.id,
+                version: Number(term.consentedVersion ?? 1),
+            }))
+        );
+        const validByIndex = new Map(validResults.map(result => [result.index, result]));
+        for (let index = 0; index < results.length; index++) {
+            const raw = results[index]!;
+            const scanned = inflateObject(raw.terms) as FlatDbTermsType;
+            const candidate = validByIndex.get(index);
+            if (candidate) {
+                const { term, contract } = candidate;
+                const acceptedVersion = acceptedVersions.get(
+                    `${contract.id}:${Number(term.consentedVersion ?? 1)}`
+                );
+                if (
+                    acceptedVersion &&
+                    isConsentExpiryActive(acceptedVersion.expiresAt, now) &&
+                    areTermsValid(term.terms, acceptedVersion.contract)
+                )
+                    records.push(projectConsentedData(term, query, now));
+            }
+            if (records.length >= limit) {
+                const moreInBatch = index + 1 < results.length;
+                const hasMore = moreInBatch || results.length === batchSize;
+                return {
+                    records,
+                    hasMore,
+                    ...(records.length
+                        ? {
+                              nextCursor: encodeConsentedDataCursor(
+                                  scanned.updatedAt ?? scanned.createdAt ?? '',
+                                  scanned.id
+                              ),
+                          }
+                        : {}),
+                };
+            }
         }
         if (results.length < batchSize) break;
         offset += batchSize;
     }
-    return records;
+    return { records, hasMore: false };
 };
 
 export const getConsentedDataForProfile = async (
     profileId: string,
     options: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
-): Promise<ConsentFlowContractData[]> => getPermittedContractData(profileId, options);
+): Promise<ConsentedDataPage> => getPermittedContractData(profileId, options);
 
 export const getConsentedDataForContract = async (
     id: string,
     viewerProfileId: string,
     options: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
-): Promise<ConsentFlowContractData[]> => getPermittedContractData(viewerProfileId, options, id);
+): Promise<ConsentedDataPage> => getPermittedContractData(viewerProfileId, options, id);
 
 // Empty expiry values historically mean no expiry. Invalid nonempty values never authorize access.
 const isConsentExpiryActive = (expiresAt: string | undefined, now: number): boolean => {
     if (!expiresAt?.trim()) return true;
     const expiry = Date.parse(expiresAt);
     return Number.isFinite(expiry) && expiry > now;
+};
+
+export type ConsentedDataForDidPage = {
+    records: ConsentFlowContractDataForDid[];
+    hasMore: boolean;
+    nextCursor?: string;
 };
 
 export const getConsentedDataBetweenProfiles = async (
@@ -613,7 +805,8 @@ export const getConsentedDataBetweenProfiles = async (
         cursor,
         domain,
     }: { query?: ConsentFlowDataForDidQuery; limit: number; cursor?: string; domain: string }
-): Promise<ConsentFlowContractDataForDid[]> => {
+): Promise<ConsentedDataForDidPage> => {
+    const decodedCursor = decodeConsentedDataCursor(cursor);
     const { id, ...params } = query;
     const convertedContractQuery = id ? convertObjectRegExpToNeo4j({ id }) : {};
     const { whereClause: contractWhereClause, params: contractQueryParams } =
@@ -639,7 +832,8 @@ export const getConsentedDataBetweenProfiles = async (
     while (records.length < limit) {
         const _dbQuery = new QueryBuilder(
             new BindParam({
-                cursor,
+                cursorDate: decodedCursor?.updatedAt,
+                cursorId: decodedCursor?.id,
                 ...contractQueryParams,
             })
         ).match({
@@ -652,12 +846,9 @@ export const getConsentedDataBetweenProfiles = async (
                 '-[:CREATED_BY|SHARES_DATA_WITH]->',
                 { model: Profile, where: { profileId: ownerProfileId } },
             ],
-            // The following is custom Cypher logic that has the following behavior:
-            // If query key is true, ensure all resulting terms have that key
-            // If query key is false, ensure no resulting terms have that key
-            // If query key is not present, return all terms whether they have it or not
         }).where(`
-(terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true))
+(coalesce(contract.status, 'active') <> 'retired') AND
+(terms.status IN ['live', 'needs_reconsent', 'suspended'] OR (terms.status = 'consumed' AND terms.oneTime = true))
 AND ${contractWhereClause}
 `);
 
@@ -670,10 +861,11 @@ AND ${contractWhereClause}
             ],
         }).with(`terms, contract,
             coalesce(terms.createdAt, min(CASE WHEN transaction.action = 'consent' THEN transaction.date END)) AS createdAt,
-            coalesce(terms.updatedAt, max(transaction.date), terms.createdAt) AS date,
+            coalesce(terms.updatedAt, max(transaction.date), terms.createdAt, '') AS date,
             count(transaction.\`guardianApproval.guardianProfileId\`) > 0 AS hadGuardianApproval`);
 
-        if (cursor) dbQuery.where('date < $cursor');
+        if (decodedCursor)
+            dbQuery.where('(date < $cursorDate OR (date = $cursorDate AND terms.id > $cursorId))');
 
         const results = convertQueryResultToPropertiesObjectArray<{
             terms: FlatDbTermsType;
@@ -690,23 +882,38 @@ AND ${contractWhereClause}
                 .run()
         );
 
-        for (const result of results) {
-            const parsedTerm = DbTermsValidator.safeParse(inflateObject(result.terms));
-            const parsedContract = DbContractValidator.safeParse(inflateObject(result.contract));
-            if (!parsedTerm.success || !parsedContract.success) {
+        const validResults = results.flatMap(result => {
+            const term = DbTermsValidator.safeParse(inflateObject(result.terms));
+            const contract = DbContractValidator.safeParse(inflateObject(result.contract));
+            if (!term.success || !contract.success) {
                 // Never log stored consent data, identifiers, or raw validation errors.
                 console.warn('consented_data: invalid_stored_grant');
-                continue;
+                return [];
             }
-            const term = parsedTerm.data;
-            const contract = parsedContract.data;
             if (
-                !isConsentExpiryActive(term.expiresAt, now) ||
-                !isConsentExpiryActive(contract.expiresAt, now)
+                !isConsentExpiryActive(term.data.expiresAt, now) ||
+                !matchesConsentedDataQuery(term.data, params, now)
+            )
+                return [];
+            return [{ result, term: term.data, contract: contract.data }];
+        });
+        const acceptedVersions = await getConsentFlowContractVersionRecords(
+            validResults.map(({ term, contract }) => ({
+                contractId: contract.id,
+                version: Number(term.consentedVersion ?? 1),
+            }))
+        );
+        for (let resultIndex = 0; resultIndex < validResults.length; resultIndex++) {
+            const { result, term, contract } = validResults[resultIndex]!;
+            const acceptedVersion = acceptedVersions.get(
+                `${contract.id}:${Number(term.consentedVersion ?? 1)}`
+            );
+            if (
+                !acceptedVersion ||
+                !isConsentExpiryActive(acceptedVersion.expiresAt, now) ||
+                !areTermsValid(term.terms, acceptedVersion.contract)
             )
                 continue;
-
-            if (!matchesConsentedDataQuery(term, params, now)) continue;
 
             const parsedApproval = ConsentFlowGuardianApprovalValidator.safeParse(
                 term.guardianApproval
@@ -716,7 +923,7 @@ AND ${contractWhereClause}
                 requiresManagerApproval || !!term.guardianApproval || result.hadGuardianApproval;
             const approved =
                 !!approval &&
-                approval.contractUpdatedAt === contract.updatedAt &&
+                approval.contractUpdatedAt === acceptedVersion.createdAt &&
                 managers.some(
                     manager =>
                         manager.profileId === approval.guardianProfileId &&
@@ -728,10 +935,12 @@ AND ${contractWhereClause}
             records.push({
                 date: result.date,
                 ...(result.createdAt ? { createdAt: result.createdAt } : {}),
-                contractUpdatedAt: contract.updatedAt,
-                ...(contract.expiresAt?.trim() ? { contractExpiresAt: contract.expiresAt } : {}),
-                ...(contract.reasonForAccessing !== undefined
-                    ? { reasonForAccessing: contract.reasonForAccessing }
+                contractUpdatedAt: acceptedVersion.createdAt,
+                ...(acceptedVersion.expiresAt?.trim()
+                    ? { contractExpiresAt: acceptedVersion.expiresAt }
+                    : {}),
+                ...(acceptedVersion.reasonForAccessing !== undefined
+                    ? { reasonForAccessing: acceptedVersion.reasonForAccessing }
                     : {}),
                 guardian: { required, approved, ...(approval ? { approval } : {}) },
                 contractUri: constructUri('contract', contract.id, domain),
@@ -769,13 +978,23 @@ AND ${contractWhereClause}
                 ),
                 personal: term.terms.read.personal,
             });
-            if (records.length >= limit) return records;
+            if (records.length >= limit) {
+                const hasMore =
+                    resultIndex + 1 < validResults.length || results.length === batchSize;
+                return {
+                    records,
+                    hasMore,
+                    ...(records.length
+                        ? { nextCursor: encodeConsentedDataCursor(result.date, term.id) }
+                        : {}),
+                };
+            }
         }
         if (results.length < batchSize) break;
         offset += batchSize;
     }
 
-    return records;
+    return { records, hasMore: false };
 };
 
 export const getTransactionsForTerms = async (
@@ -792,7 +1011,14 @@ export const getTransactionsForTerms = async (
         convertedQuery as any
     );
 
-    const query = new QueryBuilder(new BindParam({ cursor, ...transactionQueryParams }))
+    const decodedCursor = decodeConsentedDataCursor(cursor);
+    const query = new QueryBuilder(
+        new BindParam({
+            cursorDate: decodedCursor?.updatedAt,
+            cursorId: decodedCursor?.id,
+            ...transactionQueryParams,
+        })
+    )
         .match({
             related: [
                 { identifier: 'transaction', model: ConsentFlowTransaction },
@@ -800,7 +1026,13 @@ export const getTransactionsForTerms = async (
                 { model: ConsentFlowTerms, where: { id: termsId } },
             ],
         })
-        .where(`${whereClause}${cursor ? ' AND transaction.date < $cursor' : ''}`)
+        .where(
+            `${whereClause}${
+                decodedCursor
+                    ? ' AND (transaction.date < $cursorDate OR (transaction.date = $cursorDate AND transaction.id < $cursorId))'
+                    : ''
+            }`
+        )
         .with('transaction')
         .match({
             optional: true,
@@ -818,7 +1050,7 @@ export const getTransactionsForTerms = async (
     }>(
         await query
             .return('DISTINCT transaction, [node in credentials | properties(node)] AS credentials')
-            .orderBy('transaction.date DESC')
+            .orderBy('transaction.date DESC, transaction.id DESC')
             .limit(limit)
             .run()
     );

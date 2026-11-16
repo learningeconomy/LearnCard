@@ -1,5 +1,35 @@
 # @learncard/ai-agent-service
 
+## 0.0.18
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.12
+    - @learncard/network-brain-client@2.7.2
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/didkit-plugin-node@0.3.12
+
+## 0.0.17
+
+### Patch Changes
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/init@2.5.11
+    - @learncard/didkit-plugin-node@0.3.11
+    - @learncard/network-brain-client@2.7.1
+
+## 0.0.16
+
+### Patch Changes
+
+- Updated dependencies [[`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a)]:
+    - @learncard/network-brain-client@2.7.0
+    - @learncard/init@2.5.10
+    - @learncard/didkit-plugin@1.10.10
+    - @learncard/didkit-plugin-node@0.3.10
+
 ## 0.0.15
 
 ### Patch Changes

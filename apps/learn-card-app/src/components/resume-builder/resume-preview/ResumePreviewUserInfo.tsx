@@ -8,6 +8,7 @@ import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
 import ResumePreviewInfoChip from './ResumePreviewInfoChip';
+import { ResumeSummaryField } from './ResumeSummaryField';
 import ResumeBuilderToggle from '../ResumeBuilderToggle';
 
 import {
@@ -190,26 +191,12 @@ const ResumePreviewUserInfo: React.FC<{
                     data-pdf-screen-only
                     className="mt-4 flex w-full flex-col items-start gap-3 sm:flex-row"
                 >
-                    <div className="w-full max-w-full rounded-xl bg-indigo-50 px-3 py-3 min-h-[96px] flex flex-col justify-between sm:flex-1">
-                        {readOnly ? (
-                            personalDetails.summary.trim() ? (
-                                <p className="w-full max-w-full wrap-break-word text-[13px] text-grayscale-900 leading-relaxed whitespace-pre-wrap">
-                                    {personalDetails.summary}
-                                </p>
-                            ) : null
-                        ) : (
-                            <textarea
-                                value={personalDetails.summary}
-                                onChange={event =>
-                                    updateField(UserInfoEnum.Summary, event.target.value)
-                                }
-                                placeholder={placeholderByKey[UserInfoEnum.Summary]}
-                                aria-label={placeholderByKey[UserInfoEnum.Summary]}
-                                rows={4}
-                                className="w-full max-w-full resize-none bg-transparent border-none outline-hidden text-[13px] text-grayscale-900 leading-relaxed placeholder:text-grayscale-500"
-                            />
-                        )}
-                    </div>
+                    <ResumeSummaryField
+                        value={personalDetails.summary}
+                        placeholder={placeholderByKey[UserInfoEnum.Summary]}
+                        readOnly={readOnly}
+                        onChange={value => updateField(UserInfoEnum.Summary, value)}
+                    />
                     {!readOnly && (
                         <div
                             data-pdf-hide

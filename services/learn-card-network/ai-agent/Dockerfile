@@ -1,12 +1,16 @@
 # syntax=docker/dockerfile:1.7
-FROM oven/bun:1.4.4 AS build
+# The build stage only emits a self-contained Bun bundle plus the DIDKit WASM,
+# both architecture-independent, so it runs on the builder's native platform.
+# Building it under QEMU for linux/arm64 made apt + `bun install` take ~4 min.
+# The arm64 runtime stage below still smoke-tests the bundle on the target arch.
+FROM --platform=$BUILDPLATFORM oven/bun:1.4.4 AS build
 
 ENV NODE_ENV=production \
     SKIP_DIDKIT_NAPI=1
 
 WORKDIR /app
 
-# ARM64 dependencies can fall back to node-gyp during the frozen install.
+# Some dependencies can fall back to node-gyp during the frozen install.
 # Keep the compiler toolchain in this build stage, out of the runtime image.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends python3 make g++ && \

@@ -67,7 +67,7 @@ const finalizeAcceptedDelivery = async (
             await transaction.rollback();
             return false;
         }
-        const instance = await storeCredential(issued, transaction);
+        const instance = await storeCredential(issued, transaction, sender.profileId);
         if (boost) await createBoostInstanceOfRelationship(instance, boost, transaction);
         await createSentCredentialRelationship(
             { type: 'profile', profile: sender },

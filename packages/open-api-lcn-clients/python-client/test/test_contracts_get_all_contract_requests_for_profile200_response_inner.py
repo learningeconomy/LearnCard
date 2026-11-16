@@ -35,6 +35,11 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
         model = ContractsGetAllContractRequestsForProfile200ResponseInner()
         if include_optional:
             return ContractsGetAllContractRequestsForProfile200ResponseInner(
+                request_id = '',
+                requested_by = '',
+                external_reference_id = '',
+                requested_at = '',
+                message = '',
                 contract = openapi_client.models.contracts_get_all_contract_requests_for_profile_200_response_inner_contract.contracts_getAllContractRequestsForProfile_200_response_inner_contract(
                     read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
                         anonymize = True, 
@@ -42,12 +47,14 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                             categories = {
                                 'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                     required = True, 
-                                    default_enabled = True, )
+                                    default_enabled = True, 
+                                    reason = '', )
                                 }, ), 
                         personal = {
                             'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                 required = True, 
-                                default_enabled = True, )
+                                default_enabled = True, 
+                                reason = '', )
                             }, ), 
                     write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write(
                         credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
@@ -57,7 +64,10 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                         personal = {
                             'key' : 
                             }, ), 
-                    uri = '', ),
+                    uri = '', 
+                    name = '', 
+                    image = '', 
+                    description = '', ),
                 profile = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                     profile_id = '012', 
                     display_name = '', 
@@ -71,6 +81,7 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                     email = '', 
                     image = '', 
                     hero_image = '', 
+                    linked_in_organization_id = '4', 
                     website_link = '', 
                     is_service_profile = True, 
                     type = '', 
@@ -107,12 +118,14 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                             categories = {
                                 'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                     required = True, 
-                                    default_enabled = True, )
+                                    default_enabled = True, 
+                                    reason = '', )
                                 }, ), 
                         personal = {
                             'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                 required = True, 
-                                default_enabled = True, )
+                                default_enabled = True, 
+                                reason = '', )
                             }, ), 
                     write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write(
                         credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
@@ -122,7 +135,10 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                         personal = {
                             'key' : 
                             }, ), 
-                    uri = '', ),
+                    uri = '', 
+                    name = '', 
+                    image = '', 
+                    description = '', ),
                 profile = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                     profile_id = '012', 
                     display_name = '', 
@@ -136,6 +152,7 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                     email = '', 
                     image = '', 
                     hero_image = '', 
+                    linked_in_organization_id = '4', 
                     website_link = '', 
                     is_service_profile = True, 
                     type = '', 

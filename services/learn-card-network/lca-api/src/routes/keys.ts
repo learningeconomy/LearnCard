@@ -14,12 +14,26 @@ import { t, openRoute, didRoute, didAndChallengeRoute, type Context } from '@rou
 import { getDeliveryService, getFrom } from '../services/delivery';
 import { getEscrowBlobStaleReason, notifyEscrowHoldEvent } from '../services/escrow-enclave';
 import { cancelHoldInEnclave } from '../services/escrow-enclave/cancellation';
-import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
+import {
+    verifyAuthToken,
+    getContactMethodFromUser,
+    AuthProviderType,
+    type VerifyTokenOptions,
+} from '@helpers/auth.helpers';
 import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.helpers';
 import { maskEmail } from '@helpers/maskEmail';
+import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
+import { deleteClassLinkDataForAccount } from '@helpers/classlinkDeletion.helpers';
+import { pinClassLinkIdentitiesToAccount } from '@helpers/classlinkContext.helpers';
 import cache from '@cache';
 import { setValidChallengeForDid } from '@cache/challenges';
 import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
+import {
+    isLegacyKeyArchiveEnabled,
+    releaseArchivedKey,
+    markArchivedKeyExhausted,
+    markArchivedKeyReleased,
+} from '@helpers/legacyKeyArchive.helpers';
 import {
     MAX_RECOVERY_OTP_ATTEMPTS,
     claimRecoveryOtpSendWindow,
@@ -32,6 +46,7 @@ import {
 } from '@cache/recoverySessions';
 import {
     findUserKeyByAuthProvider,
+    findUserKeyByDid,
     findUniqueUserKeyByVerifiedRecoveryEmail,
     findAuthShareByVersion,
     upsertUserKeyByAuthProvider,
@@ -42,6 +57,7 @@ import {
     setRecoveryEmailByAuthProvider,
     markUserKeyMigrationProvisionalByAuthProvider,
     activateUserKeyByAuthProvider,
+    isWeb3AuthLogin,
     purgeExpiredProvisionalMigrationByAuthProvider,
     getSssActivationState,
     hasActivatableRecoveryMethod,
@@ -181,15 +197,18 @@ const sendRecoveryKeyToEscrowRelay = async (
     }
 };
 
-export async function verifyAndGetContactMethod(input: {
-    authToken: string;
-    providerType: AuthProviderType;
-}): Promise<{
+export async function verifyAndGetContactMethod(
+    input: {
+        authToken: string;
+        providerType: AuthProviderType;
+    },
+    options: VerifyTokenOptions = {}
+): Promise<{
     user: { id: string; email?: string; phone?: string; providerType: string };
     contactMethod: ContactMethod;
     authProvider: AuthProviderMapping;
 }> {
-    const user = await verifyAuthToken(input.authToken, input.providerType);
+    const user = await verifyAuthToken(input.authToken, input.providerType, options);
 
     const contactMethod = getContactMethodFromUser(user);
     if (!contactMethod) {
@@ -292,6 +311,10 @@ const notifyIdentityRebind = async (
     if (userKey.contactMethod.type === 'email') recipients.add(userKey.contactMethod.value);
     if (userKey.recoveryEmail) recipients.add(userKey.recoveryEmail);
     if (newContactMethod.type === 'email') recipients.add(newContactMethod.value);
+    // Synthetic ClassLink account addresses are undeliverable; never mail them.
+    for (const recipient of recipients) {
+        if (isSyntheticEmail(recipient)) recipients.delete(recipient);
+    }
 
     const results = await Promise.allSettled(
         [...recipients].map(to =>
@@ -334,7 +357,8 @@ const getAccountSecuredRecipients = (userKey: MongoUserKeyType): string[] => {
 
     for (const candidate of candidates) {
         const normalized = candidate?.trim().toLowerCase();
-        if (normalized) recipients.add(normalized);
+        // Synthetic ClassLink account addresses are undeliverable; never mail them.
+        if (normalized && !isSyntheticEmail(normalized)) recipients.add(normalized);
     }
 
     return [...recipients];
@@ -659,6 +683,26 @@ export const keysRouter = t.router({
             })
         )
         .mutation(async ({ input, ctx }) => {
+            // Record the account's DID on its ClassLink identities before the token is spent
+            // and before the old login is removed, so a wallet later created with that uid
+            // cannot claim them. A failed pin throws here, leaving the token usable for a
+            // retry; it only fills an unset DID on the account's own identities.
+            const peeked = await peekRecoverySession(input.recoverySessionToken, 'rebind');
+            if (peeked && AuthProviderTypeValidator.safeParse(peeked.authProvider?.type).success) {
+                const peekedUserKey = await findUserKeyByAuthProvider(
+                    peeked.authProvider.type,
+                    peeked.authProvider.id
+                );
+                // Same ownership rule as assertDidOwner below; a mismatch is rejected there.
+                if (
+                    peekedUserKey?.primaryDid &&
+                    peekedUserKey.primaryDid === ctx.user.did &&
+                    input.primaryDid === ctx.user.did
+                ) {
+                    await pinClassLinkIdentitiesToAccount(peekedUserKey);
+                }
+            }
+
             const session = await requireRecoverySessionRecord(
                 input.recoverySessionToken,
                 'rebind'
@@ -720,6 +764,9 @@ export const keysRouter = t.router({
                     message: 'The new sign-in is already linked or recovery state changed.',
                 });
             }
+            // Fill-only re-pin for a ClassLink identity created on the old uid between the
+            // pin above and the commit. Best effort: the pin before the commit is the guarantee.
+            await pinClassLinkIdentitiesToAccount(oldUserKey).catch(() => undefined);
 
             // Notification is intentionally fail-open after the security update commits.
             void notifyIdentityRebind(
@@ -945,11 +992,16 @@ export const keysRouter = t.router({
                 });
             }
 
+            // Same as the rebind: pin ClassLink identities before other logins are unlinked
+            // (a failure throws and stops the revoke before anything is removed).
+            await pinClassLinkIdentitiesToAccount(userKey);
             const result = await revokeOtherDeviceShares({
                 authProvider,
                 primaryDid: input.primaryDid,
                 expectedShareVersion: input.expectedShareVersion,
                 authShare: encryptAuthShare(input.authShare, seed),
+                // Only unlink the logins whose ClassLink identities were just pinned.
+                expectedAuthProviders: userKey.authProviders,
             });
 
             if (!result) {
@@ -958,6 +1010,9 @@ export const keysRouter = t.router({
                     message: `Key material changed; please retry (current version ${userKey.shareVersion ?? 1}).`,
                 });
             }
+            // Fill-only re-pin for a ClassLink identity created on a removed uid between the pin
+            // above and the commit. Best effort: the pin before the commit is the guarantee.
+            await pinClassLinkIdentitiesToAccount(userKey).catch(() => undefined);
 
             // Clean-up only: pending holds already cannot release once the commit lands
             // (`/complete` needs a confirmed escrow at the hold's version, and escrow is
@@ -1058,6 +1113,12 @@ export const keysRouter = t.router({
                      */
                     priorEscrowEnrollment: z.boolean(),
                     sssActivationState: z.enum(['provisional', 'active']),
+                    /**
+                     * Web3Auth, signing in through this login, derives this account's
+                     * key (see `isWeb3AuthLogin`). Web3Auth-mode clients stop any
+                     * existing account where this is false.
+                     */
+                    isWeb3AuthLogin: z.boolean(),
                 })
                 .nullable()
         )
@@ -1133,6 +1194,7 @@ export const keysRouter = t.router({
                     ? maskEmail(userKey.recoveryEmail)
                     : null,
                 sssActivationState: getSssActivationState(userKey),
+                isWeb3AuthLogin: isWeb3AuthLogin(userKey, authProvider),
                 escrowOptedOut: Boolean(userKey.escrowOptedOutAt),
                 escrowPin: getEscrowPinStatus(userKey),
                 escrowStale: userKey.escrowBlob
@@ -1571,6 +1633,70 @@ export const keysRouter = t.router({
             return { success: true };
         }),
 
+    getArchivedKey: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/keys/archived-key',
+                tags: ['Keys'],
+                summary: 'Get archived legacy key for the account upgrade',
+            },
+        })
+        .input(AuthInputValidator)
+        .output(
+            z.object({
+                available: z.boolean(),
+                privateKey: z.string().optional(),
+                did: z.string().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            if (!isLegacyKeyArchiveEnabled()) return { available: false };
+            if (input.providerType !== 'firebase') return { available: false };
+            // Releases a durable key, so a revoked session or disabled user must not pass.
+            const { authProvider } = await verifyAndGetContactMethod(input, { checkRevoked: true });
+            const allowed = await Promise.all([
+                checkRateLimit(`archived-key:uid:${authProvider.id}`, 20, 3600),
+                // Without a resolved IP the per-login limit still applies; never pool callers.
+                ctx.clientIp
+                    ? checkRateLimit(`archived-key:ip:${ctx.clientIp}`, 200, 3600)
+                    : Promise.resolve(true),
+            ]);
+            if (allowed.some(value => !value)) {
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS',
+                    message: 'Too many attempts. Please try again later.',
+                });
+            }
+            const userKey = await findUserKeyByAuthProvider(authProvider.type, authProvider.id);
+            if (
+                userKey &&
+                userKey.keyProvider != null &&
+                userKey.keyProvider !== 'web3auth' &&
+                userKey.sssActivationState !== 'provisional'
+            ) {
+                return { available: false };
+            }
+            const released = await releaseArchivedKey(authProvider.id, userKey?.primaryDid);
+            if (!released) return { available: false };
+
+            // A removed login must not regain an upgraded identity through the no-record fallback.
+            const identity = await findUserKeyByDid(released.did);
+            if (
+                identity &&
+                ((identity.keyProvider === 'sss' &&
+                    identity.sssActivationState !== 'provisional') ||
+                    !identity.authProviders?.some(
+                        provider =>
+                            provider.type === authProvider.type && provider.id === authProvider.id
+                    ))
+            ) {
+                return { available: false };
+            }
+            await markArchivedKeyReleased(authProvider.id);
+            return { available: true, ...released };
+        }),
+
     activate: didAndChallengeRoute
         .meta({
             openapi: {
@@ -1610,6 +1736,8 @@ export const keysRouter = t.router({
                     message: 'The key record changed before activation. Please try again.',
                 });
             }
+
+            if (authProvider.type === 'firebase') await markArchivedKeyExhausted(authProvider.id);
 
             return { success: true };
         }),
@@ -1990,6 +2118,12 @@ export const keysRouter = t.router({
 
             assertDidOwner(userKey, ctx.user.did);
             await deleteUserKeyByAuthProvider(authProvider);
+
+            // Cascade the account's ClassLink data. Best effort: the key is already gone, and
+            // classlink.deleteMyData (idempotent, DID-keyed) can finish the job later.
+            await deleteClassLinkDataForAccount(userKey, { clearPrivacyLock: true }).catch(() =>
+                console.error('classlink.account_deletion.cascade_failed')
+            );
 
             return { success: true };
         }),

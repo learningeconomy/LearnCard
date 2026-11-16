@@ -51,7 +51,14 @@ vi.mock('../logging/logger', () => ({
     getLogger: () => ({ debug: vi.fn() }),
 }));
 
-import { clearLearnCardCache, getBespokeLearnCard, getSigningLearnCard } from './walletHelpers';
+import { QueryClient } from '@tanstack/react-query';
+import { requireCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
+import {
+    clearLearnCardCache,
+    getBespokeLearnCard,
+    getSigningLearnCard,
+    switchProfile,
+} from './walletHelpers';
 import { configureLocalDevelopmentNetwork } from '../config/localDevelopmentNetwork';
 
 const createWallet = () => {
@@ -172,5 +179,40 @@ describe('wallet promise caches', () => {
 
         await expect(getSigningLearnCard('seed')).resolves.toBe(wallet);
         expect(mocks.initLearnCard).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('switchProfile cache scoping', () => {
+    beforeEach(() => {
+        clearLearnCardCache();
+        vi.clearAllMocks();
+        mocks.networkUrl.mockReturnValue('https://network.example.com');
+        vi.mocked(requireCurrentUserPrivateKey).mockResolvedValue('seed' as never);
+    });
+
+    it('clears non-DID-scoped queries so the next profile never sees the previous one', async () => {
+        mocks.initLearnCard.mockResolvedValue(createWallet());
+        const queryClient = new QueryClient();
+        queryClient.setQueryData(['useGetPaginatedManagedBoostsQuery', ''], 'parent boosts');
+        queryClient.setQueryData(['paginatedBoostRecipients', 'boost:1', {}], 'parent recipients');
+        queryClient.setQueryData(['passportActivities', {}], 'parent activity');
+        queryClient.setQueryData(['useTermsTransactions', 'terms:1'], 'parent terms');
+        queryClient.setQueryData(
+            ['useGetCredentialList', 'did:web:child', 'Achievement'],
+            'scoped'
+        );
+
+        await switchProfile('did:web:child', queryClient);
+
+        expect(queryClient.getQueryData(['useGetPaginatedManagedBoostsQuery', ''])).toBeUndefined();
+        expect(
+            queryClient.getQueryData(['paginatedBoostRecipients', 'boost:1', {}])
+        ).toBeUndefined();
+        expect(queryClient.getQueryData(['passportActivities', {}])).toBeUndefined();
+        expect(queryClient.getQueryData(['useTermsTransactions', 'terms:1'])).toBeUndefined();
+        expect(
+            queryClient.getQueryData(['useGetCredentialList', 'did:web:child', 'Achievement'])
+        ).toBe('scoped');
+        queryClient.clear();
     });
 });

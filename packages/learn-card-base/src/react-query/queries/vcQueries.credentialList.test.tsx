@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import React from 'react';
-import { cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
 import {
     QueryClient,
     QueryClientProvider,
@@ -19,7 +19,10 @@ const host = vi.hoisted(() => ({
 }));
 vi.mock('learn-card-base', async () => ({
     useWallet: () => ({ initWallet: host.init }),
-    switchedProfileStore: { use: { switchedDid: () => host.switchedDid } },
+    switchedProfileStore: {
+        use: { switchedDid: () => host.switchedDid },
+        get: { switchedDid: () => host.switchedDid },
+    },
     CredentialCategoryEnum: (await import('../../types/boostAndCredentialMetadata'))
         .CredentialCategoryEnum,
     categoryMetadata: (await import('../../types/boostAndCredentialMetadata')).categoryMetadata,
@@ -28,7 +31,10 @@ vi.mock('learn-card-base', async () => ({
 }));
 vi.mock('../../stores/walletStore', () => ({
     walletStore: { use: { wallet: () => host.wallet } },
-    switchedProfileStore: { get: { switchedDid: () => host.switchedDid } },
+    switchedProfileStore: {
+        use: { switchedDid: () => host.switchedDid },
+        get: { switchedDid: () => host.switchedDid },
+    },
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getIssuanceDate: (vc: VC) => vc.issuanceDate,
@@ -50,10 +56,18 @@ vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
 vi.mock('learn-card-base/helpers/backfills', () => ({ useBackfillBoostUris: () => vi.fn() }));
 
 import { insertItem } from '../mutations/mutation.helpers';
-import { isInfiniteData, useGetCredentialList, useGetRecordForUri } from './vcQueries';
+import {
+    getPaginatedManagedBoostsKey,
+    isInfiniteData,
+    useGetCredentialCount,
+    useGetCredentialList,
+    useGetPaginatedManagedBoosts,
+    useGetPaginatedManagedBoostsQuery,
+    useGetRecordForUri,
+} from './vcQueries';
 
 const CATEGORY = 'Merit Badge';
-const KEY = ['useGetCredentialList', '', CATEGORY];
+const KEY = ['useGetCredentialList', '', CATEGORY, 'did:example:reader'];
 
 // Shapes a persisted cache entry can have that are truthy but not InfiniteData.
 const malformedEntries: Array<[string, unknown]> = [
@@ -68,13 +82,17 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
 );
 
-const makeWallet = () => {
+const makeWallet = (did = 'did:example:reader') => {
     const getPage = vi
         .fn()
         .mockResolvedValue({ records: [{ uri: 'uri-1' }], hasMore: true, cursor: 'next' });
     const get = vi.fn().mockResolvedValue([{ uri: 'uri-2' }]);
-    host.wallet = { index: { LearnCloud: { getPage, get } } } as unknown as BespokeLearnCard;
-    return { getPage, get };
+    const getCount = vi.fn().mockResolvedValue(7);
+    host.wallet = {
+        id: { did: () => did },
+        index: { LearnCloud: { getPage, get, getCount } },
+    } as unknown as BespokeLearnCard;
+    return { getPage, get, getCount };
 };
 
 beforeEach(() => {
@@ -150,6 +168,29 @@ describe('useGetRecordForUri', () => {
     });
 });
 
+describe('useGetCredentialCount', () => {
+    it('does not reuse or admit a late total from another root reader', async () => {
+        const first = makeWallet();
+        let resolveFirst!: (value: number) => void;
+        first.getCount.mockReturnValueOnce(
+            new Promise<number>(resolve => {
+                resolveFirst = resolve;
+            })
+        );
+        const { result, rerender } = renderHook(() => useGetCredentialCount(CATEGORY), { wrapper });
+        await waitFor(() => expect(first.getCount).toHaveBeenCalledOnce());
+
+        const second = makeWallet('did:example:other-reader');
+        second.getCount.mockResolvedValue(2);
+        rerender();
+        expect(result.current.data).toBeUndefined();
+        await waitFor(() => expect(result.current.data).toBe(2));
+
+        await act(async () => resolveFirst(99));
+        expect(result.current.data).toBe(2);
+    });
+});
+
 describe('insertItem', () => {
     it.each(malformedEntries)('replaces a malformed list on %s', async (_, malformed) => {
         client.setQueryData(KEY, malformed);
@@ -189,8 +230,94 @@ describe('insertItem on a list with more pages', () => {
                 records: [{ id: 'new', uri: 'uri-new' }, { uri: 'uri-1' }],
                 hasMore: true,
                 cursor: 'next',
+                walkedAt: expect.any(Number),
             },
         ]);
         expect(result.current.data?.pageParams).toHaveLength(1);
+    });
+});
+
+const MANAGED_KEY = getPaginatedManagedBoostsKey('achievement', '');
+
+describe('useGetPaginatedManagedBoosts with a malformed cache entry (LC-2352)', () => {
+    const makeBoostWallet = () => {
+        const getPaginatedBoosts = vi.fn().mockResolvedValue({
+            records: [{ uri: 'boost-1' }],
+            hasMore: false,
+        });
+        host.wallet = {
+            id: { did: () => 'did:example:reader' },
+            invoke: { getPaginatedBoosts },
+            index: { LearnCloud: { getPage: vi.fn(), get: vi.fn(), getCount: vi.fn() } },
+        } as unknown as BespokeLearnCard;
+        return { getPaginatedBoosts };
+    };
+
+    it.each(malformedEntries)('refetches instead of crashing on %s', async (_, data) => {
+        const { getPaginatedBoosts } = makeBoostWallet();
+        client.setQueryData(MANAGED_KEY, data);
+
+        const { result } = renderHook(
+            () => useGetPaginatedManagedBoosts('achievement', { limit: 12 }),
+            { wrapper }
+        );
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(getPaginatedBoosts).toHaveBeenCalledOnce();
+        expect(result.current.data?.pages).toHaveLength(1);
+        expect(result.current.data?.pages[0]?.records?.[0]?.uri).toBe('boost-1');
+    });
+});
+
+describe('useGetPaginatedManagedBoostsQuery with a malformed cache entry (LC-2352)', () => {
+    it('refetches instead of crashing on an empty object', async () => {
+        const getPaginatedBoosts = vi.fn().mockResolvedValue({
+            records: [{ uri: 'boost-1' }],
+            hasMore: false,
+        });
+        host.wallet = {
+            id: { did: () => 'did:example:reader' },
+            invoke: { getPaginatedBoosts },
+            index: { LearnCloud: { getPage: vi.fn(), get: vi.fn(), getCount: vi.fn() } },
+        } as unknown as BespokeLearnCard;
+
+        const key = ['useGetPaginatedManagedBoostsQuery', ''] as const;
+        client.setQueryData(key, {});
+
+        const { result } = renderHook(() => useGetPaginatedManagedBoostsQuery(undefined), {
+            wrapper,
+        });
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(getPaginatedBoosts).toHaveBeenCalledOnce();
+        expect(result.current.data?.pages[0]?.records?.[0]?.uri).toBe('boost-1');
+    });
+});
+
+/** Mirrors CredentialPage reading pages[0].records.length after a corrupt restore. */
+const ManagedBoostsCount: React.FC = () => {
+    const { data, isSuccess, isError } = useGetPaginatedManagedBoosts('achievement', { limit: 12 });
+    const count = data?.pages?.[0]?.records?.length ?? 0;
+    if (isError) return <div>error</div>;
+    if (!isSuccess) return <div>loading</div>;
+    return <div>count:{count}</div>;
+};
+
+describe('managed-boosts page recovery (LC-2352)', () => {
+    it('renders after a malformed persisted entry instead of throwing on .length', async () => {
+        const getPaginatedBoosts = vi.fn().mockResolvedValue({
+            records: [{ uri: 'boost-1' }],
+            hasMore: false,
+        });
+        host.wallet = {
+            id: { did: () => 'did:example:reader' },
+            invoke: { getPaginatedBoosts },
+            index: { LearnCloud: { getPage: vi.fn(), get: vi.fn(), getCount: vi.fn() } },
+        } as unknown as BespokeLearnCard;
+        client.setQueryData(MANAGED_KEY, {});
+
+        expect(() => render(<ManagedBoostsCount />, { wrapper })).not.toThrow();
+        await waitFor(() => expect(screen.getByText('count:1')).toBeTruthy());
+        expect(getPaginatedBoosts).toHaveBeenCalledOnce();
     });
 });

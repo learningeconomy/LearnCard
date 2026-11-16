@@ -149,6 +149,11 @@
             "options": {
                 "script": "test:boost-recipients"
             }
+        },
+        "build:integration-dependencies": {
+            "executor": "nx:noop",
+            "cache": false,
+            "dependsOn": ["^build"]
         }
     }
 }

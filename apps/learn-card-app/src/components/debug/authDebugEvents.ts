@@ -84,6 +84,8 @@ export const emitAuthDebugEvent = (
     }
 ): void => {
     if (!isDebugEnabled()) return;
+    // Fixed event types give the timing probe a shared clock without importing this module twice.
+    if (typeof performance.mark === 'function') performance.mark(`learncard:${type}`);
 
     const event: AuthDebugEvent = {
         id: `evt_${++eventIdCounter}_${Date.now()}`,

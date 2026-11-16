@@ -14,7 +14,11 @@ import { isAiProviderError, toAiErrorPayload } from '../ai/errors';
 import { sendConversationSummary, createTopicVCStructure } from '../services/awarding';
 import { getSuggestedTopics } from '../credentials/service';
 import { CredentialVerificationUnavailableError } from '../credentials/verification';
-import { beginCredentialContextRead, credentialFailureCodeOf } from '../credentials/batch';
+import {
+    beginCredentialContextRead,
+    credentialFailureCodeOf,
+    knownBadCredentialKind,
+} from '../credentials/batch';
 import { classifyLearnCardFailure, learnCardFailureLogFields } from '../learncard/errors';
 import { type DBMessage, db } from '../db';
 import { getLearnCard } from '../learncard';
@@ -629,6 +633,9 @@ const openCredentialContext = async (
     let highestStrongestScore: number | undefined;
     let highestAverageScore: number | undefined;
     let maxMatchCount: number | undefined;
+    // A live verify gave way: keep what loaded, but leave the context pending
+    // so the deferred search can still add what was skipped.
+    let incomplete = false;
     const searchPromise = searchCredentialContextsByTopic(topic, did, {
         limit: 5,
         expandQueries: false,
@@ -647,6 +654,9 @@ const openCredentialContext = async (
             highestStrongestScore = metrics.highestStrongestScore;
             highestAverageScore = metrics.highestAverageScore;
             maxMatchCount = metrics.maxMatchCount;
+        },
+        onIncomplete: () => {
+            incomplete = true;
         },
     })
         .then(contexts => ({ contexts }))
@@ -681,7 +691,7 @@ const openCredentialContext = async (
         }
 
         if ('contexts' in outcome) {
-            if (ingestionPendingAtSearch) {
+            if (ingestionPendingAtSearch || incomplete) {
                 if (outcome.contexts.length > 0) {
                     await db.storeThreadCredentials(did, threadId, outcome.contexts);
                     await db.setThreadCredentialContextState(threadId, did, 'pending', topic);
@@ -699,7 +709,7 @@ const openCredentialContext = async (
                     maxMatchCount,
                     embeddingTextsFromCache,
                     ingestionPhaseAtSearch,
-                    indexWarm: false,
+                    indexWarm: !ingestionPendingAtSearch,
                 });
                 sendCredentialContextStatus(
                     did,
@@ -826,7 +836,7 @@ const completeCredentialContext = async (
     }
 
     return asCredentialContextRead(did, () =>
-        deferCredentialContext(topic, did, threadId, startup, timing, ownerSignal)
+        deferCredentialContext(topic, did, threadId, opening.contexts, startup, timing, ownerSignal)
     );
 };
 
@@ -834,6 +844,7 @@ const deferCredentialContext = async (
     topic: string,
     did: string,
     threadId: string,
+    provisional: TopicSearchContext[],
     startup: StartupRequest,
     timing: RequestTiming,
     ownerSignal: AbortSignal
@@ -883,7 +894,7 @@ const deferCredentialContext = async (
 
         getBoundRemainingMs(bound);
         stage = 'search';
-        const contexts = await searchCredentialContextsByTopic(topic, did, {
+        const found = await searchCredentialContextsByTopic(topic, did, {
             limit: 5,
             expandQueries: detectProvider(TITLE_MODEL) !== 'google',
             signal: bound.signal,
@@ -898,9 +909,43 @@ const deferCredentialContext = async (
                 maxMatchCount = metrics.maxMatchCount;
             },
         });
+        // The deferred ranking stands. Provisional credentials it didn't return
+        // only fill what's left, in their own order: the two searches' scores
+        // aren't comparable. Each one needs consent read fresh here, at
+        // publication, and a stored row that still exists (checked with the write).
+        const foundUris = new Set(found.map(({ uri }) => uri));
+        let provisionalFill =
+            found.length < 5
+                ? provisional.filter(
+                      ({ uri }) =>
+                          !foundUris.has(uri) && knownBadCredentialKind(did, uri) !== 'invalid'
+                  )
+                : [];
+        if (provisionalFill.length) {
+            try {
+                const { loadActiveAiConsentData } = await import('../learncard/consent');
+                const { receipt } = await loadActiveAiConsentData(
+                    await getLearnCard(),
+                    did,
+                    'model-inference',
+                    { fresh: true, signal: bound.signal }
+                );
+                const permitted = new Set(receipt.credentialUris);
+                provisionalFill = provisionalFill.filter(({ uri }) => permitted.has(uri));
+            } catch {
+                // Withdrawn or unreadable: nothing from the provisional set.
+                provisionalFill = [];
+            }
+        }
         getBoundRemainingMs(bound);
         stage = 'store';
-        await db.storeThreadCredentials(did, threadId, contexts);
+        let contexts = found;
+        if (provisionalFill.length)
+            contexts = await db.storeThreadCredentials(did, threadId, found, {
+                provisional: provisionalFill,
+                limit: 5,
+            });
+        else await db.storeThreadCredentials(did, threadId, found);
         stage = 'complete';
 
         const status = contexts.length > 0 ? 'ready' : 'empty';

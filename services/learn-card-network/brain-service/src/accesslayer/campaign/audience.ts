@@ -1,8 +1,9 @@
 import { TRPCError } from '@trpc/server';
-import { int } from 'neo4j-driver';
+import { int, type ManagedTransaction } from 'neo4j-driver';
 import {
     CampaignAudienceSourceValidator,
     type CampaignAudienceSource,
+    type CampaignAudienceResult,
     type PaginatedCampaignAudience,
 } from '@learncard/types';
 
@@ -13,6 +14,7 @@ import { constructUri, getUriParts } from '@helpers/uri.helpers';
 import type { CampaignAudienceQuery } from 'types/campaign';
 import {
     assertCampaignEditable,
+    adultProfilePredicate,
     campaignAgePredicate,
     campaignTimeParams,
     lockCampaign,
@@ -91,11 +93,28 @@ export const buildCampaignAudienceQuery = (
     }
 };
 
+/** Resolve missing input identifiers separately from age-based exclusion. */
+const missingDids = async (
+    source: CampaignAudienceSource,
+    domain: string,
+    transaction?: ManagedTransaction
+): Promise<string[]> => {
+    if (source.type !== 'dids') return [];
+    const query = `UNWIND $dids AS did
+        OPTIONAL MATCH (p:Profile) WHERE p.did = did OR ($didWebPrefix + p.profileId) = did
+        WITH did, count(p) AS matches WHERE matches = 0 RETURN did`;
+    const params = { dids: [...new Set(source.dids)], didWebPrefix: getDidWeb(domain, '') };
+    const result = await (transaction
+        ? transaction.run(query, params)
+        : neogma.queryRunner.run(query, params));
+    return result.records.map(row => row.get('did') as string);
+};
+
 export const previewCampaignAudience = async (
     campaignId: string,
     source: CampaignAudienceSource,
     domain: string
-): Promise<number> => {
+): Promise<CampaignAudienceResult> => {
     await getCampaign(campaignId);
     const query = buildCampaignAudienceQuery(source, domain);
     const result = await traceDb('campaign:previewAudience', () =>
@@ -105,39 +124,52 @@ export const previewCampaignAudience = async (
             { ...query.params, campaignId, ...campaignTimeParams() }
         )
     );
-    return result.records[0]!.get('count').toNumber();
+    return {
+        count: result.records[0]!.get('count').toNumber(),
+        added: 0,
+        notFound: await missingDids(source, domain),
+    };
 };
 
 export const addCampaignAudience = async (
     campaignId: string,
     source: CampaignAudienceSource,
     domain: string
-): Promise<number> => {
+): Promise<CampaignAudienceResult> => {
     const query = buildCampaignAudienceQuery(source, domain);
     return withCampaignTransaction('campaign:addAudience', async transaction => {
         assertCampaignEditable(await lockCampaign(transaction, campaignId));
+        const notFound = await missingDids(source, domain, transaction);
         const result = await transaction.run(
             `${query.match} WITH DISTINCT p MATCH (c:Campaign {id: $campaignId})
              WHERE ${campaignAgePredicate}
+             OPTIONAL MATCH (p)-[existing:IN_CAMPAIGN_AUDIENCE]->(c)
+             WITH p, c, existing IS NULL AS isNew
              MERGE (p)-[audience:IN_CAMPAIGN_AUDIENCE]->(c)
              ON CREATE SET audience.addedAt = $now, audience.source = $source
-             RETURN count(p) AS count`,
+             RETURN count(p) AS count, sum(CASE WHEN isNew THEN 1 ELSE 0 END) AS added`,
             { ...query.params, campaignId, source: source.type, ...campaignTimeParams() }
         );
-        return result.records[0]!.get('count').toNumber();
+        return {
+            count: result.records[0]!.get('count').toNumber(),
+            added: result.records[0]!.get('added').toNumber(),
+            notFound,
+        };
     });
 };
 
 export const pageCampaignAudience = async (
     campaignId: string,
     cursor?: string,
-    limit = 100
+    limit = 100,
+    deliveryChannel?: 'email'
 ): Promise<PaginatedCampaignAudience> => {
     await getCampaign(campaignId);
     const result = await traceDb('campaign:pageAudience', () =>
         neogma.queryRunner.run(
             `MATCH (p:Profile)-[:IN_CAMPAIGN_AUDIENCE]->(c:Campaign {id: $campaignId})
          WHERE ($cursor IS NULL OR p.profileId > $cursor) AND ${campaignAgePredicate}
+         ${deliveryChannel === 'email' ? `AND ${adultProfilePredicate} AND coalesce(p.announcementEmailOptOut, false) = false` : ''}
          RETURN DISTINCT p.profileId AS profileId, p.did AS did ORDER BY profileId LIMIT $limit`,
             { campaignId, cursor: cursor ?? null, limit: int(limit + 1), ...campaignTimeParams() }
         )

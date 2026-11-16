@@ -192,7 +192,7 @@ describe('SmartResume consent before publication', () => {
         upload.mockRejectedValueOnce(new Error('Synthetic outage'));
         await expect(accept({ oneTime: true })).rejects.toMatchObject({ code: 'BAD_GATEWAY' });
         const result = await accept({ oneTime: true });
-        expect((await savedTerms())?.status).toBe('stale');
+        expect((await savedTerms())?.status).toBe('consumed');
         expect(
             (
                 await learner.clients.fullAuth.contracts.getTermsTransactionHistory({

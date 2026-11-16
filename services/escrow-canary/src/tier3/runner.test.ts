@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { EscrowRequestError } from '@learncard/sss-key-manager';
+import {
+    EscrowAuthorityTenantMismatchError,
+    EscrowEvidenceError,
+    EscrowRequestError,
+} from '@learncard/sss-key-manager';
 import { createMetrics } from '../metrics';
 import type { AccountSecret } from '../secrets';
 import { initPool, pause } from './admin';
@@ -13,7 +17,7 @@ import {
     type RunItem,
 } from './ledger';
 import type { RunnerConfig } from './config';
-import { runTier3 } from './runner';
+import { runTier3, tier3Reason } from './runner';
 import { baseConfig, codeEmail, emailFor, runnerConfig, World } from './test-fakes';
 import { DAY, HOUR, MINUTE, warningDeadlineMs, warningSendsAfterMs } from './timing';
 
@@ -153,7 +157,7 @@ describe('tier 3 daily run (fake clock)', () => {
     });
 
     it.each([
-        ['staging 10-minute hold', 10 * MINUTE],
+        ['10-minute (software enclave) hold', 10 * MINUTE],
         ['2-day hold', 2 * DAY],
     ])(
         'derives warning timing from the hold duration (%s): warns, releases, no false pages',
@@ -679,5 +683,17 @@ describe('tier 3 crash safety and duplicates', () => {
         expect(JSON.parse(h.lines.find(l => l.includes('"Tier3.Released":0'))!)).toMatchObject({
             Reason: 'release_interrupted',
         });
+    });
+});
+
+describe('tier3Reason', () => {
+    it('reports evidence failures, including an authority tenant mismatch', () => {
+        expect(tier3Reason(new EscrowEvidenceError())).toBe('evidence');
+        expect(tier3Reason(new EscrowAuthorityTenantMismatchError('learncard', 'vetpass'))).toBe(
+            'evidence'
+        );
+        const foreign = new Error('x');
+        foreign.name = 'EscrowEvidenceError';
+        expect(tier3Reason(foreign)).toBe('evidence');
     });
 });

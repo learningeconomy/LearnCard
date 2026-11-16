@@ -1,5 +1,27 @@
 # @learncard/escrow-relay-service
 
+## 0.1.11
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/sss-key-manager@0.3.2
+
+## 0.1.10
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/sss-key-manager@0.3.1
+
+## 0.1.9
+
+### Patch Changes
+
+- Updated dependencies [[`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2), [`4caf6a99c7a204d7f211737190d85eeebe736eb0`](https://github.com/learningeconomy/LearnCard/commit/4caf6a99c7a204d7f211737190d85eeebe736eb0), [`13e0809239cd73c5153a3ff82b268afb21b665b2`](https://github.com/learningeconomy/LearnCard/commit/13e0809239cd73c5153a3ff82b268afb21b665b2)]:
+    - @learncard/email-templates@1.3.0
+    - @learncard/sss-key-manager@0.3.0
+
 ## 0.1.8
 
 ### Patch Changes

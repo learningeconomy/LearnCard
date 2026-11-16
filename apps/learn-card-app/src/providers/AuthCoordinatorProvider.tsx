@@ -27,15 +27,18 @@ import React, {
     useRef,
 } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { clearClassLinkDisplayName } from '../auth/classlink/classlinkDisplayName';
 
 import type { LCNProfile } from '@learncard/types';
 import { getLocale } from '../paraglide/runtime.js';
 
+import { resolveMigrationKey } from './resolveMigrationKey';
 import {
     AuthCoordinatorProvider as BaseAuthCoordinatorProvider,
     useAuthCoordinator as useBaseAuthCoordinator,
     useAuthCoordinatorAutoSetup,
     useIdleAuthCleanup,
+    ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS,
     createWeb3AuthStrategy,
     registerKeyDerivationFactory,
     resolveKeyDerivation,
@@ -48,7 +51,8 @@ import {
     SocialLoginTypes,
     getAuthConfig,
     getSSSConfig,
-    getEscrowStrategyConfig,
+    getTenantEscrowStrategyConfig,
+    getEscrowEmailSender,
     getLogger,
     useToast,
     ToastTypeEnum,
@@ -57,6 +61,7 @@ import {
     type AuthUser,
     type DebugEventLevel,
     type KeyDerivationStrategy,
+    type EscrowEmailSenderNote,
     isEmailRelayConfigured,
 } from 'learn-card-base';
 
@@ -290,6 +295,19 @@ const DeviceLinkOverlay: React.FC<{
 // Firebase SDK directly.
 // ---------------------------------------------------------------------------
 
+/**
+ * Option A for apps sharing another tenant's escrow enclave (VetPass on LearnCard's): the
+ * enclave brands the emails it sends (code, recovery started, release warning) from its own
+ * authority tenant, so tell the user who they will hear from. `undefined` when the brands match.
+ */
+const resolveEscrowEmailSender = (): EscrowEmailSenderNote | undefined => {
+    try {
+        return getEscrowEmailSender(getResolvedTenantConfig(), getSSSConfig());
+    } catch {
+        return undefined;
+    }
+};
+
 registerKeyDerivationFactory('sss', () => {
     const sss = getSSSConfig();
 
@@ -297,24 +315,26 @@ registerKeyDerivationFactory('sss', () => {
     // lca-api are branded for the tenant the user signed up under.
     // The factory runs after bootstrapTenantConfig() resolves, but we
     // guard defensively for test / edge-case paths.
-    let tenantId: string | undefined;
+    let tenant: ReturnType<typeof getResolvedTenantConfig> | undefined;
 
     try {
-        tenantId = getResolvedTenantConfig().tenantId;
+        tenant = getResolvedTenantConfig();
     } catch {
-        tenantId = undefined;
+        tenant = undefined;
     }
 
     return createSSSStrategy({
         serverUrl: sss.serverUrl,
         escrowRelayPublicKey: sss.escrowRelayPublicKey,
         escrowRelayKeyId: sss.escrowRelayKeyId,
-        escrow: getEscrowStrategyConfig(sss),
+        // D21: seals `branding.name` as the enclave email brand when the tenant turns on
+        // `auth.sss.escrowSealEmailBrand`.
+        escrow: getTenantEscrowStrategyConfig(sss, tenant),
         onEscrowError: err => log.warn('escrow.enrollment.failed', err),
         onEscrowPinAutoCleared: event => log.warn('escrow.pin.auto_cleared', event),
         storage: createDeviceShareStorage(),
         enableEmailBackupShare: sss.enableEmailBackupShare,
-        tenantId,
+        tenantId: tenant?.tenantId,
     });
 });
 
@@ -322,11 +342,22 @@ registerKeyDerivationFactory('web3auth', () => {
     const { providerConfig } = getAuthConfig();
     const w3a = providerConfig.web3Auth ?? {};
 
+    let tenant: ReturnType<typeof getResolvedTenantConfig> | undefined;
+
+    try {
+        tenant = getResolvedTenantConfig();
+    } catch {
+        tenant = undefined;
+    }
+
     return createWeb3AuthStrategy({
         clientId: (w3a.clientId as string) ?? '',
         web3AuthNetwork: (w3a.network as string) ?? '',
         verifier: (w3a.verifierId as string) ?? '',
         chainConfig: w3a.rpcTarget ? { rpcTarget: w3a.rpcTarget as string } : undefined,
+        // An account that already signs in with SSS must never get a Web3Auth key:
+        // this build may predate the switch, or the config may have been rolled back.
+        accountLookup: { serverUrl: getSSSConfig().serverUrl, tenantId: tenant?.tenantId },
         isSessionCurrent: async uid => {
             const provider = resolveAuthProvider(getAuthConfig());
             if (!provider) return false;
@@ -923,6 +954,7 @@ const AuthSessionManager: React.FC<{
     // When coordinator enters needs_migration, extract the Web3Auth key and
     // inject it as migrationData so the auto-setup hook can trigger migration.
     const migrationKeyFetchedRef = useRef(false);
+    const migrationAttemptRef = useRef(0);
     const migrationCoordinatorRef = useRef(coordinator);
     migrationCoordinatorRef.current = coordinator;
 
@@ -936,6 +968,16 @@ const AuthSessionManager: React.FC<{
         if (migrationData.web3AuthKey) return;
 
         migrationKeyFetchedRef.current = true;
+        const migrationAttempt = migrationAttemptRef.current;
+        const migrationUserId = coordinator.state.authUser?.id;
+        const isCurrentAttempt = (): boolean => {
+            const latestState = migrationCoordinatorRef.current.state;
+            return (
+                migrationAttemptRef.current === migrationAttempt &&
+                latestState.status === 'needs_migration' &&
+                latestState.authUser?.id === migrationUserId
+            );
+        };
 
         // A provisional account re-derives only when nothing better is at hand:
         // a QR-delivered share is picked up from recovery, and a failed derivation
@@ -949,7 +991,7 @@ const AuthSessionManager: React.FC<{
 
         const fallBack = (): void => {
             const latestCoordinator = migrationCoordinatorRef.current;
-            if (canFallBack && latestCoordinator.state.status === 'needs_migration') {
+            if (canFallBack && isCurrentAttempt()) {
                 latestCoordinator.fallBackToRecovery();
             }
         };
@@ -957,8 +999,28 @@ const AuthSessionManager: React.FC<{
         const extractAndInject = async (): Promise<void> => {
             try {
                 emitAuthDebugEvent('web3auth:migration_key', 'Extracting account upgrade key');
-                const privateKey = await deriveLegacyMigrationKey(authProvider);
-                if (!privateKey) {
+                const resolved = await resolveMigrationKey({
+                    fetchArchivedKey: async () => {
+                        if (!coordinator.keyDerivation.fetchArchivedKey) return null;
+                        const token = await authProvider.getIdToken(true);
+                        return coordinator.keyDerivation.fetchArchivedKey(
+                            token,
+                            authProvider.getProviderType()
+                        );
+                    },
+                    deriveLegacyKey: () => deriveLegacyMigrationKey(authProvider),
+                    getExistingExpectedDid: () => {
+                        const latestState = migrationCoordinatorRef.current.state;
+                        const expectedDid =
+                            latestState.status === 'needs_migration'
+                                ? latestState.migrationData?.expectedDid
+                                : undefined;
+                        return typeof expectedDid === 'string' ? expectedDid : undefined;
+                    },
+                    isCurrentAttempt,
+                });
+                if (!resolved) {
+                    if (!isCurrentAttempt()) return;
                     emitAuthError('web3auth:migration_key', 'No sign-in session available');
                     fallBack();
                     return;
@@ -966,9 +1028,21 @@ const AuthSessionManager: React.FC<{
 
                 // A sign-out or completed upgrade may occur while this tab waits.
                 const latestCoordinator = migrationCoordinatorRef.current;
-                if (latestCoordinator.state.status !== 'needs_migration') return;
+                if (!isCurrentAttempt()) return;
+                if (resolved.source === 'archive') {
+                    emitAuthSuccess('web3auth:migration_key', 'Account upgrade key restored');
+                    latestCoordinator.setMigrationData({
+                        web3AuthKey: resolved.privateKey,
+                        source: 'archive',
+                        expectedDid: resolved.expectedDid,
+                    });
+                    return;
+                }
                 emitAuthSuccess('web3auth:migration_key', 'Account upgrade key extracted');
-                latestCoordinator.setMigrationData({ web3AuthKey: privateKey, source: 'derived' });
+                latestCoordinator.setMigrationData({
+                    web3AuthKey: resolved.privateKey,
+                    source: 'derived',
+                });
             } catch {
                 // Provider and Torus errors can embed credentials. Shared strategy
                 // diagnostics retain safe outcome metadata; never forward raw errors.
@@ -984,6 +1058,7 @@ const AuthSessionManager: React.FC<{
     useEffect(() => {
         if (coordinator.state.status !== 'needs_migration') {
             migrationKeyFetchedRef.current = false;
+            migrationAttemptRef.current += 1;
         }
     }, [coordinator.state.status]);
 
@@ -1357,6 +1432,13 @@ const AuthSessionManager: React.FC<{
         status === 'identity_recovery' ||
         status === 'identity_recovery_success';
 
+    // A stable note per open overlay: tenant config is fixed after bootstrap, so resolve it
+    // once when recovery opens instead of handing the modal a new object every render.
+    const escrowEmailSender = useMemo(
+        () => (showRecovery ? resolveEscrowEmailSender() : undefined),
+        [showRecovery]
+    );
+
     const showMigrationLoading = status === 'needs_migration' && !migrationStallVisible;
 
     const showStalledMigration =
@@ -1505,6 +1587,7 @@ const AuthSessionManager: React.FC<{
                                   ? coordinator.state.email
                                   : undefined,
                         ]),
+                        emailSender: escrowEmailSender,
                         onStart: coordinator.startEscrowRecovery,
                         onStatus: coordinator.getEscrowRecoveryStatus,
                         onConfirmCode: coordinator.confirmEscrowRecovery,
@@ -2345,6 +2428,7 @@ const AuthCoordinatorSessionProvider: React.FC<AppAuthCoordinatorProviderProps> 
     // Unified logout cleanup — called by the coordinator after its own signOut + clearLocalKeys.
     // Consolidates all app-specific store/DB/storage clearing in one place.
     const handleAppLogout = useCallback(async () => {
+        clearClassLinkDisplayName();
         try {
             await queryClient.clear();
         } catch (e) {
@@ -2436,6 +2520,13 @@ const AuthCoordinatorSessionProvider: React.FC<AppAuthCoordinatorProviderProps> 
             clearPendingEscrowRecovery={clearAllPendingEscrowRecovery}
             onDebugEvent={handleDebugEvent}
             legacyAccountThresholdMs={5 * 60 * 1000}
+            // The Web3Auth account lookup runs its own escalating deadlines and must
+            // fail visibly (retryable) rather than hit the coordinator's default.
+            serverStatusTimeoutMs={
+                authConfig.keyDerivation === 'web3auth'
+                    ? ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS
+                    : undefined
+            }
             verifyMigrationIdentity={verifyMigrationIdentity}
             // The coordinator is always enabled. To switch key derivation
             // backends, set VITE_KEY_DERIVATION=web3auth or VITE_KEY_DERIVATION=sss.

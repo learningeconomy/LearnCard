@@ -6,15 +6,17 @@ import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
-import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
+import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
+import { LDProvider } from 'launchdarkly-react-client-sdk';
 import { TenantConfigProvider, renderConfigurationError } from 'learn-card-base';
 import { registerExternalUrlOpener } from 'learn-card-base/helpers/externalUrlOpener';
 // Registers the Firebase provider initializer before bootstrapTenantConfig() runs it.
 import './auth/firebaseProviderInit';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 import { applyNativeViewportRestrictions } from './helpers/applyNativeViewportRestrictions';
-import { getLaunchDarklyConfig } from './constants/runtimeLaunchDarkly';
+import { getLaunchDarklyProviderProps } from './constants/runtimeLaunchDarkly';
 import App from './App';
+import { markStartupPhase } from './helpers/startupDiagnostics';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
@@ -31,13 +33,21 @@ applyNativeViewportRestrictions(Capacitor.isNativePlatform());
 // visible on desktop. Must run before React renders (sets CSS vars on <html>).
 installInsetSimulator();
 
+markStartupPhase('entry');
+
 (async () => {
+    // Native analytics can collect independently of React. On web this call
+    // would itself initialize analytics through getAnalytics().
+    if (Capacitor.isNativePlatform()) {
+        await FirebaseAnalytics.setEnabled({ enabled: false }).catch(() => undefined);
+    }
     // Route external links through Capacitor's in-app browser when running natively.
     registerExternalUrlOpener();
 
     // Resolve and bootstrap TenantConfig before anything else.
     // This sets up Firebase, auth config, network store, Sentry, and Userflow.
     const tenantConfig = await bootstrapTenantConfig();
+    markStartupPhase('tenant');
 
     // Seed the locale-detection cache so the LocaleProvider's sync initializer
     // can fall through to the tenant default when no localStorage entry exists
@@ -60,15 +70,7 @@ installInsetSimulator();
         }
     }
 
-    // DEV access to assistant routes/debug tools is handled by their consumers.
-    // An object bootstrap here makes the React SDK prefer those defaults over
-    // already-fetched flags, losing flags on fast initialization/page reloads.
-    const ldOptions = {
-        options: {
-            logger: basicLogger({ level: 'none' }),
-            diagnosticOptOut: true,
-        },
-    };
+    markStartupPhase('updater');
 
     // Splash screen is now hidden by AppRouter once auth state is settled
     // (capacitor.config.ts has launchAutoHide=false). This bridges the native
@@ -81,18 +83,17 @@ installInsetSimulator();
         }, 10_000);
     }
 
-    const LDProvider = await asyncWithLDProvider({
-        ...getLaunchDarklyConfig(),
-        ...ldOptions,
-    });
-
+    // LaunchDarkly does not gate the first render (see getLaunchDarklyProviderProps).
+    // The mark keeps startup timings on the same phase names.
+    markStartupPhase('flags');
     const container = document.getElementById('root');
     if (container) {
         const root = createRoot(container);
+        markStartupPhase('react');
         root.render(
             <TenantConfigProvider config={tenantConfig}>
                 <LocaleProvider>
-                    <LDProvider>
+                    <LDProvider {...getLaunchDarklyProviderProps()}>
                         <App />
                     </LDProvider>
                 </LocaleProvider>

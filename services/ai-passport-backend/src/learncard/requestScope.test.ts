@@ -2,8 +2,12 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 
 import { LearnCardTimeoutError } from './errors';
 import {
+    beginLearnCardPublication,
     boundLearnCardCall,
     clearConsentSnapshots,
+    getLearnCardRequestBudget,
+    getLearnCardRequestSignal,
+    joinLearnCardRequestScope,
     CONSENT_READ_REUSE_MAX_MS,
     CONSENT_SNAPSHOT_TTL_MS,
     prefetchConsentSnapshot,
@@ -107,6 +111,91 @@ describe('reuseRequestConsentRead', () => {
             now = CONSENT_READ_REUSE_MAX_MS + 1;
             expect(await reuseRequestConsentRead('did:a', read, { now: () => now })).toBe(2);
         });
+    });
+});
+
+describe('publication: fresh checks outside an AI call share the newest live read', () => {
+    test('after publication starts, checks outside an AI call share; AI-call checks read live', async () => {
+        let reads = 0;
+        const read = async () => ++reads;
+        await runWithLearnCardRequestScope({}, async () => {
+            expect(await reuseRequestConsentRead('did:a', read)).toBe(1);
+            // Before publication a fresh check reads live, as before.
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(2);
+            beginLearnCardPublication();
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(3);
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(3);
+            // A model dispatch check reads live, and later checks share that newer read.
+            await runInAiCallConsentScope(async () => {
+                expect(
+                    await reuseRequestConsentRead('did:a', read, {
+                        fresh: true,
+                        oncePerAiCall: true,
+                    })
+                ).toBe(4);
+                expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(5);
+            });
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(5);
+            // A plain read keeps the newest read, whatever its age.
+            expect(
+                await reuseRequestConsentRead('did:a', read, {
+                    now: () => performance.now() + CONSENT_READ_REUSE_MAX_MS * 10,
+                })
+            ).toBe(5);
+            // Opening publication again (before publishing) reads live once more.
+            beginLearnCardPublication();
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(6);
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(6);
+        });
+        expect(reads).toBe(6);
+    });
+
+    test('a withdrawal after the first publication read reaches later AI calls and the publication', async () => {
+        let state = 'active';
+        let reads = 0;
+        const read = async () => {
+            reads += 1;
+            return state;
+        };
+        await runWithLearnCardRequestScope({}, async () => {
+            beginLearnCardPublication();
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe('active');
+            // Withdrawn while a model call is pending.
+            state = 'withdrawn';
+            expect(
+                await runInAiCallConsentScope(() =>
+                    reuseRequestConsentRead('did:a', read, { fresh: true, oncePerAiCall: true })
+                )
+            ).toBe('withdrawn');
+            // Checks outside an AI call now share the newer read.
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe('withdrawn');
+            beginLearnCardPublication();
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe('withdrawn');
+        });
+        expect(reads).toBe(3);
+    });
+
+    test('a failed publication read is never reused', async () => {
+        let reads = 0;
+        const read = async () => {
+            reads += 1;
+            if (reads === 1) throw new Error('consent store down');
+            return reads;
+        };
+        await runWithLearnCardRequestScope({}, async () => {
+            beginLearnCardPublication();
+            await expect(reuseRequestConsentRead('did:a', read, { fresh: true })).rejects.toThrow();
+            expect(await reuseRequestConsentRead('did:a', read, { fresh: true })).toBe(2);
+        });
+    });
+
+    test('outside a request, every fresh check reads', async () => {
+        let reads = 0;
+        const read = async () => ++reads;
+        beginLearnCardPublication();
+        await reuseRequestConsentRead('did:a', read, { fresh: true });
+        await reuseRequestConsentRead('did:a', read, { fresh: true });
+        expect(reads).toBe(2);
     });
 });
 
@@ -298,5 +387,46 @@ describe('per-learner consent snapshot', () => {
         await prefetched;
         expect(await joined).toBe('prefetched');
         expect(calls).toBe(1);
+    });
+});
+
+describe('joinLearnCardRequestScope', () => {
+    test("a joined call keeps the request's deadline and adds its own abort", async () => {
+        const request = new AbortController();
+        const search = new AbortController();
+        const deadlineAt = performance.now() + 10_000;
+        await runWithLearnCardRequestScope(
+            { signal: request.signal, deadlineAt, budgetMs: 10_000, postBatchReserveMs: 4_000 },
+            () =>
+                joinLearnCardRequestScope({ signal: search.signal }, async () => {
+                    expect(getLearnCardRequestBudget()).toEqual({
+                        deadlineAt,
+                        budgetMs: 10_000,
+                        postBatchReserveMs: 4_000,
+                    });
+                    const signal = getLearnCardRequestSignal();
+                    search.abort();
+                    expect(signal?.aborted).toBe(true);
+                    expect(request.signal.aborted).toBe(false);
+                })
+        );
+    });
+
+    test('a joined call aborts with the request', async () => {
+        const request = new AbortController();
+        await runWithLearnCardRequestScope({ signal: request.signal }, () =>
+            joinLearnCardRequestScope({}, async () => {
+                request.abort();
+                expect(getLearnCardRequestSignal()?.aborted).toBe(true);
+            })
+        );
+    });
+
+    test('with no request it opens its own scope', () => {
+        const search = new AbortController();
+        joinLearnCardRequestScope({ signal: search.signal }, () => {
+            expect(getLearnCardRequestSignal()).toBe(search.signal);
+            expect(getLearnCardRequestBudget()).toBeUndefined();
+        });
     });
 });

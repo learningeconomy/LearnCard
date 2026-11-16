@@ -17,12 +17,12 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
 from typing import List
+from openapi_client.models.claim_hook_delete_claim_hook_request import ClaimHookDeleteClaimHookRequest
 from openapi_client.models.contact_methods_add_contact_method200_response import ContactMethodsAddContactMethod200Response
-from openapi_client.models.contact_methods_add_contact_method_request import ContactMethodsAddContactMethodRequest
 from openapi_client.models.contact_methods_create_contact_method_session200_response import ContactMethodsCreateContactMethodSession200Response
 from openapi_client.models.contact_methods_create_contact_method_session_request import ContactMethodsCreateContactMethodSessionRequest
+from openapi_client.models.contact_methods_create_contact_method_session_request_contact_method import ContactMethodsCreateContactMethodSessionRequestContactMethod
 from openapi_client.models.contact_methods_get_my_contact_methods200_response_inner import ContactMethodsGetMyContactMethods200ResponseInner
-from openapi_client.models.contact_methods_remove_contact_method_request import ContactMethodsRemoveContactMethodRequest
 from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
 from openapi_client.models.contact_methods_send_challenge_request import ContactMethodsSendChallengeRequest
 from openapi_client.models.contact_methods_set_primary_contact_method_request import ContactMethodsSetPrimaryContactMethodRequest
@@ -51,7 +51,7 @@ class ContactMethodsApi:
     @validate_call
     def contact_methods_add_contact_method(
         self,
-        contact_methods_add_contact_method_request: ContactMethodsAddContactMethodRequest,
+        contact_methods_create_contact_method_session_request_contact_method: ContactMethodsCreateContactMethodSessionRequestContactMethod,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -69,8 +69,8 @@ class ContactMethodsApi:
 
         Add a new contact method to the profile (requires verification)
 
-        :param contact_methods_add_contact_method_request: (required)
-        :type contact_methods_add_contact_method_request: ContactMethodsAddContactMethodRequest
+        :param contact_methods_create_contact_method_session_request_contact_method: (required)
+        :type contact_methods_create_contact_method_session_request_contact_method: ContactMethodsCreateContactMethodSessionRequestContactMethod
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -94,7 +94,7 @@ class ContactMethodsApi:
         """ # noqa: E501
 
         _param = self._contact_methods_add_contact_method_serialize(
-            contact_methods_add_contact_method_request=contact_methods_add_contact_method_request,
+            contact_methods_create_contact_method_session_request_contact_method=contact_methods_create_contact_method_session_request_contact_method,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -122,7 +122,7 @@ class ContactMethodsApi:
     @validate_call
     def contact_methods_add_contact_method_with_http_info(
         self,
-        contact_methods_add_contact_method_request: ContactMethodsAddContactMethodRequest,
+        contact_methods_create_contact_method_session_request_contact_method: ContactMethodsCreateContactMethodSessionRequestContactMethod,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -140,8 +140,8 @@ class ContactMethodsApi:
 
         Add a new contact method to the profile (requires verification)
 
-        :param contact_methods_add_contact_method_request: (required)
-        :type contact_methods_add_contact_method_request: ContactMethodsAddContactMethodRequest
+        :param contact_methods_create_contact_method_session_request_contact_method: (required)
+        :type contact_methods_create_contact_method_session_request_contact_method: ContactMethodsCreateContactMethodSessionRequestContactMethod
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -165,7 +165,7 @@ class ContactMethodsApi:
         """ # noqa: E501
 
         _param = self._contact_methods_add_contact_method_serialize(
-            contact_methods_add_contact_method_request=contact_methods_add_contact_method_request,
+            contact_methods_create_contact_method_session_request_contact_method=contact_methods_create_contact_method_session_request_contact_method,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -193,7 +193,7 @@ class ContactMethodsApi:
     @validate_call
     def contact_methods_add_contact_method_without_preload_content(
         self,
-        contact_methods_add_contact_method_request: ContactMethodsAddContactMethodRequest,
+        contact_methods_create_contact_method_session_request_contact_method: ContactMethodsCreateContactMethodSessionRequestContactMethod,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -211,8 +211,8 @@ class ContactMethodsApi:
 
         Add a new contact method to the profile (requires verification)
 
-        :param contact_methods_add_contact_method_request: (required)
-        :type contact_methods_add_contact_method_request: ContactMethodsAddContactMethodRequest
+        :param contact_methods_create_contact_method_session_request_contact_method: (required)
+        :type contact_methods_create_contact_method_session_request_contact_method: ContactMethodsCreateContactMethodSessionRequestContactMethod
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -236,7 +236,7 @@ class ContactMethodsApi:
         """ # noqa: E501
 
         _param = self._contact_methods_add_contact_method_serialize(
-            contact_methods_add_contact_method_request=contact_methods_add_contact_method_request,
+            contact_methods_create_contact_method_session_request_contact_method=contact_methods_create_contact_method_session_request_contact_method,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -259,7 +259,7 @@ class ContactMethodsApi:
 
     def _contact_methods_add_contact_method_serialize(
         self,
-        contact_methods_add_contact_method_request,
+        contact_methods_create_contact_method_session_request_contact_method,
         _request_auth,
         _content_type,
         _headers,
@@ -285,8 +285,8 @@ class ContactMethodsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if contact_methods_add_contact_method_request is not None:
-            _body_params = contact_methods_add_contact_method_request
+        if contact_methods_create_contact_method_session_request_contact_method is not None:
+            _body_params = contact_methods_create_contact_method_session_request_contact_method
 
 
         # set the HTTP header `Accept`
@@ -871,7 +871,7 @@ class ContactMethodsApi:
     @validate_call
     def contact_methods_remove_contact_method(
         self,
-        contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest,
+        claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -889,8 +889,8 @@ class ContactMethodsApi:
 
         Remove a contact method from the profile
 
-        :param contact_methods_remove_contact_method_request: (required)
-        :type contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest
+        :param claim_hook_delete_claim_hook_request: (required)
+        :type claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -914,7 +914,7 @@ class ContactMethodsApi:
         """ # noqa: E501
 
         _param = self._contact_methods_remove_contact_method_serialize(
-            contact_methods_remove_contact_method_request=contact_methods_remove_contact_method_request,
+            claim_hook_delete_claim_hook_request=claim_hook_delete_claim_hook_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -942,7 +942,7 @@ class ContactMethodsApi:
     @validate_call
     def contact_methods_remove_contact_method_with_http_info(
         self,
-        contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest,
+        claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -960,8 +960,8 @@ class ContactMethodsApi:
 
         Remove a contact method from the profile
 
-        :param contact_methods_remove_contact_method_request: (required)
-        :type contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest
+        :param claim_hook_delete_claim_hook_request: (required)
+        :type claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -985,7 +985,7 @@ class ContactMethodsApi:
         """ # noqa: E501
 
         _param = self._contact_methods_remove_contact_method_serialize(
-            contact_methods_remove_contact_method_request=contact_methods_remove_contact_method_request,
+            claim_hook_delete_claim_hook_request=claim_hook_delete_claim_hook_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1013,7 +1013,7 @@ class ContactMethodsApi:
     @validate_call
     def contact_methods_remove_contact_method_without_preload_content(
         self,
-        contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest,
+        claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1031,8 +1031,8 @@ class ContactMethodsApi:
 
         Remove a contact method from the profile
 
-        :param contact_methods_remove_contact_method_request: (required)
-        :type contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest
+        :param claim_hook_delete_claim_hook_request: (required)
+        :type claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1056,7 +1056,7 @@ class ContactMethodsApi:
         """ # noqa: E501
 
         _param = self._contact_methods_remove_contact_method_serialize(
-            contact_methods_remove_contact_method_request=contact_methods_remove_contact_method_request,
+            claim_hook_delete_claim_hook_request=claim_hook_delete_claim_hook_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1079,7 +1079,7 @@ class ContactMethodsApi:
 
     def _contact_methods_remove_contact_method_serialize(
         self,
-        contact_methods_remove_contact_method_request,
+        claim_hook_delete_claim_hook_request,
         _request_auth,
         _content_type,
         _headers,
@@ -1105,8 +1105,8 @@ class ContactMethodsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if contact_methods_remove_contact_method_request is not None:
-            _body_params = contact_methods_remove_contact_method_request
+        if claim_hook_delete_claim_hook_request is not None:
+            _body_params = claim_hook_delete_claim_hook_request
 
 
         # set the HTTP header `Accept`

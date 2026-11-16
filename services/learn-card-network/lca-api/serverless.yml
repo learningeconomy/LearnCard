@@ -7,7 +7,7 @@ frameworkVersion: '3'
 useDotenv: true
 
 plugins:
-    - ./scripts/node24-runtime.cjs
+    - ../../../scripts/serverless-node24-runtime.cjs
     - serverless-esbuild
     - serverless-domain-manager
     - serverless-certificate-creator
@@ -273,6 +273,12 @@ resources:
     # ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME (the enclave account's endpoint
     # service). TLS trust for the hostname is pinned in enclaveTrustAnchors.ts.
     Conditions:
+        LegacyKeyArchiveConfigured:
+            Fn::And:
+                - Fn::Not:
+                      - Fn::Equals: ['${env:LEGACY_KEY_ARCHIVE_BUCKET, ""}', '']
+                - Fn::Not:
+                      - Fn::Equals: ['${env:LEGACY_KEY_ARCHIVE_KMS_KEY_ARN, ""}', '']
         LcaDevBedrockGeneration:
             Fn::And:
                 - Fn::Equals:
@@ -292,6 +298,44 @@ resources:
             Value:
                 Ref: SeedMigrationLambdaFunction
     Resources:
+        LegacyKeyArchivePolicy:
+            Type: AWS::IAM::Policy
+            Condition: LegacyKeyArchiveConfigured
+            Properties:
+                PolicyName: lca-api-legacy-key-archive
+                Roles:
+                    - Ref: SigningAuthorityExecutionRole
+                PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                              - s3:GetObject
+                              - s3:GetObjectTagging
+                              - s3:PutObjectTagging
+                          Resource: 'arn:aws:s3:::${env:LEGACY_KEY_ARCHIVE_BUCKET, ""}/uid/*'
+                        # Lets S3 answer 404 (no archive) rather than 403 for missing objects.
+                        - Effect: Allow
+                          Action: s3:ListBucket
+                          Resource: 'arn:aws:s3:::${env:LEGACY_KEY_ARCHIVE_BUCKET, ""}'
+                        - Effect: Allow
+                          Action: kms:Decrypt
+                          Resource: '${env:LEGACY_KEY_ARCHIVE_KMS_KEY_ARN, ""}'
+                          Condition:
+                              StringEquals:
+                                  kms:EncryptionContext:purpose: lc-w3a-key-backup
+                        # Archive objects are SSE-KMS with the same key: GetObject needs S3 to
+                        # decrypt on our behalf, scoped to S3 and this bucket's context only.
+                        # The context is the bucket ARN with Bucket Keys, else the object ARN.
+                        - Effect: Allow
+                          Action: kms:Decrypt
+                          Resource: '${env:LEGACY_KEY_ARCHIVE_KMS_KEY_ARN, ""}'
+                          Condition:
+                              StringLike:
+                                  kms:ViaService: s3.*.amazonaws.com
+                                  kms:EncryptionContext:aws:s3:arn:
+                                      - 'arn:aws:s3:::${env:LEGACY_KEY_ARCHIVE_BUCKET, ""}'
+                                      - 'arn:aws:s3:::${env:LEGACY_KEY_ARCHIVE_BUCKET, ""}/uid/*'
         LcaDevBedrockGenerationPolicy:
             Type: AWS::IAM::Policy
             Condition: LcaDevBedrockGeneration

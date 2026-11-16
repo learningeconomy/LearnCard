@@ -9,8 +9,8 @@
  * Exports:
  *   resolveTenantConfig(hostname)  — full merged config for the hostname
  *   getTenantEntry(hostname)       — raw registry entry (tenantId, domain)
- *   getStageFromHostname(hostname) — e.g. "alpha" from "alpha.vetpass.app" (re-exported from stage.ts)
- *   getTenantOrigin(requestUrl)    — protocol + host, e.g. "https://alpha.vetpass.app"
+ *   getStageFromHostname(hostname) — e.g. "staging" from "staging.vetpass.app" (re-exported from stage.ts)
+ *   getTenantOrigin(requestUrl)    — protocol + host, e.g. "https://staging.vetpass.app"
  */
 
 import { deepMerge } from './deep-merge.ts';

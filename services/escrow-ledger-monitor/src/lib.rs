@@ -10,6 +10,10 @@ pub mod aws;
 pub enum Error {
     #[error("monitor unavailable")]
     Unavailable,
+    /// A fixed per-account or per-scan bound was exceeded. Coverage is incomplete;
+    /// this is never an integrity finding and never partial success.
+    #[error("monitor capacity exceeded")]
+    Capacity,
     #[error("invalid monitor configuration")]
     Configuration,
     #[error("ledger integrity failure")]
@@ -22,8 +26,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Metric {
     AuthorityIntegrityFailure,
     AuthorityCoverageFailure,
+    AuthorityAccountOverCapacity,
     AuthoritySweepCompleted,
     AuthorityRepeatedPinClear,
+    AuthorityRepeatedPinClearAccounts,
     LedgerIntegrityFailure,
     AuditMismatch,
     HoldCreated,
@@ -41,8 +47,10 @@ impl Metric {
         match self {
             Self::AuthorityIntegrityFailure => "AuthorityIntegrityFailure",
             Self::AuthorityCoverageFailure => "AuthorityCoverageFailure",
+            Self::AuthorityAccountOverCapacity => "AuthorityAccountOverCapacity",
             Self::AuthoritySweepCompleted => "AuthoritySweepCompleted",
             Self::AuthorityRepeatedPinClear => "AuthorityRepeatedPinClear",
+            Self::AuthorityRepeatedPinClearAccounts => "AuthorityRepeatedPinClearAccounts",
             Self::LedgerIntegrityFailure => "LedgerIntegrityFailure",
             Self::AuditMismatch => "AuditMismatch",
             Self::HoldCreated => "HoldCreated",
@@ -84,7 +92,10 @@ pub trait Backend: Send + Sync {
     async fn head(&self, chain: &str) -> Result<Option<Head>>;
     async fn chain(&self, chain: &str) -> Result<Vec<Vec<u8>>>;
     async fn audit(&self, key: &str) -> Result<Option<Vec<u8>>>;
+    /// Count datum of 1 (an event or alarm occurrence).
     async fn metric(&self, metric: Metric) -> Result<()>;
+    /// Count datum carrying an aggregate `value` (a per-sweep gauge, may be 0).
+    async fn gauge(&self, metric: Metric, value: u64) -> Result<()>;
     async fn notify(&self, metric: Metric) -> Result<()>;
 }
 

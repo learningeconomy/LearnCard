@@ -27,14 +27,12 @@ import {
     Code,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
-
-import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
-
 import type { CredentialTemplate } from '../types';
-import { getAppBaseUrl } from '../../../../config/bootstrapTenantConfig';
 import type { GuideState } from '../../guides/types';
 import { useTemplateDetails } from '../hooks/useTemplateDetails';
+import { getAppBaseUrl } from '../../../../config/bootstrapTenantConfig';
 import { CodeOutputPanel } from '../../guides/shared/CodeOutputPanel';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 
 interface ConsentFlowTestingTabProps {
     integration: LCNIntegration;
@@ -497,8 +495,10 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     ]
                                 }
                                 components={[
-                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
-                                    <code className="bg-gray-200 px-1 rounded-sm text-xs" />,
+                                    <code
+                                        key="callback-value"
+                                        className="bg-gray-200 px-1 rounded-sm text-xs"
+                                    />,
                                 ]}
                             />
                         </span>

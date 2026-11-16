@@ -60,9 +60,8 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressGeo(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -75,14 +74,12 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressGeo(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of type
         if self.type:
             _dict['type'] = self.type.to_dict()
-        # set to None if latitude (nullable) is None
-        # and model_fields_set contains the field
-        if self.latitude is None and "latitude" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.latitude is None and "latitude" in self.model_fields_set and "latitude" not in excluded_fields:
             _dict['latitude'] = None
 
-        # set to None if longitude (nullable) is None
-        # and model_fields_set contains the field
-        if self.longitude is None and "longitude" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.longitude is None and "longitude" in self.model_fields_set and "longitude" not in excluded_fields:
             _dict['longitude'] = None
 
         return _dict

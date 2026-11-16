@@ -4,6 +4,11 @@
         "updated": "2026-03-21T22:53:34.881Z"
     },
     "registry": {
+        "did:web:network.learncard.com:users:ministryoffood": {
+            "name": "Ministry of Food",
+            "location": "London, England, United Kingdom",
+            "url": "https://www.jamieoliver.com/jamies-world/ministry-of-food/"
+        },
         "did:web:network.learncard.com:users:learn-cloud": {
             "name": "LearnCloud AI",
             "location": "Washington, DC, USA",

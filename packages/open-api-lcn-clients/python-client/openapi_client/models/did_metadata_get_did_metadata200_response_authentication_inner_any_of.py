@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_send_request_template_credential_any_of_context_inner import BoostSendRequestTemplateCredentialAnyOfContextInner
+from openapi_client.models.boost_send_boost_request_credential_any_of_context_inner import BoostSendBoostRequestCredentialAnyOfContextInner
 from openapi_client.models.did_metadata_get_did_metadata200_response_authentication_inner_any_of_public_key_jwk import DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOfPublicKeyJwk
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,7 @@ class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf(BaseModel):
     """
     DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf
     """ # noqa: E501
-    context: Optional[List[BoostSendRequestTemplateCredentialAnyOfContextInner]] = Field(default=None, alias="@context")
+    context: Optional[List[BoostSendBoostRequestCredentialAnyOfContextInner]] = Field(default=None, alias="@context")
     id: StrictStr
     type: StrictStr
     controller: StrictStr
@@ -67,9 +67,8 @@ class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -107,7 +106,7 @@ class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOf(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "@context": [BoostSendRequestTemplateCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
+            "@context": [BoostSendBoostRequestCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
             "id": obj.get("id"),
             "type": obj.get("type"),
             "controller": obj.get("controller"),

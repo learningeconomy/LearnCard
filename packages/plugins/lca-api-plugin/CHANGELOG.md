@@ -1,5 +1,42 @@
 # lca-api-plugin
 
+## 2.1.1
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/lca-api-client@1.2.6
+    - @learncard/core@9.4.46
+    - @learncard/init@2.5.12
+    - @learncard/didkit-plugin@1.10.12
+
+## 2.1.0
+
+### Minor Changes
+
+- [#2025](https://github.com/learningeconomy/LearnCard/pull/2025) [`7f430656d7ff8c780b375f109e870dd07b5b9bf2`](https://github.com/learningeconomy/LearnCard/commit/7f430656d7ff8c780b375f109e870dd07b5b9bf2) Thanks [@Custard7](https://github.com/Custard7)! - Transcript issuers can say how long delivery will take. An accepted transcript request response may include `expectedInSeconds` or an ISO 8601 `expectedBy`; lca-api stores it and returns it as an additive `expectedBy` field from `transcripts.request` and `transcripts.getStatus` (and the plugin's `transcriptsRequest` / `transcriptsGetStatus` types). Malformed, past or more than 30-day estimates are ignored. The app keeps its live steps for estimates of 30 seconds or less, shows a progress bar with the time left for estimates up to 5 minutes, and for longer ones confirms the request and when to expect it. The School Connect card shows the same estimate and only offers manual recovery once the estimate has passed.
+
+### Patch Changes
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/types@6.1.0
+    - @learncard/init@2.5.11
+    - @learncard/lca-api-client@1.2.6
+    - @learncard/core@9.4.45
+
+## 2.0.16
+
+### Patch Changes
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+    - @learncard/lca-api-client@1.2.6
+    - @learncard/core@9.4.44
+    - @learncard/init@2.5.10
+    - @learncard/didkit-plugin@1.10.10
+
 ## 2.0.15
 
 ### Patch Changes

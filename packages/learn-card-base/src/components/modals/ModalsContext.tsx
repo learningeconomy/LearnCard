@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, useLayoutEffect } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createContext } from '../../helpers/context.helpers';
 
 import { useFreezelessImmer } from 'learn-card-base/hooks/useFreezelessImmer';
@@ -67,7 +67,10 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const currentId = useRef(0);
     const modalsRef = useRef(modals);
     const pendingUserCloseInstancesRef = useRef(new Set<string>());
-    modalsRef.current = modals;
+
+    useLayoutEffect(() => {
+        modalsRef.current = modals;
+    }, [modals]);
 
     // Disable dimmer for all but top modal
     useEffect(() => {

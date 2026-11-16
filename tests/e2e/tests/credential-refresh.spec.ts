@@ -96,8 +96,9 @@ type RefreshNotification = { type: string; data?: { metadata?: Record<string, un
 
 const getRefreshNotifications = async (wallet: LearnCard): Promise<RefreshNotification[]> => {
     const result = await wallet.invoke.getNotifications({ limit: 50 });
+    if (!result) throw new Error('Could not read refresh notifications');
 
-    return (result?.notifications ?? []).filter(
+    return result.notifications.filter(
         (notification: RefreshNotification) => notification.type === 'CREDENTIAL_REFRESHED'
     );
 };

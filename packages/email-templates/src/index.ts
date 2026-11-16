@@ -71,3 +71,5 @@ export type { ResolvedTenant, RequestHeaders } from './tenant-registry';
 // configure `jsx` in their tsconfig. Use renderEmail() / renderSms() instead.
 // For direct component access (testing / preview), import from
 // '@learncard/email-templates/src/templates' explicitly.
+
+export type { AnnouncementData } from './render';

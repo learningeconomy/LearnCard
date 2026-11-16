@@ -15,6 +15,7 @@ import { notificationCardStyles } from './types';
 import NotificationBoostCard from './NotificationBoostCard';
 import ConnectionRequestCard from './ConnectionRequestCard';
 import NotificationConsentFlowCard from './NotificationConsentFlowCard';
+import NotificationContractUpdateCard from './NotificationContractUpdateCard';
 import NotificationProfileApprovalCard from './NotificationProfileApprovalCard';
 import NotificationAppStoreCard from './NotificationAppStoreCard';
 import NotificationGuardianApprovalCard from './NotificationGuardianApprovalCard';
@@ -22,6 +23,7 @@ import NotificationGuardianOutcomeCard from './NotificationGuardianOutcomeCard';
 import NotificationAppNotificationCard from './NotificationAppNotificationCard';
 import NotificationCredentialStatusCard from './NotificationCredentialStatusCard';
 import NotificationCredentialRefreshedCard from './NotificationCredentialRefreshedCard';
+import { NotificationAnnouncementCard } from './NotificationAnnouncementCard';
 import { useQueryClient } from '@tanstack/react-query';
 
 type NotificationCardProps = {
@@ -46,6 +48,7 @@ export const NOTIFICATION_TYPES = {
     BOOST_RECEIVED: 'BOOST_RECEIVED',
     BOOST_ACCEPTED: 'BOOST_ACCEPTED',
     CONSENT_FLOW_TRANSACTION: 'CONSENT_FLOW_TRANSACTION',
+    CONSENT_FLOW_CONTRACT_UPDATED: 'CONSENT_FLOW_CONTRACT_UPDATED',
     CREDENTIAL_RECEIVED: 'CREDENTIAL_RECEIVED',
     PROFILE_PARENT_APPROVED: 'PROFILE_PARENT_APPROVED',
     APP_LISTING_SUBMITTED: 'APP_LISTING_SUBMITTED',
@@ -55,6 +58,7 @@ export const NOTIFICATION_TYPES = {
     GUARDIAN_APPROVED: 'GUARDIAN_APPROVED',
     GUARDIAN_REJECTED: 'GUARDIAN_REJECTED',
     APP_NOTIFICATION: 'APP_NOTIFICATION',
+    ANNOUNCEMENT: 'ANNOUNCEMENT',
     CREDENTIAL_REVOKED: 'CREDENTIAL_REVOKED',
     CREDENTIAL_SUSPENDED: 'CREDENTIAL_SUSPENDED',
     CREDENTIAL_UNSUSPENDED: 'CREDENTIAL_UNSUSPENDED',
@@ -64,7 +68,7 @@ export const NOTIFICATION_TYPES = {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('notification-card-container');
 
-export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
+const StandardNotificationCardContainer: React.FC<NotificationCardProps> = ({
     className,
     notification: _notification,
 }) => {
@@ -319,6 +323,14 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
             />
         );
     }
+    if (type === NOTIFICATION_TYPES.CONSENT_FLOW_CONTRACT_UPDATED) {
+        return (
+            <NotificationContractUpdateCard
+                notification={notification}
+                handleArchive={handleArchiveNotification}
+            />
+        );
+    }
     /* Someone made a transaction on your ConsentFlow contract (e.g. Accepted / updated) */
     if (type === NOTIFICATION_TYPES.CONSENT_FLOW_TRANSACTION) {
         const claimStatus = notification?.actionStatus === 'COMPLETED' ? true : false;
@@ -453,5 +465,14 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
         <div className={`${notificationCardStyles.fallbackShell} ${className}`}>Notification</div>
     );
 };
+
+// Announcements carry authored copy and may come from a service DID. Do not resolve a
+// sender profile or run the legacy sender-name substitution on their title/body.
+export const NotificationCardContainer: React.FC<NotificationCardProps> = props =>
+    props.notification.type === NOTIFICATION_TYPES.ANNOUNCEMENT ? (
+        <NotificationAnnouncementCard {...props} />
+    ) : (
+        <StandardNotificationCardContainer {...props} />
+    );
 
 export default NotificationCardContainer;

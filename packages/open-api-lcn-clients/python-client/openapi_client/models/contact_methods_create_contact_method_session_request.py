@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.contact_methods_create_contact_method_session_request_contact_method import ContactMethodsCreateContactMethodSessionRequestContactMethod
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,7 @@ class ContactMethodsCreateContactMethodSessionRequest(BaseModel):
     ContactMethodsCreateContactMethodSessionRequest
     """ # noqa: E501
     contact_method: ContactMethodsCreateContactMethodSessionRequestContactMethod = Field(alias="contactMethod")
-    otp_challenge: Optional[StrictStr] = Field(alias="otpChallenge")
+    otp_challenge: StrictStr = Field(alias="otpChallenge")
     __properties: ClassVar[List[str]] = ["contactMethod", "otpChallenge"]
 
     model_config = ConfigDict(
@@ -59,9 +59,8 @@ class ContactMethodsCreateContactMethodSessionRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -74,11 +73,6 @@ class ContactMethodsCreateContactMethodSessionRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of contact_method
         if self.contact_method:
             _dict['contactMethod'] = self.contact_method.to_dict()
-        # set to None if otp_challenge (nullable) is None
-        # and model_fields_set contains the field
-        if self.otp_challenge is None and "otp_challenge" in self.model_fields_set:
-            _dict['otpChallenge'] = None
-
         return _dict
 
     @classmethod

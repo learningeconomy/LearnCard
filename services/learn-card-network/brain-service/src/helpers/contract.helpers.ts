@@ -5,7 +5,11 @@ import {
 } from '@learncard/types';
 import cloneDeep from 'lodash/cloneDeep';
 
-export const areTermsValid = (terms: ConsentFlowTermsInput, contract: ConsentFlowContractInput) => {
+export const areTermsValid = (
+    terms: ConsentFlowTermsInput,
+    contractSnapshot: ConsentFlowContractInput
+) => {
+    const contract = contractSnapshot;
     const contractPersonalReadKeys = Object.keys(contract.read?.personal ?? {});
     const contractPersonalWriteKeys = Object.keys(contract.write?.personal ?? {});
     const contractCategoryReadKeys = Object.keys(contract.read?.credentials?.categories ?? {});

@@ -1,3 +1,4 @@
+import * as notificationTransport from '@helpers/notification-webhook-fetch.helpers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createServer } from 'node:http';
 import * as runtime from '@environment';
@@ -121,6 +122,46 @@ describe('generic contract requests and correlated events', () => {
             invoke: { getDidAuthVp: async () => 'synthetic.auth.jwt' },
         } as unknown as Awaited<ReturnType<typeof learnCardHelpers.getDidWebLearnCard>>);
     };
+
+    it('delivers required-update alert copy without exposing the owner’s private profile fields', async () => {
+        const uri = await create();
+        await accept(uri);
+        await neogma.queryRunner.run(
+            `MATCH (owner:Profile {profileId:$profileId})
+             SET owner.email = 'owner-private@example.com', owner.dob = '1990-01-01',
+                 owner.country = 'US', owner.notificationsWebhook = 'https://owner.example/private-hook'`,
+            { profileId: owner.profileId }
+        );
+        delivered = [];
+        const reason = 'We need transcripts to personalize your progress report.';
+        const result = await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: {
+                contract: {
+                    read: {
+                        credentials: {
+                            categories: {
+                                ...normalContract.read.credentials.categories,
+                                Transcript: { required: true },
+                            },
+                        },
+                    },
+                },
+            },
+            reason,
+        });
+        await flush(uri);
+        const notice = delivered.find(
+            notification =>
+                notification.type === 'CONSENT_FLOW_CONTRACT_UPDATED' &&
+                notification.to.profileId === learner.profileId
+        );
+        expect(notice?.message).toEqual({ title: result.preview.headline, body: reason });
+        expect(notice?.from.profileId).toBe(owner.profileId);
+        for (const key of ['email', 'dob', 'country', 'notificationsWebhook']) {
+            expect(notice!.from).not.toHaveProperty(key);
+        }
+    });
 
     it.each(['owner', 'writer', 'recipient'] as const)(
         'allows %s requests without granting writer data access',
@@ -859,12 +900,17 @@ describe('generic contract requests and correlated events', () => {
         const history = await learner.clients.fullAuth.contracts.getTermsTransactionHistory({
             uri: termsUri,
         });
-        expect(history.records.filter(t => t.action === 'consent')).toHaveLength(2);
+        expect(
+            history.records.filter(transaction => transaction.action === 'consent')
+        ).toHaveLength(1);
+        expect(
+            history.records.filter(transaction => transaction.action === 'reconsent')
+        ).toHaveLength(1);
         expect(history.records.every(t => t.referral?.requestId === original.requestId)).toBe(true);
         expect(
             delivered.find(n => n.to.profileId === owner.profileId)?.data?.metadata
         ).toMatchObject({
-            event: 'consent_created',
+            event: 'consent_updated',
             requestId: original.requestId,
             externalReferenceId: original.externalReferenceId,
         });
@@ -939,8 +985,8 @@ describe('generic contract requests and correlated events', () => {
         expect((await getContractTermsByUri(termsUri))!.terms.referral).toBeUndefined();
         expect(await status(uri)).toMatchObject({ status: 'pending' });
         delivered.length = 0;
-        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
-            uri: termsUri,
+        await learner.clients.fullAuth.contracts.consentToContract({
+            contractUri: uri,
             terms: normalFullTerms,
             expiresAt: '',
             audienceVersion: 2,
@@ -1052,7 +1098,7 @@ describe('generic contract requests and correlated events', () => {
         const uri = await create([]);
         useDirectWebhook(webhook);
         const fetchSpy = vi
-            .spyOn(globalThis, 'fetch')
+            .spyOn(notificationTransport, 'fetchNotificationWebhook')
             .mockResolvedValue(new Response('{}', { status: httpStatus ?? 200 }));
         await expect(accept(uri)).resolves.toMatchObject({ termsUri: expect.any(String) });
         const row = (await eventRows(uri))[0]!;
@@ -1075,7 +1121,7 @@ describe('generic contract requests and correlated events', () => {
             const uri = await create([]);
             useDirectWebhook('https://synthetic.example/events');
             const fetchSpy = vi
-                .spyOn(globalThis, 'fetch')
+                .spyOn(notificationTransport, 'fetchNotificationWebhook')
                 .mockResolvedValue(new Response('{"success":false}', { status: httpStatus }));
             await accept(uri);
             const row = (await eventRows(uri))[0]!;
@@ -1104,7 +1150,7 @@ describe('generic contract requests and correlated events', () => {
         vi.mocked(learnCardHelpers.getDidWebLearnCard).mockRejectedValue(
             new Error('synthetic signing outage')
         );
-        const fetchSpy = vi.spyOn(globalThis, 'fetch');
+        const fetchSpy = vi.spyOn(notificationTransport, 'fetchNotificationWebhook');
         await accept(uri);
         const row = (await eventRows(uri))[0]!;
         expect(row.get('deliveries')[0].properties.state).toBe('pending');
@@ -1411,7 +1457,7 @@ describe('generic contract requests and correlated events', () => {
         const queued = structuredClone(delivered[0]!);
         useDirectWebhook('https://synthetic.example/events');
         const fetchSpy = vi
-            .spyOn(globalThis, 'fetch')
+            .spyOn(notificationTransport, 'fetchNotificationWebhook')
             .mockResolvedValue(new Response('{}', { status: 403 }));
         await expect(deliverQueuedNotification(JSON.stringify(queued))).resolves.toBeUndefined();
         await expect(notifications.sendNotification(structuredClone(queued))).resolves.toBe(false);
@@ -1544,7 +1590,7 @@ describe('generic contract requests and correlated events', () => {
             vi.spyOn(runtime, 'getNotificationRuntimeEnvironment').mockReturnValue({
                 ...runtime.getNotificationRuntimeEnvironment(),
                 NODE_ENV: 'development',
-                IS_OFFLINE: false,
+                IS_OFFLINE: true,
                 NOTIFICATIONS_QUEUE_URL: undefined,
                 IS_E2E_TEST: false,
                 NOTIFICATIONS_SERVICE_WEBHOOK_URL: `http://127.0.0.1:${address.port}/events`,

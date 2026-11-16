@@ -36,6 +36,7 @@ class TestContractsSyncCredentialsToContractRequest(unittest.TestCase):
         if include_optional:
             return ContractsSyncCredentialsToContractRequest(
                 terms_uri = '',
+                audience_version = 0,
                 categories = {
                     'key' : [
                         ''

@@ -128,9 +128,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                     type="text"
                                     value={searchString}
                                     onChange={e =>
-                                        credentialSearchStore.set.searchStringWithMatch(
-                                            e.target.value
-                                        )
+                                        credentialSearchStore.set.searchString(e.target.value)
                                     }
                                     placeholder={`Browse ${
                                         activeTab === CredentialListTabEnum.Earned
@@ -146,9 +144,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                 {searchString && (
                                     <button
                                         className="absolute right-[10px] top-[12px]"
-                                        onClick={() =>
-                                            credentialSearchStore.set.searchStringWithMatch('')
-                                        }
+                                        onClick={() => credentialSearchStore.set.searchString('')}
                                     >
                                         <X className="h-[20px] w-[20px] text-white" />
                                     </button>

@@ -43,6 +43,7 @@ import { getCredentialRefresh, getCredentialRefreshHead } from '@accesslayer/cre
 import { testUnsignedBoost } from './helpers/send';
 import {
     claimRefreshSendIntent,
+    computeRefreshSendRequestDigest,
     getRefreshSendIntent,
     recordRefreshSendIntent,
     recordRefreshSendIntentPending,
@@ -215,7 +216,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
     });
 
     describe('inline refresh preparation', () => {
-        it('preserves metadata, permissions, skills and contract linkage, then reuses one boost', async () => {
+        it('keeps only public display and contract linkage, then reuses one boost', async () => {
             const contractUri = await issuer.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: {
                     read: { anonymize: false },
@@ -242,8 +243,10 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             });
             const baseline = await getMutationBaseline();
             const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                statusBinding: 'server',
                 recipient: HOLDER_PROFILE_ID,
                 contractUri,
+                display: { name: 'Prepared Boost', category: 'TestBoosts' },
                 template: {
                     credential: testUnsignedBoost,
                     name: 'Prepared Boost',
@@ -258,11 +261,12 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             expect(boost).toMatchObject({
                 name: 'Prepared Boost',
                 category: 'TestBoosts',
-                claimPermissions: { canView: true },
             });
+            expect(boost.boost.display).toEqual({ name: 'Prepared Boost', category: 'TestBoosts' });
+            expect(boost.boost.credentialSubject).toEqual({ id: 'did:example:123' });
             expect(
                 await issuer.clients.fullAuth.boost.getBoostSkills({ uri: prepared.boostUri })
-            ).toEqual([expect.objectContaining({ id: 'skill-1', proficiencyLevel: 2 })]);
+            ).toEqual([]);
             const links = await runQuery(
                 'MATCH (:ConsentFlowContract)-[:RELATED_TO]->(b:Boost {name: $name}) RETURN count(b) AS count',
                 { name: 'Prepared Boost' }
@@ -281,6 +285,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     {
                         ...testUnsignedBoost,
                         id: prepared.credentialId,
+                        credentialStatus: prepared.statusEntries,
                         issuer: issuer.learnCard.id.did(),
                         credentialSubject: {
                             ...testUnsignedBoost.credentialSubject,
@@ -390,6 +395,66 @@ describe('Unified send with managed refresh (LC-2198)', () => {
     });
 
     describe('whole-call idempotency (idempotencyKey)', () => {
+        it.each(['prepared', 'delivered', 'stale'] as const)(
+            'retries a %s intent across retained digest key rotation',
+            async state => {
+                try {
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'old-send-test-key');
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v1');
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
+                    const input = {
+                        recipient: HOLDER_PROFILE_ID,
+                        template: inlineTemplate(),
+                        idempotencyKey: `rotation-${state}`,
+                    };
+                    const send = () =>
+                        state === 'delivered'
+                            ? issuer.clients.fullAuth.boost.send({
+                                  ...input,
+                                  type: 'boost',
+                                  refresh: true,
+                              })
+                            : issuer.clients.fullAuth.boost.prepareRefreshableSend(input);
+                    const first = await send();
+                    const original = await getRefreshSendIntent(
+                        ISSUER_PROFILE_ID,
+                        input.idempotencyKey
+                    );
+                    if (state === 'stale') {
+                        await neogma.queryRunner.run(
+                            `MATCH (i:RefreshSendIntent {intentKey: $key})
+                             SET i.state = 'preparing', i.updatedAt = '2000-01-01T00:00:00.000Z'`,
+                            { key: original!.intentKey }
+                        );
+                    }
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'new-send-test-key');
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v2');
+                    vi.stubEnv(
+                        'CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS',
+                        JSON.stringify({ v1: 'old-send-test-key' })
+                    );
+                    expect(await send()).toEqual(first);
+                    const retried = await getRefreshSendIntent(
+                        ISSUER_PROFILE_ID,
+                        input.idempotencyKey
+                    );
+                    expect(retried?.requestDigest).toBe(original?.requestDigest);
+                    if (state === 'stale')
+                        expect(retried?.claimToken).not.toBe(original?.claimToken);
+                    await expect(
+                        issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                            ...input,
+                            recipient: OUTSIDER_PROFILE_ID,
+                        })
+                    ).rejects.toMatchObject({ code: 'CONFLICT' });
+                    vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
+                    await expect(send()).rejects.toMatchObject({ code: 'CONFLICT' });
+                } finally {
+                    vi.unstubAllEnvs();
+                }
+            }
+        );
+
         const inlineTemplate = () => ({
             credential: testUnsignedVcV2,
             name: 'Idempotent Refreshable',
@@ -468,6 +533,16 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             };
 
             const first = (await issuer.clients.fullAuth.boost.send(input)) as SendResult;
+            // Direct signing-authority requests retain their pre-capability fingerprint.
+            expect(
+                (await getRefreshSendIntent(ISSUER_PROFILE_ID, input.idempotencyKey))?.requestDigest
+            ).toBe(
+                computeRefreshSendRequestDigest({
+                    recipientProfileId: HOLDER_PROFILE_ID,
+                    holderDid: getDidWeb(DOMAIN, HOLDER_PROFILE_ID),
+                    template: input.template,
+                })
+            );
             const second = (await issuer.clients.fullAuth.boost.send(input)) as SendResult;
 
             expect(second).toEqual(first);
@@ -481,6 +556,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
         it('completes an abandoned prepare on the next send with the same key', async () => {
             // Simulates the SDK failing after prepare (e.g. while signing).
             const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                statusBinding: 'server',
                 recipient: HOLDER_PROFILE_ID,
                 template: inlineTemplate(),
                 idempotencyKey: 'abandoned-1',
@@ -491,6 +567,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     {
                         ...testUnsignedVcV2,
                         id: prepared.credentialId,
+                        credentialStatus: prepared.statusEntries,
                         issuer: issuer.learnCard.id.did(),
                         validFrom: '2026-01-01T00:00:00Z',
                         credentialSubject: { id: prepared.holderDid },
@@ -515,6 +592,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             // A later prepare with the same key reports the completed result: the SDK
             // returns it without signing again.
             const again = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                statusBinding: 'server',
                 recipient: HOLDER_PROFILE_ID,
                 template: inlineTemplate(),
                 idempotencyKey: 'abandoned-1',
@@ -527,6 +605,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             async materialChange => {
                 const idempotencyKey = 'pre-signed-post-bind';
                 const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    statusBinding: 'server',
                     recipient: HOLDER_PROFILE_ID,
                     template: inlineTemplate(),
                     idempotencyKey,
@@ -535,6 +614,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     {
                         ...testUnsignedVcV2,
                         id: prepared.credentialId,
+                        credentialStatus: prepared.statusEntries,
                         issuer: issuer.learnCard.id.did(),
                         validFrom: '2026-01-01T00:00:00Z',
                         credentialSubject: { id: prepared.holderDid },
@@ -614,7 +694,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             expect(await countNodes('CredentialActivity')).toBe(1);
         });
 
-        it.each(['templateData', 'integrationId', 'credentialId'] as const)(
+        it.each(['integrationId'] as const)(
             'rejects changing %s after preparation without allocating again',
             async field => {
                 const input = {
@@ -642,7 +722,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             }
         );
 
-        it.each(['templateData', 'integrationId'] as const)(
+        it.each(['integrationId'] as const)(
             'rejects changing %s after delivery instead of returning the old receipt',
             async field => {
                 const input = {
@@ -676,6 +756,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             const intent = await getRefreshSendIntent(ISSUER_PROFILE_ID, input.idempotencyKey);
             const receipt = first.refresh!;
             const reordered = {
+                statusManagement: first.statusManagement,
                 refresh: {
                     holderDid: receipt.holderDid,
                     issuerDid: receipt.issuerDid,
@@ -1346,10 +1427,257 @@ describe('Unified send with managed refresh (LC-2198)', () => {
 
             expect(result.refresh).toBeDefined();
             expect(storedTemplate.refreshService).toBeUndefined();
+            expect(storedTemplate.display).toEqual({});
+            expect(storedTemplate.name).toBe('Credential');
+            expect(storedTemplate.credentialSubject).toEqual({ id: 'did:example:123' });
+        });
+
+        it('rejects reusing a display-only anchor via templateUri without a template, instead of a server error', async () => {
+            const { signed } = await buildHandoff();
+            const created = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                signedCredential: signed,
+                refresh: true,
+            })) as SendResult;
+
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: created.uri,
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: expect.stringContaining(
+                    'Display-only anchors require an issuance credential'
+                ),
+            });
+        });
+
+        it('rejects reusing a display-only anchor in an ordinary signing-authority send', async () => {
+            const { signed } = await buildHandoff();
+            const created = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                signedCredential: signed,
+                refresh: true,
+            })) as SendResult;
+
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: created.uri,
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
     });
 
     describe('normal sends are unchanged', () => {
+        it.each([undefined, 'private-display-key'])(
+            'stores only public display for inline refresh (%s)',
+            async idempotencyKey => {
+                const display = {
+                    name: 'Public credential',
+                    category: 'Achievement',
+                    image: 'https://example.com/icon.png',
+                };
+                const result = await issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    template: { credential: testUnsignedBoost, name: 'PRIVATE TEMPLATE TITLE' },
+                    display,
+                    refresh: true,
+                    idempotencyKey,
+                });
+                const stored = await issuer.clients.fullAuth.boost.getBoost({ uri: result.uri });
+                expect(stored.name).toBe(display.name);
+                expect(stored.boost).toEqual({
+                    '@context': ['https://www.w3.org/ns/credentials/v2'],
+                    type: ['VerifiableCredential'],
+                    issuer: getDidWeb(DOMAIN, ISSUER_PROFILE_ID),
+                    credentialSubject: { id: 'did:example:123' },
+                    name: display.name,
+                    display,
+                    displayOnlyAnchor: true,
+                });
+                expect(JSON.stringify(stored)).not.toContain('PRIVATE TEMPLATE TITLE');
+                const signedInput = signingAuthorityMocks.issueCredential.mock.calls[0]?.[1];
+                expect(signedInput.name).toBe(testUnsignedBoost.name);
+            }
+        );
+
+        it.each([undefined, 'omit-display-fallback-key'])(
+            'ignores the inline template name but copies its category when display is omitted (%s)',
+            async idempotencyKey => {
+                const result = await issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    template: {
+                        credential: testUnsignedBoost,
+                        name: 'Private Template Name',
+                        category: 'TemplateCategory',
+                    },
+                    refresh: true,
+                    idempotencyKey,
+                });
+                const stored = await issuer.clients.fullAuth.boost.getBoost({ uri: result.uri });
+                expect(stored.name).toBe('Credential');
+                // Unlike name/image, category is copied from the template: consent-flow
+                // write authorization keys off a Boost's category and treats an absent
+                // one as unrestricted, so dropping it would let an unconsented category
+                // through as an unrestricted write merely by omitting `display`.
+                expect(stored.category).toBe('TemplateCategory');
+                expect(stored.boost).toEqual({
+                    '@context': ['https://www.w3.org/ns/credentials/v2'],
+                    type: ['VerifiableCredential'],
+                    issuer: getDidWeb(DOMAIN, ISSUER_PROFILE_ID),
+                    credentialSubject: { id: 'did:example:123' },
+                    name: 'Credential',
+                    display: { category: 'TemplateCategory' },
+                    displayOnlyAnchor: true,
+                });
+                expect(JSON.stringify(stored)).not.toContain('Private Template Name');
+            }
+        );
+
+        it.each([undefined, 'category-not-consented-key'])(
+            'never records a contract-flow write for an inline template category the recipient did not consent to (%s)',
+            async idempotencyKey => {
+                const contractUri =
+                    await issuer.clients.fullAuth.contracts.createConsentFlowContract({
+                        contract: {
+                            read: { anonymize: false },
+                            write: {
+                                credentials: {
+                                    categories: {
+                                        AllowedCategory: { required: false },
+                                        RestrictedCategory: { required: false },
+                                    },
+                                },
+                            },
+                        },
+                        name: 'Category Enforcement Contract',
+                        writers: [ISSUER_PROFILE_ID],
+                    });
+                await holder.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: {
+                        read: { anonymize: false },
+                        write: {
+                            credentials: {
+                                categories: { AllowedCategory: true, RestrictedCategory: false },
+                            },
+                        },
+                    },
+                });
+
+                const result = await issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    template: { credential: testUnsignedBoost, category: 'RestrictedCategory' },
+                    contractUri,
+                    refresh: true,
+                    idempotencyKey,
+                });
+
+                const stored = await issuer.clients.fullAuth.boost.getBoost({ uri: result.uri });
+                // The category must reach the anchor for the consent check below to see
+                // it at all; this is what the previous test already locks in.
+                expect(stored.category).toBe('RestrictedCategory');
+
+                const transactions = await runQuery(
+                    `MATCH (root:Credential {refreshVersionKey: $key})-[:ISSUED_VIA_TRANSACTION]->(:ConsentFlowTransaction)-[:IS_FOR]->(:ConsentFlowTerms)
+                     RETURN count(*) AS count`,
+                    { key: `${result.refresh!.refreshId}:1` }
+                );
+                expect(toNum(transactions.records[0].get('count'))).toBe(0);
+            }
+        );
+
+        it.each([undefined, 'category-consented-key'])(
+            'records a contract-flow write for an inline template category the recipient consented to (%s)',
+            async idempotencyKey => {
+                const contractUri =
+                    await issuer.clients.fullAuth.contracts.createConsentFlowContract({
+                        contract: {
+                            read: { anonymize: false },
+                            write: {
+                                credentials: {
+                                    categories: { AllowedCategory: { required: false } },
+                                },
+                            },
+                        },
+                        name: 'Category Enforcement Allowed Contract',
+                        writers: [ISSUER_PROFILE_ID],
+                    });
+                await holder.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: {
+                        read: { anonymize: false },
+                        write: { credentials: { categories: { AllowedCategory: true } } },
+                    },
+                });
+
+                const result = await issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    template: { credential: testUnsignedBoost, category: 'AllowedCategory' },
+                    contractUri,
+                    refresh: true,
+                    idempotencyKey,
+                });
+
+                const transactions = await runQuery(
+                    `MATCH (root:Credential {refreshVersionKey: $key})-[:ISSUED_VIA_TRANSACTION]->(:ConsentFlowTransaction)-[:IS_FOR]->(:ConsentFlowTerms)
+                     RETURN count(*) AS count`,
+                    { key: `${result.refresh!.refreshId}:1` }
+                );
+                expect(toNum(transactions.records[0].get('count'))).toBe(1);
+            }
+        );
+
+        it('allocates a suspension status entry for a delegated signing-authority send', async () => {
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                template: { credential: testUnsignedBoost },
+                refresh: true,
+                statusPurposes: ['suspension'],
+            })) as SendResult;
+
+            expect(result.refresh!.credentialStatus).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({ statusPurpose: 'revocation' }),
+                    expect.objectContaining({ statusPurpose: 'suspension' }),
+                ])
+            );
+        });
+
+        it('sends an ordinary reusable Boost whose credential has its own display object, not a display-only anchor', async () => {
+            // Real app-created BoostCredentials have their own top-level `display`
+            // object (appearance fields like backgroundColor); this must never be
+            // mistaken for the display-only anchor marker.
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: {
+                    ...testUnsignedBoost,
+                    display: { backgroundColor: '#fff', backgroundImage: '' },
+                },
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            expect(result.refresh).toBeDefined();
+            expect(result.credentialUri).toBeDefined();
+        });
+
         it('returns no refresh receipt when refresh is omitted', async () => {
             const boostUri = await issuer.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
@@ -1723,6 +2051,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                 type: ['VerifiableCredential'],
                 issuer: receipt.issuerDid,
                 name: 'SA Updated Badge',
+                credentialStatus: receipt.credentialStatus,
                 credentialSubject: { id: receipt.holderDid },
                 refreshService: receipt.refreshService,
                 validFrom: new Date().toISOString(),

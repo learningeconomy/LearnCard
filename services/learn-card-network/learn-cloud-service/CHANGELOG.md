@@ -1,5 +1,64 @@
 # @learncard/network-brain-service
 
+## 2.5.46
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/core@9.4.46
+    - @learncard/helpers@1.8.2
+    - @learncard/did-web-plugin@1.1.46
+    - @learncard/didkey-plugin@1.1.46
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/didkit-plugin-node@0.3.12
+    - @learncard/encryption-plugin@1.2.2
+    - @learncard/learn-card-plugin@1.2.46
+    - @learncard/vc-plugin@1.7.2
+    - @learncard/vc-templates-plugin@1.1.46
+    - @learncard/crypto-plugin@1.1.46
+    - @learncard/expiration-plugin@1.2.46
+
+## 2.5.45
+
+### Patch Changes
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/types@6.1.0
+    - @learncard/didkit-plugin-node@0.3.11
+    - @learncard/core@9.4.45
+    - @learncard/helpers@1.8.1
+    - @learncard/did-web-plugin@1.1.45
+    - @learncard/didkey-plugin@1.1.45
+    - @learncard/encryption-plugin@1.2.1
+    - @learncard/learn-card-plugin@1.2.45
+    - @learncard/vc-plugin@1.7.1
+    - @learncard/vc-templates-plugin@1.1.45
+    - @learncard/crypto-plugin@1.1.45
+    - @learncard/expiration-plugin@1.2.45
+
+## 2.5.44
+
+### Patch Changes
+
+- [#1872](https://github.com/learningeconomy/LearnCard/pull/1872) [`3505f004376543ff4c723921868e17c400142884`](https://github.com/learningeconomy/LearnCard/commit/3505f004376543ff4c723921868e17c400142884) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Install python3, make, and g++ during `bun install` in the shared monorepo Docker image so linux/arm64 builds can compile native addons (utf-8-validate) via node-gyp.
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`fea9c25ec76f230944a1713500a280c80e2a9cc0`](https://github.com/learningeconomy/LearnCard/commit/fea9c25ec76f230944a1713500a280c80e2a9cc0), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+    - @learncard/helpers@1.8.0
+    - @learncard/vc-plugin@1.7.0
+    - @learncard/encryption-plugin@1.2.0
+    - @learncard/core@9.4.44
+    - @learncard/did-web-plugin@1.1.44
+    - @learncard/didkey-plugin@1.1.44
+    - @learncard/didkit-plugin@1.10.10
+    - @learncard/didkit-plugin-node@0.3.10
+    - @learncard/learn-card-plugin@1.2.44
+    - @learncard/vc-templates-plugin@1.1.44
+    - @learncard/crypto-plugin@1.1.44
+    - @learncard/expiration-plugin@1.2.44
+
 ## 2.5.43
 
 ### Patch Changes

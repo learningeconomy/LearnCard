@@ -99,7 +99,7 @@ export const sendGenericContractRequest = async (
         } AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END
         AND NOT EXISTS {
             MATCH (target)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-            WHERE (terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true)) AND
+            WHERE (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true)) AND
                 CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END
         }
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(target)

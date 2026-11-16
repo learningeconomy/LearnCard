@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_type import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType
+from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,8 +29,8 @@ class DidMetadataAddDidMetadataRequestServiceInner(BaseModel):
     """
     DidMetadataAddDidMetadataRequestServiceInner
     """ # noqa: E501
-    id: Optional[StrictStr]
-    type: BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType
+    id: StrictStr
+    type: BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType
     service_endpoint: Optional[Annotated[List[Any], Field(min_length=1)]] = Field(alias="serviceEndpoint")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "type", "serviceEndpoint"]
@@ -62,9 +62,8 @@ class DidMetadataAddDidMetadataRequestServiceInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -84,14 +83,8 @@ class DidMetadataAddDidMetadataRequestServiceInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if service_endpoint (nullable) is None
-        # and model_fields_set contains the field
-        if self.service_endpoint is None and "service_endpoint" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.service_endpoint is None and "service_endpoint" in self.model_fields_set and "service_endpoint" not in excluded_fields:
             _dict['serviceEndpoint'] = None
 
         return _dict
@@ -107,7 +100,7 @@ class DidMetadataAddDidMetadataRequestServiceInner(BaseModel):
 
         _values = {
             "id": obj.get("id"),
-            "type": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
+            "type": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "serviceEndpoint": obj.get("serviceEndpoint")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

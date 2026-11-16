@@ -1721,11 +1721,12 @@ const handleRequestLearnerContextEvent = async (
 
         // Use the same live/expiry/category/guardian evaluation as data-provider reads.
         // An app's contract is not interchangeable with another app's or AI's grant.
-        const [consent] = await getConsentedDataBetweenProfiles(
+        const consentPage = await getConsentedDataBetweenProfiles(
             owner.profileId,
             profile.profileId,
             { query: { id: contractDetails.contract.id }, limit: 1, domain: ctx.domain }
         );
+        const consent = consentPage.records[0];
         if (
             !consent ||
             consent.status !== 'live' ||

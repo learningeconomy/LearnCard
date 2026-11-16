@@ -39,6 +39,28 @@ export const getCredentialRefresh = async (
     return CredentialRefreshRecordValidator.parse(normalizeProps(node.properties));
 };
 
+/** Select only a holder's actual root delivery; acceptance is deliberately not required. */
+export const getCredentialRefreshReceiptBinding = async (
+    rootId: string,
+    holderProfileId: string
+): Promise<CredentialRefreshRecord | null | undefined> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (sender)-[sent:CREDENTIAL_SENT {to: $holderProfileId}]->(root:Credential {id: $rootId})
+         WHERE (sender:Profile OR sender:AppStoreListing)
+           AND (sent.status IS NULL OR sent.status <> 'revoked')
+           AND NOT EXISTS {
+               MATCH (root)-[received:CREDENTIAL_RECEIVED]->(:Profile {profileId: $holderProfileId})
+               WHERE received.status = 'revoked'
+           }
+         OPTIONAL MATCH (refresh:CredentialRefresh)-[:ROOT]->(root)
+         RETURN refresh LIMIT 1`,
+        { rootId, holderProfileId }
+    );
+    if (!result.records.length) return undefined;
+    const node = result.records[0]?.get('refresh');
+    return node ? CredentialRefreshRecordValidator.parse(normalizeProps(node.properties)) : null;
+};
+
 /** Fetches the current head version node (including its holder-encrypted JWE payload). */
 export const getCredentialRefreshHead = async (
     refreshId: string
@@ -205,7 +227,8 @@ export const getCredentialRefreshVersionsForHolder = async (
              effectiveAt: version.effectiveAt,
              etag: version.etag,
              signingMode: version.signingMode,
-             updateSummary: version.updateSummary
+                       updateSummary: version.updateSummary,
+                       updateReason: version.updateReason
          } END) WHERE entry IS NOT NULL] AS metadata
          RETURN revoked, metadata`,
         { refreshId, beforeVersion: beforeVersion ?? null, limitPlusOne: int(limit + 1) }
@@ -279,7 +302,8 @@ export const getCredentialRefreshVersions = async (
              effectiveAt: version.effectiveAt,
              etag: version.etag,
              signingMode: version.signingMode,
-             updateSummary: version.updateSummary
+                       updateSummary: version.updateSummary,
+                       updateReason: version.updateReason
          } AS metadata
          ORDER BY version.version DESC
          LIMIT $limitPlusOne`,

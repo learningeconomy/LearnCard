@@ -57,6 +57,7 @@ if (publishRequestBody && !('$ref' in publishRequestBody)) {
             refreshId: properties.refreshId,
             notifyHolder: properties.notifyHolder!,
             updateSummary: properties.updateSummary!,
+            updateReason: properties.updateReason!,
             idempotencyKey: properties.idempotencyKey!,
         };
         // Generator 7.25.0 loses the OpenAPI 3.1 closed-object flag. Keep the
@@ -95,6 +96,26 @@ if (publishRequestBody && !('$ref' in publishRequestBody)) {
         delete publishSchema.required;
     }
 }
+
+// Preserve the existing Python allocation identity contract without changing
+// None/default serialization for unrelated optional request fields.
+const allocationBody = openApiDocument.paths?.['/credential-refresh/allocate']?.post?.requestBody;
+const allocationSchema =
+    allocationBody && !('$ref' in allocationBody)
+        ? allocationBody.content?.['application/json']?.schema
+        : undefined;
+const allocationHolder =
+    allocationSchema && !('$ref' in allocationSchema)
+        ? allocationSchema.properties?.holder
+        : undefined;
+const allocationProfile =
+    allocationHolder && !('$ref' in allocationHolder)
+        ? allocationHolder.properties?.profileId
+        : undefined;
+if (!allocationProfile || '$ref' in allocationProfile) {
+    throw new Error('Managed refresh allocation schema is missing its holder profile input');
+}
+Object.assign(allocationProfile, { 'x-python-preserve-explicit-null': true });
 
 const SCALAR_HTML = `<!DOCTYPE html>
 <html lang="en">

@@ -2,6 +2,11 @@
 <html lang="en">
     <head>
         <meta charset="utf-8" />
+        <!-- Ionic currently inserts runtime styles before the first style element.
+             Keep them before app styles without depending on SQLite initialization.
+             This runtime detail is guarded by tests/ionic-style-order.mocked.spec.ts;
+             recheck the production CSS contract when upgrading Ionic. -->
+        <style id="ionic-runtime-style-anchor"></style>
         <title>LearnCard</title>
 
         <base href="/" />

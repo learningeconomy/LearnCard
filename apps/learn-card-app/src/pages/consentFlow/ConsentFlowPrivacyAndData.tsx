@@ -28,13 +28,12 @@ import { curriedStateSlice } from '@learncard/helpers';
 import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
 import {
-    getPersonalEntry,
     getAllCredentialUrisForCategory,
     getPrivacyAndDataInfo,
-    isSupportedPersonalField,
     isVerifiableDataContractCategory,
     VERIFIABLE_DATA_CONTRACT_CATEGORIES,
 } from '../../helpers/contract.helpers';
+import { getPersonalEntry, isSupportedPersonalField } from '../../helpers/consentPersonalFields';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
 type ConsentFlowPrivacyAndDataProps = {

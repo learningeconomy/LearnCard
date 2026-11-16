@@ -70,8 +70,8 @@ describe('resolveTenantFromRequest', () => {
             expect(result.resolvedVia).toBe('origin');
         });
 
-        it('resolves vetpass from alpha.vetpass.app', () => {
-            const headers: RequestHeaders = { origin: 'https://alpha.vetpass.app' };
+        it('resolves an unlisted vetpass subdomain via its parent domain', () => {
+            const headers: RequestHeaders = { origin: 'https://preview.vetpass.app' };
             const result = resolveTenantFromRequest(headers);
 
             expect(result.id).toBe('vetpass');

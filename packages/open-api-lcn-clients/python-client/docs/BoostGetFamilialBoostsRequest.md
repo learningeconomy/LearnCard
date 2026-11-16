@@ -8,7 +8,7 @@
 | **cursor**                  | **str**                                                                                                                                         |             | [optional]                    |
 | **sort**                    | **str**                                                                                                                                         |             | [optional]                    |
 | **uri**                     | **str**                                                                                                                                         |             |
-| **query**                   | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md)                                                                             |             | [optional]                    |
+| **query**                   | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md)                                                                                 |             | [optional]                    |
 | **parent_generations**      | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |             | [optional]                    |
 | **child_generations**       | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |             | [optional]                    |
 | **include_extended_family** | **bool**                                                                                                                                        |             | [optional] [default to False] |

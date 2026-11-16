@@ -1,4 +1,5 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { dropMalformedInfiniteCacheEntry } from 'learn-card-base/react-query/infiniteQueryGuard';
 import { useWallet } from 'learn-card-base';
 import type { CredentialActivityEventType } from '@learncard/types';
 
@@ -11,8 +12,12 @@ const PAGE_SIZE = 25;
 
 export const usePassportActivities = (filters: PassportActivityFilters = {}) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    const queryKey = ['passportActivities', filters] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'passportActivities');
+
     return useInfiniteQuery({
-        queryKey: ['passportActivities', filters],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
             return wallet.invoke.getMyActivities({

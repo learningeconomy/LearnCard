@@ -11,6 +11,15 @@ import {
     requiredEnvironmentString,
 } from '@learncard/helpers';
 
+const DEFAULT_CLASSLINK_DISCOVERY_URL =
+    'https://launchpad.classlink.com/.well-known/openid-configuration';
+
+/**
+ * Same as `ESCROW_AUTHORITY_TENANT_PATTERN` in `@learncard/sss-key-manager`; copied so loading
+ * the environment doesn't import the SDK. `environment.test.ts` asserts the two stay identical.
+ */
+export const ESCROW_AUTHORITY_TENANT_LABEL = /^[A-Za-z0-9_-]{1,128}$/;
+
 export const lcaApiEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     LAMBDA_STAGE: optionalEnvironmentString,
@@ -19,6 +28,9 @@ export const lcaApiEnvironmentShape = {
     PORT: environmentPort.default(3000),
     SEED: requiredEnvironmentString,
     SA_SEED_KMS_KEY_ARN: optionalEnvironmentString,
+    LEGACY_KEY_ARCHIVE_ENABLED: optionalEnvironmentBoolean.transform(value => value ?? false),
+    LEGACY_KEY_ARCHIVE_BUCKET: optionalEnvironmentString,
+    LEGACY_KEY_ARCHIVE_KMS_KEY_ARN: optionalEnvironmentString,
     SA_SEED_LOCAL_KEK: optionalEnvironmentString,
     // Defaults depend on offline/test mode and are resolved below.
     SA_SEED_ENCRYPT_WRITES: optionalEnvironmentBoolean,
@@ -47,6 +59,21 @@ export const lcaApiEnvironmentShape = {
         .pipe(z.number().int().min(1_000).max(25_000)),
     METABASE_SECRET_KEY: optionalEnvironmentString,
     SCOUTS_SSO_CLIENT_SECRET: optionalEnvironmentString,
+    CLASSLINK_CLIENT_ID: optionalEnvironmentString,
+    CLASSLINK_CLIENT_SECRET: optionalEnvironmentString,
+    CLASSLINK_DISCOVERY_URL: optionalEnvironmentString.transform(
+        value => value ?? DEFAULT_CLASSLINK_DISCOVERY_URL
+    ),
+    CLASSLINK_REDIRECT_URIS: optionalEnvironmentString,
+    CLASSLINK_TENANTS: optionalEnvironmentString,
+    CLASSLINK_PII_KEY: optionalEnvironmentString,
+    CLASSLINK_PII_KEY_PREVIOUS: optionalEnvironmentString,
+    CLASSLINK_IDENTITY_KEY: optionalEnvironmentString,
+    CLASSLINK_MAX_AUTH_AGE_SECONDS: optionalEnvironmentString
+        .transform(value => (value === undefined ? 86_400 : Number(value)))
+        .pipe(z.number().int().positive()),
+    // JSON registry keyed by the tenant's transcriptIssuer (or "default").
+    TRANSCRIPT_ISSUERS: optionalEnvironmentString,
     KEYCLOAK_ISSUERS: optionalEnvironmentString,
     KEYCLOAK_AUDIENCES: optionalEnvironmentString,
     KEYCLOAK_JWKS_URL_OVERRIDES: optionalEnvironmentString,
@@ -72,6 +99,16 @@ export const lcaApiEnvironmentShape = {
     ESCROW_ENCLAVE_ACTIVE_KEY_ID: optionalEnvironmentString,
     ESCROW_ENCLAVE_REMOTE_URL: optionalEnvironmentUrl,
     ESCROW_ENCLAVE_REMOTE_TOKEN: optionalEnvironmentString,
+    /** The remote enclave's measured authority tenant label (ESCROW_AUTHORITY_TENANT in its
+     *  image). Every app tenant's escrow intents and authority state are checked against it,
+     *  never against the client-supplied X-Tenant-Id: the enclave is single-tenant, so
+     *  VetPass and LearnCard both use "learncard". Defaults to "learncard" (no infra change).
+     *  The default also applies to the ScoutPass deployment (CONFIG_TENANT=scouts), whose app
+     *  has escrow off: enabling ScoutPass escrow on its own enclave must set this in
+     *  config.scouts.<stage>.json, or its escrow routes fail closed. */
+    ESCROW_AUTHORITY_TENANT: optionalEnvironmentString
+        .transform(value => value ?? 'learncard')
+        .pipe(z.string().regex(ESCROW_AUTHORITY_TENANT_LABEL)),
     /** Operator-flipped, manual-only kill switch (P7.1). When true, startRecovery/completeRecovery
      *  refuse with a friendly message; hold cancellation and notifications keep working. Never
      *  auto-flipped by the escrow-ledger-monitor — a compromised monitor must not be able to
@@ -112,6 +149,41 @@ export const lcaApiEnvironmentSchema = z
         };
     })
     .superRefine((environment, context) => {
+        if (
+            environment.LEGACY_KEY_ARCHIVE_ENABLED &&
+            (environment.IS_OFFLINE || environment.IS_E2E_TEST)
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['LEGACY_KEY_ARCHIVE_ENABLED'],
+                message:
+                    'The legacy key archive requires verified authentication, not offline or E2E mode',
+            });
+        }
+        for (const field of [
+            'LEGACY_KEY_ARCHIVE_BUCKET',
+            'LEGACY_KEY_ARCHIVE_KMS_KEY_ARN',
+        ] as const) {
+            if (environment.LEGACY_KEY_ARCHIVE_ENABLED && !environment[field]) {
+                context.addIssue({
+                    code: 'custom',
+                    path: [field],
+                    message: 'Required when the legacy key archive is enabled',
+                });
+            }
+        }
+        if (
+            environment.LEGACY_KEY_ARCHIVE_KMS_KEY_ARN &&
+            !/^arn:aws[a-z-]*:kms:[a-z0-9-]+:\d{12}:key\/[a-zA-Z0-9-]+$/.test(
+                environment.LEGACY_KEY_ARCHIVE_KMS_KEY_ARN
+            )
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['LEGACY_KEY_ARCHIVE_KMS_KEY_ARN'],
+                message: 'Must be a KMS key ARN (not an alias)',
+            });
+        }
         if (
             environment.KEYCLOAK_ISSUERS?.split(',').some(value => value.trim()) &&
             !environment.KEYCLOAK_AUDIENCES?.split(',').some(value => value.trim())

@@ -23,7 +23,7 @@ const mocks = vi.hoisted(() => ({ isSearchActive: false }));
 vi.mock('learn-card-base/stores/credentialSearchStore', () => ({
     default: {
         useStore: () => ({ searchString: '', isSearchActive: mocks.isSearchActive }),
-        set: { toggleIsSearchActive: vi.fn(), searchStringWithMatch: vi.fn() },
+        set: { toggleIsSearchActive: vi.fn(), searchString: vi.fn() },
     },
 }));
 

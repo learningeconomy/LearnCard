@@ -2,7 +2,7 @@
 
 # Use the official Bun image as a base
 # Bun pin matches the LearnCard monorepo (root package.json packageManager).
-FROM oven/bun:1.4.2 AS base
+FROM oven/bun:1.4.4 AS base
 WORKDIR /app
 
 # Local-only document extraction and OCR, provisioned before application source.

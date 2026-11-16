@@ -9,6 +9,7 @@ export type UpdatePreferencesInput = {
     analyticsEnabled?: boolean;
     analyticsAutoDisabled?: boolean;
     bugReportsEnabled?: boolean;
+    bugReportsAutoDisabled?: boolean;
     isMinor?: boolean;
 };
 
@@ -25,6 +26,8 @@ export const updatePreferences = async (
         return true;
     } catch (e) {
         console.error(e);
-        throw new Error('An unexpected error occured, unable to update preferences');
+        throw new Error('An unexpected error occured, unable to update preferences', {
+            cause: e,
+        });
     }
 };

@@ -5,6 +5,12 @@
 // safe area.
 
 // Full-bleed-style variants: the section paints the surface and owns insets.
+// The dialog host receives programmatic focus when it has no controls. Its
+// backdrop rectangle is not the visible card and must not draw a browser outline.
+[data-lc-surface]:focus {
+    outline: none;
+}
+
 .lc-surface {
     box-sizing: border-box;
     padding-top: var(--lc-safe-top);

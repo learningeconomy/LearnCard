@@ -1,6 +1,10 @@
 import cloneDeep from 'lodash/cloneDeep';
+import type { Transaction } from 'neo4j-driver';
+import { neogma } from '@instance';
+import { lockClaimLinkRequestForStorage } from '@accesslayer/claim-link-request-fence';
 import {
     CredentialFieldError,
+    isDisplayOnlyAnchorTemplate,
     isEncrypted,
     isVC2Format,
     materializeCredentialFields,
@@ -31,13 +35,14 @@ import {
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
-import { BoostInstance } from '@models';
+import { BoostInstance, CredentialInstance } from '@models';
 import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
+import { releaseUnlinkedCredential } from '@accesslayer/credential/delete';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import {
     createSentCredentialRelationship,
-    createCredentialIssuedViaContractRelationship,
+    createContractCredentialRelationships,
     createListingSentCredentialRelationship,
 } from '@accesslayer/credential/relationships/create';
 import { acceptCredential, getCredentialUri } from './credential.helpers';
@@ -51,6 +56,14 @@ import { DbTermsType } from 'types/consentflowcontract';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
 import { getIssuedCredentialPayload } from './issuedCredentialStatus.helpers';
 import type { IssuedCredential } from '../types/credential';
+
+/** No commit was attempted: the caller can safely retry this claim's storage. */
+export class ClaimLinkStorageRejectedError extends Error {
+    constructor(cause: unknown) {
+        super('Claim-link storage transaction was rolled back', { cause });
+        this.name = 'ClaimLinkStorageRejectedError';
+    }
+}
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -85,7 +98,7 @@ export const isEditableBoost = (boost: BoostInstance): boolean => {
  */
 export const isBoostViewableByClaimLink = async (boost: BoostInstance): Promise<boolean> => {
     const defaultRoles = await boost.findRelationships({ alias: 'defaultRole' });
-    const defaultRole = defaultRoles[0]?.target as any;
+    const defaultRole = defaultRoles[0]?.target;
     const canView = defaultRole?.canView ?? defaultRole?.dataValues?.canView;
 
     if (typeof canView === 'boolean') return canView;
@@ -138,10 +151,16 @@ export const sendBoost = async ({
     skipNotification = false,
     autoAcceptCredential = false,
     contractTerms,
+    contractWriterProfileId,
+    allowConsumedOneTime = false,
     metadata,
+    listingId,
     activityId,
     integrationId,
-    listingId,
+    credentialId,
+    atomicClaimLink = false,
+    claimLinkOwnerToken,
+    onStorageStart,
 }: {
     from: CredentialIssuer;
     to: ProfileType;
@@ -151,10 +170,16 @@ export const sendBoost = async ({
     skipNotification?: boolean;
     autoAcceptCredential?: boolean;
     contractTerms?: DbTermsType;
+    contractWriterProfileId?: string;
+    allowConsumedOneTime?: boolean;
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
     listingId?: string;
+    credentialId?: string;
+    atomicClaimLink?: boolean;
+    claimLinkOwnerToken?: string;
+    onStorageStart?: () => void;
 }): Promise<string> => {
     return trace(
         'boost',
@@ -179,47 +204,111 @@ export const sendBoost = async ({
             }
 
             // Preserve the issuer's payload without decrypting or counter-signing it.
-            const credentialInstance = await traceDb('storeCredential', () =>
-                storeCredential(credential)
-            );
-
-            // These writes share Credential/Profile/Listing nodes. Separate concurrent
-            // auto-commit transactions can deadlock on Neo4j relationship-chain locks.
-            await traceDb('createRelationships', async () => {
-                await createBoostInstanceOfRelationship(credentialInstance, boost);
-                await createSentCredentialRelationship(
-                    from,
-                    to,
-                    credentialInstance,
-                    metadata,
-                    activityId,
-                    integrationId
-                );
-
-                // Listing issuers already create this edge inside createSentCredentialRelationship.
-                // Keep explicit attribution for profile/integration issuers or another listing.
-                if (
-                    listingId &&
-                    (!isAppStoreListingIssuer(from) || from.listing.listing_id !== listingId)
-                ) {
-                    await createListingSentCredentialRelationship(
-                        listingId,
-                        to,
-                        credentialInstance,
-                        metadata,
-                        activityId,
-                        integrationId
+            // Contract auto-boosts are signed by the writer, whose profile owns the status list.
+            const persistDelivery = async (
+                transaction?: Transaction
+            ): Promise<CredentialInstance> => {
+                const stored = await traceDb('storeCredential', () => {
+                    if (atomicClaimLink) onStorageStart?.();
+                    return storeCredential(
+                        credential,
+                        transaction,
+                        contractWriterProfileId ?? fromProfile.profileId,
+                        credentialId === undefined ? undefined : { credentialId }
                     );
+                });
+                if (!contractTerms) {
+                    await traceDb('createRelationships', async () => {
+                        await createBoostInstanceOfRelationship(stored, boost, transaction);
+                        await createSentCredentialRelationship(
+                            from,
+                            to,
+                            stored,
+                            metadata,
+                            activityId,
+                            integrationId,
+                            transaction
+                        );
+                        if (
+                            listingId &&
+                            (!isAppStoreListingIssuer(from) ||
+                                from.listing.listing_id !== listingId)
+                        ) {
+                            await createListingSentCredentialRelationship(
+                                listingId,
+                                to,
+                                stored,
+                                metadata,
+                                activityId,
+                                integrationId,
+                                transaction
+                            );
+                        }
+                    });
                 }
+                return stored;
+            };
+            let credentialInstance: CredentialInstance;
+            // Claim recovery distinguishes rejected writes from an unacknowledged commit.
+            if (atomicClaimLink) {
+                const session = neogma.driver.session();
+                const transaction = session.beginTransaction();
+                let commitStarted = false;
+                try {
+                    if (credentialId) {
+                        if (!claimLinkOwnerToken) throw new Error('Claim-link owner is required');
+                        await lockClaimLinkRequestForStorage(
+                            transaction,
+                            credentialId,
+                            claimLinkOwnerToken
+                        );
+                    }
+                    credentialInstance = await persistDelivery(transaction);
+                    commitStarted = true;
+                    await transaction.commit();
+                } catch (error) {
+                    try {
+                        await transaction.rollback();
+                    } catch {
+                        // Rollback failure cannot replace the original storage/commit outcome.
+                    }
+                    if (!commitStarted) throw new ClaimLinkStorageRejectedError(error);
+                    throw error;
+                } finally {
+                    await session.close();
+                }
+            } else {
+                credentialInstance = contractTerms
+                    ? await persistDelivery()
+                    : await neogma.getTransaction(null, persistDelivery);
+            }
 
+            try {
                 if (contractTerms) {
-                    await createCredentialIssuedViaContractRelationship(
-                        credentialInstance,
-                        contractTerms
+                    await traceDb('createRelationships', () =>
+                        createContractCredentialRelationships({
+                            issuer: from,
+                            writerProfileId: contractWriterProfileId ?? fromProfile.profileId,
+                            recipient: to,
+                            credential: credentialInstance,
+                            boost,
+                            terms: contractTerms,
+                            metadata,
+                            activityId,
+                            integrationId,
+                            listingId,
+                            allowConsumedOneTime,
+                        })
                     );
                 }
-            });
-
+            } catch (error) {
+                try {
+                    await releaseUnlinkedCredential(credentialInstance.id);
+                } catch {
+                    console.error('BOOST_UNLINKED_CREDENTIAL_CLEANUP_FAILED');
+                }
+                throw error;
+            }
             if (autoAcceptCredential) {
                 await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
                     skipNotification,
@@ -279,7 +368,10 @@ export const issueClaimLinkBoost = async (
     domain: string,
     from: CredentialIssuer,
     to: ProfileType,
-    signingAuthorityForUser: SigningAuthorityForUserType
+    signingAuthorityForUser: SigningAuthorityForUserType,
+    credentialId?: string,
+    onStorageStart?: () => void,
+    claimLinkOwnerToken?: string
 ): Promise<string> => {
     const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;
     const boostId = boost?.dataValues?.id;
@@ -292,12 +384,10 @@ export const issueClaimLinkBoost = async (
 
     setCredentialSubjectIds(boostCredential, getDidWeb(domain, to.profileId));
 
-    // Embed the boostURI into the boost credential for verification purposes.
     if (boostCredential.type.includes('BoostCredential')) {
         boostCredential.boostId = boostURI;
     }
 
-    // Inject OBv3 skill alignments based on boost's framework/skills
     await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
     const vc = await issueCredentialWithSigningAuthority(
@@ -316,6 +406,10 @@ export const issueClaimLinkBoost = async (
         domain,
         skipNotification: true,
         autoAcceptCredential: true,
+        credentialId,
+        atomicClaimLink: true,
+        claimLinkOwnerToken,
+        onStorageStart,
     });
 };
 
@@ -349,11 +443,21 @@ export const prepareCredentialFromBoost = async (
         recipientDid?: string;
         recipientName?: string;
         issuerDid?: string;
+        /** Transient issuance body for a display-only managed anchor; never persisted. */
+        credential?: UnsignedVC | VC;
     } = {}
 ): Promise<UnsignedVC> => {
     const { templateData, recipientDid, recipientName, issuerDid } = options;
 
-    let boostJsonString = boost.dataValues.boost;
+    let boostJsonString = options.credential
+        ? convertCredentialToBoostTemplateJSON(options.credential)
+        : boost.dataValues.boost;
+    if (!options.credential && isDisplayOnlyAnchorTemplate(JSON.parse(boostJsonString))) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Display-only anchors require an issuance credential in the request.',
+        });
+    }
     const allowAutoAppendEvidence = shouldAutoAppendTemplateEvidence(boostJsonString);
 
     // Auto-inject known system variables into templateData
@@ -529,7 +633,6 @@ const credentialContextSupportsDynamicEvidence = (credential: UnsignedVC): boole
  * Throws TRPCError if not found.
  */
 export const resolveBoostByUri = async (boostUri: string): Promise<BoostInstance> => {
-    const { TRPCError } = await import('@trpc/server');
     const { getBoostByUri } = await import('@accesslayer/boost/read');
 
     const boost = await getBoostByUri(boostUri);

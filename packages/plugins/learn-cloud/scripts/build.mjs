@@ -7,7 +7,7 @@ const buildOptions = {
     // target: 'es6',
     target: 'es2020',
     sourcemap: true,
-    external: ['isomorphic-fetch', 'isomorphic-webcrypto', '@learncard/core', '@learncard/didkit-plugin', '@learncard/helpers', '@learncard/learn-cloud-client'],
+    external: ['isomorphic-fetch', '@learncard/core', '@learncard/didkit-plugin', '@learncard/helpers', '@learncard/learn-cloud-client'],
 };
 
 const configurations = [

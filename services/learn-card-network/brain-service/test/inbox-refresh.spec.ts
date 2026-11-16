@@ -119,6 +119,52 @@ beforeEach(async () => {
 });
 
 describe('managed Universal Inbox refresh', () => {
+    it('retries keyed issuance across retained digest key rotation', async () => {
+        try {
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'old-inbox-test-key');
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v1');
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
+            const first = await issue({ idempotencyKey: 'rotation-issue' });
+            const readDigest = async () =>
+                (
+                    await neogma.queryRunner.run(
+                        'MATCH (ic:InboxCredential {id: $id}) RETURN ic.refreshRequestDigest AS digest',
+                        { id: first.issuanceId }
+                    )
+                ).records[0]!.get('digest');
+            const stored = await readDigest();
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'new-inbox-test-key');
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v2');
+            vi.stubEnv(
+                'CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS',
+                JSON.stringify({ v1: 'old-inbox-test-key' })
+            );
+            expect(await issue({ idempotencyKey: 'rotation-issue' })).toEqual(first);
+            expect(await readDigest()).toBe(stored);
+            // Resume before claim-link persistence to exercise the atomic create/reuse check.
+            await neogma.queryRunner.run(
+                'MATCH (ic:InboxCredential {id: $id}) REMOVE ic.refreshClaimUrl',
+                { id: first.issuanceId }
+            );
+            const resumed = await issue({ idempotencyKey: 'rotation-issue' });
+            expect(resumed.issuanceId).toBe(first.issuanceId);
+            expect(resumed.refresh).toEqual(first.refresh);
+            expect(await readDigest()).toBe(stored);
+            await expect(
+                issue({
+                    idempotencyKey: 'rotation-issue',
+                    credential: { ...template(), name: 'Different' },
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
+            await expect(issue({ idempotencyKey: 'rotation-issue' })).rejects.toMatchObject({
+                code: 'CONFLICT',
+            });
+        } finally {
+            vi.unstubAllEnvs();
+        }
+    });
+
     it.each(['email', 'phone'] as const)(
         'allocates for unknown %s, claims latest, then publishes normally',
         async type => {
@@ -362,6 +408,46 @@ describe('managed Universal Inbox refresh', () => {
         ).rejects.toMatchObject({ code: 'CONFLICT' });
     });
 
+    it('retries unified inbox send across retained digest key rotation', async () => {
+        try {
+            await issuer.clients.fullAuth.profile.setPrimarySigningAuthority(SA);
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'old-inbox-send-test-key');
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v1');
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
+            const input = {
+                type: 'boost' as const,
+                recipient: 'unknown@example.com',
+                template: { credential: template() },
+                refresh: true,
+                idempotencyKey: 'rotation-unified-key',
+                options: { suppressDelivery: true },
+            };
+            const first = await issuer.clients.fullAuth.boost.send(input);
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'new-inbox-send-test-key');
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v2');
+            vi.stubEnv(
+                'CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS',
+                JSON.stringify({ v1: 'old-inbox-send-test-key' })
+            );
+            expect(await issuer.clients.fullAuth.boost.send(input)).toEqual(first);
+            await expect(
+                issuer.clients.fullAuth.boost.send({ ...input, recipient: 'different@example.com' })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            for (const label of ['Boost', 'InboxCredential', 'CredentialRefresh']) {
+                const count = await neogma.queryRunner.run(
+                    `MATCH (n:${label}) RETURN count(n) AS count`
+                );
+                expect(Number(count.records[0]!.get('count'))).toBe(1);
+            }
+            vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
+            await expect(issuer.clients.fullAuth.boost.send(input)).rejects.toMatchObject({
+                code: 'CONFLICT',
+            });
+        } finally {
+            vi.unstubAllEnvs();
+        }
+    });
+
     it('retains escrow when signing fails and can retry the same claim', async () => {
         const issued = await issue();
         mocks.sign.mockRejectedValueOnce(new Error('Authority unavailable'));
@@ -428,6 +514,25 @@ describe('managed Universal Inbox refresh', () => {
         expect(
             (await getCredentialRefresh(retried.refresh!.refreshId))?.initialNotificationSentAt
         ).toBeTruthy();
+    });
+
+    it('keeps stored public names on pending publication without copying the private VC name', async () => {
+        const issued = await issue();
+        const refreshId = issued.refresh!.refreshId;
+        await neogma.queryRunner.run(
+            `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:INBOX]->(ic:InboxCredential)
+             SET ic.credentialName = 'Stored label', refresh.credentialDisplayName = 'Stored label'`,
+            { refreshId }
+        );
+        await queue(issued, 'Private Updated Name');
+        const rows = await neogma.queryRunner.run(
+            `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:INBOX]->(ic:InboxCredential)
+             RETURN ic.credentialName AS inboxName, refresh.credentialDisplayName AS displayName`,
+            { refreshId }
+        );
+        expect(rows.records[0]!.get('inboxName')).toBe('Stored label');
+        expect(rows.records[0]!.get('displayName')).toBe('Stored label');
+        expect((await getCredentialRefresh(refreshId))?.currentVersion).toBe(2);
     });
 
     it('concurrent pending publications with one key create one revision', async () => {

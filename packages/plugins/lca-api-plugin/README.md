@@ -1,6 +1,11 @@
 [<img src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png" width="215"/>](https://learncard.com)
 
-# @welibraryos/lca-api-plugin
+# @learncard/lca-api-plugin
+
+[![npm version](https://img.shields.io/npm/v/@learncard/lca-api-plugin)](https://www.npmjs.com/package/@learncard/lca-api-plugin)
+[![npm downloads](https://img.shields.io/npm/dw/@learncard/lca-api-plugin)](https://www.npmjs.com/package/@learncard/lca-api-plugin)
+
+Connects a LearnCard to the LearnCard App (LCA) API.
 
 ## Documentation
 
@@ -10,7 +15,30 @@ https://docs.learncard.com
 ## Install
 
 ```bash
-bun add @welibraryos/lca-api-plugin
+bun add @learncard/init @learncard/lca-api-plugin
+```
+
+## Usage
+
+This package exports `getLCAPlugin`.
+
+```ts
+import { initLearnCard } from '@learncard/init';
+import { getLCAPlugin } from '@learncard/lca-api-plugin';
+
+// getLCAPlugin calls getProfile on construction, so the wallet needs LearnCard Network
+const learnCard = await initLearnCard({ seed: 'a'.repeat(64), network: true });
+const lcaLearnCard = await learnCard.addPlugin(await getLCAPlugin(learnCard, '<LCA API URL>'));
+```
+
+Optional args after the URL: `useCustomHash` (default `false`) and `extraHeaders`.
+
+Or let the package build the whole thing for you (network wallet + LCA plugin, defaulting to `https://api.learncard.app/trpc`):
+
+```ts
+import { initLCALearnCard } from '@learncard/lca-api-plugin';
+
+const lcaLearnCard = await initLCALearnCard({ seed: 'a'.repeat(64) });
 ```
 
 ## Contributing

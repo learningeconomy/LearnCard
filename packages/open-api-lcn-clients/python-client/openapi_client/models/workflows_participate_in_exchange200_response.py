@@ -64,9 +64,8 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -94,11 +93,6 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if redirect_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.redirect_url is None and "redirect_url" in self.model_fields_set:
-            _dict['redirectUrl'] = None
 
         return _dict
 

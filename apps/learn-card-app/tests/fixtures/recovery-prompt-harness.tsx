@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import '../../src/tailwind.css';
 import '../../src/index.scss';
@@ -116,9 +117,11 @@ const root = document.getElementById('root');
 if (!root) throw new Error('Recovery prompt harness root not found');
 
 createRoot(root).render(
-    <AnalyticsContextProvider>
-        <LocaleProvider>
-            <Harness />
-        </LocaleProvider>
-    </AnalyticsContextProvider>
+    <QueryClientProvider client={new QueryClient()}>
+        <AnalyticsContextProvider>
+            <LocaleProvider>
+                <Harness />
+            </LocaleProvider>
+        </AnalyticsContextProvider>
+    </QueryClientProvider>
 );

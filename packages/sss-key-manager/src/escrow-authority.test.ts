@@ -288,6 +288,7 @@ describe('violatesCarryContactRule (P2-d cross-language contract)', () => {
                 action: 'enroll' | 'replace' | 'disable' | 'carry';
                 blobRecoveryEmail: string | null;
                 blobRecoveryLanguage: string | null;
+                blobRecoveryBrand?: string | null;
                 expected: 'accept' | 'reject';
             }[]
         ).map(c => [c.name, c] as const)
@@ -295,6 +296,7 @@ describe('violatesCarryContactRule (P2-d cross-language contract)', () => {
         const violates = violatesCarryContactRule(testCase.action, {
             recoveryEmail: testCase.blobRecoveryEmail ?? undefined,
             recoveryLanguage: testCase.blobRecoveryLanguage ?? undefined,
+            recoveryBrand: testCase.blobRecoveryBrand ?? undefined,
         });
         expect(violates).toBe(testCase.expected === 'reject');
     });

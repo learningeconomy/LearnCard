@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "jsx": "react-jsx",
         "lib": ["es2024", "DOM"],
         "module": "esnext",
         "moduleResolution": "bundler",

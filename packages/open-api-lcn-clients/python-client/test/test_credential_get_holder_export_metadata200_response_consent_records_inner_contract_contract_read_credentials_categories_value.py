@@ -36,7 +36,8 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContrac
         if include_optional:
             return CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadCredentialsCategoriesValue(
                 required = True,
-                default_enabled = True
+                default_enabled = True,
+                reason = ''
             )
         else:
             return CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadCredentialsCategoriesValue(

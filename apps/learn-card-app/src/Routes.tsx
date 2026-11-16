@@ -1,3 +1,4 @@
+import UnsubscribePage from './pages/unsubscribe/UnsubscribePage';
 import React, { Suspense } from 'react';
 import { Redirect, Route, Switch, useLocation } from 'react-router-dom';
 import type { RouteComponentProps, RouteProps } from 'react-router-dom';
@@ -19,6 +20,7 @@ import * as Sentry from '@sentry/react';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
+const CampaignsPage = lazyWithRetry(() => import('./pages/campaigns/CampaignsPage'));
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
 const DashboardPage = lazyWithRetry(() => import('./pages/dashboard/DashboardPage'));
 const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
@@ -86,6 +88,9 @@ const ShareCredentialsWithApp = lazyWithRetry(
 const ExternalConsentFlowDoor = lazyWithRetry(
     () => import('./pages/consentFlow/ExternalConsentFlowDoor')
 );
+const ContractUpdateReviewRoute = lazyWithRetry(
+    () => import('./pages/consentFlow/ContractUpdateReviewRoute')
+);
 const WalletServiceWorker = lazyWithRetry(
     () => import('./pages/walletServiceWorker/WalletServiceWorker')
 );
@@ -107,6 +112,9 @@ const ClaimFromDashboard = lazyWithRetry(
 const ClaimFromRequest = lazyWithRetry(() => import('./pages/claim-from-request/ClaimFromRequest'));
 const Oid4vciExchange = lazyWithRetry(() => import('./pages/oid4vci/Oid4vciExchange'));
 const Oid4vpExchange = lazyWithRetry(() => import('./pages/oid4vp/Oid4vpExchange'));
+const NativeDigitalCredentialFlow = lazyWithRetry(
+    () => import('./native-digital-credentials/NativeDigitalCredentialFlow')
+);
 const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/InteractionsPage'));
 const GuardianCredentialApprovalPage = lazyWithRetry(
     () => import('./pages/interactions/GuardianCredentialApprovalPage')
@@ -119,7 +127,10 @@ const PublishSignInGate = lazyWithRetry(
     () => import('./pages/appStoreDeveloper/submit/PublishSignInGate')
 );
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
+const SchoolConnectPage = lazyWithRetry(() => import('./pages/schoolConnect/SchoolConnectPage'));
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
+const ClassLinkCallback = lazyWithRetry(() => import('./pages/auth/ClassLinkCallback'));
+const ClassLinkStart = lazyWithRetry(() => import('./pages/auth/ClassLinkStart'));
 
 // App Store Developer Portal
 const DeveloperPortalRoutes = lazyWithRetry(
@@ -236,6 +247,7 @@ export const Routes: React.FC = () => {
                     <Switch location={background || location}>
                         <SentryRoute exact path="/recovery/cancel" component={CancelRecoveryPage} />
                         <Route exact path="/s/:id" component={ShareLinkViewer} />
+                        <SentryRoute exact path="/unsubscribe" component={UnsubscribePage} />
                         <SentryRoute exact path="/login" component={LoginPage} />
                         <SentryRoute
                             exact
@@ -251,6 +263,16 @@ export const Routes: React.FC = () => {
                             component={ViewCredsBundle}
                         />
                         <SentryRoute exact path="/auth/handoff" component={AuthHandoff} />
+                        <SentryRoute
+                            exact
+                            path="/auth/classlink/callback"
+                            component={ClassLinkCallback}
+                        />
+                        <SentryRoute
+                            exact
+                            path="/auth/classlink/start"
+                            component={ClassLinkStart}
+                        />
                         <SentryRoute exact path="/share-boost" component={ViewSharedBoost} />
                         <SentryRoute exact path="/verify/resume" component={VerifySharedResume} />
                         <SentryRoute path="/waitingsofa" children={<LoadingPage2 />} />
@@ -291,6 +313,8 @@ export const Routes: React.FC = () => {
                             component={AppStoreAdminWithProvider}
                         />
 
+                        <SentryRoute path="/admin/campaigns" component={CampaignsPage} />
+
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
                         {/* Linked from the "New device signed in with your PIN" email. */}
                         <PrivateRoute exact path="/account/secure" component={SecureAccountPage} />
@@ -313,6 +337,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/memberships" component={MembershipPage} />
                         <PrivateRoute exact path="/workhistory" component={WorkHistoryPage} />
                         <PrivateRoute exact path="/families" component={FamilyPage} />
+                        <PrivateRoute exact path="/school-connect" component={SchoolConnectPage} />
                         <PrivateRoute exact path="/skills" component={SkillsPage} />
                         <PrivateRoute exact path="/ai/insights" component={AiInsights} />
                         {learnCardAssistantEnabled && (
@@ -392,6 +417,11 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/request" component={ClaimFromRequest} />
                         <SentryRoute exact path="/oid4vci" component={Oid4vciExchange} />
                         <SentryRoute exact path="/oid4vp" component={Oid4vpExchange} />
+                        <SentryRoute
+                            exact
+                            path="/native-digital-credentials"
+                            component={NativeDigitalCredentialFlow}
+                        />
 
                         <SentryRoute
                             exact
@@ -404,6 +434,11 @@ export const Routes: React.FC = () => {
                             render={() => <ExternalConsentFlowDoor login />}
                         />
                         <SentryRoute exact path="/consent-flow-sync-data" component={LaunchPad} />
+                        <PrivateRoute
+                            exact
+                            path="/consent-flow/review"
+                            component={ContractUpdateReviewRoute}
+                        />
 
                         <PrivateRoute
                             exact
@@ -480,6 +515,7 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/accommodations': () => AccommodationsPage.preload(),
     '/workhistory': () => WorkHistoryPage.preload(),
     '/families': () => FamilyPage.preload(),
+    '/school-connect': () => SchoolConnectPage.preload(),
     '/ids': () => IdsPage.preload(),
     '/memberships': () => MembershipPage.preload(),
     '/currencies': () => CurrenciesPage.preload(),

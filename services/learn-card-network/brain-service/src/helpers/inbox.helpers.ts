@@ -207,6 +207,7 @@ export const issueToInbox = async (
         refresh?: boolean;
         idempotencyKey?: string;
         refreshRequestDigest?: string;
+        refreshRequestDigestCandidates?: string[];
     } = {},
     ctx: Context,
     /** Queue ownership checkpoint immediately before delivery or inbox persistence. */
@@ -484,6 +485,7 @@ export const issueToInbox = async (
                               configuration.idempotencyKey ?? randomUUID()
                           ),
                           requestDigest: configuration.refreshRequestDigest!,
+                          requestDigestCandidates: configuration.refreshRequestDigestCandidates,
                       },
                   }
                 : {}),

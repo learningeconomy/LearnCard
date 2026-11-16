@@ -7,8 +7,13 @@ import {
     type SSSStorageFunctions,
     type SSSStrategyConfig,
 } from './sss-strategy';
-import { escrowAuthorityMeasurements, type EscrowHoldRecordLike } from './escrow-authority';
+import {
+    escrowAuthorityMeasurements,
+    violatesCarryContactRule,
+    type EscrowHoldRecordLike,
+} from './escrow-authority';
 import type { EscrowRecoveryStart } from './types';
+import { EscrowAuthorityTenantMismatchError } from './escrow-authority.types';
 import { verifyEnclaveAttestation } from './escrow-attestation';
 import {
     encryptEscrowBlob,
@@ -36,29 +41,32 @@ const digest = async (input: Uint8Array): Promise<number[]> =>
 // [D] Mirrors `hold_hash` in escrow-enclave-app's policy.rs: SHA-256 of
 // compact JSON of this fixed-order array, which the client independently
 // recomputes to bind a SignedHoldRecord to its own request.
-const holdTupleDigest = async (holdRecord: {
-    hold: {
-        holdId: string;
-        did: string;
-        shareVersion: number;
-        blobHash: string;
-        enrollmentEpoch: number;
-        releasePolicy: string;
-        clientEphemeralPublicKey: string;
-        createdLo: number;
-        createdHi: number;
-        policyVersion: number;
-    };
-    holdDurationMs: number;
-    ledgerSeq: number;
-}): Promise<number[]> => {
+const holdTupleDigest = async (
+    holdRecord: {
+        hold: {
+            holdId: string;
+            did: string;
+            shareVersion: number;
+            blobHash: string;
+            enrollmentEpoch: number;
+            releasePolicy: string;
+            clientEphemeralPublicKey: string;
+            createdLo: number;
+            createdHi: number;
+            policyVersion: number;
+        };
+        holdDurationMs: number;
+        ledgerSeq: number;
+    },
+    tenant = 'learncard'
+): Promise<number[]> => {
     const h = holdRecord.hold;
     const didHashHex = Buffer.from(await digest(Buffer.from(h.did))).toString('hex');
     return digest(
         Buffer.from(
             JSON.stringify([
                 'learncard-hold-v1',
-                'learncard',
+                tenant,
                 h.holdId,
                 didHashHex,
                 h.shareVersion,
@@ -83,7 +91,27 @@ const frame = (value: Buffer): Buffer => {
 const response = (value: unknown, status = 200): Response =>
     new Response(JSON.stringify(value), { status });
 
-const setup = async (legacyEnrolled = false) => {
+/**
+ * `enclaveTenant` is the fake enclave's measured authority label (what it signs);
+ * `appTenant` is the client's X-Tenant-Id; `authorityTenant` is the client's configured
+ * `escrow.authorityTenant` (omitted = default to the app tenant).
+ */
+const setup = async (
+    legacyEnrolled = false,
+    tenants: {
+        appTenant?: string;
+        authorityTenant?: string;
+        enclaveTenant?: string;
+        /** D21: the client's `escrow.emailBrand`. */
+        emailBrand?: string;
+    } = {}
+) => {
+    const {
+        appTenant = 'learncard',
+        authorityTenant,
+        enclaveTenant = 'learncard',
+        emailBrand,
+    } = tenants;
     const pins = [
         { pcr0: '01'.repeat(48), pcr1: '02'.repeat(48), pcr2: '03'.repeat(48) },
         { pcr0: '04'.repeat(48), pcr1: '02'.repeat(48), pcr2: '03'.repeat(48) },
@@ -139,7 +167,7 @@ const setup = async (legacyEnrolled = false) => {
         };
     };
     let state: EscrowAuthorityState = {
-        tenant: 'learncard',
+        tenant: enclaveTenant,
         authorityGeneration: 'fresh-g2',
         did: owner.intent.did,
         enrollmentVersion: 0,
@@ -181,9 +209,19 @@ const setup = async (legacyEnrolled = false) => {
         },
     };
     const calls: string[] = [];
+    /** Every X-Tenant-Id the client sent (must always be the app tenant). */
+    const tenantHeaders = new Set<string | undefined>();
     const nonces: string[] = [];
     const intents: SignedEscrowEnrollmentIntent[] = [];
-    const enrollments: Array<{ pinSalt?: unknown; clearPin?: unknown; pinVerifier?: string }> = [];
+    const enrollments: Array<{
+        pinSalt?: unknown;
+        clearPin?: unknown;
+        pinVerifier?: string;
+        action?: string;
+        /** D21: the target blob plaintext exactly as the client sealed it. */
+        recoveryEmail?: string;
+        recoveryBrand?: string;
+    }> = [];
     const faults: {
         snapshotNonce?: boolean;
         returnedEnvelope?: boolean;
@@ -221,7 +259,7 @@ const setup = async (legacyEnrolled = false) => {
             commit: {
                 schemaVersion: 1,
                 binding: {
-                    tenant: 'learncard',
+                    tenant: enclaveTenant,
                     generation: faults.generation ?? state.authorityGeneration,
                     didHash: await digest(Buffer.from(h.did)),
                 },
@@ -230,7 +268,7 @@ const setup = async (legacyEnrolled = false) => {
                 transactionDigest: Array.from({ length: 32 }, () => 2),
             },
             eventHash: Array.from({ length: 32 }, () => 3),
-            requestDigest: await holdTupleDigest(record),
+            requestDigest: await holdTupleDigest(record, enclaveTenant),
             resultBlobIdentity: Array.from(Buffer.from(h.blobHash, 'hex')),
             enrollmentEpoch: h.enrollmentEpoch,
         });
@@ -244,6 +282,9 @@ const setup = async (legacyEnrolled = false) => {
         vi.fn(async (url: string, init?: RequestInit) => {
             const path = new URL(url).pathname;
             calls.push(`${init?.method}:${path}`);
+            tenantHeaders.add(
+                (init?.headers as Record<string, string> | undefined)?.['X-Tenant-Id']
+            );
             const body: Record<string, unknown> = JSON.parse(String(init?.body ?? '{}'));
             if (path === '/keys/challenge') return response({ challenge: crypto.randomUUID() });
             if (path === '/keys/auth-share') {
@@ -363,11 +404,23 @@ const setup = async (legacyEnrolled = false) => {
                         pinSalt: body.pinSalt,
                         clearPin: body.clearPin,
                         pinVerifier: plaintext.pinVerifier,
+                        action: signed.intent.action,
+                        recoveryEmail: plaintext.recoveryEmail,
+                        recoveryBrand: plaintext.recoveryBrand,
                     });
-                    if (signed.intent.action === 'carry')
-                        plaintext.pinVerifier = (
-                            await decryptEscrowBlob(state.envelope!, keys.privateKey)
-                        ).pinVerifier;
+                    // Mirrors the enclave's Carry rule: refuse a target claiming
+                    // contact/brand, then inherit them (and the PIN) from the source.
+                    if (violatesCarryContactRule(signed.intent.action, plaintext))
+                        return response({ message: 'Carry target claims contact' }, 400);
+                    if (signed.intent.action === 'carry') {
+                        const source = await decryptEscrowBlob(state.envelope!, keys.privateKey);
+                        plaintext.pinVerifier = source.pinVerifier;
+                        if (source.recoveryEmail) {
+                            plaintext.recoveryEmail = source.recoveryEmail;
+                            plaintext.recoveryLanguage = source.recoveryLanguage;
+                        }
+                        if (source.recoveryBrand) plaintext.recoveryBrand = source.recoveryBrand;
+                    }
                     output = await encryptEscrowBlob(plaintext, keys.publicKey, identity.keyId);
                 }
                 const pinChange = signed.intent.pinAction !== 'keep';
@@ -441,7 +494,7 @@ const setup = async (legacyEnrolled = false) => {
                     commit: {
                         schemaVersion: 1,
                         binding: {
-                            tenant: 'learncard',
+                            tenant: enclaveTenant,
                             generation: state.authorityGeneration,
                             didHash: await digest(Buffer.from(h.did)),
                         },
@@ -450,7 +503,7 @@ const setup = async (legacyEnrolled = false) => {
                         transactionDigest: Array.from({ length: 32 }, () => 2),
                     },
                     eventHash: Array.from({ length: 32 }, () => 3),
-                    requestDigest: await holdTupleDigest(holdRecord),
+                    requestDigest: await holdTupleDigest(holdRecord, enclaveTenant),
                     resultBlobIdentity: Array.from(Buffer.from(h.blobHash, 'hex')),
                     enrollmentEpoch: h.enrollmentEpoch,
                 });
@@ -507,7 +560,7 @@ const setup = async (legacyEnrolled = false) => {
                                     ? 'learncard-authority-hold-snapshot-v1'
                                     : 'learncard-authority-hold-snapshot-v2',
                                 h.holdId,
-                                await holdTupleDigest(record),
+                                await holdTupleDigest(record, enclaveTenant),
                                 'pending',
                                 Date.now(),
                                 null,
@@ -527,7 +580,7 @@ const setup = async (legacyEnrolled = false) => {
                             commit: {
                                 schemaVersion: 1,
                                 binding: {
-                                    tenant: 'learncard',
+                                    tenant: enclaveTenant,
                                     generation:
                                         faults.confirmationGeneration ?? state.authorityGeneration,
                                     didHash: await digest(Buffer.from(h.did)),
@@ -590,13 +643,15 @@ const setup = async (legacyEnrolled = false) => {
     const config: SSSStrategyConfig = {
         serverUrl: 'https://example.test',
         storage,
-        tenantId: 'learncard',
+        tenantId: appTenant,
         escrow: {
             enabled: true,
             attestation: {
                 mode: 'nitro',
                 pinnedMeasurements: pins,
             },
+            ...(authorityTenant ? { authorityTenant } : {}),
+            ...(emailBrand !== undefined ? { emailBrand } : {}),
         },
     };
     const strategy = createSSSStrategy(config);
@@ -612,6 +667,7 @@ const setup = async (legacyEnrolled = false) => {
         strategy,
         params,
         calls,
+        tenantHeaders,
         nonces,
         intents,
         enrollments,
@@ -622,6 +678,9 @@ const setup = async (legacyEnrolled = false) => {
         reload: () => createSSSStrategy(config),
         emailShare: () => formatVersionedEmailShare(recoveryShares.emailShare, version),
         state: () => state,
+        /** D21: the plaintext of the authority's current blob. */
+        sealed: async () =>
+            state.envelope ? decryptEscrowBlob(state.envelope, keys.privateKey) : null,
         advance: () => {
             version++;
             enrolled = false;
@@ -1554,5 +1613,306 @@ describe('Nitro owner enrollment flow', () => {
         await expect(pending).rejects.toThrow('cancelled');
         expect(f.calls).not.toContain('PUT:/keys/auth-share');
         expect(f.intents).toHaveLength(0);
+    });
+});
+
+describe('Escrow authority tenant decoupled from the app tenant (VetPass on the LearnCard enclave)', () => {
+    // The enclave is single-tenant: it signs everything as its measured label, 'learncard'.
+    const vetpass = { appTenant: 'vetpass', authorityTenant: 'learncard' } as const;
+    const startHold = (f: Awaited<ReturnType<typeof setup>>) =>
+        f.strategy.startEscrowRecovery!({
+            token: 'token',
+            providerType: 'firebase',
+            expectedDid: owner.intent.did,
+        });
+
+    it('enrolls with a learncard-tenant intent while every request carries X-Tenant-Id vetpass', async () => {
+        const f = await setup(false, vetpass);
+        await expect(
+            f.strategy.ensureEscrowEnrollment!({
+                ...f.params,
+                options: { ...f.params.options, pin: '135790' },
+            })
+        ).resolves.toMatchObject({ enrolled: true, changed: true });
+        expect(f.intents.at(-1)?.intent).toMatchObject({ tenant: 'learncard', action: 'enroll' });
+        expect(f.state()).toMatchObject({ tenant: 'learncard', status: 'active', hasPin: true });
+        expect([...f.tenantHeaders]).toEqual(['vetpass']);
+    });
+
+    it('runs a PIN sign-in that keeps the account', async () => {
+        const f = await setup(false, vetpass);
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        f.faults.wrongPinAttempts = 0;
+        await expect(
+            f.strategy.executeRecovery({
+                token: 'token',
+                providerType: 'firebase',
+                input: { method: 'escrow-pin', pin: '135790', expectedDid: owner.intent.did },
+                didFromPrivateKey: async () => owner.intent.did,
+                signDidAuthVp: f.params.signDidAuthVp,
+                options: f.params.options,
+            })
+        ).resolves.toMatchObject({
+            escrowRecovery: true,
+            pinSignIn: { mode: 'kept', newPinRequired: false },
+        });
+        expect(f.intents.every(signed => signed.intent.tenant === 'learncard')).toBe(true);
+        expect([...f.tenantHeaders]).toEqual(['vetpass']);
+    });
+
+    it('starts, confirms, persists/reloads and restores a 7-day hold bound to the authority tenant', async () => {
+        const f = await setup(false, vetpass);
+        const saved: EscrowRecoveryStart = JSON.parse(JSON.stringify(await startHold(f)));
+        expect(saved.expectations).toMatchObject({ tenant: 'learncard', holdId: 'hold' });
+        const proof = {
+            holdId: saved.holdId,
+            resumeToken: saved.resumeToken!,
+            expectations: saved.expectations,
+        };
+        await expect(
+            f.reload().confirmEscrowRecovery!({ ...proof, code: '123456' })
+        ).resolves.toEqual({ success: true });
+        await expect(f.reload().getEscrowRecoveryStatus!(proof)).resolves.toMatchObject({
+            holdId: 'hold',
+        });
+        await expect(
+            f.reload().executeRecovery({
+                token: '',
+                providerType: 'firebase',
+                input: {
+                    method: 'escrow',
+                    ...proof,
+                    clientEphemeralPrivateKey: saved.clientEphemeralPrivateKey,
+                },
+                didFromPrivateKey: async () => owner.intent.did,
+            })
+        ).resolves.toEqual({ privateKey: owner.seedHex, did: owner.intent.did });
+        expect([...f.tenantHeaders]).toEqual(['vetpass']);
+    });
+
+    it('keeps LearnCard unchanged: the authority tenant defaults to the app tenant', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!(f.params);
+        expect(f.intents.at(-1)?.intent.tenant).toBe('learncard');
+        expect((await startHold(f)).expectations?.tenant).toBe('learncard');
+        expect([...f.tenantHeaders]).toEqual(['learncard']);
+    });
+
+    it('fails closed with a clear error when the app tenant is used against a learncard enclave', async () => {
+        // Misconfiguration: VetPass without `authorityTenant` defaults to 'vetpass'.
+        const f = await setup(false, { appTenant: 'vetpass' });
+        const enrolling = f.strategy.ensureEscrowEnrollment!(f.params);
+        await expect(enrolling).rejects.toBeInstanceOf(EscrowAuthorityTenantMismatchError);
+        await expect(enrolling).rejects.toMatchObject({
+            name: 'EscrowAuthorityTenantMismatchError',
+            expectedTenant: 'vetpass',
+            signedTenant: 'learncard',
+            message: expect.stringContaining('escrowAuthorityTenant'),
+        });
+        expect(f.intents).toHaveLength(0);
+        expect(f.calls).not.toContain('PUT:/keys/auth-share');
+        await expect(startHold(f)).rejects.toBeInstanceOf(EscrowAuthorityTenantMismatchError);
+        expect(f.calls).not.toContain('POST:/keys/escrow/confirm');
+    });
+
+    it('fails closed when the configured authority tenant differs from the enclave label', async () => {
+        const f = await setup(false, { ...vetpass, enclaveTenant: 'scouts' });
+        await expect(f.strategy.ensureEscrowEnrollment!(f.params)).rejects.toMatchObject({
+            name: 'EscrowAuthorityTenantMismatchError',
+            expectedTenant: 'learncard',
+            signedTenant: 'scouts',
+        });
+        expect(f.intents).toHaveLength(0);
+    });
+
+    it('refuses persisted expectations bound to another authority tenant without network calls', async () => {
+        const f = await setup(false, vetpass);
+        const saved: EscrowRecoveryStart = JSON.parse(JSON.stringify(await startHold(f)));
+        f.calls.length = 0;
+        const misconfigured = createSSSStrategy({
+            ...f.config,
+            escrow: { ...f.config.escrow!, authorityTenant: undefined },
+        });
+        await expect(
+            misconfigured.confirmEscrowRecovery!({
+                holdId: saved.holdId,
+                resumeToken: saved.resumeToken!,
+                expectations: saved.expectations,
+                code: '123456',
+            })
+        ).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls).toHaveLength(0);
+    });
+
+    it('rejects an invalid authority tenant label at construction', () => {
+        expect(() =>
+            createSSSStrategy({
+                serverUrl: 'https://example.test',
+                tenantId: 'vetpass',
+                escrow: {
+                    enabled: true,
+                    attestation: { mode: 'software', pinnedPublicKeys: [] },
+                    authorityTenant: 'learn card',
+                },
+            })
+        ).toThrow('Invalid escrow authority tenant');
+    });
+
+    it('shares one enrollment per DID across LearnCard and VetPass instead of colliding', async () => {
+        // One Firebase user = one UserKey = one DID = one authority record
+        // ('learncard', generation, DID), whichever app enrolled it.
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        const enrolledVersion = f.state().enrollmentVersion;
+        const intents = f.intents.length;
+        const vetpassStrategy = createSSSStrategy({
+            ...f.config,
+            tenantId: 'vetpass',
+            escrow: { ...f.config.escrow!, authorityTenant: 'learncard' },
+        });
+        // VetPass sees the LearnCard enrollment as current and signs nothing.
+        await expect(vetpassStrategy.ensureEscrowEnrollment!(f.params)).resolves.toMatchObject({
+            enrolled: true,
+            changed: false,
+        });
+        expect(f.intents).toHaveLength(intents);
+        expect(f.state().enrollmentVersion).toBe(enrolledVersion);
+        // The PIN set from LearnCard signs in from VetPass, on the same record.
+        f.faults.wrongPinAttempts = 0;
+        await expect(
+            vetpassStrategy.executeRecovery({
+                token: 'token',
+                providerType: 'firebase',
+                input: { method: 'escrow-pin', pin: '135790', expectedDid: owner.intent.did },
+                didFromPrivateKey: async () => owner.intent.did,
+                signDidAuthVp: f.params.signDidAuthVp,
+                options: f.params.options,
+            })
+        ).resolves.toMatchObject({ escrowRecovery: true, pinSignIn: { mode: 'kept' } });
+        expect(f.intents.every(signed => signed.intent.tenant === 'learncard')).toBe(true);
+        expect(f.tenantHeaders).toEqual(new Set(['learncard', 'vetpass']));
+    });
+});
+
+// D21: the owner-sealed email brand comes from one strategy config value, so
+// every enrollment path that seals the recovery contact also seals the brand,
+// and no path that carries (or seals no contact) ever sends one.
+describe('Owner-sealed escrow email brand (D21)', () => {
+    const vetpass = {
+        appTenant: 'vetpass',
+        authorityTenant: 'learncard',
+        emailBrand: '  Vet  Pass ',
+    } as const;
+    const pinEnroll = (f: Awaited<ReturnType<typeof setup>>) =>
+        f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+
+    it('rejects an invalid email brand at construction', () => {
+        for (const emailBrand of ['', 'vetpass.com', 'Vet\nPass', 'Call 5551234', 'a'.repeat(33)])
+            expect(() =>
+                createSSSStrategy({
+                    serverUrl: 'https://example.test',
+                    tenantId: 'vetpass',
+                    escrow: {
+                        enabled: true,
+                        attestation: { mode: 'software', pinnedPublicKeys: [] },
+                        emailBrand,
+                    },
+                })
+            ).toThrow('Invalid escrow email brand');
+    });
+
+    it('seals the canonical brand with the contact on first enroll, PIN change and clear', async () => {
+        const f = await setup(false, vetpass);
+        await pinEnroll(f);
+        expect(f.enrollments.at(-1)).toMatchObject({
+            action: 'enroll',
+            recoveryEmail: 'owner@example.com',
+            recoveryBrand: 'Vet Pass',
+        });
+        await f.strategy.setEscrowPin!({ ...f.params, pin: '824957' });
+        expect(f.enrollments.at(-1)).toMatchObject({
+            action: 'replace',
+            recoveryBrand: 'Vet Pass',
+        });
+        await f.strategy.clearEscrowPin!(f.params);
+        expect(f.enrollments.at(-1)).toMatchObject({
+            action: 'replace',
+            recoveryBrand: 'Vet Pass',
+        });
+        // The brand is not part of the signed intent (bound via the target identity).
+        expect(f.intents.at(-1)!.intent).not.toHaveProperty('recoveryBrand');
+        expect((await f.sealed())?.recoveryBrand).toBe('Vet Pass');
+    });
+
+    it('never sends the brand on a carry; the authority inherits the sealed one', async () => {
+        const f = await setup(false, vetpass);
+        await f.strategy.setEscrowPin!({ ...f.params, pin: '593827' });
+        f.advance();
+        await f.strategy.ensureEscrowEnrollment!(f.params);
+        expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'carry', pinAction: 'keep' });
+        expect(f.enrollments.at(-1)).toMatchObject({ action: 'carry' });
+        expect(f.enrollments.at(-1)!.recoveryBrand).toBeUndefined();
+        expect(f.enrollments.at(-1)!.recoveryEmail).toBeUndefined();
+        expect((await f.sealed())?.recoveryBrand).toBe('Vet Pass');
+    });
+
+    it('seals the brand on the PIN sign-in keep/refresh re-set', async () => {
+        const f = await setup(false, vetpass);
+        await pinEnroll(f);
+        f.spend();
+        f.faults.wrongPinAttempts = 0;
+        const before = f.enrollments.length;
+        await expect(
+            f.strategy.executeRecovery({
+                token: 'token',
+                providerType: 'firebase',
+                input: { method: 'escrow-pin', pin: '135790', expectedDid: owner.intent.did },
+                didFromPrivateKey: async () => owner.intent.did,
+                signDidAuthVp: f.params.signDidAuthVp,
+                options: f.params.options,
+            })
+        ).resolves.toMatchObject({ pinSignIn: { mode: 'kept', pinRefreshed: true } });
+        expect(f.enrollments.length).toBeGreaterThan(before);
+        expect(f.enrollments.at(-1)).toMatchObject({
+            action: 'replace',
+            recoveryBrand: 'Vet Pass',
+        });
+    });
+
+    it('seals the brand on the post-recovery rebind enrollment', async () => {
+        const f = await setup(false, vetpass);
+        const hold = await f.strategy.startEscrowRecovery!({
+            recoverySessionToken: 'otp-session',
+            expectedDid: owner.intent.did,
+        });
+        await f.strategy.executeRecovery({
+            token: '',
+            providerType: 'firebase',
+            input: { method: 'escrow', ...hold, resumeToken: hold.resumeToken! },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+        await f.strategy.completeIdentityRecovery!(f.params);
+        expect(f.enrollments.at(-1)).toMatchObject({
+            action: 'enroll',
+            recoveryBrand: 'Vet Pass',
+        });
+    });
+
+    it('seals no brand when the config leaves it unset', async () => {
+        const f = await setup(false, { appTenant: 'vetpass', authorityTenant: 'learncard' });
+        await pinEnroll(f);
+        await f.strategy.setEscrowPin!({ ...f.params, pin: '824957' });
+        expect(f.enrollments.length).toBeGreaterThan(0);
+        expect(f.enrollments.every(e => e.recoveryBrand === undefined)).toBe(true);
+        expect(await f.sealed()).not.toHaveProperty('recoveryBrand');
     });
 });

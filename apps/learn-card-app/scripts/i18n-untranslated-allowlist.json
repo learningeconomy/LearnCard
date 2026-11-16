@@ -140,6 +140,8 @@
     "fr:clrRenderer.expiration",
     "fr:clrRenderer.qualifications",
     "fr:clrRenderer.version",
+    "fr:consentUpdate.editor.image",
+    "fr:consentUpdate.scope.qualifications.label",
     "fr:contacts.contact",
     "fr:contacts.notification",
     "fr:contacts.title",

@@ -339,6 +339,12 @@ export interface TrustPolicy {
     expectedDkimDomain: string;
     requireDmarc: boolean;
     recoveryEmail: string;
+    /**
+     * Accept exactly one `X-SES-Spam-Verdict: FAIL` (provisioning login mail
+     * only, by explicit operator flag). Every other check still applies; the
+     * tier 3 runner never sets it.
+     */
+    allowSpamFail?: boolean;
 }
 
 /** `false` from a non-allowlisted sender (skip silently); throws for enclave-looking but untrusted mail. */
@@ -391,7 +397,8 @@ export const isTrusted = (message: ParsedMessage, policy: TrustPolicy): boolean 
         );
     });
     if (!aligned) fail();
-    if (all(sesBlock, 'x-ses-spam-verdict').join() !== 'PASS') fail();
+    const spam = all(sesBlock, 'x-ses-spam-verdict').join();
+    if (spam !== 'PASS' && !(policy.allowSpamFail === true && spam === 'FAIL')) fail();
     if (all(sesBlock, 'x-ses-virus-verdict').join() !== 'PASS') fail();
     // Exactly one To with exactly this account's address and no copies: a
     // relayed genuine message for another user cannot pass by adding a To/Cc.

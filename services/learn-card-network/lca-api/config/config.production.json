@@ -1,5 +1,6 @@
 {
     "DOMAIN_NAME": "api.learncard.app",
+    "NETWORK_BRAIN_SERVICE_URL": "https://network.learncard.com/trpc",
     "POSTMARK_BRAND_NAME": "LearnCard",
     "POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS": "universal-inbox-claim-1",
     "POSTMARK_FROM_EMAIL": "learncard.com",

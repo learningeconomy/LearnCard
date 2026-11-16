@@ -287,13 +287,20 @@ impl<'a> Policy<'a> {
             // P9.1 (attack C): Enroll/Replace bind the owner-signed email/language
             // to this exact blob; Carry must arrive with neither and inherits the
             // source's values verbatim, exactly like the PIN verifier just below.
+            // D21: the sealed email brand follows the same carry rule. It is not
+            // in the signed intent, so Enroll/Replace keep whatever valid brand
+            // the owner sealed (bound via `target_blob_identity`).
             if intent.action == EnrollmentAction::Carry {
-                if blob.recovery_email.is_some() || blob.recovery_language.is_some() {
+                if blob.recovery_email.is_some()
+                    || blob.recovery_language.is_some()
+                    || blob.recovery_brand.is_some()
+                {
                     return Err(ErrorCode::Policy);
                 }
                 let source_blob = source_blob.as_mut().ok_or(ErrorCode::Policy)?;
                 blob.recovery_email = source_blob.recovery_email.take();
                 blob.recovery_language = source_blob.recovery_language.take();
+                blob.recovery_brand = source_blob.recovery_brand.take();
             } else if blob.recovery_email != intent.recovery_email
                 || blob.recovery_language != intent.recovery_language
             {
@@ -584,6 +591,7 @@ impl<'a> Policy<'a> {
                 .send(
                     blob.recovery_email.as_deref().ok_or(ErrorCode::Policy)?,
                     blob.recovery_language.as_deref().ok_or(ErrorCode::Policy)?,
+                    blob.recovery_brand.as_deref(),
                     EmailMessage::OneTimeCode { code },
                 )
                 .await
@@ -1108,7 +1116,12 @@ impl<'a> Policy<'a> {
             blob.recovery_language.as_deref(),
         ) {
             let _ = email
-                .send(recipient, language, EmailMessage::RecoveryStarted)
+                .send(
+                    recipient,
+                    language,
+                    blob.recovery_brand.as_deref(),
+                    EmailMessage::RecoveryStarted,
+                )
                 .await;
         }
         Ok((receipt, confirmed_hi_ms))
@@ -1183,6 +1196,7 @@ impl<'a> Policy<'a> {
             .send(
                 recipient,
                 language,
+                blob.recovery_brand.as_deref(),
                 EmailMessage::ReleaseWarning { hours: 24 },
             )
             .await
@@ -1326,7 +1340,12 @@ impl<'a> Policy<'a> {
         // code path open only via a further resend, never a silent desync
         // between what is stored and what could possibly be confirmed.
         email
-            .send(recipient, language, EmailMessage::OneTimeCode { code })
+            .send(
+                recipient,
+                language,
+                blob.recovery_brand.as_deref(),
+                EmailMessage::OneTimeCode { code },
+            )
             .await
             .map_err(|_| ErrorCode::Unavailable)?;
         Ok(receipt)

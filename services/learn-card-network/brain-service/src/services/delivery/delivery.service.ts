@@ -12,6 +12,8 @@ export interface Notification {
     templateId: string; // e.g., 'universal-inbox-claim'
     templateModel: Record<string, any>; // Data for the template
     messageStream?: string;
+    subject?: string;
+    headers?: Array<{ Name: string; Value: string }>;
     /** Optional tenant branding. When present, emails are rendered locally via @learncard/email-templates. */
     branding?: Partial<TenantBranding>;
     /** Recipient locale (BCP-47), resolved via resolveRecipientLocale. Defaults to English at render time. */
@@ -26,6 +28,8 @@ export const NotificationSchema = z.object({
     templateId: z.string(),
     templateModel: z.record(z.string(), z.any()),
     messageStream: z.string().optional(),
+    subject: z.string().optional(),
+    headers: z.array(z.object({ Name: z.string(), Value: z.string() })).optional(),
     branding: z.record(z.string(), z.any()).optional(),
     locale: z.string().optional(),
 });

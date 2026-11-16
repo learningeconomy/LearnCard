@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name       | Type                                                                | Description | Notes                      |
-| ---------- | ------------------------------------------------------------------- | ----------- | -------------------------- |
-| **limit**  | **int**                                                             |             | [optional] [default to 50] |
-| **cursor** | **str**                                                             |             | [optional]                 |
-| **query**  | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |             | [optional]                 |
+| Name       | Type                                                            | Description | Notes                      |
+| ---------- | --------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**  | **int**                                                         |             | [optional] [default to 50] |
+| **cursor** | **str**                                                         |             | [optional]                 |
+| **query**  | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |             | [optional]                 |
 
 ## Example
 

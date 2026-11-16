@@ -1,6 +1,10 @@
 import { base64ToBuffer, bufferToBase64, bytesToHex } from './crypto';
 import { parseEscrowEnvelope } from './escrow-crypto';
-import { EscrowEvidenceError } from './escrow-authority.types';
+import {
+    ESCROW_AUTHORITY_TENANT_PATTERN,
+    EscrowAuthorityTenantMismatchError,
+    EscrowEvidenceError,
+} from './escrow-authority.types';
 import type { HistoricalEscrowEvidence } from './escrow-authority.types';
 import type { EscrowAttestationPolicy } from './types';
 import {
@@ -99,6 +103,14 @@ export const verifyEscrowCodeDelivery = async (
 };
 const requireEvidence = (condition: boolean): void => {
     if (!condition) fail();
+};
+/** Only after the signature verified: a well-formed but different signed tenant is a
+ * deployment misconfiguration (wrong `escrowAuthorityTenant`), reported specifically. */
+const requireAuthorityTenant = (signedTenant: unknown, expectedTenant: string): void => {
+    if (signedTenant === expectedTenant) return;
+    if (typeof signedTenant === 'string' && ESCROW_AUTHORITY_TENANT_PATTERN.test(signedTenant))
+        throw new EscrowAuthorityTenantMismatchError(expectedTenant, signedTenant);
+    fail();
 };
 const object = (value: unknown): Record<string, unknown> => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return fail();
@@ -335,7 +347,8 @@ export const verifyEscrowAuthorityState = async (
     const { payload } = await verifyRecord(raw.proof, 'snapshot', identity);
     if (!Array.isArray(payload) || payload.length !== 2 || payload[0] !== nonce) return fail();
     const signed = state(payload[1]);
-    requireEvidence(signed.tenant === tenant && signed.did === did);
+    requireEvidence(signed.did === did);
+    requireAuthorityTenant(signed.tenant, tenant);
     requireEvidence(JSON.stringify(signed) === JSON.stringify(state(raw.state)));
     if (signed.envelope) {
         requireEvidence(
@@ -497,7 +510,8 @@ export const verifyEscrowHoldRecord = async (
     keys(commit, ['schemaVersion', 'binding', 'executionId', 'revisions', 'transactionDigest']);
     const binding = object(commit.binding);
     keys(binding, ['tenant', 'generation', 'didHash']);
-    requireEvidence(commit.schemaVersion === 1 && binding.tenant === expected.tenant);
+    requireEvidence(commit.schemaVersion === 1);
+    requireAuthorityTenant(binding.tenant, expected.tenant);
     const authorityGeneration = text(binding.generation, 128);
     if (historical) requireEvidence(authorityGeneration === historical.authorityGeneration);
     requireEvidence(bytesToHex(bytes(binding.didHash, 32)) === (await hash(utf8(expected.did))));
@@ -608,16 +622,19 @@ export const resolveEscrowEnrollmentAction = (
 /** P2-d cross-language contract: mirrors the enclave's Carry contact-field
  * rejection rule (`apply_enrollment_intent` in authority.rs) — true means
  * the enclave would refuse this target blob. The enclave always fills
- * recoveryEmail/recoveryLanguage in from the source blob on carry, so a
- * target that already claims either field is refused. Shared by
+ * recoveryEmail/recoveryLanguage (and, D21, the sealed recoveryBrand) in from
+ * the source blob on carry, so a target that already claims any of them is
+ * refused. Shared by
  * `escrow-carry-contact-contract-v1.json`'s TS and Rust tests, and by any
  * caller (e.g. a test fake) that wants to fail the same way the real
  * enclave does instead of accepting a shape it would reject. */
 export const violatesCarryContactRule = (
     action: EscrowEnrollmentIntent['action'],
-    target: Pick<EscrowBlobPlaintext, 'recoveryEmail' | 'recoveryLanguage'> | null
+    target: Pick<EscrowBlobPlaintext, 'recoveryEmail' | 'recoveryLanguage' | 'recoveryBrand'> | null
 ): boolean =>
-    action === 'carry' && !!target && (!!target.recoveryEmail || !!target.recoveryLanguage);
+    action === 'carry' &&
+    !!target &&
+    (!!target.recoveryEmail || !!target.recoveryLanguage || !!target.recoveryBrand);
 
 /** Owner-only mutation selection. Recovery itself never calls this helper.
  * P9.1 (attack C): `recoveryEmail`/`recoveryLanguage` are always supplied by the

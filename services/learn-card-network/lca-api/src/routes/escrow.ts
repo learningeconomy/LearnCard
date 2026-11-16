@@ -54,7 +54,7 @@ import {
     clearEscrowByAuthProvider,
     setEscrowOptInByAuthProvider,
     createEscrowHold,
-    createEscrowHoldsIndexes,
+    ensureEscrowHoldsIndexes,
     findPendingEscrowHoldByAuthProvider,
     findEscrowHoldById,
     cancelEscrowHold,
@@ -90,6 +90,7 @@ import {
     getEscrowHoldDurationMs,
     getEscrowHoldRestartMinAgeMs,
     isEscrowRemoteMode,
+    getEscrowAuthorityTenant,
     activeEscrowClientMode,
     getEnclaveAttestationIdentity,
     notifyEscrowHoldEvent,
@@ -185,18 +186,16 @@ const lockPin = async (
         }
     }
 };
-let holdIndexes: Promise<void> | undefined;
-
-// Lambda and in-process callers do not run docker-entry's index initialization.
 const ensureHoldIndexes = async (): Promise<void> => {
-    holdIndexes ??= createEscrowHoldsIndexes().catch(() => {
-        holdIndexes = undefined;
+    try {
+        await ensureEscrowHoldsIndexes();
+    } catch (cause) {
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Recovery could not be started.',
+            cause,
         });
-    });
-    await holdIndexes;
+    }
 };
 const successValidator = z.object({ success: z.literal(true) });
 const cancelByLinkInput = z
@@ -498,7 +497,7 @@ const removeEscrow = async (
             !enclave.applyEnrollmentIntent ||
             signed.intent.action !== 'disable' ||
             signed.intent.did !== did ||
-            signed.intent.tenant !== tenant.id
+            signed.intent.tenant !== getEscrowAuthorityTenant()
         )
             throw new TRPCError({
                 code: 'BAD_REQUEST',
@@ -656,7 +655,10 @@ export const escrowRouter = t.router({
             const result = await enclaveOperation(() =>
                 enclave.getEnrollmentState!({ expectedDid: ctx.user.did, nonce: input.nonce })
             );
-            if (result.state.did !== ctx.user.did || result.state.tenant !== ctx.tenant.id)
+            if (
+                result.state.did !== ctx.user.did ||
+                result.state.tenant !== getEscrowAuthorityTenant()
+            )
                 throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
             return result;
         }),
@@ -726,7 +728,7 @@ export const escrowRouter = t.router({
                 const intent = signed.intent;
                 if (
                     intent.did !== ctx.user.did ||
-                    intent.tenant !== ctx.tenant.id ||
+                    intent.tenant !== getEscrowAuthorityTenant() ||
                     intent.action === 'disable' ||
                     intent.shareVersion !== input.shareVersion ||
                     !!input.pinSalt !==
@@ -740,6 +742,10 @@ export const escrowRouter = t.router({
                         nonce: randomBytes(32).toString('hex'),
                     })
                 );
+                // The enclave signs its own (measured) tenant; a different one means this
+                // lca-api's ESCROW_AUTHORITY_TENANT does not match the enclave it talks to.
+                if (current.state.tenant !== intent.tenant)
+                    throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
                 if (
                     current.state.enrollmentVersion !== intent.expectedEnrollmentVersion ||
                     current.state.authorityGeneration !== intent.authorityGeneration
@@ -1398,6 +1404,7 @@ export const escrowRouter = t.router({
             // Legacy Mongo rows can predate the required creation-time record.
             if (hold.status !== 'pending' || !hold.holdRecord)
                 throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            await ensureHoldIndexes();
             const now = new Date();
             if (now < hold.releaseAfter) {
                 throw new TRPCError({

@@ -1,12 +1,13 @@
 /**
  * Firebase Auth Provider Factory
- * 
+ *
  * Creates an AuthProvider implementation for Firebase Authentication.
  */
 
 import { AuthSessionError } from '@learncard/types';
 
 import type { AuthProvider, AuthUser, AuthProviderType } from '../auth-coordinator/types';
+import { getContactEmail } from '../helpers/syntheticEmail';
 
 export interface FirebaseAuthConfig {
     /** Function that returns the Firebase Auth instance */
@@ -45,16 +46,17 @@ export interface FirebaseAuthConfig {
 }
 
 /** Map a live Firebase currentUser to a generic AuthUser. */
-const firebaseUserToAuthUser = (cu: NonNullable<ReturnType<FirebaseAuthConfig['getAuth']>['currentUser']>): AuthUser => ({
+const firebaseUserToAuthUser = (
+    cu: NonNullable<ReturnType<FirebaseAuthConfig['getAuth']>['currentUser']>
+): AuthUser => ({
     id: cu.uid,
-    email: cu.email || undefined,
+    // Synthetic ClassLink placeholders are not contact emails; expose them as no email.
+    email: getContactEmail(cu.email),
     phone: cu.phoneNumber || undefined,
     displayName: cu.displayName || undefined,
     photoUrl: cu.photoURL || undefined,
     providerType: 'firebase' as AuthProviderType,
-    createdAt: cu.metadata?.creationTime
-        ? new Date(cu.metadata.creationTime)
-        : undefined,
+    createdAt: cu.metadata?.creationTime ? new Date(cu.metadata.creationTime) : undefined,
 });
 
 /**

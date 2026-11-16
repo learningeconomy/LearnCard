@@ -2,9 +2,9 @@
 
 ## Properties
 
-| Name                        | Type                                                                                    | Description | Notes      |
-| --------------------------- | --------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **verifiable_presentation** | [**StorageStoreRequestItemAnyOfAnyOfAnyOf**](StorageStoreRequestItemAnyOfAnyOfAnyOf.md) |             | [optional] |
+| Name                        | Type                                                                                                                | Description | Notes      |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **verifiable_presentation** | [**PresentationSendPresentationRequestPresentationAnyOf**](PresentationSendPresentationRequestPresentationAnyOf.md) |             | [optional] |
 
 ## Example
 

@@ -45,7 +45,7 @@ node services/escrow-canary/dist/provision.mjs \
   ( --labels <hold-01,hold-02|all> --login-sender <address> --login-dkim-domain <domain>
   | --account <read-only|pin-a|pin-b> --email <address> ) \
   [--dry-run] [--check-mail] [--activate] [--init-pool] [--takeover] \
-  [--no-require-dmarc] [--firebase-project <id>] [--function <name>]
+  [--no-require-dmarc] [--allow-login-spam-fail] [--firebase-project <id>] [--function <name>]
 ```
 
 - `--environment` and `--expect-account` are required in every mode. No account id is
@@ -205,6 +205,10 @@ active: `activate(T,'firebase', getFreshDidAuthVp(key, did, sign))`
 All checks apply: one SES `Authentication-Results`, SPF pass, DMARC pass (unless
 `--no-require-dmarc`), every DKIM result pass with one aligned inside the DKIM
 domain, spam and virus PASS, exactly one To equal to `email`, no Cc or Bcc.
+`--allow-login-spam-fail` accepts exactly one SES spam verdict of `FAIL` for login
+mail only (production login mail from some Postmark pools scored `FAIL` on every
+try, 2026-11-04, while staging's identical mail passed); the virus verdict and every
+other check still apply, and the tier 3 runner's enclave-mail policy never sets it.
 
 `src/tier3/inbox.ts` now exports `findParsed(store, prefix, since, policy, parse)`;
 `findMessage` and `readKnownMessage` are thin wrappers with unchanged behaviour (all

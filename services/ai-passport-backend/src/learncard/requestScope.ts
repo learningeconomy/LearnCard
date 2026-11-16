@@ -13,7 +13,22 @@ type ConsentReadEntry = {
 
 type LearnCardRequestScope = {
     readonly signal?: AbortSignal;
+    /** performance.now() time the request's budget ends, when it has one. */
+    readonly deadlineAt?: number;
+    /** The whole request budget in ms, when it has a deadline. */
+    readonly budgetMs?: number;
     consentRead?: ConsentReadEntry;
+    /** One in-flight or settled result per key (a credential URI) per request. */
+    memo?: Map<string, Promise<unknown>>;
+    /** Time kept after the credential batch for synthesis and publication. */
+    readonly postBatchReserveMs?: number;
+    /** Store writes run in the background instead of on the request path. */
+    readonly deferStores?: boolean;
+    readonly onBatchEnded?: (at: number) => void;
+    /** Durations of credential tasks that finished in this request. */
+    taskMs?: { count: number; total: number };
+    /** Set once publication starts: fresh checks outside an AI call share the newest live read. */
+    publicationConsent?: { entry?: ConsentReadEntry };
 };
 
 const requestScope = new AsyncLocalStorage<LearnCardRequestScope>();
@@ -38,9 +53,87 @@ export const runInAiCallConsentScope = <Result>(callback: () => Result): Result 
  * `reuseRequestConsentRead`).
  */
 export const runWithLearnCardRequestScope = <Result>(
+    options: {
+        signal?: AbortSignal;
+        deadlineAt?: number;
+        budgetMs?: number;
+        postBatchReserveMs?: number;
+        deferStores?: boolean;
+        /** Called when the request's credential batch settles. */
+        onBatchEnded?: (at: number) => void;
+    },
+    callback: () => Result
+): Result =>
+    requestScope.run(
+        {
+            signal: options.signal,
+            deadlineAt: options.deadlineAt,
+            budgetMs: options.budgetMs,
+            postBatchReserveMs: options.postBatchReserveMs,
+            deferStores: options.deferStores,
+            onBatchEnded: options.onBatchEnded,
+        },
+        callback
+    );
+
+/**
+ * Mark the start of the request's publication phase: all credential data has
+ * been read. From here, `fresh` checks outside an AI call share the newest live
+ * read instead of each reading the contract again. Checks inside an AI call
+ * (model dispatch and result) still read live, and each of those reads becomes
+ * the shared one. Calling it again makes the next fresh check read live: do
+ * that before publishing a result. Outside a request scope it does nothing,
+ * and fresh checks always read.
+ */
+export const beginLearnCardPublication = (): void => {
+    const scope = requestScope.getStore();
+    if (scope) scope.publicationConsent = {};
+};
+
+/** Record that the credential batch settled (for the post-batch reserve). */
+export const markLearnCardBatchEnded = (now = performance.now()): void => {
+    requestScope.getStore()?.onBatchEnded?.(now);
+};
+
+/** Record how long one credential task took in this request. */
+export const recordLearnCardTaskMs = (ms: number): void => {
+    const scope = requestScope.getStore();
+    if (!scope || !Number.isFinite(ms) || ms < 0) return;
+    scope.taskMs ??= { count: 0, total: 0 };
+    scope.taskMs.count += 1;
+    scope.taskMs.total += ms;
+};
+
+/** Mean credential task duration in this request, if any finished. */
+export const getLearnCardMeanTaskMs = (): number | undefined => {
+    const stats = requestScope.getStore()?.taskMs;
+    return stats && stats.count ? stats.total / stats.count : undefined;
+};
+
+/** Whether store writes in this request go to the background queue. */
+export const learnCardStoresDeferred = (): boolean => requestScope.getStore()?.deferStores === true;
+
+/**
+ * Like runWithLearnCardRequestScope, but inside an existing request scope it
+ * joins it: the callback shares the outer request's consent read, publication
+ * read, memo, deadline and store mode, and is bounded by both signals. Used by
+ * credential search, which an MCP tool calls inside its own request.
+ */
+export const joinLearnCardRequestScope = <Result>(
     options: { signal?: AbortSignal },
     callback: () => Result
-): Result => requestScope.run({ signal: options.signal }, callback);
+): Result => {
+    const parent = requestScope.getStore();
+    if (!parent) return requestScope.run({ signal: options.signal }, callback);
+    const signals = [parent.signal, options.signal].filter(
+        (signal): signal is AbortSignal => signal !== undefined
+    );
+    const signal = signals.length > 1 ? AbortSignal.any(signals) : signals[0];
+    const child = Object.create(parent, {
+        signal: { value: signal, enumerable: true },
+    }) as LearnCardRequestScope;
+    return requestScope.run(child, callback);
+};
 
 /**
  * Run `callback` with no request scope: nothing inside inherits a request's
@@ -51,6 +144,39 @@ export const runOutsideLearnCardRequestScope = <Result>(callback: () => Result):
 
 export const getLearnCardRequestSignal = (): AbortSignal | undefined =>
     requestScope.getStore()?.signal;
+
+export const getLearnCardRequestDeadline = (): number | undefined =>
+    requestScope.getStore()?.deadlineAt;
+
+export const getLearnCardRequestBudget = ():
+    { deadlineAt: number; budgetMs: number; postBatchReserveMs?: number } | undefined => {
+    const scope = requestScope.getStore();
+    if (scope?.deadlineAt === undefined || scope.budgetMs === undefined) return undefined;
+    return {
+        deadlineAt: scope.deadlineAt,
+        budgetMs: scope.budgetMs,
+        postBatchReserveMs: scope.postBatchReserveMs,
+    };
+};
+
+/**
+ * Run `operation` at most once per key within the current request; later
+ * callers share its promise, including a rejection (a credential that failed
+ * is not read again in the same request). Outside a request, runs every time.
+ */
+export const oncePerLearnCardRequest = <T>(
+    key: string,
+    operation: () => Promise<T>
+): Promise<T> => {
+    const scope = requestScope.getStore();
+    if (!scope) return operation();
+    scope.memo ??= new Map();
+    const existing = scope.memo.get(key);
+    if (existing) return existing as Promise<T>;
+    const result = operation();
+    scope.memo.set(key, result);
+    return result;
+};
 
 /** Longest a request may reuse one consent read before it must read again. */
 export const CONSENT_READ_REUSE_MAX_MS = 10_000;
@@ -68,6 +194,12 @@ export const CONSENT_READ_REUSE_MAX_MS = 10_000;
  * `runInAiCallConsentScope`) and reads fresh outside one. Every fresh read
  * made inside a call becomes that call's read, so boundary checks after a
  * dispatch or publication check see the newer state.
+ *
+ * After `beginLearnCardPublication`, `fresh` reads outside an AI call share the
+ * newest live read. Inside an AI call they never do: a withdrawal during
+ * compaction, generation or pseudonymization reaches the next model dispatch.
+ * Plain reads then reuse the request's read whatever its age, because a live
+ * check still runs before anything is sent or returned.
  */
 export const reuseRequestConsentRead = <T>(
     did: string,
@@ -99,12 +231,17 @@ export const reuseRequestConsentRead = <T>(
     };
     const scope = requestScope.getStore();
     if (!scope) return rememberAiCallRead(call, did, live(), now);
+    const publication = scope.publicationConsent;
+    const published = publication?.entry;
+    if (fresh && !call && published && published.did === did) return published.data as Promise<T>;
     const existing = scope.consentRead;
+    // During publication a plain read keeps the request's read whatever its
+    // age: the publication's fresh read decides, and it follows.
     if (
         !fresh &&
         existing &&
         existing.did === did &&
-        now() - existing.startedAt <= CONSENT_READ_REUSE_MAX_MS
+        (publication || now() - existing.startedAt <= CONSENT_READ_REUSE_MAX_MS)
     )
         return existing.data as Promise<T>;
     if (!fresh && snapshot) {
@@ -126,8 +263,10 @@ export const reuseRequestConsentRead = <T>(
     const data = rememberAiCallRead(call, did, live(), now);
     const entry: ConsentReadEntry = { did, startedAt: now(), data };
     scope.consentRead = entry;
+    if (fresh && publication) publication.entry = entry;
     data.catch(() => {
         if (scope.consentRead === entry) scope.consentRead = undefined;
+        if (publication?.entry === entry) publication.entry = undefined;
     });
     return data;
 };

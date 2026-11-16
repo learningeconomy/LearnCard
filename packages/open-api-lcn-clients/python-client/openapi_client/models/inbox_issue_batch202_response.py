@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,9 +27,9 @@ class InboxIssueBatch202Response(BaseModel):
     """
     InboxIssueBatch202Response
     """ # noqa: E501
-    batch_id: Optional[StrictStr] = Field(alias="batchId")
+    batch_id: StrictStr = Field(alias="batchId")
     status: StrictStr
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
+    created_at: StrictStr = Field(alias="createdAt")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["batchId", "status", "createdAt"]
 
@@ -67,9 +67,8 @@ class InboxIssueBatch202Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -85,16 +84,6 @@ class InboxIssueBatch202Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if batch_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.batch_id is None and "batch_id" in self.model_fields_set:
-            _dict['batchId'] = None
-
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
-            _dict['createdAt'] = None
 
         return _dict
 

@@ -80,6 +80,14 @@ pub struct EscrowBlobPlaintext {
     pub recovery_email: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub recovery_language: Option<String>,
+    /// D21: display name for enclave-sent recovery emails, sealed by the owner's
+    /// device at enrollment (not part of the signed intent; bound to the owner
+    /// through `target_blob_identity`, which hashes this exact envelope).
+    /// Lenient on read: `normalize` drops any value `canonical_brand` rejects
+    /// instead of failing, so recovery is never refused over display text, and
+    /// a missing/dropped brand falls back to the measured tenant label's brand.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recovery_brand: Option<String>,
 }
 
 impl<'de> Deserialize<'de> for EscrowBlobPlaintext {
@@ -102,6 +110,8 @@ impl<'de> Deserialize<'de> for EscrowBlobPlaintext {
             recovery_email: Option<Zeroizing<String>>,
             #[serde(default)]
             recovery_language: Option<String>,
+            #[serde(default, deserialize_with = "lenient_brand")]
+            recovery_brand: Option<String>,
         }
         let mut fields = Fields::deserialize(d)?;
         Ok(Self {
@@ -119,6 +129,7 @@ impl<'de> Deserialize<'de> for EscrowBlobPlaintext {
                 .as_mut()
                 .map(|s| std::mem::take(&mut **s)),
             recovery_language: fields.recovery_language,
+            recovery_brand: fields.recovery_brand,
         })
     }
 }
@@ -165,6 +176,8 @@ impl<'de> Deserialize<'de> for EscrowReleasePlaintext {
             recovery_email: Option<Zeroizing<String>>,
             #[serde(default)]
             recovery_language: Option<String>,
+            #[serde(default, deserialize_with = "lenient_brand")]
+            recovery_brand: Option<String>,
             #[serde(deserialize_with = "secret_string")]
             hold_id: Zeroizing<String>,
         }
@@ -185,6 +198,7 @@ impl<'de> Deserialize<'de> for EscrowReleasePlaintext {
                     .as_mut()
                     .map(|s| std::mem::take(&mut **s)),
                 recovery_language: fields.recovery_language,
+                recovery_brand: fields.recovery_brand,
             },
             hold_id: std::mem::take(&mut *fields.hold_id),
         })
@@ -200,6 +214,70 @@ fn optional_secret_string<'de, D: serde::Deserializer<'de>>(
 ) -> Result<Option<Zeroizing<String>>, D::Error> {
     // Absent is optional; explicit null must still fail, as in the TS parser.
     secret_string(d).map(Some)
+}
+
+fn lenient_brand<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
+    // D21 lenient-on-read: a non-string (including null) brand is dropped, never a
+    // decode failure. Its shape is checked separately by `normalize`.
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Brand {
+        Text(String),
+        Other(serde::de::IgnoredAny),
+    }
+    Ok(match Brand::deserialize(d)? {
+        Brand::Text(text) => Some(text),
+        Brand::Other(_) => None,
+    })
+}
+
+/// D21: longest canonical email brand, in characters (= bytes: ASCII only).
+pub const MAX_RECOVERY_BRAND_CHARS: usize = 32;
+
+/// D21: most digits a canonical email brand may contain, counted over the
+/// whole brand (not per run), so `Code 123 456 78` cannot pass as a brand.
+pub const MAX_RECOVERY_BRAND_DIGITS: usize = 3;
+
+/// D21: canonical form of an owner-sealed email brand, or `None` if it is not
+/// acceptable display text. Shared contract with the client's
+/// `canonicalEscrowEmailBrand` (escrow-email-brand-contract-v1.json).
+///
+/// Trims and collapses runs of ASCII space (0x20); every other whitespace or
+/// control character rejects. Only `A-Z a-z 0-9`, space, `-`, `'` and `&` are
+/// allowed, so a brand can never form a URL, address, domain or path, carry
+/// bidi/zero-width/homoglyph characters, or need RFC 2047 encoding. It must
+/// start with a letter, be 1-32 characters, contain at most 3 digits in total
+/// (so no phone number or recovery code, even split by spaces or `-`), and
+/// contain no `http`/`www` (any case). Never
+/// make this stricter in a later image without a migration: stored blobs are
+/// re-validated on every decrypt (they would only degrade to the label brand,
+/// but silently).
+pub fn canonical_brand(raw: &str) -> Option<String> {
+    let mut out = String::with_capacity(raw.len().min(64));
+    for word in raw.split(' ').filter(|w| !w.is_empty()) {
+        if !out.is_empty() {
+            out.push(' ');
+        }
+        out.push_str(word);
+        if out.len() > MAX_RECOVERY_BRAND_CHARS {
+            return None;
+        }
+    }
+    if !out
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || b" -'&".contains(&b))
+        || !out.bytes().next()?.is_ascii_alphabetic()
+    {
+        return None;
+    }
+    if out.bytes().filter(u8::is_ascii_digit).count() > MAX_RECOVERY_BRAND_DIGITS {
+        return None;
+    }
+    let lower = out.to_ascii_lowercase();
+    if lower.contains("http") || lower.contains("www") {
+        return None;
+    }
+    Some(out)
 }
 
 fn bounded(value: &str, field: &'static str, min: usize, max: usize) -> Result<(), CryptoError> {
@@ -283,6 +361,9 @@ impl EscrowBlobPlaintext {
             let _ = local;
             *email = trimmed;
         }
+        // D21: lenient on purpose; an invalid brand is dropped, never an error.
+        // Independent of `recovery_email` (kept but inert without one).
+        self.recovery_brand = self.recovery_brand.as_deref().and_then(canonical_brand);
         Ok(())
     }
 }
@@ -853,6 +934,7 @@ mod tests {
             pin_attempts_floor: None,
             recovery_email: None,
             recovery_language: None,
+            recovery_brand: None,
         };
         let envelope = encrypt_escrow_blob(&carried, &keys.public_key, "test").unwrap();
         let plaintext = decrypt(&envelope, &keys.private_key, ESCROW_BLOB_INFO).unwrap();
@@ -926,5 +1008,134 @@ mod tests {
             )
             .is_err());
         }
+    }
+
+    #[derive(Deserialize)]
+    struct BrandCase {
+        name: String,
+        input: String,
+        expected: Option<String>,
+    }
+    #[derive(Deserialize)]
+    struct BrandFixture {
+        cases: Vec<BrandCase>,
+    }
+
+    // D21 cross-language contract: escrow-crypto.test.ts loads the same file
+    // and must reach the identical canonical form or rejection for each case.
+    #[test]
+    fn canonical_brand_matches_the_shared_cross_language_fixture() {
+        let fixture: BrandFixture = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../packages/sss-key-manager/src/__fixtures__/escrow-email-brand-contract-v1.json"
+        )))
+        .unwrap();
+        assert!(fixture.cases.len() > 30);
+        for case in fixture.cases {
+            assert_eq!(
+                canonical_brand(&case.input),
+                case.expected,
+                "case {:?}",
+                case.name
+            );
+            if let Some(canonical) = &case.expected {
+                // Idempotent: what `display_brand` relies on.
+                assert_eq!(canonical_brand(canonical).as_ref(), Some(canonical));
+            }
+        }
+    }
+
+    fn branded(brand: Value) -> Value {
+        json!({
+            "version": 1,
+            "recoveryShare": "abcde",
+            "did": "did:key:test",
+            "shareVersion": 1,
+            "recoveryEmail": "owner@example.com",
+            "recoveryLanguage": "en",
+            "recoveryBrand": brand,
+        })
+    }
+
+    // D21 lenient on read: an invalid or mistyped brand never makes a blob or
+    // release undecryptable; it is dropped, and the email falls back to the
+    // measured label's brand.
+    #[test]
+    fn invalid_or_mistyped_sealed_brands_decode_with_no_brand() {
+        let keys = generate_escrow_key_pair().unwrap();
+        for bad in [
+            json!("Visit www.example.com"),
+            json!("Vet\r\nPass"),
+            json!("a".repeat(33)),
+            json!(""),
+            Value::Null,
+            json!(7),
+            json!(["VetPass"]),
+            json!({"name": "VetPass"}),
+        ] {
+            let envelope = encrypt(
+                &serde_json::to_vec(&branded(bad.clone())).unwrap(),
+                &keys.public_key,
+                "test",
+                ESCROW_BLOB_INFO,
+            )
+            .unwrap();
+            let blob = decrypt_escrow_blob(&envelope, &keys.private_key).unwrap();
+            assert_eq!(blob.recovery_brand, None, "{bad}");
+            assert_eq!(blob.recovery_email.as_deref(), Some("owner@example.com"));
+            let mut release = branded(bad.clone());
+            release["holdId"] = json!("hold");
+            let envelope = encrypt(
+                &serde_json::to_vec(&release).unwrap(),
+                &keys.public_key,
+                "client",
+                ESCROW_RELEASE_INFO,
+            )
+            .unwrap();
+            let opened = open_escrow_release(&envelope, &keys.private_key).unwrap();
+            assert_eq!(opened.blob.recovery_brand, None, "{bad}");
+        }
+    }
+
+    #[test]
+    fn a_valid_sealed_brand_round_trips_canonically_through_blob_and_release() {
+        let keys = generate_escrow_key_pair().unwrap();
+        let envelope = encrypt(
+            &serde_json::to_vec(&branded(json!("  Vet   Pass "))).unwrap(),
+            &keys.public_key,
+            "test",
+            ESCROW_BLOB_INFO,
+        )
+        .unwrap();
+        let blob = decrypt_escrow_blob(&envelope, &keys.private_key).unwrap();
+        assert_eq!(blob.recovery_brand.as_deref(), Some("Vet Pass"));
+        let resealed = encrypt_escrow_blob(&blob, &keys.public_key, "test").unwrap();
+        let bytes = decrypt(&resealed, &keys.private_key, ESCROW_BLOB_INFO).unwrap();
+        let text = std::str::from_utf8(&bytes).unwrap();
+        assert!(text.contains("\"recoveryBrand\":\"Vet Pass\""));
+        let release = EscrowReleasePlaintext {
+            blob,
+            hold_id: "hold".into(),
+        };
+        let sealed = seal_escrow_release(&release, &keys.public_key).unwrap();
+        let opened = open_escrow_release(&sealed, &keys.private_key).unwrap();
+        assert_eq!(opened.blob.recovery_brand.as_deref(), Some("Vet Pass"));
+    }
+
+    // D21 schema compatibility (as for pinAttemptsFloor): a frozen pre-D21
+    // blob plaintext, with contact but no brand, still decodes, and
+    // re-encrypting it adds no `recoveryBrand` key.
+    #[test]
+    fn frozen_pre_brand_blob_still_decodes_and_reseals_without_a_brand_key() {
+        let keys = generate_escrow_key_pair().unwrap();
+        let frozen = br#"{"version":1,"recoveryShare":"abcde","did":"did:key:test","shareVersion":1,"recoveryEmail":"owner@example.com","recoveryLanguage":"en"}"#;
+        let envelope = encrypt(frozen, &keys.public_key, "test", ESCROW_BLOB_INFO).unwrap();
+        let blob = decrypt_escrow_blob(&envelope, &keys.private_key).unwrap();
+        assert_eq!(blob.recovery_brand, None);
+        let resealed = encrypt_escrow_blob(&blob, &keys.public_key, "test").unwrap();
+        let bytes = decrypt(&resealed, &keys.private_key, ESCROW_BLOB_INFO).unwrap();
+        assert!(!std::str::from_utf8(&bytes)
+            .unwrap()
+            .contains("recoveryBrand"));
     }
 }

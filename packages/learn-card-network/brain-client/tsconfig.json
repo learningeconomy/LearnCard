@@ -1,6 +1,7 @@
 {
     "extends": "../../../tsconfig.library.json",
     "compilerOptions": {
+        "jsx": "react-jsx",
         "lib": ["es2022", "DOM"],
         "module": "esnext",
         "moduleResolution": "bundler",

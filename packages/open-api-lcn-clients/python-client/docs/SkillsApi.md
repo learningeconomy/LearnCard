@@ -37,7 +37,7 @@ All URIs are relative to _/api_
 
 # **skill_frameworks_add_framework_admin**
 
-> InboxApproveGuardianCredentialInApp200Response skill_frameworks_add_framework_admin(framework_id, skill_frameworks_add_framework_admin_request)
+> InboxApproveGuardianCredentialInApp200Response skill_frameworks_add_framework_admin(framework_id, profile_manager_remove_manages_relationship_request)
 
 Add framework admin
 
@@ -50,7 +50,7 @@ Adds another profile as a manager of the framework. Requires existing manager ac
 ```python
 import openapi_client
 from openapi_client.models.inbox_approve_guardian_credential_in_app200_response import InboxApproveGuardianCredentialInApp200Response
-from openapi_client.models.skill_frameworks_add_framework_admin_request import SkillFrameworksAddFrameworkAdminRequest
+from openapi_client.models.profile_manager_remove_manages_relationship_request import ProfileManagerRemoveManagesRelationshipRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -75,11 +75,11 @@ with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.SkillsApi(api_client)
     framework_id = 'framework_id_example' # str |
-    skill_frameworks_add_framework_admin_request = openapi_client.SkillFrameworksAddFrameworkAdminRequest() # SkillFrameworksAddFrameworkAdminRequest |
+    profile_manager_remove_manages_relationship_request = openapi_client.ProfileManagerRemoveManagesRelationshipRequest() # ProfileManagerRemoveManagesRelationshipRequest |
 
     try:
         # Add framework admin
-        api_response = api_instance.skill_frameworks_add_framework_admin(framework_id, skill_frameworks_add_framework_admin_request)
+        api_response = api_instance.skill_frameworks_add_framework_admin(framework_id, profile_manager_remove_manages_relationship_request)
         print("The response of SkillsApi->skill_frameworks_add_framework_admin:\n")
         pprint(api_response)
     except Exception as e:
@@ -88,10 +88,10 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                             | Type                                                                                      | Description | Notes |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------- | ----------- | ----- |
-| **framework_id**                                 | **str**                                                                                   |             |
-| **skill_frameworks_add_framework_admin_request** | [**SkillFrameworksAddFrameworkAdminRequest**](SkillFrameworksAddFrameworkAdminRequest.md) |             |
+| Name                                                    | Type                                                                                                    | Description | Notes |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **framework_id**                                        | **str**                                                                                                 |             |
+| **profile_manager_remove_manages_relationship_request** | [**ProfileManagerRemoveManagesRelationshipRequest**](ProfileManagerRemoveManagesRelationshipRequest.md) |             |
 
 ### Return type
 

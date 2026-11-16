@@ -32,3 +32,7 @@ export const ProfileIDStateValidator = z.object({
 });
 
 export const getDobValidator = () => getStateValidator().pick({ dob: true });
+
+/** Format-only check; mirrors the server's validator and never implies the address can receive mail. */
+export const isValidGuardianEmail = (value: string): boolean =>
+    z.string().email().safeParse(value.trim()).success;

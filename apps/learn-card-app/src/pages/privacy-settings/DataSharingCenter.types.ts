@@ -38,6 +38,7 @@ export type DataSharingDiagnosticsViewModel = {
     analyticsEnabled: boolean;
     bugReportsEnabled: boolean;
     disabled?: boolean;
+    saving?: boolean;
     lockedNote?: string;
     onToggleAnalytics: (enabled: boolean) => void;
     onToggleBugReports: (enabled: boolean) => void;

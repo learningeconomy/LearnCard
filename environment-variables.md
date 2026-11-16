@@ -51,8 +51,8 @@ The deploy workflow bakes it into every function from the matrix leg's `tenant`
 (ScoutPass legs set `scouts`). A named tenant **fails closed**: a missing
 `config.<tenant>.<stage>.json` stops startup instead of loading LearnCard's or the
 base settings. ScoutPass files were generated from the live ScoutPass Lambdas;
-ScoutPass production keeps `SA_SEED_ALLOW_LEGACY_READ=true` /
-`SA_SEED_ENCRYPT_WRITES=false` until its seed migration is confirmed complete.
+ScoutPass production enables `SA_SEED_ENCRYPT_WRITES=true` and keeps
+`SA_SEED_ALLOW_LEGACY_READ=true` until its seed migration is confirmed complete.
 To add a tenant, add its stage files to each service and register them in
 `src/config/stageConfig.ts`.
 
@@ -104,8 +104,82 @@ Whitespace is trimmed. An empty/unset value grants nobody campaign administratio
 In non-bundle Lambda deployments it is forwarded like `APP_STORE_ADMIN_PROFILE_IDS`.
 No administrators or production campaigns are enabled by this change.
 
-LC-2265 adds setup, audiences and engagement state only. Dispatch settings and queue
-configuration belong to LC-2266; this setting does not enable notification delivery.
+Campaign notification delivery additionally uses:
+
+| Variable                          | Default       | Purpose                                                                                                                     |
+| --------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `CAMPAIGN_QUEUE_URL`              | unset locally | Serverless injects the `campaign-queue` URL. Missing URL or `IS_OFFLINE=true` uses the awaited, non-durable local fallback. |
+| `CAMPAIGN_DISPATCH_PAGE_SIZE`     | `1000`        | Recipients per wave, integer 1–1000.                                                                                        |
+| `CAMPAIGN_DISPATCH_DELAY_SECONDS` | `60`          | Delay between full pages, integer 0–900 (SQS maximum).                                                                      |
+
+Put non-secret page-size/delay tuning in the brain-service stage config, or override it in
+runtime environment configuration. Empty values use defaults; invalid values fail startup.
+The queue uses batch size 1, three retries, a 300-second worker timeout and the inbox VPC.
+The notification worker also needs that VPC to recheck eligibility and acknowledge delivery.
+Monitor the construct's dead-letter queue; redrive failed jobs or re-dispatch after fixing
+the cause. Retried notifications retain their receiver identity.
+
+Deploy lca-api's ANNOUNCEMENT enum **and campaign deduplication support first**, then brain,
+then the app integration. Only an explicit admin dispatch sends audience notifications.
+See [campaign delivery](services/learn-card-network/brain-service/src/accesslayer/campaign/README.md#notification-delivery-lc-2266)
+for retry semantics and the pilot sequence. No rollout is authorized by these changes.
+
+### Campaign email runtime settings (brain-service)
+
+For bundle-enabled deployments, manage both settings below in the **LearnCard Runtime**
+Infisical project, folder **`/learncard/brain-service/runtime`**, in **`staging`**
+and **`prod`**. ScoutPass uses `/scouts/brain-service/runtime` when campaign email
+is enabled there. These are service runtime values, not new GitHub Actions inputs.
+
+| Setting                       | Value / behavior                                                                                                                                                                                                                       |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POSTMARK_BROADCAST_STREAM`   | Postmark broadcast stream ID; defaults to `broadcast`. It is not a secret, but can be managed alongside the email credentials in the runtime bundle. The configured stream must have type Broadcasts.                                  |
+| `CAMPAIGN_UNSUBSCRIBE_SECRET` | Dedicated random signing secret of at least 32 bytes. Required for campaign email sends and unsubscribe validation; no default. Generate once per environment (for example, `openssl rand -hex 32`) and keep it stable across deploys. |
+
+Campaign CTA origins are public deployment configuration in `CAMPAIGN_APP_ORIGINS`,
+a JSON object mapping tenant IDs to trusted app origins. The checked-in Brain stage
+configs provide LearnCard and VetPass production/staging origins and separate
+ScoutPass production/staging origins. Local development can use
+`CAMPAIGN_APP_ORIGINS={"learncard":"http://localhost:3000"}`. Custom deployments
+must supply their own mapping. Missing or invalid origins reject in-app campaign
+email preparation before reserving a send. Runtime bundle overrides use the same
+JSON string value; GitHub per-key wiring is unnecessary in bundle mode.
+
+The visible unsubscribe footer opens the sending Brain service's anonymous
+`/campaigns/unsubscribe/browser` confirmation page. This works for LearnCard,
+VetPass and ScoutPass and keeps staging links on staging Brain. The separate
+`/campaigns/unsubscribe` endpoint continues to handle provider one-click POSTs.
+Version 2 tokens use a durable recipient ID. Old name-based test links are rejected;
+send a new test email when checking the updated unsubscribe flow.
+
+Infisical auto-sync writes the folder as a flat JSON string map to
+`brain-service/dev/runtime-secrets` for `staging`, or
+`brain-service/production/runtime-secrets` for `prod`. LearnCard uses `us-east-1`;
+ScoutPass uses `eu-west-1`. Add these keys to the existing folder without replacing
+its other credentials, including `POSTMARK_API_KEY`.
+
+The deployment's existing `RUNTIME_SECRETS_ID` selects that bundle. Brain loads
+all bundle keys before validating configuration or importing the application;
+the API, campaign queue worker, and unsubscribe handler share this bootstrap.
+No per-key Serverless passthrough, GitHub secret, or checked-in stage override is
+needed for these two settings in bundle mode. Explicit non-empty Lambda environment
+values override the bundle, so an old explicit override must be removed if Infisical
+should control that value.
+
+After updating Infisical, confirm the sync succeeded and recycle/redeploy the Brain
+functions so warm processes reload the bundle. Keep the unsubscribe secret unchanged
+unless rotating intentionally: changing it invalidates links in previously sent emails.
+
+Local/Docker development still uses the private Brain `.env`; `env:pull` reads the
+separate **LearnCard** project at `/LearnCard/brain-service`, not the **LearnCard Runtime**
+sync folder. Configure local values there or in the local `.env` and restart/recreate
+Brain. See the service `.env.example` for key names; never commit the signing secret.
+
+A deployment without `RUNTIME_SECRETS_ID` does not read Infisical's AWS bundle.
+The existing deploy workflow does not forward `CAMPAIGN_UNSUBSCRIBE_SECRET` from
+GitHub; such a legacy stage needs explicit credential wiring before campaign email
+can be enabled. Prefer the runtime-bundle setup above. The stream can still use its
+`broadcast` default or checked-in non-secret stage config.
 
 ## Quick Start
 
@@ -131,6 +205,26 @@ plain env vars. This layer sits above the checked-in
 variables. For how the bundles are kept in sync and the per-stage cutover, see
 [Infisical → AWS secrets sync](#infisical--aws-secrets-sync). See
 [lca-api guidance](services/learn-card-network/lca-api/AGENTS.md#backend-configuration-model).
+
+The lca-api account upgrade optionally uses archived legacy keys:
+
+| Runtime variable                 | Purpose                                                                                                      |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `LEGACY_KEY_ARCHIVE_ENABLED`     | Enables archived legacy keys used by the account upgrade; defaults to false.                                 |
+| `LEGACY_KEY_ARCHIVE_BUCKET`      | Object storage location for the archive; required when enabled.                                              |
+| `LEGACY_KEY_ARCHIVE_KMS_KEY_ARN` | KMS key ARN used to decrypt the archive; required when enabled. Its region is used for both storage and KMS. |
+
+Supply the archive storage and KMS values in the deployment environment as well:
+`serverless.yml` uses them for a scoped IAM policy, omitted when either is absent.
+`serverless.function-env.cjs` forwards all three non-empty values to the API functions
+in both runtime-bundle and fallback modes. Runtime-only bundle values do not provision IAM access.
+Archive enablement is rejected in offline or E2E authentication-bypass modes.
+Archive objects are SSE-KMS encrypted with the archive key, so the policy also lets S3 decrypt on
+the API's behalf (`kms:ViaService` S3, scoped to the archive bucket's encryption context).
+The policy includes listing on the archive bucket so a missing object returns 404 (no archive)
+rather than 403; any other storage or KMS failure returns a generic error and the client falls
+back to the legacy provider. A released key is tagged `state=released`; activation tags it
+`state=exhausted` for later retention-based cleanup.
 
 ```bash
 # 1. Install the Infisical CLI (one-time)
@@ -373,6 +467,13 @@ Folder → AWS secret mapping:
 | `/scouts/brain-service/runtime`             | `brain-service/<stage>/runtime-secrets`       | `eu-west-1` |
 | `/scouts/cloud-service/runtime`             | `learn-cloud-service/<stage>/runtime-secrets` | `eu-west-1` |
 
+Each sync is many-to-one with auto-sync on: every change in the folder rewrites the whole AWS
+secret from the folder's contents. **Never add or edit keys directly on the AWS secret**; put them
+in the Infisical folder. A key that exists only in AWS is dropped on the next sync (2026-11-04:
+`ESCROW_ENCLAVE_REMOTE_URL`/`ESCROW_ENCLAVE_REMOTE_TOKEN`, written straight into
+`lca-api/production/runtime-secrets` at the escrow cutover, vanished when another key was added in
+Infisical, and production escrow was unavailable until they were added to the folder).
+
 ScoutPass reuses the same secret names because its services deploy to the same
 stage names in a different region; the region (plus admin-only sync creation)
 keeps the two tenants apart.
@@ -409,15 +510,28 @@ using its GitHub secret fallbacks, so services and stages can migrate independen
 
 | Service    | GitHub environment (`dev` / `production`)                                | Bundle ID (`dev` / `production`)                                                             |
 | ---------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| lca-api    | `lca-api-staging` / `lca-api-production`                                 | `lca-api/dev/runtime-secrets` / `lca-api/production/runtime-secrets`                         |
 | Brain      | `learn-cloud-network-api-staging` / `learn-cloud-network-api-production` | `brain-service/dev/runtime-secrets` / `brain-service/production/runtime-secrets`             |
 | LearnCloud | `learn-cloud-storage-api-staging` / `learn-cloud-storage-api-production` | `learn-cloud-service/dev/runtime-secrets` / `learn-cloud-service/production/runtime-secrets` |
+
+lca-api's bundle holds `GOOGLE_APPLICATION_CREDENTIAL`, `OPENAI_API_KEY`, `SEED`, and escrow secrets when used. It also holds the ClassLink and transcript-issuer settings `CLASSLINK_CLIENT_SECRET`, `CLASSLINK_IDENTITY_KEY`, `CLASSLINK_PII_KEY`, `CLASSLINK_PII_KEY_PREVIOUS`, `CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS`, and `TRANSCRIPT_ISSUERS`: the client ID is not secret, but the tenant map and issuer endpoints name specific districts and partners, so they stay out of the public stage files. See "ClassLink district identity configuration" below for the two ClassLink keys: `CLASSLINK_IDENTITY_KEY` must never change, while `CLASSLINK_PII_KEY` can be rotated with `CLASSLINK_PII_KEY_PREVIOUS`. Do not put these keys in `config/config.<stage>.json`: stage files are public and would publish district and partner details. (At runtime the precedence is real env > runtime secrets bundle > stage file > base, so a stage-file value would not override the bundle anyway.) Only the generic keys `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS` and `CLASSLINK_MAX_AUTH_AGE_SECONDS` belong in `config/config.<stage>.json`.
+
+`TRANSCRIPT_ISSUERS` is the only transcript issuer source: a JSON object mapping an issuer key to `{ endpoint, audience, did, profileId?, recordType? }`, for example `{"example-records":{"endpoint":"https://records.example.org/transcript-requests","audience":"example-records","did":"did:web:records.example.org","profileId":"example-records"}}`. `did` is the DID the partner signs transcripts with (`vc.issuer`). `profileId` is the partner's LearnCard Network sender profile. Both are required to offer transcripts so the app can recognize delivery. The network rewrites every profile's DID to `did:web:<network>:users:<profileId>`, so the sender is matched by profile ID, never by DID. A `CLASSLINK_TENANTS` tenant selects an issuer with `transcriptIssuer`; tenants that omit it use the `"default"` registry entry. `recordType` is optional, `"official"` or `"unofficial"`: what the issuer sends, so the app can label it ("Get your unofficial transcript"). Leave it unset when unknown; the app then uses neutral wording. `transcripts.getStatus` exposes `issuerDid`, `issuerProfileId` and `recordType`. Unknown issuer keys disable transcripts for that tenant without disabling sign-in. Endpoints must use HTTPS; HTTP is allowed only to `localhost`, `127.0.0.1` or `::1` outside production. Each issuer requires a `did:` URI.
+
+Before deploying, run `bun run config:check` from `services/learn-card-network/lca-api` with the intended environment exported. This offline check shares the runtime tenant/issuer parsers and key decoder; it does not load AWS secrets or contact providers. It prints sanitized problems and exits 1 for malformed registries, unknown issuer references (including an enabled tenant's implicit `default`), missing delivery identity, unsafe endpoints, missing client credentials/redirect list, or invalid keys. PII keys and any supplied identity/previous key must be canonical base64 encoding exactly 32 bytes. An unset identity key retains the runtime PII-key fallback only before rotation; configure the permanent identity key before rotating PII keys.
+
+When `CLASSLINK_TENANTS` is unset or blank, the check prints `ClassLink not configured` and exits 0 without checking other settings. This is the check's opt-out: runtime sign-in can still operate without tenant overrides. Use `{}` to check sign-in configuration without overrides. The existing lca-api integration CI job runs a public transcript-enabled fixture; it does not validate deployment secrets. Runtime warning/degradation behavior is unchanged, so run the check against the actual deployment environment separately.
+
+lca-api signs transcript requests as `did:web:<DOMAIN_NAME>` (the same identity `/.well-known/did.json` publishes when `DOMAIN_NAME` is set), never as the hostname a request arrived on. `DOMAIN_NAME` is already set in each stage's `config/config.<stage>.json`. Offline runs and tests without it sign as `did:web:localhost%3A<PORT>`; any other deployment without `DOMAIN_NAME` refuses transcript requests (`PRECONDITION_FAILED`, logged as `transcripts.request.requester_did_unconfigured`) rather than sign as localhost.
 
 Brain's bundle holds `SEED`, `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`,
 `POSTMARK_API_KEY`, `MESSAGEBIRD_AUTH_TOKEN`, `SENTRY_DSN`, `POSTHOG_API_KEY`,
 `SKILL_EMBEDDING_GOOGLE_API_KEY`, `SMART_RESUME_CLIENT_ID`, `SMART_RESUME_ACCESS_KEY`,
 `SMART_RESUME_CONTRACT_URI`, `CREDENTIAL_REFRESH_DIGEST_SECRET`,
 `SHARE_LINK_REQUEST_HASH_SECRET`, `APP_STORE_ADMIN_PROFILE_IDS`, `LOGIN_PROVIDER_DID`,
-and `NOTIFICATIONS_SERVICE_WEBHOOK_URL` when those integrations are used.
+and `NOTIFICATIONS_SERVICE_WEBHOOK_URL` when those integrations are used. Campaign email
+also uses `CAMPAIGN_UNSUBSCRIBE_SECRET` and optionally `POSTMARK_BROADCAST_STREAM`
+(default `broadcast`); manage them in the Infisical runtime folder described above.
 Optional provider credentials `SKILLS_PROVIDER_API_KEY`, `TWILIO_ACCOUNT_SID`, and
 `TWILIO_AUTH_TOKEN` also belong in the bundle, never stage files.
 Both checked-in Brain stages enable credential refresh, so include its digest secret;
@@ -578,3 +692,46 @@ Redeploy both services after editing the stage config (rebuilding the frontend a
 will not update Lambda configuration), then enable `share-multiple-enabled` in
 LaunchDarkly. Check create/open/revoke in the target environment, including opening
 a copied link in a signed-out browser. Missing values keep sharing disabled.
+
+# ClassLink district identity configuration
+
+`CLASSLINK_TENANTS` accepts optional `stateStudentIdSource`: `{ "type": "sourcedId" }`
+or `{ "type": "apiField", "field": "student_id" }`. This overrides legacy
+`stateStudentIdField`, which defaults to empty. Values come only from verified token
+claims, never userinfo. In some states the roster sourcedId is the state student ID.
+Optional `stateStudentIdPattern` is a compilable regex of at most 200 characters,
+fully matched after trimming (`^(?:pattern)$`); `"[0-9]{10}"` is an example only.
+Mismatch means missing, with the existing test-stage-only fallback still available.
+
+ClassLink uses two keys, each base64 of exactly 32 random bytes (for example
+`openssl rand -base64 32`), both in the runtime secrets bundle:
+
+- `CLASSLINK_IDENTITY_KEY` derives the opaque identity keys
+  (`classlink:<tenant>:v1:<HMAC>`) and new Firebase UIDs. **Never rotate it**: a
+  different key gives every student a new identity key and Firebase UID, so they
+  would land in a new, empty account. If it is unset, lca-api falls back to
+  `CLASSLINK_PII_KEY` and logs `classlink.identity_key.fallback` once per process, so
+  identities created before the split keep resolving. Before you ever rotate
+  `CLASSLINK_PII_KEY`, set `CLASSLINK_IDENTITY_KEY` to the current
+  `CLASSLINK_PII_KEY` value. The fallback is refused while
+  `CLASSLINK_PII_KEY_PREVIOUS` is set (a rotation is in progress): sign-in fails
+  closed with `PRECONDITION_FAILED` and logs
+  `classlink.identity_key.fallback_during_rotation` until `CLASSLINK_IDENTITY_KEY`
+  is set to the pre-rotation key. Without either key, or with an invalid
+  `CLASSLINK_IDENTITY_KEY` (no fallback then), sign-in fails closed with
+  `PRECONDITION_FAILED`.
+- `CLASSLINK_PII_KEY` encrypts stored state student IDs (AES-256-GCM, payload
+  `v2:<key id>:<data>`; older `v1:` payloads are still read). It can be rotated:
+  move the old value to `CLASSLINK_PII_KEY_PREVIOUS`, set a new
+  `CLASSLINK_PII_KEY`, and remove the previous key after
+  `CLASSLINK_MAX_AUTH_AGE_SECONDS` (IDs expire by then anyway). Without
+  `CLASSLINK_PII_KEY`, sign-in still works but state student IDs are not stored, so
+  transcript requests report `no_state_id` and `classlink.pii.key_missing` is
+  logged.
+
+The roster sourcedId is never sent to transcript issuers or stored in readable form;
+otherwise it is used only as input to the HMAC identity key. The one exception is a
+district that sets `stateStudentIdSource` to `{ "type": "sourcedId" }`: there the
+sourcedId is the state student ID, so it is stored encrypted with
+`CLASSLINK_PII_KEY` under the same short retention and sent only as
+`state_student_id` in the signed transcript request.

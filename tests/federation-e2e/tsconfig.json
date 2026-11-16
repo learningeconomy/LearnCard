@@ -1,6 +1,7 @@
 {
     "extends": "../../tsconfig.test.json",
     "compilerOptions": {
+        "jsx": "react-jsx",
         "moduleResolution": "bundler",
         "removeComments": true,
         "preserveConstEnums": true,

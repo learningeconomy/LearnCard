@@ -232,7 +232,7 @@ export const buildDcqlResponse = async (
 export const assembleDcqlVpToken = (
     presentations: readonly DcqlSignedPresentation[]
 ): Record<string, DcqlInnerVpToken[]> => {
-    const out: Record<string, DcqlInnerVpToken[]> = {};
+    const out: Record<string, DcqlInnerVpToken[]> = Object.create(null);
     for (const p of presentations) {
         (out[p.credentialQueryId] ??= []).push(p.vpToken);
     }

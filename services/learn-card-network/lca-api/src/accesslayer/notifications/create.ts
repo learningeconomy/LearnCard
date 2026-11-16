@@ -1,7 +1,11 @@
-import { Notifications, ensureManagedCredentialRefreshNotificationIndex } from '.';
-import { LCNNotification } from '@learncard/types';
+import {
+    ConsentFlowContractNotificationDataValidator,
+    type ConsentFlowContractNotificationData,
+    type LCNNotification,
+} from '@learncard/types';
 import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { Notifications, ensureManagedCredentialRefreshNotificationIndex } from '.';
 
 export type NotificationCreationResult = {
     created: boolean;
@@ -53,6 +57,66 @@ const getCredentialRefreshNotificationId = (
     return `credential-refresh:${digest}`;
 };
 
+const getContractUpdateNotificationData = (
+    notification: LCNNotification
+): ConsentFlowContractNotificationData | undefined => {
+    const parsed = ConsentFlowContractNotificationDataValidator.safeParse(notification.data);
+    return parsed.success ? parsed.data : undefined;
+};
+
+const getContractUpdateNotificationId = (
+    notification: LCNNotification,
+    update: ConsentFlowContractNotificationData
+): string => {
+    const digest = createHash('sha256')
+        .update(JSON.stringify([notification.to.did, update.contractUri, update.toVersion]))
+        .digest('hex');
+
+    return `consent-flow-contract-update:${digest}`;
+};
+
+/** Persist each revision once so queue retries cannot duplicate its push. */
+export const upsertConsentFlowContractUpdateNotification = async (
+    notification: LCNNotification
+): Promise<NotificationCreationResult | false> => {
+    const update = getContractUpdateNotificationData(notification);
+    if (!update) return false;
+
+    const notificationId = getContractUpdateNotificationId(notification, update);
+
+    try {
+        const result = await Notifications.updateOne(
+            { _id: notificationId },
+            {
+                $setOnInsert: {
+                    _id: notificationId,
+                    read: update.kind !== 'requires_consent',
+                    archived: false,
+                    sent: new Date().toISOString(),
+                    ...notification,
+                },
+            },
+            { upsert: true }
+        );
+
+        return { created: result.upsertedCount === 1 };
+    } catch (e) {
+        if (
+            typeof e === 'object' &&
+            e !== null &&
+            'code' in e &&
+            (e as { code?: unknown }).code === 11000
+        ) {
+            return { created: false };
+        }
+
+        if (isAmbiguousMongoWriteError(e)) throw e;
+
+        console.error(e);
+        return false;
+    }
+};
+
 const isAmbiguousMongoWriteError = (error: unknown): boolean => {
     if (typeof error !== 'object' || error === null) return false;
 
@@ -79,6 +143,37 @@ export const createNotification = async (
     notification: LCNNotification
 ): Promise<NotificationCreationResult | false> => {
     try {
+        if (notification.type === 'ANNOUNCEMENT') {
+            const metadata = notification.data?.metadata;
+            if (!metadata?.campaignId || !metadata.campaignCreatedAt) return false;
+            // The Mongo _id index arbitrates concurrent deliveries. A dispatch/retry
+            // never changes this identity; explicit test sends get their own identity.
+            const digest = createHash('sha256')
+                .update(
+                    JSON.stringify([
+                        notification.from,
+                        notification.to.did,
+                        metadata.campaignId,
+                        metadata.campaignCreatedAt,
+                        metadata.campaignTestId ?? null,
+                    ])
+                )
+                .digest('hex');
+            const result = await Notifications.updateOne(
+                { _id: `campaign:${digest}` },
+                {
+                    $setOnInsert: {
+                        ...notification,
+                        _id: `campaign:${digest}`,
+                        read: false,
+                        archived: false,
+                        sent: new Date().toISOString(),
+                    },
+                },
+                { upsert: true }
+            );
+            return { created: result.upsertedCount === 1 };
+        }
         const promptId = getConnectionPromptId(notification);
 
         if (!promptId) {

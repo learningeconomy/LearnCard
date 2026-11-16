@@ -12,9 +12,10 @@
 
 import { environment } from '@environment';
 import { TRPCError } from '@trpc/server';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet } from 'jose';
 import type { JWTVerifyGetKey } from 'jose';
 import { z } from 'zod';
+import { verifyOidcIdToken } from './oidcIdToken.helpers';
 
 export type SocialProviderId = 'google' | 'apple';
 
@@ -110,12 +111,13 @@ export const verifySocialIdToken = async (
 
     let payload: unknown;
     try {
-        ({ payload } = await jwtVerify(token, getSocialJwks(config.jwksUri), {
-            issuer: config.issuers,
-            audience: config.audiences,
+        payload = await verifyOidcIdToken(token, {
+            jwks: getSocialJwks(config.jwksUri),
+            issuers: config.issuers,
+            audiences: config.audiences,
             algorithms: ['RS256', 'ES256'],
             requiredClaims: ['sub', 'exp', 'email', 'email_verified'],
-        }));
+        });
     } catch {
         throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid social token' });
     }

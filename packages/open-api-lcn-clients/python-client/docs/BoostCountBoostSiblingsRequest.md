@@ -2,10 +2,10 @@
 
 ## Properties
 
-| Name      | Type                                                                | Description | Notes      |
-| --------- | ------------------------------------------------------------------- | ----------- | ---------- |
-| **uri**   | **str**                                                             |             |
-| **query** | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |             | [optional] |
+| Name      | Type                                                            | Description | Notes      |
+| --------- | --------------------------------------------------------------- | ----------- | ---------- |
+| **uri**   | **str**                                                         |             |
+| **query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |             | [optional] |
 
 ## Example
 

@@ -11,6 +11,7 @@ import {
     handlePushNotificationActionPerformed,
     parseNotificationFromPushRaw,
     resolveNotificationRoute,
+    shouldToastNotification,
 } from './pushNotificationHelpers';
 
 /**
@@ -206,3 +207,74 @@ describe('parseNotificationFromPushRaw', () => {
         expect(parsed?.data?.metadata).toMatchObject({ refreshId: 'r-1' });
     });
 });
+
+describe('campaign notification entry', () => {
+    it.each([
+        ['campaign-one', '/m/campaign-one'],
+        ['a/b ?#', '/m/a%2Fb%20%3F%23'],
+        ['', '/notifications'],
+        ['  ', '/notifications'],
+        [undefined, '/notifications'],
+        [42, '/notifications'],
+    ])('routes ID %s safely', (campaignId, route) => {
+        expect(
+            resolveNotificationRoute({
+                type: 'ANNOUNCEMENT',
+                data: { metadata: { campaignId, campaignHasInApp: true } },
+            } as unknown as LCNNotification)
+        ).toBe(route);
+    });
+});
+
+describe('CONSENT_FLOW_CONTRACT_UPDATED notification boundaries', () => {
+    const updateNotification = (data?: Record<string, unknown>): LCNNotification =>
+        ({
+            type: 'CONSENT_FLOW_CONTRACT_UPDATED',
+            to: HOLDER,
+            from: ISSUER,
+            data,
+        }) as unknown as LCNNotification;
+
+    it('routes native taps locally using only the encoded contract URI', () => {
+        expect(
+            resolveNotificationRoute(
+                updateNotification({
+                    contractUri: 'lc:contract/one?&',
+                    reviewUrl: 'https://attacker.example/steal',
+                })
+            )
+        ).toBe(`/consent-flow/review?uri=${encodeURIComponent('lc:contract/one?&')}`);
+    });
+
+    it('falls back to notifications when the contract URI is missing or malformed', () => {
+        expect(resolveNotificationRoute(updateNotification())).toBe('/notifications');
+        expect(resolveNotificationRoute(updateNotification({ contractUri: '' }))).toBe(
+            '/notifications'
+        );
+        expect(resolveNotificationRoute(updateNotification({ contractUri: 42 }))).toBe(
+            '/notifications'
+        );
+    });
+
+    it('keeps relaxed and optional expansions quiet but shows required updates', () => {
+        expect(shouldToastNotification(updateNotification({ kind: 'relaxed' }))).toBe(false);
+        expect(shouldToastNotification(updateNotification({ kind: 'expanded_optional' }))).toBe(
+            false
+        );
+        expect(shouldToastNotification(updateNotification({ kind: 'requires_consent' }))).toBe(
+            true
+        );
+    });
+});
+
+it.each([false, undefined, 'true'])(
+    'keeps announcements without a confirmed destination in the inbox (%s)',
+    campaignHasInApp => {
+        expect(
+            resolveNotificationRoute({
+                type: 'ANNOUNCEMENT',
+                data: { metadata: { campaignId: 'pilot', campaignHasInApp } },
+            } as unknown as LCNNotification)
+        ).toBe('/notifications');
+    }
+);

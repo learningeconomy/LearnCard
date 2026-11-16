@@ -33,6 +33,60 @@ const vcdm2Credential = {
     credentialSubject: { id: 'did:example:holder' },
 };
 
+describe('managed VC v1 public status context', () => {
+    it.each([
+        'https://www.w3.org/ns/credentials/v2',
+        'https://www.w3.org/ns/credentials/v2.evil.example',
+        'https://example.com/?context=https://www.w3.org/ns/credentials/v2',
+    ])('recognizes the VC v2 context by exact equality: %s', context => {
+        const credential = injectManagedRefreshService(
+            {
+                ...vcdm11Credential,
+                '@context': [context],
+                credentialStatus: {
+                    type: 'BitstringStatusListEntry',
+                    statusPurpose: 'revocation',
+                    statusListCredential: 'https://example.com/status-lists/1',
+                    statusListIndex: '0',
+                },
+            },
+            { id: 'https://example.com/refresh/1', type: 'LearnCardCredentialRefresh2026' }
+        );
+        const hasStatusContext = credential['@context'].some(
+            entry => entry === 'https://www.w3.org/ns/credentials/status/v1'
+        );
+        expect(hasStatusContext).toBe(context !== 'https://www.w3.org/ns/credentials/v2');
+    });
+
+    it('adds the status list context without changing status shape and is idempotent', () => {
+        const status = {
+            id: 'https://example.com/status-lists/1#0',
+            type: 'BitstringStatusListEntry',
+            statusPurpose: 'revocation',
+            statusListCredential: 'https://example.com/status-lists/1',
+            statusListIndex: '0',
+        };
+        for (const credentialStatus of [status, [status]]) {
+            const credential = injectManagedRefreshService(
+                { ...vcdm11Credential, credentialStatus },
+                {
+                    id: 'https://example.com/refresh/1',
+                    type: 'LearnCardCredentialRefresh2026',
+                }
+            );
+            expect(credential.credentialStatus).toEqual(credentialStatus);
+            const context = credential['@context'];
+            expect(
+                context.filter(entry => entry === 'https://www.w3.org/ns/credentials/status/v1')
+            ).toHaveLength(1);
+            expect(context.indexOf('https://www.w3.org/ns/credentials/status/v1')).toBeLessThan(
+                context.findIndex(entry => typeof entry === 'object')
+            );
+            expect(prepareManagedRefreshContext(credential)).toBe(credential);
+        }
+    });
+});
+
 describe('getCredentialIssuerId', () => {
     it('returns a string issuer unchanged', () => {
         expect(getCredentialIssuerId(vcdm11Credential)).toBe(issuerDid);

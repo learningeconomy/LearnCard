@@ -1,6 +1,6 @@
 # Production SQLite bundle regression
 
-From the repository root, with Node 24.12, pinned Bun dependencies and Playwright Chromium installed:
+From the repository root, with the repo `.nvmrc` Node, pinned Bun dependencies and Playwright Chromium installed:
 
 ```sh
 node scripts/verify-web-sqlite-build.mjs --output /absolute/new/private/evidence-directory

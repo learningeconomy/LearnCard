@@ -69,7 +69,7 @@ expect(rootPackage.overrides?.typescript === '5.9.3', 'TypeScript override must 
 expect(rootPackage.devDependencies?.nx === '23.2.1', 'Nx 23.2.1 must support Bun lockfile v3');
 expect(ts.version === '5.9.3', 'Installed TypeScript must be 5.9.3');
 
-expect(readFileSync('.nvmrc', 'utf8').trim() === 'v24.12.0', '.nvmrc must pin Node 24.12.0');
+expect(readFileSync('.nvmrc', 'utf8').trim() === 'v24.22.1', '.nvmrc must pin Node 24.22.1');
 expect(rootPackage.packageManager === 'bun@1.4.4', 'root packageManager must be bun@1.4.4');
 expect(rootPackage.engines?.node === '>=24.12 <25', 'root Node engine must be >=24.12 <25');
 
@@ -128,18 +128,18 @@ for (const path of runtimePinFiles) {
         const image = stage[1];
         if (image !== 'oven/bun' && !image.startsWith('oven/bun:')) continue;
 
-        // Only the final local-service runtime may retain the host-gateway workaround.
-        // Dependency installation and every standalone service image stay on Bun 1.4.4.
+        // Only the monorepo's compatible-runtime stage (its executable is copied into the
+        // local-service runtimes) may retain the host-gateway workaround; Bun 1.4.4 still
+        // bypasses it. Dependency installation and every standalone service image stay on 1.4.4.
         const isLocalRuntime =
             path === 'Dockerfile.monorepo' &&
-            index === stages.length - 1 &&
             image === 'oven/bun:1.3.14' &&
-            stage[2] === 'source';
+            stage[2] === 'compatible-runtime';
         expect(
             isLocalRuntime ||
                 image === 'oven/bun:1.4.4' ||
                 (path !== 'Dockerfile.monorepo' && image === 'oven/bun:1.4.4-alpine'),
-            `${path} must use oven/bun:1.4.4 or 1.4.4-alpine (only its final monorepo source stage may use 1.3.14)`
+            `${path} must use oven/bun:1.4.4 or 1.4.4-alpine (only the monorepo compatible-runtime stage may use 1.3.14)`
         );
     }
 }

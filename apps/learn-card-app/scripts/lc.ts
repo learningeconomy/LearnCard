@@ -16,10 +16,10 @@ const log = getLogger();
  *   bun run lc help                # cheat sheet of common commands
  *
  * ⚡ Golden paths:
- *   bun run lc dev vetpass alpha       # web dev server (prompts for run mode)
- *   bun run lc dev vetpass alpha app   # app only — skip the mode menu
- *   bun run lc dev vetpass alpha full  # full stack — skip the mode menu
- *   bun run lc sync vetpass alpha      # cap sync + tenant config patching
+ *   bun run lc dev vetpass staging     # web dev server (prompts for run mode)
+ *   bun run lc dev vetpass staging app # app only — skip the mode menu
+ *   bun run lc dev vetpass staging full # full stack — skip the mode menu
+ *   bun run lc sync vetpass staging    # cap sync + tenant config patching
  *   bun run lc open vetpass ios        # sync tenant + open Xcode / Android Studio
  *
  * Other shortcuts:
@@ -1717,7 +1717,7 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     log.info(bold(`🚀 Fastlane build: ${displayName} → ${platform} ${lane}`));
     log.info(`   Bundle ID: ${cyan(bundleId)}`);
 
-    const stage = lane === 'upload_to_appetize' ? 'alpha' : 'production';
+    const stage = lane === 'upload_to_appetize' ? 'staging' : 'production';
 
     // Step 1: Populate public/ with tenant config + assets
     execBlocking(
@@ -2621,18 +2621,18 @@ const printHelp = () => {
     log.info('');
     log.info(dim('  Examples:'));
     log.info(
-        dim('    bun run lc dev vetpass alpha                # prompts for run mode + rebuild')
+        dim('    bun run lc dev vetpass staging              # prompts for run mode + rebuild')
     );
-    log.info(dim('    bun run lc dev vetpass alpha app            # app only, no prompt'));
-    log.info(dim('    bun run lc dev vetpass alpha full           # full stack, no prompt'));
+    log.info(dim('    bun run lc dev vetpass staging app          # app only, no prompt'));
+    log.info(dim('    bun run lc dev vetpass staging full         # full stack, no prompt'));
     log.info(dim('    bun run lc dev learncard production app local-aip # app + local AI backend'));
     log.info(
-        dim('    bun run lc dev vetpass alpha full fast      # full stack, skip docker --build')
+        dim('    bun run lc dev vetpass staging full fast    # full stack, skip docker --build')
     );
     log.info(
-        dim('    bun run lc dev vetpass alpha services fast  # services only, skip docker --build')
+        dim('    bun run lc dev vetpass staging services fast # services only, skip docker --build')
     );
-    log.info(dim('    bun run lc sync vetpass alpha'));
+    log.info(dim('    bun run lc sync vetpass staging'));
     log.info(dim('    bun run lc open vetpass ios'));
     log.info('');
     log.info(bold('  🛠 Tools'));

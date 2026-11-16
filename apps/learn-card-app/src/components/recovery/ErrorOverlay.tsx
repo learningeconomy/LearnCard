@@ -5,14 +5,20 @@
 
 import React from 'react';
 
+import { ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE } from 'learn-card-base/key-derivation/accountSignInErrors';
+
 import { Overlay } from './Overlay';
 import { m } from '../../paraglide/messages.js';
 
 // Use localized safe copy rather than rendering arbitrary service error text.
-const displayError = (error: string): string =>
-    /network|offline|failed to fetch|connection/i.test(error)
+const displayError = (error: string): string => {
+    // This build signs in with Web3Auth but the account already uses SSS.
+    if (error === ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE) return m['error.updateRequired']();
+
+    return /network|offline|failed to fetch|connection/i.test(error)
         ? m['error.network']()
         : m['error.generic']();
+};
 
 interface ErrorOverlayProps {
     error: string;
@@ -26,36 +32,46 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
     canRetry,
     onRetry,
     onLogout,
-}) => (
-    <Overlay>
-        <div className="p-8 text-center space-y-v3-5">
-            <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center">
-                <span className="text-red-500 text-2xl font-semibold">!</span>
-            </div>
+}) => {
+    const updateRequired = error === ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE;
+    // Retrying cannot help until the app itself is updated.
+    const showRetry = canRetry && !updateRequired;
 
-            <div className="space-y-v3-2">
-                <h2 className="text-xl font-semibold text-grayscale-900">{m['error.generic']()}</h2>
+    return (
+        <Overlay>
+            <div className="p-8 text-center space-y-v3-5">
+                <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center">
+                    <span className="text-red-500 text-2xl font-semibold">!</span>
+                </div>
 
-                <p className="text-sm text-grayscale-600 leading-relaxed">{displayError(error)}</p>
-            </div>
+                <div className="space-y-v3-2">
+                    <h2 className="text-xl font-semibold text-grayscale-900">
+                        {updateRequired ? m['error.updateRequiredTitle']() : m['error.generic']()}
+                    </h2>
 
-            <div className="space-y-v3-3 pt-1">
-                {canRetry && (
+                    <p className="text-sm text-grayscale-600 leading-relaxed">
+                        {displayError(error)}
+                    </p>
+                </div>
+
+                <div className="space-y-v3-3 pt-1">
+                    {showRetry && (
+                        <button
+                            onClick={onRetry}
+                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium hover:opacity-90 transition-opacity"
+                        >
+                            {m['error.retry']()}
+                        </button>
+                    )}
+
                     <button
-                        onClick={onRetry}
-                        className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium hover:opacity-90 transition-opacity"
+                        onClick={onLogout}
+                        className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium hover:bg-grayscale-10 transition-colors"
                     >
-                        {m['error.retry']()}
+                        {m['recovery.logOut']()}
                     </button>
-                )}
-
-                <button
-                    onClick={onLogout}
-                    className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium hover:bg-grayscale-10 transition-colors"
-                >
-                    {m['recovery.logOut']()}
-                </button>
+                </div>
             </div>
-        </div>
-    </Overlay>
-);
+        </Overlay>
+    );
+};

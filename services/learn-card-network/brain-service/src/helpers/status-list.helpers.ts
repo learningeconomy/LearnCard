@@ -1,6 +1,9 @@
-import { environment } from '@environment';
+import { environment, getCredentialRefreshRuntimeEnvironment } from '@environment';
 import { gzipSync, gunzipSync } from 'node:zlib';
+import { isDeepStrictEqual } from 'node:util';
+import type { Transaction } from 'neo4j-driver';
 import { v4 as uuid } from 'uuid';
+import { TRPCError } from '@trpc/server';
 import type {
     AllocatedBitstringStatusListEntry,
     BitstringStatusListEntry,
@@ -20,9 +23,16 @@ import {
 } from '@learncard/helpers';
 
 import { neogma } from '@instance';
-import { Credential } from '@models';
 import type { StatusListPurpose, StatusListType } from '@models';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
+
+/** Resolve original deliveries and versions through anchored refresh lookups. */
+export const CREDENTIAL_STATUS_ROOT_QUERY = `MATCH (credential:Credential {id: $credentialId})
+    OPTIONAL MATCH (rootRefresh:CredentialRefresh)-[:ROOT]->(credential)
+    OPTIONAL MATCH (versionRefresh:CredentialRefresh {refreshId: credential.refreshId})
+    WITH credential, coalesce(rootRefresh, versionRefresh) AS refresh
+    OPTIONAL MATCH (refresh)-[:ROOT]->(managedRoot:Credential)
+    WITH credential, refresh, coalesce(managedRoot, credential) AS root`;
 
 const hasToNumber = (value: unknown): value is { toNumber: () => number } =>
     !!value &&
@@ -33,6 +43,111 @@ const asNumber = (value: unknown): number => {
     if (typeof value === 'number') return value;
     if (hasToNumber(value)) return value.toNumber();
     return Number(value);
+};
+
+/** Reserve local coordinates for an ordinary delivery under the same locks as managed binding. */
+export const reserveCredentialStatusEntries = async (
+    entries: BitstringStatusListEntry[],
+    ownerProfileId: string,
+    credentialId: string,
+    transaction: Transaction,
+    options: { lenient?: boolean; credential?: VC | UnsignedVC } = {}
+): Promise<void> => {
+    const domain = getCredentialRefreshRuntimeEnvironment().DOMAIN_NAME || 'localhost%3A3000';
+    for (const entry of [...entries].sort((a, b) =>
+        a.statusListCredential.localeCompare(b.statusListCredential)
+    )) {
+        const result = await transaction.run(
+            `MATCH (list:BitstringStatusList {statusListCredential: $url})
+             SET list._statusBindingLock = true REMOVE list._statusBindingLock
+             WITH list
+             OPTIONAL MATCH (list)-[:HAS_STATUS_BINDING]->(binding:CredentialStatusBinding {index: $index})
+             RETURN list, binding.refreshId AS refreshId, binding.credentialId AS credentialId`,
+            { url: entry.statusListCredential, index: String(entry.statusListIndex) }
+        );
+        const row = result.records[0];
+        const list = row ? nodeToStatusList(row.get('list')) : null;
+        if (!list) {
+            if (
+                entry.statusListCredential.startsWith(
+                    `${getStatusListBaseUrl(domain)}/status-lists/`
+                )
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Local status list does not exist',
+                });
+            }
+            continue; // External status lists are not managed by this network.
+        }
+        // Forwarding does not confer authority over another issuer's local list.
+        if (options.lenient && list.ownerProfileId !== ownerProfileId) continue;
+        const index = Number(entry.statusListIndex);
+        if (
+            entry.statusListCredential !== getStatusListCredentialUrl(list.id, domain) ||
+            list.ownerProfileId !== ownerProfileId ||
+            list.statusPurpose !== entry.statusPurpose ||
+            !Number.isSafeInteger(index) ||
+            index < 0 ||
+            index >= list.size ||
+            index >= list.nextIndex ||
+            (typeof entry.statusListIndex === 'string' && String(index) !== entry.statusListIndex)
+        ) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Invalid local credential status coordinates',
+            });
+        }
+        if (
+            row?.get('refreshId') ||
+            (row?.get('credentialId') && row.get('credentialId') !== credentialId)
+        ) {
+            const boundId: unknown = row?.get('credentialId');
+            if (
+                options.lenient &&
+                !row?.get('refreshId') &&
+                typeof boundId === 'string' &&
+                options.credential?.proof &&
+                (!Array.isArray(options.credential.proof) || options.credential.proof.length > 0)
+            ) {
+                const existing = await transaction.run(
+                    'MATCH (credential:Credential {id: $id}) RETURN credential.credential AS body',
+                    { id: boundId }
+                );
+                const body: unknown = existing.records[0]?.get('body');
+                if (
+                    typeof body === 'string' &&
+                    isDeepStrictEqual(
+                        JSON.parse(body),
+                        JSON.parse(JSON.stringify(options.credential))
+                    )
+                ) {
+                    await transaction.run(
+                        `MATCH (:BitstringStatusList {statusListCredential: $url})-[:HAS_STATUS_BINDING]->(binding:CredentialStatusBinding {index: $index})
+                         WITH binding, coalesce(binding.credentialIds, [binding.credentialId]) AS ids
+                         SET binding.credentialIds = CASE WHEN $credentialId IN ids THEN ids ELSE ids + $credentialId END`,
+                        {
+                            url: entry.statusListCredential,
+                            index: String(entry.statusListIndex),
+                            credentialId,
+                        }
+                    );
+                    continue; // Retain every delivery under the list lock, including legacy bindings.
+                }
+            }
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list index is already bound to another credential',
+            });
+        }
+        await transaction.run(
+            `MATCH (list:BitstringStatusList {statusListCredential: $url})
+             MERGE (list)-[:HAS_STATUS_BINDING]->(binding:CredentialStatusBinding {index: $index})
+             SET binding.credentialId = $credentialId,
+                 binding.credentialIds = coalesce(binding.credentialIds, [$credentialId])`,
+            { url: entry.statusListCredential, index: String(entry.statusListIndex), credentialId }
+        );
+    }
 };
 
 const nodeToStatusList = (node: unknown): StatusListType | null => {
@@ -338,15 +453,25 @@ export const appendBitstringStatusListEntries = async (
 
 export const setStatusListEntryBit = async (
     entry: BitstringStatusListEntry,
-    value: boolean
+    value: boolean,
+    ownerProfileId: string,
+    transaction?: Transaction
 ): Promise<boolean> => {
     const statusListIndex = Number(entry.statusListIndex);
 
-    if (!Number.isInteger(statusListIndex) || statusListIndex < 0) {
-        throw new Error('Bitstring status list index is out of range');
+    if (
+        !Number.isSafeInteger(statusListIndex) ||
+        statusListIndex < 0 ||
+        (typeof entry.statusListIndex === 'string' &&
+            String(statusListIndex) !== entry.statusListIndex)
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Bitstring status list index is out of range',
+        });
     }
 
-    return neogma.getTransaction(null, async tx => {
+    return neogma.getTransaction(transaction ?? null, async tx => {
         const record = (
             await tx.run(
                 `MATCH (list:BitstringStatusList {statusListCredential: $statusListCredential})
@@ -364,8 +489,43 @@ export const setStatusListEntryBit = async (
         const list = record ? nodeToStatusList(record.get('list')) : null;
         if (!list) return false;
 
-        if (statusListIndex >= list.size) {
-            throw new Error('Bitstring status list index is out of range');
+        const url = new URL(entry.statusListCredential);
+        if (
+            entry.statusListCredential !==
+                getStatusListCredentialUrl(
+                    list.id,
+                    getCredentialRefreshRuntimeEnvironment().DOMAIN_NAME || 'localhost%3A3000'
+                ) ||
+            url.pathname !== `/status-lists/${list.id}` ||
+            url.search ||
+            url.hash ||
+            url.username ||
+            url.password
+        ) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list URL must be canonical and local',
+            });
+        }
+
+        if (list.ownerProfileId !== ownerProfileId) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Status list owner does not match the credential',
+            });
+        }
+        if (list.statusPurpose !== entry.statusPurpose) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list purpose does not match the credential',
+            });
+        }
+
+        if (statusListIndex >= list.size || statusListIndex >= list.nextIndex) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Bitstring status list index is out of range',
+            });
         }
 
         const bitstring = decodeBitstring(list.encodedList, list.size);
@@ -397,18 +557,9 @@ export const setCredentialBitstringStatus = async (
     statusPurpose: BitstringStatusPurpose,
     value: boolean
 ): Promise<boolean> => {
-    const credential = await Credential.findOne({ where: { id: credentialId } });
-    if (!credential) return false;
-
-    // Encrypted SA credentials retain only public status coordinates separately.
-    // Legacy plaintext/wrapped credentials continue using their embedded entries.
     let statusEntries: BitstringStatusListEntry[];
     try {
-        statusEntries = BitstringStatusListEntryValidator.array().parse(
-            credential.statusEntries
-                ? JSON.parse(credential.statusEntries)
-                : getBitstringStatusListEntries(JSON.parse(credential.credential))
-        );
+        statusEntries = await getStatusEntriesForCredential(credentialId);
         if (
             statusEntries.some(
                 entry =>
@@ -424,12 +575,170 @@ export const setCredentialBitstringStatus = async (
         });
         return false;
     }
-    const entries = statusEntries.filter(entry => entry.statusPurpose === statusPurpose);
+    if (statusEntries.length === 0) return false;
 
+    const owner = (
+        await neogma.queryRunner.run(
+            `${CREDENTIAL_STATUS_ROOT_QUERY}
+         OPTIONAL MATCH (issuer:Profile)-[:CREDENTIAL_SENT]->(root)
+         RETURN coalesce(refresh.issuerProfileId, root.statusOwnerProfileId, issuer.profileId) AS owner LIMIT 1`,
+            { credentialId }
+        )
+    ).records[0]?.get('owner');
+    if (typeof owner !== 'string') return false;
+    const entries = statusEntries.filter(entry => entry.statusPurpose === statusPurpose);
     if (entries.length === 0) return false;
 
-    const updated = await Promise.all(entries.map(entry => setStatusListEntryBit(entry, value)));
+    const updated = await Promise.all(
+        entries.map(entry => setStatusListEntryBit(entry, value, owner))
+    );
     return updated.every(Boolean);
+};
+
+/** Public coordinates are shared by every immutable version of a managed credential. */
+export const getStatusEntriesForCredential = async (
+    credentialId: string,
+    transaction?: Transaction
+): Promise<BitstringStatusListEntry[]> => {
+    const query = `${CREDENTIAL_STATUS_ROOT_QUERY}
+         RETURN credential.statusEntries AS direct, credential.credential AS body,
+                refresh.statusEntries AS entries LIMIT 1`;
+    const result = transaction
+        ? await transaction.run(query, { credentialId })
+        : await neogma.queryRunner.run(query, { credentialId });
+    const row = result.records[0];
+    if (!row) return [];
+    const direct: unknown = row.get('direct');
+    const body: unknown = row.get('body');
+    const directEntries = BitstringStatusListEntryValidator.array().parse(
+        typeof direct === 'string'
+            ? JSON.parse(direct)
+            : typeof body === 'string'
+              ? getBitstringStatusListEntries(JSON.parse(body))
+              : []
+    );
+    if (directEntries.length > 0) return directEntries;
+    const entries: unknown = row.get('entries');
+    return typeof entries === 'string'
+        ? BitstringStatusListEntryValidator.array().parse(JSON.parse(entries))
+        : [];
+};
+
+/** Resolve lifecycle requests for any immutable version to its original delivery. */
+export const getCredentialStatusRootId = async (credentialId: string): Promise<string> => {
+    const result = await neogma.queryRunner.run(
+        `${CREDENTIAL_STATUS_ROOT_QUERY}
+         RETURN root.id AS id LIMIT 1`,
+        { credentialId }
+    );
+    return String(result.records[0]?.get('id') ?? credentialId);
+};
+
+/** Own-host URLs must pass local validation, even with a wrong path, port or scheme. */
+export const isNetworkStatusEntry = (
+    entry: BitstringStatusListEntry,
+    domain = getCredentialRefreshRuntimeEnvironment().DOMAIN_NAME || 'localhost%3A3000'
+): boolean => {
+    const base = getStatusListBaseUrl(domain);
+    let url: URL;
+    try {
+        url = new URL(entry.statusListCredential);
+    } catch (cause) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid credential status URL',
+            cause,
+        });
+    }
+    return (
+        entry.statusListCredential.startsWith(`${base}/status-lists/`) ||
+        url.hostname === new URL(base).hostname
+    );
+};
+
+/** Issuer-facing information, separate from the signed refresh receipt. */
+export const getStatusManagement = (
+    entries: BitstringStatusListEntry[],
+    domain: string
+): 'network' | 'external' | 'mixed' | 'none' => {
+    if (!entries.length) return 'none';
+    const local = entries.filter(entry => isNetworkStatusEntry(entry, domain)).length;
+    return local === entries.length ? 'network' : local === 0 ? 'external' : 'mixed';
+};
+
+/** Validate external shapes and local, issuer-owned, allocated coordinates. */
+export const validateStatusEntries = async (
+    entries: BitstringStatusListEntry[],
+    ownerProfileId: string,
+    domain: string
+): Promise<void> => {
+    for (const entry of entries) {
+        if (!BitstringStatusListEntryValidator.safeParse(entry).success) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Invalid credential status entry',
+            });
+        }
+        if (!isNetworkStatusEntry(entry, domain)) {
+            const index = Number(entry.statusListIndex);
+            if (
+                new URL(entry.statusListCredential).protocol !== 'https:' ||
+                !Number.isSafeInteger(index) ||
+                index < 0 ||
+                (typeof entry.statusListIndex === 'string' && !/^\d+$/.test(entry.statusListIndex))
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Invalid external credential status entry',
+                });
+            }
+            continue;
+        }
+        const prefix = `${getStatusListBaseUrl(domain)}/status-lists/`;
+        const id = entry.statusListCredential.slice(prefix.length);
+        if (!entry.statusListCredential.startsWith(prefix)) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list URL must be canonical and local',
+            });
+        }
+        if (!/^[a-zA-Z0-9-]+$/.test(id)) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list URL must be canonical and local',
+            });
+        }
+        const list = await getStatusListById(id);
+        const index = Number(entry.statusListIndex);
+        if (
+            !list ||
+            list.statusListCredential !== entry.statusListCredential ||
+            list.statusPurpose !== entry.statusPurpose
+        ) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list URL or purpose does not match the credential',
+            });
+        }
+        if (list.ownerProfileId !== ownerProfileId) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Status list owner does not match the credential',
+            });
+        }
+        if (
+            !Number.isSafeInteger(index) ||
+            index < 0 ||
+            index >= list.size ||
+            index >= list.nextIndex ||
+            (typeof entry.statusListIndex === 'string' && String(index) !== entry.statusListIndex)
+        ) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list index is out of range',
+            });
+        }
+    }
 };
 
 export const getSignedStatusListCredential = async (id: string): Promise<VC | null> => {

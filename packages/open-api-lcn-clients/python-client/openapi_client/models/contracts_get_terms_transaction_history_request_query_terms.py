@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
+from openapi_client.models.contracts_get_consented_contracts_request_query_read import ContractsGetConsentedContractsRequestQueryRead
 from openapi_client.models.contracts_get_consented_contracts_request_query_write import ContractsGetConsentedContractsRequestQueryWrite
-from openapi_client.models.contracts_get_terms_transaction_history_request_query_terms_read import ContractsGetTermsTransactionHistoryRequestQueryTermsRead
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,7 +29,7 @@ class ContractsGetTermsTransactionHistoryRequestQueryTerms(BaseModel):
     """
     ContractsGetTermsTransactionHistoryRequestQueryTerms
     """ # noqa: E501
-    read: Optional[ContractsGetTermsTransactionHistoryRequestQueryTermsRead] = None
+    read: Optional[ContractsGetConsentedContractsRequestQueryRead] = None
     write: Optional[ContractsGetConsentedContractsRequestQueryWrite] = None
     __properties: ClassVar[List[str]] = ["read", "write"]
 
@@ -60,9 +60,8 @@ class ContractsGetTermsTransactionHistoryRequestQueryTerms(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -90,7 +89,7 @@ class ContractsGetTermsTransactionHistoryRequestQueryTerms(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "read": ContractsGetTermsTransactionHistoryRequestQueryTermsRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
+            "read": ContractsGetConsentedContractsRequestQueryRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": ContractsGetConsentedContractsRequestQueryWrite.from_dict(obj["write"]) if obj.get("write") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

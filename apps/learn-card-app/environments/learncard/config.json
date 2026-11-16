@@ -13,7 +13,7 @@
     },
     "auth": {
         "provider": "firebase",
-        "keyDerivation": "web3auth",
+        "keyDerivation": "sss",
         "firebase": {
             "apiKey": "AIzaSyDQJcEDxhxdxRAVdIDBzcE1x6D-KOj6N4o",
             "authDomain": "learncard.firebaseapp.com",
@@ -27,15 +27,23 @@
         },
         "sss": {
             "serverUrl": "https://api.learncard.app/api",
+            "escrowEnclaveMode": "nitro",
             "escrowEnclaveMeasurements": [
                 {
                     "pcr0": "6dc94e2b4da01921c831d7bfc5658ba21145636ca1e81c369ef2dc60be75b009ee98bb5eb56d16ede37a8d86534ba2e2",
                     "pcr1": "4b4d5b3661b3efc12920900c80e126e4ce783c522de6c02a2a5bf7af3a2b9327b86776f188e4be1c1c404a129dbda493",
                     "pcr2": "f2ab2d56155c3b6c0be2404a423065fe0f9b5e1e1b55a96406fdcd75ac59bdaa15f83ffd98c24a9aab425ac11c0741fd"
+                },
+                {
+                    "pcr0": "18902a68bce55561342b7690e31251e5c75305ed2050e490b7227ccdb861baf897bdbdd515b3fd1c6f2dd7a015b17220",
+                    "pcr1": "4b4d5b3661b3efc12920900c80e126e4ce783c522de6c02a2a5bf7af3a2b9327b86776f188e4be1c1c404a129dbda493",
+                    "pcr2": "7955b5d9c09b315ed0922660aba2029733a66d56186894fc29e75a2f0a6a9d3f40b6e8ff7539b6572fa2a55c407c9168"
                 }
             ],
             "enableEmailBackupShare": false,
-            "requireEmailForPhoneUsers": false
+            "requireEmailForPhoneUsers": false,
+            "escrowSealEmailBrand": true,
+            "escrowSharedEmailBrands": ["VetPass"]
         },
         "web3Auth": {
             "clientId": "BBB5ReobO60-olXYx2JB7s5pkJplYnBHz4E99Cdf9aaNokNt3XzvVvRL9UQfziK_PMEuBYcgdMEW_WCHNPdUGPg",
@@ -80,6 +88,7 @@
         "pathways": true,
         "launchPadQuickActions": false,
         "dashboardHome": true,
+        "escrowRolloutPercent": 100,
         "samplePersonas": [
             {
                 "id": "student",
@@ -105,8 +114,8 @@
     "links": {
         "appStoreUrl": "https://apps.apple.com/us/app/learncard/id1635841898",
         "playStoreUrl": "https://play.google.com/store/apps/details?id=com.learncard.app",
-        "termsOfServiceUrl": "https://www.learncard.com/learncard-terms-of-service",
-        "privacyPolicyUrl": "https://www.learncard.com/learncard-privacy-policy",
+        "termsOfServiceUrl": "https://learncard.com/terms-of-service",
+        "privacyPolicyUrl": "https://learncard.com/privacy-policy",
         "contactUrl": "https://www.learningeconomy.io/contact",
         "websiteUrl": "https://www.learncard.com/"
     },

@@ -4,12 +4,12 @@
 
 | Name                      | Type                                                                                                                                            | Description | Notes      |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **context**               | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md)                         |             |
+| **context**               | [**List[BoostSendBoostRequestCredentialAnyOfContextInner]**](BoostSendBoostRequestCredentialAnyOfContextInner.md)                               |             |
 | **id**                    | **str**                                                                                                                                         |             | [optional] |
-| **type**                  | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md)                         |             |
+| **type**                  | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.md)                               |             |
 | **verifiable_credential** | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1VerifiableCredential**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1VerifiableCredential.md) |             | [optional] |
 | **holder**                | **str**                                                                                                                                         |             | [optional] |
-| **proof**                 | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md)                                             |             |
+| **proof**                 | [**BoostSendBoostRequestCredentialAnyOfProof**](BoostSendBoostRequestCredentialAnyOfProof.md)                                                   |             |
 
 ## Example
 

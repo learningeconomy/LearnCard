@@ -4,6 +4,36 @@ The `E2E` workflow runs the browser job and three service-test shards concurrent
 Each job owns its Docker stack. Within the browser job, functional tests run before
 accessibility tests so legacy database resets cannot interrupt another suite.
 
+## When full E2E runs
+
+Full browser and service E2E run automatically in the merge queue. Documentation-only
+queue entries retain their existing exemption. PR updates (including draft PRs)
+only report the required `E2E` check with a summary explaining that full E2E is
+deferred; a green PR check is not evidence that the suites ran. Keep the merge queue
+required on `main`: the queue's `E2E` check must pass before merging code changes.
+Unit tests, mock tests, and verification keep their existing triggers.
+
+### Run full E2E on a PR before queuing
+
+In **Actions → E2E → Run workflow**, select the PR branch and set **LearnCard branch
+or commit SHA to test** to that branch or its current head SHA. The input defaults
+to `main`, so set it explicitly when testing a PR. Leave browser spec files at their
+default to run the usual full set; all service shards run as well. Manual runs also
+work for draft and documentation-only PRs.
+
+With GitHub CLI, replace `1234` with the PR number (same-repository branches):
+
+```sh
+pr_branch=$(gh pr view 1234 --json headRefName --jq .headRefName)
+pr_sha=$(gh pr view 1234 --json headRefOid --jq .headRefOid)
+gh workflow run e2e.yml --ref "$pr_branch" -f ref="$pr_sha"
+```
+
+`--ref` selects the workflow revision; `-f ref=` selects the source revision tested
+by both suites. A commit SHA pins the tested source even if the PR is updated while
+the run waits. Inspect the manual run in Actions for its result and artifacts.
+Manual runs do not replace validation of the combined revision in the merge queue.
+
 ## Browser workers
 
 The default three specs use `playwright.parallel.config.ts`: two Firefox workers,

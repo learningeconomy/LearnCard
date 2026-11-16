@@ -2,32 +2,33 @@
 
 ## Properties
 
-| Name                      | Type                                                                                                                                          | Description | Notes      |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **listing_id**            | **str**                                                                                                                                       |             |
-| **slug**                  | **str**                                                                                                                                       |             | [optional] |
-| **display_name**          | **str**                                                                                                                                       |             |
-| **tagline**               | **str**                                                                                                                                       |             |
-| **full_description**      | **str**                                                                                                                                       |             |
-| **icon_url**              | **str**                                                                                                                                       |             |
-| **app_listing_status**    | **str**                                                                                                                                       |             |
-| **launch_type**           | **str**                                                                                                                                       |             |
-| **launch_config_json**    | **str**                                                                                                                                       |             |
-| **category**              | **str**                                                                                                                                       |             | [optional] |
-| **promo_video_url**       | **str**                                                                                                                                       |             | [optional] |
-| **promotion_level**       | **str**                                                                                                                                       |             | [optional] |
-| **ios_app_store_id**      | **str**                                                                                                                                       |             | [optional] |
-| **android_app_store_id**  | **str**                                                                                                                                       |             | [optional] |
-| **privacy_policy_url**    | **str**                                                                                                                                       |             | [optional] |
-| **terms_url**             | **str**                                                                                                                                       |             | [optional] |
-| **hero_background_color** | **str**                                                                                                                                       |             | [optional] |
-| **min_age**               | **int**                                                                                                                                       |             | [optional] |
-| **age_rating**            | **str**                                                                                                                                       |             | [optional] |
-| **submitted_at**          | **str**                                                                                                                                       |             | [optional] |
-| **contact_email**         | **str**                                                                                                                                       |             | [optional] |
-| **highlights**            | **List[str]**                                                                                                                                 |             | [optional] |
-| **screenshots**           | **List[str]**                                                                                                                                 |             | [optional] |
-| **submitter**             | [**AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter**](AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter.md) |             | [optional] |
+| Name                      | Type                                                                                                                                                  | Description | Notes      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **listing_id**            | **str**                                                                                                                                               |             |
+| **slug**                  | **str**                                                                                                                                               |             | [optional] |
+| **display_name**          | **str**                                                                                                                                               |             |
+| **tagline**               | **str**                                                                                                                                               |             |
+| **full_description**      | **str**                                                                                                                                               |             |
+| **icon_url**              | **str**                                                                                                                                               |             |
+| **app_listing_status**    | **str**                                                                                                                                               |             |
+| **launch_type**           | **str**                                                                                                                                               |             |
+| **launch_config_json**    | **str**                                                                                                                                               |             |
+| **category**              | **str**                                                                                                                                               |             | [optional] |
+| **promo_video_url**       | **str**                                                                                                                                               |             | [optional] |
+| **promotion_level**       | **str**                                                                                                                                               |             | [optional] |
+| **ios_app_store_id**      | **str**                                                                                                                                               |             | [optional] |
+| **android_app_store_id**  | **str**                                                                                                                                               |             | [optional] |
+| **privacy_policy_url**    | **str**                                                                                                                                               |             | [optional] |
+| **terms_url**             | **str**                                                                                                                                               |             | [optional] |
+| **hero_background_color** | **str**                                                                                                                                               |             | [optional] |
+| **min_age**               | **int**                                                                                                                                               |             | [optional] |
+| **age_rating**            | **str**                                                                                                                                               |             | [optional] |
+| **submitted_at**          | **str**                                                                                                                                               |             | [optional] |
+| **contact_email**         | **str**                                                                                                                                               |             | [optional] |
+| **highlights**            | **List[str]**                                                                                                                                         |             | [optional] |
+| **screenshots**           | **List[str]**                                                                                                                                         |             | [optional] |
+| **submitter**             | [**AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter**](AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter.md)         |             | [optional] |
+| **pending_update**        | [**AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate**](AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate.md) |             | [optional] |
 
 ## Example
 

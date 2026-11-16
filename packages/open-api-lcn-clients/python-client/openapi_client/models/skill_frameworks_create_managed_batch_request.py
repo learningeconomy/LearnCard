@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List
 from typing_extensions import Annotated
-from openapi_client.models.skill_frameworks_create_managed_batch_request_frameworks_inner import SkillFrameworksCreateManagedBatchRequestFrameworksInner
+from openapi_client.models.skill_frameworks_create_managed_request import SkillFrameworksCreateManagedRequest
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,7 +29,7 @@ class SkillFrameworksCreateManagedBatchRequest(BaseModel):
     """
     SkillFrameworksCreateManagedBatchRequest
     """ # noqa: E501
-    frameworks: Annotated[List[SkillFrameworksCreateManagedBatchRequestFrameworksInner], Field(min_length=1)]
+    frameworks: Annotated[List[SkillFrameworksCreateManagedRequest], Field(min_length=1)]
     __properties: ClassVar[List[str]] = ["frameworks"]
 
     model_config = ConfigDict(
@@ -59,9 +59,8 @@ class SkillFrameworksCreateManagedBatchRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -89,7 +88,7 @@ class SkillFrameworksCreateManagedBatchRequest(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "frameworks": [SkillFrameworksCreateManagedBatchRequestFrameworksInner.from_dict(_item) for _item in obj["frameworks"]] if obj.get("frameworks") is not None else None
+            "frameworks": [SkillFrameworksCreateManagedRequest.from_dict(_item) for _item in obj["frameworks"]] if obj.get("frameworks") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

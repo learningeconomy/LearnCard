@@ -9,6 +9,13 @@
  * dependency footprint (crypto, IndexedDB, etc.).
  */
 
-export { createWeb3AuthStrategy, deriveWeb3AuthKey } from './createWeb3AuthStrategy';
+export {
+    ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS,
+    AccountUsesNewerSignInError,
+    createWeb3AuthStrategy,
+    deriveWeb3AuthKey,
+} from './createWeb3AuthStrategy';
+
+export { ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE } from './accountSignInErrors';
 
 export type { Web3AuthStrategyConfig } from './createWeb3AuthStrategy';

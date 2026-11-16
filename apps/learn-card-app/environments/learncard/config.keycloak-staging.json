@@ -9,6 +9,7 @@
         "lcaApi": "https://staging.api.learncard.app/trpc",
         "notificationsEndpoint": "https://staging.api.learncard.app/api/notifications/send",
         "xapi": "https://staging.network.learncard.com/xapi",
+        "aiService": "https://staging-lca-backend.fly.dev",
         "aiAgentService": "https://agent-staging.learncard.ai"
     },
     "features": {

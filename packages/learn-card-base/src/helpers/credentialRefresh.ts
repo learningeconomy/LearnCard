@@ -199,6 +199,7 @@ const performRefresh = async (
         }
         result = await wallet.invoke.refreshCredential(vc, {
             etag: metadata?.etag,
+            ...(metadata?.baseline ? { baseline: metadata.baseline } : {}),
             ...(allowLocalRefresh
                 ? { allowInsecureHttp: true, allowPrivateAddresses: true, maxRedirects: 0 }
                 : {}),

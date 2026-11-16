@@ -1,7 +1,44 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { isEscrowReleaseKillSwitchEnabled, parseLcaApiEnvironment } from './environment';
+import { ESCROW_AUTHORITY_TENANT_PATTERN } from '@learncard/sss-key-manager';
+import {
+    ESCROW_AUTHORITY_TENANT_LABEL,
+    isEscrowReleaseKillSwitchEnabled,
+    parseLcaApiEnvironment,
+} from './environment';
 
 afterEach(() => vi.unstubAllEnvs());
+
+describe('legacy key archive environment', () => {
+    it('defaults to disabled', () => {
+        expect(parseLcaApiEnvironment({ NODE_ENV: 'test' }).LEGACY_KEY_ARCHIVE_ENABLED).toBe(false);
+    });
+    it.each(['IS_OFFLINE', 'IS_E2E_TEST'])('rejects authentication bypass mode %s', flag => {
+        expect(() =>
+            parseLcaApiEnvironment({
+                NODE_ENV: 'test',
+                LEGACY_KEY_ARCHIVE_ENABLED: 'true',
+                LEGACY_KEY_ARCHIVE_BUCKET: 'archive-fixture',
+                LEGACY_KEY_ARCHIVE_KMS_KEY_ARN: `arn:aws:kms:us-east-1:${'0'.repeat(12)}:key/fixture`,
+                [flag]: 'true',
+            })
+        ).toThrow('requires verified authentication');
+    });
+    it('requires both storage and KMS configuration when enabled', () => {
+        const config = {
+            NODE_ENV: 'test',
+            LEGACY_KEY_ARCHIVE_ENABLED: 'true',
+            LEGACY_KEY_ARCHIVE_BUCKET: 'archive-fixture',
+            LEGACY_KEY_ARCHIVE_KMS_KEY_ARN: `arn:aws:kms:us-east-1:${'0'.repeat(12)}:key/fixture`,
+        };
+        expect(parseLcaApiEnvironment(config).LEGACY_KEY_ARCHIVE_ENABLED).toBe(true);
+        for (const field of ['LEGACY_KEY_ARCHIVE_BUCKET', 'LEGACY_KEY_ARCHIVE_KMS_KEY_ARN']) {
+            expect(() => parseLcaApiEnvironment({ ...config, [field]: '' })).toThrow();
+        }
+        expect(() =>
+            parseLcaApiEnvironment({ ...config, LEGACY_KEY_ARCHIVE_KMS_KEY_ARN: 'alias/archive' })
+        ).toThrow();
+    });
+});
 
 describe('live escrow release kill switch', () => {
     it.each(['1', 'true'])('blocks releases for %s', value => {
@@ -155,5 +192,26 @@ describe('Keycloak startup configuration', () => {
                 KEYCLOAK_AUDIENCES: ' , learncard-app, ',
             })
         ).not.toThrow();
+    });
+});
+
+describe('escrow authority tenant', () => {
+    it('validates the label exactly like the SDK', () => {
+        expect(ESCROW_AUTHORITY_TENANT_LABEL.source).toBe(ESCROW_AUTHORITY_TENANT_PATTERN.source);
+        expect(ESCROW_AUTHORITY_TENANT_LABEL.flags).toBe(ESCROW_AUTHORITY_TENANT_PATTERN.flags);
+    });
+
+    const offline = { ...production, IS_OFFLINE: 'true' };
+    it('defaults to the learncard enclave label (no infra change)', () => {
+        expect(parseLcaApiEnvironment(offline).ESCROW_AUTHORITY_TENANT).toBe('learncard');
+    });
+    it('accepts an explicit label and rejects a malformed one', () => {
+        expect(
+            parseLcaApiEnvironment({ ...offline, ESCROW_AUTHORITY_TENANT: 'scouts' })
+                .ESCROW_AUTHORITY_TENANT
+        ).toBe('scouts');
+        expect(() =>
+            parseLcaApiEnvironment({ ...offline, ESCROW_AUTHORITY_TENANT: 'learn card' })
+        ).toThrow();
     });
 });

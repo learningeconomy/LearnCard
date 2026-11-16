@@ -1,5 +1,35 @@
 # learn-card-core
 
+## 1.10.12
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/core@9.4.46
+
+## 1.10.11
+
+### Patch Changes
+
+- [#2003](https://github.com/learningeconomy/LearnCard/pull/2003) [`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop sending inline JSON-LD context objects to the DIDKit WASM context loader. Signing or verifying a credential with an inline context (such as the managed refresh context) no longer triggers WASM out-of-bounds traps (LC-2380).
+
+- [#2013](https://github.com/learningeconomy/LearnCard/pull/2013) [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Dedupe and short-TTL cache concurrent did:web `did.json` fetches so opening one credential no longer stampedes the issuer document.
+
+    `getDidKitPlugin` keeps the generic 10s default and never raises a shorter preinstalled TTL. LearnCard App wallet boot calls `installWalletDidWebDocumentFetchCache()` (`WALLET_DID_WEB_DOCUMENT_TTL_MS` = 60s) before `initLearnCard` as an explicit opt-in.
+
+- Updated dependencies [[`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/types@6.1.0
+    - @learncard/core@9.4.45
+
+## 1.10.10
+
+### Patch Changes
+
+- Updated dependencies [[`e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5`](https://github.com/learningeconomy/LearnCard/commit/e9d738eea3b477dbd82bde171d3c5f8ffa2efbc5), [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d), [`0caa0e478bce246793893e488f37ee90c9b00a1a`](https://github.com/learningeconomy/LearnCard/commit/0caa0e478bce246793893e488f37ee90c9b00a1a), [`bde3fe0f15a780d9fafc699096a9a0307502f529`](https://github.com/learningeconomy/LearnCard/commit/bde3fe0f15a780d9fafc699096a9a0307502f529), [`784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3`](https://github.com/learningeconomy/LearnCard/commit/784f0c9b346a5f7e4e2c618a9b976dcaa90fafe3), [`751579d9c14116dbf6d0e7f7d62f489c81c39db2`](https://github.com/learningeconomy/LearnCard/commit/751579d9c14116dbf6d0e7f7d62f489c81c39db2), [`2c60b1a760958cbfe2525bc951d2381332e1aa48`](https://github.com/learningeconomy/LearnCard/commit/2c60b1a760958cbfe2525bc951d2381332e1aa48)]:
+    - @learncard/types@6.0.0
+    - @learncard/core@9.4.44
+
 ## 1.10.9
 
 ### Patch Changes

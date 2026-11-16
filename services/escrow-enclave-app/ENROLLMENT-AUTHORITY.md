@@ -741,14 +741,28 @@ visible only to the enclave and the user's inbox.
 **Content constraints.** Email text is part of the measured image, so changing it
 needs a new EIF, new PCRs and a measurement rotation. Keep it to three plain-text
 messages (code, started, release warning) with no links or images, in the four app
-languages, using a display name derived from the tenant label (`src/authority/email.rs`'s
-`brand_name`, e.g. `learncard` → `LearnCard`; unknown labels fall back unchanged).
+languages. The display name is the owner-sealed `recoveryBrand` from the decrypted
+blob when present and valid ([SECURITY.md](SECURITY.md) D21), otherwise derived from
+the tenant label (`src/authority/email.rs`'s `brand_name`, e.g. `learncard` →
+`LearnCard`; unknown labels fall back unchanged).
 Only the code message says "Only enter this code if you started this recovery."
 — the other two carry no code, so that line only belongs there. The started and
 release-warning messages instead tell the recipient how to stop an unexpected
 recovery: "If you didn't start this, open the \[app] and cancel the recovery right
 away." A separately signed template file was considered and deferred: its signing
-key could produce misleading or leaking templates.
+key could produce misleading or leaking templates. The sealed brand (D21) is different
+in kind: it is one short, plain-ASCII display name interpolated into compiled
+templates, chosen by the owner for their own blob only, and limited to characters
+that cannot form a link, address, line break, bidi override or code look-alike. It
+cannot change any wording, and a value that fails validation is ignored, not sent.
+
+**Blob plaintext wire format: `recoveryBrand`.** Optional camelCase string field of
+`EscrowBlobPlaintext` (and the release plaintext that flattens it), alongside
+`recoveryEmail`/`recoveryLanguage`. `ESCROW_ENVELOPE_VERSION` stays 1 and it is not
+in the signed intent. Writers (the client's `enrollEscrow`) seal it only when they
+also seal the contact, never on a carry. Readers (enclave `normalize`, TS
+`parseEscrowBlobPlaintext`) keep the canonical form of a valid value and silently
+drop anything else. Validation rules and the shared fixture are in SECURITY.md D21.
 
 **Operations.** SES sending domain with SPF/DKIM/DMARC, production access (out of
 the SES sandbox), bounce and complaint handling, quota monitoring. Cost is

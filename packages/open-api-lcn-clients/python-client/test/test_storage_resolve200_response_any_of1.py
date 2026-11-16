@@ -35,7 +35,7 @@ class TestStorageResolve200ResponseAnyOf1(unittest.TestCase):
         model = StorageResolve200ResponseAnyOf1()
         if include_optional:
             return StorageResolve200ResponseAnyOf1(
-                read = openapi_client.models.storage_resolve_200_response_any_of_1_read.storage_resolve_200_response_anyOf_1_read(
+                read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read(
                     anonymize = True, 
                     credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(
                         share_all = True, 
@@ -66,7 +66,7 @@ class TestStorageResolve200ResponseAnyOf1(unittest.TestCase):
             )
         else:
             return StorageResolve200ResponseAnyOf1(
-                read = openapi_client.models.storage_resolve_200_response_any_of_1_read.storage_resolve_200_response_anyOf_1_read(
+                read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read(
                     anonymize = True, 
                     credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(
                         share_all = True, 

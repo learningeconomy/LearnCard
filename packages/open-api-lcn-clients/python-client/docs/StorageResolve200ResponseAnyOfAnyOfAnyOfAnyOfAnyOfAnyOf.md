@@ -2,10 +2,26 @@
 
 ## Properties
 
-| Name       | Type    | Description | Notes |
-| ---------- | ------- | ----------- | ----- |
-| **format** | **str** |             |
-| **data**   | **str** |             |
+| Name                   | Type                                                                                                                                              | Description | Notes      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **context**            | [**List[BoostSendBoostRequestCredentialAnyOfContextInner]**](BoostSendBoostRequestCredentialAnyOfContextInner.md)                                 |             |
+| **id**                 | **str**                                                                                                                                           |             | [optional] |
+| **type**               | **List[str]**                                                                                                                                     |             |
+| **issuer**             | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOfIssuer**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOfIssuer.md)             |             |
+| **credential_subject** | [**BoostSendBoostRequestCredentialAnyOfCredentialSubject**](BoostSendBoostRequestCredentialAnyOfCredentialSubject.md)                             |             |
+| **refresh_service**    | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)                                   |             | [optional] |
+| **credential_schema**  | [**BoostSendBoostRequestCredentialAnyOfCredentialSchema**](BoostSendBoostRequestCredentialAnyOfCredentialSchema.md)                               |             | [optional] |
+| **issuance_date**      | **str**                                                                                                                                           |             | [optional] |
+| **expiration_date**    | **str**                                                                                                                                           |             | [optional] |
+| **credential_status**  | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)                                   |             | [optional] |
+| **name**               | **str**                                                                                                                                           |             | [optional] |
+| **description**        | **str**                                                                                                                                           |             | [optional] |
+| **valid_from**         | **str**                                                                                                                                           |             | [optional] |
+| **valid_until**        | **str**                                                                                                                                           |             | [optional] |
+| **status**             | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)                                   |             | [optional] |
+| **terms_of_use**       | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md)                                   |             | [optional] |
+| **evidence**           | [**BoostSendBoostRequestCredentialAnyOfEvidence**](BoostSendBoostRequestCredentialAnyOfEvidence.md)                                               |             | [optional] |
+| **render_method**      | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOfRenderMethod**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOfRenderMethod.md) |             | [optional] |
 
 ## Example
 

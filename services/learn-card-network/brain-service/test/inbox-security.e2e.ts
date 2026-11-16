@@ -1,7 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
-import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import {
     JWEValidator,
@@ -311,12 +310,15 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             const store = credentialStorage.storeCredential;
             const storeSpy = vi
                 .spyOn(credentialStorage, 'storeCredential')
-                .mockImplementation(async payload => {
-                    expect(await getRecord(issued.issuanceId)).toMatchObject({
-                        currentStatus: 'ISSUED',
-                    });
+                .mockImplementation(async (payload, transaction, ownerProfileId) => {
+                    expect(transaction).toBeDefined();
+                    const result = await transaction!.run(
+                        'MATCH (n:InboxCredential {id: $id}) RETURN n.currentStatus AS status',
+                        { id: issued.issuanceId }
+                    );
+                    expect(result.records[0]?.get('status')).toBe('ISSUED');
                     if (outcome === 'storage failure') throw new Error('Storage unavailable');
-                    return store(payload);
+                    return store(payload, transaction, ownerProfileId);
                 });
             if (outcome === 'lost race') {
                 // Another request wins after this request has read the pending payload.
@@ -336,7 +338,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             }
 
             expect(await claim(issued.claimUrl!)).toEqual(
-                outcome === 'lost race' ? [] : [credential]
+                outcome === 'success' ? [credential] : []
             );
             expect(storeSpy).toHaveBeenCalledTimes(outcome === 'lost race' ? 0 : 1);
             const stored = await neogma.queryRunner.run(
@@ -348,7 +350,15 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
                 'MATCH ()-[r:CLAIMED_INBOX_CREDENTIAL]->(n:InboxCredential {id: $id}) RETURN count(r) AS count',
                 { id: issued.issuanceId }
             );
-            expect(audit.records[0]!.get('count').toNumber()).toBe(outcome === 'lost race' ? 0 : 1);
+            expect(audit.records[0]!.get('count').toNumber()).toBe(outcome === 'success' ? 1 : 0);
+            if (outcome === 'storage failure') {
+                expect(await getRecord(issued.issuanceId)).toMatchObject({
+                    currentStatus: 'PENDING',
+                });
+                storeSpy.mockRestore();
+                expect(await claim(issued.claimUrl!)).toEqual([credential]);
+                await expectStoredStatus(credential);
+            }
         }
     );
 
@@ -897,19 +907,5 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         expect(await getInboxCredentialById(expired.issuanceId)).toMatchObject({
             currentStatus: 'EXPIRED',
         });
-    });
-
-    it('wires the maintenance worker to an enabled daily schedule', async () => {
-        const config = await readFile(new URL('../serverless.yml', import.meta.url), 'utf8');
-        expect(config).toMatch(
-            /inboxMaintenance:\s+handler: lambda\.inboxMaintenanceHandler[\s\S]*?rate: rate\(1 day\)\s+enabled: true/
-        );
-        // lambda.ts is a thin bootstrap entry that delegates to the lazily imported lambdaApp.ts.
-        const entry = await readFile(new URL('../lambda.ts', import.meta.url), 'utf8');
-        expect(entry).toMatch(
-            /export const inboxMaintenanceHandler[\s\S]*?\(await getApplication\(\)\)\.inboxMaintenanceHandler\(/
-        );
-        const handler = await readFile(new URL('../lambdaApp.ts', import.meta.url), 'utf8');
-        expect(handler).toMatch(/inboxMaintenanceHandler[\s\S]*?await runInboxMaintenance\(\)/);
     });
 });

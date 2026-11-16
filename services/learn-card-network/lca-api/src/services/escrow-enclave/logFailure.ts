@@ -26,7 +26,11 @@ export const logEscrowFailure = (error: unknown): void => {
                     : 'unexpected';
     // lca-api uses structured console warnings rather than the browser logger.
     console.warn('[LCA escrow] enclave operation failed', { reason });
-    // One EMF event alongside the existing warning; no error text, request or identity fields.
+    emitEnclaveFailureMetric(reason);
+};
+
+/** One EMF event per call; `reason` is an allowlisted label, never error text, request or identity fields. */
+export const emitEnclaveFailureMetric = (reason: string): void => {
     console.log(
         JSON.stringify({
             _aws: {

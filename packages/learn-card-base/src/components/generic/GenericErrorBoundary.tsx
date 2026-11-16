@@ -1,6 +1,6 @@
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { isLocalhost } from 'learn-card-base';
+import { isLocalhost } from '../../helpers/urlHelpers';
 
 import SpilledCup from '../../svgs/SpilledCup';
 import { getLogger } from '../../logging/logger';

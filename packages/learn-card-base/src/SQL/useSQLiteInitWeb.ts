@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection } from '@capacitor-community/sqlite';
 import { sqliteStore } from '../stores/sqliteStore';
 import { markSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
+import { markSQLiteReloadedOnOpen } from './connection';
 import { getLogger } from '../logging/logger';
 
 const log = getLogger('use-sqlite-init-web');
@@ -52,6 +53,7 @@ export const useSQLiteInitWeb = () => {
                               1,
                               false
                           );
+                markSQLiteReloadedOnOpen(db);
                 if (stopped) return;
                 sqliteStore.set.sqlite(connection);
                 sqliteStore.set.db(db);

@@ -1,5 +1,17 @@
 # @learncard/email-templates
 
+## 1.3.0
+
+### Minor Changes
+
+- [#1904](https://github.com/learningeconomy/LearnCard/pull/1904) [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d) Thanks [@gerardopar](https://github.com/gerardopar)! - Add branded campaign broadcast emails, duplicate-safe reservations, signed public unsubscribe, and private announcement email/push preferences.
+
+### Patch Changes
+
+- [#1904](https://github.com/learningeconomy/LearnCard/pull/1904) [`69b80366c48e0f458b3bb50f25166c90ecaa2d6d`](https://github.com/learningeconomy/LearnCard/commit/69b80366c48e0f458b3bb50f25166c90ecaa2d6d) Thanks [@gerardopar](https://github.com/gerardopar)! - Omit the announcement button and fallback link when there is no in-app destination.
+
+- [#1942](https://github.com/learningeconomy/LearnCard/pull/1942) [`4caf6a99c7a204d7f211737190d85eeebe736eb0`](https://github.com/learningeconomy/LearnCard/commit/4caf6a99c7a204d7f211737190d85eeebe736eb0) Thanks [@Custard7](https://github.com/Custard7)! - VetPass web now deploys from CI like LearnCard: staging on `main` pushes that affect the app, and production (`vetpass.app`) with LearnCard releases. CI web builds now bake the configured tenant and stage. LearnCard staging previously baked production config, which the edge overlay masked. The `alpha.vetpass.app` stage is retired, and email origin lookup still resolves any `*.vetpass.app` host to VetPass.
+
 ## 1.2.2
 
 ### Patch Changes

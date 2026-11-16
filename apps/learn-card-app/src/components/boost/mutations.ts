@@ -14,6 +14,7 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { VC, Boost, CredentialRecord, VCValidator } from '@learncard/types';
 
 import { publishWalletEvent } from '../../pages/pathways/events/walletEventBus';
+import { withInternalCategoryHidden } from 'learn-card-base/helpers/credentialCollection';
 
 type CredentialRecordMinusId = Omit<CredentialRecord, 'id'>;
 
@@ -84,13 +85,15 @@ export const useAddCredentialToWallet = () => {
 
                 const category = getDefaultCategoryForCredential(vc) || 'Achievement';
 
-                const res = await wallet.index.LearnCloud.add({
-                    id: _id,
-                    uri,
-                    category,
-                    ...(title ? { title } : {}),
-                    ...(imgUrl ? { imgUrl } : {}),
-                });
+                const res = await wallet.index.LearnCloud.add(
+                    withInternalCategoryHidden({
+                        id: _id,
+                        uri,
+                        category,
+                        ...(title ? { title } : {}),
+                        ...(imgUrl ? { imgUrl } : {}),
+                    })
+                );
 
                 return {
                     vc,
@@ -98,6 +101,7 @@ export const useAddCredentialToWallet = () => {
                     uri,
                     id: _id,
                     didOverride,
+                    readerDid: wallet.id.did(),
                     eventSource: input.eventSource,
                     eventBoostUri: input.eventBoostUri,
                 };
@@ -107,7 +111,8 @@ export const useAddCredentialToWallet = () => {
             }
         },
         onSuccess: async data => {
-            const { category, vc, uri, id, didOverride, eventSource, eventBoostUri } = data;
+            const { category, vc, uri, id, didOverride, readerDid, eventSource, eventBoostUri } =
+                data;
 
             await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
 
@@ -150,11 +155,15 @@ export const useAddCredentialToWallet = () => {
             });
 
             // Update cache
-            insertItem(queryClient, ['useGetCredentialList', didForListsAndCounts, category], {
-                id,
-                category,
-                uri,
-            });
+            insertItem(
+                queryClient,
+                ['useGetCredentialList', didForListsAndCounts, category, readerDid],
+                {
+                    id,
+                    category,
+                    uri,
+                }
+            );
 
             // Keep resume-builder selectors and wallet credential views in sync after any issuance.
             // Intentionally don't await these to keep this mutation fast.

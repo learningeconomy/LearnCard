@@ -19,13 +19,13 @@ from typing_extensions import Annotated
 from pydantic import StrictStr
 from typing import Any, Dict, List, Optional
 from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
+from openapi_client.models.contact_methods_verify_contact_method_request import ContactMethodsVerifyContactMethodRequest
 from openapi_client.models.federation_receive200_response import FederationReceive200Response
 from openapi_client.models.federation_receive_request import FederationReceiveRequest
 from openapi_client.models.inbox_approve_guardian_credential200_response import InboxApproveGuardianCredential200Response
 from openapi_client.models.inbox_approve_guardian_credential_in_app200_response import InboxApproveGuardianCredentialInApp200Response
 from openapi_client.models.inbox_approve_guardian_credential_in_app_request import InboxApproveGuardianCredentialInAppRequest
 from openapi_client.models.inbox_approve_guardian_credential_request import InboxApproveGuardianCredentialRequest
-from openapi_client.models.inbox_approve_guardian_request_request import InboxApproveGuardianRequestRequest
 from openapi_client.models.inbox_claim200_response import InboxClaim200Response
 from openapi_client.models.inbox_claim_pending_guardian_links200_response_inner import InboxClaimPendingGuardianLinks200ResponseInner
 from openapi_client.models.inbox_claim_request import InboxClaimRequest
@@ -41,8 +41,6 @@ from openapi_client.models.inbox_issue200_response import InboxIssue200Response
 from openapi_client.models.inbox_issue_batch202_response import InboxIssueBatch202Response
 from openapi_client.models.inbox_issue_batch_request import InboxIssueBatchRequest
 from openapi_client.models.inbox_issue_request import InboxIssueRequest
-from openapi_client.models.inbox_reject_guardian_credential_in_app_request import InboxRejectGuardianCredentialInAppRequest
-from openapi_client.models.inbox_reject_guardian_credential_request import InboxRejectGuardianCredentialRequest
 from openapi_client.models.inbox_send_guardian_approval_email200_response import InboxSendGuardianApprovalEmail200Response
 from openapi_client.models.inbox_send_guardian_approval_email_request import InboxSendGuardianApprovalEmailRequest
 
@@ -940,7 +938,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_approve_guardian_request(
         self,
-        inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest,
+        contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -958,8 +956,8 @@ class UniversalInboxApi:
 
         Consumes a guardian approval token and marks the requesting user profile as approved.
 
-        :param inbox_approve_guardian_request_request: (required)
-        :type inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest
+        :param contact_methods_verify_contact_method_request: (required)
+        :type contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -983,7 +981,7 @@ class UniversalInboxApi:
         """ # noqa: E501
 
         _param = self._inbox_approve_guardian_request_serialize(
-            inbox_approve_guardian_request_request=inbox_approve_guardian_request_request,
+            contact_methods_verify_contact_method_request=contact_methods_verify_contact_method_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1011,7 +1009,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_approve_guardian_request_with_http_info(
         self,
-        inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest,
+        contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1029,8 +1027,8 @@ class UniversalInboxApi:
 
         Consumes a guardian approval token and marks the requesting user profile as approved.
 
-        :param inbox_approve_guardian_request_request: (required)
-        :type inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest
+        :param contact_methods_verify_contact_method_request: (required)
+        :type contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1054,7 +1052,7 @@ class UniversalInboxApi:
         """ # noqa: E501
 
         _param = self._inbox_approve_guardian_request_serialize(
-            inbox_approve_guardian_request_request=inbox_approve_guardian_request_request,
+            contact_methods_verify_contact_method_request=contact_methods_verify_contact_method_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1082,7 +1080,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_approve_guardian_request_without_preload_content(
         self,
-        inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest,
+        contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1100,8 +1098,8 @@ class UniversalInboxApi:
 
         Consumes a guardian approval token and marks the requesting user profile as approved.
 
-        :param inbox_approve_guardian_request_request: (required)
-        :type inbox_approve_guardian_request_request: InboxApproveGuardianRequestRequest
+        :param contact_methods_verify_contact_method_request: (required)
+        :type contact_methods_verify_contact_method_request: ContactMethodsVerifyContactMethodRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1125,7 +1123,7 @@ class UniversalInboxApi:
         """ # noqa: E501
 
         _param = self._inbox_approve_guardian_request_serialize(
-            inbox_approve_guardian_request_request=inbox_approve_guardian_request_request,
+            contact_methods_verify_contact_method_request=contact_methods_verify_contact_method_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1148,7 +1146,7 @@ class UniversalInboxApi:
 
     def _inbox_approve_guardian_request_serialize(
         self,
-        inbox_approve_guardian_request_request,
+        contact_methods_verify_contact_method_request,
         _request_auth,
         _content_type,
         _headers,
@@ -1174,8 +1172,8 @@ class UniversalInboxApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if inbox_approve_guardian_request_request is not None:
-            _body_params = inbox_approve_guardian_request_request
+        if contact_methods_verify_contact_method_request is not None:
+            _body_params = contact_methods_verify_contact_method_request
 
 
         # set the HTTP header `Accept`
@@ -1226,7 +1224,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_approve_guardian_request_by_path(
         self,
-        token: Optional[StrictStr],
+        token: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1298,7 +1296,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_approve_guardian_request_by_path_with_http_info(
         self,
-        token: Optional[StrictStr],
+        token: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1370,7 +1368,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_approve_guardian_request_by_path_without_preload_content(
         self,
-        token: Optional[StrictStr],
+        token: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2360,7 +2358,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_get_batch(
         self,
-        batch_id: Optional[StrictStr],
+        batch_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2431,7 +2429,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_get_batch_with_http_info(
         self,
-        batch_id: Optional[StrictStr],
+        batch_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2502,7 +2500,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_get_batch_without_preload_content(
         self,
-        batch_id: Optional[StrictStr],
+        batch_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2909,7 +2907,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_get_inbox_credential(
         self,
-        credential_id: Optional[StrictStr],
+        credential_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2981,7 +2979,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_get_inbox_credential_with_http_info(
         self,
-        credential_id: Optional[StrictStr],
+        credential_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -3053,7 +3051,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_get_inbox_credential_without_preload_content(
         self,
-        credential_id: Optional[StrictStr],
+        credential_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4330,7 +4328,7 @@ class UniversalInboxApi:
     def inbox_reject_guardian_credential(
         self,
         token: StrictStr,
-        inbox_reject_guardian_credential_request: InboxRejectGuardianCredentialRequest,
+        inbox_approve_guardian_credential_request: InboxApproveGuardianCredentialRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4350,8 +4348,8 @@ class UniversalInboxApi:
 
         :param token: (required)
         :type token: str
-        :param inbox_reject_guardian_credential_request: (required)
-        :type inbox_reject_guardian_credential_request: InboxRejectGuardianCredentialRequest
+        :param inbox_approve_guardian_credential_request: (required)
+        :type inbox_approve_guardian_credential_request: InboxApproveGuardianCredentialRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4376,7 +4374,7 @@ class UniversalInboxApi:
 
         _param = self._inbox_reject_guardian_credential_serialize(
             token=token,
-            inbox_reject_guardian_credential_request=inbox_reject_guardian_credential_request,
+            inbox_approve_guardian_credential_request=inbox_approve_guardian_credential_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4405,7 +4403,7 @@ class UniversalInboxApi:
     def inbox_reject_guardian_credential_with_http_info(
         self,
         token: StrictStr,
-        inbox_reject_guardian_credential_request: InboxRejectGuardianCredentialRequest,
+        inbox_approve_guardian_credential_request: InboxApproveGuardianCredentialRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4425,8 +4423,8 @@ class UniversalInboxApi:
 
         :param token: (required)
         :type token: str
-        :param inbox_reject_guardian_credential_request: (required)
-        :type inbox_reject_guardian_credential_request: InboxRejectGuardianCredentialRequest
+        :param inbox_approve_guardian_credential_request: (required)
+        :type inbox_approve_guardian_credential_request: InboxApproveGuardianCredentialRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4451,7 +4449,7 @@ class UniversalInboxApi:
 
         _param = self._inbox_reject_guardian_credential_serialize(
             token=token,
-            inbox_reject_guardian_credential_request=inbox_reject_guardian_credential_request,
+            inbox_approve_guardian_credential_request=inbox_approve_guardian_credential_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4480,7 +4478,7 @@ class UniversalInboxApi:
     def inbox_reject_guardian_credential_without_preload_content(
         self,
         token: StrictStr,
-        inbox_reject_guardian_credential_request: InboxRejectGuardianCredentialRequest,
+        inbox_approve_guardian_credential_request: InboxApproveGuardianCredentialRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4500,8 +4498,8 @@ class UniversalInboxApi:
 
         :param token: (required)
         :type token: str
-        :param inbox_reject_guardian_credential_request: (required)
-        :type inbox_reject_guardian_credential_request: InboxRejectGuardianCredentialRequest
+        :param inbox_approve_guardian_credential_request: (required)
+        :type inbox_approve_guardian_credential_request: InboxApproveGuardianCredentialRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4526,7 +4524,7 @@ class UniversalInboxApi:
 
         _param = self._inbox_reject_guardian_credential_serialize(
             token=token,
-            inbox_reject_guardian_credential_request=inbox_reject_guardian_credential_request,
+            inbox_approve_guardian_credential_request=inbox_approve_guardian_credential_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4550,7 +4548,7 @@ class UniversalInboxApi:
     def _inbox_reject_guardian_credential_serialize(
         self,
         token,
-        inbox_reject_guardian_credential_request,
+        inbox_approve_guardian_credential_request,
         _request_auth,
         _content_type,
         _headers,
@@ -4578,8 +4576,8 @@ class UniversalInboxApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if inbox_reject_guardian_credential_request is not None:
-            _body_params = inbox_reject_guardian_credential_request
+        if inbox_approve_guardian_credential_request is not None:
+            _body_params = inbox_approve_guardian_credential_request
 
 
         # set the HTTP header `Accept`
@@ -4630,7 +4628,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_reject_guardian_credential_in_app(
         self,
-        inbox_reject_guardian_credential_in_app_request: InboxRejectGuardianCredentialInAppRequest,
+        inbox_approve_guardian_credential_in_app_request: InboxApproveGuardianCredentialInAppRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4648,8 +4646,8 @@ class UniversalInboxApi:
 
         Authenticated guardian rejects a pending credential. Requires MANAGES relationship with the child. No OTP needed.
 
-        :param inbox_reject_guardian_credential_in_app_request: (required)
-        :type inbox_reject_guardian_credential_in_app_request: InboxRejectGuardianCredentialInAppRequest
+        :param inbox_approve_guardian_credential_in_app_request: (required)
+        :type inbox_approve_guardian_credential_in_app_request: InboxApproveGuardianCredentialInAppRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4673,7 +4671,7 @@ class UniversalInboxApi:
         """ # noqa: E501
 
         _param = self._inbox_reject_guardian_credential_in_app_serialize(
-            inbox_reject_guardian_credential_in_app_request=inbox_reject_guardian_credential_in_app_request,
+            inbox_approve_guardian_credential_in_app_request=inbox_approve_guardian_credential_in_app_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4701,7 +4699,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_reject_guardian_credential_in_app_with_http_info(
         self,
-        inbox_reject_guardian_credential_in_app_request: InboxRejectGuardianCredentialInAppRequest,
+        inbox_approve_guardian_credential_in_app_request: InboxApproveGuardianCredentialInAppRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4719,8 +4717,8 @@ class UniversalInboxApi:
 
         Authenticated guardian rejects a pending credential. Requires MANAGES relationship with the child. No OTP needed.
 
-        :param inbox_reject_guardian_credential_in_app_request: (required)
-        :type inbox_reject_guardian_credential_in_app_request: InboxRejectGuardianCredentialInAppRequest
+        :param inbox_approve_guardian_credential_in_app_request: (required)
+        :type inbox_approve_guardian_credential_in_app_request: InboxApproveGuardianCredentialInAppRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4744,7 +4742,7 @@ class UniversalInboxApi:
         """ # noqa: E501
 
         _param = self._inbox_reject_guardian_credential_in_app_serialize(
-            inbox_reject_guardian_credential_in_app_request=inbox_reject_guardian_credential_in_app_request,
+            inbox_approve_guardian_credential_in_app_request=inbox_approve_guardian_credential_in_app_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4772,7 +4770,7 @@ class UniversalInboxApi:
     @validate_call
     def inbox_reject_guardian_credential_in_app_without_preload_content(
         self,
-        inbox_reject_guardian_credential_in_app_request: InboxRejectGuardianCredentialInAppRequest,
+        inbox_approve_guardian_credential_in_app_request: InboxApproveGuardianCredentialInAppRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4790,8 +4788,8 @@ class UniversalInboxApi:
 
         Authenticated guardian rejects a pending credential. Requires MANAGES relationship with the child. No OTP needed.
 
-        :param inbox_reject_guardian_credential_in_app_request: (required)
-        :type inbox_reject_guardian_credential_in_app_request: InboxRejectGuardianCredentialInAppRequest
+        :param inbox_approve_guardian_credential_in_app_request: (required)
+        :type inbox_approve_guardian_credential_in_app_request: InboxApproveGuardianCredentialInAppRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4815,7 +4813,7 @@ class UniversalInboxApi:
         """ # noqa: E501
 
         _param = self._inbox_reject_guardian_credential_in_app_serialize(
-            inbox_reject_guardian_credential_in_app_request=inbox_reject_guardian_credential_in_app_request,
+            inbox_approve_guardian_credential_in_app_request=inbox_approve_guardian_credential_in_app_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4838,7 +4836,7 @@ class UniversalInboxApi:
 
     def _inbox_reject_guardian_credential_in_app_serialize(
         self,
-        inbox_reject_guardian_credential_in_app_request,
+        inbox_approve_guardian_credential_in_app_request,
         _request_auth,
         _content_type,
         _headers,
@@ -4864,8 +4862,8 @@ class UniversalInboxApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if inbox_reject_guardian_credential_in_app_request is not None:
-            _body_params = inbox_reject_guardian_credential_in_app_request
+        if inbox_approve_guardian_credential_in_app_request is not None:
+            _body_params = inbox_approve_guardian_credential_in_app_request
 
 
         # set the HTTP header `Accept`

@@ -72,9 +72,8 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -84,31 +83,6 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if is_signed (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_signed is None and "is_signed" in self.model_fields_set:
-            _dict['isSigned'] = None
-
-        # set to None if is_accepted (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_accepted is None and "is_accepted" in self.model_fields_set:
-            _dict['isAccepted'] = None
-
-        # set to None if issuer_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuer_did is None and "issuer_did" in self.model_fields_set:
-            _dict['issuerDid'] = None
-
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
         return _dict
 
     @classmethod

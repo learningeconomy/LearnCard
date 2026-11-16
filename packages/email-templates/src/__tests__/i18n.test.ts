@@ -21,6 +21,13 @@ const LOCALES: NotificationLocale[] = ['en', 'es', 'fr', 'ar'];
 
 // Minimal valid data for every template ID.
 const FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
+    announcement: {
+        title: 'News',
+        body: 'New programs',
+        ctaLabel: 'View',
+        ctaUrl: 'https://learncard.app/m/news',
+        unsubscribeUrl: 'https://learncard.app/unsubscribe?token=test',
+    },
     'embed-email-verification': {
         verificationCode: '123456',
         verificationEmail: 'test@example.com',

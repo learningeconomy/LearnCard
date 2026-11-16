@@ -38,7 +38,7 @@ class TestContractsGetConsentedContractsRequestQueryReadCredentials(unittest.Tes
                 share_all = True,
                 sharing = True,
                 categories = {
-                    'key' : openapi_client.models.contracts_get_consented_contracts_request_query_read_credentials_categories_value.contracts_getConsentedContracts_request_query_read_credentials_categories_value(
+                    'key' : openapi_client.models.contracts_consent_to_contract_request_terms_read_credentials_categories_value.contracts_consentToContract_request_terms_read_credentials_categories_value(
                         sharing = True, 
                         shared = [
                             ''

@@ -28,7 +28,7 @@ class SkillsCreateRequest(BaseModel):
     """
     SkillsCreateRequest
     """ # noqa: E501
-    framework_id: Optional[StrictStr] = Field(alias="frameworkId")
+    framework_id: StrictStr = Field(alias="frameworkId")
     skill: Schema0
     parent_id: Optional[StrictStr] = Field(default=None, alias="parentId")
     __properties: ClassVar[List[str]] = ["frameworkId", "skill", "parentId"]
@@ -60,9 +60,8 @@ class SkillsCreateRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -75,14 +74,8 @@ class SkillsCreateRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of skill
         if self.skill:
             _dict['skill'] = self.skill.to_dict()
-        # set to None if framework_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.framework_id is None and "framework_id" in self.model_fields_set:
-            _dict['frameworkId'] = None
-
-        # set to None if parent_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.parent_id is None and "parent_id" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.parent_id is None and "parent_id" in self.model_fields_set and "parent_id" not in excluded_fields:
             _dict['parentId'] = None
 
         return _dict

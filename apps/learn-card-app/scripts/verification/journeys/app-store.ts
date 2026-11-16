@@ -69,7 +69,9 @@ const runAppStore = async (context: VerificationContext): Promise<FeatureResult>
             await page.goto(`${context.baseUrl}/launchpad`);
             await page.getByRole('button', { name: /browse more/i }).click();
             await expect(page).toHaveURL(/\/launchpad\/browse\?tab=All/);
-            const row = page.locator('ion-item').filter({ hasText: listing.displayName });
+            const row = page
+                .getByTestId('app-store-list-item')
+                .filter({ hasText: listing.displayName });
             await expect(row).toBeVisible({ timeout: 30_000 });
             await row.getByRole('button', { name: 'Get', exact: true }).click();
             await expect(
@@ -117,7 +119,9 @@ const runAppStore = async (context: VerificationContext): Promise<FeatureResult>
                     installed,
                 });
                 expect(installed).toBe(true);
-                const row = page.locator('ion-item').filter({ hasText: listing.displayName });
+                const row = page
+                    .getByTestId('app-store-list-item')
+                    .filter({ hasText: listing.displayName });
                 await expect(row.getByRole('button', { name: 'Open', exact: true })).toBeVisible({
                     timeout: 30_000,
                 });

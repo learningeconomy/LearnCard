@@ -5,7 +5,7 @@
 | Name            | Type                                                                                                                                                                                | Description | Notes |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
 | **credentials** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials.md) |             |
-| **personal**    | **Dict[str, Optional[bool]]**                                                                                                                                                       |             |
+| **personal**    | **Dict[str, bool]**                                                                                                                                                                 |             |
 
 ## Example
 

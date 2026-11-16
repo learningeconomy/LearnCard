@@ -360,6 +360,45 @@ describe('connection prompt methods', () => {
     });
 });
 
+describe('updateContract patch shapes', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it.each(['read', 'write'] as const)(
+        'rejects overlapping %s patches without a server mutation',
+        async area => {
+            const mutate = vi.fn();
+            const client = {
+                ...getMockClient(),
+                contracts: { updateConsentFlowContract: { mutate } },
+            };
+            vi.mocked(getBrainClient).mockResolvedValue(client as never);
+            const learnCard = getMockLearnCard();
+            const plugin = await getLearnCardNetworkPlugin(
+                learnCard,
+                'https://network.example/trpc'
+            );
+
+            await expect(
+                plugin.methods?.updateContract(learnCard, 'contract:1', {
+                    [area]: {
+                        credentials: { categories: { Transcript: { required: true } } },
+                        personal: {},
+                    },
+                    contract: {
+                        [area]: {
+                            credentials: { categories: { Certificate: { required: true } } },
+                            personal: {},
+                        },
+                    },
+                })
+            ).rejects.toThrow(
+                'Contract read/write updates must use either the top-level or nested contract shape'
+            );
+            expect(mutate).not.toHaveBeenCalled();
+        }
+    );
+});
+
 describe('credential refresh methods', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -611,6 +650,38 @@ describe('credential refresh methods', () => {
         expect(client.boost.sendBoost.mutate).not.toHaveBeenCalled();
         expect(learnCard.invoke.createDagJwe).not.toHaveBeenCalled();
         expect(client.utilities.getDid.query).not.toHaveBeenCalled();
+    });
+
+    it('sendBoost throws instead of signing when the boost is a display-only anchor', async () => {
+        const client = getMockClient();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({ displayOnlyAnchor: true, display: {} }),
+        });
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const { learnCard } = getMockIssuingLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+
+        await expect(
+            plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1')
+        ).rejects.toThrow('display-only anchor');
+
+        expect(learnCard.invoke.issueCredential).not.toHaveBeenCalled();
+    });
+
+    it('sendBoost signs normally when the boost has its own display object (not a display-only anchor)', async () => {
+        const client = getMockClient();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({
+                display: { backgroundColor: '#fff', backgroundImage: '', displayType: 'card' },
+            }),
+        });
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const { learnCard } = getMockIssuingLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+
+        await plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1');
+
+        expect(learnCard.invoke.issueCredential).toHaveBeenCalled();
     });
 
     it('sendBoost receipt preserves the exact credentialStatus descriptor from the signed VC', async () => {

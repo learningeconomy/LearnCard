@@ -82,31 +82,29 @@ Set `NETLIFY_SITE_ID` per environment (`learn-card-app-staging`, `learn-card-app
 auto-publishing from git branches (`main`, `production`, `production-scouts`) so CI is the only
 publisher; Deploy Previews may still be built by Netlify's git integration.
 
-## AI Passport (Fly + Netlify) Deploys
+## AI Passport Backend (Fly) Deploys
 
-AI Passport deploys run from `.github/workflows/deploy.yml` (`deploy-ai-passport-backend` and
-`deploy-ai-passport-app` jobs). Until the cutover below, the AI-Passport repo's
-`deploy-fly.yml` is still the live deployer, so **automatic legs stay off** unless the repo
-variable `AIP_DEPLOY_ENABLED` is `true`. Manual dispatch (`deploy-ai-passport-backend` /
-`deploy-ai-passport-app`, environment `staging` or `production`) works regardless.
+AI Passport backend deploys run from `.github/workflows/deploy.yml` (`deploy-ai-passport-backend`
+job). Until the cutover below, the AI-Passport repo's `deploy-fly.yml` is still the live
+deployer, so **automatic legs stay off** unless the repo variable `AIP_DEPLOY_ENABLED` is `true`.
+Manual dispatch (`deploy-ai-passport-backend`, environment `staging` or `production`) works
+regardless. The Astro AI Passport frontend (`apps/ai-passport`) has been removed from the
+monorepo, so there is no app deploy job.
 
-| Trigger                     | Backend (Fly)                                                  | App (Netlify)                                      |
-| --------------------------- | -------------------------------------------------------------- | -------------------------------------------------- |
-| Push to `main`              | staging, when Nx marks `ai-passport-backend` affected          | staging, when `ai-passport` affected               |
-| Release (`chore(release):`) | production, when `services/ai-passport-backend` version bumped | production, when `apps/ai-passport` version bumped |
-| Manual dispatch             | staging or production                                          | staging or production                              |
+| Trigger                     | Backend (Fly)                                                  |
+| --------------------------- | -------------------------------------------------------------- |
+| Push to `main`              | staging, when Nx marks `ai-passport-backend` affected          |
+| Release (`chore(release):`) | production, when `services/ai-passport-backend` version bumped |
+| Manual dispatch             | staging or production                                          |
 
 Production backend fans out to the two Fly apps AI-Passport deployed: `ai-passport` and
-`lca-backend` (`claude-ai-passport` is retired and isn't deployed). The app job waits for the
-backend job and skips if it failed.
+`lca-backend` (`claude-ai-passport` is retired and isn't deployed).
 
-| Environment                          | Deploys                           |
-| ------------------------------------ | --------------------------------- |
-| `ai-passport-api-staging`            | Fly app named by `FLY_APP_NAME`   |
-| `ai-passport-api-production`         | Fly app `ai-passport` (pinned)    |
-| `ai-passport-lca-backend-production` | Fly app `lca-backend` (pinned)    |
-| `ai-passport-app-staging`            | Netlify site in `NETLIFY_SITE_ID` |
-| `ai-passport-app-production`         | Netlify site in `NETLIFY_SITE_ID` |
+| Environment                          | Deploys                         |
+| ------------------------------------ | ------------------------------- |
+| `ai-passport-api-staging`            | Fly app named by `FLY_APP_NAME` |
+| `ai-passport-api-production`         | Fly app `ai-passport` (pinned)  |
+| `ai-passport-lca-backend-production` | Fly app `lca-backend` (pinned)  |
 
 None of these environments exist yet, and neither does the staging Fly app, Mongo, Redis,
 Qdrant, Bedrock role or Guardrail. Creating them is ops work; CI only deploys into them.
@@ -151,29 +149,13 @@ The LearnCard app picks the matching contract from its network URL
 staging app: a Fly secret with the same name takes precedence over `--env`, so the guard here would check one value while the app
 ran another. The staging role's trust policy must allow the staging Fly app's OIDC identity.
 
-### App environments
-
-| Key                   | Type   | Purpose                                                                                                                                                                         |
-| --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NETLIFY_SITE_ID`     | var    | Target Netlify site for that environment                                                                                                                                        |
-| `NETLIFY_AUTH_TOKEN`  | secret | Netlify token with deploy rights                                                                                                                                                |
-| `PUBLIC_BACKEND_URL`  | var    | Backend origin baked into the build (staging: the staging Fly app)                                                                                                              |
-| `PUBLIC_DOMAIN`       | var    | This site's origin                                                                                                                                                              |
-| `PUBLIC_LCA_URL`      | var    | LearnCard app URL. Required for staging                                                                                                                                         |
-| `PUBLIC_CONTRACT_URI` | var    | Consent contract. Required for staging, must match `AIP_LEARNCARD_CONTRACT_URI` (`lc:network:staging.network.learncard.com/trpc:contract:9eade6a7-7181-4509-b805-d26e30a8f7f1`) |
-
-The Netlify site's base directory is `apps/ai-passport` (`apps/ai-passport/netlify.toml`).
-Disable branch auto-publishing so CI is the only publisher; deploy previews can stay on
-Netlify's git integration.
-
 ### Cutover order
 
 1. Create the staging Fly app and its data stores, Bedrock role and Guardrail (ops).
-2. Create the five GitHub Environments above with their tokens and vars.
-3. Dry run: dispatch `deploy-ai-passport-backend` + `deploy-ai-passport-app` to `staging`.
-4. Disable AI-Passport's `deploy-fly.yml` and its Netlify site link (AIP is frozen at the
-   monorepo import), then set `AIP_DEPLOY_ENABLED=true`.
-5. The next release that bumps `ai-passport-backend` / `ai-passport` deploys production from here.
+2. Create the three GitHub Environments above with their tokens and vars.
+3. Dry run: dispatch `deploy-ai-passport-backend` to `staging`.
+4. Disable AI-Passport's `deploy-fly.yml` (AIP is frozen at the monorepo import), then set `AIP_DEPLOY_ENABLED=true`.
+5. The next release that bumps `ai-passport-backend` deploys production from here.
 
 `fly.mcp.toml` (the MCP server) was never deployed by AI-Passport CI and isn't deployed here.
 

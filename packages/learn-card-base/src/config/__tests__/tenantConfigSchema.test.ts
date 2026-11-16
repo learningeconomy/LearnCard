@@ -1,13 +1,20 @@
 import { describe, it, expect } from 'vitest';
+import { ESCROW_AUTHORITY_TENANT_PATTERN } from '@learncard/sss-key-manager';
 
 import {
     tenantConfigSchema,
     tenantAuthConfigSchema,
     parseTenantConfig,
+    ESCROW_AUTHORITY_TENANT_LABEL,
 } from '../tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../tenantDefaults';
 
 describe('tenantConfigSchema', () => {
+    it('validates escrowAuthorityTenant exactly like the SDK', () => {
+        expect(ESCROW_AUTHORITY_TENANT_LABEL.source).toBe(ESCROW_AUTHORITY_TENANT_PATTERN.source);
+        expect(ESCROW_AUTHORITY_TENANT_LABEL.flags).toBe(ESCROW_AUTHORITY_TENANT_PATTERN.flags);
+    });
+
     it('accepts Keycloak with default scopes', () => {
         const auth = tenantAuthConfigSchema.parse({
             provider: 'keycloak',

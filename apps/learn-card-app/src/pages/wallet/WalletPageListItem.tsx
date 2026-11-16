@@ -38,7 +38,7 @@ type WalletPageListItemProps = {
         categoryId: CredentialCategoryEnum;
         labels: { singular: string; plural: string };
     };
-    count: number;
+    count: number | null;
     showNewItemIndicator?: boolean;
     loading?: boolean;
 };
@@ -65,7 +65,7 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
 
     let countDisplay: React.ReactNode | null = (
         <div
-            className={`font-poppins text-[14px] ${passportCardTextColor ?? 'text-grayscale-900'}`}
+            className={`break-words font-poppins text-[14px] ${passportCardTextColor ?? 'text-grayscale-900'}`}
         >
             {loading ? (
                 <div className="flex items-center gap-[5px]">
@@ -77,6 +77,8 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
                     />{' '}
                     {m['wallet.items']()}
                 </div>
+            ) : count === null ? (
+                m['credentialCollection.countUnavailable']()
             ) : count === 1 ? (
                 m['wallet.itemCountOne']({ count })
             ) : (
@@ -101,7 +103,7 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
             }`}
             style={passportCardBgColor ? { backgroundColor: passportCardBgColor } : undefined}
         >
-            <div className="flex items-center justify-center relative">
+            <div className="flex shrink-0 items-center justify-center relative">
                 {IconWithShape ? (
                     <IconWithShape className="w-[40px] h-[40px]" />
                 ) : (
@@ -109,9 +111,9 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
                 )}
             </div>
 
-            <div className="flex flex-col items-start justify-center">
+            <div className="flex min-w-0 flex-1 flex-col items-start justify-center">
                 <p
-                    className={`font-poppins text-[17px] font-[600] leading-[130%] ${
+                    className={`break-words font-poppins text-[17px] font-[600] leading-[130%] ${
                         passportCardTextColor ?? 'text-grayscale-900'
                     }`}
                 >
@@ -120,7 +122,7 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
                 {countDisplay}
             </div>
 
-            <div className="ml-auto flex items-center gap-[5px]">
+            <div className="ml-auto flex shrink-0 items-center gap-[5px]">
                 {showNewItemIndicator && (
                     <div className={`border-2 rounded-full border-solid border-${borderColor}`}>
                         <DotIcon className={`text-${indicatorColor}`} />

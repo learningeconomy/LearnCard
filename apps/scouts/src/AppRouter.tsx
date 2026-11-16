@@ -25,7 +25,7 @@ import {
     showNavBar,
     useIsLoggedIn,
     QRCodeScannerStore,
-    usePrefetchCredentials,
+    usePrefetchCredentialPage,
     usePrefetchBoosts,
     useModal,
     ModalTypes,
@@ -110,8 +110,8 @@ const AppRouter: React.FC = () => {
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
 
     // Prefetch data
-    usePrefetchCredentials('Social Badge', isLoggedIn);
-    usePrefetchCredentials('Membership', isLoggedIn);
+    usePrefetchCredentialPage('Social Badge', isLoggedIn);
+    usePrefetchCredentialPage('Membership', isLoggedIn);
     usePrefetchBoosts(enablePrefetch);
     useLaunchDarklyIdentify({ debug: !IS_PRODUCTION });
     useSentryIdentify({ debug: !IS_PRODUCTION });

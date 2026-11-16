@@ -27,7 +27,7 @@ import {
     isClaimLinkAlreadySetForBoost,
     getClaimLinkSAInfoForBoost,
     getClaimLinkGeneratorProfileId,
-    useClaimLinkForBoost,
+    useClaimLinkForBoost as claimLinkForBoost,
 } from '@cache/claim-links';
 
 import { validateInboxClaimToken } from '@helpers/contact-method.helpers';
@@ -56,6 +56,7 @@ import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.hel
 import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
 import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 import { getBitstringStatusListEntries } from '@learncard/helpers';
+import { neogma } from '@instance';
 import {
     EXHAUSTED,
     exhaustExchangeChallengeForToken,
@@ -428,7 +429,7 @@ async function handlePresentationForClaim(
         ).credential as VC;
 
         // Mark the challenge as used
-        await useClaimLinkForBoost(exchangeInfo.boostUri, exchangeInfo.challenge);
+        await claimLinkForBoost(exchangeInfo.boostUri, exchangeInfo.challenge);
 
         const vp = await issueResponsePresentationWithVcs([vc]);
 
@@ -716,16 +717,60 @@ async function handleInboxClaimPresentation(
                     deliveryEncryptionFailed = true;
                     throw error;
                 }
-                const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id, {
-                    recipientDid: holderDid,
-                    credential: encryptedDelivery,
+                const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+                if (!issuerProfile) throw new Error('Issuer profile not found');
+                const boost = inboxCredential.boostUri
+                    ? await getBoostByUri(inboxCredential.boostUri)
+                    : undefined;
+                // Reservation is part of delivery, not best-effort indexing. A conflict
+                // must leave escrow pending and must never return the reused credential.
+                const delivery = encryptedDelivery;
+                const statusEntries = getBitstringStatusListEntries(finalCredential);
+                await neogma.getTransaction(null, async tx => {
+                    const finalized = await finalizeAndWipeInboxCredential(
+                        inboxCredential.id,
+                        {
+                            recipientDid: holderDid,
+                            credential: delivery,
+                        },
+                        {},
+                        tx
+                    );
+                    if (!finalized) throw new Error('Inbox credential is no longer pending');
+                    const credentialInstance =
+                        statusEntries.length > 0 || (holderProfile && boost)
+                            ? await storeCredential(
+                                  {
+                                      kind: 'issued-credential',
+                                      credential: delivery,
+                                      statusEntries,
+                                  },
+                                  tx,
+                                  issuerProfile.profileId
+                              )
+                            : undefined;
+                    if (holderProfile) {
+                        await createClaimedRelationship(
+                            holderProfile.profileId,
+                            inboxCredential.id,
+                            claimToken,
+                            tx
+                        );
+                        if (boost && credentialInstance) {
+                            await createBoostInstanceOfRelationship(credentialInstance, boost, tx);
+                            await createSentCredentialRelationship(
+                                { type: 'profile', profile: issuerProfile },
+                                holderProfile,
+                                credentialInstance,
+                                undefined,
+                                undefined,
+                                undefined,
+                                tx
+                            );
+                        }
+                    }
                 });
-                if (!finalized) throw new Error('Inbox credential is no longer pending');
-            }
-
-            // Record the claim only after finalization succeeds so failed compare-and-swap
-            // attempts cannot leave a misleading audit relationship behind.
-            if (holderProfile) {
+            } else if (holderProfile) {
                 await createClaimedRelationship(
                     holderProfile.profileId,
                     inboxCredential.id,
@@ -733,38 +778,8 @@ async function handleInboxClaimPresentation(
                 );
             }
 
-            // Store credential and create boost relationship if this was a boost issuance
-            const boostUri = inboxCredential.boostUri;
-            if (!inboxCredential.refreshId && holderProfile && boostUri) {
-                try {
-                    const boost = await getBoostByUri(boostUri);
-                    const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
-
-                    if (boost && issuerProfile) {
-                        // Store the credential in the database
-                        const credentialInstance = await storeCredential({
-                            kind: 'issued-credential',
-                            credential: encryptedDelivery!,
-                            statusEntries: getBitstringStatusListEntries(finalCredential),
-                        });
-
-                        // Create the boost instance relationship
-                        await createBoostInstanceOfRelationship(credentialInstance, boost);
-
-                        // Create the sent/received credential relationship
-                        await createSentCredentialRelationship(
-                            { type: 'profile', profile: issuerProfile },
-                            holderProfile,
-                            credentialInstance
-                        );
-                    }
-                } catch {
-                    // Escrow is already wiped; preserve delivery even if indexing fails.
-                    console.error('Failed to index claimed inbox boost', inboxCredential.id);
-                }
-            }
-
             // Log CLAIMED activity - chain to original activityId/integrationId if available
+            const boostUri = inboxCredential.boostUri;
             // activityId and integrationId are stored on the inbox credential
             const activityId = inboxCredential.activityId;
             const integrationId = inboxCredential.integrationId;
@@ -805,11 +820,11 @@ async function handleInboxClaimPresentation(
             // Trigger webhook if configured
             if (inboxCredential.webhookUrl) {
                 try {
-                    const learnCard = await getLearnCard();
+                    const webhookLearnCard = await getLearnCard();
                     await addNotificationToQueue({
                         webhookUrl: inboxCredential.webhookUrl,
                         type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
-                        from: { did: learnCard.id.did() },
+                        from: { did: webhookLearnCard.id.did() },
                         to: { did: inboxCredential.issuerDid },
                         message: getNotificationMessage(
                             'issuanceClaimed',
@@ -871,7 +886,7 @@ async function handleInboxClaimPresentation(
             try {
                 // Trigger webhook for error if configured
                 if (inboxCredential.webhookUrl) {
-                    const learnCard = await getLearnCard();
+                    const webhookLearnCard = await getLearnCard();
                     const issuanceErrorMsg = getNotificationMessage(
                         'issuanceError',
                         // failedIssuerProfile is the issuer (the webhook recipient),
@@ -883,7 +898,7 @@ async function handleInboxClaimPresentation(
                     await addNotificationToQueue({
                         webhookUrl: inboxCredential.webhookUrl,
                         type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_ERROR,
-                        from: { did: learnCard.id.did() },
+                        from: { did: webhookLearnCard.id.did() },
                         to: { did: inboxCredential.issuerDid },
                         message: {
                             title: issuanceErrorMsg.title,

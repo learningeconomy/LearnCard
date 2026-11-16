@@ -165,7 +165,7 @@ interface FakeHold {
 }
 
 export interface WorldOptions {
-    /** lca-api's ESCROW_HOLD_DURATION_MS (production 7 days, staging 10 minutes). */
+    /** The signed hold duration (7 days from the Nitro enclave; shorter only with the software enclave). */
     holdDurationMs: number;
     emailDelayMs: number;
     warningDelayMs: number;

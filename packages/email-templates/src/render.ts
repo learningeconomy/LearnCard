@@ -1,3 +1,4 @@
+import { Announcement, getAnnouncementSubject } from './templates/announcement';
 /**
  * render.ts — the main rendering entry point.
  *
@@ -101,7 +102,17 @@ export interface RenderedEmail {
  * This provides full type safety: `renderEmail('inbox-claim', branding, data)` will
  * require `data` to match `InboxClaimData`.
  */
+export interface AnnouncementData {
+    title: string;
+    body: string;
+    heroImageUrl?: string;
+    ctaLabel: string;
+    ctaUrl?: string;
+    unsubscribeUrl: string;
+}
+
 export interface TemplateDataMap {
+    announcement: AnnouncementData;
     // -- Verification code variants ------------------------------------------
 
     /** brain-service: contact-methods.ts, embed flow */
@@ -523,6 +534,17 @@ function buildElement(
             };
         }
 
+        case 'announcement': {
+            const d = data as AnnouncementData;
+            return {
+                element: React.createElement(Announcement, {
+                    branding,
+                    ...d,
+                    ...(locale === undefined ? {} : { locale }),
+                }),
+                subject: getAnnouncementSubject(d),
+            };
+        }
         case 'credential-updated': {
             const d = data as CredentialUpdatedData;
             const props: CredentialUpdatedProps = { branding, ...d, locale };

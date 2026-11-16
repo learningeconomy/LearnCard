@@ -4,8 +4,6 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { getLocale } from '../../../paraglide/runtime.js';
 import { VC } from '@learncard/types';
 
-import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
-
 import { BoostGenericCard } from '@learncard/react';
 import {
     BoostCategoryOptionsEnum,
@@ -288,22 +286,6 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     const handlePresentOptionsModal = async () => {
         handlePresentBoostMenuModal();
     };
-
-    const searchString = credentialSearchStore.use.searchString();
-    const doesNotMatchSearch =
-        searchString &&
-        (!cardTitle || !cardTitle.toLowerCase().includes(searchString.toLowerCase()));
-    const isSearchWithNoResults = credentialSearchStore.use.isSearchWithNoResults();
-    useEffect(() => {
-        if (!doesNotMatchSearch) {
-            // this is how we're keeping track of the number of search results
-            credentialSearchStore.set.addMatch(cardTitle);
-        }
-    }, [searchString]);
-
-    if (doesNotMatchSearch && !isSearchWithNoResults) {
-        return undefined;
-    }
 
     if (!useWrapper) {
         return (

@@ -84,8 +84,9 @@ export const useSeedLogin = () => {
                     } catch (err) {
                         log.info('createProfile::error (may already exist)', err);
                     }
-                    // Drop the cached null getProfile so the LCN gate sees the new profile.
-                    await queryClient.resetQueries();
+                    // Refresh the network identity, not unrelated optional queries.
+                    // A slow privacy lookup must not hold sign-in on this page.
+                    await queryClient.resetQueries({ queryKey: ['getProfile'] });
                 }
             } catch (e) {
                 log.error('login error:', e);

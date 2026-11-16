@@ -2,12 +2,17 @@
 
 ## Properties
 
-| Name            | Type                                                                                                                                          | Description | Notes      |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **contract**    | [**ContractsGetAllContractRequestsForProfile200ResponseInnerContract**](ContractsGetAllContractRequestsForProfile200ResponseInnerContract.md) |             |
-| **profile**     | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)                                     |             |
-| **status**      | **str**                                                                                                                                       |             |
-| **read_status** | **str**                                                                                                                                       |             | [optional] |
+| Name                      | Type                                                                                                                                          | Description | Notes      |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **request_id**            | **str**                                                                                                                                       |             | [optional] |
+| **requested_by**          | **str**                                                                                                                                       |             | [optional] |
+| **external_reference_id** | **str**                                                                                                                                       |             | [optional] |
+| **requested_at**          | **str**                                                                                                                                       |             | [optional] |
+| **message**               | **str**                                                                                                                                       |             | [optional] |
+| **contract**              | [**ContractsGetAllContractRequestsForProfile200ResponseInnerContract**](ContractsGetAllContractRequestsForProfile200ResponseInnerContract.md) |             |
+| **profile**               | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)                                     |             |
+| **status**                | **str**                                                                                                                                       |             |
+| **read_status**           | **str**                                                                                                                                       |             | [optional] |
 
 ## Example
 

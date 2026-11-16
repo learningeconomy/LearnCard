@@ -225,7 +225,7 @@ const createAiInsightCredentialInternal = async (
     const existingRecord = await wallet.index.LearnCloud.get({ id: '__ai_insight__' });
 
     if (existingRecord?.length > 0) {
-        await wallet.index.LearnCloud.update(existingRecord[0].id, { uri });
+        await wallet.index.LearnCloud.update(existingRecord[0].id, { uri, hidden: true });
         logAiInsightCredential('Updated AI insight index record', {
             did,
             recordId: existingRecord[0].id,
@@ -236,6 +236,7 @@ const createAiInsightCredentialInternal = async (
             uri,
             id: '__ai_insight__',
             category: 'AI Insight',
+            hidden: true,
         });
         logAiInsightCredential('Created AI insight index record', {
             did,
@@ -320,7 +321,8 @@ export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean }
     const hasLearnCardAiConsent = consentedContracts.some(
         (consent: { contract?: { uri?: string | null }; status?: string | null }) =>
             isLearnCardAiPassportContractUri(consent?.contract?.uri) &&
-            consent?.status !== 'withdrawn'
+            consent?.status !== 'withdrawn' &&
+            consent?.status !== 'consumed'
     );
     const refreshStatus = aiInsightRefreshStore.use.status();
     const requestedAt = aiInsightRefreshStore.use.requestedAt();
@@ -611,7 +613,8 @@ export const useAiInsightCredentialMutation = () => {
     const hasLearnCardAiConsent = consentedContracts.some(
         (consent: { contract?: { uri?: string | null }; status?: string | null }) =>
             isLearnCardAiPassportContractUri(consent?.contract?.uri) &&
-            consent?.status !== 'withdrawn'
+            consent?.status !== 'withdrawn' &&
+            consent?.status !== 'consumed'
     );
     const hasWalletCredentials = Number(resolvedCredentials?.length ?? 0) > 0;
     const hasCachedAiInsightCredential = Boolean(

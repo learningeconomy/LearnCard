@@ -5,7 +5,7 @@
     "actionlintVersion": "1.7.12",
     "scripts": {
         "check": "node check.cjs",
-        "test": "node --test check.test.cjs"
+        "test": "node --test *.test.cjs"
     },
     "dependencies": {
         "js-yaml": "4.3.2"

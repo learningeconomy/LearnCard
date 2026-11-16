@@ -2,9 +2,9 @@
 
 ## Properties
 
-| Name      | Type    | Description | Notes      |
-| --------- | ------- | ----------- | ---------- |
-| **regex** | **str** |             | [optional] |
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **regex** | **str** |             |
 
 ## Example
 

@@ -1,13 +1,42 @@
 import { ensureReactQueryTableExists, sqliteStore } from 'learn-card-base';
 import { withSQLiteDatabase } from 'learn-card-base/SQL/connection';
+import { waitForSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
 
 type QueryCacheDatabase = NonNullable<ReturnType<typeof sqliteStore.get.db>>;
 
+export const SQLITE_READY_TIMEOUT_MS = 10_000;
+
+/**
+ * FullApp initializes SQLite (web and native) and signals readiness even on failure. Wait for it
+ * instead of silently dropping a save made during boot, and reject if it never arrives (LC-2351).
+ */
+const getQueryCacheDatabase = async (): Promise<QueryCacheDatabase> => {
+    if (!sqliteStore.get.db()) {
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        try {
+            await Promise.race([
+                waitForSQLiteReady(),
+                new Promise<never>((_, reject) => {
+                    timeout = setTimeout(
+                        () => reject(new Error('Timed out waiting for query cache SQLite')),
+                        SQLITE_READY_TIMEOUT_MS
+                    );
+                }),
+            ]);
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    const db = sqliteStore.get.db();
+    if (!db) throw new Error('Query cache SQLite is unavailable after initialization');
+    return db;
+};
+
 const withQueryCacheDatabase = async <T>(
     operation: (db: QueryCacheDatabase) => Promise<T>
-): Promise<T | undefined> => {
-    const db = sqliteStore.get.db();
-    if (!db) return;
+): Promise<T> => {
+    const db = await getQueryCacheDatabase();
 
     return withSQLiteDatabase(db, async connection => {
         await ensureReactQueryTableExists(connection);

@@ -30,6 +30,15 @@ const script: VerificationScript = async v => {
             .rejects.toThrow(/Campaign administrator access required/);
     });
 
+    await v.step(null, 'campaign-dispatch-authorization', async () => {
+        await v
+            .expect(learner.invoke.campaignsSendTestToMe(campaignId))
+            .rejects.toThrow(/Campaign administrator access required/);
+        await v
+            .expect(learner.invoke.campaignsDispatch(campaignId))
+            .rejects.toThrow(/Campaign administrator access required/);
+    });
+
     await v.step(null, 'campaign-sdk-user-isolation', async () => {
         v.expect(await learner.invoke.getMyCampaigns()).toEqual([]);
         v.expect(await other.invoke.getMyCampaigns()).toEqual([]);
@@ -37,6 +46,37 @@ const script: VerificationScript = async v => {
         await v
             .expect(learner.invoke.enrollInCampaign(campaignId))
             .rejects.toThrow(/Campaign not found/);
+    });
+
+    const page = await v.newPage('announcement-preferences', { signInAs: v.actors.learner });
+    await v.step(page, 'announcement-preferences-ui-persistence', async () => {
+        await page.goto('/privacy-and-data');
+        const email = page.getByRole('switch', { name: 'Email', exact: true });
+        const push = page.getByRole('switch', { name: 'Push notifications', exact: true });
+        await v.expect(email).toHaveAttribute('aria-checked', 'true');
+        await email.click();
+        await v.expect(email).toHaveAttribute('aria-checked', 'false');
+        await push.click();
+        await v.expect(push).toHaveAttribute('aria-checked', 'false');
+        await page.reload();
+        await v.expect(email).toHaveAttribute('aria-checked', 'false');
+        await v.expect(push).toHaveAttribute('aria-checked', 'false');
+        v.expect(await learner.invoke.getAnnouncementPreferences()).toEqual({
+            announcementEmailOptOut: true,
+            announcementPushOptOut: true,
+        });
+        v.expect(await other.invoke.getAnnouncementPreferences()).toEqual({
+            announcementEmailOptOut: false,
+            announcementPushOptOut: false,
+        });
+    });
+    const anonymous = await v.newPage('unsubscribe-public');
+    await v.step(anonymous, 'unsubscribe-public-error-retry', async () => {
+        await anonymous.goto('/unsubscribe?token=invalid');
+        await v.expect(anonymous.getByRole('alert')).toBeVisible();
+        await anonymous.getByRole('button', { name: 'Try Again' }).click();
+        await v.expect(anonymous.getByRole('alert')).toBeVisible();
+        await v.expect(anonymous).toHaveURL(/\/unsubscribe\?token=invalid/);
     });
 
     return {

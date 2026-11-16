@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useMemo } from 'react';
+import { useLocale } from '../../../i18n';
 
 import { useHistory } from 'react-router-dom';
 import { useLoadingLine } from '../../../stores/loadingStore';
@@ -45,6 +46,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     defaultImg,
     enableCreateButton = false,
 }) => {
+    useLocale();
     const history = useHistory();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -71,7 +73,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     const noSearchResults = searchResults?.length === 0;
     const searchResultsCount = searchResults?.length ?? 0;
 
-    const managedBoostsOnScreen = useOnScreen(managedBoostInfiniteScrollRef as any, '-100px', [
+    const managedBoostsOnScreen = useOnScreen(managedBoostInfiniteScrollRef, '-100px', [
         managedBoosts?.pages?.[0]?.records?.length,
     ]);
 
@@ -137,7 +139,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
         try {
             await managedBoostsRefetch?.();
         } catch (e) {
-            throw new Error('There was an error, please try again.');
+            throw new Error('There was an error, please try again.', { cause: e });
         }
     };
 

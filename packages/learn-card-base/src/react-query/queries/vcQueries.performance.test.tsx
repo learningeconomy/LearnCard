@@ -42,7 +42,6 @@ vi.mock('learn-card-base/hooks/useConsentedContracts', () => ({
 vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
     getOrFetchCredentialRecordForBoost: host.record,
 }));
-vi.mock('learn-card-base/helpers/backfills', () => ({ useBackfillBoostUris: vi.fn() }));
 import {
     useGetResolvedCredential,
     getOrFetchResolvedCredential,
@@ -347,26 +346,28 @@ it.each(['missing', 'unreadable'] as const)(
     }
 );
 
-it('backfills missing credentials without rejecting the batch or retrying completed records', async () => {
+it('backfills only an opened document and keeps its metadata in the active account cache', async () => {
     const { read } = makeWallet();
-    read.mockImplementation(async uri =>
-        uri === 'missing' ? undefined : { ...vc, boostId: 'boost' }
-    );
     const update = vi.fn().mockResolvedValue(true);
     host.wallet!.index.LearnCloud.update = update;
-    const { useBackfillBoostUris } =
-        await vi.importActual<typeof import('../../helpers/backfills')>('../../helpers/backfills');
-    const { result } = renderHook(useBackfillBoostUris, { wrapper });
-    await expect(
-        result.current([
-            { id: 'a', uri: 'missing' },
-            { id: 'b', uri: 'healthy' },
-        ] as never)
-    ).resolves.toEqual([true, true]);
-    expect(update).toHaveBeenCalledWith('a', { __v: 1 });
-    expect(update).toHaveBeenCalledWith('b', { __v: 1, boostUri: 'boost' });
-    await result.current([{ id: 'a', uri: 'missing', __v: 1 }] as never);
-    expect(read).toHaveBeenCalledTimes(2);
+    read.mockResolvedValue({ ...vc, boostId: 'boost' });
+    const activeKey = ['useGetCredentialList', '', '', 'account-a'];
+    const otherKey = ['useGetCredentialList', '', '', 'account-b'];
+    const pages = {
+        pages: [{ records: [{ id: 'record', uri: 'uri' }], hasMore: false }],
+        pageParams: [undefined],
+    };
+    client.setQueryData(activeKey, pages);
+    client.setQueryData(otherKey, pages);
+    renderHook(() => useGetResolvedCredential('uri'), { wrapper });
+    await waitFor(() =>
+        expect(update).toHaveBeenCalledExactlyOnceWith('record', { boostUri: 'boost', __v: 1 })
+    );
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(client.getQueryData(activeKey)).toMatchObject({
+        pages: [{ records: [{ boostUri: 'boost', __v: 1 }] }],
+    });
+    expect(client.getQueryData(otherKey)).toEqual(pages);
 });
 
 it.each([true, false])(

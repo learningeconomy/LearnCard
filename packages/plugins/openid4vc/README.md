@@ -6,6 +6,22 @@ OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 - **OID4VP** — parse Authorization Requests, match held credentials against Presentation Definitions (DIF PEX v2), build and sign VP tokens.
 - **SIOPv2** — issue self-issued ID tokens for holder authentication.
 
+## Native / Digital Credentials API response
+
+`lc.invoke.createDcApiResponse(request, verifiedOrigin, chosen, options?)` returns
+`{ vp_token }` locally for `openid4vp-v1-unsigned` / `dc_api` SD-JWT VC requests.
+The host must obtain `verifiedOrigin` from the trusted transport and match/verify
+selected credentials before calling this helper; request branding is not identity.
+
+Each chosen credential requires an explicit `disclose` frame containing **exactly**
+the requested flat claim names set to `true`, for example
+`{ course_name: true, completion_date: true }`. Missing frames, extra fields,
+incomplete approval, nested/wildcard paths, absent `claims` and `claim_sets` are
+rejected before any presenter is called. This intentionally narrow profile never
+falls back to the SD-JWT presenter's disclose-everything default. Other presentation
+transports keep their existing behavior. Signed/encrypted DC API profiles and mdoc
+are unsupported.
+
 ## Status
 
 **Holder surface feature-complete.** Every slice that touches the wire — offer intake, both VCI flows, OID4VP with PEX _and_ DCQL, JARM-encrypted responses, SIOPv2 — is implemented and verified live against walt.id, Sphereon, and Animo Paradym. The remaining work is wallet-app UI integration (Slice 10) and CI infrastructure (Slice 11).

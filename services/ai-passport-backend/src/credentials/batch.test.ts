@@ -11,6 +11,8 @@ import {
     markCredentialItemFailure,
     recordCredentialOutcome,
     settleCredentialBatch,
+    credentialBatchConcurrency,
+    isCredentialItemFailure,
 } from './batch';
 import { CredentialVerificationUnavailableError } from './verification';
 
@@ -47,7 +49,19 @@ test('returns loaded items in order and skipped positions with codes', async () 
             { index: 1, code: 'credential_verification_unavailable' },
             { index: 2, code: 'unknown' },
         ],
+        deferred: 0,
     });
+});
+
+test('an all-skipped batch rejects with the first skip', async () => {
+    quiet();
+    const first = new CredentialVerificationUnavailableError('read_empty');
+    await expect(
+        settleCredentialBatch('context', [
+            async () => Promise.reject(first),
+            async () => Promise.reject(markCredentialItemFailure(new Error('private'))),
+        ])
+    ).rejects.toBe(first);
 });
 
 test('an unmarked failure still rejects the batch', async () => {
@@ -83,6 +97,7 @@ test('an empty batch loads nothing and does not log', async () => {
     expect(await settleCredentialBatch('preload', [])).toEqual({
         loaded: [],
         skipped: [],
+        deferred: 0,
     });
     expect(warn).not.toHaveBeenCalled();
     expect(info).not.toHaveBeenCalled();
@@ -109,6 +124,7 @@ test('allowEmpty resolves empty when every failure is permanent', async () => {
             { index: 0, code: 'credential_verification_unavailable' },
             { index: 1, code: 'credential_invalid' },
         ],
+        deferred: 0,
     });
 });
 
@@ -210,4 +226,64 @@ test('the verified cache stays bounded', () => {
     expect(getVerifiedCredential<unknown>('did:a', 'uri:0', 'rev', now + 1)).toBe(undefined);
     expect(getVerifiedCredential<unknown>('did:a', 'uri:10000', 'rev', now + 1)).toBe(10_000);
     clearVerifiedCredentials();
+});
+
+test('without an explicit concurrency a batch runs at most the configured limit at once', async () => {
+    quiet();
+    let active = 0;
+    let maxActive = 0;
+    const tasks = Array.from({ length: 40 }, (_, index) => async () => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await new Promise(resolve => setTimeout(resolve, 1));
+        active -= 1;
+        return index;
+    });
+    const { loaded } = await settleCredentialBatch('context', tasks);
+    expect(loaded).toHaveLength(40);
+    expect(maxActive).toBe(credentialBatchConcurrency());
+    expect(credentialBatchConcurrency()).toBe(4);
+});
+
+test('shouldStart stops new starts and counts the rest as deferred', async () => {
+    quiet();
+    let started = 0;
+    const result = await settleCredentialBatch(
+        'context',
+        Array.from({ length: 10 }, (_, index) => async () => {
+            started += 1;
+            return index;
+        }),
+        { concurrency: 2, shouldStart: () => started < 3 }
+    );
+    expect(result).toEqual({ loaded: [0, 1, 2], skipped: [], deferred: 7 });
+});
+
+test('a budget spent before anything loaded fails as an item failure', async () => {
+    quiet();
+    const error = await settleCredentialBatch('context', [async () => 1, async () => 2], {
+        shouldStart: () => false,
+    }).catch((caught: unknown) => caught);
+    expect(isCredentialItemFailure(error)).toBe(true);
+});
+
+test('stopAt returns by the stop with what settled; a hung task is deferred, not awaited', async () => {
+    quiet();
+    const tasks = [
+        async () => 'a',
+        () => new Promise<string>(() => undefined),
+        async () => {
+            throw markCredentialItemFailure(new Error('bad'), 'credential_invalid');
+        },
+        async () => 'd',
+    ];
+    const startedAt = performance.now();
+    const result = await settleCredentialBatch('thread_context', tasks, {
+        concurrency: 2,
+        stopAt: performance.now() + 100,
+    });
+    expect(performance.now() - startedAt).toBeLessThan(400);
+    expect(result.loaded).toEqual(['a', 'd']);
+    expect(result.skipped.map(item => item.index)).toEqual([2]);
+    expect(result.deferred).toBe(1);
 });

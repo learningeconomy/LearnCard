@@ -40,8 +40,8 @@ export const getWebsiteLink = (): string => resolvedLinks().websiteUrl;
 // Backward-compat constants — these are evaluated lazily via getters so they
 // resolve from tenant config. Use the getter functions or useTenantLinks hook
 // in new code instead.
-export const TOS_LINK = 'https://www.learncard.com/learncard-terms-of-service';
-export const PP_LINK = 'https://www.learncard.com/learncard-privacy-policy';
+export const TOS_LINK = 'https://learncard.com/terms-of-service';
+export const PP_LINK = 'https://learncard.com/privacy-policy';
 export const CONTACT_LINK = 'https://www.learningeconomy.io/contact';
 export const MV_TYPEFORM = 'https://r18y4ggjlxv.typeform.com/to/fBWigxQx'; // Request Metaversity at Your School
 export const LEARNCARD_WEBSITE = 'https://www.learncard.com/';

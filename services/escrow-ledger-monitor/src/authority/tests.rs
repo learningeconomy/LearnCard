@@ -147,28 +147,46 @@ fn events() -> Vec<AuthorityEvent> {
     events
 }
 fn row(value: ItemValue) -> Row {
+    row_as(&binding(), value)
+}
+fn row_as(binding: &Binding, value: ItemValue) -> Row {
     let item = StoredItem {
         schema_version: 1,
-        binding: binding(),
+        binding: binding.clone(),
         value,
     };
     Row {
-        pk: binding().partition_key().unwrap(),
+        pk: binding.partition_key().unwrap(),
         sk: item.sort_key().unwrap(),
         payload: item.encode().unwrap(),
     }
 }
 fn rows(events: &[AuthorityEvent]) -> Vec<Row> {
+    rows_as(&binding(), events)
+}
+/// `rows()` for another account: every event is re-bound (and re-signed) to `binding`.
+fn rows_as(binding: &Binding, events: &[AuthorityEvent]) -> Vec<Row> {
+    // AuthorityEvent is not Clone; a serde round trip copies it for re-binding.
+    let events: Vec<AuthorityEvent> = events
+        .iter()
+        .map(|event| {
+            let mut event: AuthorityEvent =
+                serde_json::from_slice(&serde_json::to_vec(event).unwrap()).unwrap();
+            event.binding = binding.clone();
+            event
+        })
+        .collect();
+    let row = |value| row_as(binding, value);
     let mut result = Vec::new();
     let mut operations = BTreeMap::new();
-    for event in events {
+    for event in &events {
         let revision = event.revisions.operation.get();
         let id = [revision as u8; 16];
         let proposal = signed(event);
         let execution = ExecutionRecord {
             receipt: CommitReceipt {
                 schema_version: 1,
-                binding: binding(),
+                binding: binding.clone(),
                 execution_id: id,
                 revisions: event.revisions,
                 transaction_digest: [9; 32],
@@ -176,7 +194,7 @@ fn rows(events: &[AuthorityEvent]) -> Vec<Row> {
             proposed_event: proposal.clone(),
         };
         result.push(Row {
-            pk: binding().partition_key().unwrap(),
+            pk: binding.partition_key().unwrap(),
             sk: format!("EXECUTION#{}", hex::encode(id)),
             payload: serde_json::to_vec(&execution).unwrap(),
         });
@@ -629,10 +647,91 @@ fn rpc_artifacts_are_verified_by_kind_but_never_substitute_for_execution_receipt
 
 struct Fake {
     rows: Vec<Row>,
+    /// Further accounts' rows, each bound to its own partition (see `rows_as`).
+    others: Vec<Vec<Row>>,
     reads: AtomicUsize,
-    changing: bool,
+    /// Account-row reads (global count) from which the fence appears changed;
+    /// each such read returns a distinct value, modelling continuous writes
+    /// (None: stable).
+    change_after: Option<usize>,
+    /// Exclusive end of the changing window: later reads are stable again.
+    change_until: Option<usize>,
+    /// A partition whose fence changes on every read, independent of the above.
+    unstable: Option<String>,
     unavailable: bool,
+    /// A partition whose row read returns a malformed row (Integrity).
+    malformed: Option<String>,
+    /// A metric whose publication fails (models a CloudWatch/SNS outage).
+    failing_metric: Option<Metric>,
     metrics: Mutex<Vec<Metric>>,
+    gauges: Mutex<Vec<(Metric, u64)>>,
+    diagnostics: Mutex<Vec<Diagnostic>>,
+    /// Complete row reads (first Query page) per partition, to prove each
+    /// account was (re)read.
+    row_reads: Mutex<BTreeMap<String, usize>>,
+    /// Simulated latency of every authority read (None: immediate).
+    latency: Option<std::time::Duration>,
+    /// One partition whose reads take this long instead (deadline abandon).
+    slow: Option<(String, std::time::Duration)>,
+    /// Keys per partition Scan page (one key per row, like DynamoDB).
+    scan_page: usize,
+    /// Extra keys appended to the Scan (duplicates of earlier keys).
+    extra_scan_keys: Vec<String>,
+    scan_requests: AtomicUsize,
+    /// Accounts with a Query or GetItem in progress now / at most.
+    active: Mutex<BTreeMap<String, usize>>,
+    max_active: AtomicUsize,
+    /// Last and largest in-flight row bytes / lane holders observed.
+    in_flight: Mutex<(usize, usize)>,
+    max_in_flight: Mutex<(usize, usize)>,
+    /// Simulated latency of every metric publication (None: immediate).
+    delivery_latency: Option<std::time::Duration>,
+    /// Metric publications in progress now / at most.
+    deliveries: AtomicUsize,
+    max_deliveries: AtomicUsize,
+}
+impl Fake {
+    fn account_rows(&self, pk: &str) -> &[Row] {
+        if pk == binding().partition_key().unwrap() {
+            &self.rows
+        } else {
+            self.others.iter().find(|r| r[0].pk == pk).unwrap()
+        }
+    }
+    /// One key per row, accounts in key order (as DynamoDB returns a
+    /// partition's rows together), then `extra_scan_keys`.
+    fn scan_keys(&self) -> Vec<String> {
+        let mut accounts: Vec<&Vec<Row>> = std::iter::once(&self.rows)
+            .chain(self.others.iter())
+            .filter(|r| !r.is_empty())
+            .collect();
+        accounts.sort_by(|a, b| a[0].pk.cmp(&b[0].pk));
+        accounts
+            .into_iter()
+            .flat_map(|rows| rows.iter().map(|r| r.pk.clone()))
+            .chain(self.extra_scan_keys.iter().cloned())
+            .collect()
+    }
+    async fn wait(&self, pk: &str) {
+        let delay = match &self.slow {
+            Some((slow, delay)) if slow == pk => Some(*delay),
+            _ => self.latency,
+        };
+        if let Some(delay) = delay {
+            {
+                let mut active = self.active.lock().unwrap();
+                *active.entry(pk.into()).or_default() += 1;
+                self.max_active.fetch_max(active.len(), Ordering::SeqCst);
+            }
+            tokio::time::sleep(delay).await;
+            let mut active = self.active.lock().unwrap();
+            let n = active.get_mut(pk).unwrap();
+            *n -= 1;
+            if *n == 0 {
+                active.remove(pk);
+            }
+        }
+    }
 }
 #[async_trait::async_trait]
 impl Backend for Fake {
@@ -646,35 +745,103 @@ impl Backend for Fake {
         Err(Error::Unavailable)
     }
     async fn metric(&self, m: Metric) -> Result<()> {
+        if let Some(delay) = self.delivery_latency {
+            let now = self.deliveries.fetch_add(1, Ordering::SeqCst) + 1;
+            self.max_deliveries.fetch_max(now, Ordering::SeqCst);
+            tokio::time::sleep(delay).await;
+            self.deliveries.fetch_sub(1, Ordering::SeqCst);
+        }
+        if self.failing_metric == Some(m) {
+            return Err(Error::Unavailable);
+        }
         self.metrics.lock().unwrap().push(m);
+        Ok(())
+    }
+    async fn gauge(&self, m: Metric, value: u64) -> Result<()> {
+        if let Some(delay) = self.delivery_latency {
+            tokio::time::sleep(delay).await;
+        }
+        self.metrics.lock().unwrap().push(m);
+        self.gauges.lock().unwrap().push((m, value));
         Ok(())
     }
     async fn notify(&self, _: Metric) -> Result<()> {
         Ok(())
     }
 }
+/// Mirrors DynamoDB's page stop after 1 MB of data read.
+const FAKE_PAGE_BYTES: usize = 1024 * 1024;
 #[async_trait::async_trait]
 impl AuthorityBackend for Fake {
-    async fn authority_partitions(&self, _: &str) -> Result<Vec<String>> {
-        if self.unavailable {
-            Err(Error::Unavailable)
-        } else {
-            Ok(vec![binding().partition_key().unwrap()])
+    type Cursor = usize;
+    async fn authority_partition_page(
+        &self,
+        _: &str,
+        cursor: Option<usize>,
+    ) -> Result<Page<String, usize>> {
+        self.scan_requests.fetch_add(1, Ordering::SeqCst);
+        if let Some(delay) = self.latency {
+            tokio::time::sleep(delay).await;
         }
+        if self.unavailable {
+            return Err(Error::Unavailable);
+        }
+        let keys = self.scan_keys();
+        let start = cursor.unwrap_or(0);
+        let end = (start + self.scan_page).min(keys.len());
+        Ok(Page {
+            items: keys[start..end].to_vec(),
+            next: (end < keys.len()).then_some(end),
+        })
     }
-    async fn authority_account(&self, _: &str, _: &str) -> Result<Option<Vec<u8>>> {
+    async fn authority_account(&self, _: &str, pk: &str) -> Result<Option<Vec<u8>>> {
+        self.wait(pk).await;
         let mut row = self
-            .rows
+            .account_rows(pk)
             .iter()
             .find(|r| r.sk == "ENROLLMENT")
             .map(|r| r.payload.clone());
-        if self.changing && self.reads.fetch_add(1, Ordering::SeqCst) > 0 {
-            row = Some(vec![1]);
+        let read = self.reads.fetch_add(1, Ordering::SeqCst);
+        if self.change_after.is_some_and(|n| read >= n)
+            && self.change_until.is_none_or(|n| read < n)
+            || self.unstable.as_deref() == Some(pk)
+        {
+            row = Some(read.to_le_bytes().to_vec());
         }
         Ok(row)
     }
-    async fn authority_rows(&self, _: &str, _: &str) -> Result<Vec<Row>> {
-        Ok(self.rows.clone())
+    async fn authority_rows_page(
+        &self,
+        _: &str,
+        pk: &str,
+        cursor: Option<usize>,
+    ) -> Result<Page<Row, usize>> {
+        if cursor.is_none() {
+            *self.row_reads.lock().unwrap().entry(pk.into()).or_default() += 1;
+        }
+        self.wait(pk).await;
+        if self.malformed.as_deref() == Some(pk) {
+            return Err(Error::Integrity);
+        }
+        let all = self.account_rows(pk);
+        let start = cursor.unwrap_or(0);
+        let (mut end, mut bytes) = (start, 0);
+        while end < all.len() && end - start < PAGE_ITEMS && bytes < FAKE_PAGE_BYTES {
+            bytes += all[end].payload.len();
+            end += 1;
+        }
+        Ok(Page {
+            items: all[start..end].to_vec(),
+            next: (end < all.len()).then_some(end),
+        })
+    }
+    fn diagnose(&self, diagnostic: Diagnostic) {
+        self.diagnostics.lock().unwrap().push(diagnostic);
+    }
+    fn observe_in_flight(&self, bytes: usize, large_accounts: usize) {
+        *self.in_flight.lock().unwrap() = (bytes, large_accounts);
+        let mut max = self.max_in_flight.lock().unwrap();
+        *max = (max.0.max(bytes), max.1.max(large_accounts));
     }
 }
 fn monitor(changing: bool, unavailable: bool) -> Monitor<Fake> {
@@ -683,10 +850,30 @@ fn monitor(changing: bool, unavailable: bool) -> Monitor<Fake> {
         key: TrustedKeys::Legacy(*key().verifying_key()),
         backend: Fake {
             rows: rows(&events()),
+            others: vec![],
             reads: AtomicUsize::new(0),
-            changing,
+            change_after: changing.then_some(1),
+            change_until: None,
+            unstable: None,
             unavailable,
+            malformed: None,
+            failing_metric: None,
             metrics: Mutex::new(vec![]),
+            gauges: Mutex::new(vec![]),
+            diagnostics: Mutex::new(vec![]),
+            row_reads: Mutex::new(BTreeMap::new()),
+            latency: None,
+            slow: None,
+            scan_page: PAGE_ITEMS,
+            extra_scan_keys: vec![],
+            scan_requests: AtomicUsize::new(0),
+            active: Mutex::new(BTreeMap::new()),
+            max_active: AtomicUsize::new(0),
+            in_flight: Mutex::new((0, 0)),
+            max_in_flight: Mutex::new((0, 0)),
+            delivery_latency: None,
+            deliveries: AtomicUsize::new(0),
+            max_deliveries: AtomicUsize::new(0),
         },
     }
 }
@@ -705,6 +892,8 @@ async fn concurrent_writes_are_coverage_retries_not_false_tamper_alarms() {
     assert!(metrics.contains(&Metric::AuthorityCoverageFailure));
     assert!(!metrics.contains(&Metric::AuthorityIntegrityFailure));
     assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(!metrics.contains(&Metric::AuthorityRepeatedPinClearAccounts));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
 }
 #[tokio::test]
 async fn unavailable_reads_never_report_success_and_integrity_alarms_are_fixed_labels() {
@@ -731,7 +920,10 @@ async fn unavailable_reads_never_report_success_and_integrity_alarms_are_fixed_l
     m.sweep_authority(&config()).await.unwrap();
     assert_eq!(
         *m.backend.metrics.lock().unwrap(),
-        vec![Metric::AuthoritySweepCompleted]
+        vec![
+            Metric::AuthorityRepeatedPinClearAccounts,
+            Metric::AuthoritySweepCompleted
+        ]
     );
     assert_eq!(
         Metric::AuthorityIntegrityFailure.name(),
@@ -812,6 +1004,12 @@ fn repeated_pin_clear_counts_only_clears_inside_the_window() {
     assert!(!audit(vec![now]).repeated_pin_clear(now));
     assert!(!audit(vec![]).repeated_pin_clear(now));
 }
+fn other_account(n: u8) -> Binding {
+    Binding {
+        did_hash: [n; 32],
+        ..binding()
+    }
+}
 #[tokio::test]
 async fn sweep_reports_repeated_recent_pin_clears_without_an_integrity_alarm() {
     let now = now_ms();
@@ -822,10 +1020,16 @@ async fn sweep_reports_repeated_recent_pin_clears_without_an_integrity_alarm() {
         *m.backend.metrics.lock().unwrap(),
         vec![
             Metric::AuthorityRepeatedPinClear,
+            Metric::AuthorityRepeatedPinClearAccounts,
             Metric::AuthoritySweepCompleted
         ]
     );
-    // One clear inside the window (the expected post-recovery repair) is quiet.
+    assert_eq!(
+        *m.backend.gauges.lock().unwrap(),
+        vec![(Metric::AuthorityRepeatedPinClearAccounts, 1)]
+    );
+    // One clear inside the window (the expected post-recovery repair) is quiet,
+    // but the completed sweep still reports 0 accounts so the alarm has data.
     let mut m = monitor(false, false);
     m.backend.rows = rows(&pin_clear_chain([
         now - REPEATED_PIN_CLEAR_WINDOW_MS - 60_000,
@@ -834,10 +1038,902 @@ async fn sweep_reports_repeated_recent_pin_clears_without_an_integrity_alarm() {
     m.sweep_authority(&config()).await.unwrap();
     assert_eq!(
         *m.backend.metrics.lock().unwrap(),
-        vec![Metric::AuthoritySweepCompleted]
+        vec![
+            Metric::AuthorityRepeatedPinClearAccounts,
+            Metric::AuthoritySweepCompleted
+        ]
+    );
+    assert_eq!(
+        *m.backend.gauges.lock().unwrap(),
+        vec![(Metric::AuthorityRepeatedPinClearAccounts, 0)]
     );
     assert_eq!(
         Metric::AuthorityRepeatedPinClear.name(),
         "AuthorityRepeatedPinClear"
     );
+    assert_eq!(
+        Metric::AuthorityRepeatedPinClearAccounts.name(),
+        "AuthorityRepeatedPinClearAccounts"
+    );
+}
+#[tokio::test]
+async fn sweep_gauge_counts_accounts_with_repeated_pin_clears() {
+    let now = now_ms();
+    let repeated = || pin_clear_chain([now - 60_000, now - 1_000]);
+    let single = || pin_clear_chain([now - REPEATED_PIN_CLEAR_WINDOW_MS - 60_000, now - 1_000]);
+    for (accounts, expected) in [
+        // No repeated account among three verified accounts.
+        (vec![events(), single(), events()], 0),
+        // One repeated account among quiet ones.
+        (vec![events(), repeated(), single()], 1),
+        // Two repeated accounts: a known episode does not hide a new account.
+        (vec![repeated(), single(), repeated()], 2),
+    ] {
+        let mut m = monitor(false, false);
+        let mut accounts = accounts.into_iter();
+        m.backend.rows = rows(&accounts.next().unwrap());
+        m.backend.others = accounts
+            .enumerate()
+            .map(|(i, chain)| rows_as(&other_account(i as u8 + 2), &chain))
+            .collect();
+        m.sweep_authority(&config()).await.unwrap();
+        assert_eq!(
+            *m.backend.gauges.lock().unwrap(),
+            vec![(Metric::AuthorityRepeatedPinClearAccounts, expected)],
+            "{expected} accounts"
+        );
+        let metrics = m.backend.metrics.lock().unwrap();
+        assert!(!metrics.contains(&Metric::AuthorityIntegrityFailure));
+        // The deprecated per-account datum is still emitted once per account.
+        assert_eq!(
+            metrics
+                .iter()
+                .filter(|&&metric| metric == Metric::AuthorityRepeatedPinClear)
+                .count() as u64,
+            expected
+        );
+        assert_eq!(metrics.last(), Some(&Metric::AuthoritySweepCompleted));
+    }
+}
+#[tokio::test]
+async fn incomplete_sweeps_never_emit_the_repeated_pin_clear_gauge() {
+    let now = now_ms();
+    // Unreadable partition list.
+    let m = monitor(false, true);
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+    // The first account (repeated) verifies, then the second account's fence
+    // moves mid-sweep: no partial count (and no misleading 0) is reported.
+    let mut m = monitor(false, false);
+    m.backend.change_after = Some(3);
+    m.backend.rows = rows(&pin_clear_chain([now - 60_000, now - 1_000]));
+    m.backend.others = vec![rows_as(
+        &other_account(2),
+        &pin_clear_chain([now - 60_000, now - 1_000]),
+    )];
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    let metrics = m.backend.metrics.lock().unwrap();
+    // The first account was audited (deprecated per-account datum) before the failure.
+    assert_eq!(metrics[0], Metric::AuthorityRepeatedPinClear);
+    assert!(metrics.contains(&Metric::AuthorityCoverageFailure));
+    assert!(!metrics.contains(&Metric::AuthorityRepeatedPinClearAccounts));
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+}
+
+/// Six accounts that each verify as repeated-PIN-clear (so every verified
+/// account emits one deprecated per-account datum), plus their sorted keys.
+fn many_accounts() -> (Monitor<Fake>, Vec<String>) {
+    let now = now_ms();
+    let chain = || pin_clear_chain([now - 60_000, now - 1_000]);
+    let mut m = monitor(false, false);
+    m.backend.rows = rows(&chain());
+    m.backend.others = (2..=6)
+        .map(|n| rows_as(&other_account(n), &chain()))
+        .collect();
+    let mut pks: Vec<String> = std::iter::once(binding().partition_key().unwrap())
+        .chain(m.backend.others.iter().map(|r| r[0].pk.clone()))
+        .collect();
+    pks.sort();
+    (m, pks)
+}
+fn account_mut<'a>(m: &'a mut Monitor<Fake>, pk: &str) -> &'a mut Vec<Row> {
+    if pk == binding().partition_key().unwrap() {
+        &mut m.backend.rows
+    } else {
+        m.backend.others.iter_mut().find(|r| r[0].pk == pk).unwrap()
+    }
+}
+fn verified_accounts(m: &Monitor<Fake>) -> usize {
+    m.backend
+        .metrics
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|&&metric| metric == Metric::AuthorityRepeatedPinClear)
+        .count()
+}
+/// The first partition in sweep order is padded past a bound by `pad`; the
+/// last carries a planted integrity defect that must still be found.
+async fn assert_over_capacity_account_is_isolated(pad: impl FnOnce(&mut Vec<Row>)) {
+    let (mut m, pks) = many_accounts();
+    pad(account_mut(&mut m, &pks[0]));
+    account_mut(&mut m, &pks[5]).retain(|r| r.sk != "ENROLLMENT");
+    // Permanent and already alarmed: the invocation succeeds (no pointless
+    // Lambda retries), but without the completion heartbeat.
+    assert_eq!(m.sweep_authority(&config()).await, Ok(()));
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert_eq!(
+        metrics
+            .iter()
+            .filter(|&&x| x == Metric::AuthorityAccountOverCapacity)
+            .count(),
+        1
+    );
+    assert_eq!(metrics[0], Metric::AuthorityAccountOverCapacity);
+    assert!(metrics.contains(&Metric::AuthorityIntegrityFailure));
+    assert_eq!(metrics.last(), Some(&Metric::AuthorityCoverageFailure));
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+    // The four healthy accounts after the oversized one were all verified.
+    assert_eq!(verified_accounts(&m), 4);
+    assert_eq!(m.backend.row_reads.lock().unwrap().len(), 6);
+    assert_eq!(
+        *m.backend.diagnostics.lock().unwrap(),
+        vec![
+            Diagnostic::AccountOverCapacity,
+            Diagnostic::Incomplete {
+                partitions: 6,
+                over_capacity: 1,
+                fence_unstable: 0
+            }
+        ]
+    );
+}
+#[tokio::test]
+async fn an_over_capacity_account_is_isolated_and_every_other_account_is_still_verified() {
+    assert_over_capacity_account_is_isolated(|big| {
+        let pk = big[0].pk.clone();
+        for i in big.len()..=MAX_ACCOUNT_ROWS {
+            big.push(Row {
+                pk: pk.clone(),
+                sk: format!("PAD#{i}"),
+                payload: vec![0],
+            });
+        }
+    })
+    .await;
+}
+#[tokio::test]
+async fn an_account_over_the_byte_bound_with_few_rows_is_isolated_the_same_way() {
+    assert_over_capacity_account_is_isolated(|big| {
+        let pk = big[0].pk.clone();
+        let rows_before = big.len();
+        for i in 0..2 {
+            big.push(Row {
+                pk: pk.clone(),
+                sk: format!("PAD#{i}"),
+                payload: vec![0; MAX_ACCOUNT_BYTES / 2],
+            });
+        }
+        assert!(big.len() < MAX_ACCOUNT_ROWS);
+        assert!(big.len() == rows_before + 2);
+    })
+    .await;
+}
+#[tokio::test]
+async fn a_fence_that_changes_once_is_retried_and_the_sweep_completes() {
+    let (mut m, pks) = many_accounts();
+    // Read 0 is the first account's `before`, read 1 its `after` (changed);
+    // the retry (reads 2 and 3) is stable.
+    m.backend.change_after = Some(1);
+    m.backend.change_until = Some(2);
+    m.sweep_authority(&config()).await.unwrap();
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert!(!metrics.contains(&Metric::AuthorityCoverageFailure));
+    assert!(!metrics.contains(&Metric::AuthorityIntegrityFailure));
+    assert_eq!(metrics.last(), Some(&Metric::AuthoritySweepCompleted));
+    assert_eq!(
+        *m.backend.gauges.lock().unwrap(),
+        vec![(Metric::AuthorityRepeatedPinClearAccounts, 6)]
+    );
+    assert_eq!(verified_accounts(&m), 6);
+    assert_eq!(m.backend.row_reads.lock().unwrap()[&pks[0]], 2);
+    assert_eq!(
+        *m.backend.diagnostics.lock().unwrap(),
+        vec![Diagnostic::Completed { partitions: 6 }]
+    );
+}
+#[tokio::test]
+async fn a_fence_that_keeps_changing_is_bounded_and_other_accounts_are_still_verified() {
+    let (mut m, pks) = many_accounts();
+    m.backend.unstable = Some(pks[0].clone());
+    account_mut(&mut m, &pks[5]).retain(|r| r.sk != "ENROLLMENT");
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    assert_eq!(m.backend.row_reads.lock().unwrap()[&pks[0]], FENCE_ATTEMPTS);
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    // A moving fence is never a tamper alarm by itself; the planted defect is.
+    assert_eq!(
+        metrics
+            .iter()
+            .filter(|&&x| x == Metric::AuthorityIntegrityFailure)
+            .count(),
+        1
+    );
+    assert_eq!(metrics.last(), Some(&Metric::AuthorityCoverageFailure));
+    assert!(!metrics.contains(&Metric::AuthorityAccountOverCapacity));
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+    assert_eq!(verified_accounts(&m), 4);
+    assert_eq!(
+        *m.backend.diagnostics.lock().unwrap(),
+        vec![
+            Diagnostic::FenceChangedAfterRetries,
+            Diagnostic::Incomplete {
+                partitions: 6,
+                over_capacity: 0,
+                fence_unstable: 1
+            }
+        ]
+    );
+}
+#[test]
+fn account_budget_accepts_exactly_the_limits_and_rejects_one_more() {
+    let mut budget = AccountBudget::default();
+    for _ in 0..MAX_ACCOUNT_ROWS {
+        budget.admit(1).unwrap();
+    }
+    assert_eq!(budget.admit(1), Err(Error::Capacity));
+    // A rejected row is not counted.
+    assert_eq!(budget.rows, MAX_ACCOUNT_ROWS);
+    let mut budget = AccountBudget {
+        rows: 0,
+        bytes: MAX_ACCOUNT_BYTES - 10,
+    };
+    budget.admit(10).unwrap();
+    assert_eq!(budget.admit(1), Err(Error::Capacity));
+    assert_eq!(budget.bytes, MAX_ACCOUNT_BYTES);
+    assert_eq!(
+        AccountBudget::default().admit(MAX_ACCOUNT_BYTES + 1),
+        Err(Error::Capacity)
+    );
+}
+#[test]
+fn verify_account_applies_the_same_boundary_before_any_other_check() {
+    let pk = binding().partition_key().unwrap();
+    let filler = |n: usize| -> Vec<Row> {
+        (0..n)
+            .map(|i| Row {
+                pk: pk.clone(),
+                sk: format!("PAD#{i}"),
+                payload: vec![0],
+            })
+            .collect()
+    };
+    // Exactly at the bound the rows are admitted (and then fail as malformed).
+    assert_eq!(verify(&filler(MAX_ACCOUNT_ROWS)), Err(Error::Integrity));
+    assert_eq!(verify(&filler(MAX_ACCOUNT_ROWS + 1)), Err(Error::Capacity));
+}
+#[tokio::test]
+async fn sweep_failures_write_only_fixed_reason_lines() {
+    let m = monitor(false, true);
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    assert_eq!(
+        *m.backend.diagnostics.lock().unwrap(),
+        vec![Diagnostic::PartitionScanFailed]
+    );
+    let pk = binding().partition_key().unwrap();
+    let digits = pk.trim_start_matches("ACCOUNT#");
+    for diagnostic in [
+        Diagnostic::PartitionScanFailed,
+        Diagnostic::PartitionScanOverCapacity,
+        Diagnostic::AccountReadFailed,
+        Diagnostic::AccountReadMalformed,
+        Diagnostic::AccountOverCapacity,
+        Diagnostic::FenceChangedAfterRetries,
+        Diagnostic::DeliveryFailed,
+        Diagnostic::Completed { partitions: 85 },
+        Diagnostic::Incomplete {
+            partitions: 85,
+            over_capacity: 1,
+            fence_unstable: 2,
+        },
+        Diagnostic::DeadlineReached {
+            partitions: 500_000,
+            verified: 499_999,
+        },
+    ] {
+        let line = diagnostic.to_string();
+        assert!(line.starts_with("authority sweep: "), "{line}");
+        assert!(!line.contains('\n') && !line.contains(digits) && line.len() < 100);
+        assert!(
+            line.bytes()
+                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b" :=_".contains(&b)),
+            "{line}"
+        );
+    }
+    assert_eq!(
+        Diagnostic::Incomplete {
+            partitions: 85,
+            over_capacity: 1,
+            fence_unstable: 0
+        }
+        .to_string(),
+        "authority sweep: incomplete partitions=85 over_capacity=1 fence_unstable=0"
+    );
+    assert_eq!(
+        Diagnostic::DeadlineReached {
+            partitions: 20_000,
+            verified: 12_345
+        }
+        .to_string(),
+        "authority sweep: deadline reached partitions=20000 verified=12345"
+    );
+    assert_eq!(
+        Metric::AuthorityAccountOverCapacity.name(),
+        "AuthorityAccountOverCapacity"
+    );
+    assert_eq!(Error::Capacity.to_string(), "monitor capacity exceeded");
+}
+#[tokio::test]
+async fn a_malformed_account_read_alarms_and_every_other_account_is_still_verified() {
+    let (mut m, pks) = many_accounts();
+    m.backend.malformed = Some(pks[0].clone());
+    // An integrity finding, like a failed history check: alarmed, and the sweep
+    // still covers (and completes over) every other account.
+    assert_eq!(m.sweep_authority(&config()).await, Ok(()));
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert_eq!(metrics[0], Metric::AuthorityIntegrityFailure);
+    assert_eq!(verified_accounts(&m), 5);
+    assert_eq!(metrics.last(), Some(&Metric::AuthoritySweepCompleted));
+    assert!(
+        m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .contains(&Diagnostic::AccountReadMalformed)
+    );
+}
+#[tokio::test]
+async fn a_failed_per_account_alarm_does_not_stop_the_rest_of_the_sweep() {
+    let (mut m, pks) = many_accounts();
+    let pk = pks[0].clone();
+    let big = account_mut(&mut m, &pk);
+    for i in big.len()..=MAX_ACCOUNT_ROWS {
+        big.push(Row {
+            pk: pk.clone(),
+            sk: format!("PAD#{i}"),
+            payload: vec![0],
+        });
+    }
+    account_mut(&mut m, &pks[5]).retain(|r| r.sk != "ENROLLMENT");
+    m.backend.failing_metric = Some(Metric::AuthorityAccountOverCapacity);
+    // The run still fails (and is retried), but only after every other account
+    // was verified and the planted integrity defect was found.
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert_eq!(verified_accounts(&m), 4);
+    assert!(metrics.contains(&Metric::AuthorityIntegrityFailure));
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+    assert!(
+        m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .contains(&Diagnostic::DeliveryFailed)
+    );
+}
+
+/// `n` repeated-PIN-clear accounts (so each verified one emits one deprecated
+/// datum) whose every read takes 1 ms, plus their sorted keys.
+fn concurrent_accounts(n: u8) -> (Monitor<Fake>, Vec<String>) {
+    let now = now_ms();
+    let chain = pin_clear_chain([now - 60_000, now - 1_000]);
+    let mut m = monitor(false, false);
+    m.backend.rows = rows(&chain);
+    m.backend.others = (2..=n)
+        .map(|i| rows_as(&other_account(i), &chain))
+        .collect();
+    m.backend.latency = Some(std::time::Duration::from_millis(1));
+    let mut pks: Vec<String> = std::iter::once(binding().partition_key().unwrap())
+        .chain(m.backend.others.iter().map(|r| r[0].pk.clone()))
+        .collect();
+    pks.sort();
+    (m, pks)
+}
+fn count_metric(m: &Monitor<Fake>, metric: Metric) -> usize {
+    m.backend
+        .metrics
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|&&x| x == metric)
+        .count()
+}
+/// Every path returned its bytes and the lane.
+fn assert_nothing_held(m: &Monitor<Fake>) {
+    assert_eq!(*m.backend.in_flight.lock().unwrap(), (0, 0));
+}
+
+#[tokio::test(start_paused = true)]
+async fn concurrent_sweep_verifies_every_account_exactly_once_and_finds_a_planted_defect() {
+    let (mut m, pks) = concurrent_accounts(40);
+    account_mut(&mut m, &pks[17]).retain(|r| r.sk != "ENROLLMENT");
+    // Small Scan pages split partitions across pages (one key per row), and a
+    // non-adjacent duplicate on the last page must not be swept twice.
+    m.backend.scan_page = 7;
+    m.backend.extra_scan_keys = vec![pks[0].clone(), pks[39].clone()];
+    m.sweep_authority(&config()).await.unwrap();
+    let reads = m.backend.row_reads.lock().unwrap().clone();
+    assert_eq!(reads.len(), 40);
+    assert!(reads.values().all(|&n| n == 1), "{reads:?}");
+    assert!(m.backend.scan_requests.load(Ordering::SeqCst) > 40);
+    assert_eq!(count_metric(&m, Metric::AuthorityIntegrityFailure), 1);
+    assert_eq!(verified_accounts(&m), 39);
+    assert_eq!(
+        *m.backend.gauges.lock().unwrap(),
+        vec![(Metric::AuthorityRepeatedPinClearAccounts, 39)]
+    );
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert_eq!(metrics.last(), Some(&Metric::AuthoritySweepCompleted));
+    assert!(!metrics.contains(&Metric::AuthorityCoverageFailure));
+    assert_eq!(
+        *m.backend.diagnostics.lock().unwrap(),
+        vec![Diagnostic::Completed { partitions: 40 }]
+    );
+    // Reads really overlapped, but never beyond the configured concurrency.
+    let max = m.backend.max_active.load(Ordering::SeqCst);
+    assert!((2..=DEFAULT_SWEEP_CONCURRENCY).contains(&max), "{max}");
+    assert_nothing_held(&m);
+}
+
+#[tokio::test(start_paused = true)]
+async fn concurrency_is_bounded_by_the_option_and_one_is_serial() {
+    for concurrency in [1, 3] {
+        let (m, _) = concurrent_accounts(12);
+        m.sweep_authority_with(&config(), &SweepOptions::new(concurrency, None))
+            .await
+            .unwrap();
+        assert_eq!(m.backend.max_active.load(Ordering::SeqCst), concurrency);
+        assert_eq!(verified_accounts(&m), 12);
+    }
+    assert_eq!(SweepOptions::concurrency_from_env(None), Ok(16));
+    assert_eq!(SweepOptions::concurrency_from_env(Some("")), Ok(16));
+    assert_eq!(SweepOptions::concurrency_from_env(Some("32")), Ok(32));
+    for bad in ["0", "33", "-1", "x", " 4"] {
+        assert_eq!(
+            SweepOptions::concurrency_from_env(Some(bad)),
+            Err(Error::Configuration),
+            "{bad}"
+        );
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn per_account_isolation_holds_under_concurrency() {
+    let (mut m, pks) = concurrent_accounts(12);
+    let big = account_mut(&mut m, &pks[2]);
+    let pk = big[0].pk.clone();
+    for i in big.len()..=MAX_ACCOUNT_ROWS {
+        big.push(Row {
+            pk: pk.clone(),
+            sk: format!("PAD#{i}"),
+            payload: vec![0],
+        });
+    }
+    m.backend.malformed = Some(pks[5].clone());
+    m.backend.unstable = Some(pks[7].clone());
+    account_mut(&mut m, &pks[11]).retain(|r| r.sk != "ENROLLMENT");
+    // The unstable fence makes the run retryable; nothing else stops it.
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    assert_eq!(count_metric(&m, Metric::AuthorityAccountOverCapacity), 1);
+    // The malformed read and the planted defect, never the moving fence.
+    assert_eq!(count_metric(&m, Metric::AuthorityIntegrityFailure), 2);
+    assert_eq!(verified_accounts(&m), 8);
+    assert_eq!(m.backend.row_reads.lock().unwrap()[&pks[7]], FENCE_ATTEMPTS);
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    // Every per-account alarm was delivered before the final coverage failure.
+    assert_eq!(metrics.last(), Some(&Metric::AuthorityCoverageFailure));
+    assert_eq!(count_metric(&m, Metric::AuthorityCoverageFailure), 1);
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+    let diagnostics = m.backend.diagnostics.lock().unwrap().clone();
+    assert_eq!(
+        diagnostics.last(),
+        Some(&Diagnostic::Incomplete {
+            partitions: 12,
+            over_capacity: 1,
+            fence_unstable: 1
+        })
+    );
+    for d in [
+        Diagnostic::AccountOverCapacity,
+        Diagnostic::AccountReadMalformed,
+        Diagnostic::FenceChangedAfterRetries,
+    ] {
+        assert_eq!(diagnostics.iter().filter(|&&x| x == d).count(), 1, "{d}");
+    }
+    assert_nothing_held(&m);
+
+    // Over capacity alone: permanent, so the invocation succeeds (no retry).
+    let (mut m, pks) = concurrent_accounts(12);
+    let big = account_mut(&mut m, &pks[0]);
+    let pk = big[0].pk.clone();
+    for i in big.len()..=MAX_ACCOUNT_ROWS {
+        big.push(Row {
+            pk: pk.clone(),
+            sk: format!("PAD#{i}"),
+            payload: vec![0],
+        });
+    }
+    // A failed per-account alarm does not stop the rest; the run then fails.
+    m.backend.failing_metric = Some(Metric::AuthorityAccountOverCapacity);
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    assert_eq!(verified_accounts(&m), 11);
+    assert!(
+        m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .contains(&Diagnostic::DeliveryFailed)
+    );
+    assert!(count_metric(&m, Metric::AuthoritySweepCompleted) == 0);
+    assert_nothing_held(&m);
+}
+
+#[tokio::test(start_paused = true)]
+async fn large_accounts_take_one_lane_so_in_flight_row_bytes_stay_bounded() {
+    let (mut m, pks) = concurrent_accounts(20);
+    // Eight accounts of ~3 MiB of well-formed junk (several 1 MB pages each):
+    // they must each take the single lane, and each fails verification.
+    for pk in &pks[..8] {
+        let rows = account_mut(&mut m, pk);
+        for i in 0..48 {
+            rows.push(Row {
+                pk: pk.clone(),
+                sk: format!("PAD#{i}"),
+                payload: vec![0; 64 * 1024],
+            });
+        }
+    }
+    m.sweep_authority(&config()).await.unwrap();
+    assert_eq!(count_metric(&m, Metric::AuthorityIntegrityFailure), 8);
+    assert_eq!(verified_accounts(&m), 12);
+    assert_eq!(m.backend.row_reads.lock().unwrap().len(), 20);
+    assert_eq!(
+        count_metric(&m, Metric::AuthoritySweepCompleted),
+        1,
+        "integrity findings do not block completion"
+    );
+    let (max_bytes, max_large) = *m.backend.max_in_flight.lock().unwrap();
+    // The lane was used, by one account at a time.
+    assert_eq!(max_large, 1);
+    assert!(max_bytes > LARGE_ACCOUNT_BYTES, "{max_bytes}");
+    // At most one account is past the threshold with all its rows; every
+    // other in-flight account holds at most the threshold plus one page.
+    let full: usize = account_mut(&mut m, &pks[0])
+        .iter()
+        .map(|r| r.payload.len())
+        .sum();
+    assert!(full > 3 * 1024 * 1024);
+    assert!(
+        max_bytes
+            <= full + (DEFAULT_SWEEP_CONCURRENCY - 1) * (LARGE_ACCOUNT_BYTES + MAX_PAGE_BYTES),
+        "{max_bytes}"
+    );
+    // Holding every large account at once would need 8 x `full`.
+    assert!(max_bytes < 4 * full, "{max_bytes}");
+    assert!(max_bytes <= in_flight_bound(DEFAULT_SWEEP_CONCURRENCY));
+    assert_nothing_held(&m);
+    // The configured bound fits the 1024 MiB Lambda with room for parsing
+    // (README capacity note).
+    assert!(in_flight_bound(MAX_SWEEP_CONCURRENCY) < 256 * 1024 * 1024);
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_deadline_already_inside_the_margin_starts_nothing_and_reports_coverage_failure() {
+    let (m, _) = concurrent_accounts(3);
+    let deadline = Instant::now() + DEADLINE_MARGIN - std::time::Duration::from_secs(1);
+    let options = SweepOptions::new(16, Some(deadline));
+    // Not retried: a retry would hit the same deadline.
+    assert_eq!(m.sweep_authority_with(&config(), &options).await, Ok(()));
+    assert_eq!(m.backend.scan_requests.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        *m.backend.metrics.lock().unwrap(),
+        vec![Metric::AuthorityCoverageFailure]
+    );
+    assert_eq!(
+        *m.backend.diagnostics.lock().unwrap(),
+        vec![Diagnostic::DeadlineReached {
+            partitions: 0,
+            verified: 0
+        }]
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn the_deadline_stops_new_accounts_and_in_flight_ones_finish_without_a_heartbeat() {
+    let (mut m, pks) = concurrent_accounts(40);
+    account_mut(&mut m, &pks[0]).retain(|r| r.sk != "ENROLLMENT");
+    m.backend.latency = Some(std::time::Duration::from_millis(10));
+    let start = Instant::now();
+    let deadline = start + DEADLINE_MARGIN + std::time::Duration::from_millis(45);
+    let options = SweepOptions::new(4, Some(deadline));
+    assert_eq!(m.sweep_authority_with(&config(), &options).await, Ok(()));
+    // Stopped at the margin, long before the deadline itself.
+    assert!(Instant::now() < deadline - DEADLINE_ABANDON);
+    let diagnostics = m.backend.diagnostics.lock().unwrap().clone();
+    let [
+        Diagnostic::DeadlineReached {
+            partitions,
+            verified,
+        },
+    ] = diagnostics[..]
+    else {
+        panic!("{diagnostics:?}");
+    };
+    let started = m.backend.row_reads.lock().unwrap().len();
+    // Every started account finished (none abandoned), and not all started.
+    assert_eq!(verified, started);
+    assert!((1..40).contains(&verified), "{verified}");
+    assert!(partitions >= verified);
+    // The planted defect in the first account was still alarmed.
+    assert_eq!(count_metric(&m, Metric::AuthorityIntegrityFailure), 1);
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert_eq!(metrics.last(), Some(&Metric::AuthorityCoverageFailure));
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert!(m.backend.gauges.lock().unwrap().is_empty());
+    assert_nothing_held(&m);
+}
+
+#[tokio::test(start_paused = true)]
+async fn an_account_still_reading_near_the_deadline_is_abandoned_and_the_failure_still_reported() {
+    let (mut m, pks) = concurrent_accounts(6);
+    m.backend.slow = Some((pks[3].clone(), std::time::Duration::from_secs(600)));
+    let deadline = Instant::now() + std::time::Duration::from_secs(120);
+    let options = SweepOptions::new(16, Some(deadline));
+    assert_eq!(m.sweep_authority_with(&config(), &options).await, Ok(()));
+    // Reported at the abandon point, before Lambda would kill the invocation.
+    let now = Instant::now();
+    assert!(now >= deadline - DEADLINE_ABANDON && now < deadline);
+    assert_eq!(
+        *m.backend.diagnostics.lock().unwrap(),
+        vec![Diagnostic::DeadlineReached {
+            partitions: 6,
+            verified: 5
+        }]
+    );
+    assert_eq!(verified_accounts(&m), 5);
+    let metrics = m.backend.metrics.lock().unwrap().clone();
+    assert_eq!(metrics.last(), Some(&Metric::AuthorityCoverageFailure));
+    assert!(!metrics.contains(&Metric::AuthoritySweepCompleted));
+    assert_nothing_held(&m);
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_last_account_finishing_after_the_stop_point_still_completes_the_sweep() {
+    // Every account is started before `stop_at`; one finishes between `stop_at`
+    // and the abandon point. Nothing was skipped, so the sweep completed.
+    let (mut m, pks) = concurrent_accounts(6);
+    let deadline = Instant::now() + std::time::Duration::from_secs(120);
+    let finishes_after_stop = deadline - DEADLINE_MARGIN + std::time::Duration::from_secs(10);
+    assert!(finishes_after_stop < deadline - DEADLINE_ABANDON);
+    // The fake applies the delay to each of the account's three reads.
+    m.backend.slow = Some((pks[3].clone(), (finishes_after_stop - Instant::now()) / 3));
+    let options = SweepOptions::new(16, Some(deadline));
+    assert_eq!(m.sweep_authority_with(&config(), &options).await, Ok(()));
+    assert!(Instant::now() >= deadline - DEADLINE_MARGIN);
+    assert_eq!(verified_accounts(&m), 6);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 1);
+    assert_eq!(count_metric(&m, Metric::AuthorityCoverageFailure), 0);
+    assert!(
+        !m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|d| matches!(d, Diagnostic::DeadlineReached { .. }))
+    );
+    assert_nothing_held(&m);
+}
+
+#[tokio::test(start_paused = true)]
+async fn slow_final_deliveries_after_a_late_last_account_still_report_before_the_deadline() {
+    // The last account (with an integrity finding, so an alarm is pending)
+    // finishes just before the abandon point, and every delivery takes the full
+    // sink timeout. Gauge + heartbeat would overrun; the sweep must still report
+    // something (here coverage failure) before the invocation deadline.
+    let (mut m, pks) = concurrent_accounts(6);
+    account_mut(&mut m, &pks[3]).retain(|r| r.sk != "ENROLLMENT");
+    let deadline = Instant::now() + std::time::Duration::from_secs(120);
+    let finishes = deadline - DEADLINE_ABANDON - std::time::Duration::from_secs(1);
+    // The fake applies the delay to each of the account's three reads.
+    m.backend.slow = Some((pks[3].clone(), (finishes - Instant::now()) / 3));
+    m.backend.delivery_latency = Some(crate::aws::SINK_OPERATION_TIMEOUT);
+    let options = SweepOptions::new(16, Some(deadline));
+    assert_eq!(m.sweep_authority_with(&config(), &options).await, Ok(()));
+    assert!(Instant::now() <= deadline);
+    assert_eq!(count_metric(&m, Metric::AuthorityIntegrityFailure), 1);
+    assert_eq!(count_metric(&m, Metric::AuthorityCoverageFailure), 1);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 0);
+    assert!(
+        m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .contains(&Diagnostic::DeadlineReached {
+                partitions: 6,
+                verified: 6
+            })
+    );
+}
+#[test]
+fn the_final_deliveries_fit_after_the_abandon_point() {
+    // Loop end (abandon point + one pending alarm) leaves room for the single
+    // coverage alarm and the return slack; the success path is only taken with
+    // room for gauge + heartbeat + the fallback coverage alarm + slack.
+    let sink = crate::aws::SINK_OPERATION_TIMEOUT;
+    assert!(DEADLINE_ABANDON - sink >= sink + RETURN_SLACK);
+    assert_eq!(FINAL_DELIVERIES, sink * 3 + RETURN_SLACK);
+}
+#[tokio::test(start_paused = true)]
+async fn a_failed_heartbeat_after_a_late_clean_last_account_still_reports_before_the_deadline() {
+    // The last account and its own (per-account) delivery both finish just
+    // before the abandon point, leaving ~21 s. If the success path were taken,
+    // gauge (8 s) + a heartbeat that fails (8 s) + the fallback coverage alarm
+    // (8 s) would run past the deadline.
+    let (mut m, pks) = concurrent_accounts(6);
+    let deadline = Instant::now() + std::time::Duration::from_secs(120);
+    let finishes = deadline
+        - DEADLINE_ABANDON
+        - crate::aws::SINK_OPERATION_TIMEOUT
+        - std::time::Duration::from_secs(1);
+    // The fake applies the delay to each of the account's three reads.
+    m.backend.slow = Some((pks[3].clone(), (finishes - Instant::now()) / 3));
+    m.backend.delivery_latency = Some(crate::aws::SINK_OPERATION_TIMEOUT);
+    m.backend.failing_metric = Some(Metric::AuthoritySweepCompleted);
+    let options = SweepOptions::new(16, Some(deadline));
+    let _ = m.sweep_authority_with(&config(), &options).await;
+    assert!(Instant::now() + RETURN_SLACK <= deadline);
+    assert_eq!(count_metric(&m, Metric::AuthorityCoverageFailure), 1);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 0);
+}
+
+#[tokio::test]
+async fn partition_scan_bounds_and_malformed_keys_never_report_partial_success() {
+    // More distinct partitions than the sanity bound.
+    let (m, _) = concurrent_accounts(5);
+    let options = SweepOptions {
+        max_partitions: 4,
+        ..SweepOptions::default()
+    };
+    assert_eq!(m.sweep_authority_with(&config(), &options).await, Ok(()));
+    assert!(
+        m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .contains(&Diagnostic::PartitionScanOverCapacity)
+    );
+    assert_eq!(count_metric(&m, Metric::AuthorityCoverageFailure), 1);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 0);
+    // More Scan pages than the sanity bound.
+    let (mut m, _) = concurrent_accounts(5);
+    m.backend.scan_page = 3;
+    let options = SweepOptions {
+        max_scan_pages: 4,
+        ..SweepOptions::default()
+    };
+    assert_eq!(m.sweep_authority_with(&config(), &options).await, Ok(()));
+    assert_eq!(m.backend.scan_requests.load(Ordering::SeqCst), 4);
+    assert_eq!(count_metric(&m, Metric::AuthorityCoverageFailure), 1);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 0);
+    // A malformed key is an integrity finding (never downgraded), not coverage.
+    let (mut m, _) = concurrent_accounts(5);
+    m.backend.extra_scan_keys = vec!["ACCOUNT#NOT-HEX".into()];
+    assert_eq!(m.sweep_authority(&config()).await, Err(Error::Unavailable));
+    assert_eq!(count_metric(&m, Metric::AuthorityIntegrityFailure), 1);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 0);
+    assert!(
+        m.backend
+            .diagnostics
+            .lock()
+            .unwrap()
+            .contains(&Diagnostic::PartitionScanFailed)
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_lost_alarm_is_retried_even_when_a_scan_bound_stops_the_sweep_later() {
+    // Accounts are checked while the Scan still streams, so a per-account
+    // alarm can fail before a Scan sanity bound (Capacity, normally not
+    // retried) is hit. The lost alarm must still make the run fail and retry.
+    let (mut m, pks) = concurrent_accounts(6);
+    account_mut(&mut m, &pks[0]).retain(|r| r.sk != "ENROLLMENT");
+    m.backend.scan_page = 1;
+    m.backend.failing_metric = Some(Metric::AuthorityIntegrityFailure);
+    let options = SweepOptions {
+        max_partitions: 4,
+        ..SweepOptions::default()
+    };
+    assert_eq!(
+        m.sweep_authority_with(&config(), &options).await,
+        Err(Error::Unavailable)
+    );
+    let diagnostics = m.backend.diagnostics.lock().unwrap().clone();
+    let failed = diagnostics
+        .iter()
+        .position(|&d| d == Diagnostic::DeliveryFailed)
+        .unwrap();
+    let bound = diagnostics
+        .iter()
+        .position(|&d| d == Diagnostic::PartitionScanOverCapacity)
+        .unwrap();
+    assert!(failed < bound, "{diagnostics:?}");
+    assert_eq!(count_metric(&m, Metric::AuthorityCoverageFailure), 1);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 0);
+    assert_nothing_held(&m);
+}
+
+#[tokio::test(start_paused = true)]
+async fn alarm_deliveries_in_flight_hold_back_new_accounts() {
+    // Every account raises an integrity alarm and each delivery is slow: the
+    // concurrent sweep must not fire them all at CloudWatch/SNS at once.
+    let (mut m, pks) = concurrent_accounts(40);
+    for pk in &pks {
+        account_mut(&mut m, pk).retain(|r| r.sk != "ENROLLMENT");
+    }
+    m.backend.delivery_latency = Some(std::time::Duration::from_millis(100));
+    let concurrency = 4;
+    m.sweep_authority_with(&config(), &SweepOptions::new(concurrency, None))
+        .await
+        .unwrap();
+    // Every alarm was delivered, and integrity findings do not block completion.
+    assert_eq!(count_metric(&m, Metric::AuthorityIntegrityFailure), 40);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 1);
+    let max = m.backend.max_deliveries.load(Ordering::SeqCst);
+    // Admission waits while `concurrency` deliveries are pending; accounts
+    // already in flight may each add one more.
+    assert!((2..2 * concurrency).contains(&max), "{max}");
+    assert_nothing_held(&m);
+}
+
+#[tokio::test(start_paused = true)]
+async fn skipped_account_counts_are_logged_even_when_the_deadline_ends_the_sweep() {
+    let (mut m, pks) = concurrent_accounts(6);
+    m.backend.unstable = Some(pks[0].clone());
+    m.backend.slow = Some((pks[5].clone(), std::time::Duration::from_secs(600)));
+    let deadline = Instant::now() + std::time::Duration::from_secs(120);
+    let options = SweepOptions::new(16, Some(deadline));
+    assert_eq!(m.sweep_authority_with(&config(), &options).await, Ok(()));
+    let diagnostics = m.backend.diagnostics.lock().unwrap().clone();
+    assert_eq!(
+        diagnostics[diagnostics.len() - 2..],
+        [
+            Diagnostic::DeadlineReached {
+                partitions: 6,
+                verified: 4
+            },
+            Diagnostic::Incomplete {
+                partitions: 6,
+                over_capacity: 0,
+                fence_unstable: 1
+            }
+        ]
+    );
+    assert_eq!(count_metric(&m, Metric::AuthorityCoverageFailure), 1);
+    assert_eq!(count_metric(&m, Metric::AuthoritySweepCompleted), 0);
+}
+
+#[test]
+fn deadline_from_the_lambda_context_is_relative_to_now() {
+    let in_ten_minutes = deadline_from_epoch_ms(now_ms() + 600_000);
+    let remaining = in_ten_minutes - Instant::now();
+    assert!(
+        remaining > std::time::Duration::from_secs(590),
+        "{remaining:?}"
+    );
+    // A deadline in the past (or a missing 0) stops at once, loudly.
+    assert!(deadline_from_epoch_ms(0) <= Instant::now());
 }

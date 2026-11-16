@@ -122,6 +122,9 @@ vi.mock('./pages/sync-my-school/ExternalAuthServiceProvider', () => ({
     default: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock('./components/debug/DevDebugPanel', () => ({ default: () => null }));
+vi.mock('./native-digital-credentials/NativeDigitalCredentialsListener', () => ({
+    default: () => null,
+}));
 vi.mock('./providers/AuthCoordinatorProvider', () => ({
     default: ({ children }: { children: React.ReactNode }) => children,
 }));

@@ -1,20 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('notifications-list');
 
-import { IonItem, IonList, useIonModal } from '@ionic/react';
+import { IonItem, IonList } from '@ionic/react';
 
 import { Notification, NotificationProps } from '@learncard/react';
-import { VCClaim } from 'learn-card-base/components/vcmodal/VCModal';
+import CredentialClaimModal from '../../../pages/launchPad/CredentialClaimModal';
 
-import {
-    useWallet,
-    useAcceptCredentialMutation,
-    usePathQuery,
-    useToast,
-    ToastTypeEnum,
-} from 'learn-card-base';
+import { usePathQuery, useModal } from 'learn-card-base';
 
 export const NotificationItem: React.FC<{
     notification: NotificationProps;
@@ -25,56 +17,27 @@ export const NotificationItem: React.FC<{
     const _uri = query.get('uri') ?? '';
     const _claim = query.get('claim') ?? '';
 
-    const { addVCtoWallet } = useWallet();
-    const { mutate, isLoading } = useAcceptCredentialMutation();
-
-    const [isClaimed, setIsClaimed] = useState<boolean>(false);
-
-    const { presentToast } = useToast();
+    const { newModal, closeModal: dismissModal } = useModal();
+    const presentModal = () =>
+        newModal(
+            <CredentialClaimModal
+                credentialUri={notification.uri}
+                onDismiss={() => {
+                    dismissModal();
+                    if (_claim) history.replace('/notifications');
+                }}
+            />
+        );
 
     const handleViewOnClick = () => {
         presentModal();
     };
 
-    const handleClaimOnClick = async () => {
-        if (isClaimed) return;
-
-        try {
-            mutate(
-                { uri: notification?.uri },
-                {
-                    async onSuccess(data, variables, context) {
-                        await addVCtoWallet({ uri: notification?.uri });
-                        presentToast('Successfully claimed Credential!', {
-                            duration: 3000,
-                            type: ToastTypeEnum.Success,
-                        });
-                        dismissModal?.();
-
-                        setIsClaimed(true);
-                        log.info('acceptCredential::success', data);
-                    },
-                }
-            );
-        } catch (err) {
-            log.info('acceptCredential::error', err?.message);
-        }
-    };
-
-    const [presentModal, dismissModal] = useIonModal(VCClaim, {
-        _streamId: notification?.uri,
-        dismiss: () => dismissModal(),
-        showFooter: false,
-        showBoostFooter: true,
-        handleClaimBoostCredential: handleClaimOnClick,
-        isLoading: isLoading,
-    });
+    const handleClaimOnClick = () => presentModal();
 
     useEffect(() => {
         if (_uri === notification?.uri && _claim) {
-            presentModal({
-                onDidDismiss: () => history.replace('/notifications'),
-            });
+            presentModal();
         }
     }, []);
 
@@ -90,8 +53,8 @@ export const NotificationItem: React.FC<{
                 notificationType={notification?.notificationType}
                 handleViewOnClick={handleViewOnClick}
                 handleClaimOnClick={handleClaimOnClick}
-                claimStatus={isClaimed}
-                loadingState={isLoading}
+                claimStatus={false}
+                loadingState={false}
             />
         </IonItem>
     );

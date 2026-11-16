@@ -1,9 +1,10 @@
 # CI test retries (LC-2312 / CI-08)
 
 A single intermittent test used to restart the entire affected Nx test command,
-up to three attempts. The PR test gate and automatic deployment test gate now run
-Nx once, with a default of one retry for each failing Vitest case. Recovered cases
-are labeled **flaky** in the job summary and with `[CI flaky]` in console output.
+up to three attempts. The PR test gate, automatic deployment test gate, and
+Maid-Service housekeeping job now run Nx once, with a default of one retry for
+each failing Vitest case. Recovered cases are labeled **flaky** in the job summary
+and with `[CI flaky]` in console output.
 
 For example, if 899 cases pass and one fails once, only that case runs a second
 attempt. The summary names the recovered case. A case that fails both attempts
@@ -12,10 +13,11 @@ there is no automatic whole-command recovery for infrastructure failures.
 
 ## Scope
 
-Only the `Run tests` steps in `test.yml` and `deploy.yml` set
-`LC_CI_TEST_RETRY=1` and an absolute `LC_CI_TEST_REPORT_DIR`. Other commands keep
-their existing configuration. Missing the report directory while opting in fails
-configuration rather than enabling unreported retries.
+Only the `Run tests` steps in `test.yml`, `deploy.yml`, and `maids.yml` set
+`LC_CI_TEST_RETRY=1` and an absolute `LC_CI_TEST_REPORT_DIR`. Maid-Service runs
+on pushes to main; other commands keep their existing configuration. Missing the
+report directory while opting in fails configuration rather than enabling
+unreported retries.
 
 `createVitestConfig` applies the retry default only when the project hasn't set
 one, and appends the CI reporter to the project's existing reporters. It adds the
@@ -23,8 +25,8 @@ default console reporter only when none are configured. Individual tests can als
 explicitly configure their retry count. Vitest reruns per-case hooks with a retried case;
 module imports, setup files, `beforeAll` and `afterAll` do not gain a suite retry.
 No Nx dependency build, Rust test or other non-Vitest command is retried here.
-The Nx step has one 20-minute timeout, replacing three 20-minute attempts.
-Unrelated deployment-operation retry steps are unchanged.
+Each Nx step has one 20-minute timeout. Maid-Service previously allowed three
+10-minute attempts; unrelated deployment-operation retry steps are unchanged.
 
 ## Reporting and limits
 
@@ -46,12 +48,13 @@ warning remains in cached terminal output. No reports can also mean there were
 no affected Vitest projects, a build failed before testing, or execution stopped
 early. The summary explicitly avoids claiming complete passing coverage from an
 absent report. Cache-input/output design is part of the separate CI-15 audit.
-No reports are uploaded as artifacts.
+Vitest retry reports are not uploaded as artifacts.
 
 All workspace packages whose test script invokes Vitest use the factory, including
 the AI agent and credential viewer's `vite.config.ts` files. Their existing test
-options and Vite plugins/aliases are preserved. The inventory contract checks new
-workspace test scripts for the same wiring.
+options and Vite plugins/aliases are preserved. Runtime regressions exercise the
+AI agent's Node globals and built-output exclusions, the viewer's source alias,
+and custom reporters alongside retry reporting; they do not count plugin objects.
 
 ## Nx inputs
 
@@ -92,11 +95,24 @@ node --test scripts/ci-test-retries/retry.test.cjs
 
 The regression suite starts real Vitest processes with this shared configuration,
 both standalone Vite configs and real Nx build/test fixtures. It checks healthy/flaky/permanent cases,
-concurrent writers, opt-out/misconfiguration, import/setup/teardown failures,
-non-Vitest/build failures, incomplete/corrupt evidence and workflow propagation.
-It also proves affected selection and actual cache hits/misses for inherited and
-explicit inputs, shared/config edits, and the retry flag (not report location).
-The non-Vitest fixture is a failing Node command, not the production Rust graph.
+concurrent writers and summary rows, recovered-case warnings, opt-out/misconfiguration,
+import/setup/teardown failures, non-Vitest/build failures and incomplete/corrupt evidence.
+Corrupt evidence cannot append a partial passing summary, and the summary retains
+each supplied test-step outcome without depending on its surrounding wording.
+Every workspace manifest whose test script invokes Vitest also runs a controlled
+case through its actual resolved CI test options and must emit a valid report.
+Those reporting-only fixtures isolate app plugins and service setup; the standalone
+preservation cases above exercise their normal config pipeline separately.
+This detects a new package bypassing reporting without matching factory source text
+or imposing an arbitrary minimum workspace count.
+It also queries the real workspace Nx graph: shared config/reporter/summary changes
+must select every workspace Vitest project, and each project's resolved `test`
+target inputs must include `ciTestConfig`. A coverage/build target selecting the
+same project cannot substitute for the test target's cache dependency.
+Isolated fixtures prove actual cache hits/misses for inherited and explicit inputs,
+shared/config edits, and the retry flag (not report location). The non-Vitest fixture is a failing Node command,
+not the production Rust graph. Source-pattern inventories and exact YAML-step
+snapshots are not substitutes for these execution checks.
 
 The reporter uses the pinned Vitest 4 reporter API, specifically
 [TestCase diagnostics](https://vitest.dev/api/advanced/test-case) and

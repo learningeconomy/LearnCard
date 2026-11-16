@@ -7,7 +7,7 @@ frameworkVersion: '3'
 useDotenv: true
 
 plugins:
-    - ./scripts/node24-runtime.cjs
+    - ../../../scripts/serverless-node24-runtime.cjs
     - serverless-esbuild
     - serverless-offline
 

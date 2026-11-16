@@ -6,6 +6,7 @@ import { ANONYMOUS_CONTEXT } from '../constants/launchDarkly';
 import { useIsCurrentUserLCNUser, useGetDid } from 'learn-card-base';
 import { useOnReconnect } from './useConnectivity';
 
+import { getContactEmail } from '../helpers/syntheticEmail';
 import { getLogger } from '../logging/logger';
 const log = getLogger('use-launch-darkly-identify');
 
@@ -57,7 +58,8 @@ export const useLaunchDarklyIdentify = (options: UseLaunchDarklyOptions = {}) =>
                     kind: 'user',
                     key: did,
                     name: currentUser?.name,
-                    email: currentUser?.email,
+                    // Never identify by a synthetic ClassLink placeholder email.
+                    email: getContactEmail(currentUser?.email),
                 };
 
                 if (options.debug) log.debug('🔍 LaunchDarkly User Context Identified', context);

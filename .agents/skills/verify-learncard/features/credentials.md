@@ -10,7 +10,7 @@ A learner picks a badge in **Boost a Friend**, personalizes its title, adds it t
 
 ## How to get to it (user POV)
 
-- **Issue Credentials** in the sidebar (or `/boost-a-friend`) → **Pick a Badge**.
+- Launchpad (`/launchpad`) → **Boost a Friend** → `/boost-a-friend` → **Pick a Badge**. The catalog journey uses this Launchpad shortcut. The sidebar **Issue Credentials** button goes to `/issue` authoring, which this feature does not cover.
 - Passport (`/wallet` or `/passport`) → **Badges**.
 - Bell icon → `/notifications` → **Claim**.
 
@@ -21,6 +21,7 @@ Preconditions:
 - Doctor ok. `peerbadges.com` is reachable (the default tenant badge pack is fetched from it).
 
 - **Run.** `$LCV run credentials --dir /tmp/lcv` → `credentials: passed`. Observations include both titles, both displayed issuer strings, and `selfCredential` / `peerCredential` containing each persisted index ID, URI, issuer DID, subject DID, and verification result.
+- **Open the picker.** `/launchpad` → `getByRole('button', { name: 'Boost a Friend' })` (30s timeout) → heading `Pick a Badge`.
 - **Pick and personalize.** `getByPlaceholder('Search badges...')` → `Vibe Curator`; `getByPlaceholder('e.g. Trailblazer')` → title; **Next**; heading `Send to`.
 - **Self.** **Just me** → **Boost Myself** → heading `Added to your Passport!` → **Done** → `/socialBadges` lists the title.
 - **Detail.** Choose the app's **Passport** link (`/wallet` or `/passport`) → reload → **Badges** → click the title. In `dialog`, `group` named with the title, a level-1 heading containing the title, and `.issued-by` not "loading/unknown". The route change uses the existing app session; the explicit reload still proves persistence.

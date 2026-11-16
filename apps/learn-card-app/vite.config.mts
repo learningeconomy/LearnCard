@@ -17,6 +17,7 @@ import type { Plugin as EsbuildPlugin } from 'esbuild';
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
+import { registryProxyDevServer } from '../../packages/learn-card-base/src/registry-proxy/registryProxyDevServer';
 
 // The polyfill package ships against a different esbuild type instance than Vite.
 const globalPolyfillPlugin = GlobalPolyfill({
@@ -187,6 +188,7 @@ export default defineConfig(async ({ mode, command }) => {
         plugins: [
             devCacheRevalidation,
             tailwindcss(),
+            registryProxyDevServer(),
             i18nImportGuard(),
             react(),
             svgr(),
@@ -248,6 +250,7 @@ export default defineConfig(async ({ mode, command }) => {
                 'zod/v4',
                 '@learncard/sss-key-manager > shamir-secret-sharing',
                 '@learncard/sss-key-manager > hash-wasm',
+                '@learncard/sss-key-manager > @noble/ed25519',
                 // Escrow Nitro attestation (recovery) imports these at runtime.
                 '@learncard/sss-key-manager > reflect-metadata',
                 '@learncard/sss-key-manager > cborg',
@@ -260,19 +263,31 @@ export default defineConfig(async ({ mode, command }) => {
                 '@learncard/vpqr-plugin > @digitalbazaar/vpqr',
                 '@learncard/ethereum-plugin > ethers',
                 '@learncard/network-brain-client > @trpc/client',
+                '@learncard/learn-cloud-client > @trpc/client',
                 '@learncard/lca-api-plugin > @learncard/lca-api-client > @trpc/client',
                 '@learncard/core > core-js/actual/promise',
                 '@learncard/core > abort-controller/dist/abort-controller.js',
-                '@learncard/core > isomorphic-webcrypto',
                 '@learncard/chapi-plugin > credential-handler-polyfill',
                 '@learncard/chapi-plugin > web-credential-handler',
                 '@learncard/sd-jwt-vc-plugin > @sd-jwt/sd-jwt-vc',
+                '@learncard/sd-jwt-vc-plugin > @noble/curves/ed25519',
+                '@learncard/sd-jwt-vc-plugin > @scure/base',
                 '@learncard/openid4vc-plugin > jose',
                 '@learncard/openid4vc-plugin > safe-regex',
                 '@learncard/openid4vc-plugin > @peculiar/x509',
                 '@learncard/openid4vc-plugin > dcql',
                 '@learncard/vc-plugin > multiformats/bases/base58',
                 '@learncard/vc-plugin > multiformats/bases/base64',
+                // Found only after first paint (lazy routes, locale imports); a cold dev
+                // server otherwise re-optimizes and reloads mid-navigation.
+                '@headlessui/react',
+                '@emoji-mart/react',
+                'recharts',
+                '@digitalcredentials/jsonld',
+                '@capacitor-community/in-app-review',
+                'moment/locale/ar',
+                'moment/locale/es',
+                'moment/locale/fr',
             ],
             // Exclude workspace packages from pre-bundling so Vite serves their TypeScript sources.
             exclude: workspacePackages,
@@ -331,6 +346,9 @@ export default defineConfig(async ({ mode, command }) => {
         server: {
             port: 3000,
             watch: {
+                // Native assembly writes generated HTML/assets; those must not reload an
+                // in-progress credential request in the development WebView.
+                ignored: ['**/android/**', '**/ios/**', '**/build/**'],
                 // Enable polling for Docker volume mounts
                 usePolling: environment.CHOKIDAR_USEPOLLING,
                 interval: environment.CHOKIDAR_INTERVAL,

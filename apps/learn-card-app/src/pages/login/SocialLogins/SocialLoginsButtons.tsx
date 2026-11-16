@@ -131,6 +131,7 @@ export const SocialLoginsButtons: React.FC<{
                                 return (
                                     <button
                                         type="button"
+                                        data-testid={`social-login-${socialLogin.type}`}
                                         className={`${socialLoginStyles} flex items-center justify-center border-solid border border-${primaryColor} bg-white rounded-full py-1 min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden transition-opacity disabled:opacity-40 disabled:cursor-not-allowed`}
                                         disabled={activeSocialLogin !== null}
                                         aria-busy={isActiveSocialLogin}
