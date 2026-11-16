@@ -118,7 +118,8 @@ export const useUploadVcFromText = () => {
                         });
                         void invalidateCredentialList();
                         // Raw imports bypass the add mutations, so refresh index-backed aggregates.
-                        await invalidateCredentialIndexQueries(
+                        // Do not await: the import is done once the index write lands.
+                        void invalidateCredentialIndexQueries(
                             queryClient,
                             switchedProfileStore.get.switchedDid()
                         );

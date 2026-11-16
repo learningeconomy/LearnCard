@@ -1,6 +1,8 @@
 /**
  * goblincore r4574770689: a raw credential import writes the index directly, so it must
  * refresh the skills aggregate for the active profile.
+ * goblincore r4575035411: that refresh runs in the background; the import resolves once the
+ * index write lands, even while the skills refetch is still in flight or fails.
  */
 import React from 'react';
 import { cleanup, renderHook } from '@testing-library/react';
@@ -14,6 +16,7 @@ const host = vi.hoisted(() => ({
 }));
 vi.mock('learn-card-base', async () => {
     const cache = await import('learn-card-base/react-query/queries/credentialIndexCache');
+    const counts = await import('learn-card-base/react-query/visibleCredentialCountKeys');
     return {
         useWallet: () => ({
             initWallet: async () => ({
@@ -23,6 +26,7 @@ vi.mock('learn-card-base', async () => {
         }),
         switchedProfileStore: { get: { switchedDid: () => host.switchedDid } },
         invalidateCredentialIndexQueries: cache.invalidateCredentialIndexQueries,
+        invalidateVisibleCredentialCounts: counts.invalidateVisibleCredentialCounts,
     };
 });
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
@@ -52,8 +56,11 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
 );
 
-const observeSkills = async (profileDid: string) => {
-    const queryFn = vi.fn().mockResolvedValue([]);
+const observeSkills = async (
+    profileDid: string,
+    refetch: () => Promise<unknown> = () => Promise.resolve([])
+) => {
+    const queryFn = vi.fn().mockResolvedValueOnce([]).mockImplementation(refetch);
     const observer = new QueryObserver(client, {
         queryKey: ['useGetSkills', profileDid],
         queryFn,
@@ -112,5 +119,37 @@ it('leaves skills alone when nothing was imported', async () => {
 
     expect(outcome.addedCount).toBe(0);
     expect(skills.queryFn).toHaveBeenCalledTimes(1);
+    skills.unsubscribe();
+});
+
+const pendingForever = () => new Promise<never>(() => undefined);
+const failingRefetch = () => Promise.reject(new Error('skills walk failed'));
+
+it.each([
+    ['never settles', pendingForever],
+    ['fails', failingRefetch],
+])('resolves a JSON import while the skills refetch %s', async (_l, refetch) => {
+    const skills = await observeSkills('', refetch);
+    const { result } = renderHook(() => useUploadVcFromText(), { wrapper });
+
+    const outcome = await result.current.uploadVcFromText(JSON.stringify(credential));
+
+    expect(outcome.errors).toEqual([]);
+    expect(outcome.addedCount).toBe(1);
+    await vi.waitFor(() => expect(skills.queryFn).toHaveBeenCalledTimes(2));
+    skills.unsubscribe();
+});
+
+it.each([
+    ['never settles', pendingForever],
+    ['fails', failingRefetch],
+])('resolves uploadVcFromTextAndAddToWallet while the skills refetch %s', async (_l, refetch) => {
+    const skills = await observeSkills('', refetch);
+    const { result } = renderHook(() => useUploadVcFromText(), { wrapper });
+
+    const outcome = await result.current.uploadVcFromTextAndAddToWallet(credential);
+
+    expect(outcome?.success).toBe(true);
+    await vi.waitFor(() => expect(skills.queryFn).toHaveBeenCalledTimes(2));
     skills.unsubscribe();
 });

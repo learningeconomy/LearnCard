@@ -68,6 +68,7 @@ export const useUploadVcFromText = () => {
     };
 
     // Raw imports bypass the add mutations, so refresh the index-backed aggregates (skills, IDs, counts).
+    // Callers fire and forget: the import is done once the index write lands, not after refetches.
     const refreshCredentialIndex = () =>
         invalidateCredentialIndexQueries(queryClient, switchedProfileStore.get.switchedDid());
 
@@ -280,7 +281,7 @@ export const useUploadVcFromText = () => {
         const addedCount = results.filter(r => r.success).length;
         if (addedCount > 0) {
             void invalidateCredentialList();
-            await refreshCredentialIndex();
+            void refreshCredentialIndex();
         }
         const failedCount = results.length - addedCount;
         const errors = [
@@ -338,7 +339,7 @@ export const useUploadVcFromText = () => {
                             })
                         );
                         void invalidateCredentialList();
-                        await refreshCredentialIndex();
+                        void refreshCredentialIndex();
 
                         return {
                             success: true,
