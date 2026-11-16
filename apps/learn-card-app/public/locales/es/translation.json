@@ -1900,7 +1900,7 @@
             }
         },
         "transcript": {
-            "title": "Tu expediente académico oficial, en tu bolsillo.",
+            "title": "Tu expediente académico, en tu bolsillo.",
             "desc": "Recibe tus registros escolares directamente en tu cuenta.",
             "get": "Obtener Mi Expediente",
             "notNow": "Ahora No",
@@ -10477,8 +10477,8 @@
         "connectWithClassLink": "Conectar con ClassLink",
         "notNow": "Ahora no",
         "heroTitle": "Tus registros escolares, en tus manos",
-        "heroSubhead": "Conecta tu cuenta escolar para acceder a tus registros oficiales.",
-        "benefit1": "Solicita tu expediente académico oficial",
+        "heroSubhead": "Conecta tu cuenta escolar para acceder a tus registros escolares.",
+        "benefit1": "Solicita tu expediente académico",
         "benefit2": "Compártelo con universidades y empleadores",
         "benefit3": "Tú decides quién lo ve",
         "chooseProvider": "Elige cómo se conecta tu escuela",

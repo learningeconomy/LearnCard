@@ -15,6 +15,7 @@ import {
 import { getTranscriptRequesterDid, signIssuerAssertion } from '@helpers/issuerAssertion.helpers';
 import { getStateStudentId } from '@helpers/classlinkPii.helpers';
 import { parseExpectedDelivery } from '@helpers/transcriptDelivery.helpers';
+import { TRANSCRIPT_RECORD_TYPES } from 'types/classlink';
 import {
     createTranscriptRequest,
     findLatestTranscriptRequest,
@@ -138,6 +139,8 @@ export const transcriptsRouter = t.router({
                 issuerDid: z.string().optional(),
                 /** LearnCard Network profile ID the issuer sends transcripts from. */
                 issuerProfileId: z.string().optional(),
+                /** What kind of record the issuer sends; unset means unknown. */
+                recordType: z.enum(TRANSCRIPT_RECORD_TYPES).optional(),
                 latest: z
                     .object({
                         status: z.enum(['requested', 'none_yet', 'failed']),
@@ -166,6 +169,7 @@ export const transcriptsRouter = t.router({
                     stateDisplayName: context.tenant?.displayName ?? '',
                     issuerDid: issuer?.did,
                     issuerProfileId: issuer?.profileId,
+                    recordType: issuer?.recordType,
                     latest: latest
                         ? {
                               ...project(latest),

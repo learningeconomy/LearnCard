@@ -18,6 +18,7 @@ import { useTranscriptArrival } from '../../hooks/useTranscriptArrival';
 import { useReceivedTranscript } from '../../hooks/useReceivedTranscript';
 import BoostEarnedCard from '../boost/boost-earned-card/BoostEarnedCard';
 import { getTranscriptCategory } from './transcriptCategory';
+import { getTranscriptRequestTitle } from './transcriptRecordType';
 import { TranscriptDeliveryProgress } from './TranscriptDeliveryProgress';
 import { ESTIMATE_GRACE_MS, formatExpectedDelivery, getDeliveryPace } from './transcriptDelivery';
 import {
@@ -456,7 +457,7 @@ export const TranscriptRequestFlow: React.FC<TranscriptRequestFlowProps> = ({
             <div data-testid="transcript-flow-ask" className="motion-safe:animate-fade-in-up">
                 <Hero icon={documentTextOutline} tone="emerald" />
                 <h2 className="text-2xl font-semibold text-grayscale-900 mb-2">
-                    {m['onboarding.transcript.title']()}
+                    {getTranscriptRequestTitle(data?.recordType)}
                 </h2>
                 <p className="text-sm text-grayscale-600 mb-6">
                     {m['onboarding.transcript.desc']()}
