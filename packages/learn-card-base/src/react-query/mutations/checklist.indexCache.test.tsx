@@ -19,8 +19,6 @@ vi.mock('learn-card-base', () => ({
             index: { LearnCloud: { remove: host.remove, update: host.update } },
         }),
     }),
-}));
-vi.mock('../../stores/walletStore', () => ({
     switchedProfileStore: { get: { switchedDid: () => host.switchedDid } },
 }));
 vi.mock('learn-card-base/stores/newCredsStore', () => ({
@@ -95,6 +93,7 @@ it('refetches skills after a checklist recategorization', async () => {
     expect(host.update).toHaveBeenCalledWith('record-1', {
         category: 'Skill',
         categorySource: 'manual',
+        hidden: false,
     });
     await vi.waitFor(() => expect(skills.queryFn).toHaveBeenCalledTimes(2));
     skills.unsubscribe();
