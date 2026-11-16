@@ -50,6 +50,8 @@ collect_service_artifacts() {
     exit "$status"
 }
 trap collect_service_artifacts EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # Vitest's --shard is CLI-only, and `nx:run-script` argument forwarding is fiddly,
 # so the shard is handed to the npm script through E2E_VITEST_ARGS instead. Every
