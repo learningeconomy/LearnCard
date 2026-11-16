@@ -7,6 +7,8 @@ import { Users } from '@accesslayer/user';
 import { testRecordA, testRecordB, testRecordC } from './helpers/records';
 import { client } from '@mongo';
 import cache from '@cache';
+import { getIndexFieldKey, getIndexHashKey, setCachedIndexPageForDid } from '@cache/indexPlane';
+import { MAX_INDEX_PAGE_LIMIT } from 'src/constants/limits';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -203,6 +205,78 @@ describe('Index', () => {
             expect(truncatedResults.records).toHaveLength(1);
             expect(truncatedResults.hasMore).toBeFalsy();
             expect(truncatedResults.cursor).toEqual(ids[3]);
+        });
+
+        describe('page size above the max', () => {
+            const total = MAX_INDEX_PAGE_LIMIT + 50;
+
+            beforeEach(async () => {
+                const { id: _id, ...testRecord } = testRecordA;
+                await userA.clients.fullAuth.index.removeAll();
+                await userA.clients.fullAuth.index.addMany({
+                    records: Array.from({ length: total }, () => testRecord),
+                });
+                await cache.node.flushall();
+            });
+
+            it('clamps limit 1000 to the max page, and hasMore/cursor page through every record', async () => {
+                const first = (await userA.clients.fullAuth.index.get({
+                    limit: 1000,
+                    encrypt: false,
+                })) as PaginatedEncryptedCredentialRecordsType;
+
+                expect(first.records).toHaveLength(MAX_INDEX_PAGE_LIMIT);
+                expect(first.hasMore).toBe(true);
+                expect(first.cursor).toBeDefined();
+
+                const second = (await userA.clients.fullAuth.index.get({
+                    limit: 1000,
+                    cursor: first.cursor,
+                    encrypt: false,
+                })) as PaginatedEncryptedCredentialRecordsType;
+
+                expect(second.records).toHaveLength(total - MAX_INDEX_PAGE_LIMIT);
+                expect(second.hasMore).toBe(false);
+
+                const ids = [...first.records, ...second.records].map(record => record.id);
+                expect(new Set(ids).size).toBe(total);
+            });
+
+            it('limits at or under the max are unchanged', async () => {
+                const page = (await userA.clients.fullAuth.index.get({
+                    limit: 30,
+                    encrypt: false,
+                })) as PaginatedEncryptedCredentialRecordsType;
+
+                expect(page.records).toHaveLength(30);
+                expect(page.hasMore).toBe(true);
+            });
+
+            it('a page cached for limit 1000 before the clamp is not served, and the clamped page is cached under the max', async () => {
+                const did = userA.learnCard.id.did();
+                const sort = 'newestFirst' as const;
+                // What an earlier, unclamped response left in Redis for this request.
+                await setCachedIndexPageForDid(
+                    did,
+                    {},
+                    { limit: 1000, sort },
+                    { records: [], hasMore: false }
+                );
+
+                const page = (await userA.clients.fullAuth.index.get({
+                    limit: 1000,
+                    encrypt: false,
+                })) as PaginatedEncryptedCredentialRecordsType;
+
+                expect(page.records).toHaveLength(MAX_INDEX_PAGE_LIMIT);
+                expect(page.hasMore).toBe(true);
+
+                const hashKey = getIndexHashKey(did);
+                const clampedKey = getIndexFieldKey({}, { limit: MAX_INDEX_PAGE_LIMIT, sort });
+                const cached = JSON.parse((await cache.hget(hashKey, clampedKey)) ?? 'null');
+                expect(cached?.records).toHaveLength(MAX_INDEX_PAGE_LIMIT);
+                expect(getIndexFieldKey({}, { limit: 1000, sort })).not.toBe(clampedKey);
+            });
         });
     });
 

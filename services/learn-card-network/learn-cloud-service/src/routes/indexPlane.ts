@@ -35,6 +35,7 @@ import {
     setCachedIndexPageForDid,
 } from '@cache/indexPlane';
 import { getAllDidsForDid } from '@accesslayer/user/read';
+import { MAX_INDEX_PAGE_LIMIT } from 'src/constants/limits';
 
 export const indexRouter = t.router({
     get: didAndChallengeRoute
@@ -64,7 +65,9 @@ export const indexRouter = t.router({
         )
         .output(PaginatedEncryptedCredentialRecordsValidator.or(JWEValidator))
         .query(async ({ ctx, input }) => {
-            const { query: _query, encrypt, limit, cursor, includeAssociatedDids, sort } = input;
+            const { query: _query, encrypt, cursor, includeAssociatedDids, sort } = input;
+            // Clamped, so the page and its cache entry stay small whatever the client asks for.
+            const limit = Math.min(input.limit, MAX_INDEX_PAGE_LIMIT);
             const {
                 user: { did },
             } = ctx;
