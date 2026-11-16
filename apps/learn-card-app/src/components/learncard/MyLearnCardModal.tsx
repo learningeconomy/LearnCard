@@ -179,22 +179,6 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         refetch();
     };
 
-    const handleOpenSettings = (): void => {
-        newModal(
-            <div className="h-full">
-                <UserProfileSetup
-                    title={m['profile.menu.settings']()}
-                    handleCloseModal={closeModal}
-                    handleLogout={() => handleLogout({ overrideRedirectUrl: '/login' })}
-                    showNetworkSettings={true}
-                    showNotificationsModal={false}
-                />
-            </div>,
-            {},
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-        );
-    };
-
     const rows: {
         id?: string;
         Icon: React.FC;
@@ -211,7 +195,21 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 title: m['profile.menu.settings'](),
                 Icon: OrangeProfileIcon,
                 caretText: '',
-                onClick: handleOpenSettings,
+                onClick: async () => {
+                    newModal(
+                        <div className="h-full">
+                            <UserProfileSetup
+                                title={m['profile.menu.settings']()}
+                                handleCloseModal={closeModal}
+                                handleLogout={() => handleLogout({ overrideRedirectUrl: '/login' })}
+                                showNetworkSettings={true}
+                                showNotificationsModal={false}
+                            />
+                        </div>,
+                        {},
+                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                    );
+                },
             },
             {
                 title: m['profile.menu.emailAddresses'](),
