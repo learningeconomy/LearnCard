@@ -12,7 +12,7 @@ import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credenti
 const VerifierInspectionView: React.FC<{
     model: ClrTranscriptDisplayModel;
 }> = ({ model }) => {
-    const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
+    const transcriptTitle = model.header.title?.value || 'Academic Transcript';
 
     return (
         <div className="space-y-v3-4">

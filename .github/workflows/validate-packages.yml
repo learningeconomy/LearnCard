@@ -49,6 +49,15 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Test client declaration dependency guard
+              run: node --test packages/learn-card-network/scripts/bundleClientTypes.test.mjs
+
+            - name: Check workspace clients before building
+              run: node scripts/check-client-workspace.mjs
+
+            - name: Test client publish manifest preparation
+              run: node --test scripts/prepare-publish-workspace-deps.test.mjs
+
             - name: Build publishable packages
               run: >
                   bunx nx run-many -t build -p
@@ -93,6 +102,15 @@ jobs:
 
             - name: Validate package contracts
               run: bun scripts/validate-packages.mjs
+
+            # Type-check a fixture consumer with only each package's declared dependencies
+            # installed and skipLibCheck off. Fails if published client types need a server
+            # package (@learncard/network-brain-service, @learncard/learn-cloud-service) again.
+            - name: Check published types as an external consumer
+              run: node scripts/check-consumer-types.mjs
+
+            - name: Check isolated published clients in all export conditions
+              run: node scripts/check-client-packages.mjs
 
     # @learncard/cli is published as one self-contained file (bundled by
     # packages/learn-card-cli/scripts/build.ts) with no install-time dependencies.

@@ -36,6 +36,7 @@ const mocks = vi.hoisted(() => ({
     push: vi.fn(),
     issuerDid: 'did:issuer' as string | undefined,
     issuerProfileId: 'issuer-profile' as string | undefined,
+    recordType: undefined as 'official' | 'unofficial' | undefined,
     indexGet: vi.fn(),
     read: vi.fn(),
     warn: vi.fn(),
@@ -83,6 +84,7 @@ vi.mock('learn-card-base', () => ({
                 reason: mocks.reason,
                 issuerDid: mocks.issuerDid,
                 issuerProfileId: mocks.issuerProfileId,
+                recordType: mocks.recordType,
                 stateDisplayName: 'Example',
                 latest: mocks.latest,
             },
@@ -160,6 +162,7 @@ beforeEach(() => {
     mocks.isPollingExhausted = false;
     mocks.issuerDid = 'did:issuer';
     mocks.issuerProfileId = 'issuer-profile';
+    mocks.recordType = undefined;
     mocks.indexGet.mockReset().mockResolvedValue([]);
     mocks.passportCard.mockReset();
     mocks.read.mockReset().mockResolvedValue(undefined);
@@ -252,7 +255,7 @@ describe('TranscriptOptInCard', () => {
     });
 
     it.each([
-        [undefined, 'Get your official transcript', 'Get it'],
+        [undefined, 'Get your transcript', 'Get it'],
         ['requested', 'Your school is preparing your transcript.', undefined],
         ['failed', "We couldn't reach your school records", 'Try Again'],
         ['none_yet', "We couldn't reach your school records", 'Try Again'],
@@ -267,6 +270,15 @@ describe('TranscriptOptInCard', () => {
             fireEvent.click(screen.getByRole('button', { name: action }));
             expect(mocks.push).toHaveBeenCalledWith('/school-connect');
         } else expect(screen.queryByRole('button')).toBeNull();
+    });
+
+    it.each([
+        ['official', 'Get your official transcript'],
+        ['unofficial', 'Get your unofficial transcript'],
+    ] as const)('labels the banner when the issuer sends %s records', (recordType, text) => {
+        mocks.recordType = recordType;
+        render(<TranscriptOptInCard source="wallet" variant="banner" />);
+        expect(screen.getByText(text)).toBeTruthy();
     });
 
     it('uses the request ID immediately and then the server arrival after a same-session request', async () => {
