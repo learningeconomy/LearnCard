@@ -6,7 +6,7 @@ import fs from 'fs/promises';
 const buildOptions = {
     target: 'es2020',
     sourcemap: true,
-    external: ['isomorphic-fetch', 'isomorphic-webcrypto', '@learncard/core', '@learncard/crypto-plugin', '@learncard/vc-plugin', '@learncard/types'],
+    external: ['isomorphic-fetch', '@learncard/core', '@learncard/crypto-plugin', '@learncard/vc-plugin', '@learncard/types'],
 };
 
 const configurations = [
