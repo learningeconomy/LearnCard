@@ -296,6 +296,21 @@ describe('ClassLink configuration', () => {
             ).toBe(false);
         });
 
+        it('accepts an optional record type and rejects unknown ones', () => {
+            expect(
+                TranscriptIssuerValidator.parse({
+                    ...exampleRecordsIssuer,
+                    recordType: 'unofficial',
+                }).recordType
+            ).toBe('unofficial');
+            expect(
+                TranscriptIssuerValidator.safeParse({
+                    ...exampleRecordsIssuer,
+                    recordType: 'draft',
+                }).success
+            ).toBe(false);
+        });
+
         it('rejects a non-URL endpoint', () => {
             expect(
                 TranscriptIssuerValidator.safeParse({

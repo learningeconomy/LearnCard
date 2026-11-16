@@ -7,7 +7,7 @@ const buildOptions = {
     // target: 'es6',
     target: 'es2020',
     sourcemap: true,
-    external: ['isomorphic-webcrypto', '@learncard/core'],
+    external: ['@learncard/core'],
 };
 
 // platform: 'node' makes esbuild emit the `0 && (module.exports = {...})`

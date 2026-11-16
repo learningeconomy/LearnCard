@@ -1,6 +1,6 @@
 # Transcript Request Flow
 
-The LearnCard App allows eligible students to request their official transcript directly from their school records system. This feature provides a seamless way to receive and store academic records in the wallet.
+The LearnCard App allows eligible students to request their transcript directly from their school records system. This feature provides a seamless way to receive and store academic records in the wallet.
 
 ## How It Works
 
@@ -41,7 +41,7 @@ The transcript request feature is available to students who:
 
 ## User Experience
 
-1. **Opt-In**: Eligible students see a "Get your transcript" card in their wallet or during onboarding.
+1. **Opt-In**: Eligible students see a "Get your transcript" card in their wallet or during onboarding. If LearnCard knows whether the school sends official or unofficial records, the card says so ("Get your unofficial transcript"); otherwise it uses neutral wording.
 2. **Requesting**: After consenting, what the student sees depends on how long the school says delivery takes (see [Delivery estimate](#delivery-estimate)):
     - **No estimate, or 30 seconds or less**: live steps ("Request sent", "Your school is preparing your transcript", "Adding it to your account").
     - **Up to 5 minutes**: a progress bar with the time left ("About 2 minutes left"). Past the estimate it keeps moving slowly and reads "Almost there" until the transcript arrives.

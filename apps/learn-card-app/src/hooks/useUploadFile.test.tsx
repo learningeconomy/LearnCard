@@ -29,7 +29,7 @@ const testState = vi.hoisted(() => ({
     pending: {} as Record<string, PendingReviewData | null>,
 }));
 vi.mock('@tanstack/react-query', () => ({
-    useQueryClient: () => ({ refetchQueries: refetchQueriesMock }),
+    useQueryClient: () => ({ refetchQueries: refetchQueriesMock, invalidateQueries: vi.fn() }),
 }));
 
 vi.mock('../paraglide/messages.js', () => ({

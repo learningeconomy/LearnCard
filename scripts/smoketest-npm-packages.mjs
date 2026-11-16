@@ -47,6 +47,45 @@ const ALL_PACKAGES = [...CONSUMER_PACKAGES, ...PLUGIN_PACKAGES];
 const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const REGISTRY = 'https://registry.npmjs.org/';
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+export const MAX_REGISTRY_WAIT_SECONDS = 5 * 60;
+export const MAX_REGISTRY_TIMEOUT_SECONDS = 20 * 60;
+
+const parseRegistrySeconds = ({ value, name, minimum, maximum }) => {
+    const seconds = Number(value);
+    if (!Number.isSafeInteger(seconds) || seconds < minimum || seconds > maximum) {
+        throw new Error(`${name} must be an integer between ${minimum} and ${maximum} seconds.`);
+    }
+    return seconds;
+};
+
+const normalizeRegistryTimingInput = value =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value;
+
+// GitHub Actions job timeouts are whole minutes, while these inputs are seconds.
+// Bound them here so the fixed job budgets always outlive the retry windows.
+export const parseRegistryTimingInputs = ({ registryWaitSeconds, registryTimeoutSeconds } = {}) => {
+    const wait = normalizeRegistryTimingInput(registryWaitSeconds) ?? '0';
+    const timeout = normalizeRegistryTimingInput(registryTimeoutSeconds) ?? '1200';
+    return {
+        registryWaitSeconds: parseRegistrySeconds({
+            value: wait,
+            name: 'REGISTRY_WAIT_SECONDS',
+            minimum: 0,
+            maximum: MAX_REGISTRY_WAIT_SECONDS,
+        }),
+        registryTimeoutSeconds: parseRegistrySeconds({
+            value: timeout,
+            name: 'REGISTRY_TIMEOUT_SECONDS',
+            minimum: 1,
+            maximum: MAX_REGISTRY_TIMEOUT_SECONDS,
+        }),
+    };
+};
+
+export const requiresRegistryTiming = (command, manager) =>
+    command === 'validate-registry-timing' ||
+    command === 'install' ||
+    (command === 'versions' && manager !== '--workspace');
 
 export const validateVersions = versions => {
     for (const name of ALL_PACKAGES) {
@@ -89,7 +128,8 @@ export const workspaceVersions = root => {
 };
 
 // Nightly/manual runs resolve tags once, then share the same exact versions with
-// every manager. Post-publish runs use the publishing checkout's version map.
+// every manager. Post-publish runs use the publishing checkout's version map, then
+// wait until that exact snapshot is visible from npm before fanning out the matrix.
 export const resolveVersions = async ({
     releaseVersions = {},
     overrides = {},
@@ -99,10 +139,12 @@ export const resolveVersions = async ({
     now = Date.now,
     wait = sleep,
 } = {}) => {
+    const hasReleaseSnapshot = Object.keys(releaseVersions).length > 0;
     // A release snapshot is authoritative. Filling a partial snapshot from
     // latest could validate the previous release while npm scans the new one.
-    // Only manual/nightly runs with no snapshot resolve tags.
-    if (Object.keys(releaseVersions).length > 0) return validateVersions(releaseVersions);
+    // Validate it before making any registry requests, then poll its exact
+    // versions below until npm serves them.
+    if (hasReleaseSnapshot) validateVersions(releaseVersions);
     if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
         throw new Error('Registry resolution timeout must be a positive number');
     if (!Number.isFinite(pollIntervalMs) || pollIntervalMs <= 0)
@@ -111,8 +153,10 @@ export const resolveVersions = async ({
     const controller = new AbortController();
     const entries = await Promise.all(
         ALL_PACKAGES.map(async name => {
-            const requested = overrides[name] || 'latest';
-            if (EXACT_VERSION.test(requested)) return [name, requested];
+            const requested = hasReleaseSnapshot
+                ? releaseVersions[name]
+                : overrides[name] || 'latest';
+            const exactVersion = EXACT_VERSION.test(requested);
             while (true) {
                 if (controller.signal.aborted) throw controller.signal.reason;
                 const remaining = Math.floor(deadline - now());
@@ -135,6 +179,16 @@ export const resolveVersions = async ({
                         throw new Error(
                             'Timed out resolving published package ' + name + '@' + requested
                         );
+                    if (exactVersion && manifest.version !== requested) {
+                        throw new Error(
+                            'Registry returned ' +
+                                name +
+                                '@' +
+                                manifest.version +
+                                ' while waiting for exact version ' +
+                                requested
+                        );
+                    }
                     return [name, manifest.version];
                 }
                 if (response.status !== 404)
@@ -148,7 +202,13 @@ export const resolveVersions = async ({
                     );
                 // Keep stdout exclusively for the GITHUB_OUTPUT value.
                 console.error(
-                    'Registry tag is not ready: ' + name + '@' + requested + '; retrying'
+                    'Registry ' +
+                        (exactVersion ? 'package' : 'tag') +
+                        ' is not ready: ' +
+                        name +
+                        '@' +
+                        requested +
+                        '; retrying'
                 );
                 await wait(delay, undefined, { signal: controller.signal });
             }
@@ -344,7 +404,18 @@ export const installPackages = async ({
 
 const main = async () => {
     const [command, manager, group] = process.argv.slice(2);
-    if (command === 'versions') {
+    const registryTiming = requiresRegistryTiming(command, manager)
+        ? parseRegistryTimingInputs({
+              registryWaitSeconds: process.env.REGISTRY_WAIT_SECONDS,
+              registryTimeoutSeconds: process.env.REGISTRY_TIMEOUT_SECONDS,
+          })
+        : undefined;
+    if (command === 'validate-registry-timing') {
+        console.log(
+            `Registry timing inputs are valid: ${registryTiming.registryWaitSeconds}s initial wait, ` +
+                `${registryTiming.registryTimeoutSeconds}s retry window.`
+        );
+    } else if (command === 'versions') {
         const versions =
             manager === '--workspace'
                 ? workspaceVersions(ROOT)
@@ -355,7 +426,7 @@ const main = async () => {
                           '@learncard/init': process.env.INIT_VER,
                           '@learncard/partner-connect': process.env.PC_VER,
                       },
-                      timeoutMs: Number(process.env.REGISTRY_TIMEOUT_SECONDS || '1200') * 1000,
+                      timeoutMs: registryTiming.registryTimeoutSeconds * 1000,
                   });
         console.log('package-versions=' + JSON.stringify(versions));
     } else if (command === 'install') {
@@ -363,11 +434,12 @@ const main = async () => {
             manager,
             group,
             versions: JSON.parse(process.env.SMOKE_PACKAGE_VERSIONS || '{}'),
-            timeoutMs: Number(process.env.REGISTRY_TIMEOUT_SECONDS || '1200') * 1000,
+            timeoutMs: registryTiming.registryTimeoutSeconds * 1000,
         });
     } else {
         throw new Error(
-            'Usage: smoketest-npm-packages.mjs versions [--workspace] | install <manager> <group>'
+            'Usage: smoketest-npm-packages.mjs validate-registry-timing | versions [--workspace] | ' +
+                'install <manager> <group>'
         );
     }
 };

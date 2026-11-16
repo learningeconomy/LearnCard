@@ -20,6 +20,16 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('lca-api serverless function environments', () => {
+    it.each(['', 'bundle'])('forwards archive configuration in both modes (%s)', bundle => {
+        vi.stubEnv('RUNTIME_SECRETS_ID', bundle);
+        const archive = {
+            LEGACY_KEY_ARCHIVE_ENABLED: 'true',
+            LEGACY_KEY_ARCHIVE_BUCKET: 'archive-fixture',
+            LEGACY_KEY_ARCHIVE_KMS_KEY_ARN: `arn:aws:kms:us-east-1:${'0'.repeat(12)}:key/fixture`,
+        };
+        for (const [key, value] of Object.entries(archive)) vi.stubEnv(key, value);
+        expect(functions.api()).toMatchObject(archive);
+    });
     it('omits all fallback credentials in bundle mode', () => {
         vi.stubEnv('RUNTIME_SECRETS_ID', 'lca-api/dev/runtime-secrets');
         expect(functions.api()).toEqual({ RUNTIME_SECRETS_ID: 'lca-api/dev/runtime-secrets' });

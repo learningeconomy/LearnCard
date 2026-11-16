@@ -128,7 +128,6 @@ const config: StorybookConfig = {
                     'buffer',
                     'process',
                     'end-of-stream',
-                    'isomorphic-webcrypto',
                     'decode-uri-component',
                     'filter-obj',
                     'split-on-first',

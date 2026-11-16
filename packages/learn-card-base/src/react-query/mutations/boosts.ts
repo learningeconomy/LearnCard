@@ -1,4 +1,5 @@
 import cloneDeep from 'lodash/cloneDeep';
+import { invalidateVisibleCredentialCounts } from '../visibleCredentialCountKeys';
 import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { isVC2Format } from '@learncard/helpers';
 import { getIDsQueryKey } from '../queries/idCredentials';
@@ -787,6 +788,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 uri: issuedVcUri,
                 category,
                 title: SELF_ASSIGNED_SKILLS_BOOST_NAME,
+                hidden: true,
                 boostUri: boostUri,
                 networkUri: sentCredentialUri,
             });
@@ -1180,6 +1182,7 @@ export const useDeleteEarnedBoostMutation = () => {
             queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialCount', didWeb ?? '', category],
             });
+            void invalidateVisibleCredentialCounts(queryClient, didWeb ?? '');
             // Invalidate both the current records key and any persisted legacy ID entries.
             queryClient.invalidateQueries({
                 queryKey: ['useGetIDs', didWeb ?? ''],

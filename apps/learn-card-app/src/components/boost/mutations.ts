@@ -14,6 +14,7 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { VC, Boost, CredentialRecord, VCValidator } from '@learncard/types';
 
 import { publishWalletEvent } from '../../pages/pathways/events/walletEventBus';
+import { withInternalCategoryHidden } from 'learn-card-base/helpers/credentialCollection';
 
 type CredentialRecordMinusId = Omit<CredentialRecord, 'id'>;
 
@@ -84,13 +85,15 @@ export const useAddCredentialToWallet = () => {
 
                 const category = getDefaultCategoryForCredential(vc) || 'Achievement';
 
-                const res = await wallet.index.LearnCloud.add({
-                    id: _id,
-                    uri,
-                    category,
-                    ...(title ? { title } : {}),
-                    ...(imgUrl ? { imgUrl } : {}),
-                });
+                const res = await wallet.index.LearnCloud.add(
+                    withInternalCategoryHidden({
+                        id: _id,
+                        uri,
+                        category,
+                        ...(title ? { title } : {}),
+                        ...(imgUrl ? { imgUrl } : {}),
+                    })
+                );
 
                 return {
                     vc,

@@ -120,8 +120,21 @@ const db = {
         }
     ),
     storeThreadCredentials: mock(
-        async (_did: string, _threadId: string, credentials: unknown[]) => {
-            operations.push(`credentials:${credentials.length}`);
+        async (
+            _did: string,
+            _threadId: string,
+            credentials: { uri: string }[],
+            fill?: { provisional: { uri: string }[]; limit: number }
+        ) => {
+            // Like Mongo: provisional fill only while its stored row still exists.
+            const stored = fill
+                ? [
+                      ...credentials,
+                      ...fill.provisional.filter(({ uri }) => !persistedInvalidUris.has(uri)),
+                  ].slice(0, fill.limit)
+                : credentials;
+            operations.push(`credentials:${stored.length}`);
+            return stored;
         }
     ),
     storeThreadPlan: mock(async () => {
@@ -236,6 +249,64 @@ const credentialContext = {
     context: 'Relevant credential',
     score: 0.9,
 };
+// Skipped by the opening when its live verify gave way; the deferred search loads it.
+const lateCredentialContext = {
+    uri: 'lc:credential:late',
+    context: 'Late verified credential',
+    score: 0.8,
+};
+const extraCredentialContext = {
+    uri: 'lc:credential:extra',
+    context: 'Another late credential',
+    score: 0.7,
+};
+// A full opening context. Its scores come from another query vector than the
+// deferred search's, so they are higher without ranking above it.
+const provisionalFive = [0, 1, 2, 3, 4].map(index => ({
+    uri: `lc:credential:p${index}`,
+    context: `Provisional ${index}`,
+    score: 0.99 - index * 0.01,
+}));
+const partialTopics = [
+    'PartialGaveWay',
+    'PartialConsentWithdrawn',
+    'PartialInvalidatedElsewhere',
+    'PartialFullProvisional',
+];
+// The LearnCard consent contract (real consent read and snapshot code).
+const consentResponse = (uris: string[]) => ({
+    records: [
+        {
+            contractUri: 'contract:test',
+            termsUri: 'lc:terms:test',
+            status: 'live',
+            contractUpdatedAt: '2026-01-01T00:00:00.000Z',
+            guardian: { required: false, approved: false },
+            terms: {
+                read: {
+                    credentials: {
+                        sharing: true,
+                        categories: { Achievement: { sharing: true, shareAll: true } },
+                    },
+                },
+            },
+            date: '2026-01-01T00:00:00.000Z',
+            credentials: uris.map(uri => ({ uri, category: 'Achievement' })),
+        },
+    ],
+    hasMore: false,
+    cursor: null,
+});
+const allConsentedUris = [
+    credentialContext.uri,
+    lateCredentialContext.uri,
+    extraCredentialContext.uri,
+    ...provisionalFive.map(({ uri }) => uri),
+];
+let consentFlowResponse = consentResponse(allConsentedUris);
+let staleConsentUris: string[] = [];
+// Credential rows another instance has deleted as confirmed invalid.
+const persistedInvalidUris = new Set<string>();
 
 const waitForAbort = async (signal: AbortSignal): Promise<never> => {
     signal.throwIfAborted();
@@ -259,6 +330,8 @@ const searchCredentialContextsByTopic = mock(
                 embeddingTextsFromCache: boolean;
                 resultCount: number;
             }) => void;
+            onIncomplete?: () => void;
+            onConsent?: (permitted: ReadonlySet<string>) => void;
         }
     ) => {
         const attempt = (credentialSearchAttempts.get(topic) ?? 0) + 1;
@@ -336,11 +409,40 @@ const searchCredentialContextsByTopic = mock(
 
             options.signal?.throwIfAborted();
 
+            const partial = partialTopics.includes(topic);
             const contexts =
                 topic === 'Ready' ||
                 ((topic === 'GoogleDeferred' || topic === 'DeferredClosed') && attempt > 1)
                     ? [credentialContext]
-                    : [];
+                    : topic === 'PartialFullProvisional'
+                      ? attempt === 1
+                          ? provisionalFive
+                          : [lateCredentialContext, extraCredentialContext]
+                      : partial
+                        ? attempt === 1
+                            ? [credentialContext]
+                            : [lateCredentialContext]
+                        : [];
+            if (partial && attempt === 1) options.onIncomplete?.();
+            let searchConsentUris = allConsentedUris;
+            if (topic === 'PartialConsentWithdrawn' && attempt > 1) {
+                // The search's plain consent read, in its own request scope: the
+                // per-learner snapshot, which still shows the credential after the
+                // learner withdrew it.
+                const learnCard = await getLearnCard();
+                const plainRead = () =>
+                    joinLearnCardRequestScope({}, () =>
+                        loadActiveAiConsentData(learnCard as never, _did, 'model-inference')
+                    );
+                await plainRead();
+                consentFlowResponse = consentResponse(
+                    allConsentedUris.filter(uri => uri !== credentialContext.uri)
+                );
+                staleConsentUris = (await plainRead()).receipt.credentialUris;
+                searchConsentUris = staleConsentUris;
+            }
+            // The search's own consent read, as of bf4d833d3 (ignored after it).
+            options.onConsent?.(new Set(searchConsentUris));
 
             options.onMetrics?.({
                 embeddingTextsFromCache: false,
@@ -392,6 +494,7 @@ const getLearnCard = mock(async () => ({
     id: { did: () => 'did:example:issuer' },
     read: { get: async (uri: string) => readableIssuedCredentials.get(uri) },
     invoke: {
+        getConsentFlowDataForDid: async () => consentFlowResponse,
         getBoost: async () => ({ name: 'AI Passport credential', boost: {} }),
         createBoost: async () => {
             if (
@@ -473,7 +576,10 @@ mock.module('../credentials/service', () => ({
 }));
 mock.module('../db', () => ({ db }));
 mock.module('../learncard', () => ({ getLearnCard }));
-mock.module('../learncard/constants', () => ({ contractUri: 'contract:test' }));
+mock.module('../learncard/constants', () => ({
+    contractId: 'contract-test',
+    contractUri: 'contract:test',
+}));
 const warmCredentialTopicExpansion = mock(
     async (_topic: string, _did: string, _options: { signal?: AbortSignal }) => undefined
 );
@@ -537,11 +643,15 @@ mock.module('../constants/env', () => ({
     CREDENTIAL_INGESTION_STARTUP_WAIT_MS: 30,
     SESSION_PLAN_TIMEOUT_MS: 1_000,
     TITLE_MODEL: 'title',
+    AI_PRIVACY_KEY: Buffer.alloc(32, 7).toString('base64'),
 }));
 
 // Bun must install all dependency doubles before the WebSocket module initializes.
 const { activeStartups, getThreadClient, getThreadClients, threadClients, websocketHandler } =
     await import('./index');
+const { loadActiveAiConsentData } = await import('../learncard/consent');
+const { joinLearnCardRequestScope, resetConsentSnapshots } =
+    await import('../learncard/requestScope');
 
 class TestSocket {
     readonly data: { did: string; threadId?: string };
@@ -616,6 +726,10 @@ describe('WebSocket session startup', () => {
         credentialCompletionGates.clear();
         credentialSearchAttempts.clear();
         credentialSearchSettledAttempts.clear();
+        consentFlowResponse = consentResponse(allConsentedUris);
+        staleConsentUris = [];
+        persistedInvalidUris.clear();
+        resetConsentSnapshots();
         credentialSearchOptions.length = 0;
         timingFrames.length = 0;
         titleProvider = 'openai';
@@ -1897,6 +2011,139 @@ describe('WebSocket session startup', () => {
         await settle();
         expect(createActiveSessionThread).toHaveBeenCalledTimes(2);
         expect(events(otherSocket, 'plan_ready')).toHaveLength(1);
+    });
+
+    it('keeps a partial opening context pending and lets the deferred search add what gave way', async () => {
+        const socket = new TestSocket('did:example:partial-gave-way');
+
+        await start(socket, 'PartialGaveWay');
+        await waitFor(
+            () =>
+                credentialSearchSettledAttempts.get('PartialGaveWay') === 2 &&
+                !activeStartups.has('did:example:partial-gave-way'),
+            'partial credential completion'
+        );
+
+        expect(credentialSearchAttempts.get('PartialGaveWay')).toBe(2);
+        expect(db.storeThreadCredentials).toHaveBeenNthCalledWith(
+            1,
+            'did:example:partial-gave-way',
+            'thread-1',
+            [credentialContext]
+        );
+        // The deferred ranking first, then the provisional credential it didn't return.
+        expect(db.storeThreadCredentials).toHaveBeenLastCalledWith(
+            'did:example:partial-gave-way',
+            'thread-1',
+            [lateCredentialContext],
+            { provisional: [credentialContext], limit: 5 }
+        );
+        expect(events(socket, 'credential_context_status')).toEqual([
+            expect.objectContaining({ status: 'pending', count: 0 }),
+            expect.objectContaining({ status: 'pending', count: 1 }),
+            expect.objectContaining({ status: 'ready', count: 2 }),
+        ]);
+        expect(events(socket, 'credentials_for_topic')).toEqual([
+            expect.objectContaining({ credentials: [lateCredentialContext, credentialContext] }),
+        ]);
+        expect(events(socket, 'plan_ready')).toHaveLength(1);
+    });
+
+    it('publishes no provisional credential whose consent was withdrawn, even while the snapshot still shows it', async () => {
+        const did = 'did:example:partial-consent-withdrawn';
+        const socket = new TestSocket(did);
+
+        await start(socket, 'PartialConsentWithdrawn');
+        await waitFor(
+            () =>
+                credentialSearchSettledAttempts.get('PartialConsentWithdrawn') === 2 &&
+                !activeStartups.has(did),
+            'partial consent-withdrawn completion'
+        );
+
+        // The deferred search's plain read still allowed it (a stale snapshot).
+        expect(staleConsentUris).toContain(credentialContext.uri);
+        expect(db.storeThreadCredentials).toHaveBeenLastCalledWith(did, 'thread-1', [
+            lateCredentialContext,
+        ]);
+        expect(events(socket, 'credentials_for_topic')).toEqual([
+            expect.objectContaining({ credentials: [lateCredentialContext] }),
+        ]);
+        expect(JSON.stringify(events(socket, 'credentials_for_topic'))).not.toContain(
+            credentialContext.uri
+        );
+    });
+
+    it('does not restore a provisional credential another instance invalidated', async () => {
+        const did = 'did:example:partial-invalidated-elsewhere';
+        const socket = new TestSocket(did);
+        // Persisted by another instance: this process's known-bad cache never saw it.
+        persistedInvalidUris.add(credentialContext.uri);
+
+        await start(socket, 'PartialInvalidatedElsewhere');
+        await waitFor(
+            () =>
+                credentialSearchSettledAttempts.get('PartialInvalidatedElsewhere') === 2 &&
+                !activeStartups.has(did),
+            'partial invalidated completion'
+        );
+
+        expect(db.storeThreadCredentials).toHaveBeenLastCalledWith(
+            did,
+            'thread-1',
+            [lateCredentialContext],
+            { provisional: [credentialContext], limit: 5 }
+        );
+        expect(events(socket, 'credentials_for_topic')).toEqual([
+            expect.objectContaining({ credentials: [lateCredentialContext] }),
+        ]);
+    });
+
+    it('keeps the deferred ranking first and fills from a full provisional set in its order', async () => {
+        const did = 'did:example:partial-full-provisional';
+        const socket = new TestSocket(did);
+
+        await start(socket, 'PartialFullProvisional');
+        await waitFor(
+            () =>
+                credentialSearchSettledAttempts.get('PartialFullProvisional') === 2 &&
+                !activeStartups.has(did),
+            'partial full-provisional completion'
+        );
+
+        const published = [
+            lateCredentialContext,
+            extraCredentialContext,
+            ...provisionalFive.slice(0, 3),
+        ];
+        expect(db.storeThreadCredentials).toHaveBeenLastCalledWith(
+            did,
+            'thread-1',
+            [lateCredentialContext, extraCredentialContext],
+            { provisional: provisionalFive, limit: 5 }
+        );
+        expect(events(socket, 'credentials_for_topic')).toEqual([
+            expect.objectContaining({ credentials: published }),
+        ]);
+    });
+
+    it('a complete opening context is ready and skips the deferred search', async () => {
+        const socket = new TestSocket('did:example:complete-opening');
+
+        await start(socket, 'Ready');
+        await waitFor(
+            () => !activeStartups.has('did:example:complete-opening'),
+            'complete opening context'
+        );
+
+        expect(credentialSearchAttempts.get('Ready')).toBe(1);
+        expect(events(socket, 'credential_context_status')).toEqual([
+            expect.objectContaining({ status: 'pending', count: 0 }),
+            expect.objectContaining({ status: 'ready', count: 1 }),
+        ]);
+        expect(events(socket, 'credentials_for_topic')).toEqual([
+            expect.objectContaining({ credentials: [credentialContext] }),
+        ]);
     });
 
     it('refreshes provisional context after pending ingestion settles', async () => {

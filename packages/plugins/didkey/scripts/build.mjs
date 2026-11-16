@@ -9,7 +9,6 @@ const buildOptions = {
     sourcemap: true,
     external: [
         'isomorphic-fetch',
-        'isomorphic-webcrypto',
         '@learncard/core',
         '@learncard/helpers',
         '@noble/ed25519',
