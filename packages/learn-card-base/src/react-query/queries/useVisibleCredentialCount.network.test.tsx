@@ -220,6 +220,20 @@ const expected = (records: LCR[]) => ({
     tiles: TILES.map(tile => walkCount(records, tile)),
 });
 const procedureNames = () => requests.map(request => request.map(call => call.path).sort());
+/**
+ * Whole-index reads (no query, 100 per page) up to the marker write. The qualification
+ * backfill pages the same way, but only after the visibility backfill has finished.
+ */
+const snapshotReads = () => {
+    const calls = requests.flat();
+    const marker = calls.findIndex(call => call.path === 'customStorage.create');
+    return calls
+        .slice(0, marker === -1 ? undefined : marker)
+        .filter(
+            call =>
+                call.path === 'index.get' && call.input?.limit === 100 && !call.input?.query?.fields
+        );
+};
 const freshDevice = () => {
     window.localStorage.clear();
     resetCredentialVisibilityBackfillForTests();
@@ -241,7 +255,7 @@ afterEach(() => {
 });
 
 describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP layer', () => {
-    it('a finished backfill writes the LearnCloud marker, after one 1000-record index read', async () => {
+    it('a finished backfill writes the LearnCloud marker, after one whole-index read', async () => {
         const wallet = await makeWallet();
 
         await reconcileCredentialVisibility(wallet, client, 'cloud');
@@ -255,12 +269,12 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
         expect(documents[0]!.fields).toContain(markerHash);
         const create = requests.flat().filter(call => call.path === 'customStorage.create');
         expect(create).toHaveLength(1);
-        // The scan was one index read at 1000 (the per-record `update` reads are by id).
+        // The scan was one index read at 100 (the per-record `update` reads are by id).
         const scans = requests
             .flat()
             .filter(call => call.path === 'index.get' && !call.input?.query?.fields);
         expect(scans).toHaveLength(1);
-        expect(scans[0]!.input?.limit).toBe(1000);
+        expect(scans[0]!.input?.limit).toBe(100);
     });
 
     it('marker present: a fresh device makes exactly one request and shows the counts', async () => {
@@ -281,7 +295,7 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
         ]);
     });
 
-    it('marker absent: one batched request, then one index.get at limit 1000; hidden left out, uris deduped; then the counts start the backfill', async () => {
+    it('marker absent: one batched request, then one index.get at limit 100; hidden left out, uris deduped; then the counts start the backfill', async () => {
         const records = [
             ...FIXTURE,
             // An existing duplicate-uri row: the walk shows it once.
@@ -304,7 +318,7 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
         await waitFor(() => expect(result.current.home.count).not.toBeNull());
         await new Promise(resolve => setTimeout(resolve, 50));
 
-        // Before the marker: the 1000-record read, filtered and deduped on the client.
+        // Before the marker: the whole-index read, filtered and deduped on the client.
         expect(shown).toContainEqual({ source: 'walk', ...expected(records) });
         expect(expected(records)).toEqual({ home: 5, tiles: [2, 2, 1] });
         // Then the backfill starts, reusing the counts' marker read and that index read.
@@ -313,10 +327,10 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
             ['index.get'],
         ]);
         expect(requests.flat().filter(call => call.path === 'customStorage.count')).toHaveLength(1);
-        expect(requests[1]![0]!.input).toMatchObject({ limit: 1000 });
+        expect(requests[1]![0]!.input).toMatchObject({ limit: 100 });
         // The backfill reused that read, marked the hidden rows and left the marker.
         const calls = requests.flat();
-        expect(calls.filter(call => call.input?.limit === 1000)).toHaveLength(1);
+        expect(snapshotReads()).toHaveLength(1);
         expect(calls.filter(call => call.path === 'index.update').length).toBeGreaterThan(0);
         expect(calls.filter(call => call.path === 'customStorage.create')).toHaveLength(1);
         // After it: the index count, where an existing duplicate-uri row counts once per row.
@@ -382,11 +396,8 @@ describe('Fresh-device Passport/Home counts (LC-2413), measured at the HTTP laye
         const calls = requests.flat().map(call => call.path);
         expect(calls.filter(path => path === 'customStorage.create')).toHaveLength(1);
         expect(calls.filter(path => path === 'index.update')).toHaveLength(0);
-        // One shared 1000-record read serves the fallback counts and the backfill scan.
-        const scans = requests
-            .flat()
-            .filter(call => call.path === 'index.get' && call.input?.limit === 1000);
-        expect(scans).toHaveLength(1);
+        // One shared whole-index read serves the fallback counts and the backfill scan.
+        expect(snapshotReads()).toHaveLength(1);
     });
 });
 
@@ -445,7 +456,7 @@ describe('One backfill per wallet per app session, whatever starts it (LC-2413 s
             const wallet = await makeWallet({ realisticHash: true });
             host.wallet = wallet;
 
-            // AppRouter.tsx starts it at sign-in; the counts' 1000-record fallback starts it too.
+            // AppRouter.tsx starts it at sign-in; the counts' whole-index fallback starts it too.
             void runCredentialIndexBackfills(wallet, client, 'cloud');
             if (ticks) await settle(0);
             const { result } = renderHook(useAllCounts, { wrapper });
@@ -454,7 +465,7 @@ describe('One backfill per wallet per app session, whatever starts it (LC-2413 s
             await settle(100);
 
             expect(callsTo('customStorage.count')).toHaveLength(1);
-            expect(callsTo('index.get').filter(call => call.input?.limit === 1000)).toHaveLength(1);
+            expect(snapshotReads()).toHaveLength(1);
             expect(updatedIds()).toHaveLength(NEEDS_UPDATE.length);
             expect(new Set(updatedIds()).size).toBe(NEEDS_UPDATE.length);
             expect(callsTo('customStorage.create')).toHaveLength(1);

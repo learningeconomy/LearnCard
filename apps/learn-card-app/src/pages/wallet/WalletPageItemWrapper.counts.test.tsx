@@ -193,7 +193,7 @@ describe.each([
         expect(screen.getByText(shown(viewMode))).toBeTruthy();
         expect(screen.queryByRole('status')).toBeNull();
         // The count path never reads the index. Before the backfill, the untrusted count goes
-        // out with the marker read, and the index is read once at 1000 records.
+        // out with the marker read, and the whole index is read once, in 100-record pages.
         if (source === 'count') expect(others).not.toHaveBeenCalled();
         else expect(others).toHaveBeenCalledTimes(1);
 
