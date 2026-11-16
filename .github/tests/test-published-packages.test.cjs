@@ -64,6 +64,21 @@ const main = async () => {
         ),
         'initial registry delay must be applied once in the shared resolver'
     );
+    const cliInstall = smoke['cli-install-budget'];
+    assert.equal(cliInstall.needs, 'resolve-versions');
+    assert.equal(
+        cliInstall.env.SMOKE_PACKAGE_VERSIONS,
+        '${{ needs.resolve-versions.outputs.package-versions }}'
+    );
+    assert.equal(
+        cliInstall.env.REGISTRY_TIMEOUT_SECONDS,
+        "${{ inputs.registry-timeout-seconds || '1200' }}"
+    );
+    assert(cliInstall['timeout-minutes'] >= 25, 'CLI retry job must allow registry readiness');
+    assert(
+        cliInstall.steps.some(step => step.run?.includes('wait-for-cli-install.mjs')),
+        'CLI cold install must retry only registry publication errors on a fresh cache'
+    );
 
     for (const service of ['brain-service', 'lca-api', 'learn-cloud-service']) {
         const serviceRoot = path.join(root, 'services/learn-card-network', service);
@@ -183,6 +198,7 @@ const main = async () => {
         [
             '--test',
             'scripts/smoketest-npm-packages.test.mjs',
+            'scripts/wait-for-cli-install.test.mjs',
             'scripts/prepare-publish-workspace-deps.test.mjs',
         ],
         { cwd: root, stdio: 'inherit' }
