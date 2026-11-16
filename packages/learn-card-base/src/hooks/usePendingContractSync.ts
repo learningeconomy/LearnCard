@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConsentFlowTerms } from '@learncard/types';
-import type { LCR } from '../types/credential-records';
 
 import { useWallet } from './useWallet';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
@@ -226,7 +225,7 @@ export const usePendingContractSync = (enabled = true): void => {
                         const credentialCategory =
                             contractCategoryNameToCategoryMetadata(categoryName)?.credentialType ??
                             categoryName;
-                        const records: LCR[] = await wallet.index.LearnCloud.get({
+                        const records = await wallet.index.LearnCloud.get({
                             category: credentialCategory,
                         });
                         log.info('Loaded contract sync credentials for category', {
