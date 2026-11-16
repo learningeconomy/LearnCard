@@ -1,3 +1,154 @@
+diff --git a/android/src/main/java/com/capacitorjs/plugins/keyboard/Keyboard.java b/android/src/main/java/com/capacitorjs/plugins/keyboard/Keyboard.java
+index a31085c69281a32b241e5f7f0ac2ace83fa4d7d3..61ee5942bbab75fbcd3dc9ece0963a83155728ff 100644
+--- a/android/src/main/java/com/capacitorjs/plugins/keyboard/Keyboard.java
++++ b/android/src/main/java/com/capacitorjs/plugins/keyboard/Keyboard.java
+@@ -17,6 +17,8 @@ import androidx.core.view.ViewCompat;
+ import androidx.core.view.WindowInsetsAnimationCompat;
+ import androidx.core.view.WindowInsetsCompat;
+ import com.getcapacitor.Bridge;
++import com.getcapacitor.PluginHandle;
++import com.getcapacitor.plugin.SystemBars;
+ import java.util.List;
+ 
+ public class Keyboard {
+@@ -76,12 +78,42 @@ public class Keyboard {
+         ViewCompat.setWindowInsetsAnimationCallback(
+             rootView,
+             new WindowInsetsAnimationCompat.Callback(WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_STOP) {
++                private WindowInsetsAnimationCompat keyboardAnimation;
++                private WindowInsetsAnimationCompat openingAnimation;
++                private int preparedBottom;
++                private int startBottom;
++                private int endBottom;
++                private SystemBars sizingOwner;
++
++                @Override
++                public void onPrepare(@NonNull WindowInsetsAnimationCompat animation) {
++                    if ((animation.getTypeMask() & WindowInsetsCompat.Type.ime()) != 0) {
++                        keyboardAnimation = animation;
++                        openingAnimation = null;
++                        sizingOwner = getSystemBars();
++                        if (sizingOwner == null) return;
++                        preparedBottom = rootView.getPaddingBottom();
++                        sizingOwner.beginKeyboardAnimation();
++                    }
++                }
++
++                private void setBottomPadding(int bottom) {
++                    rootView.setPadding(rootView.getPaddingLeft(), rootView.getPaddingTop(), rootView.getPaddingRight(), bottom);
++                }
++
+                 @NonNull
+                 @Override
+                 public WindowInsetsCompat onProgress(
+                     @NonNull WindowInsetsCompat insets,
+                     @NonNull List<WindowInsetsAnimationCompat> runningAnimations
+                 ) {
++                    if (openingAnimation != null && runningAnimations.contains(openingAnimation)) {
++                        // SystemBars applies its destination padding before onStart.
++                        // Follow the real IME animation instead of leaving the native
++                        // backing surface exposed until the keyboard catches up.
++                        float progress = openingAnimation.getInterpolatedFraction();
++                        setBottomPadding(Math.round(startBottom + (endBottom - startBottom) * progress));
++                    }
+                     return insets;
+                 }
+ 
+@@ -91,6 +123,20 @@ public class Keyboard {
+                     @NonNull WindowInsetsAnimationCompat animation,
+                     @NonNull WindowInsetsAnimationCompat.BoundsCompat bounds
+                 ) {
++                    if ((animation.getTypeMask() & WindowInsetsCompat.Type.ime()) == 0 || keyboardAnimation != animation) return bounds;
++                    openingAnimation = null;
++                    if (sizingOwner != null) {
++                        startBottom = preparedBottom;
++                        endBottom = sizingOwner.getKeyboardAnimationTargetBottom();
++                        if (endBottom > startBottom) {
++                            openingAnimation = animation;
++                            setBottomPadding(startBottom);
++                        } else {
++                            setBottomPadding(endBottom);
++                        }
++                        // On dismissal leave the destination padding in place so
++                        // WebView paints the expanded area before IME exposes it.
++                    }
+                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
+                     if (insets == null) return super.onStart(animation, bounds);
+                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
+@@ -102,6 +148,7 @@ public class Keyboard {
+                         possiblyResizeChildOfContent(showingKeyboard);
+                     }
+ 
++                    if (keyboardEventListener == null) return bounds;
+                     if (showingKeyboard) {
+                         keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, Math.round(imeHeight / density));
+                     } else {
+@@ -113,6 +160,15 @@ public class Keyboard {
+                 @Override
+                 public void onEnd(@NonNull WindowInsetsAnimationCompat animation) {
+                     super.onEnd(animation);
++                    // An interrupted opening must not restore its old destination
++                    // over a newer dismissal or keyboard height change.
++                    if (keyboardAnimation != animation) return;
++                    keyboardAnimation = null;
++                    if (openingAnimation == animation) {
++                        openingAnimation = null;
++                        setBottomPadding(endBottom);
++                    }
++                    if (sizingOwner != null) sizingOwner.endKeyboardAnimation();
+                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
+                     if (insets == null) return;
+                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
+@@ -120,6 +176,7 @@ public class Keyboard {
+                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
+                     final float density = dm.density;
+ 
++                    if (keyboardEventListener == null) return;
+                     if (showingKeyboard) {
+                         keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, Math.round(imeHeight / density));
+                     } else {
+@@ -137,6 +194,20 @@ public class Keyboard {
+         ((InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(activity.getCurrentFocus(), 0);
+     }
+ 
++    // Report only the native sizing owner that this plugin synchronizes with.
++    // Disabled SystemBars / legacy shells retain their existing overlay policy.
++    boolean isViewportResizeEnabled() {
++        return getSystemBars() != null;
++    }
++
++    private SystemBars getSystemBars() {
++        if (bridge == null || "disable".equals(bridge.getConfig().getPluginConfiguration("SystemBars").getString("insetsHandling", "css"))) {
++            return null;
++        }
++        PluginHandle handle = bridge.getPlugin("SystemBars");
++        return handle != null && handle.getInstance() instanceof SystemBars ? (SystemBars) handle.getInstance() : null;
++    }
++
+     public boolean hide() {
+         InputMethodManager inputManager = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+         View v = activity.getCurrentFocus();
+diff --git a/android/src/main/java/com/capacitorjs/plugins/keyboard/KeyboardPlugin.java b/android/src/main/java/com/capacitorjs/plugins/keyboard/KeyboardPlugin.java
+index 40fe0b7581c18898783dfb53c3638c70d4afd876..f71879c2976d7272ff216b41fdd0929ce844d334 100644
+--- a/android/src/main/java/com/capacitorjs/plugins/keyboard/KeyboardPlugin.java
++++ b/android/src/main/java/com/capacitorjs/plugins/keyboard/KeyboardPlugin.java
+@@ -61,7 +61,15 @@ public class KeyboardPlugin extends Plugin {
+ 
+     @PluginMethod
+     public void getResizeMode(PluginCall call) {
+-        call.unimplemented();
++        execute(() -> {
++            if (!implementation.isViewportResizeEnabled()) {
++                call.unimplemented();
++                return;
++            }
++            JSObject data = new JSObject();
++            data.put("mode", "native");
++            call.resolve(data);
++        });
+     }
+ 
+     @PluginMethod
 diff --git a/ios/Sources/KeyboardPlugin/Keyboard.m b/ios/Sources/KeyboardPlugin/Keyboard.m
 index 72cfe2f81d65e4213f2f036c95b7a490961fa7c1..4f1bc14d0f5ab7cd1d454d003914dc1d50467ae6 100644
 --- a/ios/Sources/KeyboardPlugin/Keyboard.m

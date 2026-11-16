@@ -35,6 +35,7 @@ export const KeyboardFocusManager = (): null => {
     useEffect(() => {
         const root = document.documentElement;
         const viewport = window.visualViewport;
+        const platform = Capacitor.getPlatform();
         let expandedHeight = window.innerHeight;
         let keyboardHeight = 0;
         let nativeResizesViewport = false;
@@ -44,6 +45,23 @@ export const KeyboardFocusManager = (): null => {
         let focusTimer: ReturnType<typeof setTimeout> | undefined;
         let disposed = false;
         const handles: PluginListenerHandle[] = [];
+
+        const getBounds = () =>
+            getKeyboardViewport(
+                window.innerHeight,
+                expandedHeight,
+                keyboardHeight,
+                // Older Android WebViews briefly subtract the IME again from
+                // VisualViewport after SystemBars has already resized the view.
+                // Keep panning bounds, but let the native layout own its height.
+                nativeResizesViewport && platform === 'android'
+                    ? {
+                          height: window.innerHeight,
+                          offsetTop: viewport?.offsetTop ?? 0,
+                          scale: viewport?.scale,
+                      }
+                    : (viewport ?? undefined)
+            );
 
         const revealField = (): void => {
             // Leave zoomed forms and user panning to the browser, even with a native keyboard.
@@ -56,12 +74,7 @@ export const KeyboardFocusManager = (): null => {
                 if (ancestor.matches('ion-input, ion-textarea')) return;
             }
 
-            const bounds = getKeyboardViewport(
-                window.innerHeight,
-                expandedHeight,
-                keyboardHeight,
-                viewport ?? undefined
-            );
+            const bounds = getBounds();
             const scope = field.closest('[data-lc-surface], .lc-auth-overlay, .ion-page');
             const footers = scope?.querySelectorAll<HTMLElement>(
                 '[data-keyboard-footer], ion-footer'
@@ -110,17 +123,12 @@ export const KeyboardFocusManager = (): null => {
             if (!field && keyboardHeight === 0) expandedHeight = window.innerHeight;
             // Track expansion on keyboard dismissal even if the input retains focus.
             expandedHeight = Math.max(expandedHeight, window.innerHeight);
-            const bounds = getKeyboardViewport(
-                window.innerHeight,
-                expandedHeight,
-                keyboardHeight,
-                viewport ?? undefined
-            );
+            const bounds = getBounds();
             const isOpen =
                 keyboardHeight > 0 ||
                 (!!field && expandedHeight - (bounds.bottom - bounds.top) > 120);
             root.toggleAttribute('data-lc-keyboard-open', isOpen);
-            // In native resize mode UIKit owns the WebView's bounds. Applying the
+            // In native resize mode the OS owns the WebView's bounds. Applying the
             // final keyboard height here snaps the app ahead of its animation and
             // holds it short during dismissal. Only size hosts for overlay modes.
             root.toggleAttribute('data-lc-keyboard-overlay', !nativeResizesViewport);
@@ -161,7 +169,7 @@ export const KeyboardFocusManager = (): null => {
         viewport?.addEventListener('scroll', onViewportScroll);
 
         if (Capacitor.isNativePlatform()) {
-            if (Capacitor.getPlatform() === 'ios') {
+            if (platform === 'ios' || platform === 'android') {
                 void Keyboard.getResizeMode()
                     .then(({ mode }) => {
                         if (disposed) return;

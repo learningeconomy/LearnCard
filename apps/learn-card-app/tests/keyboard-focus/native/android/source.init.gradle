@@ -1,0 +1,7 @@
+allprojects {
+    afterEvaluate { project ->
+        if (project.path == ':app') {
+            project.android.sourceSets.androidTest.java.srcDir(gradle.startParameter.projectProperties['keyboardReviewSources'])
+        }
+    }
+}

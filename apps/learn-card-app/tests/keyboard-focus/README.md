@@ -73,3 +73,47 @@ fields, but does not impose a second host height in iOS native resize mode.
 Browser and native overlay mode retain their viewport sizing fallback. Revisit
 the patch when upgrading this dependency; it requires rebuilding the native
 binary and cannot be delivered by a frontend-only OTA update.
+
+### Android
+
+The Android fix patches both `@capacitor/android@8.5.2` (SystemBars) and
+`@capacitor/keyboard@8.0.6`. SystemBars normally applies the final IME bottom
+padding before animation starts. The keyboard callback now defers that layout
+in `onPrepare`, follows the opening animation's interpolated fraction, and
+restores full height early on dismissal so WebView can paint ahead of the IME.
+Other system-bar insets retain their existing handling. Both patches must ship
+in the same rebuilt native binary; an OTA cannot install them.
+
+The patched Android `getResizeMode` reports `native` when SystemBars owns the
+viewport. The shared focus manager then avoids imposing another host height,
+and uses the native layout height when older WebViews temporarily subtract the
+IME a second time from VisualViewport. Unpatched or SystemBars-disabled shells
+retain their existing fallback when that capability is unavailable.
+
+For repeatable native regression checks, select an emulator you own, serve the
+local frontend, and configure the generated Android Debug shell's `server.url`
+to `http://10.0.2.2:<port>/tests/keyboard-focus/animation.html` with Capgo
+`autoUpdate: false`. With JDK 21 and `ANDROID_HOME` configured, run from the repository root:
+
+```sh
+python3 apps/learn-card-app/tests/keyboard-focus/native/android/review.py \
+  --device emulator-5558 --output /tmp --all-tests
+```
+
+This builds and installs only on the explicitly selected emulator, adds the
+JUnit source through an isolated Gradle init script, drives real native taps
+and Android Back, and retains logs, APK hash, source state, and an MP4 privately.
+It checks two open/dismiss cycles, switching to the lower field, Back dismissal,
+and rapid interruption. `--capture-only` records a broken baseline without
+asserting host height; it is diagnostic evidence, not a passing sizing gate.
+Review the video as well: layout assertions cannot prove every animation frame.
+The runner does not start/stop the emulator or frontend. Keep the checkout
+unchanged while recording, and inspect media before publishing.
+
+Also compare the same interaction in the actual app, preferably Resume Builder
+on the demo account. Focus the summary, dismiss with Android Back, and repeat
+without editing or publishing a resume. Capture the baseline native binary and
+its baseline frontend together, then the fixed binary and fixed frontend.
+Fixture recordings supplement this app comparison; they do not replace it.
+Physical devices, alternative IMEs/WebView versions, split-screen, rotation,
+and disabled system animations need separate QA.
