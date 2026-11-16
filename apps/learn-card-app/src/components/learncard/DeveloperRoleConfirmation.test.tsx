@@ -9,8 +9,14 @@ import userEvent from '@testing-library/user-event';
 
 const state = vi.hoisted(() => ({
     did: undefined as string | undefined,
+    profileType: 'parent' as string,
     user: { privateKey: 'test-account-a' },
-    profile: { profileId: 'alice', role: 'learner', dob: '2015-01-01' },
+    profile: {
+        profileId: 'alice',
+        role: 'learner',
+        dob: '2015-01-01',
+        type: undefined as string | undefined,
+    },
     initWallet: vi.fn(),
     updateProfile: vi.fn(),
     getProfile: vi.fn(),
@@ -24,13 +30,12 @@ vi.mock('learn-card-base', () => ({
         newModalWithToken: vi.fn(),
         forceCloseModalByToken: vi.fn(),
     }),
-    useGetCurrentUserRole: () => {
-        const { data } = useQuery({
+    useGetProfile: () => {
+        return useQuery({
             queryKey: ['getProfile', state.did ?? '', undefined],
             queryFn: async () => state.profile,
             staleTime: Infinity,
         });
-        return data?.role;
     },
     useWallet: () => ({ initWallet: state.initWallet }),
     currentUserStore: {
@@ -38,16 +43,17 @@ vi.mock('learn-card-base', () => ({
         get: { currentUser: () => state.user },
     },
     switchedProfileStore: {
-        use: { switchedDid: () => state.did },
-        get: { switchedDid: () => state.did },
+        use: { switchedDid: () => state.did, profileType: () => state.profileType },
+        get: { switchedDid: () => state.did, profileType: () => state.profileType },
     },
 }));
 vi.mock('../../helpers/queryPersistence', () => ({ persistQueryCacheNow: state.persist }));
 
 beforeEach(() => {
     state.did = undefined;
+    state.profileType = 'parent';
     state.user = { privateKey: 'test-account-a' };
-    state.profile = { profileId: 'alice', role: 'learner', dob: '2015-01-01' };
+    state.profile = { profileId: 'alice', role: 'learner', dob: '2015-01-01', type: undefined };
     state.getProfile.mockImplementation(async () => ({ ...state.profile }));
     state.updateProfile.mockImplementation(async () => {
         state.profile = { ...state.profile, role: 'developer' };
@@ -85,6 +91,38 @@ const setup = () => {
 };
 
 describe('Developer role confirmation', () => {
+    it.each(['learner', 'developer'])(
+        'blocks a child account with role %s even when opened directly',
+        role => {
+            state.profileType = 'child';
+            state.profile.role = role;
+            const { confirm, onClose } = setup();
+            expect(onClose).toHaveBeenCalled();
+            confirm();
+            expect(state.initWallet).not.toHaveBeenCalled();
+            expect(state.updateProfile).not.toHaveBeenCalled();
+            expect(state.persist).not.toHaveBeenCalled();
+        }
+    );
+
+    it('blocks a child network profile even if the profile-type store is stale', async () => {
+        state.profile.type = 'child';
+        const { confirm, onClose } = setup();
+        confirm();
+        await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+        expect(state.updateProfile).not.toHaveBeenCalled();
+        expect(state.persist).not.toHaveBeenCalled();
+    });
+
+    it('closes and blocks confirmation if the active account becomes a child', () => {
+        const { rerender, view, onClose, confirm } = setup();
+        state.profileType = 'child';
+        rerender(view());
+        expect(onClose).toHaveBeenCalled();
+        confirm();
+        expect(state.updateProfile).not.toHaveBeenCalled();
+    });
+
     it.each([320, 399, 400, 1024])('matches visual and keyboard order at %spx', width => {
         const originalWidth = window.innerWidth;
         try {
@@ -118,10 +156,11 @@ describe('Developer role confirmation', () => {
         expect(state.initWallet).not.toHaveBeenCalled();
     });
 
-    it.each([undefined, 'did:example:child'])(
+    it.each([undefined, 'did:example:org'])(
         'saves only the role for active profile %s and persists refreshed observers before closing',
         async did => {
             state.did = did;
+            state.profileType = did ? 'service' : 'parent';
             const { confirm, onClose, queryClient, key } = setup();
             const publicKey = ['getProfile', '', 'alice'];
             queryClient.setQueryData(publicKey, { profileId: 'alice', displayName: 'Alice' });
@@ -193,11 +232,42 @@ describe('Developer role confirmation', () => {
         confirm();
         await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
         expect(onClose).not.toHaveBeenCalled();
-        confirm();
+        expect(screen.getByRole('alert').textContent).toContain(
+            'Your role is now Developer, but we couldn’t refresh this device. Please try again.'
+        );
+        expect(screen.queryByText('We couldn’t save your role. Please try again.')).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
         await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
         expect(state.updateProfile).toHaveBeenCalledOnce();
         expect(state.persist).toHaveBeenCalledTimes(2);
     });
+
+    it.each(['saved-profile', 'cancel-queries'])(
+        'distinguishes a %s failure after a successful server update',
+        async failure => {
+            const { confirm, onClose, queryClient } = setup();
+            if (failure === 'saved-profile') {
+                state.getProfile
+                    .mockResolvedValueOnce({ ...state.profile })
+                    .mockRejectedValueOnce(new Error('refresh unavailable'));
+            } else {
+                vi.spyOn(queryClient, 'cancelQueries').mockRejectedValueOnce(
+                    new Error('cache unavailable')
+                );
+            }
+            confirm();
+            await waitFor(() =>
+                expect(screen.getByRole('alert').textContent).toContain(
+                    'Your role is now Developer'
+                )
+            );
+            expect(onClose).not.toHaveBeenCalled();
+            expect(state.updateProfile).toHaveBeenCalledOnce();
+            fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
+            await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+            expect(state.updateProfile).toHaveBeenCalledOnce();
+        }
+    );
 
     it.each(['profile', 'login'])(
         'closes when the %s account changes before confirmation',
@@ -212,24 +282,28 @@ describe('Developer role confirmation', () => {
         }
     );
 
-    it('does not mutate if the account changes during wallet initialization', async () => {
-        let resolveWallet!: (value: unknown) => void;
-        state.initWallet.mockImplementation(
-            () =>
-                new Promise(resolve => {
-                    resolveWallet = resolve;
-                })
-        );
-        const { confirm } = setup();
-        confirm();
-        await act(async () => {
-            state.did = 'did:example:b';
-            resolveWallet({
-                invoke: { getProfile: state.getProfile, updateProfile: state.updateProfile },
+    it.each(['account', 'child'])(
+        'does not mutate if the %s eligibility changes during wallet initialization',
+        async change => {
+            let resolveWallet!: (value: unknown) => void;
+            state.initWallet.mockImplementation(
+                () =>
+                    new Promise(resolve => {
+                        resolveWallet = resolve;
+                    })
+            );
+            const { confirm } = setup();
+            confirm();
+            await act(async () => {
+                if (change === 'child') state.profileType = 'child';
+                else state.did = 'did:example:b';
+                resolveWallet({
+                    invoke: { getProfile: state.getProfile, updateProfile: state.updateProfile },
+                });
             });
-        });
-        expect(state.updateProfile).not.toHaveBeenCalled();
-    });
+            expect(state.updateProfile).not.toHaveBeenCalled();
+        }
+    );
 
     it('does not overwrite either account cache if the account changes during saving', async () => {
         let resolveUpdate!: (value: boolean) => void;

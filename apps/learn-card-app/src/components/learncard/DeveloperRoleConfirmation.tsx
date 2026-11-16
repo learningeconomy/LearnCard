@@ -22,23 +22,31 @@ const DeveloperRoleConfirmation: React.FC<DeveloperRoleConfirmationProps> = ({
     const isNarrow = useScreenWidth() < 400;
     const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const profileType = switchedProfileStore.use.profileType();
     const currentUser = currentUserStore.use.currentUser();
     const origin = useRef({ switchedDid, privateKey: currentUser?.privateKey }).current;
     const [isSaving, setIsSaving] = useState(false);
-    const [error, setError] = useState(false);
+    const [error, setError] = useState<'save' | 'sync' | null>(null);
+    // Retain confirmed success across cache retries; never report it as a failed role update.
+    const roleSaved = useRef(false);
     const titleId = useId();
     const descriptionId = useId();
     const mounted = useRef(true);
 
     const isSameAccount = (): boolean =>
+        switchedProfileStore.get.profileType() !== 'child' &&
         switchedProfileStore.get.switchedDid() === origin.switchedDid &&
         currentUserStore.get.currentUser()?.privateKey === origin.privateKey;
 
     useEffect(() => {
-        if (switchedDid !== origin.switchedDid || currentUser?.privateKey !== origin.privateKey) {
+        if (
+            profileType === 'child' ||
+            switchedDid !== origin.switchedDid ||
+            currentUser?.privateKey !== origin.privateKey
+        ) {
             onClose();
         }
-    }, [switchedDid, currentUser?.privateKey, origin, onClose]);
+    }, [profileType, switchedDid, currentUser?.privateKey, origin, onClose]);
 
     useEffect(() => {
         mounted.current = true;
@@ -55,7 +63,7 @@ const DeveloperRoleConfirmation: React.FC<DeveloperRoleConfirmationProps> = ({
         }
         saving.current = true;
         setIsSaving(true);
-        setError(false);
+        setError(null);
 
         try {
             const wallet = await initWallet();
@@ -63,6 +71,10 @@ const DeveloperRoleConfirmation: React.FC<DeveloperRoleConfirmationProps> = ({
             const profile = await wallet.invoke.getProfile();
             if (!isSameAccount() || !mounted.current) return;
             if (!profile?.profileId) throw new Error('Profile unavailable');
+            if (profile.type === 'child') {
+                onClose();
+                return;
+            }
 
             // A retry after a cache-persistence failure need not repeat the server mutation.
             if (!('role' in profile) || profile.role !== LearnCardRolesEnum.developer) {
@@ -71,6 +83,7 @@ const DeveloperRoleConfirmation: React.FC<DeveloperRoleConfirmationProps> = ({
                 });
                 if (!updated) throw new Error('Profile update failed');
             }
+            roleSaved.current = true;
             const savedProfile = await wallet.invoke.getProfile();
             if (!isSameAccount() || !mounted.current) return;
             if (
@@ -98,7 +111,7 @@ const DeveloperRoleConfirmation: React.FC<DeveloperRoleConfirmationProps> = ({
             await persistQueryCacheNow(queryClient);
             if (isSameAccount() && mounted.current) onClose();
         } catch {
-            if (isSameAccount() && mounted.current) setError(true);
+            if (isSameAccount() && mounted.current) setError(roleSaved.current ? 'sync' : 'save');
         } finally {
             saving.current = false;
             if (mounted.current) setIsSaving(false);
@@ -132,6 +145,8 @@ const DeveloperRoleConfirmation: React.FC<DeveloperRoleConfirmationProps> = ({
                     />
                     {m['profile.developerProgram.saving']()}
                 </span>
+            ) : error === 'sync' ? (
+                m['common.tryAgain']()
             ) : (
                 m['profile.developerProgram.confirmAction']()
             )}
@@ -168,7 +183,9 @@ const DeveloperRoleConfirmation: React.FC<DeveloperRoleConfirmationProps> = ({
                         className="text-red-400 text-lg mt-0.5 shrink-0"
                     />
                     <span className="text-sm text-red-700 leading-relaxed">
-                        {m['profile.developerProgram.saveError']()}
+                        {error === 'sync'
+                            ? m['profile.developerProgram.syncError']()
+                            : m['profile.developerProgram.saveError']()}
                     </span>
                 </div>
             )}
