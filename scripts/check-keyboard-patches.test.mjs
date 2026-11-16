@@ -7,7 +7,7 @@ const fixture = () => {
     const patchedDependencies = Object.fromEntries(
         Object.entries(dependencies).map(([name, version]) => [
             `${name}@${version}`,
-            `patches/${name.replace('/', '%2F')}@${version}.patch`,
+            `patches/${name.replaceAll('/', '%2F')}@${version}.patch`,
         ])
     );
     return {

@@ -68,7 +68,7 @@ const config: CapacitorConfig = {
             // an empty channel (see PR #1063 incident).
             // LC-2157 remains latent: older binaries skip the optional bridge,
             // and production provider registration stays disabled.
-            defaultChannel: '1.0.13',
+            defaultChannel: '1.0.14',
         },
     },
 };

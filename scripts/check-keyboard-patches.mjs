@@ -27,7 +27,7 @@ export const checkKeyboardPatches = ({ manifest, manifests, lock, patchExists })
     const errors = [];
     for (const [name, version] of Object.entries(versions)) {
         const key = `${name}@${version}`;
-        const patch = `patches/${name.replace('/', '%2F')}@${version}.patch`;
+        const patch = `patches/${name.replaceAll('/', '%2F')}@${version}.patch`;
         if (
             manifest.patchedDependencies?.[key] !== patch ||
             lock.patchedDependencies?.[key] !== patch
