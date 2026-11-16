@@ -66,6 +66,8 @@ export const consentFlowFeature: FeatureDefinition = {
         await partner.invoke.createManagedServiceProfile({
             profileId: recipientProfileId,
             displayName: recipientName,
+            shortBio: '',
+            bio: '',
             type: 'organization',
         });
         const provision = {
