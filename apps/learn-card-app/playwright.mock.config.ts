@@ -9,8 +9,11 @@ import base from './playwright.config';
  */
 const mockPort = Number(process.env.PW_MOCK_PORT ?? 3010);
 const recordVideo = process.env.PW_RECORD_VIDEO === 'true';
+const workers = Number(process.env.PW_MOCK_WORKERS ?? 2);
 if (!Number.isInteger(mockPort) || mockPort < 1024 || mockPort > 65535)
     throw new Error('Invalid PW_MOCK_PORT');
+if (!Number.isInteger(workers) || workers < 1 || workers > 4)
+    throw new Error('Invalid PW_MOCK_WORKERS: expected an integer from 1 to 4');
 
 const config: PlaywrightTestConfig = {
     ...base,
@@ -24,7 +27,7 @@ const config: PlaywrightTestConfig = {
     // does a real demo email login against the backend, which this tier avoids.
     globalSetup: undefined,
     retries: 0,
-    workers: 2,
+    workers,
     fullyParallel: true,
     use: {
         ...base.use,

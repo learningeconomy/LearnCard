@@ -732,16 +732,28 @@ export const useFirebase = () => {
         }
     };
 
-    const signInWithCustomFirebaseToken = async (customToken: string): Promise<void> => {
+    /**
+     * Signs in with a server-minted Firebase custom token.
+     * Defaults keep the email-OTP/handoff behaviour (recorded as `passwordless`, failures
+     * alerted and swallowed). Brokered logins such as ClassLink pass `loginMethod` so the
+     * session and analytics record the real method, and `throwOnError` so the caller's
+     * own error UI handles failures instead of a silent no-op.
+     */
+    const signInWithCustomFirebaseToken = async (
+        customToken: string,
+        options: { loginMethod?: SocialLoginTypes; throwOnError?: boolean } = {}
+    ): Promise<void> => {
+        const loginMethod = options.loginMethod ?? SocialLoginTypes.passwordless;
         try {
             await adapter.signInWithCustomToken(customToken);
-            authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
-            trackLogin(SocialLoginTypes.passwordless);
+            authStore.set.typeOfLogin(loginMethod);
+            trackLogin(loginMethod);
         } catch (error) {
             const errorCode = getErrorCode(error);
-            const errorMessage = getAuthErrorDetails(error).message;
             log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
+            if (options.throwOnError) throw error;
 
+            const errorMessage = getAuthErrorDetails(error).message;
             if (errorMessage) presentAlert(errorMessage);
         }
     };

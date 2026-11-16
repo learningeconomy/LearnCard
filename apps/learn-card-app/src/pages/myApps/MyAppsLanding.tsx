@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
-import { useDeviceTypeByWidth } from 'learn-card-base';
+import { useDeviceTypeByWidth, useFeatureConfig } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
 
@@ -16,6 +16,7 @@ import MoreAppTile from './MoreAppTile';
 import {
     LEARNCARD_APP_SHORTCUTS,
     JOURNEYS_SHORTCUT,
+    SCHOOL_CONNECT_SHORTCUT,
     LearnCardAppShortcut,
 } from './learnCardAppShortcuts';
 import useMoreApps from './useMoreApps';
@@ -28,6 +29,7 @@ const DEEP_LINK_PARAMS = ['connectTo', 'uri', 'embedUrl'];
 // one exists; only Skill Insights and Boost a Friend needed new keys. The source
 // `title` in learnCardAppShortcuts stays English (a stable id used by tests).
 const SHORTCUT_TITLE: Record<string, () => string> = {
+    schoolConnect: m['myAppsPage.shortcuts.schoolConnect'],
     journeys: m['sidemenu.links.pathways'],
     'skill-insights': m['myAppsPage.shortcuts.skillInsights'],
     pathways: m['pathways.title'],
@@ -61,14 +63,15 @@ const MyAppsLanding: React.FC = () => {
     const [searchInput, setSearchInput] = useState('');
     const onHeaderScroll = useHeaderScrollSync();
     const pathwaysEnabled = usePathwaysEnabled();
+    const features = useFeatureConfig();
+    const schoolConnectEnabled = features.schoolConnect && features.classlinkSso;
 
-    const shortcuts = useMemo(
-        () =>
-            pathwaysEnabled
-                ? [JOURNEYS_SHORTCUT, ...LEARNCARD_APP_SHORTCUTS]
-                : LEARNCARD_APP_SHORTCUTS,
-        [pathwaysEnabled]
-    );
+    const shortcuts = useMemo(() => {
+        const list = [...LEARNCARD_APP_SHORTCUTS];
+        if (schoolConnectEnabled) list.unshift(SCHOOL_CONNECT_SHORTCUT);
+        if (pathwaysEnabled) list.unshift(JOURNEYS_SHORTCUT);
+        return list;
+    }, [pathwaysEnabled, schoolConnectEnabled]);
 
     // Existing /launchpad deep-link flows (partner connect, consent, embed) are
     // handled by the browse view — hand them off, preserving the query string.

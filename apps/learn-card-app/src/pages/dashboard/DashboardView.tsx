@@ -15,6 +15,7 @@ import LearningProfileCard from './components/LearningProfileCard';
 import AppsCard from './components/AppsCard';
 import DataTrustCard from './components/DataTrustCard';
 import RecoveryBanner from '../../components/recovery/RecoveryBanner';
+import PendingApprovalBanner from '../../components/pending-approval-banner/PendingApprovalBanner';
 import type { DashboardViewModel } from './DashboardView.types';
 
 type DashboardViewProps = {
@@ -37,6 +38,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
         primaryButtonClass,
         slots,
         recoveryPrompt,
+        pendingGuardianApproval = false,
         dataTrust,
         activity,
         learningProfile,
@@ -109,7 +111,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                 </GenericErrorBoundary>
 
                 <GenericErrorBoundary>
-                    <RecoveryBanner {...recoveryPrompt} />
+                    {pendingGuardianApproval ? (
+                        <PendingApprovalBanner />
+                    ) : (
+                        <RecoveryBanner {...recoveryPrompt} />
+                    )}
                 </GenericErrorBoundary>
 
                 <div className="grid grid-cols-1 desktop:grid-cols-12 gap-5">

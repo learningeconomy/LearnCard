@@ -225,7 +225,7 @@ const createAiInsightCredentialInternal = async (
     const existingRecord = await wallet.index.LearnCloud.get({ id: '__ai_insight__' });
 
     if (existingRecord?.length > 0) {
-        await wallet.index.LearnCloud.update(existingRecord[0].id, { uri });
+        await wallet.index.LearnCloud.update(existingRecord[0].id, { uri, hidden: true });
         logAiInsightCredential('Updated AI insight index record', {
             did,
             recordId: existingRecord[0].id,
@@ -236,6 +236,7 @@ const createAiInsightCredentialInternal = async (
             uri,
             id: '__ai_insight__',
             category: 'AI Insight',
+            hidden: true,
         });
         logAiInsightCredential('Created AI insight index record', {
             did,

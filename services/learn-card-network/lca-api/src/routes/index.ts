@@ -12,6 +12,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-templates';
 
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
+import { resolveAccountDid } from '@helpers/accountDid.helpers';
 import { consumeChallengeForDid } from '@cache/challenges';
 import { isEscrowEnabled } from '../services/escrow-enclave';
 
@@ -253,4 +254,13 @@ export const didAndChallengeRoute = didRoute.use(({ ctx, next }) => {
     if (!ctx.user?.isChallengeValid) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
     return next({ ctx: { ...ctx, user: ctx.user } });
+});
+
+/**
+ * Adds `accountDid`: the DID the caller's account is recorded under (see `resolveAccountDid`).
+ * Use it for account lookups; keep `did` for anything addressed to the caller.
+ */
+export const accountRoute = didAndChallengeRoute.use(async ({ ctx, next }) => {
+    const accountDid = await resolveAccountDid(ctx.user.did, ctx.authorizationHeader);
+    return next({ ctx: { ...ctx, user: { ...ctx.user, accountDid } } });
 });

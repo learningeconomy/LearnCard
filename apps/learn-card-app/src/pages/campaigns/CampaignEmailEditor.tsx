@@ -1,7 +1,8 @@
 import React from 'react';
+import { mailOutline } from 'ionicons/icons';
 import { hasEmailDestination } from './model';
 import type { CampaignForm } from './types';
-import { Field, inputClass } from './ui';
+import { DeliveryContentHeading, Field, inputClass } from './ui';
 
 export const CampaignEmailEditor: React.FC<{
     form: CampaignForm;
@@ -9,7 +10,7 @@ export const CampaignEmailEditor: React.FC<{
 }> = ({ form, onChange }) => (
     <div className="space-y-4">
         <div>
-            <h3 className="text-sm font-semibold text-grayscale-900">Email content</h3>
+            <DeliveryContentHeading title="Email" icon={mailOutline} />
             <p className="mt-1 text-xs text-grayscale-600">
                 Your branding and unsubscribe link are added automatically.
             </p>

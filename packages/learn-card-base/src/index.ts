@@ -240,6 +240,7 @@ export * from './helpers/statusBarHelpers';
 export * from './helpers/platformHelpers';
 export * from './helpers/navBarHelpers';
 export * from './helpers/loginHelpers';
+export * from './helpers/syntheticEmail';
 export * from './helpers/colorHelpers';
 export * from './helpers/authHelpers';
 export * from './helpers/fetchHelpers';
@@ -273,9 +274,12 @@ export * from './types/sync-my-school';
 export * from './types/careerOneStop';
 
 export * from './react-query/queries/queries';
+export * from './react-query/infiniteQueryGuard';
 export * from './react-query/queries/vcQueries';
 export * from './react-query/queries/useCredentialCollection';
 export * from './helpers/credentialCollection';
+export * from './react-query/queries/useVisibleCredentialCount';
+export * from './helpers/credentialVisibilityBackfill';
 export * from './react-query/queries/notifications';
 export * from './react-query/queries/aiPassport-queries';
 export * from './react-query/connectionPrompts';
@@ -305,6 +309,9 @@ export * from './svgs/walletsIconsFormal/WalletIconsFormal';
 export * from './svgs/displayTypes/displayTypes';
 export * from './react-query/queries/checklist';
 export * from './react-query/queries/user-contact';
+export * from './react-query/queries/transcripts';
+export * from './react-query/queries/classlinkPersonalEmail';
+export * from './react-query/mutations/transcripts';
 export * from './svgs/attachmentTypes/attachmentIcons';
 
 export * from './security/webSecureStorage';
@@ -324,3 +331,4 @@ export * from './logging/logger';
 export * from './logging/diagnosticLogBuffer';
 
 export { isAlreadyConsentedError, isConsentConflict } from './helpers/consentErrors';
+export * from './helpers/claimIncomingCredential';

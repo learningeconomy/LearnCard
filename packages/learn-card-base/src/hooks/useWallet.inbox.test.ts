@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
     receipt: vi.fn(),
     verify: vi.fn(),
     getConsentedContracts: vi.fn(),
+    sharedUri: vi.fn(),
+    syncContract: vi.fn(),
     getBespoke: vi.fn(),
     logError: vi.fn(),
     saveFact: vi.fn(),
@@ -62,7 +64,13 @@ vi.mock('@tanstack/react-query', async importOriginal => {
     const actual = await importOriginal<typeof import('@tanstack/react-query')>();
     return { ...actual, useQueryClient: () => mocks.queryClient! };
 });
-vi.mock('./useSharedUrisInTerms', () => ({ getOrCreateSharedUriForWallet: vi.fn() }));
+vi.mock('./useSharedUrisInTerms', () => ({ getOrCreateSharedUriForWallet: mocks.sharedUri }));
+vi.mock('./consentAudience', () => ({
+    loadContractAudience: vi.fn(async () => ({
+        recipients: ['did:key:owner'],
+        audienceVersion: 1,
+    })),
+}));
 vi.mock('./useConsentedContracts', () => ({
     getOrFetchConsentedContracts: mocks.getConsentedContracts,
 }));
@@ -112,12 +120,18 @@ beforeEach(async () => {
         store: { LearnCloud: { uploadEncrypted: mocks.upload } },
         index: { LearnCloud: { get: mocks.get, add: mocks.add } },
         read: { get: mocks.read },
-        invoke: { getCredentialRefreshReceipt: mocks.receipt, verifyCredential: mocks.verify },
+        invoke: {
+            getCredentialRefreshReceipt: mocks.receipt,
+            verifyCredential: mocks.verify,
+            syncCredentialsToContract: mocks.syncContract,
+        },
     };
     mocks.getBespoke.mockResolvedValue(mocks.wallet);
     mocks.saveFact.mockReset();
     mocks.saveFact.mockResolvedValue(undefined);
     mocks.getConsentedContracts.mockReset().mockResolvedValue([]);
+    mocks.sharedUri.mockReset().mockResolvedValue('shared-uri');
+    mocks.syncContract.mockReset().mockResolvedValue(true);
     mocks.upload.mockResolvedValue('encrypted-uri');
     mocks.read.mockResolvedValue(credential);
     mocks.receipt.mockResolvedValue(null);
@@ -133,6 +147,37 @@ beforeEach(async () => {
         records.push(record);
         return true;
     });
+});
+
+it('does not read or save a staged claim under a different active account', async () => {
+    await expect(
+        useWallet().addVCtoWallet({
+            uri: 'existing-uri',
+            expectedDid: 'did:example:original-account',
+            deferRefresh: true,
+        })
+    ).rejects.toThrow();
+    expect(records).toEqual([]);
+    expect(mocks.read).not.toHaveBeenCalled();
+});
+
+it('keeps a staged collection save successful when later sharing refresh fails', async () => {
+    const hooks = useWallet();
+    const saved = await hooks.addVCtoWallet({
+        uri: 'existing-uri',
+        expectedDid: 'did:example:claiming-account',
+        deferRefresh: true,
+    });
+    expect(saved).toBe(true);
+    const refreshError = new Error('sharing unavailable');
+    mocks.getConsentedContracts.mockRejectedValueOnce(refreshError);
+    await expect(
+        hooks.syncCredentialToContracts({
+            record: { id: records[0]!.id, uri: 'existing-uri', category: 'Achievement' },
+            category: 'Achievement',
+        })
+    ).rejects.toBe(refreshError);
+    expect(records).toEqual([expect.objectContaining({ uri: 'existing-uri' })]);
 });
 
 it('persists an independently validated managed baseline with the index record', async () => {
@@ -711,4 +756,70 @@ it('refreshes persisted bulk writes when contract sync fails and the reader init
     expect(calls.get('global')).toBe(1);
     expect(calls.get('count')).toBe(1);
     subscriptions.forEach(unsubscribe => unsubscribe());
+});
+
+it('retries failed contracts without repeating acknowledged contract mutations', async () => {
+    const contracts = ['terms-a', 'terms-b'].map(uri => ({
+        uri,
+        status: 'live',
+        contract: { uri: `contract-${uri}`, owner: { did: 'did:key:owner' } },
+        terms: {
+            read: {
+                credentials: { categories: { Achievement: { shareAll: true, sharing: true } } },
+            },
+        },
+    }));
+    mocks.getConsentedContracts.mockResolvedValue(contracts);
+    mocks.syncContract.mockImplementation(async (termsUri: string) => {
+        if (termsUri === 'terms-b') throw new Error('temporarily unavailable');
+        return true;
+    });
+    const hooks = useWallet();
+    const completed = new Set<string>();
+    const input: Parameters<typeof hooks.syncCredentialToContracts>[0] = {
+        record: { id: 'record', uri: 'credential', category: 'Achievement' },
+        category: 'Achievement',
+    };
+    await expect(hooks.syncCredentialToContracts(input, undefined, completed)).rejects.toThrow(
+        'Some consented contracts could not be synced'
+    );
+    expect(completed).toEqual(new Set(['terms-a']));
+    expect(mocks.syncContract).toHaveBeenCalledTimes(2);
+    mocks.syncContract.mockResolvedValue(true);
+    await expect(hooks.syncCredentialToContracts(input, undefined, completed)).resolves.toBe(true);
+    expect(completed).toEqual(new Set(['terms-a', 'terms-b']));
+    expect(mocks.syncContract.mock.calls.map(([uri]) => uri)).toEqual([
+        'terms-a',
+        'terms-b',
+        'terms-b',
+    ]);
+    await hooks.syncCredentialToContracts(input, undefined, completed);
+    expect(mocks.syncContract).toHaveBeenCalledTimes(3);
+});
+
+it('does not mark unavailable shared credentials as successfully synced', async () => {
+    mocks.getConsentedContracts.mockResolvedValue([
+        {
+            uri: 'terms-a',
+            status: 'live',
+            contract: { uri: 'contract-a', owner: { did: 'did:key:owner' } },
+            terms: {
+                read: {
+                    credentials: { categories: { Achievement: { shareAll: true, sharing: true } } },
+                },
+            },
+        },
+    ]);
+    mocks.sharedUri.mockResolvedValueOnce(false);
+    const hooks = useWallet();
+    const completed = new Set<string>();
+    const input: Parameters<typeof hooks.syncCredentialToContracts>[0] = {
+        record: { id: 'record', uri: 'credential', category: 'Achievement' },
+        category: 'Achievement',
+    };
+    await expect(hooks.syncCredentialToContracts(input, undefined, completed)).rejects.toThrow();
+    expect(completed.size).toBe(0);
+    expect(mocks.syncContract).not.toHaveBeenCalled();
+    await expect(hooks.syncCredentialToContracts(input, undefined, completed)).resolves.toBe(true);
+    expect(completed).toEqual(new Set(['terms-a']));
 });

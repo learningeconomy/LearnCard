@@ -23,6 +23,7 @@ import { useCampaignAction } from './useCampaignAction';
 import {
     Busy,
     CampaignMark,
+    DeliveryContentHeading,
     SectionHeading,
     StatusPill,
     Toggle,
@@ -220,7 +221,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                             </Field>
                             <fieldset className="pb-5">
                                 <legend className="mb-2 text-xs font-medium text-grayscale-700">
-                                    Channels
+                                    Delivery Methods
                                 </legend>
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     {(
@@ -233,8 +234,8 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                             ],
                                             [
                                                 'notify',
-                                                'Inbox / push notification',
-                                                'Send to the inbox and attempt push.',
+                                                'In-app & push notification',
+                                                'Send to notification inbox and mobile push.',
                                                 notificationsOutline,
                                             ],
                                             [
@@ -307,21 +308,30 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                     <section className={panelClass}>
                         <SectionHeading
                             step="02"
-                            title="Message"
-                            description="Add content for each selected channel."
+                            title="Delivery Content"
+                            description="Add content for each selected delivery method."
                         />
                         <fieldset disabled={busy || archived} className="min-w-0 space-y-5">
                             {form.inApp && (
-                                <CampaignMessageEditor
-                                    value={form.messageJson}
-                                    campaignId={form.id}
-                                    onChange={value => set('messageJson', value)}
-                                />
+                                <div className="flex min-w-0 flex-col gap-4">
+                                    <DeliveryContentHeading
+                                        title="In-app message"
+                                        icon={chatbubbleEllipsesOutline}
+                                    />
+                                    <CampaignMessageEditor
+                                        value={form.messageJson}
+                                        campaignId={form.id}
+                                        onChange={value => set('messageJson', value)}
+                                    />
+                                </div>
                             )}
                             {form.notify && (
-                                <div className="space-y-4 border-t border-grayscale-200 pt-5">
+                                <div className="space-y-4">
                                     <div>
-                                        <h3 className="text-sm font-semibold">Notification copy</h3>
+                                        <DeliveryContentHeading
+                                            title="In-app & push notification"
+                                            icon={notificationsOutline}
+                                        />
                                         <p className="mt-1 text-xs text-grayscale-600">
                                             The title and body people receive in their inbox and
                                             push notification.

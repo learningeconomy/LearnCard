@@ -64,10 +64,12 @@ import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useRecordFeedbackSession } from './feedback/useRecordFeedbackSession';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { AI_ROUTES } from './constants/aiRoutes';
+import { NATIVE_CREDENTIAL_PATH } from './native-digital-credentials/types';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
+import { useTranscriptPrompt } from './hooks/useTranscriptPrompt';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
-import { reconcileQualificationCategories } from 'learn-card-base/helpers/qualificationCategoryBackfill';
+import { runCredentialIndexBackfills } from 'learn-card-base/helpers/credentialVisibilityBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 
 const log = getLogger('app-router');
@@ -165,11 +167,11 @@ const AppRouter: React.FC = () => {
     const cloudUrl = networkStore.use.cloudUrl();
 
     useEffect(() => {
-        if (!walletReady || !isLoggedIn || isShareViewer || !activeWallet) return;
-        void reconcileQualificationCategories(activeWallet, queryClient, cloudUrl).catch(error =>
-            log.warn('Wallet category reconciliation failed', error)
-        );
-    }, [walletReady, isLoggedIn, isShareViewer, activeWallet, queryClient, cloudUrl]);
+        // The signed-in wallet, not walletReady: the demo login sets the wallet store without
+        // the auth coordinator, so walletReady stays false for that whole session.
+        if (!isLoggedIn || isShareViewer || !activeWallet) return;
+        void runCredentialIndexBackfills(activeWallet, queryClient, cloudUrl);
+    }, [isLoggedIn, isShareViewer, activeWallet, queryClient, cloudUrl]);
 
     useEffect(() => {
         if (
@@ -227,6 +229,7 @@ const AppRouter: React.FC = () => {
 
     const hideSideMenu =
         isShareViewer ||
+        location.pathname === NATIVE_CREDENTIAL_PATH ||
         [
             '/consent-flow',
             '/consent-flow-login',
@@ -431,6 +434,7 @@ const AppRouter: React.FC = () => {
     useScreenView();
     useAutoVerifyContactMethodWithProofOfLogin();
     useFinalizeInboxCredentials();
+    useTranscriptPrompt();
 
     const saved_email = window.localStorage.getItem('emailForSignIn');
 

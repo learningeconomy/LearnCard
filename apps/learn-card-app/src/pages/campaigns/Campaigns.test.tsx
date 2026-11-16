@@ -121,6 +121,38 @@ describe('campaign composer', () => {
             )
         );
     });
+    it.each<{ selected: string[] }>([
+        { selected: [] },
+        { selected: ['In-app message'] },
+        { selected: ['In-app & push notification'] },
+        { selected: ['Email'] },
+        { selected: ['In-app message', 'In-app & push notification'] },
+        { selected: ['In-app message', 'Email'] },
+        { selected: ['In-app & push notification', 'Email'] },
+        { selected: ['In-app message', 'In-app & push notification', 'Email'] },
+    ])('shows delivery content only for selected methods: $selected', async ({ selected }) => {
+        mount(apiMock(), '/admin/campaigns?create=1');
+        await screen.findByRole('heading', { name: 'Delivery Content', level: 2 });
+        expect(screen.getByRole('group', { name: 'Delivery Methods' })).toBeInTheDocument();
+        expect(screen.getByText('Send to notification inbox and mobile push.')).toBeInTheDocument();
+        expect(
+            screen.getByText('Add content for each selected delivery method.')
+        ).toBeInTheDocument();
+        for (const name of ['In-app message', 'In-app & push notification', 'Email']) {
+            const checkbox = screen.getByRole('checkbox', { name });
+            const enabled = selected.includes(name);
+            if ((checkbox as HTMLInputElement).checked !== enabled) fireEvent.click(checkbox);
+            const heading = screen.queryByRole('heading', { name, level: 3 });
+            if (enabled) {
+                expect(heading).toHaveClass('border-t', 'border-solid', 'border-grayscale-200');
+                expect(heading).toHaveClass('text-sm', 'text-grayscale-900');
+                expect(heading?.querySelector('ion-icon')).toHaveAttribute('aria-hidden', 'true');
+            } else {
+                expect(heading).not.toBeInTheDocument();
+            }
+        }
+    });
+
     it('replaces the create URL after saving and reloads the same campaign without another create', async () => {
         const api = apiMock();
         const save = deferred<Campaign>();
@@ -245,7 +277,7 @@ describe('campaign composer', () => {
         fireEvent.click(await screen.findByRole('button', { name: 'Send Test to Me' }));
         fireEvent.click(screen.getByRole('button', { name: 'Confirm test send' }));
         expect(await screen.findByRole('alert')).toHaveTextContent(
-            'No test was sent. Enable inbox and push announcements in Privacy & Data'
+            'No test was sent. Enable inbox and push announcements in Privacy & Data, or deselect In-app & push notification and try again.'
         );
         expect(screen.queryByText(/Test notification sent/)).not.toBeInTheDocument();
         expect(api.campaignsSendTestToMe).toHaveBeenCalledTimes(1);
@@ -404,7 +436,7 @@ describe('campaign composer', () => {
         fireEvent.change(screen.getByLabelText('Starts at (local time, optional)'), {
             target: { value: '' },
         });
-        fireEvent.click(screen.getByLabelText('Inbox / push notification'));
+        fireEvent.click(screen.getByLabelText('In-app & push notification'));
         expect(screen.getByRole('button', { name: 'Go Live' })).toBeDisabled();
         act(() => view.history.push('/admin/campaigns'));
         expect(view.history.location.pathname).toBe('/admin/campaigns/test-campaign');

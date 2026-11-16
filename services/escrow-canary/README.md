@@ -19,8 +19,11 @@ not implied by passing offline tests.
   enrollment and the configured authority generation. **Both steps exist**;
   no not-implemented metric or new API route is needed. `/v1/hold-state` is a
   host protocol endpoint, not the appropriate read-only enrollment probe.
-- **Tier 2**, every 30 minutes: select PIN A/B by the scheduled UTC half-hour
-  slot modulo two. Both accounts run once per hour. Start with empty memory
+- **Tier 2**, `cron(5,35 0,12 * * ? *)`: select PIN A/B by the scheduled UTC
+  half-hour slot modulo two, so :05 runs PIN A and :35 runs PIN B and each account
+  recovers every 12 hours (was every hour until 2026-11-14: each recovery appends
+  ~8 permanent authority rows, and hourly runs filled the ledger monitor's
+  per-account row limit in about three weeks). Start with empty memory
   storage and call `executeRecovery({ input: { method: 'escrow-pin', ... } })`.
   The SDK creates/verifies a fresh PIN hold, releases and reconstructs the key,
   then keeps the account: it stores the released share at the current version
@@ -228,7 +231,8 @@ not be manually reset to force retries.
   and allowlisted `Reason`. Logging projects only those fields: no error bodies,
   IDs, email addresses, tokens, private keys, PINs or device shares.
 - Tier 1: Minimum Success < 1, 2 of 3 × 60s. Tier 2: **per-account** 2 of 2 ×
-  3600s, matching each account's hourly cadence. Success alarms retain
+  43200s, matching each account's 12-hour cadence (a broken PIN path pages within
+  about 24 hours; tier 1 still covers availability every minute). Success alarms retain
   missing=breaching; a healthy alternating account cannot clear a broken account.
   Every handled failure emits Success=0, including configuration/initialization,
   secret reads/validation, stale events and auth (allowlisted `Reason` values
@@ -444,21 +448,31 @@ backlog of real holds can legitimately delay a warning past its due time and pag
 
 ### Tier 3 staging drills
 
-1. Warm-up and cancel gap: 8+ days enabled with no false page.
+1. Warm-up and cancel gap: 8+ days enabled with no false page. Passed 2026-11-12:
+   staging enabled 2026-11-03; its only tier 3 pages were drills 2–4 on 2026-11-04.
+   First weekly cancel runs closed `cancelled` in both environments on 2026-11-09.
 2. `inject-overdue` pages within one evaluation; `close-step` clears it. Observed
    2026-11-04: paged at the first evaluation (19:58Z), OK one evaluation after `close-step`.
 3. Disable only the evaluator schedule: the heartbeat alarm pages. Observed 2026-11-04:
    76 min after the last heartbeat, not the ~45 min that 3 × 900 s suggests, because
    CloudWatch keeps counting the last real datapoint while it is inside the alarm's
    evaluation range. Cleared ~1 min after the schedule was re-enabled.
-4. Point `TIER3_LEDGER_TABLE` at a missing table: no heartbeat, pages.
-5. Send mail from a non-allowlisted sender to a pool address: ignored.
+4. Point `TIER3_LEDGER_TABLE` at a missing table: no heartbeat, pages. Observed
+   2026-11-04: paged ~75 min later; cleared 23:15:51Z after the setting was restored.
+5. Send mail from a non-allowlisted sender to a pool address: ignored. Passed
+   2026-11-12: one plain-text message from an outside mailbox was delivered to staging
+   `hold-03` on 2026-11-06 19:34Z. The runner read that prefix every tick from the
+   warning-read window (2026-11-11 15:13Z) until the real warning arrived (16:10:48Z),
+   skipped the foreign message, then reached `warned` and was released and re-enrolled
+   2026-11-12 16:28Z. No `Step.Failure` Tier=3 series and no Overdue. A skipped
+   foreign message emits nothing by design.
 6. Resolve every UNVERIFIED item in TIER3-DESIGN.md §11: capture a redacted
    real code email (header order, `Authentication-Results` position, DKIM
    `header.i`/`header.d`), the SES setup-notification object, SSE-KMS writes
    (fallback: `AES256`), plus-address exact matching, the rules-per-set quota,
    cancel cooldown, and that `apply production → apply staging → plan production`
-   shows no changes to either environment's receipt rules.
+   shows no changes to either environment's receipt rules. Done 2026-11-06 (read-only);
+   outcomes in TIER3-DESIGN.md §11.
 
 ## Supporting signals and remaining phases
 
@@ -472,8 +486,8 @@ Escrow-account DynamoDB UserErrors (account aggregate), authority-table SystemEr
 SES delivery correlation, KMS decrypt alarms and host Roughtime probes are untouched
 and still require the owning escrow stack/operator. Ledger monitoring is unchanged.
 Release gates/CI pin consistency and two-week production observation are not
-implemented. Tier 3 and the inbox are implemented but not deployed or
-live-verified. Offline tests do not replace the real staging drills, Linux
+implemented. Tier 3 and the inbox run in staging (since 2026-11-03) and production
+(since 2026-11-04); see the staging drills above for what is live-verified. Offline tests do not replace the real staging drills, Linux
 owned-stack `lc verify`, or Lambda/CloudWatch delivery proof.
 
 ## Load testing (staging only)

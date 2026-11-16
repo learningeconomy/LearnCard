@@ -7,6 +7,17 @@ import NotificationBoostCard from './NotificationBoostCard';
 const mocks = vi.hoisted(() => ({ newModal: vi.fn(), accept: vi.fn() }));
 vi.mock('react-router-dom', () => ({ useHistory: () => ({ replace: vi.fn() }) }));
 vi.mock('learn-card-base/hooks/useOnScreen', () => ({ default: () => true }));
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}));
+vi.mock('../../../hooks/useTranscriptArrival', () => ({
+    isMatchingTranscript: vi.fn(),
+    getTranscriptPendingReceivedKey: () => '',
+}));
+vi.mock('../../../hooks/transcriptClaim', () => ({ claimTranscriptOnce: vi.fn() }));
+vi.mock('./notificationDuplicateLookup', () => ({
+    getNotificationDuplicateLookup: () => undefined,
+}));
 vi.mock('learn-card-base', () => ({
     useGetClaimCredential: () => ({ data: undefined, isLoading: false, isError: true }),
     useAcceptCredentialMutation: () => ({ mutate: mocks.accept, isLoading: false }),
@@ -21,6 +32,13 @@ vi.mock('learn-card-base', () => ({
     useGetBoost: () => ({}),
     useGetVCInfo: () => ({}),
     contractCategoryNameToCategoryMetadata: () => ({}),
+    useWallet: () => ({ addVCtoWallet: vi.fn(), initWallet: vi.fn() }),
+    useTranscriptStatus: () => ({ data: undefined, isFetched: false, isError: false }),
+    claimIncomingCredential: vi.fn(),
+    useFeatureConfig: () => ({}),
+    useToast: () => ({ presentToast: vi.fn() }),
+    ToastTypeEnum: { Error: 'error' },
+    getLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn() }),
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     unwrapBoostCredential: () => undefined,

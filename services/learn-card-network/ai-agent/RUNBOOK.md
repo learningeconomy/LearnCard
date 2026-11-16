@@ -379,12 +379,12 @@ perform irreversible effects.
   LaunchDarkly flag off throughout the initial deployment; workflows never open targeting.
 - Trigger.dev packaging, AWS validation, image scanning, and live smoke checks remain
   deployment-time gates, not PR checks.
-- Trigger SDK/build/CLI 4.5.7 explicitly selects `node-24` (Node 24.18.0); the service-local
+- Trigger SDK/build/CLI 4.5.9 explicitly selects `node-24` (Node 24.22.1); the service-local
   `.nvmrc`, engines, and AI Agent CI/deployment Node setup agree. Node 24 became a stable
   Trigger runtime in [4.5.7](https://trigger.dev/changelog/v4-5-7); the
   [runtime matrix](https://trigger.dev/docs/config/config-file#nodejs-versions) lists its
-  exact version. Do not fall back to `runtime: 'node'`, which selects obsolete Node 21.
-  The ECS image now uses Bun 1.4.4 to consume the repository's version 3 lockfile.
+  exact version. Do not fall back to `runtime: 'node'`, which tracks the current Node.js LTS
+  and can move. The ECS image now uses Bun 1.4.4 to consume the repository's version 3 lockfile.
 - Images receive an immutable `sha-<git-sha>` tag. Workflow retries reuse the existing image rather than overwriting it.
 - The workflow rejects ARM64 images with critical or high ECR findings, updates the CloudFormation image tag and deployment ID, waits for the ECS rolling deployment with circuit-breaker rollback, checks readiness, and runs the authenticated smoke test in staging.
 

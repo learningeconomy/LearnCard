@@ -106,6 +106,10 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         themeSwitching: true,
         introSlides: true,
         launchPadQuickActions: true,
+        classlinkSso: false,
+        classlinkTranscriptOptIn: false,
+        classlinkPersonalEmail: false,
+        schoolConnect: false,
         pathways: false,
         dashboardHome: false,
         useSeededSkillFrameworks: false,
@@ -137,10 +141,11 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
     links: {
         appStoreUrl: 'https://apps.apple.com/us/app/learncard/id1635841898',
         playStoreUrl: 'https://play.google.com/store/apps/details?id=com.learncard.app',
-        termsOfServiceUrl: 'https://www.learncard.com/learncard-terms-of-service',
-        privacyPolicyUrl: 'https://www.learncard.com/learncard-privacy-policy',
+        termsOfServiceUrl: 'https://learncard.com/terms-of-service',
+        privacyPolicyUrl: 'https://learncard.com/privacy-policy',
         contactUrl: 'https://www.learningeconomy.io/contact',
         websiteUrl: 'https://www.learncard.com/',
+        supportEmail: 'support@learningeconomy.io',
     },
 
     native: {

@@ -1,5 +1,53 @@
 # @learncard/cli
 
+## 4.1.0
+
+### Minor Changes
+
+- [#2032](https://github.com/learningeconomy/LearnCard/pull/2032) [`1921604b3cf5013556d9ad6f7e7aff6c56d49eeb`](https://github.com/learningeconomy/LearnCard/commit/1921604b3cf5013556d9ad6f7e7aff6c56d49eeb) Thanks [@goblincore](https://github.com/goblincore)! - Publish the CLI as one self-contained file. `npx @learncard/cli` now installs a single package of about 10 MB instead of roughly 1,170 packages and 1.2 GB, with no EBADENGINE or deprecation warnings, and starts about twice as fast. Commands, flags and output are unchanged.
+
+    Also fixes `--json` output being cut off at 8 KB on Node 20 when another process captured it, and the CLI failing to start on Node 20 releases that cannot `require()` ES modules.
+
+    Adds `bun run build:binary` to compile standalone executables that need no Node.js install.
+
+### Patch Changes
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7), [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70), [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70), [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70)]:
+    - @learncard/types@6.1.1
+    - @learncard/learn-cloud-plugin@2.4.0
+    - @learncard/holder-continuity@0.2.31
+    - @learncard/core@9.4.46
+    - @learncard/init@2.5.12
+    - @learncard/network-brain-client@2.7.2
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/lca-api-plugin@2.1.1
+    - @learncard/ler-rs-plugin@0.1.37
+    - @learncard/linked-claims-plugin@0.2.46
+    - @learncard/open-badge-v2-plugin@1.1.47
+    - @learncard/render-method-plugin@14.0.1
+
+## 4.0.3
+
+### Patch Changes
+
+- [#1983](https://github.com/learningeconomy/LearnCard/pull/1983) [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2288] Recover credential claims in place without false expiration errors or duplicate issuance, preserving confirmed save and refresh progress.
+
+    Expose claim reconciliation in CLI method and capability discovery, and require `call --write` because reconciliation can finish acceptance and usage accounting.
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7f430656d7ff8c780b375f109e870dd07b5b9bf2`](https://github.com/learningeconomy/LearnCard/commit/7f430656d7ff8c780b375f109e870dd07b5b9bf2), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/types@6.1.0
+    - @learncard/lca-api-plugin@2.1.0
+    - @learncard/init@2.5.11
+    - @learncard/learn-cloud-plugin@2.3.53
+    - @learncard/holder-continuity@0.2.30
+    - @learncard/core@9.4.45
+    - @learncard/network-brain-client@2.7.1
+    - @learncard/ler-rs-plugin@0.1.36
+    - @learncard/linked-claims-plugin@0.2.45
+    - @learncard/open-badge-v2-plugin@1.1.46
+    - @learncard/render-method-plugin@14.0.0
+
 ## 4.0.2
 
 ### Patch Changes

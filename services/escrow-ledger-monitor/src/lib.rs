@@ -10,6 +10,10 @@ pub mod aws;
 pub enum Error {
     #[error("monitor unavailable")]
     Unavailable,
+    /// A fixed per-account or per-scan bound was exceeded. Coverage is incomplete;
+    /// this is never an integrity finding and never partial success.
+    #[error("monitor capacity exceeded")]
+    Capacity,
     #[error("invalid monitor configuration")]
     Configuration,
     #[error("ledger integrity failure")]
@@ -22,6 +26,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Metric {
     AuthorityIntegrityFailure,
     AuthorityCoverageFailure,
+    AuthorityAccountOverCapacity,
     AuthoritySweepCompleted,
     AuthorityRepeatedPinClear,
     AuthorityRepeatedPinClearAccounts,
@@ -42,6 +47,7 @@ impl Metric {
         match self {
             Self::AuthorityIntegrityFailure => "AuthorityIntegrityFailure",
             Self::AuthorityCoverageFailure => "AuthorityCoverageFailure",
+            Self::AuthorityAccountOverCapacity => "AuthorityAccountOverCapacity",
             Self::AuthoritySweepCompleted => "AuthoritySweepCompleted",
             Self::AuthorityRepeatedPinClear => "AuthorityRepeatedPinClear",
             Self::AuthorityRepeatedPinClearAccounts => "AuthorityRepeatedPinClearAccounts",

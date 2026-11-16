@@ -1,5 +1,21 @@
 # @learncard/sss-key-manager
 
+## 0.3.2
+
+### Patch Changes
+
+- [#2007](https://github.com/learningeconomy/LearnCard/pull/2007) [`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7) Thanks [@Custard7](https://github.com/Custard7)! - Add optional `KeyDerivationStrategy.fetchArchivedKey()`, implemented by the SSS strategy against `POST /keys/archived-key`. It returns `null` on any failure or unavailable response, so callers can fall back to legacy key derivation.
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [[`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/types@6.1.0
+
 ## 0.3.0
 
 ### Minor Changes

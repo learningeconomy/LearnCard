@@ -155,6 +155,7 @@ const shouldCreateIndices =
 
 const indexQueries = [
     'CREATE CONSTRAINT campaign_id_unique IF NOT EXISTS FOR (c:Campaign) REQUIRE c.id IS UNIQUE',
+    'CREATE CONSTRAINT claim_link_request_id_unique IF NOT EXISTS FOR (r:ClaimLinkRequest) REQUIRE r.id IS UNIQUE',
     'CREATE INDEX campaign_status_idx IF NOT EXISTS FOR (c:Campaign) ON (c.status)',
     'CREATE CONSTRAINT consent_event_id IF NOT EXISTS FOR (e:ConsentFlowEvent) REQUIRE e.id IS UNIQUE',
     'CREATE CONSTRAINT consent_delivery_id IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) REQUIRE d.id IS UNIQUE',

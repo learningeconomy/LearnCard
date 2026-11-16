@@ -15,6 +15,13 @@ import {
     type SourceCleanupTask,
     type VectorSource,
 } from './vector-source';
+import {
+    SOURCE_CLEANUP_BUSY_MESSAGE,
+    SOURCE_CLEANUP_LEASE_EXPIRED_MESSAGE,
+    sourceCleanupLeaseRetryDelayMs,
+    sourceCleanupLeaseWaitMs,
+    waitForSourceCleanupLeaseRetry,
+} from './source-cleanup';
 import type { StoredInsightCompaction } from '../services/insightCompaction';
 import { beginAiInsightTiming, withAiInsightTiming } from '../diagnostics/ai-insight';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -41,7 +48,8 @@ import {
 } from '../credentials/raw-vault';
 import type { RawCredentialEnvelope } from '../credentials/raw-vault';
 import { fingerprintCredential } from '../credentials/verification';
-import { settleCredentialBatch } from '../credentials/batch';
+import { credentialBatchConcurrency, settleCredentialBatch } from '../credentials/batch';
+import { getLearnCardRequestSignal } from '../learncard/requestScope';
 import {
     assertCurrentAiConsent,
     getCurrentAiSubject,
@@ -824,25 +832,35 @@ export class ChatDB {
         callback: (assertLease: () => Promise<void>) => Promise<T>
     ): Promise<T> {
         await this.init();
-        const _id = getPrivacySubjectRef(did),
-            token = randomUUID();
+        const _id = getPrivacySubjectRef(did);
+        // One Mongo document per privacy subject, shared across requests and
+        // machines. An unexpired holder makes upsert throw 11000. Wait briefly
+        // so parallel invalid-credential deletes can serialize instead of
+        // failing a read path; still throw if the holder does not finish.
+        const retryUntil = Date.now() + sourceCleanupLeaseWaitMs();
+        let token = randomUUID();
         let lease;
-        try {
-            lease = await this.sourceCleanupLeases.findOneAndUpdate(
-                { _id, expiresAt: { $lte: new Date() } },
-                { $set: { token, expiresAt: new Date(Date.now() + 60000) } },
-                {
-                    upsert: true,
-                    returnDocument: 'after',
-                    writeConcern: durableWriteConcern,
-                }
-            );
-        } catch (error) {
-            if ((error as { code?: number }).code === 11000)
-                throw new Error('Source cleanup busy; retry');
-            throw error;
+        for (;;) {
+            token = randomUUID();
+            try {
+                lease = await this.sourceCleanupLeases.findOneAndUpdate(
+                    { _id, expiresAt: { $lte: new Date() } },
+                    { $set: { token, expiresAt: new Date(Date.now() + 60000) } },
+                    {
+                        upsert: true,
+                        returnDocument: 'after',
+                        writeConcern: durableWriteConcern,
+                    }
+                );
+            } catch (error) {
+                if ((error as { code?: number }).code !== 11000) throw error;
+                lease = undefined;
+            }
+            if (lease && lease.token === token) break;
+            if (getLearnCardRequestSignal()?.aborted || Date.now() >= retryUntil)
+                throw new Error(SOURCE_CLEANUP_BUSY_MESSAGE);
+            await waitForSourceCleanupLeaseRetry(sourceCleanupLeaseRetryDelayMs());
         }
-        if (!lease || lease.token !== token) throw new Error('Source cleanup busy; retry');
         const assertLease = async () => {
             if (
                 !(await this.sourceCleanupLeases.findOne({
@@ -851,7 +869,7 @@ export class ChatDB {
                     expiresAt: { $gt: new Date() },
                 }))
             )
-                throw new Error('Source cleanup lease expired');
+                throw new Error(SOURCE_CLEANUP_LEASE_EXPIRED_MESSAGE);
         };
         try {
             return await callback(assertLease);
@@ -2277,6 +2295,11 @@ export class ChatDB {
      * text (a legacy row repaired with only its projection) gets the text ingest
      * would have stored: its stored projection, serialized, when that projection
      * passed verification at ingest. `fromProjection` marks those.
+     * `verified` marks a row whose stored projection and ingest-time
+     * verification validate now (valid, proof-checked). Its text is always that
+     * projection, serialized, never the stored `aiContext`: legacy repair writes
+     * the projection and verification but leaves older text in place. A row
+     * without `verified` may still carry that legacy text; don't trust it.
      */
     public async getCredentialAiContexts(
         did: string,
@@ -2287,6 +2310,7 @@ export class ChatDB {
             aiContext?: string;
             category?: string;
             fromProjection?: true;
+            verified?: true;
         }[]
     > {
         assertRawCredentialOwner(did);
@@ -2320,15 +2344,15 @@ export class ChatDB {
             } catch {
                 stored = undefined;
             }
-            const category = stored ? { category: stored.category } : {};
-            if (typeof aiContext === 'string' && aiContext.trim())
-                return { uri, aiContext, ...category };
             if (stored)
                 return {
                     uri,
                     aiContext: serializeModelSafeCredentialProjection(stored),
-                    ...category,
-                    fromProjection: true as const,
+                    category: stored.category,
+                    verified: true as const,
+                    ...(typeof aiContext === 'string' && aiContext.trim()
+                        ? {}
+                        : { fromProjection: true as const }),
                 };
             return { uri, ...(typeof aiContext === 'string' ? { aiContext } : {}) };
         });
@@ -2736,6 +2760,19 @@ export class ChatDB {
         );
     }
 
+    /** URIs among `uris` whose stored verification is invalid (one query). */
+    public async getInvalidCredentialUris(did: string, uris: string[]): Promise<string[]> {
+        if (!uris.length) return [];
+        await this.init();
+        const rows = await this.credentialVerifications
+            .find(
+                { did, credentialUri: { $in: uris }, status: 'invalid' },
+                { projection: { credentialUri: 1, _id: 0 }, session: this.session }
+            )
+            .toArray();
+        return rows.map(row => row.credentialUri);
+    }
+
     public async storeCredentialVerification(
         did: string,
         verification: CredentialVerificationMetadata,
@@ -2775,7 +2812,11 @@ export class ChatDB {
         );
     }
 
-    public async deleteVCsByUris(did: string, uris: string[]): Promise<number> {
+    public async deleteVCsByUris(
+        did: string,
+        uris: string[],
+        options?: { awaitCleanup?: boolean }
+    ): Promise<number> {
         const deleted = await this.withOwnerWrite(did, async () => {
             await this.init();
             if (!uris.length) return 0;
@@ -2806,7 +2847,7 @@ export class ChatDB {
             );
             return result.deletedCount ?? 0;
         });
-        if (uris.length) {
+        if (uris.length && options?.awaitCleanup !== false) {
             const { deleteCredentialEmbeddings } = await import('./qdrant');
             await withOwnerOperation(did, () => deleteCredentialEmbeddings(did, uris, this));
         }
@@ -2969,24 +3010,48 @@ export class ChatDB {
     }
 
     /* --------------------- thread credential embeddings --------------- */
-    public async storeThreadCredentials(
+    /**
+     * With `fill`, `creds` keep their order and the provisional credentials fill
+     * what's left up to `limit`, in their own order, but only while their stored
+     * row still exists. Confirmed-invalid cleanup deletes that row (in an owner
+     * transaction) before it pulls thread copies; this read and write share one
+     * owner transaction, so a concurrent invalidation either lands first and the
+     * credential is skipped, or pulls it after this write. Returns what was stored.
+     */
+    public async storeThreadCredentials<Context extends ThreadCredentialContext>(
         did: string,
         threadId: string,
-        creds: ThreadCredentialContext[]
-    ) {
+        creds: Context[],
+        fill?: { provisional: Context[]; limit: number }
+    ): Promise<Context[]> {
         return this.withOwnerWrite(did, async () => {
             await this.init();
-            const credentialState = creds.length > 0 ? 'ready' : 'empty';
+            let credentials = creds;
+            if (fill?.provisional.length) {
+                const rows = await this.credentials
+                    .find(
+                        { did, uri: { $in: fill.provisional.map(({ uri }) => uri) } },
+                        { projection: { _id: 0, uri: 1 }, session: this.session }
+                    )
+                    .toArray();
+                const stored = new Set(rows.map(({ uri }) => uri));
+                credentials = [
+                    ...creds,
+                    ...fill.provisional.filter(({ uri }) => stored.has(uri)),
+                ].slice(0, fill.limit);
+            }
+            const credentialState = credentials.length > 0 ? 'ready' : 'empty';
             await this.threads.updateOne(
                 { did, id: threadId },
                 {
                     $set: {
-                        credentials: creds,
+                        credentials,
                         credentialContextStatus: credentialState,
                     },
                 },
                 { session: this.session }
             );
+            return credentials;
         });
     }
 
@@ -3020,7 +3085,8 @@ export class ChatDB {
                         projection.facts.find(({ kind }) => kind === 'title')?.value ??
                         projection.category,
                 };
-            })
+            }),
+            { concurrency: credentialBatchConcurrency() }
         );
         return loaded;
     }

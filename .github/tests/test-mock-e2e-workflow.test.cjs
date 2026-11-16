@@ -38,6 +38,13 @@ assert.doesNotMatch(
     'OS packages and cache repair run even on an exact hit'
 );
 assert.equal(full.run, 'bunx nx run learn-card-app:test-mock');
+assert.equal(
+    full.env.PW_MOCK_WORKERS,
+    "${{ github.event_name == 'workflow_dispatch' && inputs.workers || '2' }}"
+);
+const dispatch = workflow.on?.workflow_dispatch ?? workflow.true?.workflow_dispatch;
+assert.deepEqual(dispatch.inputs.workers.options, ['2', '3', '4']);
+assert.equal(dispatch.inputs.workers.default, '2');
 assert.equal(steps.filter(step => /nx (affected|run)/.test(step.run ?? '')).length, 1);
 assert.match(workflow.concurrency.group, /workflow_dispatch.*github\.run_id/);
 assert.match(steps.find(step => step.name === 'Upload Playwright report').if, /always\(\)/);

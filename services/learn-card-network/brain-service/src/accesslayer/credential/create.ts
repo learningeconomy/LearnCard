@@ -9,14 +9,14 @@ import { Credential, CredentialInstance } from '@models';
 import { neogma } from '@instance';
 import { reserveCredentialStatusEntries } from '@helpers/status-list.helpers';
 
+/** Store a payload and reserve its status entries; credentialId pins durable claim replay identity. */
 export const storeCredential = async (
     input: UnsignedVC | VC | JWE | IssuedCredential,
     transaction?: Transaction,
     statusOwnerProfileId?: string,
-    options: { lenient?: boolean } = {}
+    options: { lenient?: boolean; credentialId?: string } = {}
 ): Promise<CredentialInstance> => {
-    const id = uuid();
-
+    const id = options.credentialId ?? uuid();
     const issued = isIssuedCredential(input);
     const credential = issued ? input.credential : input;
     // Fail if an internal issuance result lost its metadata. Pre-signed wire

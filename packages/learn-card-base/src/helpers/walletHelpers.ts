@@ -2,6 +2,7 @@ import { isEqual } from 'lodash';
 import { initLearnCard, type LearnCardFromSeed } from '@learncard/init';
 import type { CredentialRecord } from '@learncard/types';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
+import { installWalletDidWebDocumentFetchCache } from '@learncard/didkit-plugin';
 import { getLCAPlugin } from '@learncard/lca-api-plugin';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
@@ -43,6 +44,8 @@ export const getSigningLearnCard = async (seed: string) => {
     // Pass the locally-bundled DIDKit WASM so did:key derivation works offline.
     // Without it DIDKit fetches its WASM from the network and lc.id.did() throws
     // on a cold offline start — breaking the private-key-first boot path.
+    // App wallet opt-in: 60s did:web doc TTL before getDidKitPlugin's generic 10s install.
+    installWalletDidWebDocumentFetchCache();
     SIGNING_LEARN_CARDS[seed] ??= initLearnCard({ seed, didkit, allowRemoteContexts: true }).catch(
         error => {
             delete SIGNING_LEARN_CARDS[seed];
@@ -100,6 +103,9 @@ const buildBespokeLearnCard = async (
         didWeb: didWeb ?? '(base did:key)',
         offline,
     });
+
+    // App wallet opt-in: 60s did:web doc TTL before getDidKitPlugin's generic 10s install.
+    installWalletDidWebDocumentFetchCache();
 
     let network: string | boolean = networkStore.get.networkUrl();
     if (!network || network === PRODUCTION_NETWORK_URL) network = true;

@@ -420,6 +420,11 @@
     --animate-reveal-card: reveal-card 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
     --animate-pop-in: pop-in 0.4s ease-out forwards;
     --animate-shimmer: shimmer 1.2s ease-in-out forwards;
+    --animate-transcript-ripple: transcript-ripple 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    --animate-transcript-flow: transcript-flow 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    --animate-transcript-sheen: transcript-sheen 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    --animate-pulse-dot: pulse-dot 2s ease-in-out infinite;
+
     --background-image-gradient-rainbow: linear-gradient(
         90deg,
         #b1ef6b 0%,
@@ -565,6 +570,44 @@
         100% {
             opacity: 1;
             transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes transcript-ripple {
+        0% {
+            transform: scale(1);
+            opacity: 0.55;
+        }
+        100% {
+            transform: scale(1.6);
+            opacity: 0;
+        }
+    }
+    @keyframes transcript-sheen {
+        0% {
+            transform: translateX(-100%);
+        }
+        100% {
+            transform: translateX(250%);
+        }
+    }
+    @keyframes transcript-flow {
+        0% {
+            transform: translateY(-100%);
+        }
+        100% {
+            transform: translateY(200%);
+        }
+    }
+    @keyframes pulse-dot {
+        0%,
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.35);
+            opacity: 0.75;
         }
     }
     @keyframes shimmer {

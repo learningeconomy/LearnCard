@@ -55,7 +55,12 @@ const selected = (group, overrides = {}) =>
             })
         )
         .map(step => step.name);
-const graph = ['Run share-link security', 'Run profile search', 'Run boost recipients'];
+const graph = [
+    'Run share-link security',
+    'Run claim-link receipts',
+    'Run profile search',
+    'Run boost recipients',
+];
 const delivery = ['Run inbox security', 'Run campaign permissions', 'Run campaign notifications'];
 
 test('the two production groups cover every original suite once with one setup each', () => {
@@ -75,6 +80,10 @@ test('the two production groups cover every original suite once with one setup e
         [
             [
                 'bunx vitest run --config vitest.share-links-neo4j.config.ts',
+                'services/learn-card-network/brain-service',
+            ],
+            [
+                'bunx vitest run --config vitest.claim-links.config.ts',
                 'services/learn-card-network/brain-service',
             ],
             [
@@ -141,6 +150,8 @@ test('actual group validation rejects unknown and empty selections before setup'
         ['delivery', false, true, 0],
         ['delivery', true, false, 0],
         ['share-links', true, false, 0],
+        ['claim-links', true, false, 0],
+        ['claim-links', false, true, 1],
         ['campaigns', false, true, 0],
         ['graph', false, true, 1],
         ['delivery', false, false, 1],
@@ -198,9 +209,9 @@ test('benchmark is opt-in and compares identical commands at one head in ABBA or
         assert.deepEqual(
             names.sort(),
             [...graph, ...delivery].sort(),
-            'same six commands in every phase'
+            'same seven commands in every phase'
         );
-        assert.equal(phase.strategy.matrix.group.length, i === 0 || i === 3 ? 5 : 2);
+        assert.equal(phase.strategy.matrix.group.length, i === 0 || i === 3 ? 6 : 2);
     }
 });
 

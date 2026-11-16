@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { addOutline, refreshOutline, chevronForwardOutline } from 'ionicons/icons';
 import { Link } from 'react-router-dom';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { dropMalformedInfiniteCacheEntry } from 'learn-card-base/react-query/infiniteQueryGuard';
 import type { Campaign, CampaignStatus } from '@learncard/types';
 import type { CampaignApi } from './types';
 import { useCampaignStats } from './CampaignStats';
@@ -97,8 +98,11 @@ const CampaignRow: React.FC<{ api: CampaignApi; campaign: Campaign }> = ({ api, 
 
 export const CampaignList: React.FC<{ api: CampaignApi }> = ({ api }) => {
     const [status, setStatus] = useState<CampaignStatus>();
+    const queryClient = useQueryClient();
+    const listQueryKey = ['campaign-list', status ?? 'all'] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, listQueryKey, 'campaign-list');
     const list = useInfiniteQuery({
-        queryKey: ['campaign-list', status ?? 'all'],
+        queryKey: listQueryKey,
         initialPageParam: undefined as string | undefined,
         queryFn: ({ pageParam }) =>
             api.campaignsList({ limit: 20, cursor: pageParam, ...(status ? { status } : {}) }),

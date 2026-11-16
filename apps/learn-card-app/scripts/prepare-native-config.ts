@@ -871,17 +871,21 @@ if (nativeConfig) {
                 );
 
             // Build custom scheme intent filters from tenant config
-            const schemeIntentFilters = customSchemes.map(scheme =>
-                [
-                    '            <intent-filter>',
-                    '                <action android:name="android.intent.action.VIEW" />',
-                    '                <category android:name="android.intent.category.DEFAULT" />',
-                    '                <category android:name="android.intent.category.BROWSABLE" />',
-                    '',
-                    `                <data android:scheme="${scheme}" />`,
-                    '            </intent-filter>',
-                ].join('\n')
-            );
+            // The bundle scheme has one dispatcher in the template. Registering
+            // MainActivity for it too creates an Android activity chooser.
+            const schemeIntentFilters = customSchemes
+                .filter(scheme => scheme !== nativeConfig.bundleId)
+                .map(scheme =>
+                    [
+                        '            <intent-filter>',
+                        '                <action android:name="android.intent.action.VIEW" />',
+                        '                <category android:name="android.intent.category.DEFAULT" />',
+                        '                <category android:name="android.intent.category.BROWSABLE" />',
+                        '',
+                        `                <data android:scheme="${scheme}" />`,
+                        '            </intent-filter>',
+                    ].join('\n')
+                );
 
             const allIntentFilters = [
                 ...httpsIntentFilters,

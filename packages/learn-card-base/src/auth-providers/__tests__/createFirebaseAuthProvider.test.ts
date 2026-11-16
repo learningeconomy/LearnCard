@@ -118,6 +118,23 @@ describe('createFirebaseAuthProvider', () => {
             expect(user).toBeNull();
         });
 
+        it('exposes a synthetic ClassLink placeholder email as no email', async () => {
+            const provider = createFirebaseAuthProvider(
+                createConfig({
+                    getAuth: () => ({
+                        currentUser: createMockCurrentUser({
+                            email: 'user-1@users.classlink.invalid',
+                        }),
+                    }),
+                })
+            );
+
+            const user = await provider.getCurrentUser();
+
+            expect(user?.id).toBe('user-1');
+            expect(user?.email).toBeUndefined();
+        });
+
         it('omits email and phone when not present', async () => {
             const provider = createFirebaseAuthProvider(
                 createConfig({

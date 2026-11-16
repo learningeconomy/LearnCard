@@ -9,6 +9,7 @@ import {
     useAllContractRequestsForProfile,
     useCurrentUser,
     useCredentialCollection,
+    useVisibleCredentialCount,
     useGetConnections,
     useGetConnectionsRequests,
     useGetCurrentLCNUser,
@@ -48,7 +49,6 @@ import {
 
 import DashboardView from './DashboardView';
 import DashboardRoleSwitcher from './components/DashboardRoleSwitcher';
-import PendingApprovalBanner from '../../components/pending-approval-banner/PendingApprovalBanner';
 import type {
     DashboardViewModel,
     DashboardEmptyTip,
@@ -81,6 +81,9 @@ import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
+
+/** The activity card lists at most three passive records. */
+const RECENT_ACTIVITY_RECORDS = 3;
 
 const DashboardPage: React.FC = () => {
     const history = useHistory();
@@ -125,14 +128,20 @@ const DashboardPage: React.FC = () => {
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
 
-    const collection = useCredentialCollection(undefined, { mode: 'complete' });
-    const allCredentialRecords = collection.records;
-    const allCredentialsLoading = !collection.isComplete && !collection.isError;
-    const totalCredentialCount = collection.isComplete ? allCredentialRecords.length : null;
-    const skillsCount = collection.isComplete
-        ? allCredentialRecords.filter(record => record.category === CredentialCategoryEnum.skill)
-              .length
-        : null;
+    // Totals come from index counts; only the newest records are listed (LC-2412, LC-2413).
+    const collection = useVisibleCredentialCount();
+    const skillsCollection = useVisibleCredentialCount(CredentialCategoryEnum.skill);
+    const recentCollection = useCredentialCollection(undefined, {
+        mode: 'recent',
+        limit: RECENT_ACTIVITY_RECORDS,
+    });
+    const allCredentialRecords = recentCollection.records;
+    const allCredentialsLoading =
+        !recentCollection.isComplete &&
+        !recentCollection.isError &&
+        allCredentialRecords.length < RECENT_ACTIVITY_RECORDS;
+    const totalCredentialCount = collection.count;
+    const skillsCount = skillsCollection.count;
 
     const { data: skillProfileData } =
         useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
@@ -304,7 +313,7 @@ const DashboardPage: React.FC = () => {
         if (pathwaysEnabled) history.push('/pathways/today');
     };
 
-    const hasCredentials = allCredentialRecords.length > 0;
+    const hasCredentials = (totalCredentialCount ?? 0) > 0 || allCredentialRecords.length > 0;
     const hasGoal = pathwaysEnabled ? !!activePathway : !!goalSummary;
     const hasSkillProfile = skillProfilePercentage >= 100;
     const hasDiscoveredApps = installedApps.length > 0;
@@ -329,7 +338,9 @@ const DashboardPage: React.FC = () => {
     const secondStepDone = pathwaysEnabled ? hasGoal : hasDiscoveredApps;
 
     const showGetStarted =
-        collection.isComplete && !getStartedDismissed && (!hasCredentials || !secondStepDone);
+        totalCredentialCount !== null &&
+        !getStartedDismissed &&
+        (!hasCredentials || !secondStepDone);
     const heroSlot: 'getStarted' | 'goal' = showGetStarted ? 'getStarted' : 'goal';
 
     const withChecklistTracking = (item: {
@@ -538,6 +549,7 @@ const DashboardPage: React.FC = () => {
             onSetupPin: () => openRecoverySetup({}),
             onSetup: openRecoverySetup,
         },
+        pendingGuardianApproval: currentLCNUser?.approved === false,
         dataTrust,
         activity: {
             notifications: unreadNotifications,
@@ -582,7 +594,6 @@ const DashboardPage: React.FC = () => {
                     scrollEvents
                     onIonScroll={onHeaderScroll}
                 >
-                    {currentLCNUser?.approved === false && <PendingApprovalBanner />}
                     <DashboardView vm={viewModel} />
                 </IonContent>
             </ErrorBoundary>

@@ -14,7 +14,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import useAppConnectModal from '../../hooks/useConnectAppModal';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 
-import { IonPage, IonContent, IonList } from '@ionic/react';
+import { IonPage, IonContent } from '@ionic/react';
 import LaunchPadHeader from './LaunchPadHeader/LaunchPadHeader';
 import LaunchPadBecomeAnApp from './LaunchPadBecomeAnApp';
 import LaunchPadAppListItem from './LaunchPadAppListItem';
@@ -335,10 +335,7 @@ const LaunchPad: React.FC = () => {
                                 </div>
                             ) : searchInput.length > 0 ? (
                                 <>
-                                    <IonList
-                                        lines="none"
-                                        className="w-full max-w-[600px] bg-grayscale-100"
-                                    >
+                                    <div className="w-full max-w-[600px]">
                                         {customAppFromQueryParams && (
                                             <LaunchPadAppListItem
                                                 key="custom-app-preview"
@@ -382,7 +379,7 @@ const LaunchPad: React.FC = () => {
                                                 ))}
                                             </>
                                         )}
-                                    </IonList>
+                                    </div>
 
                                     {/*
                                      * Show "no results" when nothing actually renders in this branch.
@@ -418,10 +415,7 @@ const LaunchPad: React.FC = () => {
                                         )}
                                 </>
                             ) : (
-                                <IonList
-                                    lines="none"
-                                    className="w-full max-w-[600px] bg-grayscale-100"
-                                >
+                                <div className="w-full max-w-[600px]">
                                     {/* My Apps tab: Installed Apps loading skeletons (cold load, no data yet) */}
                                     {isMyApps &&
                                         isLoadingInstalledApps &&
@@ -614,7 +608,7 @@ const LaunchPad: React.FC = () => {
 
                                     {filterBy === LaunchPadFilterOptionsEnum.allApps &&
                                         (isMyApps || isAll) && <LaunchPadBecomeAnApp />}
-                                </IonList>
+                                </div>
                             )}
                         </div>
                     </div>

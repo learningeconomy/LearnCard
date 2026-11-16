@@ -1,4 +1,5 @@
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { dropMalformedInfiniteCacheEntry } from '../react-query/infiniteQueryGuard';
 import { useIsLoggedIn, useWallet } from 'learn-card-base';
 import { BoostQuery } from '@learncard/types';
 
@@ -41,9 +42,12 @@ export const useGetPaginatedBoostChildren = (
     enabled: boolean = true
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    const queryKey = ['useGetPaginatedBoostChildren', uri, numberOfGenerations, query] as const;
+    dropMalformedInfiniteCacheEntry(queryClient, queryKey, 'useGetPaginatedBoostChildren');
 
     return useInfiniteQuery({
-        queryKey: ['useGetPaginatedBoostChildren', uri, numberOfGenerations, query],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
 

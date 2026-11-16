@@ -451,6 +451,19 @@ export const LCNBoostClaimLinkOptionsValidator = z.object({
 });
 export type LCNBoostClaimLinkOptionsType = z.infer<typeof LCNBoostClaimLinkOptionsValidator>;
 
+/** Confirmed terminal claim-link conditions; missing historical metadata is unavailable, not expired. */
+export const ClaimLinkTerminalReasonValidator = z.enum(['expired', 'exhausted', 'unavailable']);
+export type ClaimLinkTerminalReason = z.infer<typeof ClaimLinkTerminalReasonValidator>;
+
+/** Reconciliation always precedes repeating an interrupted claim mutation. */
+export const ClaimLinkRequestStatusValidator = z.discriminatedUnion('status', [
+    z.object({ status: z.literal('absent') }),
+    z.object({ status: z.literal('pending') }),
+    z.object({ status: z.literal('complete'), credentialUri: z.string() }),
+    z.object({ status: z.literal('terminal'), reason: ClaimLinkTerminalReasonValidator }),
+]);
+export type ClaimLinkRequestStatus = z.infer<typeof ClaimLinkRequestStatusValidator>;
+
 export const LCNSigningAuthorityValidator = z.object({
     endpoint: z.string(),
 });
@@ -526,6 +539,24 @@ export const GuardianStatusValidator = z.enum([
     'GUARDIAN_REJECTED',
 ]);
 export type GuardianStatus = z.infer<typeof GuardianStatusValidator>;
+
+export const GuardianApprovalEmailStatusValidator = z
+    .enum(['not_requested', 'sending', 'accepted', 'failed', 'unknown'])
+    .describe(
+        'Outcome of the latest account-level guardian approval email. "accepted" means the email provider accepted the message; it does not confirm delivery.'
+    );
+export type GuardianApprovalEmailStatus = z.infer<typeof GuardianApprovalEmailStatusValidator>;
+
+export const GuardianApprovalRequestStatusValidator = z.object({
+    pendingApproval: z.boolean(),
+    status: GuardianApprovalEmailStatusValidator,
+    guardianEmail: z.string().optional(),
+    updatedAt: z.string().optional(),
+    linkExpiresAt: z.string().optional(),
+    resendAvailableAt: z.string().optional(),
+    attemptsRemaining: z.number().int().nonnegative(),
+});
+export type GuardianApprovalRequestStatus = z.infer<typeof GuardianApprovalRequestStatusValidator>;
 
 // Options for send method (applies when recipient is email/phone, routes to Universal Inbox)
 export const SendOptionsValidator = z.object({

@@ -2,6 +2,82 @@
 
 This service exposes the LearnCard Network API and local Neo4j-backed skills flows.
 
+## Recoverable claim links
+
+`boost.claimBoostWithLink` accepts an optional `requestId`; `boost.claimBoostWithLinkStatus` reconciles the same authenticated recipient, Boost URI, challenge, and request ID. SDK consumers call `getClaimBoostWithLinkStatus`. Deploy this POST producer before an app that requires the status procedure; existing two-argument SDK claims remain supported.
+
+- A durable `ClaimLinkRequest` reserves one operation per context. Temporary Profile and request-node write locks serialize reservations without persistent counters or lock properties. Without the optional uniqueness index, concurrent `MERGE` statements can duplicate even the same request ID; holding the Profile write lock through reservation preserves one owner. A deterministic credential ID and explicit Neo4j transaction keep credential, Boost instance, and sent relationship together.
+- A completed receipt returns the original credential URI before checking current link availability. Generation-scoped Redis replay sets and capacity are atomically updated; the replay set lives for the full live generation lifetime, including non-expiring links, and is removed on invalidation/exhaustion. Exhausted evidence is retained 30 days; missing evidence means unavailable, not invented expiration. Corrupt live cache values are uncertain errors and are never classified as expired.
+- An active or uncertain operation without a provable result remains `pending`. There is no age-based takeover or blind re-signing. Definitive failures before the atomic credential storage entry can release the reservation; an uncertain commit cannot. Operators must reconcile pending work rather than retry issuance. Same-operation singleflight is supported; the existing `totalUses` setting remains a soft limit across different operations and does not reserve issuance capacity.
+- Legacy two-argument claims return their established credential URI even if subsequent usage accounting fails; they have no receipt to safely reconcile an error-driven retry. Request-aware claims keep accounting failures recoverable through their durable receipt instead.
+- Definite issuance rejection records a correlated `FAILED` activity. A request-aware operation with uncertain storage does not record terminal failure. Cleanup and activity-reporting failures cannot replace the original issuance error. Activity metadata uses controlled stage labels; route diagnostics retain the error class and tRPC code, with messages only for service-owned storage rejection and bounded usage contention. Raw errors, causes, credentials, and signing-authority payloads are not logged.
+- Invalidating an already absent link preserves confirmed expired/exhausted evidence, including when the last accepted claim wins the invalidation race.
+
+### Operator recovery for an abandoned receipt
+
+Do not tell the learner to create a new request ID or delete a receipt based on its age.
+Use this maintenance path for a terminated handler or an ambiguous storage commit:
+
+1. Deploy the storage-fence version of the service, then block **both** claim and claim-status
+   traffic on every instance for this network. Drain or terminate all old handlers, including
+   old service versions and background acceptance/claim-hook work. Confirm no old process can
+   resume. This is required because acceptance hooks are outside the storage transaction;
+   the storage fence alone does not fence an already-running acceptance operation.
+2. In the network's Neo4j administration console, identify the exact pending receipt using
+   the authenticated profile, Boost URI, challenge and original request ID. Privately inspect
+   `id`, `ownerToken`, `credentialId` and `status`. Do not publish these values or credentials.
+   Check active transactions from terminated instances and wait for their commit/rollback or
+   terminate them using Neo4j's normal administrative tools. Never infer rollback from a timeout.
+3. With explicit connection variables for that network, set `CLAIM_RECEIPT_ID` and
+   `CLAIM_OWNER_TOKEN` to the inspected values. From the Brain service directory run:
+
+    ```bash
+    bun scripts/reconcile-claim-link-request.ts --handlers-quiesced
+    ```
+
+    This command locks the receipt in the same order as credential storage, checks the expected
+    owner, and inspects storage only after any earlier transaction has finished. A late writer
+    with the old token cannot commit after the fence, even if signing completes later.
+    - `retryable`: no credential exists and the old reservation was removed atomically. Resume
+      service and retry with the **same original request ID**. Its new reservation has a fresh token.
+    - `stored`: the existing credential was preserved and the old owner fenced. Resume service
+      and use the authenticated status endpoint; normal acceptance/revocation checks and
+      idempotent usage accounting finish recovery without signing again.
+    - `unchanged`: the receipt was absent, complete, or its owner changed. Inspect again; do not
+      assume it is safe to issue. A failed/lost command response also requires reinspection.
+
+4. Verify the status result, one credential and one received edge for the original receipt,
+   then have the learner resume collection saving. Record the maintenance outcome privately.
+
+For rollback, keep a status-compatible, fence-aware service behind the new app. Do not restore
+pre-fence writers while using this procedure. Roll back the app first if reverting to a service
+without the status endpoint. Custom/self-hosted networks must deploy and verify the status
+producer before enabling the recovery consumer; an unavailable endpoint is not expiration.
+
+### Redis key migration and rollback
+
+Live claim links, terminal outcome evidence, and replay markers now use distinct v2
+namespaces with encoded Boost/challenge components. Legacy links are migrated on first
+access with an atomic compare-and-set; their remaining TTL and genuine consumption
+markers are preserved. Old suffix keys containing another live link are never moved or
+deleted as metadata. Previously overwritten links cannot be reconstructed from Redis.
+
+Before enabling this version, pause claim-link creation, consumption, status, and
+invalidation traffic and drain all old service handlers/workers. Upgrade **every** reader
+and writer, including custom/self-hosted networks, before resuming traffic. Mixed old/new
+cache implementations are not supported: an old process cannot read migrated keys and
+can recreate legacy state. Deploy the compatible service before the app/status consumer.
+
+After migration starts, roll back only to a service that understands v2 keys and the
+storage fence. Do not deploy a legacy-only service or flush Redis to roll back: both can
+lose active links or replay evidence. A reverse migration requires its own reviewed,
+quiesced plan that preserves live links, TTLs, outcomes, and generation-scoped markers;
+this release does not provide an automatic reverse migration.
+
+Collection indexing is still a separate, user-authenticated LearnCloud write. A successful network claim does not prove that collection saving or display refresh succeeded.
+
+Focused checks from this directory: `bun run test -- src/cache/claim-links.test.ts src/helpers/boost-storage.helpers.test.ts src/accesslayer/credential/create.test.ts`. `bunx vitest run --config vitest.claim-links.config.ts` exercises receipt recovery and concurrency against its own disposable Neo4j container and requires Docker.
+
 ## Live consent data for AI consumers
 
 `getConsentedDataForDid` returns data from live grants and authorized one-time grants (`oneTime: true`, stored with `status: 'consumed'`) between the authenticated contract owner and the requested profile. Pending and suspended updates retain reads under the user's previously accepted version; they do not enable newly requested data, writes, AutoBoosts, or synchronization. Withdrawn grants and consumed grants without the one-time flag are excluded. Term, contract and category expirations are enforced; empty expiry values mean no expiry, while malformed nonempty dates never authorize access. One-time means a fixed sharing grant, not a destructive read-once API; withdrawal still revokes subsequent retrieval. Malformed legacy terms are omitted rather than authorizing data or failing every grant in the response.
