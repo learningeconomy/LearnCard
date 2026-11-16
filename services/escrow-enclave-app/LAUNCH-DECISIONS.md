@@ -22,16 +22,16 @@ owner sign-off.
 evidence (PR, ticket or meeting notes), and update the matching ROLLOUT.md item
 in the same PR.
 
-| ID  | Decision                                     | Blocks                                | Owner (placeholder)       | Decision                                                          |
-| --- | -------------------------------------------- | ------------------------------------- | ------------------------- | ----------------------------------------------------------------- |
-| D10 | Accept KMS key-admin policy rewrite residual | 100% switch (ROLLOUT.md item 4)       | Jackson Smith             | Accepted (A) for 100%, 2026-11-05                                 |
-| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver (all stages)  | Jackson Smith             | Accepted (A), up to 100%; hardening by 2026-12-31                 |
-| RT  | Roughtime sources for production volume      | 100% switch (ROLLOUT.md item 1)       | Jackson Smith             | Accepted (A), stage 1; 100% pending (owner deferred measurements) |
-| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call   | Jackson Smith             | Accepted (A) + D post-launch                                      |
-| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker    | Jackson Smith             | Accepted (C)                                                      |
-| P-b | Email backup share default                   | Product/security call                 | Jackson Smith             | Off at launch                                                     |
-| P-c | Privacy-policy disclosure                    | Legal call before real users (switch) | Legal (via Jackson Smith) | Text approved and published; app link and legal approver pending  |
-| P-d | Userflow gating fix                          | Fix gap 1 (#1967)                     | Jackson Smith             | Accepted: fix gap 1 (#1967)                                       |
+| ID  | Decision                                     | Blocks                                | Owner (placeholder)       | Decision                                                                |
+| --- | -------------------------------------------- | ------------------------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| D10 | Accept KMS key-admin policy rewrite residual | 100% switch (ROLLOUT.md item 4)       | Jackson Smith             | Accepted (A) for 100%, 2026-11-05                                       |
+| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver (all stages)  | Jackson Smith             | Accepted (A), up to 100%; hardening by 2026-12-31                       |
+| RT  | Roughtime sources for production volume      | 100% switch (ROLLOUT.md item 1)       | Jackson Smith             | Accepted (A) for 100%, 2026-11-06; measured count deferred              |
+| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call   | Jackson Smith             | Accepted (A) + D post-launch                                            |
+| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker    | Jackson Smith             | Accepted (C)                                                            |
+| P-b | Email backup share default                   | Product/security call                 | Jackson Smith             | Off at launch                                                           |
+| P-c | Privacy-policy disclosure                    | Legal call before real users (switch) | Legal (via Jackson Smith) | Approved by Yas (Legal), 2026-10-26; published; app link fixed in #1875 |
+| P-d | Userflow gating fix                          | Fix gap 1 (#1967)                     | Jackson Smith             | Accepted: fix gap 1 (#1967)                                             |
 
 ---
 
@@ -313,7 +313,14 @@ time.txryan.com have acknowledged LearnCard's use (operator-reported by Jackson
 Smith; store the replies with this record). Still to attach before stage 2: the
 measured per-operation request count from staging and the volume forecast.
 
-`Owner: Jackson Smith` · `Decision: Accepted (option A) for stage 1; operator acknowledgments received; stage 2 needs the measured count and forecast` · `Approver/date: Jackson Smith, 2026-10-30`
+**Update (2026-11-06): accepted for the 100% switch** (operator-reported by Jackson
+Smith). The measured per-operation count and the forecast remain deferred by the
+owner: the 2026-11-06 staging measurement run (LC-2364) could not count Roughtime
+requests, because the enclave makes them, so the per-operation estimate above
+stands. Since 2026-11-14 the PIN canary recovers each account every 12 hours
+instead of hourly, which lowers the canary's share.
+
+`Owner: Jackson Smith` · `Decision: Accepted (option A) for 100%; operator acknowledgments received; measured count and forecast deferred` · `Approver/date: Jackson Smith, 2026-11-06`
 
 **Proposed amendment for the 100% launch (2026-11-05): A for full exposure.** Keep
 the three pinned sources (2-of-3) for all LearnCard and VetPass production users. The
@@ -538,10 +545,15 @@ escrow and recovery. The app still links
 2026", no escrow wording). Jackson Smith asked the web team, who own that page, to
 make sure the page the app links shows the latest wording; not yet confirmed. The
 named legal approver is still pending.
+
+**Update (2026-11-06):** the legal approver is Yas (Legal), who approved the policy
+text on 2026-10-26 (operator-reported by Jackson Smith). The switch (#1875) points the
+app's privacy link at <https://learncard.com/privacy-policy>, so the app no longer
+depends on the old page.
 At 100% every active user is silently auto-enrolled at the switch, so the short in-app
 notice is a switch prerequisite (ROLLOUT.md, "100% launch").
 
-`Owner: Legal` · `Decision: Policy text approved and published (learncard.com/privacy-policy); app-linked page update and named legal approver pending` · `Approver/date: Legal (name pending), reported by Jackson Smith, 2026-10-30`
+`Owner: Legal` · `Decision: Policy text approved and published (learncard.com/privacy-policy); the app links it from #1875; in-app notice shipped (#1991)` · `Approver/date: Yas (Legal), 2026-10-26, reported by Jackson Smith`
 
 ---
 

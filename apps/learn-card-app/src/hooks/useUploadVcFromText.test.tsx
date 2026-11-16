@@ -13,14 +13,22 @@ const mocks = vi.hoisted(() => ({
     add: vi.fn(),
     wrap: vi.fn(),
     addPlugin: vi.fn(),
+    category: vi.fn(),
+    invalidateQueries: vi.fn(),
+    invalidateCounts: vi.fn(),
+}));
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => ({ invalidateQueries: mocks.invalidateQueries }),
 }));
 vi.mock('learn-card-base', () => ({
+    switchedProfileStore: { get: { switchedDid: () => 'did:example:upload-account' } },
+    invalidateVisibleCredentialCounts: mocks.invalidateCounts,
     useWallet: () => ({ initWallet: mocks.initWallet, syncCredentialToContracts: mocks.sync }),
     enqueuePendingContractSync: (input: Parameters<typeof enqueuePendingContractSync>[0]) =>
         enqueuePendingContractSync(input),
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
-    getDefaultCategoryForCredential: () => 'Achievement',
+    getDefaultCategoryForCredential: mocks.category,
 }));
 vi.mock('@learncard/types', () => ({
     VCValidator: { safeParse: () => ({ success: true, data: {} }) },
@@ -49,6 +57,9 @@ const credential = {
 };
 beforeEach(() => {
     vi.clearAllMocks();
+    mocks.category.mockReturnValue('Achievement');
+    mocks.invalidateQueries.mockResolvedValue(undefined);
+    mocks.invalidateCounts.mockResolvedValue(undefined);
     pendingContractSyncStore.set.jobs({});
     mocks.wallet = {
         id: { did: () => 'did:example:upload-account' },
@@ -167,8 +178,17 @@ describe('useUploadVcFromText contract synchronization', () => {
             await waitFor(() => expect(mocks.add).toHaveBeenCalled());
             expect(pendingContractSyncStore.get.jobs()).toEqual({});
             expect(mocks.sync).not.toHaveBeenCalled();
+            expect(mocks.invalidateQueries).not.toHaveBeenCalled();
+            expect(mocks.invalidateCounts).not.toHaveBeenCalled();
             index.resolve(true);
             await saving;
+            expect(mocks.invalidateQueries).toHaveBeenCalledExactlyOnceWith({
+                queryKey: ['useGetCredentialList', 'did:example:upload-account'],
+            });
+            expect(mocks.invalidateCounts).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({ invalidateQueries: mocks.invalidateQueries }),
+                'did:example:upload-account'
+            );
             const jobs = Object.values(pendingContractSyncStore.get.jobs());
             expect(jobs.length).toBeGreaterThan(0);
             expect(
@@ -200,6 +220,8 @@ describe('useUploadVcFromText contract synchronization', () => {
             }
             expect(pendingContractSyncStore.get.jobs()).toEqual({});
             expect(mocks.sync).not.toHaveBeenCalled();
+            expect(mocks.invalidateQueries).not.toHaveBeenCalled();
+            expect(mocks.invalidateCounts).not.toHaveBeenCalled();
         }
     );
 
@@ -215,4 +237,32 @@ describe('useUploadVcFromText contract synchronization', () => {
         expect(mocks.sync).not.toHaveBeenCalled();
         expect(pendingContractSyncStore.get.jobs()).toEqual({});
     });
+
+    it.each(['single', 'openbadge', 'paste'] as const)(
+        'preserves internal-category visibility on the %s save path',
+        async path => {
+            mocks.category.mockReturnValue('AI Topic');
+            const { result } = renderHook(() => useUploadVcFromText());
+            if (path === 'paste') {
+                expect(
+                    (await result.current.uploadVcFromTextAndAddToWallet(credential))?.success
+                ).toBe(true);
+            } else {
+                const response = await result.current.uploadVcFromText(
+                    JSON.stringify(
+                        path === 'openbadge'
+                            ? { '@context': 'https://openbadges.org/openbadges/v2', name: 'badge' }
+                            : credential
+                    )
+                );
+                expect(response.success).toBe(true);
+            }
+            expect(mocks.add).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({ category: 'AI Topic', hidden: true })
+            );
+            expect(mocks.invalidateCounts).toHaveBeenCalledOnce();
+            expect(Object.values(pendingContractSyncStore.get.jobs())).toHaveLength(1);
+            expect(mocks.sync).not.toHaveBeenCalled();
+        }
+    );
 });

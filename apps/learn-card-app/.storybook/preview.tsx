@@ -78,8 +78,8 @@ const preview: Preview = {
             <IonApp>
                 <TenantConfigProvider config={DEFAULT_LEARNCARD_TENANT_CONFIG}>
                     <LocaleProvider>
-                        <AnalyticsContextProvider>
-                            <QueryClientProvider client={queryClient}>
+                        <QueryClientProvider client={queryClient}>
+                            <AnalyticsContextProvider>
                                 <MemoryRouter>
                                     <ModalsProvider>
                                         <div className="font-poppins bg-grayscale-100 h-screen overflow-y-auto">
@@ -88,8 +88,8 @@ const preview: Preview = {
                                         <Modals />
                                     </ModalsProvider>
                                 </MemoryRouter>
-                            </QueryClientProvider>
-                        </AnalyticsContextProvider>
+                            </AnalyticsContextProvider>
+                        </QueryClientProvider>
                     </LocaleProvider>
                 </TenantConfigProvider>
             </IonApp>

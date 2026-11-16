@@ -8,6 +8,33 @@
 - LC-2371: Keep background credential discovery out of contract-sync banners. Partner sync status waits for the active account's queued credential deliveries, including retry backoff, before reporting a configured contract ready.
 - LC-2371: Scope exhausted credential-delivery errors to contracts that actually failed, so unrelated partner apps remain usable. Keep unattributed failures in account-wide status.
 
+## 1.101.2
+
+### Patch Changes
+
+- [#1875](https://github.com/learningeconomy/LearnCard/pull/1875) [`0cd204d5d1d9af393001a17b772339bfd9a5b6dd`](https://github.com/learningeconomy/LearnCard/commit/0cd204d5d1d9af393001a17b772339bfd9a5b6dd) Thanks [@Custard7](https://github.com/Custard7)! - Point Terms of Service and Privacy Policy links at https://learncard.com/terms-of-service and https://learncard.com/privacy-policy (LearnCard production config, tenant defaults used by VetPass, and fallback constants).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fresh-device Passport/Home counts: the counts start the visibility backfill when its marker is missing, so a sign-in that skips the auth coordinator still writes it, and the marker read goes in the same batched request as the counts (LC-2413).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCloud index `getPage`/`getCount` accept `$ne`, `$nin` and `$in` on encrypted fields (sent as `fields.$nin` / `fields.$in` hashes; equality-only queries are unchanged). Internal index records (verifiable data, Self-Assigned Skills, internal categories) are written with `hidden: true`, a one-time per-account client backfill marks existing ones, and Passport and Home counts come from one index count request per tile instead of walking the whole index once the backfill is done (LC-2412, LC-2413).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCloud `index.add` skips a record whose `uri` is already indexed (one count lookup per add, by the existing `uri` field hash) and returns `true`, so new duplicate uri rows can't inflate index counts. Passport and Home counts no longer wait for this device's visibility backfill: a finished backfill leaves a LearnCloud marker, a fresh device reads it in the same batched request as the counts, and accounts with no marker count from one 1000-record index read instead of the paged walk (LC-2413).
+
+- [#2044](https://github.com/learningeconomy/LearnCard/pull/2044) [`ae4eb0ffc9c23119c469af38e8866b5086179b70`](https://github.com/learningeconomy/LearnCard/commit/ae4eb0ffc9c23119c469af38e8866b5086179b70) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Keep Passport and Home counts visible from the cached index walk during background refetches and after a failed refresh (LC-2412), reuse the walk for 5 minutes, and take 100-record pages after the first page so the complete walk needs far fewer round trips (LC-2413).
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/sss-key-manager@0.3.2
+    - @learncard/credential-library@2.1.9
+    - @learncard/helpers@1.8.2
+    - @learncard/network-brain-client@2.7.2
+    - @learncard/lca-api-plugin@2.1.1
+    - @learncard/ler-rs-plugin@0.1.37
+    - @learncard/open-badge-v2-plugin@1.1.47
+    - @learncard/openid4vc-plugin@0.4.1
+    - @learncard/render-method-plugin@14.0.1
+    - @learncard/sd-jwt-vc-plugin@0.2.24
+    - @learncard/react@3.0.7
+
 ## 1.101.1
 
 ### Patch Changes

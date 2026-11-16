@@ -50,6 +50,7 @@ import {
     assertManagedCredentialBinding,
 } from '@learncard/helpers';
 import Mustache from 'mustache';
+import { loadTrustedBoostRegistry } from './trustedBoostRegistry';
 
 import {
     LearnCardNetworkPluginDependentMethods,
@@ -4077,26 +4078,9 @@ export const getVerifyBoostPlugin = async (
     learnCard: LearnCard<any, any, VerifyExtension>,
     trustedBoostRegistryUrl?: string
 ): Promise<VerifyBoostPlugin> => {
-    const DEFAULT_TRUSTED_BOOST_REGISTRY: TrustedBoostRegistryEntry[] = [
-        {
-            id: 'LearnCard Network',
-            url: 'https://network.learncard.com',
-            did: 'did:web:network.learncard.com',
-        },
-    ];
-
-    let boostRegistry: TrustedBoostRegistryEntry[];
-
-    if (trustedBoostRegistryUrl) {
-        const res = await fetch(trustedBoostRegistryUrl);
-        if (res.status === 200) {
-            boostRegistry = JSON.parse(await res.text());
-        } else {
-            boostRegistry = DEFAULT_TRUSTED_BOOST_REGISTRY;
-        }
-    } else {
-        boostRegistry = DEFAULT_TRUSTED_BOOST_REGISTRY;
-    }
+    // The registry is only needed to name a trusted network, so fetch it on first use
+    // instead of holding up LearnCard initialization.
+    const getBoostRegistry = () => loadTrustedBoostRegistry(trustedBoostRegistryUrl);
 
     const getIssuerDID = (issuer: string | Profile | undefined): string | undefined => {
         if (!issuer) return;
@@ -4109,13 +4093,17 @@ export const getVerifyBoostPlugin = async (
         }
     };
     const getTrustedBoostVerifier = (
+        boostRegistry: readonly TrustedBoostRegistryEntry[],
         issuer: string | Profile | undefined
     ): TrustedBoostRegistryEntry | undefined => {
         const issuerDID = getIssuerDID(issuer);
         if (!issuerDID) return;
         return boostRegistry.find(o => o.did === issuerDID);
     };
-    const getTrustedBoostNetwork = (boostId: unknown): TrustedBoostRegistryEntry | undefined => {
+    const getTrustedBoostNetwork = (
+        boostRegistry: readonly TrustedBoostRegistryEntry[],
+        boostId: unknown
+    ): TrustedBoostRegistryEntry | undefined => {
         if (typeof boostId !== 'string') return;
         const match = /^lc:network:([^?#\s]+)\/(?:trpc:)?boost:([^/?#\s]+)$/.exec(boostId);
         if (!match) return;
@@ -4195,9 +4183,10 @@ export const getVerifyBoostPlugin = async (
                             // A direct VC is signed by the issuing authority, not by the
                             // network. Its signed boostId identifies the associated network.
                             // Legacy wrappers still establish trust through the outer issuer.
+                            const boostRegistry = await getBoostRegistry();
                             const trustedBoostIssuer = boostCredential
-                                ? getTrustedBoostVerifier(credential?.issuer)
-                                : getTrustedBoostNetwork(boostId);
+                                ? getTrustedBoostVerifier(boostRegistry, credential?.issuer)
+                                : getTrustedBoostNetwork(boostRegistry, boostId);
                             if (trustedBoostIssuer) {
                                 verificationCheck.checks.push(
                                     `Boost is Authentic. Verified by ${trustedBoostIssuer.id}.`

@@ -1,9 +1,17 @@
 import { VC, VCValidator } from '@learncard/types';
-import { useWallet, CredentialCategory, enqueuePendingContractSync } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+    useWallet,
+    CredentialCategory,
+    enqueuePendingContractSync,
+    switchedProfileStore,
+    invalidateVisibleCredentialCounts,
+} from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
 
 import { extractCredentialsFromText } from './extractCredentialsFromText';
+import { withInternalCategoryHidden } from 'learn-card-base/helpers/credentialCollection';
 
 export interface FileInfo {
     name?: string;
@@ -50,6 +58,14 @@ export interface AggregateUploadResult {
 
 export const useUploadVcFromText = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    // Direct index writes must refresh the cached list walk and the Passport/Home counts;
+    // both stay fresh for minutes (LC-2412).
+    const invalidateCredentialList = () => {
+        const profileDid = switchedProfileStore.get.switchedDid() ?? '';
+        void invalidateVisibleCredentialCounts(queryClient, profileDid);
+        return queryClient.invalidateQueries({ queryKey: ['useGetCredentialList', profileDid] });
+    };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const isOpenBadgeV2 = (obj: any) => {
@@ -134,7 +150,7 @@ export const useUploadVcFromText = () => {
                         fileInfo: fileInfo || {},
                     };
                 }
-                const record = {
+                const record = withInternalCategoryHidden({
                     id: id || crypto.randomUUID(),
                     uri: credURI,
                     category: categoryObvV2,
@@ -142,7 +158,7 @@ export const useUploadVcFromText = () => {
                     fileSize: fileInfo?.size,
                     fileType: fileInfo?.type,
                     uploadType,
-                };
+                });
                 const storedVC = await walletWithObv2.index.LearnCloud.add(record);
                 if (!storedVC) {
                     return {
@@ -198,7 +214,7 @@ export const useUploadVcFromText = () => {
                             parsed?.credentialSubject?.achievement?.name ||
                             'JSON Credential';
 
-                        const record = {
+                        const record = withInternalCategoryHidden({
                             id: id || crypto.randomUUID(),
                             uri: credentialUri,
                             category,
@@ -206,7 +222,7 @@ export const useUploadVcFromText = () => {
                             fileSize: fileInfo?.size,
                             fileType: fileInfo?.type,
                             uploadType,
-                        };
+                        });
                         const storedVC = await wallet.index.LearnCloud.add(record);
                         if (!storedVC) {
                             return {
@@ -293,6 +309,7 @@ export const useUploadVcFromText = () => {
         }
 
         const addedCount = results.filter(r => r.success).length;
+        if (addedCount > 0) void invalidateCredentialList();
         const failedCount = results.length - addedCount;
         const errors = [
             ...extractionErrors,
@@ -341,11 +358,11 @@ export const useUploadVcFromText = () => {
                 if (credentialUri) {
                     // Add to index if credentialUri was successfully obtained
                     try {
-                        const record = {
+                        const record = withInternalCategoryHidden({
                             id: crypto.randomUUID(),
                             uri: credentialUri,
                             category,
-                        };
+                        });
                         storedVC = await wallet.index.LearnCloud.add(record);
                         if (!storedVC) {
                             return {
@@ -361,6 +378,7 @@ export const useUploadVcFromText = () => {
                             record: { id: record.id, uri: record.uri, category: record.category },
                             category,
                         });
+                        void invalidateCredentialList();
 
                         return {
                             success: true,

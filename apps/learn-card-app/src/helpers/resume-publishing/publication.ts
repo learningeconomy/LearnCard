@@ -430,6 +430,7 @@ export const publishManagedResume = async (options: {
             previousPublicationUris,
             uri: attempt.lerUri,
             category: 'Resume',
+            hidden: true,
             credentialId: attempt.lerVc.id,
             lerRecordId: attempt.lerVc.id || attempt.recordId,
             pdfHash: attempt.pdfHash,
