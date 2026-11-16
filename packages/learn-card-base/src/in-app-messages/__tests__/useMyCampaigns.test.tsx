@@ -16,6 +16,8 @@ const state = vi.hoisted(() => ({
     record: vi.fn(),
     init: vi.fn(),
     warn: vi.fn(),
+    // A stable wallet object, for tests where the same wallet's DID changes.
+    wallet: null as { id: { did: () => string } } | null,
 }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
 vi.mock('../../hooks/useWallet', () => ({ useWallet: () => ({ initWallet: state.init }) }));
@@ -25,8 +27,8 @@ vi.mock('../../stores/currentUserStore', () => ({
 }));
 vi.mock('../../stores/walletStore', () => ({
     walletStore: {
-        use: { wallet: () => ({ id: { did: () => state.did } }) },
-        get: { wallet: () => ({ id: { did: () => state.did } }) },
+        use: { wallet: () => state.wallet ?? { id: { did: () => state.did } } },
+        get: { wallet: () => state.wallet ?? { id: { did: () => state.did } } },
     },
     switchedProfileStore: {
         use: { switchedDid: () => state.switchedDid },
@@ -60,6 +62,7 @@ beforeEach(() => {
     state.did = `alice-${++sequence}`;
     state.switchedDid = undefined;
     state.loggedIn = state.lcn = true;
+    state.wallet = null;
     localStorage.clear();
     state.fetch.mockResolvedValue([item()]);
     state.enroll.mockResolvedValue(true);
@@ -279,4 +282,52 @@ it('keeps a shared in-flight read usable when the host remounts for the same pro
     const next = renderHook(useMyCampaigns, { wrapper });
     await act(async () => finish(wallet));
     await waitFor(() => expect(next.result.current.campaigns).toHaveLength(1));
+});
+
+describe('when the LearnCard Network profile loads mid-fetch (LEARN-CARD-APP-M7A)', () => {
+    const stableWallet = (getMyCampaigns: () => Promise<MyCampaign[]>) => {
+        const wallet = {
+            id: { did: () => state.did },
+            invoke: {
+                getMyCampaigns: vi.fn(getMyCampaigns),
+                enrollInCampaign: state.enroll,
+                recordCampaignEvent: state.record,
+            },
+        };
+        state.wallet = wallet;
+        state.init.mockImplementation(async () => state.wallet);
+        return wallet;
+    };
+
+    it('keeps the campaigns when the same wallet turns from did:key into did:web', async () => {
+        state.did = 'did:key:z6MkFirstSessionDid';
+        const wallet = stableWallet(async () => {
+            // The plugin swaps did:key for the profile's did:web once its first getProfile lands.
+            state.did = 'did:web:network.example.com:users:alice';
+            return [item()];
+        });
+        const { result } = renderHook(useMyCampaigns, { wrapper });
+        await waitFor(() => expect(result.current.campaigns).toHaveLength(1));
+        expect(wallet.invoke.getMyCampaigns).toHaveBeenCalled();
+        expect(state.warn).not.toHaveBeenCalledWith('Campaign fetch failed');
+        const first = client
+            .getQueryCache()
+            .find({ queryKey: ['useMyCampaigns', 'local-network', 'did:key:z6MkFirstSessionDid'] });
+        expect(first?.state.status).toBe('success');
+    });
+
+    it("still drops the read when another account's wallet replaces it mid-fetch", async () => {
+        state.did = 'did:key:z6MkFirstSessionDid';
+        stableWallet(async () => {
+            state.wallet = { id: { did: () => 'did:web:network.example.com:users:bob' } };
+            return [item()];
+        });
+        renderHook(useMyCampaigns, { wrapper });
+        await waitFor(() => expect(state.warn).toHaveBeenCalledWith('Campaign fetch failed'));
+        const first = client
+            .getQueryCache()
+            .find({ queryKey: ['useMyCampaigns', 'local-network', 'did:key:z6MkFirstSessionDid'] });
+        expect(first?.state.status).toBe('error');
+        expect(first?.state.error).toEqual(new Error('Campaign profile changed'));
+    });
 });
