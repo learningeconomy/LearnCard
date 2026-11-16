@@ -14,7 +14,6 @@ const buildOptions = {
         'process',
         'abortcontroller-polyfill',
         'abort-controller',
-        'isomorphic-webcrypto',
         'cross-fetch',
         '@learncard/types',
     ],

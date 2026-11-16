@@ -1,6 +1,6 @@
 import { CryptoPluginType } from './types';
 
-import crypto from './crypto';
+import { getCrypto } from './crypto';
 
 export * from './types';
 
@@ -12,6 +12,6 @@ export const CryptoPlugin: CryptoPluginType = {
     displayName: 'Crypto Plugin',
     description: 'Exposes a standardized, isomorphic Crypto object',
     methods: {
-        crypto: () => crypto,
+        crypto: () => getCrypto(),
     },
 };

@@ -1,6 +1,9 @@
 import { createTRPCClient, TRPCClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '@learncard/learn-cloud-service';
 
+/** MongoDB-style query filter accepted by LearnCloud's custom storage routes. */
+export type { Filter } from '@learncard/learn-cloud-service';
+
 import { callbackLink } from './callbackLink';
 
 type Client = TRPCClient<AppRouter>;
