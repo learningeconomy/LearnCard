@@ -2,6 +2,8 @@ import { QueryClient, queryOptions } from '@tanstack/react-query';
 import type { Registry } from '@digitalcredentials/issuer-registry-client';
 import jwtDecode from 'jwt-decode';
 
+import { REGISTRY_PROXY_HEADER, toRegistryProxyUrl } from '../../registry-proxy/registryProxy';
+
 export const ISSUER_REGISTRY_STALE_TIME = 60_000;
 const TRUSTED_LIST = 'https://registries.learncard.com/known-did-registries.json';
 const UNTRUSTED_LIST = 'https://registries.learncard.com/untrusted-did-registries.json';
@@ -17,17 +19,38 @@ type FederationMetadata = {
     };
 };
 type EntityConfiguration = { metadata: FederationMetadata };
+type EntityStatement = EntityConfiguration & { sub?: string };
 type LegacyDocument = {
     registry: Record<string, { name: string; url: string; location?: string } | null>;
 };
 type IssuerMatch = { issuer: FederationMetadata; registry: object };
+
+/**
+ * Allowlisted registry documents go through the app-owned proxy first. Only responses the
+ * proxy itself produced are used; any other outcome (outage, SPA fallback, network error)
+ * retries the original direct request, so the proxy can never introduce a trusted result.
+ */
+const fetchRegistryDocument = async (url: string, proxyBaseUrl?: string): Promise<Response> => {
+    const proxyUrl = proxyBaseUrl ? toRegistryProxyUrl(url, proxyBaseUrl) : null;
+    if (proxyUrl) {
+        const proxied = await fetch(proxyUrl, {
+            credentials: 'omit',
+            signal: AbortSignal.timeout(10_000),
+        }).catch(() => null);
+        if (proxied?.headers.get(REGISTRY_PROXY_HEADER) && (proxied.ok || proxied.status === 404)) {
+            return proxied;
+        }
+    }
+    return fetch(url);
+};
 
 /** Public registry data only. QueryClient owns freshness, in-flight sharing and eviction. */
 const readDocument = <T>(
     client: QueryClient,
     url: string,
     format: 'json' | 'jwt',
-    allowNotFound = false
+    allowNotFound = false,
+    proxyBaseUrl?: string
 ) =>
     client.fetchQuery({
         queryKey: ['issuerRegistryDocument', format, url],
@@ -35,7 +58,7 @@ const readDocument = <T>(
         gcTime: 5 * 60_000,
         retry: false,
         queryFn: async (): Promise<T | null> => {
-            const response = await fetch(url);
+            const response = await fetchRegistryDocument(url, proxyBaseUrl);
             // A missing OIDF issuer is a valid negative lookup, not a registry outage.
             if (allowNotFound && response.status === 404) return null;
             if (!response.ok) throw new Error(`Registry request failed: ${response.status}`);
@@ -46,7 +69,8 @@ const readDocument = <T>(
 const lookupIssuers = async (
     client: QueryClient,
     registries: Registry[],
-    did: string
+    did: string,
+    proxyBaseUrl?: string
 ): Promise<{ matchingIssuers: IssuerMatch[]; uncheckedRegistries: Registry[] }> => {
     const lookups = await Promise.all(
         registries.map(async entry => {
@@ -78,19 +102,24 @@ const lookupIssuers = async (
                     const anchor = await readDocument<EntityConfiguration>(
                         client,
                         entry.trustAnchorEC,
-                        'jwt'
+                        'jwt',
+                        false,
+                        proxyBaseUrl
                     );
                     const endpoint = anchor?.metadata.federation_entity.federation_fetch_endpoint;
                     if (!endpoint) throw new Error('Missing issuer lookup endpoint');
                     const url = new URL(endpoint);
                     url.searchParams.set('sub', did);
-                    const issuer = await readDocument<EntityConfiguration>(
+                    const issuer = await readDocument<EntityStatement>(
                         client,
                         url.href,
                         'jwt',
-                        true
+                        true,
+                        proxyBaseUrl
                     );
                     if (!issuer) return {};
+                    // A statement about another subject is a bad response, never a match.
+                    if (issuer.sub !== did) throw new Error('Issuer statement subject mismatch');
                     return { match: { issuer: issuer.metadata, registry: anchor!.metadata } };
                 }
                 // Runtime registry lists may introduce types this client cannot check yet.
@@ -110,7 +139,11 @@ const lookupIssuers = async (
 };
 
 /** Registry labels are informational; decoding federation JWTs does not verify signatures. */
-export const knownDIDRegistryQueryOptions = (client: QueryClient, did?: string) =>
+export const knownDIDRegistryQueryOptions = (
+    client: QueryClient,
+    did?: string,
+    proxyBaseUrl?: string
+) =>
     queryOptions({
         queryKey: ['knownDidRegistry', did],
         enabled: !!did,
@@ -128,8 +161,8 @@ export const knownDIDRegistryQueryOptions = (client: QueryClient, did?: string) 
                 throw new Error('Invalid registry list');
             }
             const [trustedResults, untrustedResults] = await Promise.all([
-                lookupIssuers(client, trusted, did),
-                lookupIssuers(client, untrusted, did),
+                lookupIssuers(client, trusted, did, proxyBaseUrl),
+                lookupIssuers(client, untrusted, did, proxyBaseUrl),
             ]);
             if (trustedResults.matchingIssuers.length) {
                 return { source: 'trusted' as const, results: trustedResults, incomplete: false };

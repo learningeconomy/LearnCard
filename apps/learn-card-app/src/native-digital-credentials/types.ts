@@ -28,7 +28,15 @@ export interface NativeDigitalCredentialsPlugin {
     getPendingRequest: () => Promise<{
         pending?: PendingDigitalCredentialRequest;
         isProvider?: boolean;
+        /** Native binary can route OAuth callbacks to the activity that opened sign-in. */
+        authCallbackRouting?: boolean;
     }>;
+    beginAuthCallback: (options: {
+        requestId: string;
+        callbackUrlPrefix: string;
+        timeoutMs: number;
+    }) => Promise<{ token: string }>;
+    endAuthCallback: (options: { token: string }) => Promise<void>;
     complete: (options: { requestId: string; responseJson: string }) => Promise<void>;
     cancel: (options: { requestId?: string }) => Promise<void>;
 }

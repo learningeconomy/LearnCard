@@ -578,6 +578,12 @@ export interface KeyDerivationStrategy<
     /** Fetch the server-side key status for the authenticated user */
     fetchServerKeyStatus(token: string, providerType: AuthProviderType): Promise<ServerKeyStatus>;
 
+    /** Fetch a server-attested legacy key for account upgrade; unavailable responses return null. */
+    fetchArchivedKey?(
+        authToken: string,
+        providerType: AuthProviderType
+    ): Promise<{ privateKey: string; did: string } | null>;
+
     /** Store the remote key component on the server */
     storeAuthShare(
         token: string,

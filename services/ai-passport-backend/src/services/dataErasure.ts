@@ -209,6 +209,8 @@ export const assertOwnerOperationActive = async (did: string): Promise<void> => 
         throw error;
     }
 };
+/** Run `callback` outside any owner operation (work that outlives one). */
+export const runOutsideOwnerOperation = <T>(callback: () => T): T => operations.exit(callback);
 export const withOwnerOperation = async <T>(
     did: string,
     callback: (signal: AbortSignal) => Promise<T>,

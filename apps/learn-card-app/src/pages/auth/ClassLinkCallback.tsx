@@ -6,6 +6,7 @@ import {
     ToastTypeEnum,
     authUserStore,
     SocialLoginTypes,
+    redirectStore,
 } from 'learn-card-base';
 import { useClassLinkExchangeCode } from 'learn-card-base/react-query/mutations/firebase';
 import { LoadingPageDumb } from '../loadingPage/LoadingPage';
@@ -137,7 +138,17 @@ const ClassLinkSignInCallback: React.FC = () => {
                         loginMethod: SocialLoginTypes.classlink,
                         throwOnError: true,
                     });
-                    history.replace(attempt.redirectTo || '/wallet');
+                    // The provider destination belongs to this WebView, not the persisted
+                    // PKCE attempt (which may outlive a canceled Android activity).
+                    const requestRedirect = redirectStore.get.requestRedirect();
+                    const destination =
+                        requestRedirect &&
+                        redirectStore.get.lcnRedirect() === requestRedirect.destination
+                            ? requestRedirect.destination
+                            : undefined;
+                    if (requestRedirect && destination)
+                        redirectStore.set.clearRequestRedirect(requestRedirect.requestId);
+                    history.replace(destination || attempt.redirectTo || '/wallet');
                 } else {
                     throw new Error('No token returned');
                 }

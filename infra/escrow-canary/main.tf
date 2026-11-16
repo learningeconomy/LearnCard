@@ -93,7 +93,7 @@ resource "aws_lambda_function_event_invoke_config" "runner" {
 resource "aws_cloudwatch_event_rule" "schedule" {
   for_each            = local.tiers
   name                = "${local.name}-tier${each.key}"
-  schedule_expression = each.key == "1" ? "rate(1 minute)" : "rate(30 minutes)"
+  schedule_expression = each.key == "1" ? "rate(1 minute)" : local.tier2_schedule
   state               = var.enabled ? "ENABLED" : "DISABLED"
 }
 resource "aws_cloudwatch_event_target" "runner" {

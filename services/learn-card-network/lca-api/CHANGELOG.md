@@ -1,5 +1,41 @@
 # @welibraryos/lca-api-service
 
+## 1.8.1
+
+### Patch Changes
+
+- [#2006](https://github.com/learningeconomy/LearnCard/pull/2006) [`49bc45c978c41b947ba650e0d601554c8f869e56`](https://github.com/learningeconomy/LearnCard/commit/49bc45c978c41b947ba650e0d601554c8f869e56) Thanks [@Custard7](https://github.com/Custard7)! - Add `POST /keys/archived-key`, which releases an archived legacy key to the verified Firebase login that owns it so the SSS account upgrade does not depend on the legacy provider. Release is limited to accounts that still need the legacy key, verifies the decrypted key reproduces the archived DID (and any recorded primary DID), rate-limits per login and IP, and tags the archive `released`; SSS activation tags it `exhausted`. Disabled unless `LEGACY_KEY_ARCHIVE_ENABLED` is set.
+
+- [#2039](https://github.com/learningeconomy/LearnCard/pull/2039) [`4c980dd2eeac86a00dc58603f1076de2d92df4c4`](https://github.com/learningeconomy/LearnCard/commit/4c980dd2eeac86a00dc58603f1076de2d92df4c4) Thanks [@gerardopar](https://github.com/gerardopar)! - fix(scouts): enable production signing-authority seed encryption
+
+- Updated dependencies [[`f3f3d678156b46a67a2f916b62789aeef4e40bc7`](https://github.com/learningeconomy/LearnCard/commit/f3f3d678156b46a67a2f916b62789aeef4e40bc7)]:
+    - @learncard/types@6.1.1
+    - @learncard/sss-key-manager@0.3.2
+    - @learncard/core@9.4.46
+    - @learncard/helpers@1.8.2
+    - @learncard/init@2.5.12
+    - @learncard/did-web-plugin@1.1.46
+    - @learncard/didkit-plugin@1.10.12
+    - @learncard/didkit-plugin-node@0.3.12
+
+## 1.8.0
+
+### Minor Changes
+
+- [#2025](https://github.com/learningeconomy/LearnCard/pull/2025) [`7f430656d7ff8c780b375f109e870dd07b5b9bf2`](https://github.com/learningeconomy/LearnCard/commit/7f430656d7ff8c780b375f109e870dd07b5b9bf2) Thanks [@Custard7](https://github.com/Custard7)! - Transcript issuers can say how long delivery will take. An accepted transcript request response may include `expectedInSeconds` or an ISO 8601 `expectedBy`; lca-api stores it and returns it as an additive `expectedBy` field from `transcripts.request` and `transcripts.getStatus` (and the plugin's `transcriptsRequest` / `transcriptsGetStatus` types). Malformed, past or more than 30-day estimates are ignored. The app keeps its live steps for estimates of 30 seconds or less, shows a progress bar with the time left for estimates up to 5 minutes, and for longer ones confirms the request and when to expect it. The School Connect card shows the same estimate and only offers manual recovery once the estimate has passed.
+
+### Patch Changes
+
+- Updated dependencies [[`c245cba6fc162e6896c4f9439a8a8da42d4189c9`](https://github.com/learningeconomy/LearnCard/commit/c245cba6fc162e6896c4f9439a8a8da42d4189c9), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c), [`6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480`](https://github.com/learningeconomy/LearnCard/commit/6568ef03ecbaf3e29ca91ffabb9ef509e5cc0480), [`f086c95870f57896331b2bbbdd97a94f6ddc3339`](https://github.com/learningeconomy/LearnCard/commit/f086c95870f57896331b2bbbdd97a94f6ddc3339), [`7641006bae66bf2cd52666eb937f2e22154e301c`](https://github.com/learningeconomy/LearnCard/commit/7641006bae66bf2cd52666eb937f2e22154e301c)]:
+    - @learncard/didkit-plugin@1.10.11
+    - @learncard/types@6.1.0
+    - @learncard/init@2.5.11
+    - @learncard/didkit-plugin-node@0.3.11
+    - @learncard/core@9.4.45
+    - @learncard/helpers@1.8.1
+    - @learncard/did-web-plugin@1.1.45
+    - @learncard/sss-key-manager@0.3.1
+
 ## 1.7.0
 
 ### Minor Changes

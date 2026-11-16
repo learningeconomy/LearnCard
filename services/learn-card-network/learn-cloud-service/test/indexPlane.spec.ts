@@ -117,6 +117,39 @@ describe('Index', () => {
             expect(records.records[0]).toEqual(testRecordA);
         });
 
+        it('should exclude encrypted field hashes with fields.$nin', async () => {
+            const encryptedRecords = await userA.clients.fullAuth.index.get({
+                query: { fields: { $in: ['record'], $nin: ['recordA'] } },
+            });
+            const records = await userA.learnCard.invoke.decryptDagJwe(encryptedRecords as JWE);
+
+            expect(records.records.map((record: { id: string }) => record.id)).toEqual([
+                'testRecordB',
+            ]);
+        });
+
+        it('should allow fields.$nin without fields.$in', async () => {
+            const encryptedRecords = await userA.clients.fullAuth.index.get({
+                query: { fields: { $nin: ['recordB'] } },
+            });
+            const records = await userA.learnCard.invoke.decryptDagJwe(encryptedRecords as JWE);
+
+            expect(records.records.map((record: { id: string }) => record.id)).toEqual([
+                'testRecordA',
+            ]);
+        });
+
+        it('should allow $ne on unencrypted fields', async () => {
+            const encryptedRecords = await userA.clients.fullAuth.index.get({
+                query: { title: { $ne: 'Record A' } },
+            });
+            const records = await userA.learnCard.invoke.decryptDagJwe(encryptedRecords as JWE);
+
+            expect(records.records.map((record: { id: string }) => record.id)).toEqual([
+                'testRecordB',
+            ]);
+        });
+
         it('should have working pagination', async () => {
             const { id, ...testRecord } = testRecordA;
             const records = [testRecord, testRecord, testRecord, testRecord];
@@ -253,6 +286,33 @@ describe('Index', () => {
 
             expect(count).toEqual(1);
         });
+
+        it('should exclude encrypted field hashes with fields.$nin', async () => {
+            const encryptedCount = await userA.clients.fullAuth.index.count({
+                query: { fields: { $in: ['record'], $nin: ['recordA'] } },
+            });
+            const count = Number(await userA.learnCard.invoke.decryptDagJwe(encryptedCount as JWE));
+
+            expect(count).toEqual(1);
+        });
+
+        it('should allow fields.$nin without fields.$in', async () => {
+            const encryptedCount = await userA.clients.fullAuth.index.count({
+                query: { fields: { $nin: ['recordA', 'recordB'] } },
+            });
+            const count = Number(await userA.learnCard.invoke.decryptDagJwe(encryptedCount as JWE));
+
+            expect(count).toEqual(0);
+        });
+
+        it('should allow $ne on unencrypted fields', async () => {
+            const encryptedCount = await userA.clients.fullAuth.index.count({
+                query: { title: { $ne: 'Record A' } },
+            });
+            const count = Number(await userA.learnCard.invoke.decryptDagJwe(encryptedCount as JWE));
+
+            expect(count).toEqual(1);
+        });
     });
 
     describe('add', () => {
@@ -342,7 +402,7 @@ describe('Index', () => {
 
             expect(records.records).toHaveLength(0);
 
-            const promise = userA.clients.fullAuth.index.add({ record: testRecordC as any });
+            const promise = userA.clients.fullAuth.index.add({ record: testRecordC as never });
             await expect(promise).resolves.not.toThrow();
 
             const newRecords = (await userA.clients.fullAuth.index.get({

@@ -42,12 +42,32 @@ export const isInternalCredentialCategory = (category?: string): boolean =>
             ))
     );
 
+/** Stamp at write time so the count endpoint can leave internal records out. */
+export const withInternalCategoryHidden = <T extends { category?: string }>(
+    record: T
+): T & { hidden?: true } =>
+    isInternalCredentialCategory(record.category) ? { ...record, hidden: true } : record;
+
+/**
+ * Categories Passport and Home never count, as the exact strings writers store. The count
+ * query excludes them by hash, which also covers records written by app versions that do
+ * not stamp `hidden` yet. Non-canonical spellings are flagged by the visibility backfill.
+ */
+export const UNCOUNTED_CATEGORY_VALUES: readonly string[] = [
+    'Hidden',
+    'hidden',
+    ...Object.keys(INTERNAL_CATEGORIES),
+    ...FILE_KINDS,
+];
+
 export const isCredentialCollectionCategoryVisible = (category?: string): boolean =>
     category?.toLowerCase() !== 'hidden' && !isInternalCredentialCategory(category);
 
 /** User-facing collection membership depends only on encrypted index metadata. */
 export const isCredentialCollectionRecordVisible = (record: LCR): boolean =>
     Boolean(record.uri) &&
+    record.hidden !== true &&
+    // Records written before `hidden` existed; kept until every client stamps it.
     !record.id?.startsWith('__verifiable_data_') &&
     isCredentialCollectionCategoryVisible(record.category) &&
     record.title?.trim() !== 'Self-Assigned Skills';

@@ -9,8 +9,8 @@ resource "aws_sns_topic_subscription" "email" {
 locals {
   alarm_streams = {
     "1"       = { tier = "1", period = 60, dimensions = { Tier = "1", Environment = var.environment } }
-    "2-pin-a" = { tier = "2", period = 3600, dimensions = { Tier = "2", Environment = var.environment, Account = "pin-a" } }
-    "2-pin-b" = { tier = "2", period = 3600, dimensions = { Tier = "2", Environment = var.environment, Account = "pin-b" } }
+    "2-pin-a" = { tier = "2", period = 43200, dimensions = { Tier = "2", Environment = var.environment, Account = "pin-a" } }
+    "2-pin-b" = { tier = "2", period = 43200, dimensions = { Tier = "2", Environment = var.environment, Account = "pin-b" } }
   }
 }
 resource "aws_cloudwatch_metric_alarm" "success" {

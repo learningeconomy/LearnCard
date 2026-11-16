@@ -11,6 +11,23 @@ describe('native account invalidation boundary', () => {
         expect(nativeAccountChanged(restored, initial)).toBe(false);
         expect(nativeAccountChanged({ ...restored }, restored)).toBe(false);
     });
+    it('allows a cached social UID to be replaced during key restoration, before owner verification', () => {
+        const cached = { currentUser: { uid: 'social-provider-uid' }, currentUserPK: null };
+        expect(
+            nativeAccountChanged(
+                { ...restored, currentUser: { uid: '', privateKey: 'test-key-a' } },
+                cached
+            )
+        ).toBe(false);
+        // A different seed is rejected by the persisted-owner check, not by a profile UID.
+        expect(
+            nativeAccountChanged(
+                { ...restored, currentUser: { uid: '', privateKey: 'test-key-b' } },
+                cached
+            )
+        ).toBe(false);
+        expect(nativeAccountChanged({ currentUser: null, currentUserPK: null }, cached)).toBe(true);
+    });
     it('invalidates a key/account replacement immediately, before a replacement wallet exists', () => {
         expect(
             nativeAccountChanged(

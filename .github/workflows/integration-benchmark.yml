@@ -17,7 +17,8 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                group: [share-links, profile-search, boost-recipients, inbox, campaigns]
+                group:
+                    [share-links, claim-links, profile-search, boost-recipients, inbox, campaigns]
         uses: ./.github/workflows/brain-integration.yml
         with:
             group: ${{ matrix.group }}
@@ -62,7 +63,8 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                group: [share-links, profile-search, boost-recipients, inbox, campaigns]
+                group:
+                    [share-links, claim-links, profile-search, boost-recipients, inbox, campaigns]
         uses: ./.github/workflows/brain-integration.yml
         with:
             group: ${{ matrix.group }}

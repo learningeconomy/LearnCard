@@ -5,6 +5,8 @@ import { cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+    requestRedirect: null as { requestId: string; destination: string } | null,
+    clearRequestRedirect: vi.fn(),
     search: '',
     intent: 'signIn' as 'signIn' | 'connect',
     peek: vi.fn(),
@@ -30,6 +32,13 @@ vi.mock('learn-card-base', () => ({
     ToastTypeEnum: { Error: 'error', Success: 'success' },
     authUserStore: { get: { currentUser: () => null } },
     SocialLoginTypes: { classlink: 'classlink' },
+    redirectStore: {
+        get: {
+            requestRedirect: () => mocks.requestRedirect,
+            lcnRedirect: () => mocks.requestRedirect?.destination ?? null,
+        },
+        set: { clearRequestRedirect: mocks.clearRequestRedirect },
+    },
     getLogger: () => ({ error: vi.fn(), warn: vi.fn() }),
     useWallet: () => ({ initWallet: async () => mocks.wallet }),
     SCHOOL_CONNECTION_QUERY_KEY: 'schoolConnection',
@@ -73,6 +82,24 @@ const ATTEMPT = {
 };
 
 describe('ClassLinkCallback (sign-in)', () => {
+    afterEach(() => {
+        mocks.requestRedirect = null;
+    });
+    it('returns to the activity-local Android request after successful sign-in, without persisting it in PKCE', async () => {
+        mocks.requestRedirect = {
+            requestId: 'selected-request',
+            destination: '/native-digital-credentials',
+        };
+        mocks.search = '?code=code-1&state=state-1';
+        mocks.consume.mockResolvedValue(ATTEMPT);
+        mocks.exchangeCode.mockResolvedValue({ token: 'test-token' });
+        render(<ClassLinkCallback />);
+        await waitFor(() =>
+            expect(mocks.replace).toHaveBeenCalledWith('/native-digital-credentials')
+        );
+        expect(mocks.clearRequestRedirect).toHaveBeenCalledWith('selected-request');
+        expect(ATTEMPT).not.toHaveProperty('redirectTo');
+    });
     beforeEach(() => {
         vi.clearAllMocks();
         resetClassLinkCallbackClaims();
