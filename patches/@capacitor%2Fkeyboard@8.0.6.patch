@@ -1,8 +1,7 @@
 diff --git a/android/src/main/java/com/capacitorjs/plugins/keyboard/Keyboard.java b/android/src/main/java/com/capacitorjs/plugins/keyboard/Keyboard.java
-index a31085c69281a32b241e5f7f0ac2ace83fa4d7d3..61ee5942bbab75fbcd3dc9ece0963a83155728ff 100644
 --- a/android/src/main/java/com/capacitorjs/plugins/keyboard/Keyboard.java
 +++ b/android/src/main/java/com/capacitorjs/plugins/keyboard/Keyboard.java
-@@ -17,6 +17,8 @@ import androidx.core.view.ViewCompat;
+@@ -17,6 +17,8 @@
  import androidx.core.view.WindowInsetsAnimationCompat;
  import androidx.core.view.WindowInsetsCompat;
  import com.getcapacitor.Bridge;
@@ -11,7 +10,16 @@ index a31085c69281a32b241e5f7f0ac2ace83fa4d7d3..61ee5942bbab75fbcd3dc9ece0963a83
  import java.util.List;
  
  public class Keyboard {
-@@ -76,12 +78,42 @@ public class Keyboard {
+@@ -28,6 +30,8 @@
+     private Bridge bridge;
+     private AppCompatActivity activity;
+     private View rootView;
++    private Runnable finishAnimation;
++    private boolean destroyed;
+     private int usableHeightPrevious;
+     private FrameLayout.LayoutParams frameLayoutParams;
+     private View mChildOfContent;
+@@ -76,12 +80,46 @@
          ViewCompat.setWindowInsetsAnimationCallback(
              rootView,
              new WindowInsetsAnimationCompat.Callback(WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_STOP) {
@@ -25,12 +33,16 @@ index a31085c69281a32b241e5f7f0ac2ace83fa4d7d3..61ee5942bbab75fbcd3dc9ece0963a83
 +                @Override
 +                public void onPrepare(@NonNull WindowInsetsAnimationCompat animation) {
 +                    if ((animation.getTypeMask() & WindowInsetsCompat.Type.ime()) != 0) {
++                        if (finishAnimation != null) {
++                            rootView.removeCallbacks(finishAnimation);
++                            finishAnimation = null;
++                        }
 +                        keyboardAnimation = animation;
 +                        openingAnimation = null;
 +                        sizingOwner = getSystemBars();
 +                        if (sizingOwner == null) return;
 +                        preparedBottom = rootView.getPaddingBottom();
-+                        sizingOwner.beginKeyboardAnimation();
++                        sizingOwner.beginKeyboardAnimation(animation.getDurationMillis());
 +                    }
 +                }
 +
@@ -54,7 +66,7 @@ index a31085c69281a32b241e5f7f0ac2ace83fa4d7d3..61ee5942bbab75fbcd3dc9ece0963a83
                      return insets;
                  }
  
-@@ -91,6 +123,20 @@ public class Keyboard {
+@@ -91,6 +129,20 @@
                      @NonNull WindowInsetsAnimationCompat animation,
                      @NonNull WindowInsetsAnimationCompat.BoundsCompat bounds
                  ) {
@@ -75,7 +87,7 @@ index a31085c69281a32b241e5f7f0ac2ace83fa4d7d3..61ee5942bbab75fbcd3dc9ece0963a83
                      WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
                      if (insets == null) return super.onStart(animation, bounds);
                      boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
-@@ -102,6 +148,7 @@ public class Keyboard {
+@@ -102,6 +154,7 @@
                          possiblyResizeChildOfContent(showingKeyboard);
                      }
  
@@ -83,7 +95,7 @@ index a31085c69281a32b241e5f7f0ac2ace83fa4d7d3..61ee5942bbab75fbcd3dc9ece0963a83
                      if (showingKeyboard) {
                          keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, Math.round(imeHeight / density));
                      } else {
-@@ -113,6 +160,15 @@ public class Keyboard {
+@@ -113,6 +166,23 @@
                  @Override
                  public void onEnd(@NonNull WindowInsetsAnimationCompat animation) {
                      super.onEnd(animation);
@@ -91,15 +103,23 @@ index a31085c69281a32b241e5f7f0ac2ace83fa4d7d3..61ee5942bbab75fbcd3dc9ece0963a83
 +                    // over a newer dismissal or keyboard height change.
 +                    if (keyboardAnimation != animation) return;
 +                    keyboardAnimation = null;
-+                    if (openingAnimation == animation) {
-+                        openingAnimation = null;
-+                        setBottomPadding(endBottom);
++                    openingAnimation = null;
++                    if (sizingOwner != null) {
++                        SystemBars owner = sizingOwner;
++                        // A cancelled opening may end before the replacement's
++                        // onPrepare. Do not snap to its obsolete destination.
++                        // Let a replacement claim sizing before the next frame;
++                        // otherwise reconcile with the current platform insets.
++                        finishAnimation = () -> {
++                            finishAnimation = null;
++                            if (!destroyed && keyboardAnimation == null) owner.endKeyboardAnimation();
++                        };
++                        rootView.postOnAnimation(finishAnimation);
 +                    }
-+                    if (sizingOwner != null) sizingOwner.endKeyboardAnimation();
                      WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
                      if (insets == null) return;
                      boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
-@@ -120,6 +176,7 @@ public class Keyboard {
+@@ -120,6 +190,7 @@
                      DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                      final float density = dm.density;
  
@@ -107,10 +127,12 @@ index a31085c69281a32b241e5f7f0ac2ace83fa4d7d3..61ee5942bbab75fbcd3dc9ece0963a83
                      if (showingKeyboard) {
                          keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, Math.round(imeHeight / density));
                      } else {
-@@ -137,6 +194,20 @@ public class Keyboard {
-         ((InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(activity.getCurrentFocus(), 0);
-     }
+@@ -135,6 +206,30 @@
  
+     public void show() {
+         ((InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(activity.getCurrentFocus(), 0);
++    }
++
 +    // Report only the native sizing owner that this plugin synchronizes with.
 +    // Disabled SystemBars / legacy shells retain their existing overlay policy.
 +    boolean isViewportResizeEnabled() {
@@ -125,14 +147,21 @@ index a31085c69281a32b241e5f7f0ac2ace83fa4d7d3..61ee5942bbab75fbcd3dc9ece0963a83
 +        return handle != null && handle.getInstance() instanceof SystemBars ? (SystemBars) handle.getInstance() : null;
 +    }
 +
++    public void destroy() {
++        destroyed = true;
++        keyboardEventListener = null;
++        if (finishAnimation != null) rootView.removeCallbacks(finishAnimation);
++        finishAnimation = null;
++        ViewCompat.setWindowInsetsAnimationCallback(rootView, null);
++        SystemBars owner = getSystemBars();
++        if (owner != null) owner.endKeyboardAnimation();
+     }
+ 
      public boolean hide() {
-         InputMethodManager inputManager = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
-         View v = activity.getCurrentFocus();
 diff --git a/android/src/main/java/com/capacitorjs/plugins/keyboard/KeyboardPlugin.java b/android/src/main/java/com/capacitorjs/plugins/keyboard/KeyboardPlugin.java
-index 40fe0b7581c18898783dfb53c3638c70d4afd876..f71879c2976d7272ff216b41fdd0929ce844d334 100644
 --- a/android/src/main/java/com/capacitorjs/plugins/keyboard/KeyboardPlugin.java
 +++ b/android/src/main/java/com/capacitorjs/plugins/keyboard/KeyboardPlugin.java
-@@ -61,7 +61,15 @@ public class KeyboardPlugin extends Plugin {
+@@ -61,7 +61,15 @@
  
      @PluginMethod
      public void getResizeMode(PluginCall call) {
@@ -149,11 +178,18 @@ index 40fe0b7581c18898783dfb53c3638c70d4afd876..f71879c2976d7272ff216b41fdd0929c
      }
  
      @PluginMethod
+@@ -89,6 +97,6 @@
+ 
+     @Override
+     protected void handleOnDestroy() {
+-        implementation.setKeyboardEventListener(null);
++        if (implementation != null) implementation.destroy();
+     }
+ }
 diff --git a/ios/Sources/KeyboardPlugin/Keyboard.m b/ios/Sources/KeyboardPlugin/Keyboard.m
-index 72cfe2f81d65e4213f2f036c95b7a490961fa7c1..4f1bc14d0f5ab7cd1d454d003914dc1d50467ae6 100644
 --- a/ios/Sources/KeyboardPlugin/Keyboard.m
 +++ b/ios/Sources/KeyboardPlugin/Keyboard.m
-@@ -40,6 +40,9 @@ typedef enum : NSUInteger {
+@@ -40,6 +40,9 @@
  @property (nonatomic, readwrite) ResizePolicy keyboardResizes;
  @property (readwrite, assign, nonatomic) NSString* keyboardStyle;
  @property (nonatomic, readwrite) int paddingBottom;
@@ -163,7 +199,7 @@ index 72cfe2f81d65e4213f2f036c95b7a490961fa7c1..4f1bc14d0f5ab7cd1d454d003914dc1d
  
  @end
  
-@@ -212,7 +215,7 @@ double stageManagerOffset;
+@@ -212,7 +215,7 @@
  
  - (void)onKeyboardWillHide:(NSNotification *)notification
  {
@@ -172,7 +208,7 @@ index 72cfe2f81d65e4213f2f036c95b7a490961fa7c1..4f1bc14d0f5ab7cd1d454d003914dc1d
    [self resetScrollView];
    hideTimer = [NSTimer scheduledTimerWithTimeInterval:0 repeats:NO block:^(NSTimer * _Nonnull timer) {
      [self.bridge triggerWindowJSEventWithEventName:@"keyboardWillHide"];
-@@ -255,7 +258,7 @@ double stageManagerOffset;
+@@ -255,7 +258,7 @@
    }
  
    double duration = [[notification.userInfo valueForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue]+0.2;
@@ -181,10 +217,22 @@ index 72cfe2f81d65e4213f2f036c95b7a490961fa7c1..4f1bc14d0f5ab7cd1d454d003914dc1d
    [self resetScrollView];
  
    NSString * data = [NSString stringWithFormat:@"{ 'keyboardHeight': %d }", (int)height];
-@@ -304,6 +307,67 @@ double stageManagerOffset;
-   stageManagerOffset = 0;
- }
+@@ -302,6 +305,80 @@
+   [self resetScrollView];
  
+   stageManagerOffset = 0;
++}
++
++- (void)cancelKeyboardResizeAnimation
++{
++  ++self.resizeAnimationGeneration;
++  [self.resizeDisplayLink invalidate];
++  self.resizeDisplayLink = nil;
++  [self.resizeAnimationView.layer removeAllAnimations];
++  [self.resizeAnimationView removeFromSuperview];
++  self.resizeAnimationView = nil;
++}
++
 +- (void)resizeForKeyboardNotification:(NSNotification *)notification height:(int)height fallbackDelay:(NSTimeInterval)delay
 +{
 +  if (self.keyboardResizes != ResizeNative) {
@@ -194,11 +242,8 @@ index 72cfe2f81d65e4213f2f036c95b7a490961fa7c1..4f1bc14d0f5ab7cd1d454d003914dc1d
 +
 +  if (self.paddingBottom == height && self.resizeDisplayLink == nil) return;
 +  self.paddingBottom = height;
-+  [self.resizeDisplayLink invalidate];
-+  self.resizeDisplayLink = nil;
-+  [self.resizeAnimationView removeFromSuperview];
-+  self.resizeAnimationView = nil;
-+  NSUInteger generation = ++self.resizeAnimationGeneration;
++  [self cancelKeyboardResizeAnimation];
++  NSUInteger generation = self.resizeAnimationGeneration;
 +
 +  CGRect currentFrame = self.webView.frame;
 +  CGRect windowBounds = [self currentKeyWindow].bounds;
@@ -211,6 +256,7 @@ index 72cfe2f81d65e4213f2f036c95b7a490961fa7c1..4f1bc14d0f5ab7cd1d454d003914dc1d
 +  // revealing its empty backing surface for several frames.
 +  if (height == 0) {
 +    self.webView.frame = targetFrame;
++    [self resetScrollView];
 +    return;
 +  }
 +
@@ -237,15 +283,59 @@ index 72cfe2f81d65e4213f2f036c95b7a490961fa7c1..4f1bc14d0f5ab7cd1d454d003914dc1d
 +    [guide removeFromSuperview];
 +    self.resizeAnimationView = nil;
 +    self.webView.frame = targetFrame;
++    [self resetScrollView];
 +  }];
 +}
 +
 +- (void)updateAnimatedKeyboardFrame:(CADisplayLink *)displayLink
 +{
++  if (self.keyboardResizes != ResizeNative) {
++    [self cancelKeyboardResizeAnimation];
++    return;
++  }
 +  CALayer *presentation = self.resizeAnimationView.layer.presentationLayer;
 +  if (presentation != nil) self.webView.frame = presentation.frame;
-+}
-+
+ }
+ 
  - (void)setKeyboardHeight:(int)height delay:(NSTimeInterval)delay
+@@ -449,17 +526,21 @@
+ 
+ - (void)setResizeMode:(CAPPluginCall *)call
  {
-   if (self.paddingBottom == height) {
+-  NSString * mode = [call getString:@"mode" defaultValue:@"none"];
+-  if ([mode isEqualToString:@"ionic"]) {
+-    self.keyboardResizes = ResizeIonic;
+-  } else if ([mode isEqualToString:@"body"]) {
+-    self.keyboardResizes = ResizeBody;
+-  } else if ([mode isEqualToString:@"native"]) {
+-    self.keyboardResizes = ResizeNative;
+-  } else {
+-    self.keyboardResizes = ResizeNone;
+-  }
+-  [call resolve];
++  // Plugin calls arrive on Capacitor's bridge queue; guide/layer cleanup is UIKit work.
++  dispatch_async(dispatch_get_main_queue(), ^{
++    NSString * mode = [call getString:@"mode" defaultValue:@"none"];
++    if (![mode isEqualToString:@"native"]) [self cancelKeyboardResizeAnimation];
++    if ([mode isEqualToString:@"ionic"]) {
++      self.keyboardResizes = ResizeIonic;
++    } else if ([mode isEqualToString:@"body"]) {
++      self.keyboardResizes = ResizeBody;
++    } else if ([mode isEqualToString:@"native"]) {
++      self.keyboardResizes = ResizeNative;
++    } else {
++      self.keyboardResizes = ResizeNone;
++    }
++    [call resolve];
++  });
+ }
+ 
+ - (void)getResizeMode:(CAPPluginCall *)call
+@@ -517,6 +598,7 @@
+ 
+ - (void)dealloc
+ {
++  [self cancelKeyboardResizeAnimation];
+   [[NSNotificationCenter defaultCenter] removeObserver:self];
+ }
+ 

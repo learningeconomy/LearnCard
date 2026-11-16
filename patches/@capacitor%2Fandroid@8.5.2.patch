@@ -1,20 +1,25 @@
 diff --git a/capacitor/src/main/java/com/getcapacitor/plugin/SystemBars.java b/capacitor/src/main/java/com/getcapacitor/plugin/SystemBars.java
-index 8b9de88493bd3269247cffbe9d290fc381fc088f..892c74bf76590098abb1a73b2e0f9c0469f353b9 100644
 --- a/capacitor/src/main/java/com/getcapacitor/plugin/SystemBars.java
 +++ b/capacitor/src/main/java/com/getcapacitor/plugin/SystemBars.java
-@@ -55,6 +55,30 @@ public class SystemBars extends Plugin {
+@@ -55,6 +55,45 @@
  
      private String insetsHandling = INSETS_HANDLING_CSS;
      private boolean hasViewportCover = false;
 +    private boolean keyboardAnimationPending;
 +    private int keyboardAnimationTargetBottom;
++    private final Runnable keyboardAnimationRecovery = this::endKeyboardAnimation;
 +
 +    // The keyboard plugin owns the IME animation callback. Cooperate with that
 +    // callback rather than resizing to the destination during the earlier
 +    // onApplyWindowInsets pass, which exposes WebView's empty backing surface.
-+    public void beginKeyboardAnimation() {
++    public void beginKeyboardAnimation(long durationMillis) {
++        View view = getActivity().getWindow().getDecorView();
++        view.removeCallbacks(keyboardAnimationRecovery);
 +        keyboardAnimationPending = true;
-+        keyboardAnimationTargetBottom = getActivity().getWindow().getDecorView().getPaddingBottom();
++        keyboardAnimationTargetBottom = view.getPaddingBottom();
++        // Android 11 can cancel after onPrepare without any later callback.
++        // Release the deferral even when onStart/onEnd never arrive.
++        view.postDelayed(keyboardAnimationRecovery, durationMillis >= 0 ? durationMillis + 250 : 1250);
 +    }
 +
 +    public int getKeyboardAnimationTargetBottom() {
@@ -22,8 +27,17 @@ index 8b9de88493bd3269247cffbe9d290fc381fc088f..892c74bf76590098abb1a73b2e0f9c04
 +    }
 +
 +    public void endKeyboardAnimation() {
++        View view = getActivity().getWindow().getDecorView();
++        view.removeCallbacks(keyboardAnimationRecovery);
++        if (!keyboardAnimationPending) return;
 +        keyboardAnimationPending = false;
-+        ViewCompat.requestApplyInsets(getActivity().getWindow().getDecorView());
++        ViewCompat.requestApplyInsets(view);
++    }
++
++    @Override
++    protected void handleOnDestroy() {
++        getActivity().getWindow().getDecorView().removeCallbacks(keyboardAnimationRecovery);
++        keyboardAnimationPending = false;
 +    }
 +
 +    private int keyboardBottomPadding(View view, int bottom) {
@@ -33,7 +47,7 @@ index 8b9de88493bd3269247cffbe9d290fc381fc088f..892c74bf76590098abb1a73b2e0f9c04
  
      private String currentStatusBarStyle = STYLE_DEFAULT;
      private String currentGestureBarStyle = STYLE_DEFAULT;
-@@ -199,7 +223,7 @@ public class SystemBars extends Plugin {
+@@ -199,7 +238,7 @@
  
              if (shouldPassthroughInsets) {
                  // We need to correct for a possible shown IME
@@ -42,7 +56,7 @@ index 8b9de88493bd3269247cffbe9d290fc381fc088f..892c74bf76590098abb1a73b2e0f9c04
  
                  WindowInsetsCompat newInsets = new WindowInsetsCompat.Builder(insets)
                      .setInsets(
-@@ -223,7 +247,7 @@ public class SystemBars extends Plugin {
+@@ -223,7 +262,7 @@
                  systemBarsInsets.left,
                  systemBarsInsets.top,
                  systemBarsInsets.right,

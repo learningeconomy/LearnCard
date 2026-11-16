@@ -176,6 +176,7 @@ export const KeyboardFocusManager = (): null => {
                         nativeResizesViewport = mode === 'native';
                         schedule();
                     })
+                    // Unimplemented on unpatched/legacy shells: retain overlay fallback.
                     .catch(() => undefined);
             }
             const register = (listener: Promise<PluginListenerHandle>): void => {

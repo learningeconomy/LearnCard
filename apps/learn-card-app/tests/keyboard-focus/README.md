@@ -117,3 +117,44 @@ its baseline frontend together, then the fixed binary and fixed frontend.
 Fixture recordings supplement this app comparison; they do not replace it.
 Physical devices, alternative IMEs/WebView versions, split-screen, rotation,
 and disabled system animations need separate QA.
+
+### Shared release and interruption safeguards
+
+LearnCard App **and ScoutPass** resolve the same patched native plugins. Both
+apps and `learn-card-base` pin Keyboard to `8.0.6`; both native apps pin Android
+to `8.5.2`. Upgrade the native patches as a pair. Do not hide a missing native
+patch behind reflection: failing the version contract is preferable to silently
+shipping the old keyboard timing. The source-only CI guard checks manifest
+pins, lockfile declarations/resolutions, and patch-file presence:
+
+```sh
+node --test scripts/check-keyboard-patches.test.mjs
+node scripts/check-keyboard-patches.mjs
+```
+
+ScoutPass receives the iOS and Android native timing changes on its next binary
+build. It does not mount `KeyboardFocusManager`, so the shared manager's host
+sizing changes do not apply there. ScoutPass native forms have **not** been
+smoke-tested for this patch; include them in device QA alongside LearnCard.
+
+On Android 11, an animation cancelled after `onPrepare` can have no subsequent
+`onStart` or `onEnd` ([Android callback contract](<https://developer.android.com/reference/android/view/WindowInsetsAnimation.Callback#onPrepare(android.view.WindowInsetsAnimation)>)).
+SystemBars therefore bounds the padding deferral by the reported animation
+duration plus 250ms (1250ms if no duration is available). Normal completion
+cancels that recovery task. Activity destruction removes callbacks and releases
+the deferral. The native test suite also models a preparation with no follow-up
+callbacks and checks that subsequent inset updates can apply.
+
+An interrupted opening no longer forces its obsolete destination padding in
+`onEnd`: reconciliation waits until the next frame so a replacement preparation
+can claim ownership. Review intermediate frames during rapid open/dismiss on
+older Android releases, including both possible orders of the old `onEnd` and
+new `onPrepare`. Final-height assertions alone do not prove those frames.
+
+On iOS, completed opening and immediate dismissal reset the scroll view after
+the final frame assignment, matching upstream inset cleanup. Switching away
+from native resize mode invalidates the display link and animation guide so
+an old completion cannot overwrite the new policy. Include resize-mode changes
+while opening, teardown, and background/foreground in native QA. Shared tests
+cover late native-capability resolution on both platforms: opening before the
+promise resolves releases the fallback host height and keeps the field revealed.
