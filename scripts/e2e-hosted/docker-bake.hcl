@@ -1,7 +1,8 @@
 # Cache writers. A cache written from a merge-queue ref is unreadable by every
 # other ref, and a PR-ref cache only by later runs of that PR, so e2e.yml exports
-# from one job per scope on pull requests, never from merge groups, and
-# e2e-cache-warm.yml refreshes the scopes every ref can read from main.
+# from one job per scope outside merge groups (full E2E skips pull requests, so in
+# practice manual runs), and e2e-cache-warm.yml refreshes the scopes every ref can
+# read from main.
 variable "E2E_EXPORT_BROWSER_CACHE" {
   default = "true"
 }
