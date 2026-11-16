@@ -234,10 +234,10 @@ describe('Counts leave hidden records out (LC-2413 count endpoint)', () => {
         await waitFor(() => expect(learnCloudCreate).toHaveBeenCalled());
         expect(values(result.current)).toEqual({ home: 6, tiles: [3, 2, 1] });
         expect(result.current.home.source).toBe('walk');
-        // No marker, so the raw counts are not shown; one 1000-record read replaces the walk,
+        // No marker, so the raw counts are not shown; one paged read of the whole index replaces the walk,
         // and the backfill reuses it.
         expect(getPage).toHaveBeenCalledTimes(1);
-        expect(getPage).toHaveBeenCalledWith({}, { cursor: undefined, limit: 1000 });
+        expect(getPage).toHaveBeenCalledWith({}, { cursor: undefined, limit: 100 });
     });
 
     it('after the backfill, each count is one count request and equals the full walk on the same records', async () => {
@@ -307,9 +307,9 @@ describe('Counts leave hidden records out (LC-2413 count endpoint)', () => {
         expect(beforeIds).toEqual(['hid-1', 'hid-2']);
     });
 
-    it('the index read keeps paging at 1000 while hasMore, and callers in the same tick share it', async () => {
+    it('the index read pages at 100 (the LearnCloud max, LC-2428) while hasMore, and callers in the same tick share it', async () => {
         const { getPage } = makeWallet();
-        records = Array.from({ length: 1500 }, (_, i) => ({
+        records = Array.from({ length: 150 }, (_, i) => ({
             id: `r-${i}`,
             uri: `u:r-${i}`,
             category: 'Achievement',
@@ -320,11 +320,11 @@ describe('Counts leave hidden records out (LC-2413 count endpoint)', () => {
             loadCredentialIndexSnapshot(host.wallet!),
         ]);
 
-        expect(first).toHaveLength(1500);
+        expect(first).toHaveLength(150);
         expect(second).toBe(first);
         expect(getPage.mock.calls).toEqual([
-            [{}, { cursor: undefined, limit: 1000 }],
-            [{}, { cursor: '1000', limit: 1000 }],
+            [{}, { cursor: undefined, limit: 100 }],
+            [{}, { cursor: '100', limit: 100 }],
         ]);
     });
 
