@@ -13,6 +13,8 @@ export const ReadableDeliveryRecipientValidator = z.object({
 export type ReadableDeliveryRecipient = z.infer<typeof ReadableDeliveryRecipientValidator>;
 
 export const CreateReadableDeliveryRecipientValidator = z.object({
+    /** Enable an existing directly managed organization before its first consent. */
+    profileId: z.string().min(3).max(40).optional(),
     requestId: z.uuid(),
     displayName: z.string().trim().min(1).max(100),
     acceptDelegatedAuthority: z.literal(true),
@@ -48,8 +50,17 @@ export const ReadableDeliveryCredentialValidator = z.object({
             validUntil: z.string().optional(),
             boostUri: z.string().optional(),
             verification: z.object({
-                proof: z.enum(['valid', 'invalid', 'not_checked']),
-                status: z.literal('not_checked'),
+                proof: z.enum(['valid', 'invalid', 'unavailable']),
+                status: z.enum(['valid', 'invalid', 'unavailable', 'not_applicable']),
+                dates: z.enum(['valid', 'invalid']),
+                label: z.enum([
+                    'verified',
+                    'recognized_issuer',
+                    'signed_unknown_issuer',
+                    'self_reported',
+                    'unverified',
+                ]),
+                issuerName: z.string().optional(),
             }),
         })
         .optional(),

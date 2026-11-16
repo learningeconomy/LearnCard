@@ -34,6 +34,12 @@ const copyDidkitWasmPlugin = {
             const src = require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm');
             fs.mkdirSync(outDir, { recursive: true });
             fs.copyFileSync(src, path.join(outDir, 'didkit_wasm_bg.wasm'));
+            // The isolated readable-delivery verifier must use the matching WASM
+            // wrapper, not the native plugin's unrestricted HTTP transport.
+            fs.copyFileSync(
+                path.join(path.dirname(src), 'didkit_wasm.js'),
+                path.join(outDir, 'readable-delivery-didkit.mjs')
+            );
         });
     },
 };

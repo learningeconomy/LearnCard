@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { neogma } from '@instance';
 import type { DeliveryRecord } from 'types/readable-delivery';
+import { TRPCError } from '@trpc/server';
 
 let constraints: Promise<unknown> | undefined;
 const ensureConstraints = (): Promise<unknown> =>
@@ -42,19 +43,40 @@ export const getDeliveryRecord = async (
 
 export const createDeliveryRecipient = async (
     record: DeliveryRecord,
-    recipientDid: string
+    recipientDid: string,
+    existing = false
 ): Promise<void> => {
     await ensureConstraints();
-    // A fresh profile ID is mandatory. Never add a service reader to an existing audience.
+    // Existing profiles require direct management and no previous consent. Profile
+    // and contract locks serialize this with audience creation and first consent.
     const result = await neogma.queryRunner.run(
         `
         MATCH (owner:Profile {profileId:$ownerProfileId})
-        CREATE (recipient:Profile {profileId:$profileId, did:$recipientDid,
+        ${
+            existing
+                ? `
+        MATCH (recipient:Profile {profileId:$profileId})-[:MANAGED_BY]->(owner)
+        SET recipient.readableDeliveryLock = coalesce(recipient.readableDeliveryLock, 0) + 1
+        WITH DISTINCT owner, recipient
+        OPTIONAL MATCH (contract:ConsentFlowContract)-[:CREATED_BY|SHARES_DATA_WITH]->(recipient)
+        WITH owner, recipient, collect(DISTINCT contract) AS contracts
+        FOREACH (contract IN contracts | SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1)
+        WITH owner, recipient, contracts
+        WHERE recipient.type = 'organization' AND recipient.displayName = $displayName
+          AND EXISTS { MATCH (recipient)-[:MANAGED_BY]->(owner) }
+          AND NOT EXISTS { MATCH (:ReadableDelivery {profileId:$profileId, domain:$domain}) }
+          AND all(contract IN contracts WHERE coalesce(contract.hasConsented, false) = false
+            AND NOT EXISTS { MATCH (:ConsentFlowTerms)-[:CONSENTS_TO]->(contract) })
+        SET recipient.isServiceProfile = true
+        FOREACH (contract IN contracts | SET contract.audienceVersion = coalesce(contract.audienceVersion, 0) + 1)
+        `
+                : `CREATE (recipient:Profile {profileId:$profileId, did:$recipientDid,
             displayName:$displayName, displayNameLower:toLower($displayName),
             isServiceProfile:true, type:'organization', profileVisibility:'private'})
+        CREATE (recipient)-[:MANAGED_BY]->(owner)`
+        }
         CREATE (agent:Profile {profileId:$agentProfileId, did:$agentDid,
             displayName:'Delivery agent', isServiceProfile:true, profileVisibility:'private'})
-        CREATE (recipient)-[:MANAGED_BY]->(owner)
         CREATE (recipient)-[:MANAGED_BY]->(agent)
         CREATE (d:ReadableDelivery)
         SET d = $record
@@ -64,7 +86,12 @@ export const createDeliveryRecipient = async (
         RETURN d.profileId AS id`,
         { ...record, record, recipientDid, auditId: randomUUID(), now: new Date().toISOString() }
     );
-    if (!result.records.length) throw new Error('Recipient owner is unavailable');
+    if (!result.records.length)
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message:
+                'Use an organization you directly manage with the same name and no previous consent or delivery setup.',
+        });
 };
 
 export const disableDeliveryRecipient = async (

@@ -862,6 +862,16 @@ export type ConsentFlowContractNotificationData = z.infer<
 >;
 
 export const ConsentFlowContractValidator = z.object({
+    /** Additional outcome issuers accepted by the contract owner. */
+    expectedIssuers: z
+        .array(
+            z
+                .string()
+                .regex(/^did:[a-z0-9]+:[^\s]+$/)
+                .max(2048)
+        )
+        .max(50)
+        .optional(),
     read: z
         .object({
             anonymize: z.boolean().optional(),
@@ -933,6 +943,15 @@ const ConsentFlowContractScopePatchValidator = z
 export const ConsentFlowContractChangesValidator = z.object({
     contract: z
         .object({
+            expectedIssuers: z
+                .array(
+                    z
+                        .string()
+                        .regex(/^did:[a-z0-9]+:[^\s]+$/)
+                        .max(2048)
+                )
+                .max(50)
+                .optional(),
             read: z
                 .object({
                     anonymize: z.boolean().optional(),

@@ -107,6 +107,8 @@ export const createConsentFlowContract = async ({
             OPTIONAL MATCH (boost:Boost) WHERE boost.id IN $boostIds
             WITH owner, recipients, writers, collect(DISTINCT boost) AS boosts
             WHERE size(boosts) = size($boostIds)
+            FOREACH (profile IN [owner] + recipients |
+                SET profile.readableDeliveryLock = coalesce(profile.readableDeliveryLock, 0) + 1)
         `
         )
         .create({ model: ConsentFlowContract, identifier: 'contract' })

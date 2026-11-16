@@ -1,12 +1,12 @@
 # Read Consented Credentials as an Organization
 
-Readable delivery lets an organization request credential summaries through an authenticated API. Provision a dedicated recipient **before** asking learners to consent. LearnCard then processes the selected encrypted credentials for that organization.
+Readable delivery lets an organization request credential summaries through an authenticated API. Provision or enable an organization recipient **before** asking learners to consent. LearnCard then processes the selected encrypted credentials for that organization.
 
 This feature is disabled by default. An operator must configure and enable it for the network you use. It does not make existing encrypted records readable retroactively.
 
 ## Understand the delegation
 
-The organization explicitly accepts LearnCard as a manager of the new recipient. Managers participate in the recipient's DID document, including authentication and signing authority as well as encryption. This is broader than a permission to decrypt a single credential. Use the dedicated recipient only for this integration; do not use a learner, family, or existing organization identity as the delivery agent.
+The organization explicitly accepts LearnCard as a manager of the recipient. Managers participate in the recipient's DID document, including authentication and signing authority as well as encryption. This is broader than a permission to decrypt a single credential. Use the dedicated recipient only for this integration; do not use a learner, family, or existing organization identity as the delivery agent.
 
 The consent screen names the recipient and explains that LearnCard can process the selected information on its behalf. Neither provisioning nor this API grants access without current learner consent and any required guardian approval.
 
@@ -28,14 +28,15 @@ sequenceDiagram
 
 Using an organization administrator's initialized SDK, call `learnCard.invoke.createReadableDeliveryRecipient` with:
 
-| Field                      | Value                                                      |
-| -------------------------- | ---------------------------------------------------------- |
-| `requestId`                | A UUID retained for retries of this operation              |
-| `displayName`              | The organization name learners will see (1–100 characters) |
-| `acceptDelegatedAuthority` | `true`, after accepting the delegation described above     |
-| `disclosureVersion`        | `"1"`                                                      |
+| Field                      | Value                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| `profileId`                | Optional existing organization profile you directly manage; omit to create one |
+| `requestId`                | A UUID retained for retries of this operation                                  |
+| `displayName`              | The organization name learners will see (1–100 characters)                     |
+| `acceptDelegatedAuthority` | `true`, after accepting the delegation described above                         |
+| `disclosureVersion`        | `"1"`                                                                          |
 
-The response contains `profileId`, `did`, `displayName`, `agentDid`, `enabled`, and `disclosureVersion`. Repeating the same request ID and name returns the same enabled recipient. It never attaches the agent to an existing profile.
+The response contains `profileId`, `did`, `displayName`, `agentDid`, `enabled`, and `disclosureVersion`. Repeating the same request ID and name returns the same enabled recipient. With `profileId`, the existing profile must be an organization directly managed by the caller, with the same display name and no previous readable-delivery setup. None of its contracts may have ever received consent, even withdrawn consent. The check and co-manager creation are atomic with first consent and audience changes. Existing contracts get a new audience version so an already-open consent screen must reload the disclosure. The profile identity is preserved. Learner and family profiles cannot opt in.
 
 Include the returned `profileId` in `recipients` when creating the consent contract. Ask the learner to select credentials and accept through the app. Adding a recipient later requires the existing audience-change and renewed-consent process. Older ciphertext does not acquire the new key.
 
@@ -62,9 +63,29 @@ The response contains `records`, `hasMore`, and a continuation `cursor` when app
 | `readable`    | Decrypted and parsed; `credential` contains the summary                          |
 | `unreadable`  | The copy could not be decrypted, including copies made before agent provisioning |
 | `unavailable` | The configured storage could not supply the encrypted copy                       |
-| `invalid`     | The decrypted object is not a supported signed credential                        |
+| `invalid`     | The decrypted object is not a supported credential                               |
 
-The summary includes available name, types, issuer, dates, and boost URI. It excludes the credential subject, raw credential, and proof material. `verification.proof` is `valid`, `invalid`, or `not_checked`. This release checks self-contained `did:key` issuer proofs; other issuers are `not_checked`. `verification.status` is always `not_checked`: this endpoint does **not** establish revocation status, expiry, issuer trust, or overall credential validity. Do not present `proof: valid` as “verified and current.”
+The summary includes available name, types, issuer, dates, and boost URI. It excludes the credential subject, raw credential, and proof material. Each summary has a `verification` object:
+
+| Field        | Values / meaning                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------- |
+| `proof`      | `valid`, `invalid`, or `unavailable`                                                                    |
+| `status`     | `valid`, `invalid`, `unavailable`, or `not_applicable` when the credential declares no status mechanism |
+| `dates`      | `valid` or `invalid`; expiry and not-before dates are checked                                           |
+| `label`      | The outcome label below                                                                                 |
+| `issuerName` | Registry display name when the issuer is recognized                                                     |
+
+| Label                   | Meaning                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `verified`              | Signature and applicable status/date checks passed, and the issuer is expected for this contract                                                 |
+| `recognized_issuer`     | Checks passed and the issuer is in a configured registry, but is not expected for this contract                                                  |
+| `signed_unknown_issuer` | Checks passed; the issuer is neither expected nor recognized by the successfully checked registries                                              |
+| `self_reported`         | Missing/invalid signature or signed by the learner's known identity, even if that identity was listed as expected                                |
+| `unverified`            | A required check could not complete, the credential is revoked/suspended/expired/not yet valid, or registry recognition could not be established |
+
+Expected issuers are the contract owner and explicit writers (both their stored DID and network DID), plus their registered signing-authority DIDs. The owner can supply additional DIDs with `contract.expectedIssuers` when creating or updating a contract; send an empty array to remove those additions. These expectations do not grant write permission or data access. Current expectations are checked again before a response is released.
+
+Proof and status verification run in a disposable WASM worker. Public verification documents use bounded HTTPS GETs with DNS-pinned public addresses and no redirects; private addresses, credentials in URLs, and arbitrary outbound methods are rejected. Only the exact owned network origin is allowed over HTTP in local development. Verification has a time/request budget and incomplete checks never produce a positive label. Unsupported proof/status formats produce an explicit failure or unavailable result, not a verified credential. No status mechanism means `not_applicable`, not proof that the issuer can never revoke the credential. Integrators should use the label and individual checks together and set their own acceptance policy.
 
 Pages reflect current consent, rather than a historical snapshot. Suspended, withdrawn, or pending-renewal consent is denied. The API checks consent again before releasing results and returns `Cache-Control: private, no-store`.
 
@@ -90,4 +111,4 @@ The graph stores encrypted private-key envelopes separately from public profiles
 
 Only the network's own storage and the explicitly configured LearnCloud origin are read. Redirects are refused, ciphertext is limited to 2 MiB, and plaintext is neither persisted nor cached. Other storage backends return `unavailable`.
 
-The `consent-flow` verification journey exercises provisioning, app disclosure, encrypted LearnCloud delivery, token scopes, withdrawal, and disablement on a disposable stack. Local verification uses an ephemeral wrapping key; it does not prove deployed AWS permissions. Validate KMS permissions in the target nonproduction environment before enabling the feature there.
+The `consent-flow` verification journey exercises existing-organization provisioning, app disclosure, encrypted LearnCloud delivery, verified outcome labels, token scopes, withdrawal, and disablement on a disposable stack. Local verification uses an ephemeral wrapping key; it does not prove deployed AWS permissions. Validate KMS permissions in the target nonproduction environment before enabling the feature there.

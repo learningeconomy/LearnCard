@@ -23,3 +23,9 @@ export interface DeliveryKeyCustody {
     encrypt: (key: string, binding: DeliveryKeyBinding) => Promise<DeliveryKeyEnvelope>;
     decrypt: (envelope: DeliveryKeyEnvelope, binding: DeliveryKeyBinding) => Promise<string>;
 }
+
+export interface DeliveryVerificationChecks {
+    proof: 'valid' | 'invalid' | 'unavailable';
+    status: 'valid' | 'invalid' | 'unavailable' | 'not_applicable';
+    dates: 'valid' | 'invalid';
+}

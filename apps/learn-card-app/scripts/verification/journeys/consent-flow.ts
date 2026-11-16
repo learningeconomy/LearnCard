@@ -61,12 +61,23 @@ export const consentFlowFeature: FeatureDefinition = {
             category: 'Achievement',
         });
 
-        const recipient = await partner.invoke.createReadableDeliveryRecipient({
-            requestId: randomUUID(),
-            displayName: `Readable Partner ${suffix}`,
-            acceptDelegatedAuthority: true,
-            disclosureVersion: '1',
+        const recipientProfileId = `rd-existing-${suffix}`;
+        const recipientName = `Readable Partner ${suffix}`;
+        await partner.invoke.createManagedServiceProfile({
+            profileId: recipientProfileId,
+            displayName: recipientName,
+            type: 'organization',
         });
+        const provision = {
+            profileId: recipientProfileId,
+            requestId: randomUUID(),
+            displayName: recipientName,
+            acceptDelegatedAuthority: true as const,
+            disclosureVersion: '1' as const,
+        };
+        const recipient = await partner.invoke.createReadableDeliveryRecipient(provision);
+        expect(recipient.profileId).toBe(recipientProfileId);
+        expect(await partner.invoke.createReadableDeliveryRecipient(provision)).toEqual(recipient);
 
         const contractUri = await context.step(null, 'consent-partner-contract', async () => {
             // Same terms as the docs create-contract snippet, without its external redirect.
@@ -309,7 +320,12 @@ export const consentFlowFeature: FeatureDefinition = {
                 credential: {
                     name: achievementName,
                     issuer: partner.id.did(),
-                    verification: { proof: 'not_checked', status: 'not_checked' },
+                    verification: {
+                        proof: 'valid',
+                        status: 'not_applicable',
+                        dates: 'valid',
+                        label: 'verified',
+                    },
                 },
             });
             expect(data.records[0]?.credential).not.toHaveProperty('credentialSubject');

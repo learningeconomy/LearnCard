@@ -819,7 +819,7 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataQuery }
     ) => Promise<PaginatedConsentFlowData>;
-    /** Provision a fresh recipient with explicit LearnCard delegation. */
+    /** Provision a new recipient, or opt in an existing managed organization before first consent. */
     createReadableDeliveryRecipient: (
         input: CreateReadableDeliveryRecipient
     ) => Promise<ReadableDeliveryRecipient>;

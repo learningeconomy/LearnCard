@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import {
     JWKWithPrivateKeyValidator,
-    VCValidator,
+    UnsignedVCValidator,
     type CreateReadableDeliveryRecipient,
     type ReadableDeliveryRecipient,
     type ReadableDeliveryPage,
@@ -26,6 +26,7 @@ import {
 } from '@accesslayer/readable-delivery';
 import { createDeliveryKeyCustody } from './readable-delivery-keys.helpers';
 import { readDeliveryCiphertext } from './readable-delivery-storage.helpers';
+import { getDeliveryTrustContext, verifyDeliveryOutcome } from './readable-delivery-trust.helpers';
 import type { DeliveryRecord } from 'types/readable-delivery';
 
 const unavailable = (): TRPCError =>
@@ -70,7 +71,7 @@ const publicRecipient = (record: DeliveryRecord): ReadableDeliveryRecipient => (
     disclosureVersion: '1',
 });
 
-/** Create a fresh, explicitly delegated recipient; never modify an existing profile's audience. */
+/** Opt in a new or directly managed organization before its first learner consent. */
 export const provisionReadableDelivery = async (
     owner: string,
     domain: string,
@@ -83,13 +84,18 @@ export const provisionReadableDelivery = async (
             record.ownerProfileId !== owner ||
             record.domain !== domain ||
             record.displayName !== input.displayName ||
+            (input.profileId !== undefined && record.profileId !== input.profileId) ||
             !record.enabled
         )
             throw denied();
         return publicRecipient(record);
     };
     const previous = await getDeliveryProvision(provisionId);
-    if (previous) return reuse(previous);
+    if (previous) {
+        const result = reuse(previous);
+        await deleteDidDocForProfile(previous.profileId);
+        return result;
+    }
     const wallet = await getEmptyLearnCard();
     const entropy = randomBytes(32);
     const recipientEntropy = randomBytes(32);
@@ -100,7 +106,7 @@ export const provisionReadableDelivery = async (
             'key',
             await wallet.invoke.generateEd25519KeyFromBytes(recipientEntropy)
         );
-        const binding = { profileId: `rd-${randomUUID()}`, domain, version: 1 };
+        const binding = { profileId: input.profileId ?? `rd-${randomUUID()}`, domain, version: 1 };
         const encrypted = await keys.encrypt(JSON.stringify(key), binding);
         const record: DeliveryRecord = {
             ...binding,
@@ -113,13 +119,19 @@ export const provisionReadableDelivery = async (
             enabled: true,
             disclosureVersion: '1',
         };
-        await createDeliveryRecipient(record, recipientDid);
+        await createDeliveryRecipient(record, recipientDid, input.profileId !== undefined);
+        await deleteDidDocForProfile(record.profileId);
         return publicRecipient(record);
-    } catch {
+    } catch (error) {
         // A concurrent request may have committed the unique provision, or the
         // database response may have been lost after commit. Reuse that result.
         const committed = await getDeliveryProvision(provisionId).catch(() => undefined);
-        if (committed) return reuse(committed);
+        if (committed) {
+            const result = reuse(committed);
+            await deleteDidDocForProfile(committed.profileId);
+            return result;
+        }
+        if (error instanceof TRPCError) throw error;
         throw unavailable();
     } finally {
         entropy.fill(0);
@@ -197,6 +209,10 @@ export const readReadableDelivery = async (
     } catch {
         throw unavailable();
     }
+    const trust = await getDeliveryTrustContext(input.contractUri, input.did, domain);
+    const localOrigin = isLocalDeliveryRuntime()
+        ? `http://${domain.replace(/%3a/gi, ':')}`
+        : undefined;
     const records: ReadableDeliveryCredential[] = [];
     const signal = AbortSignal.timeout(12_000);
     for (const item of selected) {
@@ -224,7 +240,7 @@ export const readReadableDelivery = async (
             records.push({ ...item, status: 'unreadable' });
             continue;
         }
-        const parsed = VCValidator.safeParse(plaintext);
+        const parsed = UnsignedVCValidator.safeParse(plaintext);
         if (!parsed.success) {
             records.push({ ...item, status: 'invalid' });
             continue;
@@ -235,30 +251,7 @@ export const readReadableDelivery = async (
             records.push({ ...item, status: 'invalid' });
             continue;
         }
-        let proof: 'valid' | 'invalid' | 'not_checked' = 'not_checked';
-        // Arbitrary DID URLs can trigger network requests. Only did:key proofs are
-        // checked here; full issuer trust/status evaluation belongs to the verifier.
-        const proofs = Array.isArray(vc.proof) ? vc.proof : [vc.proof];
-        if (
-            issuer.startsWith('did:key:') &&
-            proofs.every(
-                p =>
-                    typeof p?.verificationMethod === 'string' &&
-                    p.verificationMethod.startsWith(`${issuer}#`)
-            )
-        ) {
-            try {
-                const result = await wallet.invoke.verifyCredential(vc, { checks: ['proof'] });
-                proof =
-                    result.errors.length === 0 &&
-                    result.warnings.length === 0 &&
-                    result.checks.includes('proof')
-                        ? 'valid'
-                        : 'invalid';
-            } catch {
-                proof = 'invalid';
-            }
-        }
+        const verification = await verifyDeliveryOutcome(vc, trust, localOrigin, signal);
         const text = (value: unknown): string | undefined =>
             typeof value === 'string' ? value.slice(0, 2048) : undefined;
         records.push({
@@ -273,13 +266,19 @@ export const readReadableDelivery = async (
                 validFrom: text(vc.validFrom),
                 validUntil: text(vc.validUntil),
                 boostUri: text(vc.boostId),
-                verification: { proof, status: 'not_checked' },
+                verification,
             },
         });
     }
     // Decryption/fetch may have taken time. Reauthorize before releasing any result.
     await requireEnabled(recipient, domain);
     const current = await readGrant(recipient, domain, input);
+    const currentTrust = await getDeliveryTrustContext(input.contractUri, input.did, domain);
+    if (
+        trust.expectedIssuers.size !== currentTrust.expectedIssuers.size ||
+        [...trust.expectedIssuers].some(issuer => !currentTrust.expectedIssuers.has(issuer))
+    )
+        throw denied();
     if (
         selected.some(
             item =>

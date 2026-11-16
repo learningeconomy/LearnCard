@@ -106,6 +106,8 @@ export const addRecipientToContract = async (
 ): Promise<boolean> => {
     const query = lockContractAudience(new QueryBuilder(new BindParam({ profileId })), contractId)
         .match('(recipient:Profile {profileId: $profileId})')
+        .set('recipient.readableDeliveryLock = coalesce(recipient.readableDeliveryLock, 0) + 1')
+        .with('contract, recipient')
         .where(
             `NOT EXISTS { MATCH (contract)-[:CREATED_BY]->(recipient) }
             AND (EXISTS { MATCH (contract)-[:SHARES_DATA_WITH]->(recipient) }

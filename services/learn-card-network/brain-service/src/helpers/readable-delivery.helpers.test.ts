@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     decryptKey: vi.fn(),
     decrypt: vi.fn(),
     verify: vi.fn(),
+    trust: vi.fn(),
     environment: {
         READABLE_DELIVERY_ENABLED: true,
         IS_OFFLINE: true,
@@ -50,6 +51,10 @@ vi.mock('@accesslayer/profile/relationships/read', () => ({
 }));
 vi.mock('@accesslayer/consentflowcontract/relationships/read', () => ({
     getConsentedDataBetweenProfiles: mocks.grants,
+}));
+vi.mock('@helpers/readable-delivery-trust.helpers', () => ({
+    getDeliveryTrustContext: mocks.trust,
+    verifyDeliveryOutcome: mocks.verify,
 }));
 vi.mock('@helpers/readable-delivery-storage.helpers', () => ({
     readDeliveryCiphertext: mocks.read,
@@ -136,7 +141,16 @@ beforeEach(() => {
     );
     mocks.read.mockResolvedValue({ ciphertext: 'encrypted' });
     mocks.decrypt.mockResolvedValue(vc);
-    mocks.verify.mockResolvedValue({ errors: [], warnings: [], checks: ['proof'] });
+    mocks.trust.mockResolvedValue({
+        expectedIssuers: new Set(['did:key:issuer']),
+        learnerDids: new Set([input.did]),
+    });
+    mocks.verify.mockResolvedValue({
+        proof: 'valid',
+        status: 'not_applicable',
+        dates: 'valid',
+        label: 'verified',
+    });
     mocks.audit.mockResolvedValue(undefined);
 });
 
@@ -168,7 +182,11 @@ describe('readable delivery authorization and projection', () => {
                     status: 'readable',
                     credential: {
                         name: 'Synthetic outcome',
-                        verification: { proof: 'valid', status: 'not_checked' },
+                        verification: {
+                            proof: 'valid',
+                            status: 'not_applicable',
+                            label: 'verified',
+                        },
                     },
                 },
             ],
@@ -216,19 +234,25 @@ describe('readable delivery authorization and projection', () => {
             code: 'FORBIDDEN',
         });
     });
+    it('does not release an obsolete trust label if expected issuers change during verification', async () => {
+        mocks.trust
+            .mockResolvedValueOnce({
+                expectedIssuers: new Set(['did:key:issuer']),
+                learnerDids: new Set([input.did]),
+            })
+            .mockResolvedValueOnce({
+                expectedIssuers: new Set(),
+                learnerDids: new Set([input.did]),
+            });
+        await expect(readReadableDelivery('recipient', domain, input)).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+    });
     it('reports old-key ciphertext as unreadable without substituting plaintext', async () => {
         mocks.decrypt.mockResolvedValue(undefined);
         expect((await readReadableDelivery('recipient', domain, input)).records).toEqual([
             { ...item, status: 'unreadable' },
         ]);
-        expect(mocks.verify).not.toHaveBeenCalled();
-    });
-    it('does not resolve arbitrary issuer/proof URLs while verifying', async () => {
-        mocks.decrypt.mockResolvedValue({ ...vc, issuer: 'did:web:private.internal' });
-        expect(
-            (await readReadableDelivery('recipient', domain, input)).records[0]?.credential
-                ?.verification.proof
-        ).toBe('not_checked');
         expect(mocks.verify).not.toHaveBeenCalled();
     });
     it('rejects foreign network references and foreign did:web identifiers', async () => {
@@ -334,6 +358,18 @@ describe('readable recipient provisioning', () => {
         ).toBe(true);
         expect(JSON.stringify(stored)).not.toContain('private');
         expect(result).not.toHaveProperty('ciphertext');
+    });
+    it('passes the selected existing organization to the atomic authorization/consent boundary', async () => {
+        const result = await provisionReadableDelivery('owner', domain, {
+            ...request,
+            profileId: 'existing-org',
+        });
+        expect(result.profileId).toBe('existing-org');
+        expect(mocks.create).toHaveBeenCalledWith(
+            expect.objectContaining({ profileId: 'existing-org', ownerProfileId: 'owner' }),
+            expect.any(String),
+            true
+        );
     });
     it('reuses the same provision request and rejects a mismatched retry', async () => {
         mocks.provision.mockResolvedValue({
