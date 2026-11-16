@@ -169,3 +169,15 @@ it('refreshes index queries for the switched profile, not the primary one', asyn
         'did:web:child'
     );
 });
+
+it.each([
+    ['never settles', () => new Promise<never>(() => undefined)],
+    ['fails', () => Promise.reject(new Error('skills walk failed'))],
+])('completes the sync while the index refresh %s', async (_l, refresh) => {
+    // goblincore r4575035411: index refetches must not hold up inbox sync completion.
+    mocks.invalidateIndex.mockImplementation(refresh);
+    renderHook(() => useFinalizeInboxCredentials());
+    await waitFor(() => expect(mocks.syncing).toHaveBeenCalledWith('completed', 1));
+    expect(mocks.invalidateIndex).toHaveBeenCalled();
+    expect(mocks.invalidate).toHaveBeenCalledWith({ queryKey: ['useGetCredentialList'] });
+});

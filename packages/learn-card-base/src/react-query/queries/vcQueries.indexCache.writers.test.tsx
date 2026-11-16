@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, QueryObserver } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 import type { BespokeLearnCard } from '../../types/learn-card';
@@ -71,7 +71,11 @@ vi.mock('../../logging/logger', () => ({
     getLogger: () => ({ debug: vi.fn(), error: vi.fn(), warn: vi.fn(), info: vi.fn() }),
 }));
 
-import { useGetCredentials, useGetCredentialsForSkills } from './vcQueries';
+import {
+    useGetCredentials,
+    useGetCredentialsForSkills,
+    useSyncRevokedCredentials,
+} from './vcQueries';
 import { useDeleteCredentialRecord } from '../mutations/mutations';
 
 const CATEGORY = 'Achievement';
@@ -162,5 +166,37 @@ describe('credential index writers (LC-2383)', () => {
         await waitFor(() =>
             expect(get.mock.calls.length).toBeGreaterThanOrEqual(firstCalls * 2 + 1)
         );
+    });
+});
+
+describe('revoked-credential sync (LC-2383)', () => {
+    // goblincore r4575035411: index refetches run in the background, so the rest of the
+    // cleanup (troop-ID refresh) still happens while the skills walk is pending or failing.
+    const observe = async (queryKey: string[], refetch: () => Promise<unknown>) => {
+        const queryFn = vi.fn().mockResolvedValueOnce([]).mockImplementation(refetch);
+        const observer = new QueryObserver(client, { queryKey, queryFn, staleTime: Infinity });
+        const unsubscribe = observer.subscribe(() => undefined);
+        await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(1));
+        return { queryFn, unsubscribe };
+    };
+
+    it.each([
+        ['never settles', () => new Promise<never>(() => undefined)],
+        ['fails', () => Promise.reject(new Error('skills walk failed'))],
+    ])('finishes cleanup while the skills refetch %s', async (_l, refetch) => {
+        const { remove } = makeWallet();
+        (
+            host.wallet as unknown as { invoke: Record<string, unknown> }
+        ).invoke.getRevokedCredentials = vi.fn().mockResolvedValue(['uri-1']);
+        const skills = await observe(['useGetSkills', ''], refetch);
+        const troops = await observe(['currentUserTroopIds'], () => Promise.resolve([]));
+
+        renderHook(() => useSyncRevokedCredentials(true), { wrapper });
+
+        await waitFor(() => expect(remove).toHaveBeenCalledWith('r1'));
+        await waitFor(() => expect(skills.queryFn).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(troops.queryFn).toHaveBeenCalledTimes(2));
+        skills.unsubscribe();
+        troops.unsubscribe();
     });
 });

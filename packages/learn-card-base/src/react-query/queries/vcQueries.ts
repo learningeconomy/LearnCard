@@ -1343,8 +1343,11 @@ export const useSyncRevokedCredentials = (enabled = true) => {
                     }
                 }
 
-                // Invalidate relevant queries to refresh the UI
-                await invalidateCredentialIndexQueries(queryClient, switchedDid);
+                // Invalidate relevant queries to refresh the UI. Do not await: the index
+                // refetches (skills walk) must not hold up the rest of the cleanup.
+                void invalidateCredentialIndexQueries(queryClient, switchedDid).catch(e =>
+                    log.error('[useSyncRevokedCredentials] Error refreshing index queries:', e)
+                );
                 queryClient.invalidateQueries({ queryKey: ['currentUserTroopIds'] });
                 queryClient.invalidateQueries({ queryKey: ['useGetCurrentUserTroopIdsResolved'] });
             } finally {
