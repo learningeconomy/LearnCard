@@ -32,7 +32,8 @@ const main = async () => {
         'validate original package privacy before excluding the separately published native addon'
     );
 
-    const smoke = workflow('.github/workflows/smoketest-npm-packages.yml').jobs;
+    const smokeWorkflow = workflow('.github/workflows/smoketest-npm-packages.yml');
+    const smoke = smokeWorkflow.jobs;
     for (const name of ['smoketest', 'bundler-smoketest']) {
         const job = smoke[name];
         assert.equal(job.needs, 'resolve-versions');
@@ -43,13 +44,35 @@ const main = async () => {
         assert(job.steps.some(step => step.run?.includes('smoketest-npm-packages.mjs" install')));
     }
     const resolver = smoke['resolve-versions'];
+    assert.equal(
+        resolver['timeout-minutes'],
+        35,
+        'resolver must cover bounded wait and retry windows'
+    );
+    const timingValidationIndex = resolver.steps.findIndex(
+        step => step.name === 'Validate registry timing inputs'
+    );
     const waitIndex = resolver.steps.findIndex(
         step => step.name === 'Wait for npm CDN propagation'
     );
     const versionsIndex = resolver.steps.findIndex(step => step.id === 'versions');
     assert(
-        waitIndex >= 0 && waitIndex < versionsIndex,
-        'initial registry wait must precede tag resolution'
+        timingValidationIndex >= 0 &&
+            timingValidationIndex < waitIndex &&
+            waitIndex < versionsIndex,
+        'validated initial registry wait must precede tag resolution'
+    );
+    assert.equal(
+        resolver.steps[timingValidationIndex].env.REGISTRY_WAIT_SECONDS,
+        "${{ inputs.registry-wait-seconds || '0' }}"
+    );
+    assert.equal(
+        resolver.steps[timingValidationIndex].env.REGISTRY_TIMEOUT_SECONDS,
+        "${{ inputs.registry-timeout-seconds || '1200' }}"
+    );
+    assert(
+        resolver.steps[timingValidationIndex].run.includes('validate-registry-timing'),
+        'resolver must reject timing windows that cannot fit its job budget'
     );
     assert.equal(resolver.steps[waitIndex].env.WAIT, "${{ inputs.registry-wait-seconds || '0' }}");
     assert.equal(
@@ -63,6 +86,25 @@ const main = async () => {
             smoke[name].steps.some(step => step.name === 'Wait for npm CDN propagation')
         ),
         'initial registry delay must be applied once in the shared resolver'
+    );
+    const cliInstall = smoke['cli-install-budget'];
+    assert.equal(cliInstall.needs, 'resolve-versions');
+    assert.equal(
+        cliInstall.env.SMOKE_PACKAGE_VERSIONS,
+        '${{ needs.resolve-versions.outputs.package-versions }}'
+    );
+    assert.equal(
+        cliInstall.env.REGISTRY_TIMEOUT_SECONDS,
+        "${{ inputs.registry-timeout-seconds || '1200' }}"
+    );
+    assert.equal(
+        cliInstall['timeout-minutes'],
+        30,
+        'CLI retry job must outlive its bounded window'
+    );
+    assert(
+        cliInstall.steps.some(step => step.run?.includes('wait-for-cli-install.mjs')),
+        'CLI cold install must retry only registry publication errors on a fresh cache'
     );
 
     for (const service of ['brain-service', 'lca-api', 'learn-cloud-service']) {
@@ -183,6 +225,7 @@ const main = async () => {
         [
             '--test',
             'scripts/smoketest-npm-packages.test.mjs',
+            'scripts/wait-for-cli-install.test.mjs',
             'scripts/prepare-publish-workspace-deps.test.mjs',
         ],
         { cwd: root, stdio: 'inherit' }
