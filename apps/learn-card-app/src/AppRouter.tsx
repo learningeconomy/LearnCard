@@ -12,6 +12,7 @@ import NewMyData from './components/new-my-data/NewMyData';
 import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
 import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
 import { preloadRoutes } from './components/mobile-nav-bar/RoutesOutlet';
+import { afterFirstScreen } from './helpers/firstScreen';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
@@ -401,12 +402,21 @@ const AppRouter: React.FC = () => {
     // (side menu, mobile nav, wallet squares, deep link) lands on a warm cache
     // and never hits the Suspense fallback. AI routes are skipped when the
     // user doesn't have AI access — no point downloading what they can't use.
+    // Waits for the first dashboard paint so ~100 chunks don't share a slow link with the wallet's
+    // WASM and the dashboard chunk (see helpers/firstScreen).
     useEffect(() => {
         if (!enablePrefetch) return;
-        // Lazy-import to avoid a circular import on the Routes module graph.
-        import('./Routes')
-            .then(m => m.prefetchRoutes({ aiEnabled: isAiEnabled }))
+        let cancelled = false;
+        afterFirstScreen()
+            .then(() => {
+                if (cancelled) return;
+                // Lazy-import to avoid a circular import on the Routes module graph.
+                return import('./Routes').then(m => m.prefetchRoutes({ aiEnabled: isAiEnabled }));
+            })
             .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
     }, [enablePrefetch, isAiEnabled]);
 
     // Warm the landing chunks immediately — while the boot loader or login
