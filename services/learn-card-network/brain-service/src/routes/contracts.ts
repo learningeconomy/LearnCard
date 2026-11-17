@@ -3,6 +3,8 @@ import {
     SendContractRequestResultValidator,
     ContractRequestFieldsValidator,
     ContractRequestValidator,
+    ContractSentRequestValidator,
+    type ContractRequestTarget,
 } from '@learncard/types';
 import {
     sendGenericContractRequest,
@@ -161,7 +163,7 @@ const contractRequestTarget = (
         email?: string;
         profile?: ProfileType;
     }
-) =>
+): ContractRequestTarget =>
     request.profile && !(request.addressedByEmail && request.status !== 'accepted')
         ? {
               profile: stripSensitiveProfileListFields(
@@ -2526,7 +2528,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Get requests sent for a given contract',
                 description:
-                    'Gets a list of users and their request statuses for a given contract.',
+                    'Gets a list of requests and their statuses for a given contract. A request addressed to an email has no profile and shows target.email until it is accepted.',
             },
         })
         .input(
@@ -2534,15 +2536,7 @@ export const contractsRouter = t.router({
                 contractUri: z.string(),
             })
         )
-        .output(
-            z.array(
-                ContractRequestFieldsValidator.extend({
-                    profile: LCNProfileValidator,
-                    status: z.enum(['pending', 'accepted', 'denied', 'cancelled']).nullable(),
-                    readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
-                })
-            )
-        )
+        .output(z.array(ContractSentRequestValidator))
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { contractUri } = input;
@@ -2565,17 +2559,19 @@ export const contractsRouter = t.router({
 
             const requests = await getRequestedForList(contractByUri.id, profile.profileId);
 
-            return Promise.all(
-                requests.map(async request => {
-                    const updatedProfile = updateDidForProfile(ctx.domain, request.profile);
-                    return {
-                        ...request,
-                        profile: stripSensitiveProfileListFields(
-                            sanitizeProfileForTier(updatedProfile, 'authenticated')
-                        ),
-                    };
-                })
-            );
+            return requests.map(request => {
+                const { addressedByEmail, email, profile: targetProfile, ...row } = request;
+                const target = contractRequestTarget(ctx.domain, {
+                    addressedByEmail,
+                    status: row.status,
+                    email,
+                    profile: targetProfile,
+                });
+                return 'profile' in target
+                    ? { ...row, target, profile: target.profile }
+                    : // The read state would reveal that the email belongs to an account.
+                      { ...row, readStatus: null, target };
+            });
         }),
 
     getRequestStatusForProfile: profileRoute
@@ -2587,7 +2583,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Get request status for a specific profile under a contract',
                 description:
-                    'Returns the request status and read status for a given profile in a specific contract.',
+                    'Returns the request status and read status for a given profile in a specific contract. A request addressed to an email is returned only to its target until it is accepted; use getContractRequest with the request ID instead.',
             },
         })
         .input(
@@ -2647,6 +2643,14 @@ export const contractsRouter = t.router({
             );
 
             if (!requests?.[0]) return null;
+            // This route is keyed by profile ID. Answering for an email-addressed request
+            // would confirm which profile owns the invited email, so answer as if none exists.
+            if (
+                requests[0].addressedByEmail &&
+                requests[0].status !== 'accepted' &&
+                !isCheckingOwnStatus
+            )
+                return null;
 
             const updatedProfile = updateDidForProfile(ctx.domain, requests[0].profile);
 

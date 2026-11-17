@@ -87,24 +87,32 @@ const requestingRecipientWhere = `r.requestedBy = $viewerProfileId AND EXISTS {
 }`;
 
 export const getRequestedForList = async (id: string, viewerProfileId: string) => {
-    const query = new QueryBuilder(new BindParam({ viewerProfileId }))
-        .match({
-            model: ConsentFlowContract,
-            identifier: 'c',
-            where: { id },
-        })
-        .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
-        .where(`${requestManagerWhere} OR (${requestingRecipientWhere})`);
-    const result = await query.return(['p', 'r']).run();
+    const result = await neogma.queryRunner.run(
+        `MATCH (c:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->(p:Profile)
+         WHERE ${requestManagerWhere} OR (${requestingRecipientWhere})
+         OPTIONAL MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
+             WHERE invite.id = r.requestId
+         RETURN r, p, invite.email AS email, invite.expiresAt AS expiresAt`,
+        { id, viewerProfileId }
+    );
 
     return result.records.map(rec => {
-        const { p, r } = rec.toObject();
+        const request = rec.get('r').properties;
+        const email: string | null = rec.get('email');
+        const expiresAt: string | null = rec.get('expiresAt');
 
         return {
-            ...requestFields(r.properties),
-            profile: p.properties,
-            status: r.properties?.status ?? null,
-            readStatus: r.properties?.readStatus ?? null,
+            ...requestFields(request),
+            profile: rec.get('p').properties as ProfileType,
+            status: (request?.status ?? null) as NonNullable<
+                StoredContractRequest['status']
+            > | null,
+            readStatus: (request?.readStatus ?? null) as NonNullable<
+                StoredContractRequest['readStatus']
+            > | null,
+            addressedByEmail: request?.addressedByEmail === true,
+            ...(email ? { email } : {}),
+            ...(expiresAt ? { expiresAt } : {}),
         };
     });
 };
@@ -215,6 +223,7 @@ export const getRequestedForForUser = async (
             profile: p.properties,
             status: r.properties?.status ?? null,
             readStatus: r.properties?.readStatus ?? null,
+            addressedByEmail: r.properties?.addressedByEmail === true,
         };
     });
 };
