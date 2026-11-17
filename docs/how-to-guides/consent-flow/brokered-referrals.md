@@ -343,7 +343,7 @@ See [Contract Requests and Events](../../sdks/learncard-network/contract-request
 
 ### Request profile fields at consent
 
-Tenant configuration defines the field labels, types (`text`, `select`, or ISO `date`), and allowed select values in `verifiableDataSchemas`. A field may declare `maxAgeDays` to require a fresh answer. The local VetPass configuration includes an example `military-profile` schema. Confirm picklists with your partner before configuring another stage.
+Tenant configuration defines the field labels, types (`text`, `select`, or ISO `date`), and allowed select values in `verifiableDataSchemas`. A field may declare `maxAgeDays` to require a fresh answer. VetPass local and staging configurations include the initial `military-profile` fields: branch of service, disability status, gender, and date of birth. Each answer belongs to the learner: its encrypted credential uses the learner’s DID as issuer and subject. A contract can request any subset. The current picklists and formats are for testing. Confirm accepted values, required fields and Salesforce mappings with the partner before production use.
 
 Use `requestProfileFields` from `@learncard/types` to build a contract's read categories. The following requests just the branch field. Omitting the field list expands the schema to its current field keys when creating the contract.
 

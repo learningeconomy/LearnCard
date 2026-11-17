@@ -1,4 +1,37 @@
 {
+    "_profileFieldsNote": "Pilot test configuration. Picklist values, field formats and requiredness await partner confirmation. Contracts request fields individually.",
+    "verifiableDataSchemas": {
+        "military-profile": {
+            "label": "Military profile",
+            "fields": {
+                "branch": {
+                    "label": "Branch of service",
+                    "type": "select",
+                    "values": [
+                        "Army",
+                        "Navy",
+                        "Air Force",
+                        "Marine Corps",
+                        "Coast Guard",
+                        "Space Force"
+                    ]
+                },
+                "disabilityStatus": {
+                    "label": "Disability status",
+                    "type": "select",
+                    "values": ["Yes", "No", "Prefer not to answer"]
+                },
+                "gender": {
+                    "label": "Gender",
+                    "type": "text"
+                },
+                "birthDate": {
+                    "label": "Date of birth",
+                    "type": "date"
+                }
+            }
+        }
+    },
     "stage": "staging",
     "domain": "staging.vetpass.app",
     "apis": {
