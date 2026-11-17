@@ -17,6 +17,7 @@ import type { Plugin as EsbuildPlugin } from 'esbuild';
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
 import { paraglideLazyLocales } from './src/i18n/paraglideLazyLocales';
+import { minifySvgPathDataInSource } from './src/buildPlugins/minifySvgPathData';
 import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
 import { registryProxyDevServer } from '../../packages/learn-card-base/src/registry-proxy/registryProxyDevServer';
 
@@ -221,6 +222,21 @@ const lodashEsForWorkspace = (): Plugin => ({
     },
 });
 
+// Inline SVG icons are Figma exports (absolute coordinates, four decimals): ~1 MB of startup JS.
+// Round path points to a 0.01 grid (0.001 for small view boxes) and use the shorter of absolute or
+// relative commands. Source stays as exported; see src/buildPlugins/minifySvgPathData.ts.
+const minifySvgPathData = (): Plugin => ({
+    name: 'learncard-minify-svg-path-data',
+    enforce: 'pre',
+    apply: 'build',
+    transform(code, id) {
+        if (id.includes('/node_modules/') || !/\.[jt]sx$/.test(id.split('?')[0])) return null;
+        const next = minifySvgPathDataInSource(code);
+        // edits stay within single lines, so the existing source map is still line-accurate
+        return next === null ? null : { code: next, map: null };
+    },
+});
+
 export default defineConfig(async ({ mode, command }) => {
     const loadedEnvironment = loadEnv(mode, __dirname, '');
     const environment = parseLearnCardAppEnvironment(
@@ -259,6 +275,7 @@ export default defineConfig(async ({ mode, command }) => {
             devCacheRevalidation,
             ...(useSourceConditions ? [] : [workspaceSourceEntries()]),
             lodashEsForWorkspace(),
+            minifySvgPathData(),
             tailwindcss(),
             registryProxyDevServer(),
             i18nImportGuard(),
