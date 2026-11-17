@@ -204,6 +204,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'getGasPrice',
     'getGuardianApprovalStatus',
     'getGuardianPendingCredential',
+    'getHcpClient',
     'getHolderExportMetadata',
     'getInboxCredential',
     'getInboxCredentialBatch',
