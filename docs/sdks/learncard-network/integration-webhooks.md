@@ -99,7 +99,8 @@ const result = await learnCard.invoke.sendIntegrationTestEvent(integrationId);
 // { delivered: true,  httpStatus: 200, latencyMs: 84 }
 // { delivered: false, httpStatus: 401, latencyMs: 120, error: 'http_401' }
 // { delivered: false, latencyMs: 6001, error: 'timeout' }
-// { delivered: false, latencyMs: 12, error: 'network_error' | 'invalid_webhook' }
+// { delivered: false, latencyMs: 12, error: 'network_error' }
+// { delivered: false, error: 'invalid_webhook' | 'no_webhook' }
 // { delivered: false, error: 'no_webhook' }
 ```
 
@@ -107,14 +108,16 @@ REST: `POST /integration/{id}/webhook/test`.
 
 This posts one signed event with `type: "integration.test"` and `sequence: 0` to your URL right away and returns the result in the same response. It is sent once, is not retried, and is not written to the feed. It also works while contract events are disabled, so you can check a receiver before you enable them.
 
-| Field        | Meaning                                                                     |
-| ------------ | --------------------------------------------------------------------------- |
-| `delivered`  | `true` when your endpoint answered `2xx`                                    |
-| `httpStatus` | The status your endpoint answered with. Absent when there was no answer     |
-| `latencyMs`  | How long the request took. Absent when no request was made (`no_webhook`)   |
-| `error`      | A fixed code when it was not delivered. See [failure codes](#failure-codes) |
+| Field        | Meaning                                                                                      |
+| ------------ | -------------------------------------------------------------------------------------------- |
+| `delivered`  | `true` when your endpoint answered `2xx`                                                     |
+| `httpStatus` | The status your endpoint answered with. Absent when there was no answer                      |
+| `latencyMs`  | How long the request took. Absent when no request was made (`no_webhook`, `invalid_webhook`) |
+| `error`      | A fixed code when it was not delivered. See [failure codes](#failure-codes)                  |
 
-You can send **10 test pings per Integration per minute**. More are refused with HTTP 429 (tRPC code `TOO_MANY_REQUESTS`).
+You can send **10 test pings per Integration per minute**. Every call counts, including one that ends in `no_webhook`. More are refused with HTTP 429 (tRPC code `TOO_MANY_REQUESTS`). If the rate-limit service is unavailable the call is refused with a server error (HTTP 500); try again later.
+
+A test ping updates the health shown by `getIntegrationWebhook`, but only for the URL it was sent to. Results measured against a URL you have since replaced are discarded.
 
 ### Read configuration and health
 
