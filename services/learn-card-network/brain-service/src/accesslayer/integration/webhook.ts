@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
+import type { IntegrationWebhookStatus } from '@learncard/types';
 
 import { neogma } from '@instance';
+import { deriveIntegrationWebhookState } from '@helpers/integrations.helpers';
 import { WEBHOOK_SECRET_PREVIOUS_TTL_MS } from 'src/constants/integration-events';
 import {
     decryptWebhookSecret,
@@ -32,9 +34,11 @@ export type IntegrationWebhookConfigResult = {
 
 /**
  * Writes the webhook URL and the contract-events switch of an Integration and returns the
- * resulting configuration. The first time a URL is set a signing secret is created and
- * returned in plaintext; that is the only time it is returned. Returns null when the
- * Integration does not exist.
+ * resulting configuration. The first time a URL is set a signing secret is created (secret
+ * version 1) and returned in plaintext; that is the only time it is returned. A URL that
+ * differs from the stored one starts with empty delivery health, because the recorded
+ * successes and failures belong to the previous URL. Returns null when the Integration does
+ * not exist.
  */
 export const setIntegrationWebhookConfig = async ({
     integrationId,
@@ -53,8 +57,19 @@ export const setIntegrationWebhookConfig = async ({
         `MATCH (integration:Integration {id: $id})
          SET integration.updatedAt = $now
          WITH integration,
-             ($webhookUrl IS NOT NULL AND integration.webhookSecretEnc IS NULL) AS createsSecret
+             ($webhookUrl IS NOT NULL AND integration.webhookSecretEnc IS NULL) AS createsSecret,
+             ($setUrl AND coalesce(integration.webhookUrl, '') <> coalesce($webhookUrl, '')) AS urlChanges
          SET integration.webhookUrl = CASE WHEN $setUrl THEN $webhookUrl ELSE integration.webhookUrl END,
+             integration.webhookSecretVersion = CASE
+                 WHEN createsSecret THEN 1 ELSE integration.webhookSecretVersion END,
+             integration.webhookLastSuccessAt = CASE
+                 WHEN urlChanges THEN null ELSE integration.webhookLastSuccessAt END,
+             integration.webhookLastFailureAt = CASE
+                 WHEN urlChanges THEN null ELSE integration.webhookLastFailureAt END,
+             integration.webhookLastFailureReason = CASE
+                 WHEN urlChanges THEN null ELSE integration.webhookLastFailureReason END,
+             integration.webhookLastOutcome = CASE
+                 WHEN urlChanges THEN null ELSE integration.webhookLastOutcome END,
              integration.webhookSecretEnc = CASE
                  WHEN createsSecret THEN $newSecretEnc
                  ELSE integration.webhookSecretEnc END,
@@ -93,7 +108,10 @@ export const setIntegrationWebhookConfig = async ({
 
 /**
  * Stores a new signing secret and returns it in plaintext. The secret it replaces stays valid
- * for 24 hours. Returns null when the Integration does not exist.
+ * for 24 hours. The secret version goes up by one; a secret stored before versions existed
+ * counts as version 1. Returns null when the Integration does not exist. The first SET takes the
+ * node's write lock before the current secret is read, so overlapping rotations run one after
+ * the other and each one's previous secret is the one the rotation before it stored.
  */
 export const rotateWebhookSecretForIntegration = async (
     integrationId: string
@@ -107,11 +125,16 @@ export const rotateWebhookSecretForIntegration = async (
 
     const result = await neogma.queryRunner.run(
         `MATCH (integration:Integration {id: $id})
+         SET integration.updatedAt = $now
          WITH integration, integration.webhookSecretEnc AS previous
          SET integration.webhookSecretPrevEnc = previous,
              integration.webhookSecretPrevExpiresAt = CASE
                  WHEN previous IS NULL THEN null ELSE $previousExpiresAt END,
              integration.webhookSecretEnc = $secretEnc,
+             integration.webhookSecretVersion = coalesce(
+                 integration.webhookSecretVersion,
+                 CASE WHEN previous IS NULL THEN 0 ELSE 1 END
+             ) + 1,
              integration.updatedAt = $now
          RETURN previous IS NOT NULL AS hadPrevious`,
         { id: integrationId, secretEnc, previousExpiresAt, now: now.toISOString() }
@@ -260,4 +283,92 @@ export const getIntegrationWebhookDeliveryFingerprint = async (
     const state = await readStoredDeliveryState(integrationId);
 
     return state ? fingerprintOf(state) : null;
+};
+
+const optionalString = (value: unknown): string | undefined =>
+    typeof value === 'string' && value.length > 0 ? value : undefined;
+
+/**
+ * The statement behind getIntegrationWebhook. Both counts are answered by the
+ * IntegrationEvent(integrationId, deliveryState, attempts) index, which is created with the
+ * rest of the schema at service start (models/index.ts includes
+ * contractEventMaintenanceSchema) and again by every worker pass. There is no USING INDEX
+ * hint on purpose: a read route does not run schema setup, and without the index the
+ * statement is still correct, only slower.
+ */
+export const INTEGRATION_WEBHOOK_STATUS_CYPHER = `MATCH (integration:Integration {id: $id})
+     CALL {
+         MATCH (record:IntegrationEvent)
+         WHERE record.integrationId = $id AND record.deliveryState = 'pending'
+             AND record.attempts = 0
+         RETURN count(record) AS pendingDeliveries
+     }
+     CALL {
+         MATCH (record:IntegrationEvent)
+         WHERE record.integrationId = $id AND record.deliveryState = 'pending'
+             AND record.attempts > 0
+         RETURN count(record) AS retryingDeliveries
+     }
+     RETURN integration.webhookUrl AS webhookUrl,
+         integration.contractEventsEnabledAt AS contractEventsEnabledAt,
+         integration.webhookSecretEnc IS NOT NULL AS hasSecret,
+         integration.webhookSecretVersion AS secretVersion,
+         integration.webhookSecretPrevEnc IS NOT NULL AS hasPreviousSecret,
+         integration.webhookSecretPrevExpiresAt AS previousSecretExpiresAt,
+         integration.webhookLastSuccessAt AS lastSuccessAt,
+         integration.webhookLastFailureAt AS lastFailureAt,
+         integration.webhookLastFailureReason AS lastFailureReason,
+         integration.webhookLastOutcome AS lastOutcome,
+         pendingDeliveries, retryingDeliveries`;
+
+/**
+ * Reads the webhook configuration and delivery health of an Integration. Secrets, encrypted
+ * or not, are not read. Returns null when the Integration does not exist.
+ */
+export const readIntegrationWebhookStatus = async (
+    integrationId: string
+): Promise<IntegrationWebhookStatus | null> => {
+    const result = await neogma.queryRunner.run(INTEGRATION_WEBHOOK_STATUS_CYPHER, {
+        id: integrationId,
+    });
+    const record = result.records[0];
+
+    if (!record) return null;
+
+    const webhookUrl = optionalString(record.get('webhookUrl')) ?? null;
+    const contractEventsEnabledAt = optionalString(record.get('contractEventsEnabledAt'));
+    const hasSecret = record.get('hasSecret') === true;
+    const storedVersion = Number(record.get('secretVersion') ?? 0);
+    const previousSecretExpiresAt = optionalString(record.get('previousSecretExpiresAt'));
+    const lastSuccessAt = optionalString(record.get('lastSuccessAt'));
+    const lastFailureAt = optionalString(record.get('lastFailureAt'));
+    const lastFailureReason = optionalString(record.get('lastFailureReason'));
+    const storedOutcome: unknown = record.get('lastOutcome');
+    const lastOutcome =
+        storedOutcome === 'success' || storedOutcome === 'failure' ? storedOutcome : undefined;
+
+    return {
+        webhookUrl,
+        state: deriveIntegrationWebhookState({
+            webhookUrl,
+            contractEventsEnabledAt,
+            lastSuccessAt,
+            lastFailureAt,
+            lastOutcome,
+        }),
+        ...(contractEventsEnabledAt ? { contractEventsEnabledAt } : {}),
+        hasSecret,
+        // A secret stored before versions existed is version 1.
+        secretVersion: hasSecret ? Math.max(1, storedVersion) : 0,
+        ...(record.get('hasPreviousSecret') === true &&
+        previousSecretExpiresAt &&
+        Date.parse(previousSecretExpiresAt) > Date.now()
+            ? { previousSecretExpiresAt }
+            : {}),
+        ...(lastSuccessAt ? { lastSuccessAt } : {}),
+        ...(lastFailureAt ? { lastFailureAt } : {}),
+        ...(lastFailureAt && lastFailureReason ? { lastFailureReason } : {}),
+        pendingDeliveries: Number(record.get('pendingDeliveries')),
+        retryingDeliveries: Number(record.get('retryingDeliveries')),
+    };
 };

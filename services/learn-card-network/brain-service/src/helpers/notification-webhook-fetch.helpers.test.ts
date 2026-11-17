@@ -10,6 +10,8 @@ vi.mock('node:http', () => ({ request: mocks.request }));
 vi.mock('node:https', () => ({ request: mocks.request }));
 
 import {
+    NotificationWebhookRedirectError,
+    UnsafeNotificationWebhookError,
     fetchNotificationWebhook,
     isPublicNotificationAddress,
 } from './notification-webhook-fetch.helpers';
@@ -197,6 +199,29 @@ describe('notification destination boundary', () => {
         expect(mocks.request).toHaveBeenCalledOnce();
     });
 
+    it.each([301, 302, 307, 308])('reports %i as a redirect carrying its status', async status => {
+        respond(status);
+
+        const error = await fetchNotificationWebhook('https://8.8.8.8/', request(), false).catch(
+            (caught: unknown) => caught
+        );
+
+        expect(error).toBeInstanceOf(NotificationWebhookRedirectError);
+        // Callers that only know about refused destinations keep treating it as one.
+        expect(error).toBeInstanceOf(UnsafeNotificationWebhookError);
+        expect((error as NotificationWebhookRedirectError).status).toBe(status);
+    });
+
+    it('reports a refused address as a refusal, not as a redirect', async () => {
+        const error = await fetchNotificationWebhook('http://10.0.0.1/', request(), false).catch(
+            (caught: unknown) => caught
+        );
+
+        expect(error).toBeInstanceOf(UnsafeNotificationWebhookError);
+        expect(error).not.toBeInstanceOf(NotificationWebhookRedirectError);
+        expect(mocks.request).not.toHaveBeenCalled();
+    });
+
     it('bounds the acknowledgement body', async () => {
         respond(200, 'x'.repeat(64 * 1024 + 1));
         await expect(
@@ -222,7 +247,24 @@ describe('notification destination boundary', () => {
         await fetchNotificationWebhook('http://127.0.0.1:5100/', request(), true);
         expect(globalFetch).toHaveBeenCalledWith(
             'http://127.0.0.1:5100/',
-            expect.objectContaining({ redirect: 'error' })
+            expect.objectContaining({ redirect: 'manual' })
         );
+    });
+
+    it('reports a redirect answered to a local development request without following it', async () => {
+        const globalFetch = vi
+            .fn()
+            .mockResolvedValue(new Response(null, { status: 302, headers: { location: '/next' } }));
+        vi.stubGlobal('fetch', globalFetch);
+
+        const error = await fetchNotificationWebhook(
+            'http://127.0.0.1:5100/',
+            request(),
+            true
+        ).catch((caught: unknown) => caught);
+
+        expect(error).toBeInstanceOf(NotificationWebhookRedirectError);
+        expect((error as NotificationWebhookRedirectError).status).toBe(302);
+        expect(globalFetch).toHaveBeenCalledOnce();
     });
 });

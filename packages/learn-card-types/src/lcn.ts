@@ -2254,6 +2254,43 @@ export type IntegrationWebhookRegistration = z.infer<
     typeof IntegrationWebhookRegistrationValidator
 >;
 
+export const IntegrationWebhookStateValidator = z.enum(['active', 'failing', 'disabled']);
+export type IntegrationWebhookState = z.infer<typeof IntegrationWebhookStateValidator>;
+
+/**
+ * Configuration and delivery health of an Integration's webhook. Never contains a secret.
+ *
+ * `state` is `disabled` when there is no webhook URL or contract events are disabled,
+ * `failing` when the most recent delivery attempt failed, and `active` otherwise.
+ * `lastFailureReason` is a short fixed code such as `http_500`, `timeout`, `network_error` or
+ * `redirect` (the endpoint answered with a redirect, which is not followed) or
+ * `invalid_webhook` (the address was refused before any request); it never contains a URL or a
+ * response body.
+ */
+export const IntegrationWebhookStatusValidator = z.object({
+    webhookUrl: z.string().nullable(),
+    state: IntegrationWebhookStateValidator,
+    contractEventsEnabledAt: z.string().optional(),
+    hasSecret: z.boolean(),
+    secretVersion: z
+        .number()
+        .int()
+        .describe('0 without a secret, 1 for the first secret, plus 1 for every rotation.'),
+    previousSecretExpiresAt: z.string().optional(),
+    lastSuccessAt: z.string().optional(),
+    lastFailureAt: z.string().optional(),
+    lastFailureReason: z.string().optional(),
+    pendingDeliveries: z
+        .number()
+        .int()
+        .describe('Feed records waiting for their first delivery attempt.'),
+    retryingDeliveries: z
+        .number()
+        .int()
+        .describe('Feed records that were attempted at least once and will be tried again.'),
+});
+export type IntegrationWebhookStatus = z.infer<typeof IntegrationWebhookStatusValidator>;
+
 export const IntegrationWebhookSecretRotationValidator = z.object({
     secret: z.string(),
     previousSecretExpiresAt: z.string().optional(),
@@ -2262,9 +2299,18 @@ export type IntegrationWebhookSecretRotation = z.infer<
     typeof IntegrationWebhookSecretRotationValidator
 >;
 
+/**
+ * Result of one synchronous test ping. `httpStatus` is present when the receiver answered,
+ * `latencyMs` when a request was made (not for `invalid_webhook` or `no_webhook`), and `error` is a
+ * short fixed code (`http_<status>`, `timeout`, `network_error`, `redirect`, `invalid_webhook`,
+ * `no_webhook`) when it was not delivered. `redirect` means the endpoint answered with a
+ * redirect, which is never followed: `httpStatus` is its 3xx code. `invalid_webhook` means the
+ * address was refused before any request was sent.
+ */
 export const IntegrationTestEventResultValidator = z.object({
     delivered: z.boolean(),
-    status: z.number().optional(),
+    httpStatus: z.number().optional(),
+    latencyMs: z.number().optional(),
     error: z.string().optional(),
 });
 export type IntegrationTestEventResult = z.infer<typeof IntegrationTestEventResultValidator>;

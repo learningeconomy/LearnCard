@@ -16,10 +16,15 @@ import { associateIntegrationWithProfile } from '@accesslayer/integration/relati
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
 import {
     getIntegrationWebhookDeliveryConfig,
+    readIntegrationWebhookStatus,
     rotateWebhookSecretForIntegration,
     setIntegrationWebhookConfig,
 } from '@accesslayer/integration/webhook';
-import { sendSignedIntegrationWebhook } from '@helpers/integration-events.helpers';
+import {
+    recordIntegrationWebhookOutcomes,
+    sendSignedIntegrationWebhook,
+} from '@helpers/integration-events.helpers';
+import { enforceRateLimits } from '@helpers/rateLimit.helpers';
 import { constructUri } from '@helpers/uri.helpers';
 import { readIntegrationEventPage } from '@accesslayer/integration-event/read';
 import {
@@ -36,11 +41,15 @@ import {
     PaginatedLCNIntegrationsValidator,
     IntegrationWebhookRegistrationValidator,
     IntegrationWebhookSecretRotationValidator,
+    IntegrationWebhookStatusValidator,
     IntegrationWebhookUrlValidator,
     IntegrationEventsResponseValidator,
     IntegrationTestEventResultValidator,
     type IntegrationEvent,
 } from '@learncard/types';
+
+/** Test pings one Integration may send per minute. */
+export const INTEGRATION_TEST_EVENTS_PER_MINUTE = 10;
 
 export const integrationsRouter = t.router({
     addIntegration: profileRoute
@@ -259,6 +268,43 @@ export const integrationsRouter = t.router({
             return registration;
         }),
 
+    getIntegrationWebhook: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/integration/{id}/webhook',
+                tags: ['Integrations'],
+                summary: 'Get Integration Webhook',
+                description:
+                    'Read the webhook configuration and delivery health of an Integration: the URL, its state (`active`, `failing` or `disabled`), when the last delivery succeeded and failed, the fixed code of the last failure (for example `http_401`, `timeout`, `network_error`, `redirect` when the endpoint answered with a redirect, which is not followed, or `invalid_webhook` when the address was refused before any request), how many feed records are waiting for a first attempt or for a retry, and the version of the signing secret. The secret itself is never returned.',
+            },
+            requiredScope: 'integrations:read',
+        })
+        .input(z.object({ id: z.string() }))
+        .output(IntegrationWebhookStatusValidator)
+        .query(async ({ input, ctx }) => {
+            const associated = await isIntegrationAssociatedWithProfile(
+                input.id,
+                ctx.user.profile.profileId
+            );
+
+            if (!associated) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'This Integration is not associated with you!',
+                });
+            }
+
+            const status = await readIntegrationWebhookStatus(input.id);
+
+            if (!status) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+            }
+
+            return status;
+        }),
+
     rotateIntegrationWebhookSecret: profileRoute
         .meta({
             openapi: {
@@ -305,7 +351,7 @@ export const integrationsRouter = t.router({
                 tags: ['Integrations'],
                 summary: 'Send Integration Test Event',
                 description:
-                    'Send one signed `integration.test` event to the webhook URL of an Integration and report the result. The test event is not written to the change feed. It is sent whenever the Integration has a webhook URL and a signing secret, also while contract events are disabled, so a receiver can be checked before events are enabled.',
+                    'Send one signed `integration.test` event to the webhook URL of an Integration right away and return the result in the same response: `delivered`, the `httpStatus` the receiver answered with, `latencyMs` (only when a request was made, so not for `invalid_webhook` or `no_webhook`), and a fixed `error` code when it was not delivered (`http_<status>`, `timeout`, `network_error`, `redirect` for an endpoint that answered with a redirect (not followed; `httpStatus` is its 3xx code), `invalid_webhook` for an unsafe or invalid address, `no_webhook`). The test event is not written to the change feed. It is sent whenever the Integration has a webhook URL and a signing secret, also while contract events are disabled, so a receiver can be checked before events are enabled. The result also updates the delivery health read by Get Integration Webhook. Limited to 10 test events per Integration per minute; every call counts toward that limit, including calls that end in `no_webhook`, and more are refused with TOO_MANY_REQUESTS. The call is refused with an error when the rate-limit service is unavailable.',
             },
             requiredScope: 'integrations:write',
         })
@@ -323,6 +369,16 @@ export const integrationsRouter = t.router({
                     message: 'This Integration is not associated with you!',
                 });
             }
+
+            // Per integration, after the ownership check, so only its owner can use the budget.
+            await enforceRateLimits([
+                {
+                    key: `integration-webhook-test:${input.id}`,
+                    limit: INTEGRATION_TEST_EVENTS_PER_MINUTE,
+                    windowSeconds: 60,
+                    description: `${INTEGRATION_TEST_EVENTS_PER_MINUTE} test events per integration per minute`,
+                },
+            ]);
 
             // Deliberately not gated on contractEventsEnabledAt: only feed records stop on disable.
             const config = await getIntegrationWebhookDeliveryConfig(input.id);
@@ -346,9 +402,25 @@ export const integrationsRouter = t.router({
                 event,
             });
 
+            // A test ping is a real attempt on the URL, so health reflects it.
+            const outcome = {
+                at: new Date().toISOString(),
+                delivered: result.delivered,
+                reason: result.error,
+            };
+
+            await recordIntegrationWebhookOutcomes(
+                input.id,
+                config.webhookUrl,
+                result.delivered ? { success: outcome } : { failure: outcome }
+            );
+
             return {
                 delivered: result.delivered,
-                ...(result.status !== undefined ? { status: result.status } : {}),
+                ...(result.status !== undefined ? { httpStatus: result.status } : {}),
+                // No request was made when the address was refused before sending. A redirect
+                // was answered, so it has a status and a latency like any other answer.
+                ...(result.error === 'invalid_webhook' ? {} : { latencyMs: result.latencyMs }),
                 ...(result.error ? { error: result.error } : {}),
             };
         }),

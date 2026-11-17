@@ -14,6 +14,7 @@ import { INTEGRATION_EVENT_RETENTION_MS } from 'src/constants/integration-events
 import { ensureContractEventMaintenance } from './contract-event-maintenance.helpers';
 import {
     fetchNotificationWebhook,
+    NotificationWebhookRedirectError,
     UnsafeNotificationWebhookError,
 } from './notification-webhook-fetch.helpers';
 import {
@@ -587,12 +588,108 @@ const WEBHOOK_TIMEOUT_MS = 6_000;
 
 export type IntegrationWebhookSendResult = {
     delivered: boolean;
-    /** HTTP status, when the receiver answered. */
+    /** HTTP status, when the receiver answered (also the 3xx code of a redirect). */
     status?: number;
     /** false when retrying cannot help (bad URL, or a 4xx other than 408, 425, 429). */
     retryable: boolean;
-    /** Short fixed code such as http_500, timeout, network_error, invalid_webhook. Never a URL. */
+    /**
+     * Short fixed code: http_<status>, timeout, network_error, redirect (the endpoint answered
+     * with a redirect, which is never followed) or invalid_webhook (the address was refused
+     * before any request). Never a URL.
+     */
     error?: string;
+    /** Wall time of the HTTP attempt in milliseconds, from just before the request to its result. */
+    latencyMs: number;
+};
+
+export type IntegrationWebhookOutcome = {
+    /** ISO time of the attempt. */
+    at: string;
+    delivered: boolean;
+    /** Fixed failure code of a failed attempt. Never a URL or a response body. */
+    reason?: string;
+};
+
+/**
+ * Records the result of one delivery attempt on the Integration node, for the webhook health
+ * read: `webhookLastSuccessAt`, or `webhookLastFailureAt` with `webhookLastFailureReason`.
+ * A value is only replaced by a later one, so overlapping workers cannot move health back.
+ * `webhookLastOutcome` says which attempt was the most recent. `last` is the one that happened
+ * last when both a success and a failure are given (a failure when not said); it replaces the
+ * stored marker when its time is later than or equal to the stored latest outcome time, so a
+ * success and a failure within the same millisecond are still told apart by their order.
+ * `webhookUrl` is the address the outcomes were produced against: nothing is written when the
+ * Integration has another URL by now, because health describes the current address only.
+ * Never throws: health is advisory and must not fail a delivery or a test ping.
+ */
+export const recordIntegrationWebhookOutcomes = async (
+    integrationId: string,
+    webhookUrl: string,
+    {
+        success,
+        failure,
+        last,
+    }: {
+        success?: IntegrationWebhookOutcome;
+        failure?: IntegrationWebhookOutcome;
+        last?: 'success' | 'failure';
+    }
+): Promise<void> => {
+    if (!success && !failure) return;
+
+    const lastOutcome: 'success' | 'failure' =
+        last === 'success' && success ? 'success' : failure ? 'failure' : 'success';
+    const lastAt = (lastOutcome === 'success' ? success?.at : failure?.at) ?? null;
+
+    // The forward-only guard below compares ISO strings with `<`. That is correct only because
+    // every writer stores toISOString() values.
+    // The statement takes the Integration node's write lock before it reads the URL and the
+    // stored health, so two overlapping writers (worker passes, a test ping) cannot both decide
+    // from the same stale values, and a URL change cannot slip in between the check and the write.
+    try {
+        await neogma.queryRunner.run(
+            `MATCH (integration:Integration {id: $id})
+             SET integration.eventSeqLock = coalesce(integration.eventSeqLock, 0) + 1
+             WITH integration
+             WHERE integration.webhookUrl = $webhookUrl
+             WITH integration,
+                 ($successAt IS NOT NULL AND (integration.webhookLastSuccessAt IS NULL
+                     OR integration.webhookLastSuccessAt < $successAt)) AS newSuccess,
+                 ($failureAt IS NOT NULL AND (integration.webhookLastFailureAt IS NULL
+                     OR integration.webhookLastFailureAt < $failureAt)) AS newFailure,
+                 CASE
+                     WHEN integration.webhookLastSuccessAt IS NULL
+                         THEN integration.webhookLastFailureAt
+                     WHEN integration.webhookLastFailureAt IS NULL
+                         THEN integration.webhookLastSuccessAt
+                     WHEN integration.webhookLastSuccessAt >= integration.webhookLastFailureAt
+                         THEN integration.webhookLastSuccessAt
+                     ELSE integration.webhookLastFailureAt
+                 END AS storedLatestAt
+             SET integration.webhookLastOutcome = CASE
+                     WHEN storedLatestAt IS NULL OR storedLatestAt <= $lastAt THEN $lastOutcome
+                     ELSE integration.webhookLastOutcome END,
+                 integration.webhookLastSuccessAt = CASE
+                     WHEN newSuccess THEN $successAt ELSE integration.webhookLastSuccessAt END,
+                 integration.webhookLastFailureReason = CASE
+                     WHEN newFailure THEN $failureReason
+                     ELSE integration.webhookLastFailureReason END,
+                 integration.webhookLastFailureAt = CASE
+                     WHEN newFailure THEN $failureAt ELSE integration.webhookLastFailureAt END`,
+            {
+                id: integrationId,
+                webhookUrl,
+                successAt: success?.at ?? null,
+                failureAt: failure?.at ?? null,
+                failureReason: failure?.reason ?? 'delivery_failed',
+                lastOutcome,
+                lastAt,
+            }
+        );
+    } catch {
+        // Never log identifiers.
+        console.warn('integration_events: health_update_failed');
+    }
 };
 
 /**
@@ -615,6 +712,8 @@ export const sendSignedIntegrationWebhook = async ({
     const timestamp = Math.floor(Date.now() / 1000);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const startedAt = Date.now();
+    const latency = (): number => Date.now() - startedAt;
 
     try {
         const response = await fetchNotificationWebhook(
@@ -640,7 +739,14 @@ export const sendSignedIntegrationWebhook = async ({
         // Keep the deadline active while the answer is read. Its content is not used.
         await response.text();
 
-        if (response.ok) return { delivered: true, status: response.status, retryable: false };
+        if (response.ok) {
+            return {
+                delivered: true,
+                status: response.status,
+                retryable: false,
+                latencyMs: latency(),
+            };
+        }
 
         const isFinal =
             response.status >= 400 &&
@@ -652,16 +758,34 @@ export const sendSignedIntegrationWebhook = async ({
             status: response.status,
             retryable: !isFinal,
             error: `http_${response.status}`,
+            latencyMs: latency(),
         };
     } catch (error) {
+        // A request was sent and answered, so this has a status and counts as a real attempt.
+        if (error instanceof NotificationWebhookRedirectError) {
+            return {
+                delivered: false,
+                status: error.status,
+                retryable: false,
+                error: 'redirect',
+                latencyMs: latency(),
+            };
+        }
+
         if (error instanceof UnsafeNotificationWebhookError) {
-            return { delivered: false, retryable: false, error: 'invalid_webhook' };
+            return {
+                delivered: false,
+                retryable: false,
+                error: 'invalid_webhook',
+                latencyMs: latency(),
+            };
         }
 
         return {
             delivered: false,
             retryable: true,
             error: controller.signal.aborted ? 'timeout' : 'network_error',
+            latencyMs: latency(),
         };
     } finally {
         clearTimeout(timeoutId);
@@ -740,6 +864,17 @@ const isDeliveryDisabled = (config: WebhookDeliveryConfig, occurredAt: unknown):
  * integration whose contract events are disabled are not sent: they become final `rejected`
  * with failureReason `disabled`. A failed or refused delivery only changes delivery
  * bookkeeping; the record always stays in the feed.
+ *
+ * Webhook health: every attempt that reached the send step (delivered, refused or failed) is
+ * remembered per integration and webhook URL. The latest success and the latest failure of the
+ * pass are written to the Integration node once per URL, after the loop, and only while the
+ * Integration still has that URL. That is at most one extra write per integration per pass
+ * instead of one per record, and it keeps the Integration node's write lock (shared with
+ * sequence allocation and feed reads) out of the per-record statements. An internal error
+ * before a request is sent (a failed config read, say) changes no health, and neither do
+ * records closed without a request (`no_webhook`, `disabled`, `retry_expired`,
+ * `retry_exhausted`): they say nothing new about the receiver. A crash before the final write
+ * loses only that pass's health update.
  */
 export const dispatchIntegrationWebhooks = async ({
     limit = 100,
@@ -795,6 +930,35 @@ export const dispatchIntegrationWebhooks = async ({
         string,
         { fingerprint: string | null; config: WebhookDeliveryConfig | null }
     >();
+    // Keyed by integration and webhook URL: an outcome describes the address it was sent to.
+    const outcomes = new Map<
+        string,
+        {
+            integrationId: string;
+            webhookUrl: string;
+            success?: IntegrationWebhookOutcome;
+            failure?: IntegrationWebhookOutcome;
+            /** Which outcome was remembered last, so equal timestamps keep their order. */
+            last?: 'success' | 'failure';
+        }
+    >();
+    const remember = (
+        integrationId: string,
+        webhookUrl: string,
+        delivered: boolean,
+        reason?: string
+    ): void => {
+        const key = `${integrationId}\n${webhookUrl}`;
+        const entry = outcomes.get(key) ?? { integrationId, webhookUrl };
+        const outcome = { at: new Date().toISOString(), delivered, reason };
+
+        outcomes.set(
+            key,
+            delivered
+                ? { ...entry, success: outcome, last: 'success' }
+                : { ...entry, failure: outcome, last: 'failure' }
+        );
+    };
 
     for (const record of dueRecords) {
         if (Date.now() >= deadline) break;
@@ -871,14 +1035,17 @@ export const dispatchIntegrationWebhooks = async ({
 
                     if (result.delivered) {
                         state = 'delivered';
+                        remember(integrationId, config.webhookUrl, true);
                     } else {
                         failureReason = result.error ?? 'delivery_failed';
+                        remember(integrationId, config.webhookUrl, false, failureReason);
                         if (!result.retryable) state = 'rejected';
                         else if (attempts >= MAX_WEBHOOK_ATTEMPTS) state = 'failed';
                     }
                 }
             }
         } catch {
+            // A fault on our side (sending never throws): not a statement about the receiver.
             failureReason = 'delivery_error';
             if (attempts >= MAX_WEBHOOK_ATTEMPTS) state = 'failed';
         }
@@ -918,6 +1085,10 @@ export const dispatchIntegrationWebhooks = async ({
                 now: new Date().toISOString(),
             }
         );
+    }
+
+    for (const { integrationId, webhookUrl, ...entry } of outcomes.values()) {
+        await recordIntegrationWebhookOutcomes(integrationId, webhookUrl, entry);
     }
 
     return summary;

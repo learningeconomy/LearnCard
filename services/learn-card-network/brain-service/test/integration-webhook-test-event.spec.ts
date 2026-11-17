@@ -77,7 +77,7 @@ describe('sendIntegrationTestEvent and the worker pass', () => {
     it('posts a signed integration.test event and does not write it to the feed', async () => {
         await expect(
             userA.clients.fullAuth.integrations.sendIntegrationTestEvent({ id: integrationId })
-        ).resolves.toEqual({ delivered: true, status: 200 });
+        ).resolves.toEqual({ delivered: true, httpStatus: 200, latencyMs: expect.any(Number) });
 
         expect(fetchSpy).toHaveBeenCalledOnce();
 
@@ -117,7 +117,34 @@ describe('sendIntegrationTestEvent and the worker pass', () => {
 
         await expect(
             userA.clients.fullAuth.integrations.sendIntegrationTestEvent({ id: integrationId })
-        ).resolves.toEqual({ delivered: false, status: 500, error: 'http_500' });
+        ).resolves.toEqual({
+            delivered: false,
+            httpStatus: 500,
+            latencyMs: expect.any(Number),
+            error: 'http_500',
+        });
+    });
+
+    it('does not mark a URL replaced during the ping as failing', async () => {
+        fetchSpy.mockImplementation(async () => {
+            await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                id: integrationId,
+                webhookUrl: 'https://new.example.com/learncard',
+            });
+
+            return answer(503);
+        });
+
+        await expect(
+            userA.clients.fullAuth.integrations.sendIntegrationTestEvent({ id: integrationId })
+        ).resolves.toMatchObject({ delivered: false, httpStatus: 503 });
+
+        const after = await userA.clients.fullAuth.integrations.getIntegrationWebhook({
+            id: integrationId,
+        });
+
+        expect(after.state).toBe('active');
+        expect(after).not.toHaveProperty('lastFailureAt');
     });
 
     it('reports no_webhook without sending when there is no webhook URL', async () => {
@@ -140,9 +167,34 @@ describe('sendIntegrationTestEvent and the worker pass', () => {
 
         await expect(
             userA.clients.fullAuth.integrations.sendIntegrationTestEvent({ id: integrationId })
-        ).resolves.toEqual({ delivered: true, status: 200 });
+        ).resolves.toEqual({ delivered: true, httpStatus: 200, latencyMs: expect.any(Number) });
         expect(fetchSpy).toHaveBeenCalledOnce();
         expect(JSON.parse(fetchSpy.mock.calls[0]![1].body).type).toBe('integration.test');
+    });
+
+    it('allows 10 test events per integration per minute, then answers TOO_MANY_REQUESTS', async () => {
+        const send = () =>
+            userA.clients.fullAuth.integrations.sendIntegrationTestEvent({ id: integrationId });
+
+        for (let i = 0; i < 10; i++)
+            await expect(send()).resolves.toMatchObject({ delivered: true });
+
+        await expect(send()).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        expect(fetchSpy).toHaveBeenCalledTimes(10);
+
+        // The budget belongs to one integration.
+        const otherId = await userA.clients.fullAuth.integrations.addIntegration({
+            name: 'Other',
+            whitelistedDomains: [],
+        });
+        await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+            id: otherId,
+            webhookUrl: WEBHOOK_URL,
+        });
+
+        await expect(
+            userA.clients.fullAuth.integrations.sendIntegrationTestEvent({ id: otherId })
+        ).resolves.toMatchObject({ delivered: true });
     });
 
     it('is refused for another profile and without the integrations:write scope', async () => {

@@ -3,10 +3,12 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { neogma } from '@instance';
 import { Integration, Profile } from '@models';
 import * as notificationTransport from '@helpers/notification-webhook-fetch.helpers';
+import * as webhookAccess from '@accesslayer/integration/webhook';
 import {
     createIntegrationOnlyEvent,
     dispatchIntegrationWebhooks,
     fanOutIntegrationEvents,
+    recordIntegrationWebhookOutcomes,
     toIntegrationEvent,
 } from '@helpers/integration-events.helpers';
 import { signIntegrationWebhookBody } from '@helpers/integration-webhook-signature.helpers';
@@ -272,6 +274,250 @@ describe('dispatchIntegrationWebhooks', () => {
         await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({ rejected: 1 });
         expect((await stored('dispatch-7')).failureReason).toBe('no_webhook');
         expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('records webhook health for attempts only, not for records closed without a request', async () => {
+        const health = () =>
+            userA.clients.fullAuth.integrations.getIntegrationWebhook({ id: integrationId });
+
+        // Closed without a request: older than the retry window.
+        await seedEvent('dispatch-health-expired');
+        await run(
+            `MATCH (record:IntegrationEvent {eventId: 'dispatch-health-expired'})
+             SET record.createdAt = '2020-01-01T00:00:00.000Z'`
+        );
+        await dispatchIntegrationWebhooks();
+
+        expect(fetchSpy).not.toHaveBeenCalled();
+        expect(await health()).toMatchObject({ state: 'active' });
+        expect(await health()).not.toHaveProperty('lastFailureAt');
+
+        // One pass with a success and then a failure: the failure is the latest outcome.
+        await seedEvent('dispatch-health-ok');
+        await seedEvent('dispatch-health-bad');
+        fetchSpy.mockResolvedValueOnce(answer(200)).mockImplementationOnce(async () => {
+            await new Promise(resolve => setTimeout(resolve, 5));
+
+            return answer(500);
+        });
+        await dispatchIntegrationWebhooks();
+
+        const after = await health();
+
+        expect(after).toMatchObject({
+            state: 'failing',
+            lastFailureReason: 'http_500',
+            pendingDeliveries: 0,
+            retryingDeliveries: 1,
+        });
+        expect(Date.parse(after.lastFailureAt!)).toBeGreaterThan(Date.parse(after.lastSuccessAt!));
+    });
+
+    describe('webhook health follows the URL it was measured against', () => {
+        const NEW_URL = 'https://new.example.com/learncard';
+        const health = () =>
+            userA.clients.fullAuth.integrations.getIntegrationWebhook({ id: integrationId });
+        const replaceUrl = () =>
+            userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                id: integrationId,
+                webhookUrl: NEW_URL,
+            });
+
+        it('does not put a failure of the old URL on a URL replaced during the pass', async () => {
+            await seedEvent('health-url-1');
+            fetchSpy.mockImplementationOnce(async () => {
+                await replaceUrl();
+
+                return answer(500);
+            });
+
+            await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({ pending: 1 });
+
+            const after = await health();
+
+            expect(after.state).toBe('active');
+            expect(after).not.toHaveProperty('lastFailureAt');
+            expect(after).not.toHaveProperty('lastSuccessAt');
+        });
+
+        it('keeps the outcomes of the old and the new URL apart within one pass', async () => {
+            await seedEvent('health-url-2');
+            await seedEvent('health-url-3');
+            fetchSpy.mockImplementationOnce(async () => {
+                await replaceUrl();
+
+                return answer(500);
+            });
+
+            await dispatchIntegrationWebhooks();
+
+            expect(fetchSpy.mock.calls.map(([destination]) => destination)).toEqual([
+                WEBHOOK_URL,
+                NEW_URL,
+            ]);
+
+            const after = await health();
+
+            expect(after.state).toBe('active');
+            expect(after).toHaveProperty('lastSuccessAt');
+            expect(after).not.toHaveProperty('lastFailureAt');
+            expect(after).not.toHaveProperty('lastFailureReason');
+        });
+
+        it('ignores an outcome remembered for a URL that is no longer the integration URL', async () => {
+            const failure = { at: new Date().toISOString(), delivered: false, reason: 'http_500' };
+
+            await replaceUrl();
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, { failure });
+
+            const after = await health();
+
+            expect(after.state).toBe('active');
+            expect(after).not.toHaveProperty('lastFailureAt');
+
+            await recordIntegrationWebhookOutcomes(integrationId, NEW_URL, { failure });
+
+            expect(await health()).toMatchObject({
+                state: 'failing',
+                lastFailureReason: 'http_500',
+            });
+        });
+    });
+
+    it('rejects a record sent to a redirecting endpoint and counts it as a failed attempt', async () => {
+        await seedEvent('redirect-1');
+        fetchSpy.mockRejectedValue(new notificationTransport.NotificationWebhookRedirectError(302));
+
+        await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({
+            rejected: 1,
+            pending: 0,
+        });
+
+        const record = await stored('redirect-1');
+        const after = await userA.clients.fullAuth.integrations.getIntegrationWebhook({
+            id: integrationId,
+        });
+
+        expect(fetchSpy).toHaveBeenCalledOnce();
+        expect(record.deliveryState).toBe('rejected');
+        expect(record.failureReason).toBe('redirect');
+        expect(Number(record.lastStatus)).toBe(302);
+        expect(after).toMatchObject({ state: 'failing', lastFailureReason: 'redirect' });
+        expect(after.lastFailureAt).toEqual(expect.any(String));
+    });
+
+    it('rejects a record for an unsafe address as invalid_webhook, without a status', async () => {
+        await seedEvent('unsafe-1');
+        fetchSpy.mockRejectedValue(new notificationTransport.UnsafeNotificationWebhookError());
+
+        await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({ rejected: 1 });
+
+        const record = await stored('unsafe-1');
+        const after = await userA.clients.fullAuth.integrations.getIntegrationWebhook({
+            id: integrationId,
+        });
+
+        expect(record.deliveryState).toBe('rejected');
+        expect(record.failureReason).toBe('invalid_webhook');
+        expect(record.lastStatus).toBeUndefined();
+        expect(after).toMatchObject({ state: 'failing', lastFailureReason: 'invalid_webhook' });
+    });
+
+    describe('webhook health when outcomes share a timestamp', () => {
+        const health = () =>
+            userA.clients.fullAuth.integrations.getIntegrationWebhook({ id: integrationId });
+        const at = '2026-11-14T02:00:00.000Z';
+        const success = { at, delivered: true };
+        const failure = { at, delivered: false, reason: 'http_500' };
+
+        it('reads failing for a success followed by a failure at the same time', async () => {
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, { success });
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, { failure });
+
+            expect(await health()).toMatchObject({
+                state: 'failing',
+                lastFailureReason: 'http_500',
+            });
+        });
+
+        it('reads active for a failure followed by a success at the same time', async () => {
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, { failure });
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, { success });
+
+            expect((await health()).state).toBe('active');
+        });
+
+        it('keeps the order of two outcomes written in one call', async () => {
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, {
+                success,
+                failure,
+                last: 'failure',
+            });
+            expect((await health()).state).toBe('failing');
+
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, {
+                success,
+                failure,
+                last: 'success',
+            });
+            expect((await health()).state).toBe('active');
+        });
+
+        it('does not let an older outcome replace the marker', async () => {
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, { failure });
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, {
+                success: { at: '2026-11-14T01:00:00.000Z', delivered: true },
+            });
+
+            expect((await health()).state).toBe('failing');
+        });
+
+        it('clears the marker when the URL changes', async () => {
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, { failure });
+            await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                id: integrationId,
+                webhookUrl: 'https://other.example.com/learncard',
+            });
+
+            const stored = await run(
+                'MATCH (integration:Integration {id: $id}) RETURN integration.webhookLastOutcome AS marker',
+                { id: integrationId }
+            );
+
+            expect(stored.records[0]?.get('marker')).toBeNull();
+            expect((await health()).state).toBe('active');
+        });
+
+        it('never returns the marker from a read route', async () => {
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, { failure });
+
+            expect(await health()).not.toHaveProperty('lastOutcome');
+            expect(
+                await userA.clients.fullAuth.integrations.getIntegration({ id: integrationId })
+            ).not.toHaveProperty('webhookLastOutcome');
+        });
+    });
+
+    it('does not change webhook health when an internal error stops a delivery before any request', async () => {
+        await seedEvent('health-internal-1');
+        vi.spyOn(webhookAccess, 'getIntegrationWebhookDeliverySnapshot').mockRejectedValue(
+            new Error('database hiccup')
+        );
+
+        await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({ pending: 1 });
+
+        expect(fetchSpy).not.toHaveBeenCalled();
+
+        const record = await stored('health-internal-1');
+        const after = await userA.clients.fullAuth.integrations.getIntegrationWebhook({
+            id: integrationId,
+        });
+
+        expect(record.deliveryState).toBe('pending');
+        expect(record.failureReason).toBe('delivery_error');
+        expect(after.state).toBe('active');
+        expect(after).not.toHaveProperty('lastFailureAt');
+        expect(after).not.toHaveProperty('lastFailureReason');
     });
 
     it('rejects pending and retrying records once contract events are disabled', async () => {

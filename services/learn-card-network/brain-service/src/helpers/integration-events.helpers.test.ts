@@ -17,7 +17,10 @@ vi.mock('./notification-webhook-fetch.helpers', async importOriginal => ({
 
 import { sendSignedIntegrationWebhook } from './integration-events.helpers';
 import { signIntegrationWebhookBody } from './integration-webhook-signature.helpers';
-import { UnsafeNotificationWebhookError } from './notification-webhook-fetch.helpers';
+import {
+    NotificationWebhookRedirectError,
+    UnsafeNotificationWebhookError,
+} from './notification-webhook-fetch.helpers';
 
 const webhookUrl = 'https://hooks.example.com/learncard?token=do-not-log';
 const event: IntegrationEvent = {
@@ -49,7 +52,12 @@ describe('sendSignedIntegrationWebhook', () => {
             event,
         });
 
-        expect(result).toEqual({ delivered: true, status: 200, retryable: false });
+        expect(result).toEqual({
+            delivered: true,
+            status: 200,
+            retryable: false,
+            latencyMs: expect.any(Number),
+        });
         expect(fetchNotificationWebhook).toHaveBeenCalledOnce();
 
         const [destination, request, isOffline] = fetchNotificationWebhook.mock.calls[0]!;
@@ -86,7 +94,12 @@ describe('sendSignedIntegrationWebhook', () => {
             event,
         });
 
-        expect(result).toEqual({ delivered: true, status: 204, retryable: false });
+        expect(result).toEqual({
+            delivered: true,
+            status: 204,
+            retryable: false,
+            latencyMs: expect.any(Number),
+        });
 
         const request = fetchNotificationWebhook.mock.calls[0]![1];
         const parts: string[] = request.headers['X-LearnCard-Signature'].split(',');
@@ -114,7 +127,13 @@ describe('sendSignedIntegrationWebhook', () => {
 
         await expect(
             sendSignedIntegrationWebhook({ webhookUrl, secrets: ['whsec_current'], event })
-        ).resolves.toEqual({ delivered: false, status, retryable, error: `http_${status}` });
+        ).resolves.toEqual({
+            delivered: false,
+            status,
+            retryable,
+            error: `http_${status}`,
+            latencyMs: expect.any(Number),
+        });
     });
 
     it('treats an unsafe destination as final', async () => {
@@ -122,8 +141,32 @@ describe('sendSignedIntegrationWebhook', () => {
 
         await expect(
             sendSignedIntegrationWebhook({ webhookUrl, secrets: ['whsec_current'], event })
-        ).resolves.toEqual({ delivered: false, retryable: false, error: 'invalid_webhook' });
+        ).resolves.toEqual({
+            delivered: false,
+            retryable: false,
+            error: 'invalid_webhook',
+            latencyMs: expect.any(Number),
+        });
     });
+
+    it.each([301, 302, 307, 308])(
+        'reports a %d redirect as final with its status, apart from an unsafe address',
+        async status => {
+            fetchNotificationWebhook.mockRejectedValue(
+                new NotificationWebhookRedirectError(status)
+            );
+
+            await expect(
+                sendSignedIntegrationWebhook({ webhookUrl, secrets: ['whsec_current'], event })
+            ).resolves.toEqual({
+                delivered: false,
+                status,
+                retryable: false,
+                error: 'redirect',
+                latencyMs: expect.any(Number),
+            });
+        }
+    );
 
     it('treats a network error as retryable and never reports the URL', async () => {
         fetchNotificationWebhook.mockRejectedValue(new Error(`connect ECONNREFUSED ${webhookUrl}`));
@@ -134,7 +177,12 @@ describe('sendSignedIntegrationWebhook', () => {
             event,
         });
 
-        expect(result).toEqual({ delivered: false, retryable: true, error: 'network_error' });
+        expect(result).toEqual({
+            delivered: false,
+            retryable: true,
+            error: 'network_error',
+            latencyMs: expect.any(Number),
+        });
         expect(JSON.stringify(result)).not.toContain('hooks.example.com');
     });
 
@@ -153,6 +201,11 @@ describe('sendSignedIntegrationWebhook', () => {
                 event,
                 timeoutMs: 20,
             })
-        ).resolves.toEqual({ delivered: false, retryable: true, error: 'timeout' });
+        ).resolves.toEqual({
+            delivered: false,
+            retryable: true,
+            error: 'timeout',
+            latencyMs: expect.any(Number),
+        });
     });
 });
