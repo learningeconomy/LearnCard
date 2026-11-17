@@ -4,6 +4,7 @@ import { neogma } from '@instance';
 import { getDidWeb } from '@helpers/did.helpers';
 import { constructUri } from '@helpers/uri.helpers';
 import {
+    MAX_FANOUT_ATTEMPTS,
     createIntegrationOnlyEvent,
     fanOutIntegrationEvents,
     toIntegrationEvent,
@@ -499,32 +500,32 @@ describe('fanOutIntegrationEvents', () => {
             expect(cappedDelay).toBeLessThanOrEqual(3_610_000);
         });
 
-        it('abandons an event after 12 attempts and keeps the attempt count', async () => {
+        it('abandons an event after the attempt limit and keeps the attempt count', async () => {
             const spy = failPoisonContracts();
             const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
             await createEvent('bad', 'poison-1', OCCURRED_AT);
 
-            for (let attempt = 1; attempt <= 12; attempt++) {
+            for (let attempt = 1; attempt <= MAX_FANOUT_ATTEMPTS; attempt++) {
                 await fanOutIntegrationEvents();
-                if (attempt < 12) {
+                if (attempt < MAX_FANOUT_ATTEMPTS) {
                     expect(await isFlagged('bad')).toBe(true);
                     await makeDue('bad');
                 }
             }
 
-            expect(spy.attempts()).toBe(12);
+            expect(spy.attempts()).toBe(MAX_FANOUT_ATTEMPTS);
             expect(await isFlagged('bad')).toBe(false);
 
             const state = await eventState('bad');
 
-            expect(Number(state.integrationFanoutAttempts)).toBe(12);
+            expect(Number(state.integrationFanoutAttempts)).toBe(MAX_FANOUT_ATTEMPTS);
             expect(typeof state.integrationFanoutFailedAt).toBe('string');
             expect(state.integrationFanoutNextAt).toBeUndefined();
             expect(warn).toHaveBeenCalledWith('integration_events: fanout_abandoned');
 
             await fanOutIntegrationEvents();
-            expect(spy.attempts()).toBe(12);
+            expect(spy.attempts()).toBe(MAX_FANOUT_ATTEMPTS);
         });
 
         it('does not let a failing event block the inline path and clears attempts on success', async () => {

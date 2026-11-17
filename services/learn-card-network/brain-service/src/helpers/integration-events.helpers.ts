@@ -336,7 +336,11 @@ const fanOutEvent = async (event: Record<string, unknown>): Promise<number> => {
     return created;
 };
 
-const MAX_FANOUT_ATTEMPTS = 12;
+/**
+ * About three days of retries (the delay reaches its 1-hour cap after seven attempts). Giving up
+ * leaves a gap in the feed, so it must outlast a bad deploy or a long incident.
+ */
+export const MAX_FANOUT_ATTEMPTS = 80;
 const FANOUT_INITIAL_RETRY_DELAY_MS = 60_000;
 const FANOUT_MAX_RETRY_DELAY_MS = 60 * 60_000;
 
@@ -345,7 +349,8 @@ const FANOUT_MAX_RETRY_DELAY_MS = 60 * 60_000;
  * per subscribed integration, then removes the flag. Safe to run concurrently and to retry:
  * records are MERGEd by id and a sequence number is only consumed when a record is created.
  * A failing event is retried with a backoff (60 seconds doubling to 1 hour) and given up on
- * after 12 attempts: the flag is removed and integrationFanoutFailedAt is set.
+ * after MAX_FANOUT_ATTEMPTS (about three days): the flag is removed and
+ * integrationFanoutFailedAt is set, so the event can be found and re-flagged by hand.
  */
 export const fanOutIntegrationEvents = async ({
     eventId,
