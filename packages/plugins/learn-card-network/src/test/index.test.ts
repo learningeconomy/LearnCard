@@ -298,6 +298,29 @@ describe('inbox batch method', () => {
     });
 });
 
+describe('ordinary inbox idempotency forwarding', () => {
+    beforeEach(() => vi.clearAllMocks());
+    it('forwards the existing key field without opting into managed refresh', async () => {
+        const receipt = { issuanceId: 'issue-1', status: 'PENDING' };
+        const mutate = vi.fn().mockResolvedValue(receipt);
+        vi.mocked(getBrainClient).mockResolvedValue({
+            ...getMockClient(),
+            inbox: { issue: { mutate } },
+        } as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        const request = {
+            recipient: { type: 'email' as const, value: 'holder@example.com' },
+            templateUri: 'urn:template',
+            idempotencyKey: 'request-1',
+        };
+        await expect(plugin.methods?.sendCredentialViaInbox(learnCard, request)).resolves.toEqual(
+            receipt
+        );
+        expect(mutate).toHaveBeenCalledExactlyOnceWith(request);
+    });
+});
+
 describe('credential sync authorization', () => {
     beforeEach(() => vi.clearAllMocks());
 
