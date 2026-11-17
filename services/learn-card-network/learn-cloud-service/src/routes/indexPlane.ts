@@ -36,22 +36,9 @@ import {
 } from '@cache/indexPlane';
 import { getAllDidsForDid } from '@accesslayer/user/read';
 import { MAX_INDEX_PAGE_LIMIT } from 'src/constants/limits';
+import { withInternalError } from '@helpers/error.helpers';
 
-/**
- * A failed index read becomes a 500, never an empty page or 0. Mongo's message stays in the cause
- * (logs, Sentry), not in the response.
- */
-const readIndex = async <T>(read: () => Promise<T>): Promise<T> => {
-    try {
-        return await read();
-    } catch (cause) {
-        throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'Could not read index',
-            cause,
-        });
-    }
-};
+const INDEX_READ_ERROR = 'Could not read index';
 
 export const indexRouter = t.router({
     get: didAndChallengeRoute
@@ -104,7 +91,7 @@ export const indexRouter = t.router({
             }
 
             // Throws on a failed read, so only a real result reaches the cache below.
-            const rawResults = await readIndex(() =>
+            const rawResults = await withInternalError(INDEX_READ_ERROR, () =>
                 getCredentialRecordsForDid(
                     did,
                     query,
@@ -181,7 +168,7 @@ export const indexRouter = t.router({
 
             if (isEncrypted(query)) query = await decryptObject(query as JWE);
 
-            const count = await readIndex(() =>
+            const count = await withInternalError(INDEX_READ_ERROR, () =>
                 countCredentialRecordsForDid(did, query, includeAssociatedDids)
             );
 

@@ -11,6 +11,7 @@ import { addDidToUser, removeDidFromUser, setDidAsPrimary } from '@accesslayer/u
 import { ensureUserForDid } from '@accesslayer/user/create';
 import { deleteUserByDid } from '@accesslayer/user/delete';
 import { client } from '@mongo';
+import { withInternalError } from '@helpers/error.helpers';
 
 export const userRouter = t.router({
     getDids: didAndChallengeRoute
@@ -25,13 +26,15 @@ export const userRouter = t.router({
         })
         .input(z.void())
         .output(z.string().array())
-        .query(async ({ ctx }) => {
-            const session = client.startSession();
+        .query(({ ctx }) =>
+            withInternalError('Could not read DIDs', async () => {
+                const session = client.startSession();
 
-            return session.withTransaction(async () => {
-                return getAllDidsForDid(ctx.user.did, session);
-            });
-        }),
+                return session.withTransaction(async () => {
+                    return getAllDidsForDid(ctx.user.did, session);
+                });
+            })
+        ),
 
     addDid: didAndChallengeRoute
         .meta({
@@ -45,59 +48,61 @@ export const userRouter = t.router({
         })
         .input(z.object({ presentation: VPValidator.or(z.string()) }))
         .output(z.boolean())
-        .mutation(async ({ ctx, input }) => {
-            const { presentation } = input;
+        .mutation(({ ctx, input }) =>
+            withInternalError('Could not add DID', async () => {
+                const { presentation } = input;
 
-            const learnCard = await getEmptyLearnCard();
+                const learnCard = await getEmptyLearnCard();
 
-            const result = await learnCard.invoke.verifyPresentation(
-                presentation,
-                typeof presentation === 'string' ? { proofFormat: 'jwt' } : {}
-            );
+                const result = await learnCard.invoke.verifyPresentation(
+                    presentation,
+                    typeof presentation === 'string' ? { proofFormat: 'jwt' } : {}
+                );
 
-            if (
-                result.warnings.length === 0 &&
-                result.errors.length === 0 &&
-                (result.checks.includes('JWS') || result.checks.includes('proof'))
-            ) {
-                const did =
-                    typeof presentation === 'string'
-                        ? jwtDecode<DidAuthVP>(presentation).vp.holder!
-                        : presentation.holder!;
+                if (
+                    result.warnings.length === 0 &&
+                    result.errors.length === 0 &&
+                    (result.checks.includes('JWS') || result.checks.includes('proof'))
+                ) {
+                    const did =
+                        typeof presentation === 'string'
+                            ? jwtDecode<DidAuthVP>(presentation).vp.holder!
+                            : presentation.holder!;
 
-                const existing = await getUserForDid(did);
+                    const existing = await getUserForDid(did);
 
-                if (existing && !existing.dids.includes(did)) {
-                    // If existing user is only a very simple user with just the one did as primary
-                    // and no associated dids, then it was probably made by accident prior to this call!
-                    //
-                    // We can safely just delete that user for now, though in the future we may want
-                    // to add a more robust check
-                    //
-                    // Otherwise, we should throw an error here to prevent accidentally screwing up
-                    // existing users!
-                    if (existing.associatedDids.length > 0) {
-                        throw new TRPCError({
-                            code: 'CONFLICT',
-                            message: 'Did is already associated with a user',
-                        });
+                    if (existing && !existing.dids.includes(did)) {
+                        // If existing user is only a very simple user with just the one did as primary
+                        // and no associated dids, then it was probably made by accident prior to this call!
+                        //
+                        // We can safely just delete that user for now, though in the future we may want
+                        // to add a more robust check
+                        //
+                        // Otherwise, we should throw an error here to prevent accidentally screwing up
+                        // existing users!
+                        if (existing.associatedDids.length > 0) {
+                            throw new TRPCError({
+                                code: 'CONFLICT',
+                                message: 'Did is already associated with a user',
+                            });
+                        }
+
+                        await deleteUserByDid(did);
                     }
 
-                    await deleteUserByDid(did);
+                    const user = await ensureUserForDid(ctx.user.did);
+
+                    return !user.dids.includes(did) && (await addDidToUser(user.did, did));
                 }
 
-                const user = await ensureUserForDid(ctx.user.did);
+                console.warn('Invalid DidAuthVP when trying to add did!', result, presentation);
 
-                return !user.dids.includes(did) && (await addDidToUser(user.did, did));
-            }
-
-            console.warn('Invalid DidAuthVP when trying to add did!', result, presentation);
-
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Invalid DID-Auth VP',
-            });
-        }),
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Invalid DID-Auth VP',
+                });
+            })
+        ),
 
     removeDid: didAndChallengeRoute
         .meta({
@@ -111,52 +116,54 @@ export const userRouter = t.router({
         })
         .input(z.object({ presentation: VPValidator.or(z.string()) }))
         .output(z.boolean())
-        .mutation(async ({ ctx, input }) => {
-            const { presentation } = input;
+        .mutation(({ ctx, input }) =>
+            withInternalError('Could not remove DID', async () => {
+                const { presentation } = input;
 
-            const learnCard = await getEmptyLearnCard();
+                const learnCard = await getEmptyLearnCard();
 
-            const result = await learnCard.invoke.verifyPresentation(
-                presentation,
-                typeof presentation === 'string' ? { proofFormat: 'jwt' } : {}
-            );
+                const result = await learnCard.invoke.verifyPresentation(
+                    presentation,
+                    typeof presentation === 'string' ? { proofFormat: 'jwt' } : {}
+                );
 
-            if (
-                result.warnings.length === 0 &&
-                result.errors.length === 0 &&
-                (result.checks.includes('JWS') || result.checks.includes('proof'))
-            ) {
-                const did =
-                    typeof presentation === 'string'
-                        ? jwtDecode<DidAuthVP>(presentation).vp.holder!
-                        : presentation.holder!;
+                if (
+                    result.warnings.length === 0 &&
+                    result.errors.length === 0 &&
+                    (result.checks.includes('JWS') || result.checks.includes('proof'))
+                ) {
+                    const did =
+                        typeof presentation === 'string'
+                            ? jwtDecode<DidAuthVP>(presentation).vp.holder!
+                            : presentation.holder!;
 
-                const existing = await getUserForDid(did);
+                    const existing = await getUserForDid(did);
 
-                if (!existing) {
-                    throw new TRPCError({
-                        code: 'CONFLICT',
-                        message: 'Did is not associated with any user',
-                    });
+                    if (!existing) {
+                        throw new TRPCError({
+                            code: 'CONFLICT',
+                            message: 'Did is not associated with any user',
+                        });
+                    }
+
+                    const user = await ensureUserForDid(ctx.user.did);
+
+                    if (!user.associatedDids.includes(did)) {
+                        throw new TRPCError({
+                            code: 'UNAUTHORIZED',
+                            message: 'Did is not associated with this user',
+                        });
+                    }
+
+                    return removeDidFromUser(ctx.user.did, did);
                 }
 
-                const user = await ensureUserForDid(ctx.user.did);
-
-                if (!user.associatedDids.includes(did)) {
-                    throw new TRPCError({
-                        code: 'UNAUTHORIZED',
-                        message: 'Did is not associated with this user',
-                    });
-                }
-
-                return removeDidFromUser(ctx.user.did, did);
-            }
-
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Invalid DID-Auth VP',
-            });
-        }),
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Invalid DID-Auth VP',
+                });
+            })
+        ),
 
     setPrimaryDid: didAndChallengeRoute
         .meta({
@@ -170,49 +177,51 @@ export const userRouter = t.router({
         })
         .input(z.object({ presentation: VPValidator.or(z.string()) }))
         .output(z.boolean())
-        .mutation(async ({ ctx, input }) => {
-            const { presentation } = input;
+        .mutation(({ ctx, input }) =>
+            withInternalError('Could not set primary DID', async () => {
+                const { presentation } = input;
 
-            const learnCard = await getEmptyLearnCard();
+                const learnCard = await getEmptyLearnCard();
 
-            const result = await learnCard.invoke.verifyPresentation(
-                presentation,
-                typeof presentation === 'string' ? { proofFormat: 'jwt' } : {}
-            );
+                const result = await learnCard.invoke.verifyPresentation(
+                    presentation,
+                    typeof presentation === 'string' ? { proofFormat: 'jwt' } : {}
+                );
 
-            if (
-                result.warnings.length === 0 &&
-                result.errors.length === 0 &&
-                (result.checks.includes('JWS') || result.checks.includes('proof'))
-            ) {
-                const did =
-                    typeof presentation === 'string'
-                        ? jwtDecode<DidAuthVP>(presentation).vp.holder!
-                        : presentation.holder!;
+                if (
+                    result.warnings.length === 0 &&
+                    result.errors.length === 0 &&
+                    (result.checks.includes('JWS') || result.checks.includes('proof'))
+                ) {
+                    const did =
+                        typeof presentation === 'string'
+                            ? jwtDecode<DidAuthVP>(presentation).vp.holder!
+                            : presentation.holder!;
 
-                const user = await getUserForDid(ctx.user.did);
+                    const user = await getUserForDid(ctx.user.did);
 
-                if (!user) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: 'User not found',
-                    });
+                    if (!user) {
+                        throw new TRPCError({
+                            code: 'NOT_FOUND',
+                            message: 'User not found',
+                        });
+                    }
+
+                    if (!user.dids.includes(did)) {
+                        throw new TRPCError({
+                            code: 'NOT_FOUND',
+                            message: 'Did not associated with user',
+                        });
+                    }
+
+                    return setDidAsPrimary(ctx.user.did, did);
                 }
 
-                if (!user.dids.includes(did)) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: 'Did not associated with user',
-                    });
-                }
-
-                return setDidAsPrimary(ctx.user.did, did);
-            }
-
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Invalid DID-Auth VP',
-            });
-        }),
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Invalid DID-Auth VP',
+                });
+            })
+        ),
 });
 export type UserRouter = typeof userRouter;
