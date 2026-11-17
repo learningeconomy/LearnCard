@@ -15,6 +15,16 @@ Both carry the same record. The feed is always available once events are enabled
 Integration events are separate from **profile notification webhooks** (`notificationsWebhook` on a profile). Profile notification webhooks carry an `Authorization: Bearer <DID-JWT>` token and have no signature header; see [Know When a Credential Is Claimed](../../tutorials/listen-to-webhooks.md) and [Contract Requests and Events](contract-requests-and-events.md). Everything on this page applies to Integrations only.
 {% endhint %}
 
+## What an Integration receives
+
+An Integration is not tied to particular contracts. It receives the events of **every** contract where its owner profile is the owner, a writer or a data recipient, and the request events where its owner profile is the requester. `contractUri` in each record tells you which contract it belongs to, so a client that only cares about some contracts can filter on it.
+
+A profile can have several Integrations with contract events enabled. Each of them receives the events of every contract of that profile, with its own `sequence`.
+
+{% hint style="warning" %}
+Do not put the Integrations of different customers under one profile. Each of them would receive the events of all the others' contracts. Give each customer its own profile and its own API token.
+{% endhint %}
+
 ## Enable events
 
 Events are recorded for an Integration from the moment they are enabled. Events that happened before that moment are never added.
@@ -65,7 +75,7 @@ curl -X POST "https://network.learncard.com/api/integration/$INTEGRATION_ID/webh
 - **The secret is returned once**, by the call that creates it: the first time a URL is set for the Integration. Store it then. No route returns it again.
 - Replacing the URL, or removing it with `null`, keeps the same secret and returns no `secret`.
 - If you lose the secret, replace it with a rotation (below).
-- `webhookUrl` must be an `http(s)` URL of at most 2048 characters. At delivery time LearnCard connects only to public addresses and does not follow redirects.
+- `webhookUrl` must be an `http` or `https` URL of at most 2048 characters, with no username or password in it. Any other scheme, or a URL such as `https://user:pass@example.com`, is rejected. At delivery time LearnCard connects only to public addresses and does not follow redirects.
 - The caller must own the Integration. Writes need the `integrations:write` scope; reads need `integrations:read`.
 
 ### Rotate the secret
@@ -267,40 +277,40 @@ The feed record and the webhook body are the same JSON object.
 }
 ```
 
-| Field                 | Meaning                                                                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `eventId`             | Id of the source event. The same event sent to two Integrations has the same `eventId`                                                            |
-| `deliveryKey`         | Unique per Integration and record. Use it to deduplicate                                                                                          |
-| `sequence`            | Position in this Integration's feed. Increases by one per record, with no reuse                                                                   |
-| `type`                | One of the event types below                                                                                                                      |
-| `contractUri`         | The contract the event belongs to                                                                                                                 |
-| `termsUri`            | The consent terms the event is about. Absent on request events, on `contract_retired`, and on records whose `role` is `requester`                 |
-| `subject`             | The profile the event is about (the consenter or the request target). Absent on `contract_retired`                                                |
-| `requestId`           | The contract request linked to the event, when there is one                                                                                       |
-| `externalReferenceId` | Your reference from `sendContractRequest`. Present only when the Integration's owner manages the contract (owner or writer) or sent the request   |
-| `reason`              | Why the event happened, for `consent_withdrawn` (`contract_retired`) and `consent_paused` (`needs_reconsent`)                                     |
-| `role`                | Why this Integration received the record: `owner`, `writer`, `recipient` or `requester`. A profile with several roles gets the first that applies |
-| `occurredAt`          | ISO 8601 time of the source event                                                                                                                 |
+| Field                 | Meaning                                                                                                                                              |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `eventId`             | Id of the source event. The same event sent to two Integrations has the same `eventId`                                                               |
+| `deliveryKey`         | Unique per Integration and record. Use it to deduplicate                                                                                             |
+| `sequence`            | Position in this Integration's feed. Increases by one per record, with no reuse                                                                      |
+| `type`                | One of the event types below                                                                                                                         |
+| `contractUri`         | The contract the event belongs to                                                                                                                    |
+| `termsUri`            | The consent terms the event is about. Absent on request events, on `contract_retired`, and on records whose `role` is `requester`                    |
+| `subject`             | The profile the event is about (the consenter or the request target). Absent on `contract_retired`                                                   |
+| `requestId`           | The contract request linked to the event, when there is one                                                                                          |
+| `externalReferenceId` | Your reference from `sendContractRequest`. Present only when the Integration's owner manages the contract (owner or writer) or sent the request      |
+| `reason`              | Why the event happened, for `consent_withdrawn` (`contract_retired`), `consent_paused` (`needs_reconsent`) and `consent_updated` (`expiry_extended`) |
+| `role`                | Why this Integration received the record: `owner`, `writer`, `recipient` or `requester`. A profile with several roles gets the first that applies    |
+| `occurredAt`          | ISO 8601 time of the source event                                                                                                                    |
 
 The record carries identifiers only. It never contains shared credentials or personal fields; read those through the consented data APIs, which apply current permissions.
 
 ### Event types
 
-| Type                 | Sent to the Integrations of           | Meaning                                                                              |
-| -------------------- | ------------------------------------- | ------------------------------------------------------------------------------------ |
-| `request_sent`       | Owner, requester                      | A contract request was sent                                                          |
-| `request_accepted`   | Owner, requester                      | The target consented with that request. Written just before the consent event        |
-| `request_denied`     | Owner, requester                      | The target declined                                                                  |
-| `request_cancelled`  | Owner, requester                      | The request was cancelled                                                            |
-| `consent_created`    | Owner, writers, recipients, requester | New consent. The connection is live                                                  |
-| `consent_updated`    | Owner, writers, recipients, requester | Terms changed or consent was given again                                             |
-| `consent_withdrawn`  | Owner, writers, recipients, requester | Consent ended. `reason: "contract_retired"` when the contract was retired            |
-| `credentials_synced` | Owner, writers, recipients, requester | The consenter shared more credentials                                                |
-| `consent_paused`     | Owner, writers, recipients, requester | A contract update needs new consent (`reason: "needs_reconsent"`). Access is paused  |
-| `consent_suspended`  | Owner, writers, recipients, requester | The re-consent deadline passed without an answer                                     |
-| `consent_expired`    | Owner, writers, recipients, requester | The consent expired (see [Expiry](#expiry)). Can occur again after a renewal         |
-| `contract_retired`   | Owner, writers, recipients            | The contract was retired. One `consent_withdrawn` per active consent is sent as well |
-| `integration.test`   | The Integration you tested            | Test delivery only. Never in the feed                                                |
+| Type                 | Sent to the Integrations of           | Meaning                                                                                  |
+| -------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `request_sent`       | Owner, requester                      | A contract request was sent                                                              |
+| `request_accepted`   | Owner, requester                      | The target consented with that request. Written just before the consent event            |
+| `request_denied`     | Owner, requester                      | The target declined                                                                      |
+| `request_cancelled`  | Owner, requester                      | The request was cancelled                                                                |
+| `consent_created`    | Owner, writers, recipients, requester | New consent. The connection is live                                                      |
+| `consent_updated`    | Owner, writers, recipients, requester | Terms changed or consent was given again. `reason: "expiry_extended"` is explained below |
+| `consent_withdrawn`  | Owner, writers, recipients, requester | Consent ended. `reason: "contract_retired"` when the contract was retired                |
+| `credentials_synced` | Owner, writers, recipients, requester | The consenter shared more credentials                                                    |
+| `consent_paused`     | Owner, writers, recipients, requester | A contract update needs new consent (`reason: "needs_reconsent"`). Access is paused      |
+| `consent_suspended`  | Owner, writers, recipients, requester | The re-consent deadline passed without an answer                                         |
+| `consent_expired`    | Owner, writers, recipients, requester | The consent expired (see [Expiry](#expiry)). Can occur again after a renewal             |
+| `contract_retired`   | Owner, writers, recipients            | The contract was retired. One `consent_withdrawn` per active consent is sent as well     |
+| `integration.test`   | The Integration you tested            | Test delivery only. Never in the feed                                                    |
 
 A requester receives a record only for events that carry its own request.
 
@@ -314,6 +324,8 @@ A requester receives a record only for events that carry its own request.
 The newest contract version does not count for a consenter who has not accepted it yet. After a contract update, someone who is still asked to re-consent expires with the version they accepted, not with the new one.
 
 One event is sent per expiry time, and its `eventId` contains that time (`<termsId>:expired:<expiresAt>`). The same expiry is never sent twice. `consent_expired` **can occur again** for the same terms: if the consenter renews an expired consent by accepting a newer contract version (you receive `consent_updated`), and that version later expires, you receive a second `consent_expired`. When the terms' own expiry and the accepted version's expiry are different times and both pass, you receive one event for each; treat `consent_expired` for a connection you already removed as a repeat.
+
+When a non-breaking contract update moves a consent that had expired onto a contract version that has not expired, you receive `consent_updated` with `reason: "expiry_extended"`. The connection is live again, so treat it like any other `consent_updated`.
 
 The terms status is not changed by expiry, and the [connections snapshot](#connections-snapshot) leaves expired consents out by the same rule.
 
@@ -493,11 +505,14 @@ global without sharing class LearnCardWebhook {
 
 - Any `2xx` answer counts as delivered. Answer within 6 seconds; the response body is ignored.
 - Delivery is **at least once**. Store `deliveryKey` with your side effect and treat a repeat as a no-op.
-- Order across requests is not guaranteed, because a failed delivery is retried later. Use `sequence` to order records, or read the feed.
+- Order across requests is not guaranteed, because a failed delivery is retried later and can arrive after newer records. Deduplicate by `deliveryKey`. Within the feed, `sequence` is the order. See [Ordering and stale records](#ordering-and-stale-records).
 - A timeout, a network error, a `5xx`, and `408`, `425` or `429` are retried.
 - Any other `4xx` is final: the delivery is marked rejected and is not retried.
 - A delivery gets up to **12 attempts within 24 hours** of the record being written. The wait starts at 60 seconds and doubles after each failed attempt, up to 1 hour.
 - A worker runs about once a minute, so a first delivery normally arrives within a minute.
+- Each delivery pass sends at most 5 records per Integration and interleaves Integrations, so a busy Integration does not hold back the others. A slow endpoint slows only its own deliveries.
+- A configuration change applies to the very next delivery: disabling events, changing or removing the URL, and rotating the secret.
+- Before a record reaches the feed, LearnCard fans the source event out to the Integrations that should see it. An event that repeatedly fails to fan out is retried with a growing delay for about three days and then abandoned. Such an event never reaches the feed, so keep the safety-net feed read and the occasional snapshot described below.
 - A failed or rejected delivery never removes the record from the feed. Failed deliveries are not replayed after you fix your endpoint; read the feed to catch up.
 - **Disabling contract events stops deliveries.** Records that were still waiting, for a first attempt or for a retry, are closed without being sent (delivery failure reason `disabled`). They stay in the feed. Records from before a disable are not sent after events are enabled again; read the feed to catch up.
 - Use [`getIntegrationWebhook`](#read-configuration-and-health) to see whether deliveries are arriving, why the last one failed, and how many are waiting.
@@ -524,7 +539,7 @@ const page = await learnCard.invoke.getIntegrationEvents(integrationId, {
 {% tab title="REST" %}
 
 ```bash
-curl "https://network.learncard.com/api/integrations/$INTEGRATION_ID/events?since=$CURSOR&limit=100" \
+curl "https://network.learncard.com/api/integration/$INTEGRATION_ID/events?since=$CURSOR&limit=100" \
   -H "Authorization: Bearer $API_TOKEN"
 ```
 
@@ -537,7 +552,7 @@ curl "https://network.learncard.com/api/integrations/$INTEGRATION_ID/events?sinc
 - `latestCursor` is always returned. Record it before taking a snapshot (see below).
 - Records are kept for **30 days**, then deleted.
 - A cursor older than the retention window is rejected with **HTTP 409** (tRPC code `CONFLICT`) and a message that starts with `CURSOR_EXPIRED: `. Take a new connections snapshot and continue from `latestCursor`.
-- A cursor this API did not produce returns `BAD_REQUEST`.
+- A cursor belongs to one Integration. A malformed cursor, a cursor from another Integration, and a cursor that is ahead of the feed are all rejected with **HTTP 400** (tRPC code `BAD_REQUEST`).
 
 ```typescript
 const isCursorExpired = (error: unknown): boolean =>
@@ -580,7 +595,8 @@ curl -G "https://network.learncard.com/api/consent-flow-contracts/connections" \
 {% endtab %}
 {% endtabs %}
 
-- Only the contract owner and current data recipients can call it. It needs the `contracts-data:read` scope.
+- The contract owner, contract writers and data recipients can call it. It needs the `contracts-data:read` scope.
+- A requester who is none of those cannot read the snapshot. It recovers through `getContractSentRequests`, which lists its own referrals and their status.
 - `limit` defaults to 100, with a maximum of 200. Pages are ordered by terms id, so they stay stable while statuses change.
 - `externalReferenceId` follows the same rule as events: it is present only for contract managers and for the profile that sent that request.
 - Like events, it returns identifiers only.
@@ -589,21 +605,27 @@ curl -G "https://network.learncard.com/api/consent-flow-contracts/connections" \
 
 Both patterns keep a table of connections keyed by `termsUri`. Apply each record like this:
 
-| Type                                   | Effect on your table                                   |
-| -------------------------------------- | ------------------------------------------------------ |
-| `consent_created`, `consent_updated`   | Insert or update the connection as `live`              |
-| `consent_paused`                       | Set status `needs_reconsent`                           |
-| `consent_suspended`                    | Set status `suspended`                                 |
-| `consent_withdrawn`, `consent_expired` | Remove the connection (a no-op if already removed)     |
-| `contract_retired`                     | Remove every connection of that contract               |
-| `credentials_synced`                   | No status change. Read the consented data again        |
-| `request_*`                            | Update your own request tracking; no connection change |
+| Type                                   | Effect on your table                                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `consent_created`, `consent_updated`   | Insert or update the connection as `live` (this includes `consent_updated` with `reason: "expiry_extended"`) |
+| `consent_paused`                       | Set status `needs_reconsent`                                                                                 |
+| `consent_suspended`                    | Set status `suspended`                                                                                       |
+| `consent_withdrawn`, `consent_expired` | Remove the connection (a no-op if already removed)                                                           |
+| `contract_retired`                     | Remove every connection of that contract                                                                     |
+| `credentials_synced`                   | No status change. Read the consented data again                                                              |
+| `request_*`                            | Update your own request tracking; no connection change                                                       |
 
 Applying a record twice must give the same result, so replays are harmless.
 
+### Ordering and stale records
+
+Delivery is at least once, and retries can arrive out of order. Deduplicate by `deliveryKey`. Within the feed, `sequence` is the order.
+
+`sequence` is the order in which records were written to the feed, not the order in which things happened. An event whose fan-out was delayed gets a later `sequence` than newer events of the same contract, but it keeps its original `occurredAt`. So a client must not let a record with an older `occurredAt` overwrite newer state for the same connection (`termsUri`). Keep the `occurredAt` of the last record you applied for each `termsUri`, and ignore a record that is older than it.
+
 ### Webhook with feed catch-up
 
-1. Verify and store each webhook request, and remember the highest `sequence` you have applied.
+1. Verify and store each webhook request, deduplicated by `deliveryKey`, and remember the highest `sequence` you have applied.
 2. If a record arrives with a gap in `sequence`, or after your endpoint was down, read the feed from your saved cursor until `hasMore` is `false`.
 3. Run the same feed read on a schedule (for example hourly) as a safety net. Deliveries that used up their retries are only in the feed.
 4. On `CURSOR_EXPIRED`, follow the snapshot steps below.
@@ -629,7 +651,7 @@ const syncOnce = async (): Promise<void> => {
         while (hasMore) {
             const page = await learnCard.invoke.getIntegrationEvents(integrationId, { since });
 
-            for (const record of page.records) await applyRecord(record);
+            for (const record of page.records) await applyRecord(record); // skip a record whose occurredAt is older than the one applied for its termsUri
 
             since = page.cursor ?? page.latestCursor;
             await saveCursor(since);
@@ -666,5 +688,5 @@ An event tells you that something changed. It is not permission to use data. Bef
 | `sendIntegrationTestEvent(id)`           | `POST /integration/{id}/webhook/test`          | `integrations:write`  |
 | `rotateIntegrationWebhookSecret(id)`     | `POST /integration/{id}/webhook-secret/rotate` | `integrations:write`  |
 | `updateIntegration(id, updates)`         | `POST /integration/update/{id}`                | `integrations:write`  |
-| `getIntegrationEvents(id, options?)`     | `GET /integrations/{id}/events`                | `integrations:read`   |
+| `getIntegrationEvents(id, options?)`     | `GET /integration/{id}/events`                 | `integrations:read`   |
 | `getContractConnections(uri, options?)`  | `GET /consent-flow-contracts/connections`      | `contracts-data:read` |
