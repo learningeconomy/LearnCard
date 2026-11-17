@@ -8,7 +8,8 @@ import { useLocale } from '../../../i18n';
 import { IonContent, IonPage, IonRow } from '@ionic/react';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
-import { useTheme } from '../../../theme/hooks/useTheme';
+import themeStore from '../../../theme/store/themeStore';
+import { getThemeLoaderColors, resolveThemeId } from '../../../theme/helpers/themeIds';
 
 export const LoginLoadingPage: React.FC = () => {
     const locale = useLocale();
@@ -31,8 +32,9 @@ export const LoginLoadingPage: React.FC = () => {
         [locale]
     );
     const { textLogo } = useTenantBrandingAssets();
-    const { theme } = useTheme();
-    const { loaders } = theme.colors.defaults;
+    // Rendered before FullApp loads (App's Suspense fallback), so read the loader colors from the theme
+    // JSON instead of useTheme(), which would pull every theme's icon set into the entry.
+    const loaders = getThemeLoaderColors(resolveThemeId(themeStore.use.theme()));
     const [currentColorIndex, setCurrentColorIndex] = useState(0);
     const colors = useMemo(() => [...loaders], [loaders]);
     const interval = 5200;
