@@ -133,6 +133,23 @@ describe('reading and cancelling unattached contract request invites', () => {
         ).toHaveLength(2);
     });
 
+    it('lists requests in send order whether or not the email has an account', async () => {
+        const knownEmail = randomEmail();
+        await addEmail(learner.profileId, knownEmail);
+        const unattached = await send(randomEmail(), 'ref-first');
+        const attached = await send(knownEmail, 'ref-second');
+        const last = await send(randomEmail(), 'ref-third');
+
+        const rows = await recipient.clients.fullAuth.contracts.getContractSentRequests({
+            contractUri,
+        });
+        expect(rows.map(row => row.requestId)).toEqual([
+            unattached.requestId,
+            attached.requestId,
+            last.requestId,
+        ]);
+    });
+
     it('cancels an unattached invite by request ID', async () => {
         const email = randomEmail();
         const { requestId } = await send(email);

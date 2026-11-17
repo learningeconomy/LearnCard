@@ -33,7 +33,7 @@ import { uploadSmartResume } from '@helpers/smartResume.helpers';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, profileRoute, openRoute, guardianGatedRoute } from '@routes';
+import { t, profileRoute, credentialProfileRoute, openRoute, guardianGatedRoute } from '@routes';
 
 import {
     CONTRACT_APPROVAL_REQUIRED,
@@ -2294,7 +2294,9 @@ export const contractsRouter = t.router({
             return true;
         }),
 
-    sendContractRequest: profileRoute
+    // Same auth chain as profileRoute, but the input (which can carry targetEmail) is never
+    // attached to Sentry.
+    sendContractRequest: credentialProfileRoute
         .meta({
             requiredScope: 'contracts:write',
             openapi: {
@@ -2602,6 +2604,8 @@ export const contractsRouter = t.router({
                 contractByUri.id,
                 profile.profileId
             );
+            // One list in send order. Listing invites after requests would reveal which
+            // emails already belong to an account.
             return [
                 ...rows,
                 ...invites.map(invite => ({
@@ -2610,7 +2614,12 @@ export const contractsRouter = t.router({
                     ...(invite.message ? { message: invite.message } : {}),
                     readStatus: null,
                 })),
-            ];
+            ].sort((a, b) => {
+                const [left, right] = [a.requestedAt ?? '', b.requestedAt ?? ''];
+                if (left !== right) return left < right ? -1 : 1;
+                const [leftId, rightId] = [a.requestId ?? '', b.requestId ?? ''];
+                return leftId < rightId ? -1 : leftId > rightId ? 1 : 0;
+            });
         }),
 
     getRequestStatusForProfile: profileRoute
