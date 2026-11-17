@@ -454,17 +454,24 @@ global without sharing class LearnCardWebhook {
         String timestamp;
         List<String> signatures = new List<String>();
 
-        for (String part : header.split(',')) {
-            part = part.trim();
+        for (String rawPart : header.split(',')) {
+            String part = rawPart.trim();
             if (part.startsWith('t=')) timestamp = part.substring(2);
             else if (part.startsWith('v1=')) signatures.add(part.substring(3));
         }
 
-        if (String.isBlank(timestamp) || !timestamp.isNumeric() || signatures.isEmpty()) {
+        // The length limit keeps Long.valueOf from throwing on an absurd value.
+        if (
+            String.isBlank(timestamp) ||
+            !timestamp.isNumeric() ||
+            timestamp.length() > 12 ||
+            signatures.isEmpty()
+        ) {
             return false;
         }
 
-        Long age = Math.abs(System.now().getTime() / 1000 - Long.valueOf(timestamp));
+        Long nowSeconds = System.now().getTime() / 1000;
+        Long age = Math.abs(nowSeconds - Long.valueOf(timestamp));
         if (age > TOLERANCE_SECONDS) return false;
 
         // The body is UTF-8 JSON, so this is the same byte sequence that was signed.
@@ -484,9 +491,11 @@ global without sharing class LearnCardWebhook {
     private static Boolean constantTimeEquals(String a, String b) {
         if (a.length() != b.length()) return false;
 
+        // String.charAt returns the character code as an Integer. Apex defines |= only for
+        // Booleans, so write the integer bitwise OR out in full.
         Integer difference = 0;
         for (Integer i = 0; i < a.length(); i++) {
-            difference |= a.charAt(i) ^ b.charAt(i);
+            difference = difference | (a.charAt(i) ^ b.charAt(i));
         }
         return difference == 0;
     }
