@@ -46,6 +46,25 @@ const setup = async () => {
 };
 
 describe('existing readable recipient atomic boundary', () => {
+    it.each([false, null, true])(
+        'preserves the existing service-profile flag (%s) while adding a service agent',
+        async isServiceProfile => {
+            const { record } = await setup();
+            await neogma.queryRunner.run(
+                'MATCH (p:Profile {profileId:$profileId}) SET p.isServiceProfile = $isServiceProfile',
+                { profileId: record.profileId, isServiceProfile }
+            );
+            await createDeliveryRecipient(record, 'unused', true);
+            const result = await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId:$profileId})-[:MANAGED_BY]->(agent:Profile {profileId:$agentProfileId})
+                 RETURN p.isServiceProfile AS recipientFlag, agent.isServiceProfile AS agentFlag`,
+                record
+            );
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0]?.get('recipientFlag')).toBe(isServiceProfile);
+            expect(result.records[0]?.get('agentFlag')).toBe(true);
+        }
+    );
     it('completes provisioning raced with add-recipient before first consent exactly once', async () => {
         const { owner, contractUri, record } = await setup();
         const before = await owner.clients.fullAuth.contracts.getConsentFlowContract({

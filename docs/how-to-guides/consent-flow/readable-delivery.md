@@ -36,7 +36,7 @@ Using an organization administrator's initialized SDK, call `learnCard.invoke.cr
 | `acceptDelegatedAuthority` | `true`, after accepting the delegation described above                         |
 | `disclosureVersion`        | `"1"`                                                                          |
 
-The response contains `profileId`, `did`, `displayName`, `agentDid`, `enabled`, and `disclosureVersion`. Repeating the same request ID and name returns the same enabled recipient. With `profileId`, the existing profile must be an organization directly managed by the caller, with the same display name and no previous readable-delivery setup. None of its contracts may have ever received consent, even withdrawn consent. The check and co-manager creation are atomic with first consent and audience changes. Existing contracts get a new audience version so an already-open consent screen must reload the disclosure. The profile identity is preserved. Learner and family profiles cannot opt in.
+The response contains `profileId`, `did`, `displayName`, `agentDid`, `enabled`, and `disclosureVersion`. Repeating the same request ID and name returns the same enabled recipient. With `profileId`, the existing profile must be an organization directly managed by the caller, with the same display name and no previous readable-delivery setup. None of its contracts may have ever received consent, even withdrawn consent. The check and co-manager creation are atomic with first consent and audience changes. Existing contracts get a new audience version so an already-open consent screen must reload the disclosure. An existing organization keeps its identity, visibility, and service-profile flag. Provisioning marks the new delivery agent and any newly created recipient as service profiles. Learner and family profiles cannot opt in.
 
 Include the returned `profileId` in `recipients` when creating the consent contract. Ask the learner to select credentials and accept through the app. Adding a recipient later requires the existing audience-change and renewed-consent process. Older ciphertext does not acquire the new key.
 
@@ -75,13 +75,13 @@ The summary includes available name, types, issuer, dates, and boost URI. It exc
 | `label`      | The outcome label below                                                                                 |
 | `issuerName` | Registry display name when the issuer is recognized                                                     |
 
-| Label                   | Meaning                                                                                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `verified`              | Signature and applicable status/date checks passed, and the issuer is expected for this contract                                                 |
-| `recognized_issuer`     | Checks passed and the issuer is in a configured registry, but is not expected for this contract                                                  |
-| `signed_unknown_issuer` | Checks passed; the issuer is neither expected nor recognized by the successfully checked registries                                              |
-| `self_reported`         | Missing/invalid signature or signed by the learner's known identity, even if that identity was listed as expected                                |
-| `unverified`            | A required check could not complete, the credential is revoked/suspended/expired/not yet valid, or registry recognition could not be established |
+| Label                   | Meaning                                                                                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `verified`              | Signature and applicable status/date checks passed, and the issuer is expected for this contract                                                                          |
+| `recognized_issuer`     | Checks passed and the issuer is in a configured registry, but is not expected for this contract                                                                           |
+| `signed_unknown_issuer` | Checks passed; the issuer is neither expected nor recognized by the successfully checked registries                                                                       |
+| `self_reported`         | Missing/invalid signature or signed by the learner's known identity, even if that identity was listed as expected                                                         |
+| `unverified`            | A required check could not complete, the credential is revoked/suspended/expired/not yet valid, or registry recognition could not be established for an unexpected issuer |
 
 Expected issuers are the contract owner and explicit writers (both their stored DID and network DID), plus their registered signing-authority DIDs. The owner can supply additional DIDs with `contract.expectedIssuers` when creating or updating a contract; send an empty array to remove those additions. These expectations do not grant write permission or data access. Current expectations are checked again before a response is released.
 

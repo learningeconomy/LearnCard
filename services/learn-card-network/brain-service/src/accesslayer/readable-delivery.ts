@@ -72,7 +72,6 @@ export const createDeliveryRecipient = async (
           AND NOT EXISTS { MATCH (:ReadableDelivery {profileId:$profileId, domain:$domain}) }
           AND all(contract IN contracts WHERE coalesce(contract.hasConsented, false) = false
             AND NOT EXISTS { MATCH (:ConsentFlowTerms)-[:CONSENTS_TO]->(contract) })
-        SET recipient.isServiceProfile = true
         FOREACH (contract IN contracts | SET contract.audienceVersion = coalesce(contract.audienceVersion, 0) + 1)
         `
                 : `CREATE (recipient:Profile {profileId:$profileId, did:$recipientDid,
