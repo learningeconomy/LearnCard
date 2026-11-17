@@ -1,18 +1,42 @@
 import { IntegrationType } from 'types/integration';
 
 /**
- * Parse guideState from JSON string to object if present
+ * Stored Integration properties that must never leave the access layer:
+ * encrypted webhook secrets and the event sequence bookkeeping.
+ */
+export const PRIVATE_INTEGRATION_PROPERTIES = [
+    'webhookSecretEnc',
+    'webhookSecretPrevEnc',
+    'webhookSecretPrevExpiresAt',
+    'eventSeq',
+    'eventPurgedThroughSeq',
+    'eventSeqLock',
+] as const;
+
+/**
+ * Turn a stored Integration into its public shape: remove private properties, compute
+ * hasWebhookSecret, and parse guideState from a JSON string to an object if present.
  */
 export const parseIntegration = (integration: IntegrationType): IntegrationType => {
-    if (integration.guideState && typeof integration.guideState === 'string') {
+    const stored = integration as unknown as Record<string, unknown>;
+    const publicProperties: Record<string, unknown> = { ...stored };
+
+    for (const key of PRIVATE_INTEGRATION_PROPERTIES) delete publicProperties[key];
+
+    publicProperties.hasWebhookSecret =
+        typeof stored.webhookSecretEnc === 'string' && stored.webhookSecretEnc.length > 0;
+
+    const parsed = publicProperties as unknown as IntegrationType;
+
+    if (parsed.guideState && typeof parsed.guideState === 'string') {
         try {
-            return { ...integration, guideState: JSON.parse(integration.guideState) };
+            return { ...parsed, guideState: JSON.parse(parsed.guideState) };
         } catch {
-            return integration;
+            return parsed;
         }
     }
 
-    return integration;
+    return parsed;
 };
 
 /**

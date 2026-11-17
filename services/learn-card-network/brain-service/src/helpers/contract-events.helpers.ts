@@ -26,6 +26,7 @@ import { sanitizeProfileForTier, stripSensitiveProfileListFields } from './profi
 import { getStoredContractRequest } from '@accesslayer/consentflowcontract/read';
 import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 import { ensureContractEventMaintenance } from './contract-event-maintenance.helpers';
+import { fanOutIntegrationEvents } from './integration-events.helpers';
 import { updateDidForProfile } from './did.helpers';
 import { buildContractUpdatePreview } from '@learncard/helpers';
 
@@ -106,6 +107,7 @@ export const appendConsentEvent = (
         CREATE (event:ConsentFlowEvent {id: transaction.id, contractId: contract.id, termsId: terms.id,
             fromId: $eventConsenter, ownerId: owner.profileId, domain: $eventDomain,
             kind: $eventKind, requestAccepted: requestAccepted, messageKey: $eventMessageKey, payload: $eventPayload, cleanupPending: true,
+            integrationFanoutPending: true,
             createdAt: transaction.date, requestId: terms.\`referral.requestId\`,
             requestedBy: terms.\`referral.requestedBy\`, externalReferenceId: terms.\`referral.externalReferenceId\`})
         WITH contract, terms, transaction, event, owner,
@@ -131,7 +133,8 @@ export const requestEventCypher = `
     ON CREATE SET event += {contractId: contract.id, fromId: $eventFrom,
         ownerId: owner.profileId, domain: $domain, kind: $eventKind, createdAt: $now,
         requestId: request.requestId, requestedBy: request.requestedBy,
-        externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false, cleanupPending: true}
+        externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false, cleanupPending: true,
+        targetId: target.profileId, integrationFanoutPending: true}
     WITH request, event, owner, target,
         CASE WHEN coalesce(event.fanoutCreated, false) THEN []
             WHEN $eventKind = 'request_sent' THEN [target.profileId]
@@ -568,5 +571,11 @@ export const tryDispatchContractEvent = async (eventId: string): Promise<void> =
         });
     } catch {
         console.warn('contract_events: dispatch_pending');
+    }
+    // Integrations are told in the same request when possible; the worker retries otherwise.
+    try {
+        await fanOutIntegrationEvents({ eventId, limit: 1, budgetMs: 1_000 });
+    } catch {
+        console.warn('integration_events: fanout_pending');
     }
 };
