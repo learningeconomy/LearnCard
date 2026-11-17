@@ -29,7 +29,7 @@ import {
 } from '@learncard/sss-key-manager';
 
 import { AuthSessionError } from './types';
-import { RecoveryInProgressError, SameEscrowPinError } from './errors';
+import { LegacyKeyUnassignedError, RecoveryInProgressError, SameEscrowPinError } from './errors';
 import type { MigrationIdentityVerdict, MigrationKeySource } from './types';
 
 const DEFAULT_AUTH_SESSION_TIMEOUT_MS = 2500;
@@ -1444,7 +1444,11 @@ export class AuthCoordinator {
                     const accountAgeMs = Date.now() - authUser.createdAt.getTime();
 
                     if (accountAgeMs > threshold) {
-                        this.setState({ status: 'needs_migration', authUser });
+                        this.setState({
+                            status: 'needs_migration',
+                            authUser,
+                            migrationData: { noExistingKeyRecord: !hasLocalKey },
+                        });
                         return this.state;
                     }
                 }
@@ -1687,6 +1691,35 @@ export class AuthCoordinator {
         this.setState({
             ...this.state,
             migrationData: { ...this.state.migrationData, ...data },
+        });
+    }
+
+    /** Resolve a failed legacy lookup without replacing an established identity. */
+    handleMigrationKeyError(error: unknown): void {
+        if (this.state.status !== 'needs_migration') return;
+
+        const { authUser, migrationData } = this.state;
+        if (
+            error instanceof LegacyKeyUnassignedError &&
+            migrationData?.noExistingKeyRecord === true &&
+            !migrationData.expectedDid &&
+            !migrationData.web3AuthKey &&
+            !migrationData.provisionalRederive
+        ) {
+            this.setState({ status: 'needs_setup', authUser });
+            return;
+        }
+
+        if (migrationData?.provisionalRederive) {
+            this.fallBackToRecovery();
+            return;
+        }
+
+        this.setState({
+            status: 'error',
+            error: 'We couldn’t finish signing you in. Please try again.',
+            canRetry: true,
+            previousState: this.state,
         });
     }
 
