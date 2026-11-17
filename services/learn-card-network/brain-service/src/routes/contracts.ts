@@ -1,4 +1,8 @@
-import { SendContractRequestValidator, ContractRequestFieldsValidator } from '@learncard/types';
+import {
+    SendContractRequestValidator,
+    SendContractRequestResultValidator,
+    ContractRequestFieldsValidator,
+} from '@learncard/types';
 import {
     sendGenericContractRequest,
     decideGenericContractRequest,
@@ -2266,7 +2270,7 @@ export const contractsRouter = t.router({
             },
         })
         .input(SendContractRequestValidator)
-        .output(z.boolean())
+        .output(SendContractRequestResultValidator)
         .mutation(async ({ ctx, input }) =>
             sendGenericContractRequest(input, ctx.user.profile, ctx.domain)
         ),
