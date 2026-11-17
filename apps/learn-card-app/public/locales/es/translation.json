@@ -8754,7 +8754,7 @@
                     "reqHttps": "Debe ser HTTPS (no HTTP)",
                     "reqResponseTime": "Responder en menos de 30 segundos",
                     "reqStatus2xx": "Devolver código de estado 2xx en caso de éxito",
-                    "reqSignature": "Verificar el token Bearer del encabezado Authorization"
+                    "reqSignature": "Verifica el token Bearer del encabezado Authorization y comprueba que lo emitió LearnCard Network"
                 },
                 "handleEventsStep": {
                     "title": "Manejar eventos",

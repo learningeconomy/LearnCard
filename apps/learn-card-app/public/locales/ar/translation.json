@@ -8780,7 +8780,7 @@
                     "reqHttps": "يجب أن يكون HTTPS (وليس HTTP)",
                     "reqResponseTime": "الرد خلال 30 ثانية",
                     "reqStatus2xx": "إرجاع رمز حالة 2xx عند النجاح",
-                    "reqSignature": "التحقق من رمز Bearer في رأس Authorization"
+                    "reqSignature": "تحقق من رمز Bearer في رأس Authorization وتأكد من أنه صادر عن LearnCard Network"
                 },
                 "handleEventsStep": {
                     "title": "معالجة الأحداث",

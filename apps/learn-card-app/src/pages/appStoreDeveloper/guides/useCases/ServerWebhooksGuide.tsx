@@ -314,18 +314,32 @@ const verifier = await initLearnCard();
 // Notification webhooks carry "Authorization: Bearer <DID-JWT>", signed by the
 // LearnCard Network DID. There is no shared secret and no signature header here.
 // (Signed integration webhooks are a separate channel: see your integration's Webhooks tab.)
-async function verifyLearnCardRequest(authHeader?: string): Promise<boolean> {
-    const token = authHeader?.replace(/^Bearer\\s+/i, '');
-    if (!token) return false;
 
-    const result = await verifier.invoke.verifyPresentation(token, { proofFormat: 'jwt' });
-    return result.errors.length === 0;
+// Use the DID of the network you are connected to (production shown).
+const EXPECTED_NETWORK_DID = process.env.EXPECTED_NETWORK_DID ?? 'did:web:network.learncard.com';
+
+// Returns 200 when the request is from the LearnCard Network, otherwise the status to reply with.
+async function verifyLearnCardRequest(authHeader?: string): Promise<number> {
+    const token = authHeader?.replace(/^Bearer\\s+/i, '');
+    if (!token) return 401;
+
+    try {
+        const result = await verifier.invoke.verifyPresentation(token, { proofFormat: 'jwt' });
+        if (result.errors.length !== 0) return 401;
+
+        // A valid signature only proves SOME DID signed it, so also pin the issuer.
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+        return payload.iss === EXPECTED_NETWORK_DID ? 200 : 403;
+    } catch {
+        return 401;
+    }
 }
 
 app.post('${webhookUrl || '/webhooks/learncard'}', async (req, res) => {
     // Verify the request is from LearnCard
-    if (!(await verifyLearnCardRequest(req.headers.authorization))) {
-        return res.status(401).json({ error: 'Invalid token' });
+    const status = await verifyLearnCardRequest(req.headers.authorization);
+    if (status !== 200) {
+        return res.status(status).json({ error: 'Invalid token' });
     }
     
     // Handle the event
@@ -339,22 +353,40 @@ app.post('${webhookUrl || '/webhooks/learncard'}', async (req, res) => {
     processEvent(event);
 });`,
                     python: `# Flask webhook handler
+import base64
+import json
+import os
+
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+# Use the DID of the network you are connected to (production shown).
+EXPECTED_NETWORK_DID = os.environ.get('EXPECTED_NETWORK_DID', 'did:web:network.learncard.com')
+
 # Notification webhooks carry "Authorization: Bearer <DID-JWT>", signed by the
-# LearnCard Network DID (did:web:network.learncard.com in production).
-# There is no shared secret and no signature header here.
-def verify_learncard_request(auth_header: str) -> bool:
+# LearnCard Network DID. There is no shared secret and no signature header here.
+def verify_learncard_request(auth_header: str) -> int:
+    """Return 200 when the request is from the LearnCard Network, else the status to reply with."""
     token = auth_header.removeprefix('Bearer ').strip()
-    # Verify the DID-JWT with your JWT library of choice
-    return bool(token) and verify_did_jwt(token)
+    # Verify the DID-JWT signature with your JWT/DID library of choice
+    if not token or not verify_did_jwt(token):
+        return 401
+
+    # A valid signature only proves SOME DID signed it, so also pin the issuer.
+    try:
+        segment = token.split('.')[1]
+        payload = json.loads(base64.urlsafe_b64decode(segment + '=' * (-len(segment) % 4)))
+    except (IndexError, ValueError):
+        return 401
+
+    return 200 if payload.get('iss') == EXPECTED_NETWORK_DID else 403
 
 @app.route('${webhookUrl || '/webhooks/learncard'}', methods=['POST'])
 def webhook():
-    if not verify_learncard_request(request.headers.get('Authorization', '')):
-        return jsonify({'error': 'Invalid token'}), 401
+    status = verify_learncard_request(request.headers.get('Authorization', ''))
+    if status != 200:
+        return jsonify({'error': 'Invalid token'}), status
     
     event = request.json
     print(f"Received event: {event['type']}")

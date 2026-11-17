@@ -8806,7 +8806,7 @@
                     "reqHttps": "Must be HTTPS (not HTTP)",
                     "reqResponseTime": "Respond within 30 seconds",
                     "reqStatus2xx": "Return 2xx status code on success",
-                    "reqSignature": "Verify the Authorization bearer token"
+                    "reqSignature": "Verify the Authorization bearer token and check it was issued by the LearnCard Network"
                 },
                 "handleEventsStep": {
                     "title": "Handle Events",
