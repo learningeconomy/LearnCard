@@ -55,16 +55,16 @@ describe('pendingContractSyncStore', () => {
         await hydratePendingContractSyncJobs();
 
         const jobs = pendingContractSyncStore.get.jobs();
-        expect(jobs[first.id]?.kind === 'credential' && jobs[first.id].syncedTermsUris).toEqual([
-            'terms:acknowledged',
-        ]);
-        expect(
-            jobs[second.id]?.kind === 'credential' && jobs[second.id].failedContractUris
-        ).toEqual(['contract:failed']);
         expect(jobs[first.id]).toMatchObject({
+            kind: 'credential',
+            syncedTermsUris: ['terms:acknowledged'],
             totalCredentials: 1,
             processedCredentials: 1,
             completedCredentials: 1,
+        });
+        expect(jobs[second.id]).toMatchObject({
+            kind: 'credential',
+            failedContractUris: ['contract:failed'],
         });
         expect(Object.keys(jobs)).toEqual(expect.arrayContaining([first.id, second.id]));
     });

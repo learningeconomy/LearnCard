@@ -121,15 +121,17 @@ const openDatabase = (): Promise<IDBDatabase> =>
             reject(request.error ?? new Error('Could not open pending sync database'));
     });
 
+const hasWindowEvents =
+    typeof window !== 'undefined' && typeof window.addEventListener === 'function';
 const channel =
-    typeof window === 'undefined' || typeof BroadcastChannel === 'undefined'
+    !hasWindowEvents || typeof BroadcastChannel === 'undefined'
         ? undefined
         : new BroadcastChannel(`${DB_NAME}:updates`);
 const onQueueChanged = (): void => {
     void refreshJobs().catch(error => log.error('Failed to refresh pending sync jobs', error));
 };
 channel?.addEventListener('message', onQueueChanged);
-if (typeof window !== 'undefined') {
+if (hasWindowEvents) {
     window.addEventListener('storage', event => {
         if (event.key === `${DB_NAME}:updates`) onQueueChanged();
     });

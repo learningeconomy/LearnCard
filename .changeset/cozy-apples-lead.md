@@ -16,3 +16,5 @@ Guard automatic deliveries against current category consent at the server write 
 Treat blank legacy category expiries as no expiry while preserving the server's automatic-sharing consent and expiry guards.
 
 Persist pending delivery updates transactionally across tabs, retain legacy retry checkpoints, and recover abandoned attempts without losing other saved credentials. Successful background delivery reports completed progress.
+
+Initialize cross-tab notifications only when browser event APIs are available, preserving credential-helper imports in storage-only environments.
