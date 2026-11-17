@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const pruningMocks = vi.hoisted(() => ({ prune: vi.fn() }));
 vi.mock('@accesslayer/consentflowcontract/relationships/update', async importOriginal => {
@@ -228,6 +228,98 @@ describe('Consent external grant issuance fence', () => {
         );
         await expectNoDelivery(fixture.termsUri);
     });
+
+    describe.each(['withdraw', 'revision bump'] as const)(
+        'concurrent route contention: %s',
+        mutation => {
+            const wins = { write: 0, mutation: 0, violations: 0 };
+            afterAll(() =>
+                console.log('EXTERNAL_GRANT_CONTENTION', mutation, JSON.stringify(wins))
+            );
+            it.each(Array.from({ length: 20 }, (_, i) => i + 1))(
+                'preserves commit-order invariant %i',
+                async () => {
+                    const fixture = await setupConsent();
+                    const before = (await getContractTermsByUri(fixture.termsUri))!.terms;
+                    // Sign before launching either route, so crypto does not serialize the race.
+                    const credential = await userA.learnCard.invoke.issueCredential({
+                        ...testUnsignedBoost,
+                        issuer: userA.learnCard.id.did(),
+                        credentialSubject: {
+                            ...testUnsignedBoost.credentialSubject,
+                            id: userB.learnCard.id.did(),
+                        },
+                        boostId: fixture.boostUri,
+                    });
+                    const bumpedGrant = { ...externalGrant, revision: 1, hash: 'grant-hash-v1' };
+                    try {
+                        const [write, change] = await Promise.allSettled([
+                            userA.clients.fullAuth.contracts.writeCredentialToContract({
+                                did: userB.learnCard.id.did(),
+                                contractUri: fixture.contractUri,
+                                boostUri: fixture.boostUri,
+                                credential,
+                                expectedExternalGrant: expectedGrant,
+                            }),
+                            mutation === 'withdraw'
+                                ? userB.clients.fullAuth.contracts.withdrawConsent({
+                                      uri: fixture.termsUri,
+                                  })
+                                : userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                                      uri: fixture.termsUri,
+                                      terms: { ...normalFullTerms, externalGrant: bumpedGrant },
+                                  }),
+                        ]);
+                        expect(change.status).toBe('fulfilled');
+                        const current = (await getContractTermsByUri(fixture.termsUri))!.terms;
+                        if (mutation === 'withdraw') expect(current.status).toBe('withdrawn');
+                        else expect(current.terms.externalGrant).toEqual(bumpedGrant);
+                        const delivered = await neogma.queryRunner.run(
+                            `MATCH (credential:Credential)-[:ISSUED_VIA_TRANSACTION]->(transaction:ConsentFlowTransaction)-[:IS_FOR]->(:ConsentFlowTerms {id:$id})
+                     RETURN transaction.consentMutationVersion AS version,
+                            transaction.externalGrantRevision AS revision, transaction.externalGrantHash AS hash`,
+                            { id: before.id }
+                        );
+                        if (write.status === 'fulfilled') {
+                            // Historical delivery is valid only if its locked snapshot
+                            // predates the mutation. Withdrawal is not retroactive.
+                            expect(delivered.records).toHaveLength(1);
+                            expect(Number(delivered.records[0]!.get('version'))).toBe(
+                                Number(before.mutationVersion ?? 0)
+                            );
+                            expect(Number(delivered.records[0]!.get('version'))).toBeLessThan(
+                                Number(current.mutationVersion)
+                            );
+                            expect(Number(delivered.records[0]!.get('revision'))).toBe(0);
+                            expect(delivered.records[0]!.get('hash')).toBe(externalGrant.hash);
+                            expect(await Credential.findMany({ where: {} })).toHaveLength(1);
+                            wins.write += 1;
+                        } else {
+                            expect(['FORBIDDEN', 'CONFLICT']).toContain(write.reason.code);
+                            await expectNoDelivery(fixture.termsUri);
+                            wins.mutation += 1;
+                        }
+                        await expect(
+                            writeCredential('direct', fixture, expectedGrant)
+                        ).rejects.toMatchObject({
+                            code: mutation === 'withdraw' ? 'FORBIDDEN' : 'CONFLICT',
+                        });
+                        const orphaned = await neogma.queryRunner.run(
+                            'MATCH (credential:Credential) WHERE NOT (credential)-[:ISSUED_VIA_TRANSACTION]->() RETURN count(credential) AS count'
+                        );
+                        expect(Number(orphaned.records[0]!.get('count'))).toBe(0);
+                        expect(await Credential.findMany({ where: {} })).toHaveLength(
+                            write.status === 'fulfilled' ? 1 : 0
+                        );
+                    } catch (error) {
+                        wins.violations += 1;
+                        throw error;
+                    }
+                },
+                30000
+            );
+        }
+    );
 
     // Ordered in-flight issuance races, NOT simultaneous database transactions.
     // Same-key issuance idempotency is a separate feature and is not asserted here.

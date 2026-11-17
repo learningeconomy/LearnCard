@@ -324,6 +324,10 @@ export const createContractCredentialRelationships = async ({
                     SET delivery = $sent)
                 CREATE (transaction:ConsentFlowTransaction {id:$transactionId, action:'write', date:$date, boostId:$boostId})
                     -[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(terms)
+                FOREACH (_ IN CASE WHEN $expectedExternalRevision IS NULL THEN [] ELSE [1] END |
+                    SET transaction.consentMutationVersion = coalesce(terms.mutationVersion, 0),
+                        transaction.externalGrantRevision = terms['terms.externalGrant.revision'],
+                        transaction.externalGrantHash = terms['terms.externalGrant.hash'])
                 ${termsReferralSnapshotCypher()}
                 CREATE (credential)-[:${Credential.getRelationshipByAlias('issuedViaTransaction').name} {date:$date}]->(transaction)
                     RETURN transaction.id AS id, false AS externalGrantMismatch
