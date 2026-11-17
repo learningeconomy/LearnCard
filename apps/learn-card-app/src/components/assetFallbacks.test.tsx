@@ -97,6 +97,7 @@ describe('asset rendering', () => {
             'class',
             'w-[100px] h-[100px]'
         );
+        expect(screen.getByTestId('colorful-badge-icon').parentElement).toHaveClass('mb-4');
 
         themeMocks.getThemedCategoryIcons.mockReturnValue({ Icon: FormalBadgeIcon });
         rerender(

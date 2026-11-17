@@ -24,7 +24,7 @@ const CategoryDescriptorModal: React.FC<{
             >
                 <div className="p-[30px]">
                     {CategoryIcon && (
-                        <div className="flex justify-center">
+                        <div className="mb-4 flex justify-center">
                             <CategoryIcon className="w-[100px] h-[100px]" />
                         </div>
                     )}
