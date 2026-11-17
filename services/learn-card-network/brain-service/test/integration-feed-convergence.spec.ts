@@ -430,4 +430,57 @@ describe('a client that uses only the feed and the snapshot', () => {
         expect(clientA.state()).toEqual({});
         expect(lateA.state()).toEqual({});
     });
+
+    it('brings a consent back when a non-breaking update removes the expiry it had passed', async () => {
+        const [l0, l1] = learners as [Actor, Actor, Actor, Actor, Actor, Actor];
+        const contract = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Expiry removed',
+            contract: normalContract,
+            expiresAt: new Date(Date.now() + 60 * 60_000).toISOString(),
+        });
+
+        await consent(l0, contract);
+        await consent(l1, contract);
+        await runJobs();
+
+        const client = createFeedOnlyClient(owner, integrationId, contract);
+
+        await client.sync();
+        expect(client.state()).toEqual(await reference(contract));
+        expect(Object.keys(client.state())).toHaveLength(2);
+
+        // Version 1 expires: both consents are expired, their status stays live.
+        await expireVersion(contract, 1);
+        await runJobs();
+        await client.sync();
+
+        expect(await reference(contract)).toEqual({});
+        expect(client.state()).toEqual({});
+
+        // An optional addition does not need consent, so both move to version 2, which has no
+        // expiry. The data read returns them again, and the feed must say so.
+        const result = await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri: contract,
+            changes: {
+                expiresAt: null,
+                contract: { read: { credentials: { categories: { Gamma: { required: false } } } } },
+            },
+        });
+
+        expect(result.kind).not.toBe('requires_consent');
+        await runJobs();
+        await client.sync();
+
+        expect(await reference(contract)).toEqual({
+            [l0.profileId]: 'live',
+            [l1.profileId]: 'live',
+        });
+        expect(client.state()).toEqual(await reference(contract));
+        expect(client.stats().snapshots).toBe(1);
+
+        const late = createFeedOnlyClient(owner, integrationId, contract);
+
+        await late.sync();
+        expect(late.state()).toEqual(await reference(contract));
+    });
 });

@@ -246,6 +246,102 @@ describe('integration-only state events', () => {
         expect(await profileDeliveriesFor(idOf(contractUri), ['consent_paused'])).toBe(0);
     });
 
+    describe('expiry extended by a non-breaking update', () => {
+        const expireVersionOne = async (agoMs = 1_000): Promise<void> => {
+            await run(
+                `MATCH (contract:ConsentFlowContract {id: $id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion {version: 1})
+                 SET contract.expiresAt = $expiresAt, version.expiresAt = $expiresAt`,
+                { id: idOf(contractUri), expiresAt: new Date(Date.now() - agoMs).toISOString() }
+            );
+            await emitExpiredConsentEvents();
+            await fanOutIntegrationEvents({ limit: 500 });
+        };
+
+        const optionalAddition = {
+            read: { credentials: { categories: { Gamma: { required: false } } } },
+        };
+
+        const connectionIds = async (): Promise<string[]> =>
+            (await owner.clients.fullAuth.contracts.getContractConnections({ contractUri })).records
+                .map(record => record.profileId)
+                .sort();
+
+        it('emits consent_updated with reason expiry_extended per revived consent, with no profile delivery', async () => {
+            await expireVersionOne();
+            expect(await connectionIds()).toEqual([]);
+
+            const before = (await recordsFor(ownerIntegrationId)).length;
+            const result = await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: contractUri,
+                changes: { expiresAt: null, contract: optionalAddition },
+            });
+            expect(result.kind).not.toBe('requires_consent');
+            await fanOutIntegrationEvents({ limit: 500 });
+
+            const records = await typesSince(ownerIntegrationId, before);
+
+            expect(records.map(record => record.type)).toEqual([
+                'consent_updated',
+                'consent_updated',
+            ]);
+            for (const record of records) expect(record.reason).toBe('expiry_extended');
+            expect(records.map(record => record.termsUri).sort()).toEqual([termsA, termsB].sort());
+            expect(records.find(record => record.termsUri === termsA)).toMatchObject({
+                subject: { profileId: learnerA.profileId },
+                externalReferenceId: 'case-501',
+                role: 'owner',
+            });
+            expect(await profileDeliveriesFor(idOf(contractUri), ['consent_updated'])).toBe(0);
+            expect(await connectionIds()).toEqual([learnerA.profileId, learnerB.profileId].sort());
+
+            const pending = await run(
+                `MATCH (event:ConsentFlowEvent {contractId: $contractId})
+                 WHERE event.integrationFanoutPending = true RETURN count(event) AS total`,
+                { contractId: idOf(contractUri) }
+            );
+            expect(Number(pending.records[0]?.get('total'))).toBe(0);
+        });
+
+        it('emits nothing for a consent that was not expired', async () => {
+            await run(
+                `MATCH (contract:ConsentFlowContract {id: $id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion {version: 1})
+                 SET contract.expiresAt = $expiresAt, version.expiresAt = $expiresAt`,
+                {
+                    id: idOf(contractUri),
+                    expiresAt: new Date(Date.now() + 60 * 60_000).toISOString(),
+                }
+            );
+            await fanOutIntegrationEvents({ limit: 500 });
+            const before = (await recordsFor(ownerIntegrationId)).length;
+
+            await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: contractUri,
+                changes: { expiresAt: null, contract: optionalAddition },
+            });
+            await fanOutIntegrationEvents({ limit: 500 });
+
+            expect(await typesSince(ownerIntegrationId, before)).toEqual([]);
+        });
+
+        it('emits nothing when the update still leaves the consent expired', async () => {
+            await expireVersionOne(60_000);
+
+            const before = (await recordsFor(ownerIntegrationId)).length;
+
+            await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: contractUri,
+                changes: {
+                    expiresAt: new Date(Date.now() - 1_000).toISOString(),
+                    contract: optionalAddition,
+                },
+            });
+            await fanOutIntegrationEvents({ limit: 500 });
+
+            expect(await typesSince(ownerIntegrationId, before)).toEqual([]);
+            expect(await connectionIds()).toEqual([]);
+        });
+    });
+
     it('deadline: consent_suspended once per terms with the deadline in the event id', async () => {
         const deadline = new Date(Date.now() + 60 * 60_000).toISOString();
         await owner.clients.fullAuth.contracts.updateConsentFlowContract({
