@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Integration, Profile } from '@models';
+import * as integrationUpdate from '@accesslayer/integration/update';
 import { getIntegrationWebhookDeliveryConfig } from '@accesslayer/integration/webhook';
 
 import { getUser } from './helpers/getClient';
@@ -232,6 +233,40 @@ describe('Integration webhook routes', () => {
         expect(after?.name).toBe('Renamed');
         expect(typeof after?.contractEventsEnabledAt).toBe('string');
         expect(after?.hasWebhookSecret).toBe(false);
+    });
+
+    it('updateIntegration does not flip contract events when the field update fails', async () => {
+        const failing = vi
+            .spyOn(integrationUpdate, 'updateIntegration')
+            .mockRejectedValueOnce(new Error('write failed'));
+
+        await expect(
+            userA.clients.fullAuth.integrations.updateIntegration({
+                id: integrationId,
+                updates: { name: 'Renamed', contractEventsEnabled: true },
+            })
+        ).rejects.toThrow();
+        failing.mockRestore();
+
+        const after = await userA.clients.fullAuth.integrations.getIntegration({
+            id: integrationId,
+        });
+
+        expect(after?.name).toBe('Hooks');
+        expect(after?.contractEventsEnabledAt).toBeUndefined();
+
+        // Retrying the same call succeeds and applies both writes.
+        await userA.clients.fullAuth.integrations.updateIntegration({
+            id: integrationId,
+            updates: { name: 'Renamed', contractEventsEnabled: true },
+        });
+
+        const retried = await userA.clients.fullAuth.integrations.getIntegration({
+            id: integrationId,
+        });
+
+        expect(retried?.name).toBe('Renamed');
+        expect(typeof retried?.contractEventsEnabledAt).toBe('string');
     });
 
     it('updateIntegration disables events with false and leaves the URL and secret alone', async () => {

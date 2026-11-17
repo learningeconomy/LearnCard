@@ -202,6 +202,11 @@ export const integrationsRouter = t.router({
 
             const { contractEventsEnabled } = input.updates;
 
+            // The general update runs first and the switch only after it succeeded, so a failed
+            // field update never leaves the switch changed. A failed switch after a successful
+            // update is reported as an error and is safe to retry: both writes are idempotent.
+            const updated = await updateIntegrationAccess(integration, input.updates);
+
             // The webhook URL has its own route (setIntegrationWebhook), which can return the
             // signing secret once. Only the contract-events switch is written here.
             if (contractEventsEnabled !== undefined) {
@@ -211,7 +216,7 @@ export const integrationsRouter = t.router({
                 });
             }
 
-            return updateIntegrationAccess(integration, input.updates);
+            return updated;
         }),
 
     setIntegrationWebhook: profileRoute
