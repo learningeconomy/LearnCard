@@ -228,6 +228,61 @@ it('records a child presentation during a parent rerender with a new initWallet 
     view.rerender(<Parent show />);
     await waitFor(() => expect(state.record).toHaveBeenCalledWith('test-campaign', 'shown'));
 });
+it.each([false, true])(
+    'records a child presentation during a scope transition (strict: %s)',
+    async strict => {
+        let ready = false;
+        let previousSource: ReturnType<typeof useMyCampaigns>;
+        let currentSource: ReturnType<typeof useMyCampaigns>;
+        const event = {
+            type: 'shown' as const,
+            messageId: 'test-campaign',
+            campaignId: 'test-campaign',
+            source: 'deepLink' as const,
+            presentation: 'modal' as const,
+        };
+        const Presentation = ({ source }: { source: ReturnType<typeof useMyCampaigns> }) => {
+            const shown = React.useRef(false);
+            React.useLayoutEffect(() => {
+                // InAppMessageHost similarly deduplicates StrictMode's effect replay.
+                if (shown.current) return;
+                shown.current = true;
+                source.record(event, false);
+            }, []);
+            return null;
+        };
+        const Parent = ({ show }: { show: boolean }) => {
+            const source = useMyCampaigns();
+            ready = source.ready;
+            if (!show) previousSource = source;
+            else currentSource = source;
+            return show ? <Presentation source={source} /> : null;
+        };
+        const tree = (show: boolean) =>
+            strict ? (
+                <React.StrictMode>
+                    <Parent show={show} />
+                </React.StrictMode>
+            ) : (
+                <Parent show={show} />
+            );
+        const view = render(tree(false), { wrapper });
+        await waitFor(() => expect(ready).toBe(true));
+        const oldSource = previousSource!;
+        state.did = 'bob';
+        // A previously visited profile can have a fresh cached query on transition.
+        client.setQueryData(['useMyCampaigns', 'local-network', state.did], [item()]);
+        view.rerender(tree(true));
+        await waitFor(() => expect(state.record).toHaveBeenCalledWith('test-campaign', 'shown'));
+        oldSource.record(event, false);
+        await act(async () => {});
+        expect(state.record).toHaveBeenCalledTimes(1);
+        view.unmount();
+        currentSource!.record(event, false);
+        await act(async () => {});
+        expect(state.record).toHaveBeenCalledTimes(1);
+    }
+);
 it('cancels stale wallet resolution before sending an enrollment or engagement as another profile', async () => {
     const { result, rerender } = renderHook(useMyCampaigns, { wrapper });
     await waitFor(() => expect(result.current.ready).toBe(true));

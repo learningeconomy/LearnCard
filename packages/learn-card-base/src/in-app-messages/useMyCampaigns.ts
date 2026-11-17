@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useInsertionEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import type { MyCampaign } from '@learncard/types';
@@ -39,12 +39,12 @@ export const useMyCampaigns = (): CampaignMessageSource => {
     const { initWallet } = useWallet();
     const active = useRef(scope);
     const initRef = useRef(initWallet);
-    useLayoutEffect(() => {
+    useInsertionEffect(() => {
         initRef.current = initWallet;
     }, [initWallet]);
-    // initWallet changes on every render. Clearing the active scope for those
-    // renders can drop a child's presentation event before this effect runs.
-    useLayoutEffect(() => {
+    // Commit the scope before child layout effects can report a presentation.
+    // Updating during render could expose an uncommitted scope to stale callbacks.
+    useInsertionEffect(() => {
         active.current = scope;
         return () => {
             active.current = null;
