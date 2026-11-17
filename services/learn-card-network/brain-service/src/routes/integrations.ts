@@ -256,7 +256,7 @@ export const integrationsRouter = t.router({
                 tags: ['Integrations'],
                 summary: 'Send Integration Test Event',
                 description:
-                    'Send one signed `integration.test` event to the webhook URL of an Integration and report the result. The test event is not written to the change feed.',
+                    'Send one signed `integration.test` event to the webhook URL of an Integration and report the result. The test event is not written to the change feed. It is sent whenever the Integration has a webhook URL and a signing secret, also while contract events are disabled, so a receiver can be checked before events are enabled.',
             },
             requiredScope: 'integrations:write',
         })
@@ -275,6 +275,7 @@ export const integrationsRouter = t.router({
                 });
             }
 
+            // Deliberately not gated on contractEventsEnabledAt: only feed records stop on disable.
             const config = await getIntegrationWebhookDeliveryConfig(input.id);
 
             if (!config) return { delivered: false, error: 'no_webhook' };

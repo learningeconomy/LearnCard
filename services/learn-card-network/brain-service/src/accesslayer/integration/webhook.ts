@@ -98,12 +98,17 @@ export type IntegrationWebhookDeliveryConfig = {
     webhookUrl: string;
     /** Plaintext signing secrets: the current one first, then the previous one while it is valid. */
     secrets: string[];
+    /**
+     * When contract events were last enabled. Absent while they are disabled: the webhook can
+     * still be tested then, but no feed record may be delivered to it.
+     */
+    contractEventsEnabledAt?: string;
 };
 
 /**
- * Reads what signed delivery needs: the webhook URL and the decrypted signing secrets.
- * Returns null when the Integration does not exist, has no webhook URL, or has no secret.
- * The result must never be returned by a route or written to a log.
+ * Reads what signed delivery needs: the webhook URL, the decrypted signing secrets and whether
+ * contract events are enabled. Returns null when the Integration does not exist, has no webhook
+ * URL, or has no secret. The result must never be returned by a route or written to a log.
  */
 export const getIntegrationWebhookDeliveryConfig = async (
     integrationId: string
@@ -113,7 +118,8 @@ export const getIntegrationWebhookDeliveryConfig = async (
          RETURN integration.webhookUrl AS webhookUrl,
              integration.webhookSecretEnc AS secretEnc,
              integration.webhookSecretPrevEnc AS previousEnc,
-             integration.webhookSecretPrevExpiresAt AS previousExpiresAt`,
+             integration.webhookSecretPrevExpiresAt AS previousExpiresAt,
+             integration.contractEventsEnabledAt AS contractEventsEnabledAt`,
         { id: integrationId }
     );
     const record = result.records[0];
@@ -143,5 +149,13 @@ export const getIntegrationWebhookDeliveryConfig = async (
         }
     }
 
-    return { webhookUrl, secrets };
+    const contractEventsEnabledAt: unknown = record.get('contractEventsEnabledAt');
+
+    return {
+        webhookUrl,
+        secrets,
+        ...(typeof contractEventsEnabledAt === 'string' && contractEventsEnabledAt.length > 0
+            ? { contractEventsEnabledAt }
+            : {}),
+    };
 };

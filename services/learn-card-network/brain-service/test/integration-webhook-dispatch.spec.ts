@@ -262,6 +262,75 @@ describe('dispatchIntegrationWebhooks', () => {
         expect(fetchSpy).not.toHaveBeenCalled();
     });
 
+    it('rejects pending and retrying records once contract events are disabled', async () => {
+        await seedEvent('dispatch-disabled-pending');
+        await seedEvent('dispatch-disabled-retrying');
+        await run(
+            `MATCH (record:IntegrationEvent {eventId: 'dispatch-disabled-retrying'})
+             SET record.attempts = 3, record.failureReason = 'http_500'`
+        );
+
+        await userA.clients.fullAuth.integrations.updateIntegration({
+            id: integrationId,
+            updates: { contractEventsEnabled: false },
+        });
+
+        await expect(dispatchIntegrationWebhooks()).resolves.toEqual({
+            delivered: 0,
+            pending: 0,
+            rejected: 2,
+            failed: 0,
+        });
+        expect(fetchSpy).not.toHaveBeenCalled();
+
+        for (const eventId of ['dispatch-disabled-pending', 'dispatch-disabled-retrying']) {
+            const record = await stored(eventId);
+
+            expect(record.deliveryState).toBe('rejected');
+            expect(record.failureReason).toBe('disabled');
+            expect(record.nextAttemptAt).toBeUndefined();
+        }
+
+        // The records stay in the feed.
+        const feed = await userA.clients.fullAuth.integrations.getIntegrationEvents({
+            id: integrationId,
+        });
+
+        expect(feed.records.map(record => record.eventId).sort()).toEqual([
+            'dispatch-disabled-pending',
+            'dispatch-disabled-retrying',
+        ]);
+
+        // Final: a later pass does not pick them up again.
+        await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({ rejected: 0 });
+    });
+
+    it('does not deliver records from before a disable after events are enabled again', async () => {
+        await seedEvent('dispatch-before-disable');
+
+        await userA.clients.fullAuth.integrations.updateIntegration({
+            id: integrationId,
+            updates: { contractEventsEnabled: false },
+        });
+        await new Promise(resolve => setTimeout(resolve, 5));
+        await userA.clients.fullAuth.integrations.updateIntegration({
+            id: integrationId,
+            updates: { contractEventsEnabled: true },
+        });
+        await new Promise(resolve => setTimeout(resolve, 5));
+        await seedEvent('dispatch-after-enable');
+
+        await expect(dispatchIntegrationWebhooks()).resolves.toEqual({
+            delivered: 1,
+            pending: 0,
+            rejected: 1,
+            failed: 0,
+        });
+        expect(fetchSpy).toHaveBeenCalledOnce();
+        expect(JSON.parse(fetchSpy.mock.calls[0]![1].body).eventId).toBe('dispatch-after-enable');
+        expect((await stored('dispatch-before-disable')).failureReason).toBe('disabled');
+    });
+
     it('does not send a record that another worker holds a lease on', async () => {
         await seedEvent('dispatch-8');
         await run(

@@ -132,6 +132,19 @@ describe('sendIntegrationTestEvent and the worker pass', () => {
         expect(fetchSpy).not.toHaveBeenCalled();
     });
 
+    it('still sends the test event while contract events are disabled', async () => {
+        await userA.clients.fullAuth.integrations.updateIntegration({
+            id: integrationId,
+            updates: { contractEventsEnabled: false },
+        });
+
+        await expect(
+            userA.clients.fullAuth.integrations.sendIntegrationTestEvent({ id: integrationId })
+        ).resolves.toEqual({ delivered: true, status: 200 });
+        expect(fetchSpy).toHaveBeenCalledOnce();
+        expect(JSON.parse(fetchSpy.mock.calls[0]![1].body).type).toBe('integration.test');
+    });
+
     it('is refused for another profile and without the integrations:write scope', async () => {
         await expect(
             userB.clients.fullAuth.integrations.sendIntegrationTestEvent({ id: integrationId })

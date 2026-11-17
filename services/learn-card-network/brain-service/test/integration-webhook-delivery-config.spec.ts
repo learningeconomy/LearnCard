@@ -64,6 +64,7 @@ describe('getIntegrationWebhookDeliveryConfig', () => {
         await expect(getIntegrationWebhookDeliveryConfig(integrationId)).resolves.toEqual({
             webhookUrl: 'https://hooks.example.com/a',
             secrets: [second?.secret, first?.secret],
+            contractEventsEnabledAt: expect.any(String),
         });
     });
 
@@ -84,6 +85,21 @@ describe('getIntegrationWebhookDeliveryConfig', () => {
         await expect(getIntegrationWebhookDeliveryConfig(integrationId)).resolves.toEqual({
             webhookUrl: 'https://hooks.example.com/a',
             secrets: [second?.secret],
+            contractEventsEnabledAt: expect.any(String),
         });
+    });
+
+    it('reports that contract events are disabled instead of hiding the webhook', async () => {
+        await setIntegrationWebhookConfig({
+            integrationId,
+            webhookUrl: 'https://hooks.example.com/a',
+        });
+        await setIntegrationWebhookConfig({ integrationId, contractEventsEnabled: false });
+
+        const config = await getIntegrationWebhookDeliveryConfig(integrationId);
+
+        expect(config?.webhookUrl).toBe('https://hooks.example.com/a');
+        expect(config?.secrets).toHaveLength(1);
+        expect(config?.contractEventsEnabledAt).toBeUndefined();
     });
 });

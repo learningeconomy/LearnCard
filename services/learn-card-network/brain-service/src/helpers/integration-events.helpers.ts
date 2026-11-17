@@ -556,19 +556,41 @@ export type IntegrationWebhookDispatchSummary = {
     delivered: number;
     /** Failed this time and scheduled for another attempt. */
     pending: number;
-    /** Final: the receiver refused it, or the integration has no usable webhook any more. */
+    /** Final: the receiver refused it, or the integration has no webhook or has events disabled. */
     rejected: number;
     /** Final: 12 attempts or 24 hours were used up. */
     failed: number;
 };
 
-type WebhookDeliveryConfig = { webhookUrl: string; secrets: string[] };
+type WebhookDeliveryConfig = {
+    webhookUrl: string;
+    secrets: string[];
+    contractEventsEnabledAt?: string;
+};
+
+/**
+ * true when a feed record must not be delivered because contract events are disabled, or were
+ * disabled after the record's event happened (fan-out only writes records for events at or
+ * after contractEventsEnabledAt, so an older record means a disable in between).
+ */
+const isDeliveryDisabled = (config: WebhookDeliveryConfig, occurredAt: unknown): boolean => {
+    if (!config.contractEventsEnabledAt) return true;
+
+    const enabledAtMs = Date.parse(config.contractEventsEnabledAt);
+    const occurredAtMs = Date.parse(String(occurredAt));
+
+    if (Number.isNaN(enabledAtMs)) return true;
+
+    return !Number.isNaN(occurredAtMs) && occurredAtMs < enabledAtMs;
+};
 
 /**
  * Sends pending IntegrationEvent records to their integration's webhook, at least once.
  * A 60-second lease fences overlapping workers. The retry policy matches the profile outbox:
- * up to 12 attempts within 24 hours, 60 seconds doubling to a 1-hour cap. A failed delivery
- * only changes delivery bookkeeping; the record always stays in the feed.
+ * up to 12 attempts within 24 hours, 60 seconds doubling to a 1-hour cap. Records of an
+ * integration whose contract events are disabled are not sent: they become final `rejected`
+ * with failureReason `disabled`. A failed or refused delivery only changes delivery
+ * bookkeeping; the record always stays in the feed.
  */
 export const dispatchIntegrationWebhooks = async ({
     limit = 100,
@@ -663,6 +685,10 @@ export const dispatchIntegrationWebhooks = async ({
                 if (!config) {
                     state = 'rejected';
                     failureReason = 'no_webhook';
+                } else if (isDeliveryDisabled(config, record.occurredAt)) {
+                    // Disabling contract events also stops records that are already queued.
+                    state = 'rejected';
+                    failureReason = 'disabled';
                 } else {
                     const result = await sendSignedIntegrationWebhook({
                         webhookUrl: config.webhookUrl,
