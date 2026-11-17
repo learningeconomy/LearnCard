@@ -75,7 +75,7 @@ describe('getIntegrationEvents', () => {
 
         expect(page).toEqual({
             records: [],
-            latestCursor: encodeIntegrationEventCursor(0),
+            latestCursor: encodeIntegrationEventCursor(integrationId, 0),
             hasMore: false,
         });
     });
@@ -101,8 +101,8 @@ describe('getIntegrationEvents', () => {
             role: 'owner',
         });
         expect(page.hasMore).toBe(false);
-        expect(page.cursor).toBe(encodeIntegrationEventCursor(5));
-        expect(page.latestCursor).toBe(encodeIntegrationEventCursor(5));
+        expect(page.cursor).toBe(encodeIntegrationEventCursor(integrationId, 5));
+        expect(page.latestCursor).toBe(encodeIntegrationEventCursor(integrationId, 5));
     });
 
     it('pages with limit and since', async () => {
@@ -115,8 +115,8 @@ describe('getIntegrationEvents', () => {
 
         expect(first.records.map(record => record.sequence)).toEqual([1, 2]);
         expect(first.hasMore).toBe(true);
-        expect(first.cursor).toBe(encodeIntegrationEventCursor(2));
-        expect(first.latestCursor).toBe(encodeIntegrationEventCursor(5));
+        expect(first.cursor).toBe(encodeIntegrationEventCursor(integrationId, 2));
+        expect(first.latestCursor).toBe(encodeIntegrationEventCursor(integrationId, 5));
 
         const second = await userA.clients.fullAuth.integrations.getIntegrationEvents({
             id: integrationId,
@@ -135,13 +135,13 @@ describe('getIntegrationEvents', () => {
 
         expect(third.records.map(record => record.sequence)).toEqual([5]);
         expect(third.hasMore).toBe(false);
-        expect(third.cursor).toBe(encodeIntegrationEventCursor(5));
+        expect(third.cursor).toBe(encodeIntegrationEventCursor(integrationId, 5));
     });
 
     it('returns the same cursor back when there is nothing new', async () => {
         await seedEvents(2);
 
-        const since = encodeIntegrationEventCursor(2);
+        const since = encodeIntegrationEventCursor(integrationId, 2);
         const page = await userA.clients.fullAuth.integrations.getIntegrationEvents({
             id: integrationId,
             since,
@@ -178,6 +178,65 @@ describe('getIntegrationEvents', () => {
         ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     });
 
+    it('round-trips latestCursor as since', async () => {
+        await seedEvents(3);
+
+        const first = await userA.clients.fullAuth.integrations.getIntegrationEvents({
+            id: integrationId,
+        });
+
+        await seedEvents(2, 'feed-later');
+
+        const next = await userA.clients.fullAuth.integrations.getIntegrationEvents({
+            id: integrationId,
+            since: first.latestCursor,
+        });
+
+        expect(next.records.map(record => record.sequence)).toEqual([4, 5]);
+        expect(next.latestCursor).toBe(encodeIntegrationEventCursor(integrationId, 5));
+    });
+
+    it('rejects a cursor issued for another integration', async () => {
+        await seedEvents(2);
+
+        const otherId = await userA.clients.fullAuth.integrations.addIntegration({
+            name: 'Other',
+            whitelistedDomains: [],
+        });
+
+        await expect(
+            userA.clients.fullAuth.integrations.getIntegrationEvents({
+                id: integrationId,
+                since: encodeIntegrationEventCursor(otherId, 1),
+            })
+        ).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: expect.stringMatching(/different integration/),
+        });
+    });
+
+    it('rejects a cursor that is ahead of the feed', async () => {
+        await seedEvents(2);
+
+        await expect(
+            userA.clients.fullAuth.integrations.getIntegrationEvents({
+                id: integrationId,
+                since: encodeIntegrationEventCursor(integrationId, 3),
+            })
+        ).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: expect.stringMatching(/ahead of this integration's feed/),
+        });
+
+        // The newest position itself is fine.
+        await expect(
+            userA.clients.fullAuth.integrations.getIntegrationEvents({
+                id: integrationId,
+                since: encodeIntegrationEventCursor(integrationId, 2),
+            })
+        ).resolves.toMatchObject({ records: [], hasMore: false });
+    });
+
     it('rejects a cursor older than the purged range with CURSOR_EXPIRED', async () => {
         await seedEvents(5);
         await run(
@@ -188,7 +247,7 @@ describe('getIntegrationEvents', () => {
         await expect(
             userA.clients.fullAuth.integrations.getIntegrationEvents({
                 id: integrationId,
-                since: encodeIntegrationEventCursor(2),
+                since: encodeIntegrationEventCursor(integrationId, 2),
             })
         ).rejects.toMatchObject({
             code: 'CONFLICT',
@@ -198,7 +257,7 @@ describe('getIntegrationEvents', () => {
         // A cursor exactly at the purged boundary has lost nothing.
         const page = await userA.clients.fullAuth.integrations.getIntegrationEvents({
             id: integrationId,
-            since: encodeIntegrationEventCursor(3),
+            since: encodeIntegrationEventCursor(integrationId, 3),
         });
 
         expect(page.records.map(record => record.sequence)).toEqual([4, 5]);

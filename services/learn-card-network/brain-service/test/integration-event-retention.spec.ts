@@ -119,7 +119,7 @@ describe('purgeExpiredIntegrationEvents', () => {
         await expect(
             userA.clients.fullAuth.integrations.getIntegrationEvents({
                 id: integrationId,
-                since: encodeIntegrationEventCursor(1),
+                since: encodeIntegrationEventCursor(integrationId, 1),
             })
         ).rejects.toMatchObject({
             code: 'CONFLICT',
@@ -131,11 +131,11 @@ describe('purgeExpiredIntegrationEvents', () => {
         });
 
         expect(fromStart.records.map(record => record.sequence)).toEqual([4, 5]);
-        expect(fromStart.latestCursor).toBe(encodeIntegrationEventCursor(5));
+        expect(fromStart.latestCursor).toBe(encodeIntegrationEventCursor(integrationId, 5));
 
         const fromBoundary = await userA.clients.fullAuth.integrations.getIntegrationEvents({
             id: integrationId,
-            since: encodeIntegrationEventCursor(3),
+            since: encodeIntegrationEventCursor(integrationId, 3),
         });
 
         expect(fromBoundary.records.map(record => record.sequence)).toEqual([4, 5]);
@@ -162,7 +162,7 @@ describe('purgeExpiredIntegrationEvents', () => {
             await expect(
                 userA.clients.fullAuth.integrations.getIntegrationEvents({
                     id: integrationId,
-                    since: encodeIntegrationEventCursor(1),
+                    since: encodeIntegrationEventCursor(integrationId, 1),
                 })
             ).rejects.toMatchObject({
                 code: 'CONFLICT',
@@ -192,7 +192,10 @@ describe('purgeExpiredIntegrationEvents', () => {
 
             let settled = false;
             const read = userA.clients.fullAuth.integrations
-                .getIntegrationEvents({ id: integrationId, since: encodeIntegrationEventCursor(1) })
+                .getIntegrationEvents({
+                    id: integrationId,
+                    since: encodeIntegrationEventCursor(integrationId, 1),
+                })
                 .then(
                     () => 'returned',
                     (error: { message?: string }) => error.message ?? 'failed'

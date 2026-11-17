@@ -24,6 +24,7 @@ import {
 } from './integration-webhook-signature.helpers';
 
 export {
+    IntegrationEventCursorMismatchError,
     decodeIntegrationEventCursor,
     encodeIntegrationEventCursor,
 } from './integration-event-cursor.helpers';

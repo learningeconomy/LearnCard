@@ -23,6 +23,7 @@ import { sendSignedIntegrationWebhook } from '@helpers/integration-events.helper
 import { constructUri } from '@helpers/uri.helpers';
 import { readIntegrationEventPage } from '@accesslayer/integration-event/read';
 import {
+    IntegrationEventCursorMismatchError,
     decodeIntegrationEventCursor,
     encodeIntegrationEventCursor,
 } from '@helpers/integration-event-cursor.helpers';
@@ -385,9 +386,15 @@ export const integrationsRouter = t.router({
 
             if (input.since !== undefined) {
                 try {
-                    afterSequence = decodeIntegrationEventCursor(input.since);
-                } catch {
-                    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid cursor' });
+                    afterSequence = decodeIntegrationEventCursor(input.since, input.id);
+                } catch (error) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message:
+                            error instanceof IntegrationEventCursorMismatchError
+                                ? 'This cursor belongs to a different integration'
+                                : 'Invalid cursor',
+                    });
                 }
             }
 
@@ -404,6 +411,14 @@ export const integrationsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
             }
 
+            // A cursor past the newest sequence would silently skip the events that come next.
+            if (input.since !== undefined && afterSequence > state.eventSeq) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: "This cursor is ahead of this integration's feed",
+                });
+            }
+
             if (input.since !== undefined && afterSequence < state.eventPurgedThroughSeq) {
                 throw new TRPCError({
                     code: CURSOR_EXPIRED_TRPC_CODE,
@@ -415,12 +430,14 @@ export const integrationsRouter = t.router({
             const hasMore = results.length > limit;
             const records = hasMore ? results.slice(0, limit) : results;
             const last = records[records.length - 1];
-            const cursor = last ? encodeIntegrationEventCursor(last.sequence) : input.since;
+            const cursor = last
+                ? encodeIntegrationEventCursor(input.id, last.sequence)
+                : input.since;
 
             return {
                 records,
                 ...(cursor !== undefined ? { cursor } : {}),
-                latestCursor: encodeIntegrationEventCursor(state.eventSeq),
+                latestCursor: encodeIntegrationEventCursor(input.id, state.eventSeq),
                 hasMore,
             };
         }),

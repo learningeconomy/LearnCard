@@ -215,6 +215,8 @@ describe('toIntegrationEvent', () => {
     });
 
     it('re-exports the cursor codec', () => {
-        expect(decodeIntegrationEventCursor(encodeIntegrationEventCursor(5))).toBe(5);
+        expect(
+            decodeIntegrationEventCursor(encodeIntegrationEventCursor('int-1', 5), 'int-1')
+        ).toBe(5);
     });
 });
