@@ -33,4 +33,3 @@ const SvgAiSessions = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgAiSessions;
-

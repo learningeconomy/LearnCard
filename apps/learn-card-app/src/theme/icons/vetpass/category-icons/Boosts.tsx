@@ -22,4 +22,3 @@ const SvgBoosts = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgBoosts;
-

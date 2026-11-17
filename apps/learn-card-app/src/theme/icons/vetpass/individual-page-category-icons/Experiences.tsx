@@ -21,4 +21,3 @@ const SvgExperiences = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgExperiences;
-

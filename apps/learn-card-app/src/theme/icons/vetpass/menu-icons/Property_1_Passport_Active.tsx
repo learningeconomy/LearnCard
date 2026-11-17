@@ -32,4 +32,3 @@ const SvgProperty1PassportActive = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgProperty1PassportActive;
-

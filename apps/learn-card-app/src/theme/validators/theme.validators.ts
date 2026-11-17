@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ViewMode } from '../types/theme.types';
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { MobileNavBarLinks } from '../../components/mobile-nav-bar/mobileNavBarLinks';
-import { SideMenuLinksEnum } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
+import { SideMenuLinksEnum } from 'learn-card-base/components/sidemenu/sideMenuLinksEnum';
 
 import { ThemeColorsSchema } from './colors.validators';
 import { ThemeIconsSchema } from './icons.validators';
