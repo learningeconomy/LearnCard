@@ -19,6 +19,9 @@ window.schoolConnectHarness = { connectCalls: 0 };
 
 const params = new URLSearchParams(window.location.search);
 const state = params.get('state') ?? 'intro';
+// `keepAccount=shown` fills the keep-account slot; `empty` passes a slot that renders nothing.
+const keepAccount = params.get('keepAccount');
+const EmptySlot: React.FC = () => null;
 
 const connection = {
     available: state !== 'unavailable',
@@ -49,6 +52,18 @@ const Harness: React.FC = () => {
                 onRetry={() => undefined}
                 formatDate={iso =>
                     new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(new Date(iso))
+                }
+                keepAccountSlot={
+                    keepAccount === 'shown' ? (
+                        <section
+                            data-testid="keep-account-slot"
+                            className="rounded-[20px] bg-white p-6 text-sm text-grayscale-600 shadow-sm border border-grayscale-200"
+                        >
+                            Keep your account
+                        </section>
+                    ) : keepAccount === 'empty' ? (
+                        <EmptySlot />
+                    ) : undefined
                 }
                 transcriptSlot={
                     <section

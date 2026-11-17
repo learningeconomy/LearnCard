@@ -93,11 +93,13 @@ import {
     TranscriptOnboardingStep,
     getOnboardingTranscriptEligibility,
 } from './TranscriptOnboardingStep';
+import { KeepAccountStep } from '../../classlink/KeepAccountStep';
+import { useKeepAccountOffer } from '../../classlink/useKeepAccountOffer';
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
 const log = getLogger('onboarding-flow-v2');
 
-type Step = 'age-country' | 'profile' | 'pin' | 'transcript' | 'celebrate';
+type Step = 'age-country' | 'profile' | 'pin' | 'transcript' | 'keepAccount' | 'celebrate';
 
 type OnboardingFlowProps = {
     onSuccess?: () => void;
@@ -195,6 +197,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 return { step_id: 'pin', step_index: 3 } as const;
             case 'transcript':
                 return { step_id: 'transcript', step_index: 3 } as const;
+            case 'keepAccount':
+                return { step_id: 'keepAccount', step_index: 3 } as const;
             case 'celebrate':
                 return { step_id: 'celebrate', step_index: 4 } as const;
         }
@@ -262,6 +266,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     }, []);
 
     const [step, setStep] = useState<Step>('age-country');
+    // Asked only around the transcript step; the server decides whether to offer it.
+    const keepAccount = useKeepAccountOffer(step === 'transcript' || step === 'keepAccount');
+    const leaveKeepAccount = useCallback(async (): Promise<void> => {
+        const showPinStep = await decidePinStep();
+        setStep(showPinStep ? 'pin' : 'celebrate');
+    }, [decidePinStep]);
     const [isPreparingKey, setIsPreparingKey] = useState(false);
     const didPrepareNewKeyRef = useRef(false);
     const prepareNewKeyPromiseRef = useRef<Promise<boolean> | null>(null);
@@ -1457,12 +1467,38 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             {step === 'transcript' && (
                 <TranscriptOnboardingStep
                     stateDisplayName={transcriptStateDisplayName}
-                    onComplete={async ({ requested }) => {
+                    onComplete={async ({ requested, arrived }) => {
                         setTranscriptRequested(requested);
+                        // The transcript is in: offer to keep the account it now lives in.
+                        if (
+                            arrived &&
+                            keepAccount.continuity?.nextStep === 'email' &&
+                            keepAccount.offer
+                        ) {
+                            setStep('keepAccount');
+                            return;
+                        }
                         const showPinStep = await decidePinStep();
                         setStep(showPinStep ? 'pin' : 'celebrate');
                     }}
                 />
+            )}
+
+            {step === 'keepAccount' && (
+                <div
+                    className="relative z-10 w-full h-full flex flex-col"
+                    data-testid="onboarding-keep-account-step"
+                >
+                    <div className="flex-1 flex flex-col items-center justify-center px-4 pt-[calc(var(--ion-safe-area-top,0px)+2rem)] pb-8 overflow-y-auto">
+                        <KeepAccountStep
+                            variant="onboarding"
+                            source="transcript_onboarding"
+                            emailOnly
+                            onComplete={leaveKeepAccount}
+                            onDismiss={leaveKeepAccount}
+                        />
+                    </div>
+                </div>
             )}
 
             {step === 'celebrate' && (

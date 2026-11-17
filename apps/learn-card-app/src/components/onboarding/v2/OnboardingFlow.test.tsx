@@ -29,6 +29,10 @@ const mocks = vi.hoisted(() => ({
     sendGuardianApprovalEmail: vi.fn(),
     updatePreferences: vi.fn(),
     setIsOnboardingOpen: vi.fn(),
+    stubTranscriptStep: false,
+    transcriptArrived: false,
+    keepAccountNextStep: undefined as 'email' | 'method' | 'done' | undefined,
+    keepAccountStep: vi.fn(),
 }));
 const stableAdapter = vi.hoisted(() => ({
     getCurrentUser: () => ({ displayName: mocks.authName }),
@@ -152,6 +156,40 @@ vi.mock('../onboardingNetworkForm/components/UnderageModalContent', () => ({
     default: () => null,
 }));
 vi.mock('../GuardianLinkedModal', () => ({ default: () => null }));
+vi.mock('./TranscriptOnboardingStep', async importOriginal => {
+    const actual = await importOriginal<typeof import('./TranscriptOnboardingStep')>();
+    return {
+        ...actual,
+        TranscriptOnboardingStep: (props: Parameters<typeof actual.TranscriptOnboardingStep>[0]) =>
+            mocks.stubTranscriptStep ? (
+                <button
+                    data-testid="onboarding-transcript-step"
+                    onClick={() =>
+                        void props.onComplete({ requested: true, arrived: mocks.transcriptArrived })
+                    }
+                >
+                    Finish transcript
+                </button>
+            ) : (
+                <actual.TranscriptOnboardingStep {...props} />
+            ),
+    };
+});
+vi.mock('../../classlink/useKeepAccountOffer', () => ({
+    useKeepAccountOffer: (enabled: boolean) => {
+        const nextStep = enabled ? mocks.keepAccountNextStep : undefined;
+        return {
+            offer: nextStep === 'email' || nextStep === 'method',
+            continuity: nextStep ? { nextStep, personalEmail: { allowed: true } } : undefined,
+        };
+    },
+}));
+vi.mock('../../classlink/KeepAccountStep', () => ({
+    KeepAccountStep: (props: { onComplete: () => void; emailOnly?: boolean; source: string }) => {
+        mocks.keepAccountStep(props);
+        return <button onClick={props.onComplete}>Finish keep account</button>;
+    },
+}));
 vi.mock('../../../pages/issue/components/Confetti', () => ({ Confetti: () => null }));
 
 const openProfile = async (): Promise<ReturnType<typeof render>> => {
@@ -187,6 +225,9 @@ beforeEach(() => {
     });
     mocks.requestTranscript.mockResolvedValue({ status: 'requested' });
     mocks.updatePreferences.mockReset().mockResolvedValue(true);
+    mocks.stubTranscriptStep = false;
+    mocks.transcriptArrived = false;
+    mocks.keepAccountNextStep = undefined;
 });
 
 describe('onboarding open flag', () => {
@@ -681,5 +722,42 @@ describe('ClassLink transcript onboarding step', () => {
 
         await screen.findByText(m['onboarding.v2.ready']({ brand: 'LearnCard' }));
         expect(screen.queryByTestId('onboarding-transcript-step')).not.toBeInTheDocument();
+    });
+
+    describe('then keeping the account', () => {
+        const finishTranscript = async (): Promise<void> => {
+            mocks.transcriptFlag = true;
+            mocks.isClassLinkStudent = true;
+            mocks.stubTranscriptStep = true;
+            await createProfile();
+            fireEvent.click(await screen.findByTestId('onboarding-transcript-step'));
+        };
+
+        it('offers the email step once the server reports the transcript arrived', async () => {
+            mocks.transcriptArrived = true;
+            mocks.keepAccountNextStep = 'email';
+            await finishTranscript();
+
+            await screen.findByTestId('onboarding-keep-account-step');
+            // Onboarding sits in a modal, so the method overlay is left to the dashboard.
+            expect(mocks.keepAccountStep).toHaveBeenCalledWith(
+                expect.objectContaining({ source: 'transcript_onboarding', emailOnly: true })
+            );
+            fireEvent.click(screen.getByText('Finish keep account'));
+            await screen.findByText(m['onboarding.transcript.onItsWay']());
+        });
+
+        it.each([
+            ['the transcript has not arrived', false, 'email'],
+            ['only the method step is left', true, 'method'],
+            ['the server offers nothing', true, undefined],
+        ] as const)('is skipped when %s', async (_label, arrived, nextStep) => {
+            mocks.transcriptArrived = arrived;
+            mocks.keepAccountNextStep = nextStep;
+            await finishTranscript();
+
+            await screen.findByText(m['onboarding.transcript.onItsWay']());
+            expect(screen.queryByTestId('onboarding-keep-account-step')).not.toBeInTheDocument();
+        });
     });
 });

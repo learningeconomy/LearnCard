@@ -52,6 +52,18 @@ export type FeedbackSurface = 'issue_success' | 'claim_interaction' | 'claim_oid
 /** Where the LC-2089 contacts invite was surfaced. */
 export type InviteSurface = 'empty_state' | 'menu';
 
+/** Where the ClassLink "keep your account" step was offered. */
+export type KeepAccountSource =
+    'transcript_onboarding' | 'transcript_modal' | 'school_connect' | 'dashboard';
+
+/** Which "keep your account" step an event is about (`code` = the emailed code). */
+export type KeepAccountAnalyticsStep = 'email' | 'code' | 'method' | 'done' | 'blocked';
+
+export type KeepAccountEventPayload = {
+    source: KeepAccountSource;
+    step: KeepAccountAnalyticsStep;
+};
+
 /** 3-point sentiment scale used by the SentimentStrip. */
 export type FeedbackSentiment = 'negative' | 'neutral' | 'positive';
 
@@ -265,6 +277,12 @@ export const AnalyticsEvents = {
     TRANSCRIPT_REQUESTED: 'transcript_requested',
     TRANSCRIPT_ARRIVED: 'transcript_arrived',
     TRANSCRIPT_AUTO_ACCEPT_SKIPPED: 'transcript_auto_accept_skipped',
+
+    // "Keep your account after school" (ClassLink personal email + recovery method).
+    // `step` is the step shown, completed or left; never the address.
+    KEEP_ACCOUNT_SHOWN: 'keep_account_shown',
+    KEEP_ACCOUNT_STEP_COMPLETED: 'keep_account_step_completed',
+    KEEP_ACCOUNT_DISMISSED: 'keep_account_dismissed',
 
     // Credential claim lifecycle: CLAIM_BOOST records success only.
     // `presented` = the claim screen rendered (exposure); `started` =
@@ -1037,6 +1055,12 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.TRANSCRIPT_AUTO_ACCEPT_SKIPPED]: {
         reason: 'onboarding_skipped' | 'modal_skipped';
     };
+
+    [AnalyticsEvents.KEEP_ACCOUNT_SHOWN]: KeepAccountEventPayload;
+
+    [AnalyticsEvents.KEEP_ACCOUNT_STEP_COMPLETED]: KeepAccountEventPayload;
+
+    [AnalyticsEvents.KEEP_ACCOUNT_DISMISSED]: KeepAccountEventPayload;
 
     [AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED]: {
         flow_id: string;

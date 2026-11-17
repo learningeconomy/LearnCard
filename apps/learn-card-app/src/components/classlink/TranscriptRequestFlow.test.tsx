@@ -167,7 +167,8 @@ describe('TranscriptRequestFlow', () => {
         await act(async () => {
             fireEvent.click(screen.getByTestId('transcript-flow-continue'));
         });
-        expect(onDone).toHaveBeenCalledWith({ requested: true });
+        // The server's receivedAt lets the host chain the keep-your-account step.
+        expect(onDone).toHaveBeenCalledWith({ requested: true, arrived: true });
     });
 
     it('lets the student move on when it takes longer', async () => {
@@ -181,7 +182,7 @@ describe('TranscriptRequestFlow', () => {
         await act(async () => {
             fireEvent.click(screen.getByTestId('transcript-flow-continue'));
         });
-        expect(onDone).toHaveBeenCalledWith({ requested: true });
+        expect(onDone).toHaveBeenCalledWith({ requested: true, arrived: false });
     });
 
     describe('with a delivery estimate from the school', () => {
@@ -241,7 +242,7 @@ describe('TranscriptRequestFlow', () => {
             await act(async () => {
                 fireEvent.click(screen.getByTestId('transcript-flow-continue'));
             });
-            expect(onDone).toHaveBeenCalledWith({ requested: true });
+            expect(onDone).toHaveBeenCalledWith({ requested: true, arrived: false });
         });
 
         it('still reveals the transcript if it arrives early', async () => {
@@ -289,7 +290,7 @@ describe('TranscriptRequestFlow', () => {
         await act(async () => {
             fireEvent.click(screen.getByTestId('transcript-flow-continue'));
         });
-        expect(onDone).toHaveBeenCalledWith({ requested: true });
+        expect(onDone).toHaveBeenCalledWith({ requested: true, arrived: false });
     });
 
     it('Not now finishes without requesting', async () => {
@@ -298,6 +299,6 @@ describe('TranscriptRequestFlow', () => {
             fireEvent.click(screen.getByTestId('onboarding-transcript-skip'));
         });
         expect(mocks.request).not.toHaveBeenCalled();
-        expect(onDone).toHaveBeenCalledWith({ requested: false });
+        expect(onDone).toHaveBeenCalledWith({ requested: false, arrived: false });
     });
 });

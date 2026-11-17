@@ -69,6 +69,16 @@ test.describe('School Connect @mocked', () => {
         expect(await connectCalls(page)).toBe(1);
     });
 
+    test('keep-account section shows only while its slot renders something', async ({ page }) => {
+        await page.goto(`${HARNESS}?state=connected&keepAccount=shown`);
+        await expect(page.getByRole('heading', { name: 'Your account' })).toBeVisible();
+        await expect(page.getByTestId('keep-account-slot')).toBeVisible();
+
+        await page.goto(`${HARNESS}?state=connected&keepAccount=empty`);
+        await expect(page.getByText('Example Unified School District')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Your account' })).toBeHidden();
+    });
+
     test('unavailable and mobile layouts', async ({ page }) => {
         await page.goto(`${HARNESS}?state=unavailable`);
         await expect(

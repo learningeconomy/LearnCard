@@ -11,6 +11,8 @@ export type {
     FeedbackSurface,
     FeedbackSentiment,
     InviteSurface,
+    KeepAccountSource,
+    KeepAccountAnalyticsStep,
 } from './events';
 
 export {

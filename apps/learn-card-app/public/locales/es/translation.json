@@ -16,6 +16,42 @@
         "limitError": "Has solicitado demasiados códigos. Inténtalo más tarde.",
         "error": "Algo salió mal. Inténtalo de nuevo."
     },
+    "classlinkKeepAccount": {
+        "title": "Conserva tu cuenta después de la escuela",
+        "body": "Añade un correo personal y luego una llave de acceso o una frase de recuperación. Si pierdes tu inicio de sesión escolar, podrás usarlos para volver a entrar.",
+        "storedNote": "Guardamos este correo en tu cuenta para ayudarte a volver a entrar si pierdes tu inicio de sesión escolar. Puedes eliminarlo cuando quieras.",
+        "notNow": "Ahora no",
+        "notAllowed": "Ahora mismo no puedes añadir un correo personal.",
+        "emailRejected": "Usa un correo personal en el que recibas mensajes, no el de tu escuela.",
+        "sharedEmail": "Otra cuenta ya usa este correo para volver a entrar. Prueba con otro correo personal.",
+        "methodTitle": "Un paso más",
+        "methodBody": "Añade una llave de acceso o una frase de recuperación. Junto con tu correo personal, te permite volver a entrar en tu cuenta si pierdes tu inicio de sesión escolar.",
+        "addPasskey": "Añade una llave de acceso",
+        "addPhrase": "Guarda una frase de recuperación",
+        "doneTitle": "Todo listo para conservar tu cuenta",
+        "doneBody": "Si pierdes tu inicio de sesión escolar, elige “{{option}}” al iniciar sesión y te enviaremos un código a tu correo de recuperación.",
+        "remove": "Eliminar este correo",
+        "removeConfirm": "¿Eliminar este correo? Ya no podrás usarlo para volver a entrar en tu cuenta.",
+        "removeAction": "Eliminar",
+        "removing": "Eliminando…",
+        "sectionTitle": "Tu cuenta",
+        "banner": {
+            "title": "Conserva tu cuenta después de la escuela",
+            "emailBody": "Añade un correo personal y un método de recuperación para volver a entrar si pierdes tu inicio de sesión escolar.",
+            "methodBody": "Último paso: añade una llave de acceso o una frase de recuperación.",
+            "action": "Configurar",
+            "snoozeAria": "Recordármelo en 7 días"
+        },
+        "reason": {
+            "disabled": "Todavía no se puede añadir un correo personal.",
+            "districtOff": "Tu escuela no ha activado los correos personales.",
+            "studentsExcluded": "Tu escuela no permite que los estudiantes añadan un correo personal.",
+            "statusUnknown": "No pudimos comprobar tu cuenta. Inténtalo más tarde.",
+            "belowMinimumAge": "Todavía no tienes la edad para añadir un correo personal.",
+            "ageUnknown": "Añade tu fecha de nacimiento a tu perfil y vuelve a intentarlo.",
+            "approvalRequired": "Primero tiene que aprobarlo tu madre, padre o tutor."
+        }
+    },
     "transcriptOptIn": {
         "title": "Obtén tu expediente académico de {{state}}",
         "body": "Le pediremos a los registros escolares que envíen tu expediente académico aquí.",
@@ -2655,13 +2691,14 @@
         "identity": {
             "lostSchoolLogin": "Perdí el acceso a mi correo escolar o inicio de sesión",
             "title": "Restaura tu cuenta",
-            "emailDescription": "Ingresa el correo personal de recuperación que verificaste anteriormente.",
+            "emailDescription": "Ingresa tu correo personal de recuperación o el correo personal que añadiste a tu cuenta escolar.",
             "recoveryEmailLabel": "Correo de recuperación",
             "recoveryEmailPlaceholder": "tu@ejemplo.com",
             "sendCode": "Enviar código de recuperación",
             "sendingCode": "Enviando código...",
             "checkEmail": "Revisa tu correo",
             "codeDescription": "Ingresa el código de 6 dígitos enviado a tu correo de recuperación.",
+            "noCodeHint": "¿No llegó el código? Solo podemos enviarlo si este es el correo de recuperación de una cuenta con un método de recuperación configurado, como una llave de acceso, una frase de recuperación o un PIN. Revisa también tu carpeta de spam.",
             "codeLabel": "Código de recuperación",
             "verifyCode": "Verificar código",
             "chooseMethod": "Verifica tu cuenta",

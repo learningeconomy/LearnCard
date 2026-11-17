@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     useIsLoggedIn,
     useFeatureConfig,
@@ -10,12 +10,49 @@ import {
 } from 'learn-card-base';
 import { useAppAuth } from '../providers/AuthCoordinatorProvider';
 import { TranscriptRequestFlow } from '../components/classlink/TranscriptRequestFlow';
+import { KeepAccountStep } from '../components/classlink/KeepAccountStep';
+import { useKeepAccountOffer } from '../components/classlink/useKeepAccountOffer';
 import { redirectStore } from 'learn-card-base';
 
 const log = getLogger('transcript-prompt');
 
 const PROMPT_DISMISSAL_KEY_PREFIX = 'transcript_prompt_dismissed_';
 const PROMPT_REOFFER_DAYS = 14;
+
+/**
+ * The transcript prompt sheet: the guided request flow and, once the server reports the
+ * transcript arrived, the "keep your account" step when the server offers it.
+ */
+export const TranscriptPromptSheet: React.FC<{
+    stateDisplayName: string;
+    onClose: () => void;
+}> = ({ stateDisplayName, onClose }) => {
+    const [keepAccount, setKeepAccount] = useState(false);
+    const { offer } = useKeepAccountOffer();
+
+    return (
+        <div className="p-6 bg-white rounded-t-[20px] max-h-[90vh] overflow-y-auto">
+            {keepAccount ? (
+                <KeepAccountStep
+                    variant="sheet"
+                    source="transcript_modal"
+                    onComplete={onClose}
+                    onDismiss={onClose}
+                    onBeforeMethod={onClose}
+                />
+            ) : (
+                <TranscriptRequestFlow
+                    variant="modal"
+                    stateDisplayName={stateDisplayName}
+                    onDone={({ arrived }) => {
+                        if (arrived && offer) setKeepAccount(true);
+                        else onClose();
+                    }}
+                />
+            )}
+        </div>
+    );
+};
 
 export const useTranscriptPrompt = () => {
     const isLoggedIn = useIsLoggedIn();
@@ -60,13 +97,10 @@ export const useTranscriptPrompt = () => {
                 localStorage.setItem(storageKey, Date.now().toString());
 
                 newModal(
-                    <div className="p-6 bg-white rounded-t-[20px] max-h-[90vh] overflow-y-auto">
-                        <TranscriptRequestFlow
-                            variant="modal"
-                            stateDisplayName={data.stateDisplayName ?? ''}
-                            onDone={() => closeModal()}
-                        />
-                    </div>,
+                    <TranscriptPromptSheet
+                        stateDisplayName={data.stateDisplayName ?? ''}
+                        onClose={() => closeModal()}
+                    />,
                     { className: 'bg-transparent!' },
                     { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
                 );

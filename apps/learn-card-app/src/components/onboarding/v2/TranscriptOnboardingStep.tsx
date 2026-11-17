@@ -44,9 +44,10 @@ export type TranscriptOnboardingStepProps = {
     stateDisplayName: string;
     /**
      * Called once the student has requested (`requested: true`) or skipped the
-     * transcript. The parent decides what comes next (PIN step / celebrate).
+     * transcript; `arrived` when the server reports it received. The parent decides
+     * what comes next (keep your account / PIN step / celebrate).
      */
-    onComplete: (result: { requested: boolean }) => void | Promise<void>;
+    onComplete: (result: { requested: boolean; arrived: boolean }) => void | Promise<void>;
 };
 
 /**

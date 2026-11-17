@@ -76,6 +76,8 @@ export type SchoolConnectViewProps = {
     onRetry: () => void;
     formatDate: (iso: string) => string;
     transcriptSlot?: React.ReactNode;
+    /** "Keep your account after school"; its section hides while the slot renders nothing. */
+    keepAccountSlot?: React.ReactNode;
 };
 
 /** Every School Connect state, without data loading, so it can be rendered in isolation. */
@@ -91,6 +93,7 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
     onRetry,
     formatDate,
     transcriptSlot,
+    keepAccountSlot,
 }) => {
     const [showWarning, setShowWarning] = useState(false);
 
@@ -214,6 +217,15 @@ export const SchoolConnectView: React.FC<SchoolConnectViewProps> = ({
                         className="hidden has-[section]:block"
                     >
                         {transcriptSlot}
+                    </Section>
+                )}
+
+                {keepAccountSlot && (
+                    <Section
+                        title={m['classlinkKeepAccount.sectionTitle']()}
+                        className="hidden has-[section]:block"
+                    >
+                        {keepAccountSlot}
                     </Section>
                 )}
 

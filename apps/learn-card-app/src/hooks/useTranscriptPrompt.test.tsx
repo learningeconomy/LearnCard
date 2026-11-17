@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
-import { renderHook } from '@testing-library/react';
+import React from 'react';
+import { act, cleanup, render, renderHook, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useTranscriptPrompt } from './useTranscriptPrompt';
+import { TranscriptPromptSheet, useTranscriptPrompt } from './useTranscriptPrompt';
+
+type FlowProps = { onDone: (result: { requested: boolean; arrived: boolean }) => void };
+type StepProps = Record<'onComplete' | 'onDismiss' | 'onBeforeMethod', () => void> & {
+    variant: string;
+    source: string;
+};
 
 const mocks = vi.hoisted(() => ({
     isLoggedIn: true,
@@ -22,6 +29,9 @@ const mocks = vi.hoisted(() => ({
     initWallet: vi.fn().mockResolvedValue({
         id: { did: () => 'did:test:123' },
     }),
+    keepAccountOffer: false,
+    flow: undefined as FlowProps | undefined,
+    step: undefined as StepProps | undefined,
 }));
 
 vi.mock('react-router-dom', () => ({ useHistory: () => ({ push: vi.fn() }) }));
@@ -39,7 +49,19 @@ vi.mock('../providers/AuthCoordinatorProvider', () => ({
     useAppAuth: () => ({ state: { status: mocks.status } }),
 }));
 vi.mock('../components/classlink/TranscriptRequestFlow', () => ({
-    TranscriptRequestFlow: () => null,
+    TranscriptRequestFlow: (props: FlowProps) => {
+        mocks.flow = props;
+        return <div data-testid="mock-transcript-flow" />;
+    },
+}));
+vi.mock('../components/classlink/KeepAccountStep', () => ({
+    KeepAccountStep: (props: StepProps) => {
+        mocks.step = props;
+        return <div data-testid="mock-keep-account" />;
+    },
+}));
+vi.mock('../components/classlink/useKeepAccountOffer', () => ({
+    useKeepAccountOffer: () => ({ offer: mocks.keepAccountOffer }),
 }));
 
 const memoryStorage = (() => {
@@ -64,6 +86,9 @@ beforeEach(() => {
     mocks.isOnboardingOpen = false;
     mocks.status = 'ready';
     mocks.classlinkTranscriptOptIn = true;
+    mocks.keepAccountOffer = false;
+    mocks.flow = undefined;
+    mocks.step = undefined;
     mocks.transcriptStatus = {
         isLoading: false,
         isError: false,
@@ -152,5 +177,42 @@ describe('useTranscriptPrompt', () => {
         renderHook(() => useTranscriptPrompt());
         await new Promise(resolve => setTimeout(resolve, 0));
         expect(mocks.newModal).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('TranscriptPromptSheet', () => {
+    const finish = (result: { requested: boolean; arrived: boolean }): void => {
+        act(() => mocks.flow?.onDone(result));
+    };
+
+    beforeEach(cleanup);
+
+    it('chains into keeping the account once the server reports the transcript arrived', () => {
+        mocks.keepAccountOffer = true;
+        const onClose = vi.fn();
+        render(<TranscriptPromptSheet stateDisplayName="Example" onClose={onClose} />);
+        finish({ requested: true, arrived: true });
+
+        expect(onClose).not.toHaveBeenCalled();
+        expect(screen.queryByTestId('mock-transcript-flow')).toBeNull();
+        expect(screen.getByTestId('mock-keep-account')).toBeTruthy();
+        expect(mocks.step).toMatchObject({ variant: 'sheet', source: 'transcript_modal' });
+
+        // The method overlay sits below the modal stack, so the sheet closes first.
+        mocks.step?.onBeforeMethod();
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+        ['the transcript has not arrived', true, false],
+        ['the server offers nothing', false, true],
+    ])('closes when %s', (_label, offer, arrived) => {
+        mocks.keepAccountOffer = offer;
+        const onClose = vi.fn();
+        render(<TranscriptPromptSheet stateDisplayName="Example" onClose={onClose} />);
+        finish({ requested: true, arrived });
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(screen.queryByTestId('mock-keep-account')).toBeNull();
     });
 });

@@ -407,8 +407,15 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
                     {m['recovery.identity.checkEmail']()}
                 </h2>
-                <p className="text-sm text-grayscale-600 leading-relaxed mb-5">
+                <p className="text-sm text-grayscale-600 leading-relaxed mb-2">
                     {m['recovery.identity.codeDescription']()}
+                </p>
+                {/* lca-api deliberately answers the same whether or not it sent a code. */}
+                <p
+                    data-testid="recovery-identity-no-code-hint"
+                    className="text-xs text-grayscale-500 leading-relaxed mb-5"
+                >
+                    {m['recovery.identity.noCodeHint']()}
                 </p>
                 {identityError}
                 <label className="block text-xs font-medium text-grayscale-700 mb-1.5">

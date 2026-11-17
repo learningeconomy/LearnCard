@@ -294,6 +294,10 @@ describe('RecoveryFlowModal', () => {
         expect(screen.getByRole('heading', { name: /Check Your Email/i })).toBeInTheDocument();
         expect(screen.getByRole('textbox')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Verify Code/i })).toBeInTheDocument();
+        // The server answers the same whether or not it sent a code, so explain why none came.
+        expect(screen.getByTestId('recovery-identity-no-code-hint')).toHaveTextContent(
+            /No code\? We can only send one if this is the recovery email/
+        );
     });
 
     it('renders identity new_login phase', () => {

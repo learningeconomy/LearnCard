@@ -146,6 +146,14 @@ export type DashboardRecoveryPromptViewModel = {
     }) => void;
 };
 
+/** The ClassLink "keep your account" banner; present only while it should show. */
+export type DashboardKeepAccountViewModel = {
+    /** What is left: a personal email, or a passkey / recovery phrase. */
+    step: 'email' | 'method';
+    onStart: () => void;
+    onSnooze: () => void;
+};
+
 export type DashboardViewModel = {
     brandName: string;
     collection?: {
@@ -167,6 +175,10 @@ export type DashboardViewModel = {
     recoveryPrompt: DashboardRecoveryPromptViewModel;
     /** When true, the guardian approval banner replaces the recovery banner. */
     pendingGuardianApproval?: boolean;
+    /** When set (and no guardian approval is pending), replaces the recovery banner. */
+    keepAccount?: DashboardKeepAccountViewModel;
+    /** True while the keep-account check is loading: the banner slot stays empty. */
+    keepAccountPending?: boolean;
     dataTrust: DashboardDataTrustViewModel;
     activity: DashboardActivityViewModel;
     learningProfile: DashboardLearningProfileViewModel;

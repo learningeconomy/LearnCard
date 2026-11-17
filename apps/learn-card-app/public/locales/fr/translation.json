@@ -16,6 +16,42 @@
         "limitError": "Trop de codes demandés. Veuillez réessayer plus tard.",
         "error": "Une erreur est survenue. Veuillez réessayer."
     },
+    "classlinkKeepAccount": {
+        "title": "Conservez votre compte après l’école",
+        "body": "Ajoutez une adresse e-mail personnelle, puis une clé d’accès ou une phrase de récupération. Si vous perdez votre connexion scolaire, elles vous permettront de revenir.",
+        "storedNote": "Nous enregistrons cette adresse avec votre compte pour vous aider à revenir si vous perdez votre connexion scolaire. Vous pouvez la supprimer à tout moment.",
+        "notNow": "Pas maintenant",
+        "notAllowed": "Vous ne pouvez pas ajouter d’adresse e-mail personnelle pour le moment.",
+        "emailRejected": "Utilisez une adresse personnelle où vous recevez vos e-mails, pas celle de votre école.",
+        "sharedEmail": "Un autre compte utilise déjà cette adresse pour revenir. Essayez une autre adresse personnelle.",
+        "methodTitle": "Encore une étape",
+        "methodBody": "Ajoutez une clé d’accès ou une phrase de récupération. Avec votre adresse personnelle, elle vous permet de revenir sur votre compte si vous perdez votre connexion scolaire.",
+        "addPasskey": "Ajouter une clé d’accès",
+        "addPhrase": "Enregistrer une phrase de récupération",
+        "doneTitle": "Vous pourrez conserver votre compte",
+        "doneBody": "Si vous perdez votre connexion scolaire, choisissez « {{option}} » au moment de vous connecter, et nous enverrons un code à votre e-mail de récupération.",
+        "remove": "Supprimer cette adresse",
+        "removeConfirm": "Supprimer cette adresse ? Vous ne pourrez plus l’utiliser pour revenir sur votre compte.",
+        "removeAction": "Supprimer",
+        "removing": "Suppression…",
+        "sectionTitle": "Votre compte",
+        "banner": {
+            "title": "Conservez votre compte après l’école",
+            "emailBody": "Ajoutez une adresse e-mail personnelle et une méthode de récupération pour revenir si vous perdez votre connexion scolaire.",
+            "methodBody": "Dernière étape : ajoutez une clé d’accès ou une phrase de récupération.",
+            "action": "Configurer",
+            "snoozeAria": "Me le rappeler dans 7 jours"
+        },
+        "reason": {
+            "disabled": "L’ajout d’une adresse e-mail personnelle n’est pas encore disponible.",
+            "districtOff": "Votre école n’a pas activé les adresses e-mail personnelles.",
+            "studentsExcluded": "Votre école ne permet pas aux élèves d’ajouter une adresse e-mail personnelle.",
+            "statusUnknown": "Nous n’avons pas pu vérifier votre compte. Veuillez réessayer plus tard.",
+            "belowMinimumAge": "Vous n’avez pas encore l’âge requis pour ajouter une adresse e-mail personnelle.",
+            "ageUnknown": "Ajoutez votre date de naissance à votre profil, puis réessayez.",
+            "approvalRequired": "Un parent ou tuteur doit d’abord donner son accord."
+        }
+    },
     "transcriptOptIn": {
         "title": "Obtenez votre relevé de notes de {{state}}",
         "body": "Nous demanderons aux registres scolaires d'envoyer votre relevé de notes ici.",
@@ -2655,13 +2691,14 @@
         "identity": {
             "lostSchoolLogin": "Je n’ai plus accès à mon adresse scolaire ou à ma connexion",
             "title": "Restaurer votre compte",
-            "emailDescription": "Saisissez l’adresse personnelle de récupération vérifiée auparavant.",
+            "emailDescription": "Saisissez votre adresse personnelle de récupération, ou l’adresse personnelle ajoutée à votre compte scolaire.",
             "recoveryEmailLabel": "Adresse de récupération",
             "recoveryEmailPlaceholder": "vous@exemple.com",
             "sendCode": "Envoyer le code de récupération",
             "sendingCode": "Envoi du code...",
             "checkEmail": "Consultez vos e-mails",
             "codeDescription": "Saisissez le code à 6 chiffres envoyé à votre adresse de récupération.",
+            "noCodeHint": "Pas de code ? Nous ne pouvons l’envoyer que si cette adresse est l’adresse de récupération d’un compte doté d’une méthode de récupération, comme une clé d’accès, une phrase de récupération ou un code PIN. Vérifiez aussi vos courriers indésirables.",
             "codeLabel": "Code de récupération",
             "verifyCode": "Vérifier le code",
             "chooseMethod": "Vérifier votre compte",

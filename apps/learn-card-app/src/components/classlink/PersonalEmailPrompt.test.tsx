@@ -1,35 +1,47 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import * as m from '../../paraglide/messages.js';
+
+type Continuity = {
+    personalEmail: { allowed: boolean; reason?: string };
+    emailVerified: boolean;
+    nextStep: 'email' | 'method' | 'done';
+};
 
 const mocks = vi.hoisted(() => ({
     features: { classlinkSso: true, classlinkPersonalEmail: true } as Record<string, boolean>,
-    preferences: { isMinor: false } as { isMinor?: boolean } | undefined,
     session: { classlink: true, student: false },
-    personalEmail: vi.fn(),
-    preferencesHook: vi.fn(),
+    continuity: undefined as Continuity | undefined,
+    continuityHook: vi.fn(),
+    start: vi.fn(),
+    verify: vi.fn(),
 }));
 
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('learn-card-base', () => ({
     useFeatureConfig: () => mocks.features,
-    useGetPreferencesForDid: (enabled: boolean) => {
-        mocks.preferencesHook(enabled);
-        return { data: enabled ? mocks.preferences : undefined, isLoading: false };
+    useClassLinkAccountContinuity: (options?: { enabled?: boolean }) => {
+        mocks.continuityHook(options);
+        return { data: mocks.continuity, isError: false };
     },
-    useClassLinkPersonalEmail: (options?: { enabled?: boolean }) => {
-        mocks.personalEmail(options);
-        return { data: { verified: false }, isError: false };
-    },
-    useStartPersonalEmail: () => ({ mutateAsync: vi.fn(), isPending: false }),
-    useVerifyPersonalEmail: () => ({ mutateAsync: vi.fn(), isPending: false }),
+    useStartPersonalEmail: () => ({ mutateAsync: mocks.start, isPending: false }),
+    useVerifyPersonalEmail: () => ({ mutateAsync: mocks.verify, isPending: false }),
 }));
 vi.mock('../../auth/classlink/classlinkProfileDefaults', () => ({
     getClassLinkSession: async () => mocks.session,
 }));
 
 import { PersonalEmailPrompt, isPersonalEmailPromptEnabled } from './PersonalEmailPrompt';
+
+const allowed = (overrides: Partial<Continuity> = {}): Continuity => ({
+    personalEmail: { allowed: true },
+    emailVerified: false,
+    nextStep: 'email',
+    ...overrides,
+});
+const trpcError = (code: string) => Object.assign(new Error('server copy'), { data: { code } });
 
 /** Lets the async session check settle so "not shown" assertions are meaningful. */
 const flush = async (): Promise<void> => {
@@ -43,8 +55,8 @@ describe('PersonalEmailPrompt gating', () => {
         vi.clearAllMocks();
         localStorage.clear?.();
         mocks.features = { classlinkSso: true, classlinkPersonalEmail: true };
-        mocks.preferences = { isMinor: false };
         mocks.session = { classlink: true, student: false };
+        mocks.continuity = allowed();
     });
     afterEach(cleanup);
 
@@ -56,33 +68,17 @@ describe('PersonalEmailPrompt gating', () => {
         ).toBe(true);
     });
 
-    it('shows the invitation to an eligible non-student ClassLink account', async () => {
+    it('shows the invitation when the server allows a personal email', async () => {
         render(<PersonalEmailPrompt />);
         expect(await screen.findByTestId('classlink-email-prompt')).toBeTruthy();
+        expect(mocks.continuityHook).toHaveBeenCalledWith({ enabled: true });
     });
 
-    it('never requests personal-email status when the tenant flag is off', async () => {
+    it('never asks the server when the tenant flag is off', async () => {
         mocks.features = { classlinkSso: true, classlinkPersonalEmail: false };
         render(<PersonalEmailPrompt />);
         await flush();
-        expect(mocks.personalEmail).not.toHaveBeenCalled();
-        expect(mocks.preferencesHook).toHaveBeenCalledWith(false);
-        expect(screen.queryByTestId('classlink-email-prompt')).toBeNull();
-    });
-
-    it('is never shown to ClassLink student sessions', async () => {
-        mocks.session = { classlink: true, student: true };
-        render(<PersonalEmailPrompt />);
-        await flush();
-        expect(mocks.personalEmail).not.toHaveBeenCalled();
-        expect(screen.queryByTestId('classlink-email-prompt')).toBeNull();
-    });
-
-    it('is never shown to accounts locked as minors', async () => {
-        mocks.preferences = { isMinor: true };
-        render(<PersonalEmailPrompt />);
-        await flush();
-        expect(mocks.personalEmail).not.toHaveBeenCalled();
+        expect(mocks.continuityHook).not.toHaveBeenCalled();
         expect(screen.queryByTestId('classlink-email-prompt')).toBeNull();
     });
 
@@ -90,6 +86,60 @@ describe('PersonalEmailPrompt gating', () => {
         mocks.session = { classlink: false, student: false };
         render(<PersonalEmailPrompt />);
         await flush();
-        expect(mocks.personalEmail).not.toHaveBeenCalled();
+        expect(mocks.continuityHook).not.toHaveBeenCalled();
+    });
+
+    it('follows the server, not the client, for students', async () => {
+        mocks.session = { classlink: true, student: true };
+        render(<PersonalEmailPrompt />);
+        expect(await screen.findByTestId('classlink-email-prompt')).toBeTruthy();
+    });
+
+    it('is hidden when the server refuses this account', async () => {
+        mocks.continuity = allowed({
+            personalEmail: { allowed: false, reason: 'students_excluded' },
+        });
+        render(<PersonalEmailPrompt />);
+        await flush();
+        expect(mocks.continuityHook).toHaveBeenCalled();
+        expect(screen.queryByTestId('classlink-email-prompt')).toBeNull();
+    });
+
+    it('is hidden once a personal email is verified', async () => {
+        mocks.continuity = allowed({ emailVerified: true, nextStep: 'method' });
+        render(<PersonalEmailPrompt />);
+        await flush();
+        expect(screen.queryByTestId('classlink-email-prompt')).toBeNull();
+    });
+
+    it('maps errors by tRPC code, not by the server message', async () => {
+        mocks.start
+            .mockRejectedValueOnce(trpcError('BAD_REQUEST'))
+            .mockResolvedValueOnce({ success: true });
+        mocks.verify.mockRejectedValueOnce(trpcError('CONFLICT'));
+        render(<PersonalEmailPrompt />);
+        fireEvent.change(await screen.findByTestId('classlink-email-input'), {
+            target: { value: 'me@school.example' },
+        });
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('classlink-email-submit'));
+        });
+        expect(screen.getByRole('alert').textContent).toBe(
+            m['classlinkKeepAccount.emailRejected']()
+        );
+
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('classlink-email-submit'));
+        });
+        fireEvent.change(screen.getByTestId('classlink-email-code'), {
+            target: { value: '123456' },
+        });
+        await act(async () => {
+            fireEvent.click(screen.getByTestId('classlink-email-submit'));
+        });
+        expect(mocks.verify).toHaveBeenCalledWith({ email: 'me@school.example', code: '123456' });
+        expect(screen.getByRole('alert').textContent).toBe(
+            m['classlinkPersonalEmail.conflictError']()
+        );
     });
 });

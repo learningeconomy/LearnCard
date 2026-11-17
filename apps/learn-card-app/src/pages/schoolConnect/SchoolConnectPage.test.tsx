@@ -32,6 +32,28 @@ vi.mock('../../components/classlink/TranscriptOptInCard', () => ({
     TranscriptOptInCard: () => <div data-testid="mock-transcript-opt-in" />,
 }));
 
+const keepAccount = vi.hoisted(() => ({
+    offer: vi.fn(),
+    continuity: undefined as
+        | {
+              nextStep: string;
+              emailVerified: boolean;
+              personalEmail: { allowed: boolean; reason?: string };
+          }
+        | undefined,
+}));
+vi.mock('../../components/classlink/useKeepAccountOffer', () => ({
+    useKeepAccountOffer: (enabled: boolean) => {
+        keepAccount.offer(enabled);
+        return { offer: false, continuity: enabled ? keepAccount.continuity : undefined };
+    },
+}));
+vi.mock('../../components/classlink/KeepAccountStep', () => ({
+    KeepAccountStep: ({ variant, source }: { variant: string; source: string }) => (
+        <section data-testid="mock-keep-account" data-variant={variant} data-source={source} />
+    ),
+}));
+
 vi.mock('../../components/main-header/MainHeader', () => ({
     default: () => <div data-testid="mock-main-header" />,
 }));
@@ -67,6 +89,7 @@ describe('SchoolConnectPage', () => {
     });
     beforeEach(() => {
         vi.clearAllMocks();
+        keepAccount.continuity = undefined;
         stub(useFeatureConfig, { schoolConnect: true, classlinkSso: true });
         stub(useLinksConfig, { supportEmail: 'support@learningeconomy.io' });
         stub(useAppAuth, { state: { status: 'ready' } });
@@ -160,6 +183,68 @@ describe('SchoolConnectPage', () => {
                 'AI features, analytics, and bug reports are off, as your school requires.'
             )
         ).toBeTruthy();
+    });
+
+    it('fills the keep-account slot for a connected ClassLink account', () => {
+        keepAccount.continuity = {
+            nextStep: 'done',
+            emailVerified: true,
+            personalEmail: { allowed: false, reason: 'district_off' },
+        };
+        stub(useSchoolConnection, {
+            data: { available: true, canConnect: true, connected: true, schoolName: 'Test High' },
+            isLoading: false,
+            isError: false,
+        });
+        render(<SchoolConnectPage />);
+        expect(keepAccount.offer).toHaveBeenCalledWith(true);
+        const slot = screen.getByTestId('mock-keep-account');
+        expect(slot.dataset.variant).toBe('inline');
+        expect(slot.dataset.source).toBe('school_connect');
+        expect(screen.getByText('Your account')).toBeTruthy();
+    });
+
+    it('leaves out a standing refusal when there is no email to manage', () => {
+        keepAccount.continuity = {
+            nextStep: 'email',
+            emailVerified: false,
+            personalEmail: { allowed: false, reason: 'district_off' },
+        };
+        stub(useSchoolConnection, {
+            data: { available: true, canConnect: true, connected: true, schoolName: 'Test High' },
+            isLoading: false,
+            isError: false,
+        });
+        const { rerender } = render(<SchoolConnectPage />);
+        expect(screen.queryByTestId('mock-keep-account')).toBeNull();
+
+        // Once offered, a refusal mid-flow stays visible so the step can explain it.
+        keepAccount.continuity = { ...keepAccount.continuity, personalEmail: { allowed: true } };
+        rerender(<SchoolConnectPage />);
+        expect(screen.getByTestId('mock-keep-account')).toBeTruthy();
+        keepAccount.continuity = {
+            ...keepAccount.continuity,
+            personalEmail: { allowed: false, reason: 'disabled' },
+        };
+        rerender(<SchoolConnectPage />);
+        expect(screen.getByTestId('mock-keep-account')).toBeTruthy();
+    });
+
+    it('leaves the keep-account slot out without server state', () => {
+        stub(useSchoolConnection, {
+            data: { available: true, canConnect: true, connected: true, schoolName: 'Test High' },
+            isLoading: false,
+            isError: false,
+        });
+        render(<SchoolConnectPage />);
+        expect(screen.queryByTestId('mock-keep-account')).toBeNull();
+        expect(screen.queryByText('Your account')).toBeNull();
+    });
+
+    it('does not ask about keeping the account before connecting', () => {
+        render(<SchoolConnectPage />);
+        expect(keepAccount.offer).toHaveBeenCalledWith(false);
+        expect(keepAccount.offer).not.toHaveBeenCalledWith(true);
     });
 
     it('renders not available state', () => {

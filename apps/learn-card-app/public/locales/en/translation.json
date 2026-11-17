@@ -16,6 +16,42 @@
         "limitError": "Too many codes requested. Please try again later.",
         "error": "Something went wrong. Please try again."
     },
+    "classlinkKeepAccount": {
+        "title": "Keep your account after school",
+        "body": "Add a personal email, then a passkey or recovery phrase. If you lose your school login, you can use them to get back in.",
+        "storedNote": "We save this email with your account to help you get back in if you lose your school login. You can remove it anytime.",
+        "notNow": "Not now",
+        "notAllowed": "You can't add a personal email right now.",
+        "emailRejected": "Use a personal email you can get mail at, not your school email.",
+        "sharedEmail": "Another account already uses this email to get back in. Try a different personal email.",
+        "methodTitle": "One more step",
+        "methodBody": "Add a passkey or recovery phrase. Together with your personal email, it lets you get back into your account if you lose your school login.",
+        "addPasskey": "Add a passkey",
+        "addPhrase": "Save a recovery phrase",
+        "doneTitle": "You're set to keep your account",
+        "doneBody": "If you lose your school login, choose “{{option}}” when you sign in, and we'll send a code to your recovery email.",
+        "remove": "Remove this email",
+        "removeConfirm": "Remove this email? You won't be able to use it to get back into your account.",
+        "removeAction": "Remove",
+        "removing": "Removing…",
+        "sectionTitle": "Your account",
+        "banner": {
+            "title": "Keep your account after school",
+            "emailBody": "Add a personal email and a recovery method so you can get back in if you lose your school login.",
+            "methodBody": "Finish up: add a passkey or recovery phrase.",
+            "action": "Set up",
+            "snoozeAria": "Remind me in 7 days"
+        },
+        "reason": {
+            "disabled": "Adding a personal email isn't available yet.",
+            "districtOff": "Your school hasn't turned on personal emails.",
+            "studentsExcluded": "Your school doesn't let students add a personal email.",
+            "statusUnknown": "We couldn't check your account. Please try again later.",
+            "belowMinimumAge": "You're not old enough to add a personal email yet.",
+            "ageUnknown": "Add your date of birth to your profile, then try again.",
+            "approvalRequired": "A parent or guardian needs to approve this first."
+        }
+    },
     "transcriptOptIn": {
         "title": "Get your {{state}} transcript",
         "body": "We'll ask your school records to send your transcript here.",
@@ -2682,13 +2718,14 @@
         "identity": {
             "lostSchoolLogin": "I lost access to my school email or login",
             "title": "Restore Your Account",
-            "emailDescription": "Enter the personal recovery email you verified earlier.",
+            "emailDescription": "Enter your personal recovery email, or the personal email you added to your school account.",
             "recoveryEmailLabel": "Recovery Email",
             "recoveryEmailPlaceholder": "you@example.com",
             "sendCode": "Send Recovery Code",
             "sendingCode": "Sending code...",
             "checkEmail": "Check Your Email",
             "codeDescription": "Enter the 6-digit code sent to your recovery email.",
+            "noCodeHint": "No code? We can only send one if this is the recovery email of an account with a recovery method set up, like a passkey, recovery phrase or PIN. Check your spam folder too.",
             "codeLabel": "Recovery Code",
             "verifyCode": "Verify Code",
             "chooseMethod": "Verify Your Account",
