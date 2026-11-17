@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthProvider, UnifiedAuthState } from 'learn-card-base';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { LegacyKeyUnassignedError } from 'learn-card-base/auth-coordinator/errors';
 
 const mocks = vi.hoisted(() => ({
     coordinator: {
@@ -18,6 +19,7 @@ const mocks = vi.hoisted(() => ({
         },
         setMigrationData: vi.fn(),
         fallBackToRecovery: vi.fn(),
+        handleMigrationKeyError: vi.fn(),
     },
     config: {
         authProvider: 'firebase',
@@ -332,6 +334,17 @@ describe('ScoutPass archive-first account upgrade', () => {
         expect(mocks.coordinator.setMigrationData).not.toHaveBeenCalled();
     });
 
+    it('passes the definitive unassigned-key signal to the shared coordinator', async () => {
+        const error = new LegacyKeyUnassignedError();
+        mocks.coordinator.keyDerivation.fetchArchivedKey.mockResolvedValue(null);
+        mocks.deriveWeb3AuthKey.mockRejectedValue(error);
+        mount();
+        await waitFor(() =>
+            expect(mocks.coordinator.handleMigrationKeyError).toHaveBeenCalledWith(error)
+        );
+        expect(mocks.coordinator.setMigrationData).not.toHaveBeenCalled();
+    });
+
     it('discards an archive response after sign-out', async () => {
         const lookup = deferred<typeof archived>();
         mocks.coordinator.keyDerivation.fetchArchivedKey.mockReturnValue(lookup.promise);
@@ -345,12 +358,14 @@ describe('ScoutPass archive-first account upgrade', () => {
         expect(mocks.deriveWeb3AuthKey).not.toHaveBeenCalled();
     });
 
-    it('returns provisional accounts to recovery when legacy derivation fails', async () => {
+    it('delegates provisional legacy derivation failures to the coordinator', async () => {
         mocks.coordinator.state = migration({ provisionalRederive: true });
         mocks.coordinator.keyDerivation.fetchArchivedKey.mockResolvedValue(null);
         mocks.deriveWeb3AuthKey.mockRejectedValue(new Error('unavailable'));
         mount();
-        await waitFor(() => expect(mocks.coordinator.fallBackToRecovery).toHaveBeenCalledOnce());
+        await waitFor(() =>
+            expect(mocks.coordinator.handleMigrationKeyError).toHaveBeenCalledOnce()
+        );
         expect(mocks.coordinator.setMigrationData).not.toHaveBeenCalled();
     });
 
