@@ -602,6 +602,33 @@ const WEBHOOK_RETRY_WINDOW_MS = 24 * 60 * 60_000;
 const WEBHOOK_INITIAL_RETRY_DELAY_MS = 60_000;
 const WEBHOOK_MAX_RETRY_DELAY_MS = 60 * 60_000;
 const WEBHOOK_LEASE_MS = 60_000;
+/** Most due records one integration can have claimed in a single pass. */
+const MAX_WEBHOOK_CLAIMS_PER_INTEGRATION = 5;
+
+/**
+ * Round-robin over per-integration lists: every integration's first record comes before any
+ * integration's second. Integrations are ordered by their oldest due record.
+ */
+const interleaveByIntegration = (
+    groups: Record<string, unknown>[][]
+): Record<string, unknown>[] => {
+    const ordered = groups
+        .filter(group => group.length > 0)
+        .sort((a, b) =>
+            `${a[0]?.nextAttemptAt}|${a[0]?.id}`.localeCompare(`${b[0]?.nextAttemptAt}|${b[0]?.id}`)
+        );
+    const result: Record<string, unknown>[] = [];
+
+    for (let round = 0; ordered.some(group => group.length > round); round++) {
+        for (const group of ordered) {
+            const record = group[round];
+
+            if (record) result.push(record);
+        }
+    }
+
+    return result;
+};
 
 export type IntegrationWebhookDispatchSummary = {
     delivered: number;
@@ -660,29 +687,42 @@ export const dispatchIntegrationWebhooks = async ({
 
     await ensureContractEventMaintenance();
 
+    const batchLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
+    // Read a bounded window of the oldest due records through the index, then keep a few per
+    // integration, so one integration's backlog cannot take the whole pass.
     const due = await neogma.queryRunner.run(
         `MATCH (record:IntegrationEvent)
          USING INDEX record:IntegrationEvent(deliveryState, nextAttemptAt)
          WHERE record.deliveryState = 'pending' AND record.nextAttemptAt <= $now
              AND (record.leaseUntil IS NULL OR record.leaseUntil < $now)
-         RETURN record ORDER BY record.nextAttemptAt, record.id LIMIT $limit`,
+         WITH record ORDER BY record.nextAttemptAt, record.id LIMIT $candidates
+         WITH record.integrationId AS integrationId, collect(record) AS records
+         RETURN integrationId, records[0..$perIntegration] AS records`,
         {
             now: new Date().toISOString(),
-            limit: int(Math.max(1, Math.min(500, Math.trunc(limit)))),
+            candidates: int(batchLimit * 5),
+            perIntegration: int(MAX_WEBHOOK_CLAIMS_PER_INTEGRATION),
         }
     );
 
-    if (due.records.length === 0) return summary;
+    const dueRecords = interleaveByIntegration(
+        due.records.map(row =>
+            (row.get('records') as { properties: Record<string, unknown> }[]).map(
+                node => node.properties
+            )
+        )
+    ).slice(0, batchLimit);
+
+    if (dueRecords.length === 0) return summary;
 
     // Loaded lazily: decrypting secrets pulls in the wallet stack (rule 11).
     const { getIntegrationWebhookDeliveryConfig } =
         await import('@accesslayer/integration/webhook');
     const configs = new Map<string, WebhookDeliveryConfig | null>();
 
-    for (const row of due.records) {
+    for (const record of dueRecords) {
         if (Date.now() >= deadline) break;
 
-        const record: Record<string, unknown> = row.get('record').properties;
         const id = String(record.id);
         const integrationId = String(record.integrationId);
         const lease = randomUUID();

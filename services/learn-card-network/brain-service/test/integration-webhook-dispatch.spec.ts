@@ -393,4 +393,66 @@ describe('dispatchIntegrationWebhooks', () => {
         expect(logged).not.toContain('whsec');
         expect(logged).not.toContain('dispatch-usera');
     });
+
+    it('gives every integration a share of a pass and caps what one integration can take', async () => {
+        const otherId = await userA.clients.fullAuth.integrations.addIntegration({
+            name: 'Other',
+            whitelistedDomains: [],
+        });
+
+        await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+            id: otherId,
+            webhookUrl: 'https://other.example.com/learncard',
+        });
+
+        // Both integrations belong to the contract owner, so every event reaches both.
+        for (let index = 0; index < 20; index++) {
+            await createIntegrationOnlyEvent({
+                id: `fair-${String(index).padStart(2, '0')}`,
+                kind: 'contract_retired',
+                contractId: 'dispatch-contract',
+            });
+        }
+        await fanOutIntegrationEvents({ limit: 500 });
+        await run(
+            `MATCH (record:IntegrationEvent {integrationId: $otherId})
+             WHERE record.eventId >= 'fair-02' DETACH DELETE record`,
+            { otherId }
+        );
+        // The slow integration's backlog is older, so a plain oldest-first read would fill the batch.
+        await run(
+            `MATCH (record:IntegrationEvent {integrationId: $integrationId})
+             SET record.nextAttemptAt = '2020-01-01T00:00:00.000Z'`,
+            { integrationId }
+        );
+        await run(
+            `MATCH (record:IntegrationEvent {integrationId: $otherId})
+             SET record.nextAttemptAt = '2021-01-01T00:00:00.000Z'`,
+            { otherId }
+        );
+        fetchSpy.mockImplementation(async destination => {
+            if (destination === WEBHOOK_URL) await new Promise(resolve => setTimeout(resolve, 20));
+
+            return answer(200);
+        });
+
+        const summary = await dispatchIntegrationWebhooks({ limit: 6 });
+        const order = fetchSpy.mock.calls.map(([destination]) =>
+            destination === WEBHOOK_URL ? 'slow' : 'other'
+        );
+
+        // Round-robin: each integration gets its first record before any gets its second.
+        expect(summary.delivered).toBe(6);
+        expect(order.slice(0, 4)).toEqual(['slow', 'other', 'slow', 'other']);
+        expect(order.filter(name => name === 'other')).toHaveLength(2);
+
+        fetchSpy.mockClear();
+
+        // With a large limit one integration still gets at most 5 records in a pass.
+        await dispatchIntegrationWebhooks({ limit: 100 });
+        expect(fetchSpy).toHaveBeenCalledTimes(5);
+        expect(fetchSpy.mock.calls.every(([destination]) => destination === WEBHOOK_URL)).toBe(
+            true
+        );
+    });
 });
