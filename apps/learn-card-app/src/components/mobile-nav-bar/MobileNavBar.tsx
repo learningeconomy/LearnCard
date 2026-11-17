@@ -30,13 +30,9 @@ import { getNavBarLinkLabel } from './mobileNavBarI18n';
 import { NATIVE_CREDENTIAL_PATH } from '../../native-digital-credentials/types';
 import { RoutesOutlet } from './RoutesOutlet';
 
-export enum MobileNavBarLinks {
-    dashboard = 'dashboard',
-    wallet = 'wallet',
-    plus = '/boost',
-    launchpad = 'launchpad',
-    notification = 'notification',
-}
+import { MobileNavBarLinks } from './mobileNavBarLinks';
+
+export { MobileNavBarLinks };
 
 const MobileNavBar: React.FC = () => {
     const { getIconSet, getColorSet, theme } = useTheme();

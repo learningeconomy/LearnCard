@@ -1,4 +1,4 @@
-import { MobileNavBarLinks } from '../../components/mobile-nav-bar/MobileNavBar';
+import { MobileNavBarLinks } from '../../components/mobile-nav-bar/mobileNavBarLinks';
 import { SideMenuLinksEnum } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
 import type { SideMenuLink, NavbarLink } from '../validators/theme.validators';
