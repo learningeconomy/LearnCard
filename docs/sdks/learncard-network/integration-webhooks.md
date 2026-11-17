@@ -300,21 +300,21 @@ The record carries identifiers only. It never contains shared credentials or per
 
 ### Event types
 
-| Type                 | Sent to the Integrations of           | Meaning                                                                                                                          |
-| -------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `request_sent`       | Owner, requester                      | A contract request was sent                                                                                                      |
-| `request_accepted`   | Owner, requester                      | The target consented with that request. Written just before the consent event                                                    |
-| `request_denied`     | Owner, requester                      | The target declined                                                                                                              |
-| `request_cancelled`  | Owner, requester                      | The request was cancelled                                                                                                        |
-| `consent_created`    | Owner, writers, recipients            | New consent. The connection is live                                                                                              |
-| `consent_updated`    | Owner, writers, recipients, requester | Terms changed or consent was given again. `reason` is `"expiry_extended"` or `"share_until_passed"` in the cases explained below |
-| `consent_withdrawn`  | Owner, writers, recipients            | Consent ended. `reason: "contract_retired"` when the contract was retired                                                        |
-| `credentials_synced` | Owner, writers, recipients            | The consenter shared more credentials                                                                                            |
-| `consent_paused`     | Owner, writers, recipients            | A contract update needs new consent (`reason: "needs_reconsent"`). Access is paused                                              |
-| `consent_suspended`  | Owner, writers, recipients            | The re-consent deadline passed without an answer                                                                                 |
-| `consent_expired`    | Owner, writers, recipients            | The consent expired (see [Expiry](#expiry)). Can occur again after a renewal                                                     |
-| `contract_retired`   | Owner, writers, recipients            | The contract was retired. One `consent_withdrawn` per active consent is sent as well                                             |
-| `integration.test`   | The Integration you tested            | Test delivery only. Never in the feed                                                                                            |
+| Type                 | Sent to the Integrations of | Meaning                                                                                                                          |
+| -------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `request_sent`       | Owner, requester            | A contract request was sent                                                                                                      |
+| `request_accepted`   | Owner, requester            | The target consented with that request. Written just before the consent event                                                    |
+| `request_denied`     | Owner, requester            | The target declined                                                                                                              |
+| `request_cancelled`  | Owner, requester            | The request was cancelled                                                                                                        |
+| `consent_created`    | Owner, writers, recipients  | New consent. The connection is live                                                                                              |
+| `consent_updated`    | Owner, writers, recipients  | Terms changed or consent was given again. `reason` is `"expiry_extended"` or `"share_until_passed"` in the cases explained below |
+| `consent_withdrawn`  | Owner, writers, recipients  | Consent ended. `reason: "contract_retired"` when the contract was retired                                                        |
+| `credentials_synced` | Owner, writers, recipients  | The consenter shared more credentials                                                                                            |
+| `consent_paused`     | Owner, writers, recipients  | A contract update needs new consent (`reason: "needs_reconsent"`). Access is paused                                              |
+| `consent_suspended`  | Owner, writers, recipients  | The re-consent deadline passed without an answer                                                                                 |
+| `consent_expired`    | Owner, writers, recipients  | The consent expired (see [Expiry](#expiry)). Can occur again after a renewal                                                     |
+| `contract_retired`   | Owner, writers, recipients  | The contract was retired. One `consent_withdrawn` per active consent is sent as well                                             |
+| `integration.test`   | The Integration you tested  | Test delivery only. Never in the feed                                                                                            |
 
 The requester is the profile that sent the referral. It receives the request events of its own requests. It receives consent events only while it is also the contract owner, a writer or a data recipient: a profile that has been removed as a data recipient stops receiving them, even for people it referred.
 
