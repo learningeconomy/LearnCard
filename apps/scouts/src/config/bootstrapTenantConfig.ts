@@ -21,7 +21,7 @@ const SCOUTS_TENANT_BASE_CONFIG: TenantConfig = {
     auth: {
         ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
         provider: 'firebase',
-        keyDerivation: 'web3auth',
+        keyDerivation: 'sss',
         firebase: {
             apiKey: 'AIzaSyCdh1fKaZgk3lKbMkzmiQ26k8aKRQQemjM',
             authDomain: 'scoutpass-9a67e.firebaseapp.com',
@@ -129,7 +129,7 @@ mergedScoutsTenantConfig.apis.notificationsEndpoint = mergedScoutsTenantConfig.a
 );
 mergedScoutsTenantConfig.auth.sss = {
     ...mergedScoutsTenantConfig.auth.sss,
-    serverUrl: mergedScoutsTenantConfig.apis.lcaApi,
+    serverUrl: mergedScoutsTenantConfig.apis.lcaApi.replace(/\/trpc\/?$/, '/api'),
 };
 
 export const SCOUTS_TENANT_CONFIG = mergedScoutsTenantConfig;
