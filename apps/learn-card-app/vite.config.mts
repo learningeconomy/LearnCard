@@ -344,9 +344,9 @@ export default defineConfig(async ({ mode, command }) => {
                 'recharts',
                 '@digitalcredentials/jsonld',
                 '@capacitor-community/in-app-review',
-                'moment/locale/ar',
-                'moment/locale/es',
-                'moment/locale/fr',
+                'moment/dist/locale/ar',
+                'moment/dist/locale/es',
+                'moment/dist/locale/fr',
             ],
             // Exclude workspace packages from pre-bundling so Vite serves their TypeScript sources.
             exclude: workspacePackages,
