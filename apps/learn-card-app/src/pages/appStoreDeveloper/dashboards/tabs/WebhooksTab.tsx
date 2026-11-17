@@ -386,7 +386,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                             type="button"
                             onClick={removeUrl}
                             disabled={isSaving}
-                            className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             <IonIcon icon={trashOutline} aria-hidden className="text-base" />
                             {m['developerPortal.dashboards.tabs.webhooks.removeUrl']()}
@@ -522,7 +522,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                         <button
                             type="button"
                             onClick={dismissSecret}
-                            className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                            className="py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                         >
                             {m['developerPortal.dashboards.tabs.webhooks.dismissSecret']()}
                         </button>
@@ -542,7 +542,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                             type="button"
                             onClick={rotate}
                             disabled={rotateSecret.isPending}
-                            className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             {rotateSecret.isPending && (
                                 <span
