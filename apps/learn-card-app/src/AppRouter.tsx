@@ -12,7 +12,7 @@ import NewMyData from './components/new-my-data/NewMyData';
 import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
 import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
 import { preloadRoutes } from './components/mobile-nav-bar/RoutesOutlet';
-import { afterFirstScreen } from './helpers/firstScreen';
+import { afterFirstScreen } from 'learn-card-base/helpers/firstScreen';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';

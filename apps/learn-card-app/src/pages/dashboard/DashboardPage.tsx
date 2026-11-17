@@ -82,7 +82,7 @@ import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import { markDashboardPath, useDashboardPathMark } from '../../helpers/dashboardPathMarks';
-import { markFirstScreenPainted } from '../../helpers/firstScreen';
+import { markFirstScreenPainted } from 'learn-card-base/helpers/firstScreen';
 
 /** The activity card lists at most three passive records. */
 const RECENT_ACTIVITY_RECORDS = 3;
