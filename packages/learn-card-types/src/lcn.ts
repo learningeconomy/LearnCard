@@ -2127,9 +2127,24 @@ export type LCNIntegrationCreateType = z.infer<typeof LCNIntegrationCreateValida
 
 /**
  * URL of an Integration's contract-event webhook: an absolute URL whose scheme is exactly
- * `http` or `https`, at most 2048 characters.
+ * `http` or `https`, at most 2048 characters, without a username or password (the delivery
+ * transport refuses those, so they would be stored and then never delivered).
  */
-export const IntegrationWebhookUrlValidator = z.url({ protocol: /^https?$/ }).max(2048);
+export const IntegrationWebhookUrlValidator = z
+    .url({ protocol: /^https?$/ })
+    .max(2048)
+    .refine(
+        value => {
+            try {
+                const url = new URL(value);
+
+                return url.username === '' && url.password === '';
+            } catch {
+                return false;
+            }
+        },
+        { message: 'Webhook URL must not contain a username or password' }
+    );
 
 export const LCNIntegrationUpdateValidator = z.object({
     name: z.string().optional(),

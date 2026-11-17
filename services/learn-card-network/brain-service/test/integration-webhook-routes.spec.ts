@@ -159,6 +159,8 @@ describe('Integration webhook routes', () => {
         'httpx://hooks.example.com/learncard',
         'httpss://hooks.example.com/learncard',
         'not a url',
+        'https://user:pass@hooks.example.com/learncard',
+        'https://user@hooks.example.com/learncard',
     ])('setIntegrationWebhook rejects %j', async webhookUrl => {
         await expect(
             userA.clients.fullAuth.integrations.setIntegrationWebhook({

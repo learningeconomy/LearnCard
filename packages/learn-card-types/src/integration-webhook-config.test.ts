@@ -79,6 +79,22 @@ describe('IntegrationWebhookUrlValidator', () => {
         expect(IntegrationWebhookUrlValidator.safeParse(webhookUrl).success).toBe(false);
     });
 
+    it.each(['https://user:pass@example.com/x', 'https://user@example.com/x'])(
+        'rejects a URL with userinfo: %j',
+        webhookUrl => {
+            const result = IntegrationWebhookUrlValidator.safeParse(webhookUrl);
+
+            expect(result.success).toBe(false);
+            expect(result.error?.issues[0]?.message).toContain('username or password');
+        }
+    );
+
+    it('accepts a plain URL with a port, path and query', () => {
+        expect(
+            IntegrationWebhookUrlValidator.safeParse('https://example.com:8443/x?a=b').success
+        ).toBe(true);
+    });
+
     it('rejects a URL longer than 2048 characters', () => {
         expect(
             IntegrationWebhookUrlValidator.safeParse(`https://example.com/${'a'.repeat(2048)}`)
