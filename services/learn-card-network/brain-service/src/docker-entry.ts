@@ -61,6 +61,9 @@ let integrationEventPurgeTimer: NodeJS.Timeout | undefined;
 let integrationEventPurgePass: Promise<unknown> | null = null;
 let integrationEventPurgeStopped = false;
 const INTEGRATION_EVENT_PURGE_INTERVAL_MS = 24 * 60 * 60_000;
+// A run stays short so shutdown (which waits for it) fits an orchestrator's grace period.
+const INTEGRATION_EVENT_PURGE_BUDGET_MS = 20_000;
+const INTEGRATION_EVENT_PURGE_CONTINUE_MS = 60_000;
 
 const runContractEventPass = (): void => {
     if (contractEventsStopped) return;
@@ -94,16 +97,27 @@ const runConsentDeadlinePass = (): void => {
 // Docker has no daily maintenance Lambda, so feed retention runs on its own daily timer.
 const runIntegrationEventPurgePass = (): void => {
     if (integrationEventPurgeStopped) return;
-    integrationEventPurgePass = purgeExpiredIntegrationEvents({ limit: 500, budgetMs: 120_000 })
+    let hasMore = false;
+
+    integrationEventPurgePass = purgeExpiredIntegrationEvents({
+        limit: 500,
+        budgetMs: INTEGRATION_EVENT_PURGE_BUDGET_MS,
+    })
+        .then(summary => {
+            hasMore = summary.hasMore;
+        })
         .catch(() => {
             console.warn('integration_events: purge_pending');
         })
         .finally(() => {
             integrationEventPurgePass = null;
+            // Work left over after a full budget continues soon instead of tomorrow.
             if (!integrationEventPurgeStopped)
                 integrationEventPurgeTimer = setTimeout(
                     runIntegrationEventPurgePass,
-                    INTEGRATION_EVENT_PURGE_INTERVAL_MS
+                    hasMore
+                        ? INTEGRATION_EVENT_PURGE_CONTINUE_MS
+                        : INTEGRATION_EVENT_PURGE_INTERVAL_MS
                 );
         });
 };

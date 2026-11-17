@@ -440,7 +440,11 @@ export const fanOutIntegrationEvents = async ({
     return summary;
 };
 
-export type IntegrationEventPurgeSummary = { deleted: number };
+export type IntegrationEventPurgeSummary = {
+    deleted: number;
+    /** true when the budget ran out right after a full batch, so more expired records may remain. */
+    hasMore: boolean;
+};
 
 /**
  * Deletes IntegrationEvent records older than the retention window, in batches, and records
@@ -457,7 +461,7 @@ export const purgeExpiredIntegrationEvents = async ({
 } = {}): Promise<IntegrationEventPurgeSummary> => {
     const deadline = Date.now() + budgetMs;
     const batchSize = Math.max(1, Math.min(1_000, Math.trunc(limit)));
-    const summary: IntegrationEventPurgeSummary = { deleted: 0 };
+    const summary: IntegrationEventPurgeSummary = { deleted: 0, hasMore: false };
 
     await ensureContractEventMaintenance();
 
@@ -486,7 +490,9 @@ export const purgeExpiredIntegrationEvents = async ({
 
         summary.deleted += deleted;
 
-        if (deleted < batchSize) break;
+        summary.hasMore = deleted >= batchSize;
+
+        if (!summary.hasMore) break;
     } while (Date.now() < deadline);
 
     return summary;

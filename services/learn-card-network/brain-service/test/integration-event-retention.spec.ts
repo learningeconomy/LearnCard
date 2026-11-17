@@ -94,7 +94,10 @@ describe('purgeExpiredIntegrationEvents', () => {
     });
 
     it('deletes nothing while every record is inside the retention window', async () => {
-        await expect(purgeExpiredIntegrationEvents()).resolves.toEqual({ deleted: 0 });
+        await expect(purgeExpiredIntegrationEvents()).resolves.toEqual({
+            deleted: 0,
+            hasMore: false,
+        });
         expect(await remainingSequences(integrationId)).toEqual([1, 2, 3, 4, 5]);
         expect(await purgedThrough(integrationId)).toBe(0);
     });
@@ -103,13 +106,33 @@ describe('purgeExpiredIntegrationEvents', () => {
         await expireThrough(integrationId, 3);
 
         // limit 2 forces two batches: 2 records, then 1.
-        await expect(purgeExpiredIntegrationEvents({ limit: 2 })).resolves.toEqual({ deleted: 3 });
+        await expect(purgeExpiredIntegrationEvents({ limit: 2 })).resolves.toEqual({
+            deleted: 3,
+            hasMore: false,
+        });
 
         expect(await remainingSequences(integrationId)).toEqual([4, 5]);
         expect(await purgedThrough(integrationId)).toBe(3);
 
-        await expect(purgeExpiredIntegrationEvents({ limit: 2 })).resolves.toEqual({ deleted: 0 });
+        await expect(purgeExpiredIntegrationEvents({ limit: 2 })).resolves.toEqual({
+            deleted: 0,
+            hasMore: false,
+        });
         expect(await purgedThrough(integrationId)).toBe(3);
+    });
+
+    it('reports hasMore when the budget ran out after a full batch', async () => {
+        await expireThrough(integrationId, 3);
+
+        // A zero budget allows exactly one batch of 2; one expired record is left.
+        await expect(purgeExpiredIntegrationEvents({ limit: 2, budgetMs: 0 })).resolves.toEqual({
+            deleted: 2,
+            hasMore: true,
+        });
+        await expect(purgeExpiredIntegrationEvents({ limit: 2, budgetMs: 0 })).resolves.toEqual({
+            deleted: 1,
+            hasMore: false,
+        });
     });
 
     it('makes the feed reject an older cursor and start at the oldest retained record', async () => {
@@ -257,9 +280,11 @@ describe('purgeExpiredIntegrationEvents', () => {
 
         await expect(purgeExpiredIntegrationEvents({ now: in29Days })).resolves.toEqual({
             deleted: 0,
+            hasMore: false,
         });
         await expect(purgeExpiredIntegrationEvents({ now: in31Days })).resolves.toEqual({
             deleted: 5,
+            hasMore: false,
         });
 
         expect(await remainingSequences(integrationId)).toEqual([]);
@@ -280,7 +305,10 @@ describe('purgeExpiredIntegrationEvents', () => {
         await expireThrough(integrationId, 5);
         await Integration.delete({ detach: true, where: { id: integrationId } });
 
-        await expect(purgeExpiredIntegrationEvents()).resolves.toEqual({ deleted: 5 });
+        await expect(purgeExpiredIntegrationEvents()).resolves.toEqual({
+            deleted: 5,
+            hasMore: false,
+        });
         expect(await remainingSequences(integrationId)).toEqual([]);
     });
 });
