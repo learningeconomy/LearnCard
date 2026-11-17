@@ -40,12 +40,16 @@ export const useMyCampaigns = (): CampaignMessageSource => {
     const active = useRef(scope);
     const initRef = useRef(initWallet);
     useLayoutEffect(() => {
-        active.current = scope;
         initRef.current = initWallet;
+    }, [initWallet]);
+    // initWallet changes on every render. Clearing the active scope for those
+    // renders can drop a child's presentation event before this effect runs.
+    useLayoutEffect(() => {
+        active.current = scope;
         return () => {
             active.current = null;
         };
-    }, [scope, initWallet]);
+    }, [scope]);
 
     // The LearnCard Network plugin reports did:key until its profile loads, then the profile's
     // did:web, on the same wallet. That is the same account, not a profile change (LEARN-CARD-APP-M7A).

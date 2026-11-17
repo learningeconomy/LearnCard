@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, render, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 import { inAppMessageValidator, type MyCampaign } from '@learncard/types';
 import { requestInAppMessage, clearInAppMessageRequest } from '../deepLinkRequestStore';
@@ -15,12 +15,17 @@ const state = vi.hoisted(() => ({
     enroll: vi.fn(),
     record: vi.fn(),
     init: vi.fn(),
+    unstableInit: false,
     warn: vi.fn(),
     // A stable wallet object, for tests where the same wallet's DID changes.
     wallet: null as { id: { did: () => string } } | null,
 }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
-vi.mock('../../hooks/useWallet', () => ({ useWallet: () => ({ initWallet: state.init }) }));
+vi.mock('../../hooks/useWallet', () => ({
+    useWallet: () => ({
+        initWallet: state.unstableInit ? () => state.init() : state.init,
+    }),
+}));
 vi.mock('../../stores/currentUserStore', () => ({
     useIsLoggedIn: () => state.loggedIn,
     currentUserStore: { get: { currentUser: () => (state.loggedIn ? {} : null) } },
@@ -62,6 +67,7 @@ beforeEach(() => {
     state.did = `alice-${++sequence}`;
     state.switchedDid = undefined;
     state.loggedIn = state.lcn = true;
+    state.unstableInit = false;
     state.wallet = null;
     localStorage.clear();
     state.fetch.mockResolvedValue([item()]);
@@ -191,6 +197,36 @@ it('preserves direct-entry attribution without enrolling on bypass, and ignores 
     result.current.record({ ...event, type: 'action', actionType: 'dismiss' }, true);
     expect(state.enroll).not.toHaveBeenCalled();
     expect(state.record).toHaveBeenCalledTimes(1);
+});
+it('records a child presentation during a parent rerender with a new initWallet callback', async () => {
+    // useWallet returns a new initWallet function on each render. A child can
+    // present in its layout effect before the parent's layout effects run.
+    state.unstableInit = true;
+    let ready = false;
+    const Presentation = ({ source }: { source: ReturnType<typeof useMyCampaigns> }) => {
+        React.useLayoutEffect(() => {
+            source.record(
+                {
+                    type: 'shown',
+                    messageId: 'test-campaign',
+                    campaignId: 'test-campaign',
+                    source: 'deepLink',
+                    presentation: 'modal',
+                },
+                false
+            );
+        }, []);
+        return null;
+    };
+    const Parent = ({ show }: { show: boolean }) => {
+        const source = useMyCampaigns();
+        ready = source.ready;
+        return show ? <Presentation source={source} /> : null;
+    };
+    const view = render(<Parent show={false} />, { wrapper });
+    await waitFor(() => expect(ready).toBe(true));
+    view.rerender(<Parent show />);
+    await waitFor(() => expect(state.record).toHaveBeenCalledWith('test-campaign', 'shown'));
 });
 it('cancels stale wallet resolution before sending an enrollment or engagement as another profile', async () => {
     const { result, rerender } = renderHook(useMyCampaigns, { wrapper });
