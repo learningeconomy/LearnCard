@@ -1,6 +1,10 @@
 import './config/applyDockerStageConfig';
 
 import { dispatchContractEvents } from '@helpers/contract-events.helpers';
+import {
+    purgeExpiredIntegrationEvents,
+    runIntegrationEventPass,
+} from '@helpers/integration-events.helpers';
 import { suspendExpiredConsentFlowTerms } from '@helpers/consentflow-deadline.helpers';
 import { configureInboxBatchBodyLimit } from '@helpers/inbox-batch-http.helpers';
 import { environment } from '@environment';
@@ -53,10 +57,21 @@ let contractEventsStopped = false;
 let consentDeadlineTimer: NodeJS.Timeout | undefined;
 let consentDeadlinePass: Promise<unknown> | null = null;
 let consentDeadlineStopped = false;
+let integrationEventPurgeTimer: NodeJS.Timeout | undefined;
+let integrationEventPurgePass: Promise<unknown> | null = null;
+let integrationEventPurgeStopped = false;
+const INTEGRATION_EVENT_PURGE_INTERVAL_MS = 24 * 60 * 60_000;
+// A run stays short so shutdown (which waits for it) fits an orchestrator's grace period.
+const INTEGRATION_EVENT_PURGE_BUDGET_MS = 20_000;
+const INTEGRATION_EVENT_PURGE_CONTINUE_MS = 60_000;
 
 const runContractEventPass = (): void => {
     if (contractEventsStopped) return;
-    contractEventPass = dispatchContractEvents()
+    contractEventPass = runIntegrationEventPass()
+        .catch(() => {
+            console.warn('integration_events: pass_failed');
+        })
+        .then(() => dispatchContractEvents())
         .catch(() => {
             console.warn('contract_events: recovery_pending');
         })
@@ -79,7 +94,38 @@ const runConsentDeadlinePass = (): void => {
         });
 };
 
+// Docker has no daily maintenance Lambda, so feed retention runs on its own daily timer.
+const runIntegrationEventPurgePass = (): void => {
+    if (integrationEventPurgeStopped) return;
+    let hasMore = false;
+
+    integrationEventPurgePass = purgeExpiredIntegrationEvents({
+        limit: 500,
+        budgetMs: INTEGRATION_EVENT_PURGE_BUDGET_MS,
+    })
+        .then(summary => {
+            hasMore = summary.hasMore;
+        })
+        .catch(() => {
+            console.warn('integration_events: purge_pending');
+        })
+        .finally(() => {
+            integrationEventPurgePass = null;
+            // Work left over after a full budget continues soon instead of tomorrow.
+            if (!integrationEventPurgeStopped)
+                integrationEventPurgeTimer = setTimeout(
+                    runIntegrationEventPurgePass,
+                    hasMore
+                        ? INTEGRATION_EVENT_PURGE_CONTINUE_MS
+                        : INTEGRATION_EVENT_PURGE_INTERVAL_MS
+                );
+        });
+};
+
 server.addHook('onClose', async () => {
+    integrationEventPurgeStopped = true;
+    clearTimeout(integrationEventPurgeTimer);
+    await integrationEventPurgePass;
     contractEventsStopped = true;
     if (contractEventTimer) clearTimeout(contractEventTimer);
     await contractEventPass;
@@ -215,6 +261,7 @@ server.register(campaignUnsubscribeFastifyPlugin);
 
         contractEventTimer = setTimeout(runContractEventPass, 60_000);
         consentDeadlineTimer = setTimeout(runConsentDeadlinePass, 60_000);
+        integrationEventPurgeTimer = setTimeout(runIntegrationEventPurgePass, 60_000);
 
         // Explicit startup after readiness. Disabled/invalid config stays inert.
         const maintenanceRuntime = createShareLinkMaintenanceRuntime();

@@ -29,6 +29,17 @@ export const Integration = ModelFactory<FlatIntegrationType, IntegrationRelation
             guideType: { type: 'string', required: false },
             guideState: { type: 'string', required: false }, // JSON stringified
 
+            // Contract event webhook and change feed (LC-2370).
+            // webhookSecretEnc and webhookSecretPrevEnc are encrypted and never returned by a route.
+            webhookUrl: { type: 'string', required: false },
+            webhookSecretEnc: { type: 'string', required: false },
+            webhookSecretPrevEnc: { type: 'string', required: false },
+            webhookSecretPrevExpiresAt: { type: 'string', required: false },
+            contractEventsEnabledAt: { type: 'string', required: false },
+            eventSeq: { type: 'number', required: false },
+            eventPurgedThroughSeq: { type: 'number', required: false },
+            eventSeqLock: { type: 'number', required: false },
+
             // Timestamps
             createdAt: { type: 'string', required: false },
             updatedAt: { type: 'string', required: false },

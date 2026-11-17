@@ -28,6 +28,7 @@ import {
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
 import { runInboxMaintenance } from './src/helpers/inbox-maintenance.helpers';
+import { purgeExpiredIntegrationEvents } from './src/helpers/integration-events.helpers';
 import {
     inboxBatchResponseMeta,
     withInboxBatchBodyLimit,
@@ -218,6 +219,14 @@ export const campaignDispatchWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(a
 });
 
 export const inboxMaintenanceHandler = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
+    // Daily retention for the integration change feed. It must not block inbox maintenance.
+    try {
+        const purged = await purgeExpiredIntegrationEvents({ limit: 500, budgetMs: 120_000 });
+        console.log('Integration event retention completed', purged);
+    } catch {
+        console.warn('integration_events: purge_pending');
+    }
+
     const counts = await runInboxMaintenance();
     console.log('Universal Inbox maintenance completed', counts);
 });
