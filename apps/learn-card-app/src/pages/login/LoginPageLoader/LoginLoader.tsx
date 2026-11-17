@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Typewriter from 'typewriter-effect';
-import _ from 'lodash-es';
+import { shuffle } from 'lodash-es';
 
 import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
@@ -15,7 +15,7 @@ export const LoginLoadingPage: React.FC = () => {
 
     const messages = useMemo(
         () =>
-            _.shuffle([
+            shuffle([
                 m['login.loader.messages.0'](),
                 m['login.loader.messages.1'](),
                 m['login.loader.messages.2'](),

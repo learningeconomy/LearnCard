@@ -5,6 +5,7 @@ import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import { IonApp, setupIonicReact } from '@ionic/react';
+import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 
 import { lazyWithRetry, useIsLoggedIn } from 'learn-card-base';
 import { useEnforceVisibleLocale } from './i18n/useLanguageSelectorConfig';
@@ -79,7 +80,19 @@ const App: React.FC = () => {
             </IonReactRouter>
         );
     } else {
-        return <LazyFullApp />;
+        // Paint the same loader AppRouter shows during auth init while FullApp's chunks download,
+        // instead of an empty page until they arrive.
+        return (
+            <React.Suspense
+                fallback={
+                    <IonApp>
+                        <LoginLoadingPage />
+                    </IonApp>
+                }
+            >
+                <LazyFullApp />
+            </React.Suspense>
+        );
     }
 };
 
