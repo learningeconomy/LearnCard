@@ -100,6 +100,7 @@ const result = await learnCard.invoke.sendIntegrationTestEvent(integrationId);
 // { delivered: false, httpStatus: 401, latencyMs: 120, error: 'http_401' }
 // { delivered: false, latencyMs: 6001, error: 'timeout' }
 // { delivered: false, latencyMs: 12, error: 'network_error' }
+// { delivered: false, httpStatus: 302, latencyMs: 40, error: 'redirect' }
 // { delivered: false, error: 'invalid_webhook' | 'no_webhook' }
 // { delivered: false, error: 'no_webhook' }
 ```
@@ -182,14 +183,14 @@ Health counts every request made to the URL: deliveries of feed records and test
 
 The same fixed codes appear as `error` on a test ping and as `lastFailureReason` in health.
 
-| Code              | Meaning                                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------------------- |
-| `http_<status>`   | Your endpoint answered with that status, for example `http_401` or `http_503`                     |
-| `timeout`         | No answer within 6 seconds                                                                        |
-| `network_error`   | The connection failed (DNS, TLS, refused, reset)                                                  |
-| `invalid_webhook` | The URL answered with a redirect, or does not resolve to a public address. LearnCard sent nothing |
-| `no_webhook`      | Test ping only: the Integration has no URL or no secret                                           |
-| `delivery_error`  | LearnCard could not prepare the request. It is retried                                            |
+| Code              | Meaning                                                                                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `http_<status>`   | Your endpoint answered with that status, for example `http_401` or `http_503`                                                                            |
+| `timeout`         | No answer within 6 seconds                                                                                                                               |
+| `network_error`   | The connection failed (DNS, TLS, refused, reset)                                                                                                         |
+| `redirect`        | Your endpoint answered with a redirect (3xx). LearnCard does not follow redirects, so register the final URL. A test ping reports the status and latency |
+| `invalid_webhook` | The URL does not resolve to a public address. LearnCard sent nothing                                                                                     |
+| `no_webhook`      | Test ping only: the Integration has no URL or no secret                                                                                                  |
 
 ### API-only setup
 
@@ -253,7 +254,7 @@ curl "$BASE/integration/$INTEGRATION_ID/webhook" -H "$AUTH"
 {% endtab %}
 {% endtabs %}
 
-A failing test ping is the quickest way to find a setup problem: `http_401` or `http_403` usually means your endpoint is not public or rejects the signature, `invalid_webhook` means the URL redirects or is not a public address, and `timeout` means the endpoint did not answer within 6 seconds.
+A failing test ping is the quickest way to find a setup problem: `http_401` or `http_403` usually means your endpoint is not public or rejects the signature, `redirect` means the URL answers with a redirect (register the final URL), `invalid_webhook` means it does not resolve to a public address, and `timeout` means the endpoint did not answer within 6 seconds.
 
 ## The event record
 

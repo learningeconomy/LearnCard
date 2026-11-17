@@ -96,6 +96,8 @@ const getFailureReasonText = (reason: string): string => {
             return m['developerPortal.dashboards.tabs.webhooks.reasonTimeout']();
         case 'network_error':
             return m['developerPortal.dashboards.tabs.webhooks.reasonNetwork']();
+        case 'redirect':
+            return m['developerPortal.dashboards.tabs.webhooks.reasonRedirect']();
         case 'invalid_webhook':
             return m['developerPortal.dashboards.tabs.webhooks.reasonInvalid']();
         default:
@@ -108,6 +110,12 @@ const isRateLimitError = (error: unknown): boolean =>
 
 /** Text for a test event that was not delivered. `error` is a fixed code from the network. */
 const getTestFailureText = (result: IntegrationTestEventResult): string => {
+    if (result.error === 'redirect') {
+        return m['developerPortal.dashboards.tabs.webhooks.testFailedRedirect']({
+            status: result.httpStatus ?? 0,
+        });
+    }
+
     if (result.httpStatus !== undefined) {
         return m['developerPortal.dashboards.tabs.webhooks.testFailedStatus']({
             status: result.httpStatus,
