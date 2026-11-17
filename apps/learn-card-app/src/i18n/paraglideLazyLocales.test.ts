@@ -3,7 +3,11 @@ import { join } from 'path';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { renderLocaleTable, transformParaglideIndex } from './paraglideLazyLocales';
+import {
+    COMPACT_DISPATCHER,
+    renderLocaleTable,
+    transformParaglideIndex,
+} from './paraglideLazyLocales';
 
 // The app's ambient Node typings predate fs.rmSync (Node >= 14.14); it exists at runtime.
 const { mkdtempSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync } =
@@ -26,6 +30,7 @@ let messages: Messages;
 let runtime: Runtime;
 let keys: string[];
 let lazyLocales: string[];
+let compactedCount: number;
 
 beforeAll(async () => {
     // Inside the app so Vite may serve it (gitignored, like the generated catalog).
@@ -46,6 +51,9 @@ beforeAll(async () => {
     const tableFile = (locale: string) => `__table_${locale}.js`;
     const result = transformParaglideIndex(index, 'en', locale => `./${tableFile(locale)}`);
     writeFileSync(join(dir, 'messages/_index.js'), result.code);
+    // Untransformed copy sharing the same runtime and locale modules, to compare every message against.
+    writeFileSync(join(dir, 'messages/_orig_index.js'), index);
+    compactedCount = result.code.split(`${COMPACT_DISPATCHER}(`).length - 2;
     for (const locale of result.lazyLocales) {
         writeFileSync(
             join(dir, 'messages', tableFile(locale)),
@@ -116,6 +124,32 @@ describe('paraglide lazy locales (real generated catalog)', () => {
             expect(keys.filter((key, index) => table[index] !== module[key])).toEqual([]);
             expect(table.filter(entry => typeof entry !== 'function')).toEqual([]);
         }
+    });
+
+    it('compacts plain dispatchers and renders every message exactly like Paraglide in every locale', async () => {
+        // About 7.9k of the ~8.7k messages are plain dispatchers; markup (`.parts`) messages keep their shape.
+        expect(compactedCount).toBeGreaterThan(7500);
+        const original = (await import(
+            /* @vite-ignore */ join(dir, 'messages/_orig_index.js')
+        )) as Record<string, unknown>;
+        for (const locale of lazyLocales) await messages.$loadLocaleMessages(locale);
+        const names = Object.keys(original).filter(name => typeof original[name] === 'function');
+        expect(names.length).toBeGreaterThan(8000);
+        const render = (fn: unknown) => {
+            try {
+                return String((fn as (inputs: Record<string, unknown>) => unknown)({}));
+            } catch (error) {
+                return `threw ${String(error)}`;
+            }
+        };
+        for (const locale of ['en', ...lazyLocales]) {
+            runtime.setLocale(locale, { reload: false });
+            const differing = names.filter(
+                name => render(messages[name]) !== render(original[name])
+            );
+            expect(differing).toEqual([]);
+        }
+        runtime.setLocale('en', { reload: false });
     });
 
     it('ignores locales it does not know', async () => {

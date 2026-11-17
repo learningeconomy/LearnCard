@@ -47,6 +47,82 @@ export interface ParaglideIndexTransform {
     lazyLocales: string[];
 }
 
+// One plain dispatcher as Paraglide emits it, after the lazy-locale member rewrite above:
+//   ((inputs = {}, options = {}) => {
+//   \tconst locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+//   \tif (locale === "en") return __en.key(inputs)
+//   \tif (locale === "es") return __es[17](inputs)
+//   \treturn __ar[17](inputs)
+//   })
+const DISPATCHER = new RegExp(
+    String.raw`\(\(inputs = \{\}, options = \{\}\) => \{\n\tconst locale = experimentalStaticLocale \?\? options\.locale \?\? getLocale\(\)\n` +
+        String.raw`((?:\tif \(locale === "[A-Za-z0-9_-]+"\) return __[A-Za-z0-9_]+(?:\.${IDENTIFIER}|\[\d+\])\(inputs\)\n)+)` +
+        String.raw`\treturn __([A-Za-z0-9_]+)\[(\d+)\]\(inputs\)\n\}\)`,
+    'g'
+);
+const DISPATCH_LINE = new RegExp(
+    String.raw`\tif \(locale === "([A-Za-z0-9_-]+)"\) return __([A-Za-z0-9_]+)(?:\.(${IDENTIFIER})|\[(\d+)\])\(inputs\)`,
+    'g'
+);
+export const COMPACT_DISPATCHER = '__lazyMsg';
+
+/**
+ * Replaces each plain message dispatcher (~170 B minified, ~8k of them) with a call to one shared
+ * dispatcher factory: `/* @__PURE__ *\/ __lazyMsg(17)` (~20 B). Only dispatchers whose branches all point
+ * at the same table index, in the same locale order, are replaced; anything else (markup `.parts`
+ * messages, unexpected shapes) stays as Paraglide wrote it. Behavior is the same: the factory reads the
+ * locale per call, picks the locale's table (base table for the base locale, which holds the same
+ * functions as the base namespace), and falls through to the last locale like the original.
+ */
+export const compactDispatchers = (
+    code: string,
+    baseLocale: string,
+    keyIndex: Map<string, number>
+): string => {
+    let order: string[] | undefined;
+    let replaced = 0;
+    const out = code.replace(
+        DISPATCHER,
+        (whole, lines: string, last: string, lastIndex: string) => {
+            const index = Number(lastIndex);
+            const branches = [...lines.matchAll(DISPATCH_LINE)];
+            const locales: string[] = [];
+            for (const [, locale, binding, key, tableIndex] of branches) {
+                const ok =
+                    binding === locale &&
+                    (locale === baseLocale
+                        ? key !== undefined && keyIndex.get(key) === index
+                        : tableIndex !== undefined && Number(tableIndex) === index);
+                if (!ok) return whole;
+                locales.push(locale);
+            }
+            locales.push(last);
+            if (!locales.includes(baseLocale)) return whole;
+            order ??= locales;
+            if (order.join() !== locales.join()) return whole;
+            replaced++;
+            return `/* @__PURE__ */ ${COMPACT_DISPATCHER}(${index})`;
+        }
+    );
+    if (!order || replaced === 0) return code;
+    const table = (locale: string) => (locale === baseLocale ? '__lazyBaseTable' : `__${locale}`);
+    const pick = order
+        .slice(0, -1)
+        .map(locale => `locale === ${JSON.stringify(locale)} ? ${table(locale)} : `)
+        .join('');
+    return (
+        out +
+        `
+function ${COMPACT_DISPATCHER}(i) {
+\treturn (inputs = {}, options = {}) => {
+\t\tconst locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+\t\treturn (${pick}${table(order[order.length - 1]!)})[i](inputs)
+\t}
+}
+`
+    );
+};
+
 export const transformParaglideIndex = (
     code: string,
     baseLocale: string,
@@ -91,6 +167,7 @@ export const transformParaglideIndex = (
     if (keyIndex.size === 0) throw drift('no locale message access found');
 
     const keys = [...keyIndex.keys()];
+    out = compactDispatchers(out, baseLocale, keyIndex);
     const baseTable = keys.map(key => `__${baseLocale}.${key}`).join(', ');
     const bindings = lazy.map(({ binding }) => `let __${binding} = __lazyBaseTable;`).join('\n');
     const loaders = lazy
