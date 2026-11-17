@@ -166,7 +166,8 @@ const collectWorkspaceSourceEntries = (): Map<string, string> => {
     const walk = (dir: string, depth: number): void => {
         if (depth < 0 || !existsSync(dir)) return;
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
-            if (!entry.isDirectory() || ['node_modules', 'dist', 'src'].includes(entry.name)) continue;
+            if (!entry.isDirectory() || ['node_modules', 'dist', 'src'].includes(entry.name))
+                continue;
             const child = path.join(dir, entry.name);
             const pkgPath = path.join(child, 'package.json');
             if (existsSync(pkgPath)) {
@@ -176,8 +177,13 @@ const collectWorkspaceSourceEntries = (): Map<string, string> => {
                         exports?: Record<string, unknown>;
                     };
                     const root = pkg.exports?.['.'] as { development?: unknown } | undefined;
-                    const dev = typeof root?.development === 'string' ? root.development : undefined;
-                    if (pkg.name?.startsWith('@learncard/') && dev && !SOURCE_ENTRY_EXCLUDE.has(pkg.name)) {
+                    const dev =
+                        typeof root?.development === 'string' ? root.development : undefined;
+                    if (
+                        pkg.name?.startsWith('@learncard/') &&
+                        dev &&
+                        !SOURCE_ENTRY_EXCLUDE.has(pkg.name)
+                    ) {
                         const file = path.join(child, dev);
                         if (existsSync(file)) entries.set(pkg.name, file);
                     }
@@ -201,6 +207,19 @@ const workspaceSourceEntries = (): Plugin => {
         resolveId: id => entries.get(id) ?? null,
     };
 };
+
+// `lodash` is CommonJS, so one `import { isEqual } from 'lodash'` in workspace code bundles all of it
+// (~76 KB raw) into the entry. Resolve workspace imports of it to lodash-es (same API, tree-shakes).
+// Packages in node_modules keep real lodash: CJS callers may rely on the callable `_` chain.
+const lodashEsForWorkspace = (): Plugin => ({
+    name: 'learncard-lodash-es-for-workspace',
+    enforce: 'pre',
+    apply: 'build',
+    async resolveId(id, importer) {
+        if (id !== 'lodash' || !importer || importer.includes('/node_modules/')) return null;
+        return this.resolve('lodash-es', path.join(__dirname, 'index.html'), { skipSelf: true });
+    },
+});
 
 export default defineConfig(async ({ mode, command }) => {
     const loadedEnvironment = loadEnv(mode, __dirname, '');
@@ -239,6 +258,7 @@ export default defineConfig(async ({ mode, command }) => {
         plugins: [
             devCacheRevalidation,
             ...(useSourceConditions ? [] : [workspaceSourceEntries()]),
+            lodashEsForWorkspace(),
             tailwindcss(),
             registryProxyDevServer(),
             i18nImportGuard(),
