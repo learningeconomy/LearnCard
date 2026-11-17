@@ -629,6 +629,26 @@ describe('integration-only state events', () => {
             expect(await markerOf()).toBe(expiresAt);
         });
 
+        it('keeps walking when a window comes back full', async () => {
+            const expiresAt = new Date(Date.now() - 2_000).toISOString();
+
+            await expireVersionOne(expiresAt);
+
+            const spy = vi.spyOn(neogma.queryRunner, 'run');
+            const result = await emitExpiredConsentEvents(undefined, { walkWindow: 1 });
+            const reads = spy.mock.calls
+                .map(([query]) => String(query))
+                .filter(query => query.includes(VERSION_WALK) && !query.includes(VERSION_MARK));
+
+            // Two terms and a window of one: two full windows, then an empty one that ends the walk.
+            expect(result.expired).toBe(2);
+            expect(reads).toHaveLength(3);
+            expect(await markerOf()).toBe(expiresAt);
+
+            spy.mockClear();
+            expect((await emitExpiredConsentEvents(undefined, { walkWindow: 1 })).expired).toBe(0);
+        });
+
         it('does not mark a version whose terms walk was cut short, and finishes it on the next pass', async () => {
             const before = (await recordsFor(ownerIntegrationId)).length;
             const expiresAt = new Date(Date.now() - 2_000).toISOString();

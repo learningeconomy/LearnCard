@@ -180,10 +180,18 @@ const MARK_EXPIRED_CYPHER = `
  */
 export const emitExpiredConsentEvents = async (
     now = new Date().toISOString(),
-    { limit = 200, budgetMs = 20_000 }: BatchOptions = {}
+    {
+        limit = 200,
+        budgetMs = 20_000,
+        walkWindow = EXPIRY_WALK_WINDOW,
+    }: BatchOptions & {
+        /** Terms ids read by one walk of a contract. Only tests pass a smaller value. */
+        walkWindow?: number;
+    } = {}
 ): Promise<ConsentFlowExpirySummary> => {
     const deadline = Date.now() + budgetMs;
     const batchSize = batchSizeOf(limit);
+    const windowSize = Math.max(1, Math.trunc(walkWindow));
     const nowMs = Date.parse(now);
     let expired = 0;
 
@@ -268,7 +276,7 @@ export const emitExpiredConsentEvents = async (
                          AND ${ACCEPTED_VERSION_PREDICATE}
                      RETURN terms.id AS termsId
                      ORDER BY termsId LIMIT $window`,
-                    { ...version, statuses: ACTIVE_STATUSES, window: int(EXPIRY_WALK_WINDOW) }
+                    { ...version, statuses: ACTIVE_STATUSES, window: int(windowSize) }
                 );
                 const termsIds = found.records.flatMap(row => {
                     const termsId: unknown = row.get('termsId');
@@ -304,7 +312,7 @@ export const emitExpiredConsentEvents = async (
                     expired += toNumber(result.records[0]?.get('expired'));
                 }
 
-                if (termsIds.length < EXPIRY_WALK_WINDOW) break;
+                if (termsIds.length < windowSize) break;
             }
 
             // The terms walk reached its end, so this expiry instant is fully handled. A later
