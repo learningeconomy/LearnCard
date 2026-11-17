@@ -10,6 +10,7 @@ import {
     type TenantConfig,
 } from 'learn-card-base';
 import { deepMerge } from 'learn-card-base/config/deepMerge';
+import { tenantSSSConfigSchema } from 'learn-card-base/config/tenantConfigSchema';
 
 import { environment } from './environment';
 
@@ -33,11 +34,11 @@ const SCOUTS_TENANT_BASE_CONFIG: TenantConfig = {
             redirectDomain: 'pass.scout.org',
             dynamicLinkDomain: 'pass.scout.org',
         },
-        sss: {
+        sss: tenantSSSConfigSchema.parse({
             ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
             enableEmailBackupShare: true,
             requireEmailForPhoneUsers: true,
-        },
+        }),
         web3Auth: {
             clientId: environment.VITE_WEB3AUTH_CLIENT_ID,
             network: 'cyan',
@@ -127,10 +128,10 @@ mergedScoutsTenantConfig.apis.notificationsEndpoint = mergedScoutsTenantConfig.a
     /\/trpc\/?$/,
     '/api/notifications/send'
 );
-mergedScoutsTenantConfig.auth.sss = {
+mergedScoutsTenantConfig.auth.sss = tenantSSSConfigSchema.parse({
     ...mergedScoutsTenantConfig.auth.sss,
     serverUrl: mergedScoutsTenantConfig.apis.lcaApi.replace(/\/trpc\/?$/, '/api'),
-};
+});
 
 export const SCOUTS_TENANT_CONFIG = mergedScoutsTenantConfig;
 
