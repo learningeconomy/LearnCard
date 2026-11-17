@@ -24,6 +24,7 @@ import {
     ConsentFlowContractDetailsValidator,
     ConsentFlowContractQueryValidator,
     ConsentFlowTermsValidator,
+    ConsentFlowExternalGrantExpectationValidator,
     ConsentFlowTermsQueryValidator,
     PaginationOptionsValidator,
     PaginatedConsentFlowContractsValidator,
@@ -888,6 +889,7 @@ export const contractsRouter = t.router({
                 contractUri: z.string(),
                 boostUri: z.string(),
                 credential: VCValidator.or(JWEValidator),
+                expectedExternalGrant: ConsentFlowExternalGrantExpectationValidator.optional(),
             })
         )
         .output(z.string())
@@ -1011,6 +1013,7 @@ export const contractsRouter = t.router({
                 skipNotification: true,
                 autoAcceptCredential: false,
                 contractTerms: terms,
+                expectedExternalGrant: input.expectedExternalGrant,
             });
         }),
 
@@ -1037,6 +1040,7 @@ export const contractsRouter = t.router({
                     name: z.string(),
                     endpoint: z.string(),
                 }),
+                expectedExternalGrant: ConsentFlowExternalGrantExpectationValidator.optional(),
             })
         )
         .output(z.string())
@@ -1203,6 +1207,7 @@ export const contractsRouter = t.router({
                 skipNotification: true,
                 autoAcceptCredential: false,
                 contractTerms: terms,
+                expectedExternalGrant: input.expectedExternalGrant,
             });
         }),
 
