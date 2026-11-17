@@ -11,14 +11,21 @@ import {
     getChainIdFromProvider,
 } from './helpers';
 import ERC20ABI from './erc20.abi.json';
-import uniswapDefaultTokenList from '@uniswap/default-token-list/build/uniswap-default.tokenlist.json';
 import hardcodedTokens from './hardcodedTokens';
 
 export * from './types';
 
-const defaultTokenList = (uniswapDefaultTokenList as { tokens: TokenList }).tokens.concat(
-    hardcodedTokens
-);
+// The Uniswap token list is ~175 KB of JSON that only token lookups need; load it on first use so it
+// stays out of wallet start-up.
+let defaultTokenListPromise: Promise<TokenList> | undefined;
+const getDefaultTokenList = (): Promise<TokenList> =>
+    (defaultTokenListPromise ??=
+        import('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').then(module => {
+            const list = ((module as { default?: unknown }).default ?? module) as {
+                tokens: TokenList;
+            };
+            return list.tokens.concat(hardcodedTokens);
+        }));
 
 /**
  * @group Plugins
@@ -54,15 +61,13 @@ export const getEthereumPlugin = (
     };
     let provider: ethers.providers.Provider;
 
-    const defaultTokenListForNetwork = defaultTokenList;
-
     const getTokenAddress = async (tokenSymbolOrAddress: string) => {
         if (!provider) provider = getProvider();
 
         return (
             await getTokenFromSymbolOrAddress(
                 tokenSymbolOrAddress,
-                defaultTokenListForNetwork,
+                await getDefaultTokenList(),
                 await getChainIdFromProvider(provider)
             )
         )?.address;
@@ -80,7 +85,7 @@ export const getEthereumPlugin = (
         const formattedBalance = formatUnits(
             balance,
             tokenContractAddress,
-            defaultTokenList,
+            await getDefaultTokenList(),
             await getChainIdFromProvider(provider)
         );
 
@@ -151,7 +156,7 @@ export const getEthereumPlugin = (
                         await parseUnits(
                             amount.toString(),
                             tokenContract.address,
-                            defaultTokenList,
+                            await getDefaultTokenList(),
                             await getChainIdFromProvider(provider)
                         )
                     )
