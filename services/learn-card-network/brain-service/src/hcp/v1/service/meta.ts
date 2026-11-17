@@ -22,6 +22,7 @@ export const HCP_V1_OPERATIONS = [
     'entries.get',
     'entries.revise',
     'entries.withdraw',
+    'entries.list',
     'grants.create',
     'grants.list',
     'grants.get',

@@ -1,4 +1,7 @@
-/** Draft 3 §8.3 audit log read, and §5.4.1 export. Both are the Context Subject's alone. */
+/**
+ * Draft 3 §8.3 audit log read, §5.4.1 export, and the LearnCard entry list. All are
+ * the Context Subject's alone.
+ */
 import { requireSubject } from '../auth';
 import type { EventPosition, StoredEvent } from '../store/port';
 import {
@@ -9,6 +12,8 @@ import {
     type ExportResult,
     type ListAuditInput,
     type ListAuditResult,
+    type ListEntriesInput,
+    type ListEntriesResult,
 } from '../schemas';
 import { urn, type HcpV1Caller, type HcpV1Deps } from './deps';
 import { malformed } from './errors';
@@ -138,5 +143,38 @@ export const exportContext = async (
         directives: [],
         delegations: [],
         audit: [],
+    };
+};
+
+/**
+ * Most recently updated entries the list returns.
+ * TODO(before real users): page with a cursor instead of capping (README).
+ */
+export const LIST_ENTRIES_LIMIT = 500;
+
+/** Entries a Management Client shows. Not withdrawn unless `statuses` asks; no audit event. */
+export const listOwnEntries = async (
+    deps: HcpV1Deps,
+    caller: HcpV1Caller,
+    input: ListEntriesInput
+): Promise<ListEntriesResult> => {
+    const subjectDid = requireSubject(caller);
+    const records = await deps.store.listEntries(subjectDid, {
+        statuses: input.statuses ?? [
+            'active',
+            'deprecated',
+            'conflicted',
+            'expired',
+            'revoked',
+            'suspended',
+        ],
+        limit: LIST_ENTRIES_LIMIT + 1,
+    });
+    return {
+        subject: { id: subjectDid },
+        entries: records
+            .slice(0, LIST_ENTRIES_LIMIT)
+            .map(record => toEntry(record.header, record.current)),
+        truncated: records.length > LIST_ENTRIES_LIMIT,
     };
 };

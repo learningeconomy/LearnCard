@@ -368,6 +368,29 @@ export const WithdrawResultSchema = z.object({
 });
 export type WithdrawResult = z.infer<typeof WithdrawResultSchema>;
 
+/**
+ * LearnCard addition: the Context Subject's own entries, for a Management Client to
+ * show. Draft 3 has no list operation (export is the closest); this one records no
+ * audit event, because a person reading their own context is not an access (§6.1.6
+ * makes the same call for grant lists).
+ */
+export const ListEntriesInputSchema = z
+    .object({ statuses: z.array(EntryStatusSchema).min(1).optional() })
+    .default({});
+export type ListEntriesInput = z.infer<typeof ListEntriesInputSchema>;
+
+export const ListEntriesResultSchema = z.object({
+    /**
+     * The Context Subject id to name in `entries.create`: the profile's stored DID
+     * (normally its did:key), which can differ from the did:web the profile routes show.
+     */
+    subject: z.object({ id: z.string() }),
+    entries: z.array(EntrySchema),
+    /** True when more entries exist than `LIST_ENTRIES_LIMIT`; the rest are not returned. */
+    truncated: z.boolean(),
+});
+export type ListEntriesResult = z.infer<typeof ListEntriesResultSchema>;
+
 // ---------------------------------------------------------------------------
 // Grants (Draft 3 §6.1.5)
 // ---------------------------------------------------------------------------

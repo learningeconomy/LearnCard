@@ -66,6 +66,33 @@ describe('HCP v1 router (hcp.v1.*)', () => {
         expect(meta.spec.commit).toBe('b790561830702c067cd7810c96ee78dd3d84741c');
     });
 
+    it('lists the subject entries with the subject id that create accepts (LC-2424)', async () => {
+        const own = subject.clients.fullAuth.hcp.v1;
+        const profile = await subject.clients.fullAuth.profile.getProfile();
+        const empty = await own.entries.list();
+
+        // The HCP subject is profile.did (did:key), not the did:web profile routes return.
+        expect(empty).toEqual({
+            subject: { id: subject.learnCard.id.did() },
+            entries: [],
+            truncated: false,
+        });
+        expect(profile?.did).toMatch(/^did:web:/);
+        await expect(own.entries.create(entry(profile!.did, 'wrong id'))).rejects.toMatchObject({
+            hcp: { type: 'scope-denied' },
+        });
+
+        const created = await own.entries.create(entry(empty.subject.id, 'Prefers mornings'));
+        const listed = await own.entries.list({});
+        expect(listed.entries.map(e => e.id)).toEqual([(created as { id: string }).id]);
+        expect((await own.audit.list({})).events.map(e => e.eventType)).toEqual([
+            'context.created',
+        ]);
+        await expect(agent.clients.fullAuth.hcp.v1.entries.list()).rejects.toMatchObject({
+            hcp: { type: 'scope-denied' },
+        });
+    });
+
     it('requires DID auth with a valid challenge, and the hcp scope for API tokens', async () => {
         await expect(
             getClient().hcp.v1.entries.query({ query: 'x', purpose: PURPOSE })
@@ -413,6 +440,7 @@ describe('HCP v1 router (hcp.v1.*)', () => {
             '/hcp/v1/audit',
             '/hcp/v1/entries',
             '/hcp/v1/entries/get',
+            '/hcp/v1/entries/list',
             '/hcp/v1/entries/query',
             '/hcp/v1/entries/revisions',
             '/hcp/v1/entries/withdraw',

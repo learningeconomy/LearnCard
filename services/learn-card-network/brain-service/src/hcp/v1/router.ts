@@ -25,6 +25,8 @@ import {
     GrantSchema,
     ListAuditInputSchema,
     ListAuditResultSchema,
+    ListEntriesInputSchema,
+    ListEntriesResultSchema,
     ListGrantsInputSchema,
     MetaSchema,
     QueryInputSchema,
@@ -36,7 +38,7 @@ import {
 import type { HcpV1Caller, HcpV1Deps } from './service/deps';
 import { createEntry, getEntry, queryEntries, reviseEntry, withdrawEntry } from './service/entries';
 import { HcpV1Error, type HcpV1ErrorType } from './service/errors';
-import { exportContext, listAudit } from './service/governance';
+import { exportContext, listAudit, listOwnEntries } from './service/governance';
 import { createGrant, getGrant, listGrants, revokeGrant } from './service/grants';
 import { hcpV1Meta } from './service/meta';
 import { createStoreActivitySink, directWritePolicy } from './service/seams';
@@ -119,6 +121,10 @@ const mapToCoreErrors = t.middleware(async ({ next }) => {
 /** Core-error mapping wraps the whole auth chain, so auth failures are mapped too. */
 const hcpRoute = t.procedure.use(mapToCoreErrors).concat(privateScopedRoute);
 
+/**
+ * The Context Subject is the profile's stored DID (normally its did:key), not the
+ * did:web that profile routes return. `entries.list` reports it for clients to use.
+ */
 const callerOf = (user: { did: string; profile: { did: string } | null }): HcpV1Caller => ({
     did: user.did,
     subjectDid: user.profile?.did ?? null,
@@ -213,6 +219,23 @@ const entriesRouter = t.router({
         .input(WithdrawEntryInputSchema)
         .output(WithdrawResultSchema)
         .mutation(({ ctx, input }) => withdrawEntry(depsFor(), callerOf(ctx.user), input)),
+
+    list: hcpRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/hcp/v1/entries/list',
+                tags: TAGS,
+                summary: "List the Context Subject's entries",
+                description:
+                    'LearnCard addition, Context Subject only. Whole entries, newest first, withdrawn ones only when `statuses` asks. Records no audit event.',
+            },
+            requiredScope: READ,
+        })
+        .input(ListEntriesInputSchema)
+        .output(ListEntriesResultSchema)
+        .query(({ ctx, input }) => listOwnEntries(depsFor(), callerOf(ctx.user), input)),
 });
 
 const grantsRouter = t.router({

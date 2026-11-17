@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ListAuditInputSchema } from '../schemas';
 import { createEntry, reviseEntry, withdrawEntry } from './entries';
-import { exportContext, listAudit } from './governance';
+import { exportContext, listAudit, listOwnEntries } from './governance';
 import { createGrant, getGrant, listGrants, revokeGrant } from './grants';
 import { hcpV1Meta } from './meta';
 import {
@@ -311,5 +311,27 @@ describe('HCP v1 meta', () => {
             schemes: ['https', 'http'],
             sensitivity: 'high',
         });
+    });
+});
+
+describe('HCP management entry list', () => {
+    it('lists only the signed-in profile, excludes withdrawn entries, and does not create events', async () => {
+        const h = makeHarness();
+        await createEntry(h.deps, subject, entryInput());
+        const removed = await createEntry(h.deps, subject, entryInput());
+        if (!('id' in removed)) throw new Error('Expected subject entry');
+        await withdrawEntry(h.deps, subject, { entryId: removed.id, reason: 'Remove' });
+        const before = await h.snapshot();
+        const listed = await listOwnEntries(h.deps, subject, {});
+        expect(listed.subject).toEqual({ id: SUBJECT_DID });
+        expect(listed.entries).toHaveLength(1);
+        expect(
+            (await listOwnEntries(h.deps, subject, { statuses: ['deleted'] })).entries
+        ).toHaveLength(1);
+        expect(
+            await listOwnEntries(h.deps, { did: 'did:key:other', subjectDid: 'did:key:other' }, {})
+        ).toEqual({ subject: { id: 'did:key:other' }, entries: [], truncated: false });
+        await expect(listOwnEntries(h.deps, client, {})).rejects.toMatchObject(DENIED);
+        expect(await h.snapshot()).toEqual(before);
     });
 });
