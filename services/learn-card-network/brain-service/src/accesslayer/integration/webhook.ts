@@ -68,6 +68,8 @@ export const setIntegrationWebhookConfig = async ({
                  WHEN urlChanges THEN null ELSE integration.webhookLastFailureAt END,
              integration.webhookLastFailureReason = CASE
                  WHEN urlChanges THEN null ELSE integration.webhookLastFailureReason END,
+             integration.webhookLastOutcome = CASE
+                 WHEN urlChanges THEN null ELSE integration.webhookLastOutcome END,
              integration.webhookSecretEnc = CASE
                  WHEN createsSecret THEN $newSecretEnc
                  ELSE integration.webhookSecretEnc END,
@@ -316,6 +318,7 @@ export const INTEGRATION_WEBHOOK_STATUS_CYPHER = `MATCH (integration:Integration
          integration.webhookLastSuccessAt AS lastSuccessAt,
          integration.webhookLastFailureAt AS lastFailureAt,
          integration.webhookLastFailureReason AS lastFailureReason,
+         integration.webhookLastOutcome AS lastOutcome,
          pendingDeliveries, retryingDeliveries`;
 
 /**
@@ -340,6 +343,9 @@ export const readIntegrationWebhookStatus = async (
     const lastSuccessAt = optionalString(record.get('lastSuccessAt'));
     const lastFailureAt = optionalString(record.get('lastFailureAt'));
     const lastFailureReason = optionalString(record.get('lastFailureReason'));
+    const storedOutcome: unknown = record.get('lastOutcome');
+    const lastOutcome =
+        storedOutcome === 'success' || storedOutcome === 'failure' ? storedOutcome : undefined;
 
     return {
         webhookUrl,
@@ -348,6 +354,7 @@ export const readIntegrationWebhookStatus = async (
             contractEventsEnabledAt,
             lastSuccessAt,
             lastFailureAt,
+            lastOutcome,
         }),
         ...(contractEventsEnabledAt ? { contractEventsEnabledAt } : {}),
         hasSecret,

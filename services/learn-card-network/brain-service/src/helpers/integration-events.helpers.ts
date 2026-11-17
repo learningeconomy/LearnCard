@@ -614,6 +614,10 @@ export type IntegrationWebhookOutcome = {
  * Records the result of one delivery attempt on the Integration node, for the webhook health
  * read: `webhookLastSuccessAt`, or `webhookLastFailureAt` with `webhookLastFailureReason`.
  * A value is only replaced by a later one, so overlapping workers cannot move health back.
+ * `webhookLastOutcome` says which attempt was the most recent. `last` is the one that happened
+ * last when both a success and a failure are given (a failure when not said); it replaces the
+ * stored marker when its time is later than or equal to the stored latest outcome time, so a
+ * success and a failure within the same millisecond are still told apart by their order.
  * `webhookUrl` is the address the outcomes were produced against: nothing is written when the
  * Integration has another URL by now, because health describes the current address only.
  * Never throws: health is advisory and must not fail a delivery or a test ping.
@@ -624,9 +628,18 @@ export const recordIntegrationWebhookOutcomes = async (
     {
         success,
         failure,
-    }: { success?: IntegrationWebhookOutcome; failure?: IntegrationWebhookOutcome }
+        last,
+    }: {
+        success?: IntegrationWebhookOutcome;
+        failure?: IntegrationWebhookOutcome;
+        last?: 'success' | 'failure';
+    }
 ): Promise<void> => {
     if (!success && !failure) return;
+
+    const lastOutcome: 'success' | 'failure' =
+        last === 'success' && success ? 'success' : failure ? 'failure' : 'success';
+    const lastAt = (lastOutcome === 'success' ? success?.at : failure?.at) ?? null;
 
     // The forward-only guard below compares ISO strings with `<`. That is correct only because
     // every writer stores toISOString() values.
@@ -638,8 +651,20 @@ export const recordIntegrationWebhookOutcomes = async (
                  ($successAt IS NOT NULL AND (integration.webhookLastSuccessAt IS NULL
                      OR integration.webhookLastSuccessAt < $successAt)) AS newSuccess,
                  ($failureAt IS NOT NULL AND (integration.webhookLastFailureAt IS NULL
-                     OR integration.webhookLastFailureAt < $failureAt)) AS newFailure
-             SET integration.webhookLastSuccessAt = CASE
+                     OR integration.webhookLastFailureAt < $failureAt)) AS newFailure,
+                 CASE
+                     WHEN integration.webhookLastSuccessAt IS NULL
+                         THEN integration.webhookLastFailureAt
+                     WHEN integration.webhookLastFailureAt IS NULL
+                         THEN integration.webhookLastSuccessAt
+                     WHEN integration.webhookLastSuccessAt >= integration.webhookLastFailureAt
+                         THEN integration.webhookLastSuccessAt
+                     ELSE integration.webhookLastFailureAt
+                 END AS storedLatestAt
+             SET integration.webhookLastOutcome = CASE
+                     WHEN storedLatestAt IS NULL OR storedLatestAt <= $lastAt THEN $lastOutcome
+                     ELSE integration.webhookLastOutcome END,
+                 integration.webhookLastSuccessAt = CASE
                      WHEN newSuccess THEN $successAt ELSE integration.webhookLastSuccessAt END,
                  integration.webhookLastFailureReason = CASE
                      WHEN newFailure THEN $failureReason
@@ -652,6 +677,8 @@ export const recordIntegrationWebhookOutcomes = async (
                 successAt: success?.at ?? null,
                 failureAt: failure?.at ?? null,
                 failureReason: failure?.reason ?? 'delivery_failed',
+                lastOutcome,
+                lastAt,
             }
         );
     } catch {
@@ -906,6 +933,8 @@ export const dispatchIntegrationWebhooks = async ({
             webhookUrl: string;
             success?: IntegrationWebhookOutcome;
             failure?: IntegrationWebhookOutcome;
+            /** Which outcome was remembered last, so equal timestamps keep their order. */
+            last?: 'success' | 'failure';
         }
     >();
     const remember = (
@@ -920,7 +949,9 @@ export const dispatchIntegrationWebhooks = async ({
 
         outcomes.set(
             key,
-            delivered ? { ...entry, success: outcome } : { ...entry, failure: outcome }
+            delivered
+                ? { ...entry, success: outcome, last: 'success' }
+                : { ...entry, failure: outcome, last: 'failure' }
         );
     };
 

@@ -15,6 +15,7 @@ export const PRIVATE_INTEGRATION_PROPERTIES = [
     'webhookLastSuccessAt',
     'webhookLastFailureAt',
     'webhookLastFailureReason',
+    'webhookLastOutcome',
     'eventSeq',
     'eventPurgedThroughSeq',
     'eventSeqLock',
@@ -48,21 +49,26 @@ export const parseIntegration = (integration: IntegrationType): IntegrationType 
 
 /**
  * State of an Integration's webhook: `disabled` without a URL or while contract events are
- * disabled, `failing` when the most recent delivery attempt failed (a failure later than the
- * last success, or failures and no success yet), `active` otherwise.
+ * disabled, `failing` when the most recent delivery attempt failed, `active` otherwise. The
+ * stored `lastOutcome` marker says which attempt was the most recent one. An Integration that
+ * has none yet falls back to comparing the two timestamps (a failure later than the last
+ * success, or failures and no success yet).
  */
 export const deriveIntegrationWebhookState = ({
     webhookUrl,
     contractEventsEnabledAt,
     lastSuccessAt,
     lastFailureAt,
+    lastOutcome,
 }: {
     webhookUrl: string | null;
     contractEventsEnabledAt?: string;
     lastSuccessAt?: string;
     lastFailureAt?: string;
+    lastOutcome?: 'success' | 'failure';
 }): IntegrationWebhookState => {
     if (!webhookUrl || !contractEventsEnabledAt) return 'disabled';
+    if (lastOutcome) return lastOutcome === 'failure' ? 'failing' : 'active';
     if (!lastFailureAt) return 'active';
     if (!lastSuccessAt) return 'failing';
 

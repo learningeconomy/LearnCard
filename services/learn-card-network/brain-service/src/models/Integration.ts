@@ -40,6 +40,8 @@ export const Integration = ModelFactory<FlatIntegrationType, IntegrationRelation
             webhookLastSuccessAt: { type: 'string', required: false },
             webhookLastFailureAt: { type: 'string', required: false },
             webhookLastFailureReason: { type: 'string', required: false },
+            // 'success' or 'failure': which outcome was the most recent one.
+            webhookLastOutcome: { type: 'string', required: false },
             contractEventsEnabledAt: { type: 'string', required: false },
             eventSeq: { type: 'number', required: false },
             eventPurgedThroughSeq: { type: 'number', required: false },

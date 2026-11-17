@@ -28,6 +28,7 @@ describe('parseIntegration', () => {
                 webhookLastSuccessAt: '2026-11-14T01:00:00.000Z',
                 webhookLastFailureAt: '2026-11-14T02:00:00.000Z',
                 webhookLastFailureReason: 'http_500',
+                webhookLastOutcome: 'failure',
                 eventSeq: 7,
                 eventPurgedThroughSeq: 3,
                 eventSeqLock: 9,
@@ -101,6 +102,49 @@ describe('deriveIntegrationWebhookState', () => {
                 lastFailureAt: '2026-11-14T02:00:00.000Z',
             })
         ).toBe('failing');
+    });
+
+    describe('with the stored last-outcome marker', () => {
+        const sameTime = {
+            lastSuccessAt: '2026-11-14T02:00:00.000Z',
+            lastFailureAt: '2026-11-14T02:00:00.000Z',
+        };
+
+        it('is failing when the marker says failure, even with equal timestamps', () => {
+            expect(
+                deriveIntegrationWebhookState({ ...enabled, ...sameTime, lastOutcome: 'failure' })
+            ).toBe('failing');
+        });
+
+        it('is active when the marker says success, even with equal timestamps', () => {
+            expect(
+                deriveIntegrationWebhookState({ ...enabled, ...sameTime, lastOutcome: 'success' })
+            ).toBe('active');
+        });
+
+        it('prefers the marker over the timestamps', () => {
+            expect(
+                deriveIntegrationWebhookState({
+                    ...enabled,
+                    lastSuccessAt: '2026-11-14T01:00:00.000Z',
+                    lastFailureAt: '2026-11-14T02:00:00.000Z',
+                    lastOutcome: 'success',
+                })
+            ).toBe('active');
+        });
+
+        it('keeps the timestamp rule when there is no marker', () => {
+            expect(deriveIntegrationWebhookState({ ...enabled, ...sameTime })).toBe('active');
+        });
+
+        it('is disabled regardless of the marker', () => {
+            expect(
+                deriveIntegrationWebhookState({
+                    webhookUrl: enabled.webhookUrl,
+                    lastOutcome: 'failure',
+                })
+            ).toBe('disabled');
+        });
     });
 
     it('is active again when a success follows the failure', () => {
