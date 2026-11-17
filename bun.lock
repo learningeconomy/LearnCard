@@ -70,7 +70,7 @@
     },
     "apps/learn-card-app": {
       "name": "learn-card-app",
-      "version": "1.101.2",
+      "version": "1.101.1",
       "dependencies": {
         "@capacitor-community/in-app-review": "^8.0.0",
         "@capacitor-community/media": "9.1.0",
@@ -272,7 +272,7 @@
     },
     "apps/scouts": {
       "name": "scoutpass-app",
-      "version": "1.90.52",
+      "version": "1.90.51",
       "dependencies": {
         "@capacitor-community/sqlite": "8.1.1",
         "@capacitor-firebase/analytics": "8.5.2",
@@ -395,7 +395,7 @@
     },
     "examples/app-store-apps/1-basic-launchpad-app": {
       "name": "@learncard/app-store-demo-basic-launchpad",
-      "version": "0.0.56",
+      "version": "0.0.55",
       "dependencies": {
         "@astrojs/netlify": "^8.1.2",
         "@learncard/init": "workspace:*",
@@ -410,7 +410,7 @@
     },
     "examples/app-store-apps/2-lore-card-app": {
       "name": "@learncard/app-store-demo-lore-card",
-      "version": "0.0.57",
+      "version": "0.0.56",
       "dependencies": {
         "@astrojs/netlify": "^8.1.2",
         "@learncard/init": "workspace:*",
@@ -423,7 +423,7 @@
     },
     "examples/app-store-apps/3-mozilla-social-badges-app": {
       "name": "@learncard/app-store-demo-mozilla-social-badges",
-      "version": "0.0.57",
+      "version": "0.0.56",
       "dependencies": {
         "@astrojs/netlify": "^8.1.2",
         "@learncard/init": "workspace:*",
@@ -436,7 +436,7 @@
     },
     "examples/app-store-apps/4-request-learner-context-app": {
       "name": "@learncard/app-store-demo-request-learner-context",
-      "version": "1.0.31",
+      "version": "1.0.30",
       "dependencies": {
         "@learncard/partner-connect": "workspace:*",
         "astro": "^7.1.0",
@@ -448,7 +448,7 @@
     },
     "examples/app-store-apps/5-northstar-learning": {
       "name": "@learncard/app-store-demo-northstar-learning",
-      "version": "0.0.34",
+      "version": "0.0.33",
       "dependencies": {
         "@astrojs/netlify": "^8.1.2",
         "@learncard/init": "workspace:*",
@@ -461,7 +461,7 @@
     },
     "examples/app-store-apps/6-basic-sync-app": {
       "name": "@learncard/app-store-demo-basic-sync",
-      "version": "1.0.26",
+      "version": "1.0.25",
       "dependencies": {
         "@astrojs/netlify": "^8.1.2",
         "@learncard/init": "workspace:*",
@@ -475,7 +475,7 @@
     },
     "examples/consent-flow-test": {
       "name": "consent-flow-test",
-      "version": "1.0.47",
+      "version": "1.0.46",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "@learncard/network-brain-client": "workspace:*",
@@ -484,7 +484,7 @@
     },
     "examples/consent-referral-demo": {
       "name": "consent-referral-demo",
-      "version": "0.0.11",
+      "version": "0.0.10",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
@@ -499,7 +499,7 @@
     },
     "examples/credential-viewer": {
       "name": "@learncard/credential-viewer",
-      "version": "0.0.40",
+      "version": "0.0.39",
       "dependencies": {
         "@learncard/credential-library": "workspace:*",
         "@learncard/init": "workspace:*",
@@ -559,7 +559,7 @@
     },
     "packages/credential-library": {
       "name": "@learncard/credential-library",
-      "version": "2.1.9",
+      "version": "2.1.8",
       "dependencies": {
         "@learncard/sd-jwt-vc-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -594,7 +594,7 @@
     },
     "packages/holder-continuity-bundle": {
       "name": "@learncard/holder-continuity",
-      "version": "0.2.31",
+      "version": "0.2.30",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
@@ -629,7 +629,7 @@
     },
     "packages/learn-card-base": {
       "name": "learn-card-base",
-      "version": "0.8.2",
+      "version": "0.8.1",
       "dependencies": {
         "@capacitor-community/sqlite": "8.1.0",
         "@capacitor/app": "^8.1.0",
@@ -705,7 +705,7 @@
     },
     "packages/learn-card-bridge-http": {
       "name": "@learncard/create-http-bridge",
-      "version": "1.1.269",
+      "version": "1.1.268",
       "bin": "dist/index.js",
       "dependencies": {
         "@learncard/init": "workspace:*",
@@ -751,7 +751,7 @@
     },
     "packages/learn-card-cli": {
       "name": "@learncard/cli",
-      "version": "4.1.0",
+      "version": "4.0.3",
       "bin": {
         "learncard": "dist/index.js",
         "cli": "dist/index.js",
@@ -788,7 +788,7 @@
     },
     "packages/learn-card-core": {
       "name": "@learncard/core",
-      "version": "9.4.46",
+      "version": "9.4.45",
       "dependencies": {
         "@learncard/helpers": "workspace:*",
         "abort-controller": "^3.0.0",
@@ -822,7 +822,7 @@
     },
     "packages/learn-card-helpers": {
       "name": "@learncard/helpers",
-      "version": "1.8.2",
+      "version": "1.8.1",
       "dependencies": {
         "@learncard/types": "workspace:*",
         "@noble/hashes": "^1.8.0",
@@ -844,7 +844,7 @@
     },
     "packages/learn-card-init": {
       "name": "@learncard/init",
-      "version": "2.5.12",
+      "version": "2.5.11",
       "dependencies": {
         "@learncard/chapi-plugin": "workspace:*",
         "@learncard/core": "workspace:*",
@@ -900,7 +900,7 @@
     },
     "packages/learn-card-network/brain-client": {
       "name": "@learncard/network-brain-client",
-      "version": "2.7.2",
+      "version": "2.7.1",
       "dependencies": {
         "@learncard/types": "workspace:*",
         "@trpc/client": "11.8.0",
@@ -918,7 +918,7 @@
     },
     "packages/learn-card-network/cloud-client": {
       "name": "@learncard/learn-cloud-client",
-      "version": "1.6.54",
+      "version": "1.6.53",
       "dependencies": {
         "@trpc/client": "11.8.0",
         "@trpc/server": "11.8.0",
@@ -935,7 +935,7 @@
     },
     "packages/learn-card-partner-connect-sdk": {
       "name": "@learncard/partner-connect",
-      "version": "0.6.8",
+      "version": "0.6.7",
       "dependencies": {
         "@learncard/partner-connect-core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -952,7 +952,7 @@
     },
     "packages/learn-card-types": {
       "name": "@learncard/types",
-      "version": "6.1.1",
+      "version": "6.1.0",
       "dependencies": {
         "zod": "^4.1.13",
         "zod-openapi": "^5.4.5",
@@ -985,7 +985,7 @@
     },
     "packages/plugins/ceramic": {
       "name": "@learncard/ceramic-plugin",
-      "version": "1.1.46",
+      "version": "1.1.45",
       "dependencies": {
         "@ceramicnetwork/common": "2.13.0",
         "@ceramicnetwork/http-client": "2.7.0",
@@ -1012,7 +1012,7 @@
     },
     "packages/plugins/chapi": {
       "name": "@learncard/chapi-plugin",
-      "version": "1.1.46",
+      "version": "1.1.45",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1030,7 +1030,7 @@
     },
     "packages/plugins/claimable-boosts": {
       "name": "@learncard/claimable-boosts-plugin",
-      "version": "1.1.46",
+      "version": "1.1.45",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1045,7 +1045,7 @@
     },
     "packages/plugins/crypto": {
       "name": "@learncard/crypto-plugin",
-      "version": "1.1.46",
+      "version": "1.1.45",
       "dependencies": {
         "@learncard/core": "workspace:*",
       },
@@ -1059,7 +1059,7 @@
     },
     "packages/plugins/did-web-plugin": {
       "name": "@learncard/did-web-plugin",
-      "version": "1.1.46",
+      "version": "1.1.45",
       "dependencies": {
         "@learncard/core": "workspace:*",
       },
@@ -1075,7 +1075,7 @@
     },
     "packages/plugins/didkey": {
       "name": "@learncard/didkey-plugin",
-      "version": "1.1.46",
+      "version": "1.1.45",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/helpers": "workspace:^",
@@ -1095,7 +1095,7 @@
     },
     "packages/plugins/didkit": {
       "name": "@learncard/didkit-plugin",
-      "version": "1.10.12",
+      "version": "1.10.11",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1111,7 +1111,7 @@
     },
     "packages/plugins/didkit-plugin-node": {
       "name": "@learncard/didkit-plugin-node",
-      "version": "0.3.12",
+      "version": "0.3.11",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -1124,7 +1124,7 @@
     },
     "packages/plugins/dynamic-loader": {
       "name": "@learncard/dynamic-loader-plugin",
-      "version": "1.1.46",
+      "version": "1.1.45",
       "dependencies": {
         "@learncard/core": "workspace:*",
       },
@@ -1138,7 +1138,7 @@
     },
     "packages/plugins/encryption": {
       "name": "@learncard/encryption-plugin",
-      "version": "1.2.2",
+      "version": "1.2.1",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1153,7 +1153,7 @@
     },
     "packages/plugins/ethereum": {
       "name": "@learncard/ethereum-plugin",
-      "version": "1.1.47",
+      "version": "1.1.46",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@uniswap/default-token-list": "^4.1.0",
@@ -1169,7 +1169,7 @@
     },
     "packages/plugins/expiration": {
       "name": "@learncard/expiration-plugin",
-      "version": "1.2.46",
+      "version": "1.2.45",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/vc-plugin": "workspace:^",
@@ -1185,7 +1185,7 @@
     },
     "packages/plugins/idx": {
       "name": "@learncard/idx-plugin",
-      "version": "1.1.46",
+      "version": "1.1.45",
       "dependencies": {
         "@ceramicnetwork/http-client": "2.7.0",
         "@ceramicnetwork/streamid": "2.7.0",
@@ -1205,7 +1205,7 @@
     },
     "packages/plugins/lca-api-plugin": {
       "name": "@learncard/lca-api-plugin",
-      "version": "2.1.1",
+      "version": "2.1.0",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -1227,7 +1227,7 @@
     },
     "packages/plugins/learn-card": {
       "name": "@learncard/learn-card-plugin",
-      "version": "1.2.46",
+      "version": "1.2.45",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1244,7 +1244,7 @@
     },
     "packages/plugins/learn-card-network": {
       "name": "@learncard/network-plugin",
-      "version": "4.1.1",
+      "version": "4.1.0",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/helpers": "workspace:*",
@@ -1266,7 +1266,7 @@
     },
     "packages/plugins/learn-cloud": {
       "name": "@learncard/learn-cloud-plugin",
-      "version": "2.4.0",
+      "version": "2.3.53",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -1288,7 +1288,7 @@
     },
     "packages/plugins/ler-rs": {
       "name": "@learncard/ler-rs-plugin",
-      "version": "0.1.37",
+      "version": "0.1.36",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1304,7 +1304,7 @@
     },
     "packages/plugins/linked-claims": {
       "name": "@learncard/linked-claims-plugin",
-      "version": "0.2.46",
+      "version": "0.2.45",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1321,7 +1321,7 @@
     },
     "packages/plugins/open-badge-v2": {
       "name": "@learncard/open-badge-v2-plugin",
-      "version": "1.1.47",
+      "version": "1.1.46",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/crypto-plugin": "workspace:*",
@@ -1338,7 +1338,7 @@
     },
     "packages/plugins/openid4vc": {
       "name": "@learncard/openid4vc-plugin",
-      "version": "0.4.1",
+      "version": "0.4.0",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1360,7 +1360,7 @@
     },
     "packages/plugins/render-method": {
       "name": "@learncard/render-method-plugin",
-      "version": "14.0.1",
+      "version": "14.0.0",
       "dependencies": {
         "@learncard/helpers": "workspace:*",
       },
@@ -1382,7 +1382,7 @@
     },
     "packages/plugins/sd-jwt-vc": {
       "name": "@learncard/sd-jwt-vc-plugin",
-      "version": "0.2.24",
+      "version": "0.2.23",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1405,7 +1405,7 @@
     },
     "packages/plugins/vc": {
       "name": "@learncard/vc-plugin",
-      "version": "1.7.2",
+      "version": "1.7.1",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1423,7 +1423,7 @@
     },
     "packages/plugins/vc-api": {
       "name": "@learncard/vc-api-plugin",
-      "version": "1.1.46",
+      "version": "1.1.45",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1438,7 +1438,7 @@
     },
     "packages/plugins/vc-templates": {
       "name": "@learncard/vc-templates-plugin",
-      "version": "1.1.46",
+      "version": "1.1.45",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1453,7 +1453,7 @@
     },
     "packages/plugins/vpqr": {
       "name": "@learncard/vpqr-plugin",
-      "version": "1.1.46",
+      "version": "1.1.45",
       "dependencies": {
         "@digitalbazaar/vpqr": "^3.0.0",
         "@learncard/core": "workspace:*",
@@ -1469,7 +1469,7 @@
     },
     "packages/react-learn-card": {
       "name": "@learncard/react",
-      "version": "3.0.7",
+      "version": "3.0.6",
       "dependencies": {
         "@learncard/helpers": "workspace:*",
         "@learncard/init": "workspace:*",
@@ -1539,7 +1539,7 @@
     },
     "packages/sss-key-manager": {
       "name": "@learncard/sss-key-manager",
-      "version": "0.3.2",
+      "version": "0.3.1",
       "dependencies": {
         "@learncard/types": "workspace:*",
         "@noble/ed25519": "^2.0.0",
@@ -1595,7 +1595,7 @@
     },
     "services/ai-passport-backend": {
       "name": "ai-passport-backend",
-      "version": "0.0.4",
+      "version": "0.0.3",
       "dependencies": {
         "@aws-sdk/client-bedrock": "3.1138.0",
         "@aws-sdk/client-bedrock-runtime": "3.1138.0",
@@ -1641,7 +1641,7 @@
     },
     "services/escrow-canary": {
       "name": "@learncard/escrow-canary",
-      "version": "0.3.4",
+      "version": "0.3.3",
       "dependencies": {
         "@aws-sdk/client-dynamodb": "^3.883.0",
         "@aws-sdk/client-lambda": "^3.883.0",
@@ -1665,7 +1665,7 @@
     },
     "services/escrow-relay": {
       "name": "@learncard/escrow-relay-service",
-      "version": "0.1.11",
+      "version": "0.1.10",
       "dependencies": {
         "@learncard/email-templates": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
@@ -1682,7 +1682,7 @@
     },
     "services/learn-card-network/ai-agent": {
       "name": "@learncard/ai-agent-service",
-      "version": "0.0.18",
+      "version": "0.0.17",
       "dependencies": {
         "@aws-sdk/client-cloudwatch": "^3.1120.0",
         "@launchdarkly/node-server-sdk": "^9.13.1",
@@ -1712,7 +1712,7 @@
     },
     "services/learn-card-network/brain-service": {
       "name": "@learncard/network-brain-service",
-      "version": "5.1.1",
+      "version": "5.1.0",
       "dependencies": {
         "@aws-sdk/client-bedrock-runtime": "^3.1139.0",
         "@aws-sdk/client-sqs": "^3.379.1",
@@ -1799,7 +1799,7 @@
     },
     "services/learn-card-network/lca-api": {
       "name": "@learncard/lca-api-service",
-      "version": "1.8.1",
+      "version": "1.8.0",
       "dependencies": {
         "@aws-sdk/client-bedrock-runtime": "^3.1139.0",
         "@aws-sdk/client-kms": "^3.1139.0",
@@ -1874,7 +1874,7 @@
     },
     "services/learn-card-network/learn-cloud-service": {
       "name": "@learncard/learn-cloud-service",
-      "version": "2.5.46",
+      "version": "2.5.45",
       "dependencies": {
         "@fastify/cors": "^11.2.0",
         "@fastify/rate-limit": "^10.2.0",
@@ -1950,7 +1950,7 @@
     },
     "services/learn-card-network/vc-api-service": {
       "name": "@learncard/vc-api-service",
-      "version": "1.0.17",
+      "version": "1.0.16",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/crypto-plugin": "workspace:*",
