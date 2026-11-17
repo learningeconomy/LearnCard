@@ -563,6 +563,8 @@ const isCursorExpired = (error: unknown): boolean =>
 
 The snapshot answers "who is connected to this contract right now". It returns one record per consenter whose terms are `live`, `needs_reconsent` or `suspended` and have not expired. A retired or expired contract returns no records.
 
+Each request scans a bounded number of consents, so a page can hold fewer records than `limit`, or none at all, while `hasMore` is still `true`. Keep reading with the returned `cursor` until `hasMore` is `false`.
+
 {% tabs %}
 {% tab title="SDK" %}
 
@@ -608,8 +610,8 @@ Both patterns keep a table of connections keyed by `termsUri`. Apply each record
 | Type                                   | Effect on your table                                                                                         |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `consent_created`, `consent_updated`   | Insert or update the connection as `live` (this includes `consent_updated` with `reason: "expiry_extended"`) |
-| `consent_paused`                       | Set status `needs_reconsent`                                                                                 |
-| `consent_suspended`                    | Set status `suspended`                                                                                       |
+| `consent_paused`                       | Set status `needs_reconsent`, but only for a connection you hold                                             |
+| `consent_suspended`                    | Set status `suspended`, but only for a connection you hold                                                   |
 | `consent_withdrawn`, `consent_expired` | Remove the connection (a no-op if already removed)                                                           |
 | `contract_retired`                     | Remove every connection of that contract                                                                     |
 | `credentials_synced`                   | No status change. Read the consented data again                                                              |
@@ -622,6 +624,10 @@ Applying a record twice must give the same result, so replays are harmless.
 Delivery is at least once, and retries can arrive out of order. Deduplicate by `deliveryKey`. Within the feed, `sequence` is the order.
 
 `sequence` is the order in which records were written to the feed, not the order in which things happened. An event whose fan-out was delayed gets a later `sequence` than newer events of the same contract, but it keeps its original `occurredAt`. So a client must not let a record with an older `occurredAt` overwrite newer state for the same connection (`termsUri`). Keep the `occurredAt` of the last record you applied for each `termsUri`, and ignore a record that is older than it.
+
+Records written by one change share one `occurredAt` and have no defined order among themselves. For example, when a contract is retired, `contract_retired` can come before or after the `consent_withdrawn` records of that retirement.
+
+A consent that has already expired can still be paused or suspended by a later contract update, and you receive those events. The [connections snapshot](#connections-snapshot) leaves such a consent out, so do not add a connection back on `consent_paused` or `consent_suspended`: apply them only to connections you hold.
 
 ### Webhook with feed catch-up
 
