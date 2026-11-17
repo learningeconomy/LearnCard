@@ -51,27 +51,26 @@ const initiator = (actor: Actor): StoredEvent['initiator'] => ({
     id: actor.did,
 });
 
-const recordEvent = (
+const entryEvent = (
     deps: HcpV1Deps,
     actor: Actor,
     eventType: AuditEventType,
     at: string,
     record: EntryRecord,
     data: Record<string, unknown>
-): Promise<void> =>
-    deps.activity.record({
-        eventId: urn(deps.newId()),
-        eventType,
-        timestamp: at,
-        subjectDid: actor.subjectDid,
-        providerId: deps.providerId,
-        initiator: initiator(actor),
-        entryId: record.header.id,
-        categories: record.header.categories,
-        purpose: null,
-        grantId: actor.kind === 'client' ? actor.grant.grantId : null,
-        data,
-    });
+): StoredEvent => ({
+    eventId: urn(deps.newId()),
+    eventType,
+    timestamp: at,
+    subjectDid: actor.subjectDid,
+    providerId: deps.providerId,
+    initiator: initiator(actor),
+    entryId: record.header.id,
+    categories: record.header.categories,
+    purpose: null,
+    grantId: actor.kind === 'client' ? actor.grant.grantId : null,
+    data,
+});
 
 /**
  * Sets `expired` the first time a lapsed entry is touched (Draft 3 §4.2.4). Returns
@@ -84,21 +83,19 @@ const settleEntryExpiry = async (deps: HcpV1Deps, record: EntryRecord): Promise<
         return record;
 
     const at = now.toISOString();
-    if (await deps.store.transitionEntryStatus(record.header.id, ['active'], 'expired', at)) {
-        await deps.activity.record({
-            eventId: urn(deps.newId()),
-            eventType: 'context.expired',
-            timestamp: at,
-            subjectDid: record.header.subjectDid,
-            providerId: deps.providerId,
-            initiator: { role: 'hcp-provider', id: deps.providerId },
-            entryId: record.header.id,
-            categories: record.header.categories,
-            purpose: null,
-            grantId: null,
-            data: { version: record.header.version },
-        });
-    }
+    await deps.store.transitionEntryStatus(record.header.id, ['active'], 'expired', at, {
+        eventId: urn(deps.newId()),
+        eventType: 'context.expired',
+        timestamp: at,
+        subjectDid: record.header.subjectDid,
+        providerId: deps.providerId,
+        initiator: { role: 'hcp-provider', id: deps.providerId },
+        entryId: record.header.id,
+        categories: record.header.categories,
+        purpose: null,
+        grantId: null,
+        data: { version: record.header.version },
+    });
     return { ...record, header: { ...record.header, status: 'expired', updatedAt: at } };
 };
 
@@ -261,8 +258,10 @@ export const createEntry = async (
         },
     };
 
-    await deps.store.insertEntry(record);
-    await recordEvent(deps, actor, 'context.created', at, record, { version: 1 });
+    await deps.store.insertEntry(
+        record,
+        entryEvent(deps, actor, 'context.created', at, record, { version: 1 })
+    );
 
     const visible =
         actor.kind === 'client' ? coveredCategories(actor, record.header.categories) : [];
@@ -431,7 +430,11 @@ export const reviseEntry = async (
             input.expectedVersion,
             next,
             'active',
-            at
+            at,
+            entryEvent(deps, actor, 'context.revised', at, record, {
+                version: next.version,
+                reason: input.reason,
+            })
         ))
     )
         throw versionConflict();
@@ -440,11 +443,6 @@ export const reviseEntry = async (
         header: { ...record.header, version: next.version, status: 'active', updatedAt: at },
         current: next,
     };
-    await recordEvent(deps, actor, 'context.revised', at, revised, {
-        version: next.version,
-        reason: input.reason,
-    });
-
     const visible =
         actor.kind === 'client' ? coveredCategories(actor, revised.header.categories) : [];
     return view(deps, actor, revised, next, visible);
@@ -468,9 +466,13 @@ export const withdrawEntry = async (
     requireWrite(actor, record.header.categories);
 
     const at = deps.now().toISOString();
-    if (await deps.store.transitionEntryStatus(record.header.id, NOT_DELETED, 'deleted', at)) {
-        await recordEvent(deps, actor, 'context.withdrawn', at, record, { reason: input.reason });
-    }
+    await deps.store.transitionEntryStatus(
+        record.header.id,
+        NOT_DELETED,
+        'deleted',
+        at,
+        entryEvent(deps, actor, 'context.withdrawn', at, record, { reason: input.reason })
+    );
 
     return {
         ...(actor.kind === 'client' ? { ref: input.ref } : { entryId: record.header.id }),

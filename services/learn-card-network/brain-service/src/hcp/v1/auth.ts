@@ -32,21 +32,19 @@ export const settleGrantExpiry = async (
     if (grant.status !== 'active' || !isLapsed(grant, now)) return grant;
 
     const at = now.toISOString();
-    if (await deps.store.transitionGrantStatus(grant.grantId, 'expired', at)) {
-        await deps.activity.record({
-            eventId: urn(deps.newId()),
-            eventType: 'grant.expired',
-            timestamp: at,
-            subjectDid: grant.subjectDid,
-            providerId: deps.providerId,
-            initiator: { role: 'hcp-provider', id: deps.providerId },
-            entryId: null,
-            categories: [],
-            purpose: null,
-            grantId: grant.grantId,
-            data: { reason: 'expiresAt' },
-        });
-    }
+    await deps.store.transitionGrantStatus(grant.grantId, 'expired', at, {
+        eventId: urn(deps.newId()),
+        eventType: 'grant.expired',
+        timestamp: at,
+        subjectDid: grant.subjectDid,
+        providerId: deps.providerId,
+        initiator: { role: 'hcp-provider', id: deps.providerId },
+        entryId: null,
+        categories: [],
+        purpose: null,
+        grantId: grant.grantId,
+        data: { reason: 'expiresAt' },
+    });
     return { ...grant, status: 'expired', statusChangedAt: at };
 };
 

@@ -208,20 +208,28 @@ const toRecord = (row: { get(key: string): unknown }): EntryRecord => ({
     current: toVersion(props(row.get('v'))),
 });
 
+const CREATE_EVENT = `CREATE (n:HcpV1Event) SET n = $event`;
+
+/** Writes the change's audit event inside the change's transaction (port contract). */
+const recordIn = async (tx: ManagedTransaction, event: StoredEvent): Promise<void> => {
+    await tx.run(CREATE_EVENT, { event: eventProps(event) });
+};
+
 /** Takes the node's write lock before reading it, so a check-then-set is serialized. */
 const LOCK_ENTRY = `MATCH (e:HcpV1ContextEntry {id: $entryId})
     SET e._lock = coalesce(e._lock, 0) + 1
     RETURN e`;
 
 export const createNeo4jHcpV1Store = (): HcpV1Store => ({
-    async insertEntry({ header, current }): Promise<void> {
-        await write(tx =>
-            tx.run(
+    async insertEntry({ header, current }, event): Promise<void> {
+        await write(async tx => {
+            await tx.run(
                 `CREATE (e:HcpV1ContextEntry) SET e = $header
                 CREATE (v:HcpV1EntryVersion) SET v = $version`,
                 { header: headerProps(header), version: versionProps(current) }
-            )
-        );
+            );
+            await recordIn(tx, event);
+        });
     },
 
     async getEntry(subjectDid, entryId): Promise<EntryRecord | null> {
@@ -279,7 +287,7 @@ export const createNeo4jHcpV1Store = (): HcpV1Store => ({
         return result.records.map(row => toVersion(props(row.get('v'))));
     },
 
-    async appendVersion(entryId, expectedVersion, next, status, at): Promise<boolean> {
+    async appendVersion(entryId, expectedVersion, next, status, at, event): Promise<boolean> {
         return write(async tx => {
             const locked = await tx.run(LOCK_ENTRY, { entryId });
             const row = locked.records[0];
@@ -296,11 +304,12 @@ export const createNeo4jHcpV1Store = (): HcpV1Store => ({
                     at,
                 }
             );
+            await recordIn(tx, event);
             return true;
         });
     },
 
-    async transitionEntryStatus(entryId, from, to, at): Promise<boolean> {
+    async transitionEntryStatus(entryId, from, to, at, event): Promise<boolean> {
         return write(async tx => {
             const locked = await tx.run(LOCK_ENTRY, { entryId });
             const row = locked.records[0];
@@ -309,6 +318,7 @@ export const createNeo4jHcpV1Store = (): HcpV1Store => ({
                 `MATCH (e:HcpV1ContextEntry {id: $entryId}) SET e.status = $to, e.updatedAt = $at`,
                 { entryId, to, at }
             );
+            await recordIn(tx, event);
             return true;
         });
     },
@@ -335,10 +345,11 @@ export const createNeo4jHcpV1Store = (): HcpV1Store => ({
         return strOrNull(result.records[0]?.get('entryId'));
     },
 
-    async insertGrant(grant): Promise<void> {
-        await write(tx =>
-            tx.run(`CREATE (g:HcpV1Grant) SET g = $grant`, { grant: grantProps(grant) })
-        );
+    async insertGrant(grant, event): Promise<void> {
+        await write(async tx => {
+            await tx.run(`CREATE (g:HcpV1Grant) SET g = $grant`, { grant: grantProps(grant) });
+            await recordIn(tx, event);
+        });
     },
 
     async getGrant(grantId): Promise<StoredGrant | null> {
@@ -360,7 +371,7 @@ export const createNeo4jHcpV1Store = (): HcpV1Store => ({
         return result.records.map(row => toGrant(props(row.get('g'))));
     },
 
-    async transitionGrantStatus(grantId, to, at): Promise<boolean> {
+    async transitionGrantStatus(grantId, to, at, event): Promise<boolean> {
         return write(async tx => {
             const locked = await tx.run(
                 `MATCH (g:HcpV1Grant {grantId: $grantId})
@@ -373,14 +384,13 @@ export const createNeo4jHcpV1Store = (): HcpV1Store => ({
                 `MATCH (g:HcpV1Grant {grantId: $grantId}) SET g.status = $to, g.statusChangedAt = $at`,
                 { grantId, to, at }
             );
+            await recordIn(tx, event);
             return true;
         });
     },
 
     async appendEvent(event): Promise<void> {
-        await write(tx =>
-            tx.run(`CREATE (n:HcpV1Event) SET n = $event`, { event: eventProps(event) })
-        );
+        await write(tx => recordIn(tx, event));
     },
 
     async listEvents(subjectDid, filter, page): Promise<StoredEvent[]> {

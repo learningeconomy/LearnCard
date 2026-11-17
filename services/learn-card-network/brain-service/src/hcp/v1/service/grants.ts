@@ -105,8 +105,7 @@ export const createGrant = async (
         source: input.source,
     };
 
-    await deps.store.insertGrant(grant);
-    await deps.activity.record({
+    await deps.store.insertGrant(grant, {
         eventId: urn(deps.newId()),
         eventType: 'grant.issued',
         timestamp: issuedAt,
@@ -179,11 +178,7 @@ export const revokeGrant = async (
     if (grant.status !== 'active') return toGrant(grant);
 
     const at = deps.now().toISOString();
-    if (!(await deps.store.transitionGrantStatus(grant.grantId, 'revoked', at))) {
-        const current = await deps.store.getGrant(grant.grantId);
-        return toGrant(current ?? grant);
-    }
-    await deps.activity.record({
+    const changed = await deps.store.transitionGrantStatus(grant.grantId, 'revoked', at, {
         eventId: urn(deps.newId()),
         eventType: 'grant.revoked',
         timestamp: at,
@@ -196,5 +191,9 @@ export const revokeGrant = async (
         grantId: grant.grantId,
         data: {},
     });
+    if (!changed) {
+        const current = await deps.store.getGrant(grant.grantId);
+        return toGrant(current ?? grant);
+    }
     return toGrant({ ...grant, status: 'revoked', statusChangedAt: at });
 };

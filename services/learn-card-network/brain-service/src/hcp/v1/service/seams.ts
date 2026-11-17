@@ -5,7 +5,11 @@
 import type { HcpV1Store, StoredEvent } from '../store/port';
 import type { Category } from '../schemas';
 
-/** Records audit events. v1 records lifecycle events (Draft 3 §8.1) through it. */
+/**
+ * Records standalone activity (`context.exported`, then LC-2422 access/denial
+ * events). State-changing lifecycle events go directly to the store alongside
+ * their change so both commit atomically; never publish them through this sink.
+ */
 export interface ActivitySink {
     record(event: StoredEvent): Promise<void>;
     // TODO(LC-2422): access log. Record `context.read` (with `disclosed`) on query and

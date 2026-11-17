@@ -96,6 +96,11 @@ const event = (
     ...options,
 });
 
+let auditSeq = 0;
+/** A fresh lifecycle event to pass with a change. */
+const audit = (options: Partial<StoredEvent> = {}): StoredEvent =>
+    event(`urn:uuid:audit-${++auditSeq}`, 0, options);
+
 export type StoreHarness = { store: HcpV1Store; reset: () => Promise<void> };
 
 export const describeHcpV1StoreContract = (
@@ -113,7 +118,7 @@ export const describeHcpV1StoreContract = (
 
         it('round-trips an entry and scopes reads to its subject', async () => {
             const record = entry('urn:uuid:e1');
-            await store.insertEntry(record);
+            await store.insertEntry(record, audit());
 
             expect(await store.getEntry(SUBJECT, 'urn:uuid:e1')).toEqual(record);
             expect(await store.getEntry(OTHER_SUBJECT, 'urn:uuid:e1')).toBeNull();
@@ -121,17 +126,22 @@ export const describeHcpV1StoreContract = (
         });
 
         it('lists newest first, filtering by status and category before the limit', async () => {
-            await store.insertEntry(entry('urn:uuid:a', { minute: 1 }));
+            await store.insertEntry(entry('urn:uuid:a', { minute: 1 }), audit());
             await store.insertEntry(
-                entry('urn:uuid:b', { minute: 2, categories: ['health_context'] })
+                entry('urn:uuid:b', { minute: 2, categories: ['health_context'] }),
+                audit()
             );
-            await store.insertEntry(entry('urn:uuid:c', { minute: 3, status: 'deleted' }));
-            await store.insertEntry(entry('urn:uuid:d', { minute: 4, subjectDid: OTHER_SUBJECT }));
+            await store.insertEntry(entry('urn:uuid:c', { minute: 3, status: 'deleted' }), audit());
+            await store.insertEntry(
+                entry('urn:uuid:d', { minute: 4, subjectDid: OTHER_SUBJECT }),
+                audit()
+            );
             await store.insertEntry(
                 entry('urn:uuid:e', {
                     minute: 5,
                     categories: ['work_context', 'general_preferences'],
-                })
+                }),
+                audit()
             );
 
             const all = await store.listEntries(SUBJECT, { limit: 10 });
@@ -155,12 +165,17 @@ export const describeHcpV1StoreContract = (
 
         it('filters by a custom category with exact matching (Draft 3 §4.5)', async () => {
             const badges = 'https://learncard.com/hcp/categories/badges';
-            await store.insertEntry(entry('urn:uuid:a', { minute: 1, categories: [badges] }));
             await store.insertEntry(
-                entry('urn:uuid:b', { minute: 2, categories: ['general_preferences', badges] })
+                entry('urn:uuid:a', { minute: 1, categories: [badges] }),
+                audit()
             );
             await store.insertEntry(
-                entry('urn:uuid:c', { minute: 3, categories: [`${badges}/sub`] })
+                entry('urn:uuid:b', { minute: 2, categories: ['general_preferences', badges] }),
+                audit()
+            );
+            await store.insertEntry(
+                entry('urn:uuid:c', { minute: 3, categories: [`${badges}/sub`] }),
+                audit()
             );
 
             const found = await store.listEntries(SUBJECT, { categories: [badges], limit: 10 });
@@ -176,7 +191,7 @@ export const describeHcpV1StoreContract = (
         });
 
         it('appends a version only from the expected version, keeping prior versions', async () => {
-            await store.insertEntry(entry('urn:uuid:v'));
+            await store.insertEntry(entry('urn:uuid:v'), audit());
 
             expect(
                 await store.appendVersion(
@@ -184,7 +199,8 @@ export const describeHcpV1StoreContract = (
                     1,
                     version('urn:uuid:v', 2),
                     'active',
-                    at(9)
+                    at(9),
+                    audit()
                 )
             ).toBe(true);
             expect(
@@ -193,7 +209,8 @@ export const describeHcpV1StoreContract = (
                     1,
                     version('urn:uuid:v', 2),
                     'active',
-                    at(9)
+                    at(9),
+                    audit()
                 )
             ).toBe(false);
 
@@ -210,7 +227,7 @@ export const describeHcpV1StoreContract = (
         });
 
         it('serializes concurrent revisions of one version: exactly one wins', async () => {
-            await store.insertEntry(entry('urn:uuid:race'));
+            await store.insertEntry(entry('urn:uuid:race'), audit());
             const results = await Promise.all(
                 [0, 1, 2, 3].map(() =>
                     store.appendVersion(
@@ -218,24 +235,45 @@ export const describeHcpV1StoreContract = (
                         1,
                         version('urn:uuid:race', 2),
                         'active',
-                        at(9)
+                        at(9),
+                        audit()
                     )
                 )
             );
             expect(results.filter(Boolean)).toHaveLength(1);
             expect((await store.listVersions(SUBJECT)).length).toBe(2);
+            // One event for the insert, one for the single winning revision.
+            expect(await store.listEvents(SUBJECT, {}, { limit: 10 })).toHaveLength(2);
         });
 
         it('transitions status only from an allowed status', async () => {
-            await store.insertEntry(entry('urn:uuid:s'));
+            await store.insertEntry(entry('urn:uuid:s'), audit());
             expect(
-                await store.transitionEntryStatus('urn:uuid:s', ['active'], 'deleted', at(3))
+                await store.transitionEntryStatus(
+                    'urn:uuid:s',
+                    ['active'],
+                    'deleted',
+                    at(3),
+                    audit()
+                )
             ).toBe(true);
             expect(
-                await store.transitionEntryStatus('urn:uuid:s', ['active'], 'deleted', at(4))
+                await store.transitionEntryStatus(
+                    'urn:uuid:s',
+                    ['active'],
+                    'deleted',
+                    at(4),
+                    audit()
+                )
             ).toBe(false);
             expect(
-                await store.transitionEntryStatus('urn:uuid:missing', ['active'], 'deleted', at(4))
+                await store.transitionEntryStatus(
+                    'urn:uuid:missing',
+                    ['active'],
+                    'deleted',
+                    at(4),
+                    audit()
+                )
             ).toBe(false);
             expect((await store.getEntry(SUBJECT, 'urn:uuid:s'))?.header).toMatchObject({
                 status: 'deleted',
@@ -257,11 +295,12 @@ export const describeHcpV1StoreContract = (
         });
 
         it('stores grants, lists by subject and status, and moves only active grants', async () => {
-            await store.insertGrant(grant('urn:uuid:g1', { issuedAt: at(1) }));
+            await store.insertGrant(grant('urn:uuid:g1', { issuedAt: at(1) }), audit());
             await store.insertGrant(
-                grant('urn:uuid:g2', { issuedAt: at(2), expiresAt: null, grantType: 'persistent' })
+                grant('urn:uuid:g2', { issuedAt: at(2), expiresAt: null, grantType: 'persistent' }),
+                audit()
             );
-            await store.insertGrant(grant('urn:uuid:g3', { subjectDid: OTHER_SUBJECT }));
+            await store.insertGrant(grant('urn:uuid:g3', { subjectDid: OTHER_SUBJECT }), audit());
 
             expect(await store.getGrant('urn:uuid:g2')).toEqual(
                 grant('urn:uuid:g2', { issuedAt: at(2), expiresAt: null, grantType: 'persistent' })
@@ -272,8 +311,12 @@ export const describeHcpV1StoreContract = (
                 'urn:uuid:g1',
             ]);
 
-            expect(await store.transitionGrantStatus('urn:uuid:g1', 'revoked', at(5))).toBe(true);
-            expect(await store.transitionGrantStatus('urn:uuid:g1', 'expired', at(6))).toBe(false);
+            expect(
+                await store.transitionGrantStatus('urn:uuid:g1', 'revoked', at(5), audit())
+            ).toBe(true);
+            expect(
+                await store.transitionGrantStatus('urn:uuid:g1', 'expired', at(6), audit())
+            ).toBe(false);
             expect(await store.getGrant('urn:uuid:g1')).toMatchObject({
                 status: 'revoked',
                 statusChangedAt: at(5),
@@ -320,6 +363,91 @@ export const describeHcpV1StoreContract = (
                 { limit: 10 }
             );
             expect(window.map(e => e.eventId)).toEqual(['urn:uuid:ev2']);
+        });
+
+        describe('writes each lifecycle change and its event atomically', () => {
+            const DUP = 'urn:uuid:dup';
+            const dup = (): StoredEvent => event(DUP, 0);
+            const eventIds = async (subjectDid = SUBJECT): Promise<string[]> =>
+                (await store.listEvents(subjectDid, {}, { limit: 100 })).map(e => e.eventId);
+
+            beforeEach(async () => {
+                await store.appendEvent(dup());
+            });
+
+            it('records the event with the change, and none when the change does not happen', async () => {
+                await store.insertEntry(entry('urn:uuid:e'), audit({ eventId: 'urn:uuid:c1' }));
+                expect(
+                    await store.appendVersion(
+                        'urn:uuid:e',
+                        7,
+                        version('urn:uuid:e', 8),
+                        'active',
+                        at(9),
+                        audit({ eventId: 'urn:uuid:skipped' })
+                    )
+                ).toBe(false);
+                expect(
+                    await store.transitionGrantStatus(
+                        'urn:uuid:none',
+                        'revoked',
+                        at(9),
+                        audit({ eventId: 'urn:uuid:skipped2' })
+                    )
+                ).toBe(false);
+                expect((await eventIds()).sort()).toEqual(['urn:uuid:c1', DUP]);
+            });
+
+            it('insertEntry: a failed event leaves no entry or version', async () => {
+                await expect(store.insertEntry(entry('urn:uuid:e'), dup())).rejects.toThrow();
+                expect(await store.getEntry(SUBJECT, 'urn:uuid:e')).toBeNull();
+                expect(await store.listVersions(SUBJECT)).toEqual([]);
+                expect(await eventIds()).toEqual([DUP]);
+            });
+
+            it('appendVersion: a failed event leaves the current version', async () => {
+                await store.insertEntry(entry('urn:uuid:e'), audit());
+                const before = await store.getEntry(SUBJECT, 'urn:uuid:e');
+                await expect(
+                    store.appendVersion(
+                        'urn:uuid:e',
+                        1,
+                        version('urn:uuid:e', 2),
+                        'active',
+                        at(9),
+                        dup()
+                    )
+                ).rejects.toThrow();
+                expect(await store.getEntry(SUBJECT, 'urn:uuid:e')).toEqual(before);
+                expect(await store.getEntryVersion('urn:uuid:e', 2)).toBeNull();
+            });
+
+            it('transitionEntryStatus: a failed event leaves the status', async () => {
+                await store.insertEntry(entry('urn:uuid:e'), audit());
+                await expect(
+                    store.transitionEntryStatus('urn:uuid:e', ['active'], 'deleted', at(9), dup())
+                ).rejects.toThrow();
+                expect((await store.getEntry(SUBJECT, 'urn:uuid:e'))?.header).toMatchObject({
+                    status: 'active',
+                    updatedAt: at(0),
+                });
+            });
+
+            it('insertGrant: a failed event leaves no grant', async () => {
+                await expect(store.insertGrant(grant('urn:uuid:g'), dup())).rejects.toThrow();
+                expect(await store.getGrant('urn:uuid:g')).toBeNull();
+            });
+
+            it('transitionGrantStatus: a failed event leaves the grant active', async () => {
+                await store.insertGrant(grant('urn:uuid:g'), audit());
+                await expect(
+                    store.transitionGrantStatus('urn:uuid:g', 'revoked', at(9), dup())
+                ).rejects.toThrow();
+                expect(await store.getGrant('urn:uuid:g')).toMatchObject({
+                    status: 'active',
+                    statusChangedAt: null,
+                });
+            });
         });
     });
 };

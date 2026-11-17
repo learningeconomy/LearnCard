@@ -30,6 +30,14 @@ export const createMemoryHcpV1Store = (): HcpV1Store => {
     const grants = new Map<string, StoredGrant>();
     const events: StoredEvent[] = [];
 
+    /**
+     * Mirrors the Neo4j unique constraint on eventId. Every lifecycle method checks
+     * its event before changing anything, so a failure leaves the store untouched.
+     */
+    const checkEvent = (event: StoredEvent): void => {
+        if (events.some(e => e.eventId === event.eventId)) throw new Error('duplicate event id');
+    };
+
     const refKey = (grantId: string, entryId: string): string => `${grantId}\u0000${entryId}`;
 
     const record = (header: EntryHeader): EntryRecord => {
@@ -40,10 +48,12 @@ export const createMemoryHcpV1Store = (): HcpV1Store => {
     };
 
     return {
-        async insertEntry({ header, current }): Promise<void> {
+        async insertEntry({ header, current }, event): Promise<void> {
             if (headers.has(header.id)) throw new Error('duplicate entry id');
+            checkEvent(event);
             headers.set(header.id, clone(header));
             versions.set(header.id, [clone(current)]);
+            events.push(clone(event));
         },
 
         async getEntry(subjectDid, entryId): Promise<EntryRecord | null> {
@@ -85,11 +95,13 @@ export const createMemoryHcpV1Store = (): HcpV1Store => {
                 .map(clone);
         },
 
-        async appendVersion(entryId, expectedVersion, next, status, at): Promise<boolean> {
+        async appendVersion(entryId, expectedVersion, next, status, at, event): Promise<boolean> {
             const header = headers.get(entryId);
             if (!header || header.version !== expectedVersion) return false;
+            checkEvent(event);
             versions.get(entryId)!.push(clone(next));
             headers.set(entryId, { ...header, version: next.version, status, updatedAt: at });
+            events.push(clone(event));
             return true;
         },
 
@@ -97,11 +109,14 @@ export const createMemoryHcpV1Store = (): HcpV1Store => {
             entryId,
             from: readonly EntryStatus[],
             to,
-            at
+            at,
+            event
         ): Promise<boolean> {
             const header = headers.get(entryId);
             if (!header || !from.includes(header.status)) return false;
+            checkEvent(event);
             headers.set(entryId, { ...header, status: to, updatedAt: at });
+            events.push(clone(event));
             return true;
         },
 
@@ -121,9 +136,11 @@ export const createMemoryHcpV1Store = (): HcpV1Store => {
             return null;
         },
 
-        async insertGrant(grant): Promise<void> {
+        async insertGrant(grant, event): Promise<void> {
             if (grants.has(grant.grantId)) throw new Error('duplicate grant id');
+            checkEvent(event);
             grants.set(grant.grantId, clone(grant));
+            events.push(clone(event));
         },
 
         async getGrant(grantId): Promise<StoredGrant | null> {
@@ -142,14 +159,17 @@ export const createMemoryHcpV1Store = (): HcpV1Store => {
                 .map(clone);
         },
 
-        async transitionGrantStatus(grantId, to, at): Promise<boolean> {
+        async transitionGrantStatus(grantId, to, at, event): Promise<boolean> {
             const grant = grants.get(grantId);
             if (!grant || grant.status !== 'active') return false;
+            checkEvent(event);
             grants.set(grantId, { ...grant, status: to, statusChangedAt: at });
+            events.push(clone(event));
             return true;
         },
 
         async appendEvent(event): Promise<void> {
+            checkEvent(event);
             events.push(clone(event));
         },
 

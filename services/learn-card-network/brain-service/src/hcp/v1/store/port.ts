@@ -88,9 +88,14 @@ export type EventFilter = {
 /** Keyset position: events strictly older than this (timestamp, eventId) pair. */
 export type EventPosition = { timestamp: string; eventId: string };
 
+/**
+ * Every lifecycle change takes the audit event that records it (Draft 3 §8.1). The
+ * adapter writes change and event in one transaction: both commit or neither does,
+ * and a change that does not happen (a `false` result) writes no event.
+ */
 export interface HcpV1Store {
-    /** Inserts a new entry and its first version. */
-    insertEntry(entry: EntryRecord): Promise<void>;
+    /** Inserts a new entry, its first version and `event`. */
+    insertEntry(entry: EntryRecord, event: StoredEvent): Promise<void>;
     getEntry(subjectDid: string, entryId: string): Promise<EntryRecord | null>;
     getEntryVersion(entryId: string, version: number): Promise<EntryVersion | null>;
     /** Entries for one subject, newest `updatedAt` first, filtered before the limit. */
@@ -106,21 +111,23 @@ export interface HcpV1Store {
         expectedVersion: number,
         next: EntryVersion,
         status: EntryStatus,
-        at: string
+        at: string,
+        event: StoredEvent
     ): Promise<boolean>;
     /** Sets status only when the current status is in `from`. Returns whether it changed. */
     transitionEntryStatus(
         entryId: string,
         from: readonly EntryStatus[],
         to: EntryStatus,
-        at: string
+        at: string,
+        event: StoredEvent
     ): Promise<boolean>;
 
     /** The grant-scoped ref for an entry: the existing one, or `candidate` stored as new. */
     refFor(grantId: string, entryId: string, candidate: string): Promise<string>;
     resolveRef(grantId: string, ref: string): Promise<string | null>;
 
-    insertGrant(grant: StoredGrant): Promise<void>;
+    insertGrant(grant: StoredGrant, event: StoredEvent): Promise<void>;
     getGrant(grantId: string): Promise<StoredGrant | null>;
     /** Grants for one subject, newest first. */
     listGrants(subjectDid: string, status: GrantStatus): Promise<StoredGrant[]>;
@@ -128,9 +135,11 @@ export interface HcpV1Store {
     transitionGrantStatus(
         grantId: string,
         to: Exclude<GrantStatus, 'active'>,
-        at: string
+        at: string,
+        event: StoredEvent
     ): Promise<boolean>;
 
+    /** An event with no state change of its own (`context.exported`; LC-2422 reads). */
     appendEvent(event: StoredEvent): Promise<void>;
     /** Events for one subject, newest first, filtered before `limit` is applied. */
     listEvents(
