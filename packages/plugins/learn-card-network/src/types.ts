@@ -141,6 +141,10 @@ import {
     LCNIntegrationUpdateType,
     LCNIntegrationQueryType,
     PaginatedLCNIntegrationsType,
+    IntegrationWebhookSecretRotation,
+    IntegrationTestEventResult,
+    IntegrationEventsResponse,
+    PaginatedContractConnections,
     // App Store
     AppStoreListing,
     AppStoreListingCreateType,
@@ -931,6 +935,15 @@ export type LearnCardNetworkPluginMethods = {
 
     markContractRequestAsSeen: (contractUri: string, targetProfileId: string) => Promise<boolean>;
     cancelContractRequest: (contractUri: string, targetProfileId: string) => Promise<boolean>;
+    /**
+     * Snapshot of a contract's current connections (consenters whose terms are live,
+     * needs_reconsent or suspended, and not expired). Owner or data recipient only.
+     * Pair it with getIntegrationEvents: read latestCursor, take the snapshot, then follow the feed.
+     */
+    getContractConnections: (
+        contractUri: string,
+        options?: { limit?: number; cursor?: string }
+    ) => Promise<PaginatedContractConnections>;
 
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
     getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;
@@ -1123,6 +1136,22 @@ export type LearnCardNetworkPluginMethods = {
     countIntegrations: (options?: { query?: LCNIntegrationQueryType }) => Promise<number>;
     updateIntegration: (id: string, updates: LCNIntegrationUpdateType) => Promise<boolean>;
     deleteIntegration: (id: string) => Promise<boolean>;
+    /**
+     * Creates a new webhook signing secret and returns it once. The secret it replaces stays
+     * valid for 24 hours. Also used to reveal the secret for the first time.
+     */
+    rotateIntegrationWebhookSecret: (id: string) => Promise<IntegrationWebhookSecretRotation>;
+    /** Sends one signed `integration.test` event to the integration's webhook URL. */
+    sendIntegrationTestEvent: (id: string) => Promise<IntegrationTestEventResult>;
+    /**
+     * Reads the ordered change feed of contract events for an integration. Pass the returned
+     * cursor as `since` to continue. A cursor older than the 30-day retention window is
+     * rejected with a CONFLICT error whose message starts with `CURSOR_EXPIRED: `.
+     */
+    getIntegrationEvents: (
+        id: string,
+        options?: { since?: string; limit?: number }
+    ) => Promise<IntegrationEventsResponse>;
     associateListingWithSigningAuthority: (
         listingId: string,
         endpoint: string,

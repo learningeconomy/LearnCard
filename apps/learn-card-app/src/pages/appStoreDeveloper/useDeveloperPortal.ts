@@ -6,6 +6,8 @@ import type {
     AppStoreListingUpdateType,
     LCNIntegration,
     LCNIntegrationUpdateType,
+    IntegrationWebhookSecretRotation,
+    IntegrationTestEventResult,
     AppListingStatus,
     PromotionLevel,
 } from '@learncard/types';
@@ -168,6 +170,32 @@ export const useDeveloperPortal = () => {
                 queryClient.invalidateQueries({
                     queryKey: ['developer', 'integration', variables.id],
                 });
+            },
+        });
+    };
+
+    // Mutation for creating a new webhook signing secret. The secret is returned once.
+    const useRotateIntegrationWebhookSecret = () => {
+        return useMutation({
+            mutationFn: async (id: string): Promise<IntegrationWebhookSecretRotation> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.rotateIntegrationWebhookSecret(id);
+            },
+            onSuccess: (_data, id) => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
+                queryClient.invalidateQueries({ queryKey: ['developer', 'integration', id] });
+            },
+        });
+    };
+
+    // Mutation for sending a signed test event to an integration's webhook URL
+    const useSendIntegrationTestEvent = () => {
+        return useMutation({
+            mutationFn: async (id: string): Promise<IntegrationTestEventResult> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.sendIntegrationTestEvent(id);
             },
         });
     };
@@ -634,6 +662,8 @@ export const useDeveloperPortal = () => {
         useListingSigningAuthority,
         useCreateIntegration,
         useUpdateIntegration,
+        useRotateIntegrationWebhookSecret,
+        useSendIntegrationTestEvent,
 
         // Listing hooks
         useListingsForIntegration,

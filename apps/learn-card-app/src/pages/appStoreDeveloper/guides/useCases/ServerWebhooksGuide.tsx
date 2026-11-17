@@ -303,35 +303,29 @@ const WebhookEndpointStep: React.FC<{
                 snippets={{
                     typescript: `// Express.js webhook handler
 import express from 'express';
-import crypto from 'crypto';
+import { initLearnCard } from '@learncard/init';
 
 const app = express();
 app.use(express.json());
 
-// Verify webhook signature
-function verifyWebhookSignature(
-    payload: string,
-    signature: string,
-    secret: string
-): boolean {
-    const expectedSig = crypto
-        .createHmac('sha256', secret)
-        .update(payload)
-        .digest('hex');
-    
-    return crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expectedSig)
-    );
+// A seedless instance is enough to verify signatures
+const verifier = await initLearnCard();
+
+// Notification webhooks carry "Authorization: Bearer <DID-JWT>", signed by the
+// LearnCard Network DID. There is no shared secret and no signature header here.
+// (Signed integration webhooks are a separate channel: see your integration's Webhooks tab.)
+async function verifyLearnCardRequest(authHeader?: string): Promise<boolean> {
+    const token = authHeader?.replace(/^Bearer\\s+/i, '');
+    if (!token) return false;
+
+    const result = await verifier.invoke.verifyPresentation(token, { proofFormat: 'jwt' });
+    return result.errors.length === 0;
 }
 
-app.post('${webhookUrl || '/webhooks/learncard'}', (req, res) => {
-    const signature = req.headers['x-learncard-signature'] as string;
-    const payload = JSON.stringify(req.body);
-    
+app.post('${webhookUrl || '/webhooks/learncard'}', async (req, res) => {
     // Verify the request is from LearnCard
-    if (!verifyWebhookSignature(payload, signature, process.env.WEBHOOK_SECRET!)) {
-        return res.status(401).json({ error: 'Invalid signature' });
+    if (!(await verifyLearnCardRequest(req.headers.authorization))) {
+        return res.status(401).json({ error: 'Invalid token' });
     }
     
     // Handle the event
@@ -346,25 +340,21 @@ app.post('${webhookUrl || '/webhooks/learncard'}', (req, res) => {
 });`,
                     python: `# Flask webhook handler
 from flask import Flask, request, jsonify
-import hmac
-import hashlib
 
 app = Flask(__name__)
 
-def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
-    expected = hmac.new(
-        secret.encode(),
-        payload,
-        hashlib.sha256
-    ).hexdigest()
-    return hmac.compare_digest(expected, signature)
+# Notification webhooks carry "Authorization: Bearer <DID-JWT>", signed by the
+# LearnCard Network DID (did:web:network.learncard.com in production).
+# There is no shared secret and no signature header here.
+def verify_learncard_request(auth_header: str) -> bool:
+    token = auth_header.removeprefix('Bearer ').strip()
+    # Verify the DID-JWT with your JWT library of choice
+    return bool(token) and verify_did_jwt(token)
 
 @app.route('${webhookUrl || '/webhooks/learncard'}', methods=['POST'])
 def webhook():
-    signature = request.headers.get('X-LearnCard-Signature', '')
-    
-    if not verify_signature(request.data, signature, WEBHOOK_SECRET):
-        return jsonify({'error': 'Invalid signature'}), 401
+    if not verify_learncard_request(request.headers.get('Authorization', '')):
+        return jsonify({'error': 'Invalid token'}), 401
     
     event = request.json
     print(f"Received event: {event['type']}")

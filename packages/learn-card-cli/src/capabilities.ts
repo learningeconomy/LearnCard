@@ -246,6 +246,32 @@ export const CAPABILITIES: readonly Capability[] = [
         snippet: 'docs/snippets/contract-requests/request-and-poll.mjs',
     },
     {
+        id: 'integration-webhooks',
+        title: 'Integration webhooks and change feed',
+        summary:
+            'Receive signed contract events at a webhook, or poll the ordered change feed of an integration, and take a connections snapshot to converge after an outage.',
+        cli: [],
+        call: [
+            'updateIntegration',
+            'rotateIntegrationWebhookSecret',
+            'sendIntegrationTestEvent',
+            'getIntegrationEvents',
+            'getContractConnections',
+        ],
+        api: {
+            tag: 'Integrations',
+            paths: [
+                '/integration/update/{id}',
+                '/integration/{id}/webhook-secret/rotate',
+                '/integration/{id}/webhook/test',
+                '/integrations/{id}/events',
+                '/consent-flow-contracts/connections',
+            ],
+        },
+        docs: `${DOCS}/reference/learncard-network/integration-webhooks`,
+        notes: 'These events are separate from profile notification webhooks. rotateIntegrationWebhookSecret returns a secret, so call needs --show-secret.',
+    },
+    {
         id: 'revocation',
         title: 'Revocation and suspension',
         summary:

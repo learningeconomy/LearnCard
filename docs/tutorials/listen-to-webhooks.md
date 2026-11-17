@@ -326,6 +326,10 @@ A third event, `ISSUANCE_ERROR`, fires instead of `ISSUANCE_CLAIMED` if claiming
 
 Every webhook request carries `Authorization: Bearer <token>` — a DID-JWT proving the request came from the LearnCard Network's own DID. There's no separate signing secret and no `X-LearnCard-Signature` header; the bearer token **is** the proof.
 
+{% hint style="info" %}
+This is true for the profile notification webhook this tutorial uses (`notificationsWebhook`). **Integration webhooks** are a separate channel for contract events: they are signed with a shared secret in an `X-LearnCard-Signature` header and come with a pollable change feed. See [Integration Webhooks and Change Feed](../sdks/learncard-network/integration-webhooks.md).
+{% endhint %}
+
 You don't need a seed to check it — a seedless instance can still verify signatures:
 
 ```javascript
@@ -411,7 +415,7 @@ ISSUANCE_CLAIMED { issuanceId: '2f1a9c3e-6b8d-4e2f-9a71-58c6d1b4a9f0', status: '
 | `Notification webhook transport failed with 404` | Your server is reachable, but nothing is listening on the path ngrok is forwarding to. Match `webhookUrl` to where `webhook.mjs` actually listens.                                            |
 | No `ISSUANCE_CLAIMED` after claiming             | The recipient already had a LearnCard account, so the credential was auto-delivered as `ISSUED` at send time — there's nothing left to claim. Check for that in `ISSUANCE_DELIVERED` instead. |
 | Duplicate webhooks                               | Expected — delivery is at-least-once, not a sign your server responded too slowly. De-duplicate on `${type}:${issuanceId}` as shown above.                                                    |
-| 401s in your own logs                            | `verifyLearnCardRequest` rejected the token. Check you're reading the `Authorization` header — there's no separate signature header to fall back to.                                          |
+| 401s in your own logs                            | `verifyLearnCardRequest` rejected the token. Check you're reading the `Authorization` header — profile notification webhooks have no separate signature header to fall back to.               |
 
 ## Next Steps
 

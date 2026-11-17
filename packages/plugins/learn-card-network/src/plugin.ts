@@ -3202,6 +3202,12 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            getContractConnections: async (_learnCard, contractUri, options = {}) => {
+                await ensureUser();
+
+                return client.contracts.getContractConnections.query({ contractUri, ...options });
+            },
+
             addDidMetadata: async (_learnCard, metadata) => {
                 await ensureUser();
 
@@ -3665,6 +3671,21 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.integrations.deleteIntegration.mutate({ id });
+            },
+            rotateIntegrationWebhookSecret: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.integrations.rotateIntegrationWebhookSecret.mutate({ id });
+            },
+            sendIntegrationTestEvent: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.integrations.sendIntegrationTestEvent.mutate({ id });
+            },
+            getIntegrationEvents: async (_learnCard, id, options = {}) => {
+                await ensureUser();
+
+                return client.integrations.getIntegrationEvents.query({ id, ...options });
             },
 
             // App Store

@@ -680,6 +680,58 @@ getRevokedCredentials: profileRoute
 | `test/revoke-credential.spec.ts`      | Revocation tests                                                                           |
 | `test/claim-hooks.spec.ts`            | Claim hook tests                                                                           |
 
+## Integration Events (webhooks and change feed)
+
+A second delivery channel for contract events, addressed to an `Integration` instead of a profile. It is separate from profile notification webhooks (`ConsentFlowEvent` deliveries, `notificationsWebhook`). Client-facing behaviour is documented in `docs/sdks/learncard-network/integration-webhooks.md`.
+
+### Data model
+
+- `Integration` stores `webhookUrl`, `webhookSecretEnc`, `webhookSecretPrevEnc` + `webhookSecretPrevExpiresAt` (previous secret, valid 24 hours after a rotation), `contractEventsEnabledAt` (`null` = disabled), `eventSeq` (last sequence allocated) and `eventPurgedThroughSeq` (highest sequence removed by retention). Only `webhookUrl`, `hasWebhookSecret` and `contractEventsEnabledAt` are public; encrypted secrets never leave the access layer.
+- `IntegrationEvent`: one node per Integration and source event. `id` is `${eventId}:${integrationId}` (unique constraint) and is the public `deliveryKey`. The acceptance record uses `${eventId}:accepted:${integrationId}`. Public fields are the feed record and the exact webhook body (`toIntegrationEvent`). Bookkeeping fields (`deliveryState`: `none | pending | delivered | failed | rejected`, `attempts`, `nextAttemptAt`, `lease`, `leaseUntil`, `lastStatus`, `failureReason`, `purgeAt`) are never returned.
+- Indexes and the constraint are created by `ensureContractEventMaintenance` (`src/helpers/contract-event-maintenance.helpers.ts`).
+
+### Flow
+
+1. **Emit.** Every site that creates a `ConsentFlowEvent` sets `integrationFanoutPending = true` on it. Events that only integrations see (`contract_retired`, `consent_paused`, `consent_suspended`, `consent_expired`, and `consent_withdrawn` with reason `contract_retired`) are `ConsentFlowEvent` nodes with no profile deliveries. A new emit site must set the flag or integrations will never see the event.
+2. **Fan-out pass** (`fanOutIntegrationEvents`). For each flagged event: find the audience (owner, `CAN_WRITE` writers, `SHARES_DATA_WITH` recipients, `requestedBy`; request events go to owner and requester only), find their Integrations with `contractEventsEnabledAt <= event.createdAt`, allocate the next `eventSeq` under a lock on the Integration node, `MERGE` the `IntegrationEvent` by id, then remove the flag. Safe to retry and to run concurrently. `externalReferenceId` is written only for contract managers and the requester.
+3. **Signed delivery** (`dispatchIntegrationWebhooks`). Records start as `pending` when the Integration has a `webhookUrl`, otherwise `none`. The worker claims due records with a 60-second lease and POSTs them with `fetchNotificationWebhook` (no SQS, no `sendNotification`). Headers: `X-LearnCard-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, t + "." + body)>` (a second `v1=` while the previous secret is valid), `X-LearnCard-Event-Id`, `X-LearnCard-Delivery`. Up to 12 attempts within 24 hours, 60 s doubling to 1 hour; a 4xx other than 408/425/429 is `rejected`. A failed delivery never removes the record from the feed.
+4. **Feed** (`getIntegrationEvents`). Ordered by `sequence`; the cursor is an opaque encoding of the sequence. A `since` below `eventPurgedThroughSeq` is rejected with tRPC `CONFLICT` (HTTP 409) and a message starting `CURSOR_EXPIRED: ` — tRPC cannot return 410 (`src/constants/integration-events.ts`).
+5. **Retention** (`purgeExpiredIntegrationEvents`). Records are deleted 30 days after they are written (`purgeAt`), in batches, and `eventPurgedThroughSeq` advances.
+
+`getContractConnections` (`src/accesslayer/consentflowcontract/relationships/connections.ts`) is the snapshot a feed client pairs with the feed.
+
+### Where the jobs run
+
+| Job                | Lambda                                                                                                                                          | Docker (`src/docker-entry.ts`)                                                                  |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Fan-out, inline    | `tryDispatchContractEvent` in `contract-events.helpers.ts` (one event, 1-second budget)                                                         | Same code path                                                                                  |
+| Fan-out + delivery | `contractEventsLambdaApp.ts`: `runIntegrationEventPass` runs first with at most a third of the budget (15 s cap), then `dispatchContractEvents` | The 60-second contract-event timer runs `runIntegrationEventPass` then `dispatchContractEvents` |
+| Retention          | `inboxMaintenanceHandler` in `lambdaApp.ts` (daily)                                                                                             | Its own 24-hour timer, first run 60 seconds after start                                         |
+
+A failure of the integration pass is caught and logged; it must never stop profile notifications.
+
+### Rules
+
+- **Import restriction.** `src/helpers/integration-events.helpers.ts` is loaded by the slim `contractEvents` Lambda and by `contract-events.helpers.ts`. Keep its static imports light: `uri.helpers`, `did.helpers` and `@accesslayer/integration/webhook` (which decrypts secrets and pulls in the wallet stack) are loaded with dynamic `import()` inside the functions that need them. Do not turn them into top-level imports, and do not add other static imports that reach the wallet stack.
+- **Never log** webhook URLs, secrets, subject identifiers or reference ids. Log lines are fixed strings such as `integration_events: delivery_failed`.
+- **The secret is returned in one place only:** `rotateIntegrationWebhookSecret`. `sendIntegrationTestEvent` posts an `integration.test` event synchronously and never writes it to the feed.
+- Routes authorize with `isIntegrationAssociatedWithProfile`: the caller must own the Integration.
+
+### Key Files
+
+| File                                                   | Purpose                                                    |
+| ------------------------------------------------------ | ---------------------------------------------------------- |
+| `src/routes/integrations.ts`                           | Webhook config, secret rotation, test event, feed route    |
+| `src/accesslayer/integration/webhook.ts`               | Stores config and secrets; reads decrypted delivery config |
+| `src/accesslayer/integration-event/read.ts`            | Feed reads and sequence state                              |
+| `src/helpers/integration-events.helpers.ts`            | Fan-out, signed delivery, retention, worker pass           |
+| `src/helpers/integration-webhook-signature.helpers.ts` | Signature header                                           |
+| `src/helpers/integration-webhook-secret.helpers.ts`    | Secret generation and encryption                           |
+| `src/helpers/integration-event-cursor.helpers.ts`      | Feed cursor encoding                                       |
+| `src/constants/integration-events.ts`                  | Retention, previous-secret TTL, `CURSOR_EXPIRED` constants |
+
+---
+
 ## App Notifications
 
 Apps can send notifications to users via the `APP_NOTIFICATION` type. There are two delivery paths:
