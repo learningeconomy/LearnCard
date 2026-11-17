@@ -310,6 +310,22 @@ export const hasActivatableRecoveryMethod = (userKey: MongoUserKeyType): boolean
             isRecoveryMethodConfirmed(userKey, method)
     );
 
+/**
+ * Whether the account holds escrow that `escrow.startRecovery` would accept: a stored
+ * copy, no opt-out, and a confirmed escrow method at the copy's share version. Ignores
+ * transient refusals (kill switch, an in-flight PIN operation, a pending cancellation).
+ */
+export const hasUsableEscrow = (userKey: MongoUserKeyType): boolean => {
+    const blob = userKey.escrowBlob;
+    if (!blob || userKey.escrowOptedOutAt) return false;
+    return (userKey.recoveryMethods ?? []).some(
+        method =>
+            method.type === 'escrow' &&
+            method.shareVersion === blob.shareVersion &&
+            isRecoveryMethodConfirmed(userKey, method)
+    );
+};
+
 export { pruneOrphanedRecoveryMethods };
 
 export const getUserKeysCollection = () => {

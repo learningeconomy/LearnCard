@@ -32,7 +32,17 @@ export type ClassLinkAccountContinuity = {
     hasServerConfirmedMethod: boolean;
     /** A confirmed method the user holds: passkey, phrase, backup file or email backup. */
     hasUserRecoveryMethod: boolean;
-    nextStep: 'email' | 'method' | 'done';
+    /** The escrow PIN's state (`getEscrowPinStatus().state`), even without usable escrow. */
+    pinState: 'none' | 'enabled' | 'locked' | 'stale';
+    /** Usable escrow plus an enabled PIN: the emailed code then the PIN recovers the account. */
+    pinRecoverable: boolean;
+    /**
+     * - `email`: add (or re-verify) the personal email.
+     * - `pin`: escrow is usable but the PIN is missing, locked or stale (see `pinState`).
+     * - `method`: no usable escrow, so a passkey or recovery phrase is the only way back in.
+     * - `done`: the account can be recovered without the school login.
+     */
+    nextStep: 'email' | 'pin' | 'method' | 'done';
 };
 
 export type SchoolConnection = {

@@ -25,7 +25,10 @@ import {
 } from '../models/ClassLinkIdentity';
 import {
     clearRecoveryEmailIfUnchanged,
+    EscrowPinStatusValidator,
+    getEscrowPinStatus,
     hasOtherVerifiedRecoveryEmailHolder,
+    hasUsableEscrow,
     isRecoveryMethodConfirmed,
     setRecoveryEmailByUserKeyId,
     type MongoUserKeyType,
@@ -224,10 +227,15 @@ export const personalEmailProcedures = {
         }),
     /**
      * What the account still needs to keep working after losing school access. Never returns
-     * the tenant ID, the policy or the date of birth. `nextStep` is `done` only with a
-     * verified personal email, a verified recovery email and a confirmed recovery method the
-     * user holds (escrow does not count). `email` also covers a recovery email that was
-     * skipped because another account uses that address.
+     * the tenant ID, the policy or the date of birth. `nextStep`:
+     * - `email`: no verified personal email, or no verified recovery email (also when it was
+     *   skipped because another account uses that address).
+     * - `done`: both emails, plus a confirmed method the user holds (passkey, phrase, backup)
+     *   or a usable PIN on usable escrow (`pinRecoverable`): the emailed code then the PIN
+     *   gets them back in.
+     * - `pin`: usable escrow without a usable PIN (none, locked or stale; see `pinState`).
+     * - `method`: no usable escrow (never enrolled, opted out or wiped), so only a passkey or
+     *   recovery phrase can get them back in.
      */
     getAccountContinuity: accountRoute
         .output(
@@ -241,7 +249,9 @@ export const personalEmailProcedures = {
                 recoveryEmailVerified: z.boolean(),
                 hasServerConfirmedMethod: z.boolean(),
                 hasUserRecoveryMethod: z.boolean(),
-                nextStep: z.enum(['email', 'method', 'done']),
+                pinState: EscrowPinStatusValidator.shape.state,
+                pinRecoverable: z.boolean(),
+                nextStep: z.enum(['email', 'pin', 'method', 'done']),
             })
         )
         .query(async ({ ctx }) => {
@@ -259,6 +269,17 @@ export const personalEmailProcedures = {
                 userKey.recoveryEmail && userKey.recoveryEmailVerifiedAt
             );
             const hasUserRecoveryMethod = confirmed.some(method => method.type !== 'escrow');
+            const escrowUsable = hasUsableEscrow(userKey);
+            const pin = getEscrowPinStatus(userKey);
+            const pinRecoverable = escrowUsable && pin.enabled;
+            const nextStep =
+                !emailVerified || !recoveryEmailVerified
+                    ? ('email' as const)
+                    : hasUserRecoveryMethod || pinRecoverable
+                      ? ('done' as const)
+                      : escrowUsable
+                        ? ('pin' as const)
+                        : ('method' as const);
             return {
                 personalEmail: decision,
                 emailVerified,
@@ -268,12 +289,9 @@ export const personalEmailProcedures = {
                 recoveryEmailVerified,
                 hasServerConfirmedMethod: confirmed.length > 0,
                 hasUserRecoveryMethod,
-                nextStep:
-                    !emailVerified || !recoveryEmailVerified
-                        ? ('email' as const)
-                        : hasUserRecoveryMethod
-                          ? ('done' as const)
-                          : ('method' as const),
+                pinState: pin.state,
+                pinRecoverable,
+                nextStep,
             };
         }),
     startPersonalEmail: accountRoute

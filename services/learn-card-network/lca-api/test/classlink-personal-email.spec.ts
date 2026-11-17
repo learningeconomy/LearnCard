@@ -517,12 +517,30 @@ describe('ClassLink personal email', () => {
     });
 
     describe('getAccountContinuity', () => {
-        const confirmed = (type: string) => ({
+        const confirmed = (type: string, shareVersion = 1) => ({
             type,
             createdAt: new Date(),
             confirmedAt: new Date(),
-            shareVersion: 1,
+            shareVersion,
         });
+        /** Only the fields the continuity check reads; the real copy is sealed for the enclave. */
+        const blob = (shareVersion = 1) => ({ shareVersion, blobHash: 'test-blob' });
+        const pin = (overrides: Record<string, unknown> = {}) => ({
+            salt: 'salt',
+            failedAttempts: 0,
+            enabledAt: new Date(),
+            shareVersion: 1,
+            ...overrides,
+        });
+        const setKey = (fields: Record<string, unknown>) =>
+            mongodb
+                .collection('userkeys')
+                .updateOne({ primaryDid: did }, { $set: { shareVersion: 1, ...fields } });
+        const verifyEmail = async () => {
+            setContinuity({ defaultPolicy: { personalEmail: 'all', approval: 'none' } });
+            await caller().startPersonalEmail({ email });
+            await caller().verifyPersonalEmail({ email, code: getCode() });
+        };
 
         it('reports the next step without the district, policy or date of birth', async () => {
             setContinuity({
@@ -537,6 +555,8 @@ describe('ClassLink personal email', () => {
                 recoveryEmailVerified: false,
                 hasServerConfirmedMethod: false,
                 hasUserRecoveryMethod: false,
+                pinState: 'none',
+                pinRecoverable: false,
                 nextStep: 'email',
             });
             const serialized = JSON.stringify(before);
@@ -553,16 +573,13 @@ describe('ClassLink personal email', () => {
             });
 
             // Escrow counts for the server's recovery gate but is not a method the user holds.
-            await mongodb
-                .collection('userkeys')
-                .updateOne(
-                    { primaryDid: did },
-                    { $set: { recoveryMethods: [confirmed('escrow')] } }
-                );
+            await setKey({ recoveryMethods: [confirmed('escrow')], escrowBlob: blob() });
             expect(await caller().getAccountContinuity()).toMatchObject({
                 hasServerConfirmedMethod: true,
                 hasUserRecoveryMethod: false,
-                nextStep: 'method',
+                pinState: 'none',
+                pinRecoverable: false,
+                nextStep: 'pin',
             });
             await mongodb
                 .collection('userkeys')
@@ -573,6 +590,102 @@ describe('ClassLink personal email', () => {
             expect(await caller().getAccountContinuity()).toMatchObject({
                 hasUserRecoveryMethod: true,
                 nextStep: 'done',
+            });
+        });
+
+        it('needs the email first, even with a usable PIN', async () => {
+            await setKey({
+                recoveryMethods: [confirmed('escrow')],
+                escrowBlob: blob(),
+                escrowPin: pin(),
+            });
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                pinState: 'enabled',
+                pinRecoverable: true,
+                nextStep: 'email',
+            });
+        });
+
+        it.each([
+            {
+                name: 'escrow with an enabled PIN is done (email code + PIN recovers)',
+                fields: { escrowPin: pin() },
+                expected: { pinState: 'enabled', pinRecoverable: true, nextStep: 'done' },
+            },
+            {
+                name: 'escrow without a PIN asks for a PIN',
+                fields: {},
+                expected: { pinState: 'none', pinRecoverable: false, nextStep: 'pin' },
+            },
+            {
+                name: 'escrow with a locked PIN asks for a PIN again',
+                fields: { escrowPin: pin({ failedAttempts: 10, disabledAt: new Date() }) },
+                expected: { pinState: 'locked', pinRecoverable: false, nextStep: 'pin' },
+            },
+            {
+                name: 'escrow with a PIN from an older share version asks for a PIN again',
+                fields: {
+                    shareVersion: 2,
+                    recoveryMethods: [confirmed('escrow', 2)],
+                    escrowBlob: blob(2),
+                    escrowPin: pin({ shareVersion: 1 }),
+                },
+                expected: { pinState: 'stale', pinRecoverable: false, nextStep: 'pin' },
+            },
+            {
+                name: 'opted-out escrow needs a passkey or phrase, even with a PIN record',
+                fields: { escrowPin: pin(), escrowOptedOutAt: new Date() },
+                expected: { pinState: 'enabled', pinRecoverable: false, nextStep: 'method' },
+            },
+            {
+                name: 'a confirmed escrow method without a stored copy needs a passkey or phrase',
+                fields: { escrowBlob: undefined, escrowPin: pin() },
+                expected: { pinRecoverable: false, nextStep: 'method' },
+            },
+            {
+                name: 'escrow confirmed only at an older copy version needs a passkey or phrase',
+                fields: { escrowBlob: blob(2), escrowPin: pin() },
+                expected: { pinRecoverable: false, nextStep: 'method' },
+            },
+            {
+                name: 'no escrow (placeholder email) needs a passkey or phrase',
+                fields: { recoveryMethods: [], escrowBlob: undefined },
+                expected: { pinState: 'none', pinRecoverable: false, nextStep: 'method' },
+            },
+            {
+                name: 'a passkey is done even when the PIN is locked',
+                fields: {
+                    recoveryMethods: [confirmed('escrow'), confirmed('passkey')],
+                    escrowPin: pin({ disabledAt: new Date() }),
+                },
+                expected: {
+                    hasUserRecoveryMethod: true,
+                    pinState: 'locked',
+                    pinRecoverable: false,
+                    nextStep: 'done',
+                },
+            },
+        ])('$name', async ({ fields, expected }) => {
+            await verifyEmail();
+            // `undefined` removes the field from the escrow-enrolled baseline.
+            const entries = Object.entries(fields as Record<string, unknown>);
+            await setKey({
+                recoveryMethods: [confirmed('escrow')],
+                escrowBlob: blob(),
+                ...Object.fromEntries(entries.filter(([, value]) => value !== undefined)),
+            });
+            const unset = entries.filter(([, value]) => value === undefined);
+            if (unset.length > 0)
+                await mongodb
+                    .collection('userkeys')
+                    .updateOne(
+                        { primaryDid: did },
+                        { $unset: Object.fromEntries(unset.map(([field]) => [field, ''])) }
+                    );
+            expect(await caller().getAccountContinuity()).toMatchObject({
+                emailVerified: true,
+                recoveryEmailVerified: true,
+                ...expected,
             });
         });
 

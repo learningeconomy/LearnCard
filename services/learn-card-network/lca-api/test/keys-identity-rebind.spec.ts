@@ -1,6 +1,15 @@
 import { randomUUID } from 'crypto';
 
+import {
+    encryptEscrowBlob,
+    generateEscrowKeyPair,
+    openEscrowRelease,
+    reconstructPrivateKey,
+    splitPrivateKey,
+} from '@learncard/sss-key-manager';
 import { client } from '@mongo';
+import { environment } from '@environment';
+import { encryptAuthShare } from '@helpers/shareEncryption.helpers';
 import cache from '@cache';
 import {
     createRecoverySession,
@@ -12,12 +21,15 @@ import {
 } from '@cache/recoverySessions';
 import {
     createUserKeysIndexes,
+    getEscrowHoldsCollection,
     getUserKeysCollection,
     purgeExpiredProvisionalMigrationByAuthProvider,
     revokeOtherDeviceShares,
+    upsertUserKeyByAuthProvider,
     type MongoUserKeyType,
 } from '@models';
 import * as delivery from '../src/services/delivery';
+import { __setEscrowEnclaveForTests } from '../src/services/escrow-enclave';
 import { Collection } from 'mongodb';
 import {
     getClassLinkIdentitiesCollection,
@@ -724,6 +736,175 @@ describe('ClassLink account continuity (LC-2409)', () => {
             ]);
         } finally {
             await collection.deleteMany({ primaryDid: did });
+            await getClassLinkIdentitiesCollection().deleteMany({ tenantId });
+            await getAuthSubjectsCollection().deleteMany({ identityKey: `email:${personal}` });
+        }
+    });
+
+    it('recovers an escrow-only account with a PIN through the personal email (email code + PIN)', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const uid = `classlink_${suffix}`;
+        const schoolEmail = `student-${suffix}@example.edu`;
+        const personal = `personal-pin-${suffix}@example.com`;
+        const pk = '3c'.repeat(32);
+        const keyId = 'keep-account-pin-test';
+        const pinProof = 'ef'.repeat(32);
+        const enclaveKeys = await generateEscrowKeyPair();
+        const recipient = await generateEscrowKeyPair();
+        const shares = await splitPrivateKey(pk);
+        const did = (await getUser(pk)).learnCard.id.did();
+        const collection = getUserKeysCollection();
+        const enclaveEnv = {
+            ESCROW_ENCLAVE_MODE: 'software',
+            ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: JSON.stringify({
+                [keyId]: enclaveKeys.privateKey,
+            }),
+            ESCROW_ENCLAVE_ACTIVE_KEY_ID: keyId,
+            ESCROW_HOLD_DURATION_MS: '60000',
+        };
+        const savedEnv = Object.fromEntries(
+            Object.keys(enclaveEnv).map(name => [name, process.env[name]])
+        );
+        Object.assign(process.env, enclaveEnv);
+        __setEscrowEnclaveForTests(undefined);
+        const schoolLogin = {
+            authToken: makeMockToken(schoolEmail, uid),
+            providerType: 'firebase' as const,
+        };
+
+        await upsertUserKeyByAuthProvider(
+            { type: 'email', value: schoolEmail },
+            { type: 'firebase', id: uid },
+            {
+                primaryDid: did,
+                authShare: encryptAuthShare(
+                    { encryptedData: shares.authShare, encryptedDek: '', iv: '' },
+                    environment.SEED
+                ),
+            }
+        );
+        await upsertClassLinkIdentity({
+            identityKey: `classlink:${tenantId}:${suffix}`,
+            tenantId,
+            sub: 'upstream',
+            role: 'student',
+            isMinorHint: true,
+            sealedStateStudentId: null,
+            state: 'XX',
+            firebaseUid: uid,
+            subject: `subject-${suffix}`,
+            lastAuthTime: now,
+        });
+        vi.mocked(getClassLinkConfig).mockReturnValue({
+            clientId: 'test',
+            clientSecret: 'test',
+            discoveryUrl: 'https://example.edu/discovery',
+            redirectUris: [],
+            maxAuthAgeSeconds: 86400,
+            tenants: {},
+            accountContinuity: {
+                enabled: true,
+                defaultPolicy: { personalEmail: 'all', approval: 'none' },
+                tenants: {},
+            },
+        });
+
+        try {
+            const owner = getClient({ did, isChallengeValid: true });
+            // Escrow with a PIN, and no passkey, phrase or backup.
+            await owner.escrow.enroll({
+                ...schoolLogin,
+                envelope: await encryptEscrowBlob(
+                    {
+                        recoveryShare: shares.recoveryShare,
+                        did,
+                        shareVersion: 1,
+                        pinVerifier: pinProof,
+                    },
+                    enclaveKeys.publicKey,
+                    keyId
+                ),
+                shareVersion: 1,
+                enclaveKeyId: keyId,
+                pinSalt: Buffer.alloc(16, 3).toString('base64'),
+            });
+            await expect(owner.classlink.getAccountContinuity()).resolves.toMatchObject({
+                hasUserRecoveryMethod: false,
+                pinState: 'enabled',
+                pinRecoverable: true,
+                nextStep: 'email',
+            });
+
+            let send = captureSend();
+            await owner.classlink.startPersonalEmail({ email: personal });
+            await expect(
+                owner.classlink.verifyPersonalEmail({ email: personal, code: lastCode(send) })
+            ).resolves.toEqual({ success: true, recoveryEmailSet: true });
+            await expect(owner.classlink.getAccountContinuity()).resolves.toMatchObject({
+                hasUserRecoveryMethod: false,
+                pinRecoverable: true,
+                nextStep: 'done',
+            });
+
+            // The school login is lost: the code goes to the personal email, then the PIN.
+            send = captureSend();
+            await getClient().keys.startRecoverySession({ email: personal });
+            expect(send).toHaveBeenCalledWith(expect.objectContaining({ to: personal }));
+            const verified = await getClient().keys.verifyRecoverySession({
+                email: personal,
+                code: lastCode(send),
+            });
+            expect(verified.recoveryMethods.map(method => method.type)).toEqual(['escrow']);
+            expect(verified.escrowPin).toMatchObject({ state: 'enabled', enabled: true });
+            expect(verified.primaryDid).toBe(did);
+
+            const hold = await getClient().escrow.startRecovery({
+                recoverySessionToken: verified.recoverySessionToken,
+                clientEphemeralPublicKey: recipient.publicKey,
+                releasePolicy: 'pin',
+            });
+            expect(hold.releasePolicy).toBe('pin');
+            if (!hold.resumeToken) throw new Error('Expected a new PIN recovery request');
+            const released = await getClient().escrow.completeRecovery({
+                holdId: hold.holdId,
+                resumeToken: hold.resumeToken,
+                pinProof,
+            });
+            const { recoveryShare } = await openEscrowRelease(
+                released.sealedShare,
+                recipient.privateKey
+            );
+            expect(recoveryShare).toBe(shares.recoveryShare);
+
+            const newUid = `new-${suffix}`;
+            const newLogin = makeMockToken(`new-${suffix}@example.com`, newUid);
+            await expect(
+                owner.keys.completePinSignIn({
+                    recoverySessionToken: released.rebindSessionToken,
+                    newAuthToken: newLogin,
+                    providerType: 'firebase',
+                    primaryDid: did,
+                })
+            ).resolves.toEqual({ success: true, shareVersion: 1, linked: true });
+
+            // The new login opens the same account, and the key rebuilds from its shares.
+            const status = await getClient().keys.getAuthShare({
+                authToken: newLogin,
+                providerType: 'firebase',
+            });
+            expect(status?.primaryDid).toBe(did);
+            expect(status?.escrowPin.enabled).toBe(true);
+            expect(
+                await reconstructPrivateKey(status!.authShare!.encryptedData, recoveryShare)
+            ).toBe(pk);
+        } finally {
+            for (const [name, value] of Object.entries(savedEnv)) {
+                if (value === undefined) delete process.env[name];
+                else process.env[name] = value;
+            }
+            __setEscrowEnclaveForTests(undefined);
+            await collection.deleteMany({ primaryDid: did });
+            await getEscrowHoldsCollection().deleteMany({ primaryDid: did });
             await getClassLinkIdentitiesCollection().deleteMany({ tenantId });
             await getAuthSubjectsCollection().deleteMany({ identityKey: `email:${personal}` });
         }
