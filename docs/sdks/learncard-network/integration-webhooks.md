@@ -299,23 +299,23 @@ The record carries identifiers only. It never contains shared credentials or per
 
 ### Event types
 
-| Type                 | Sent to the Integrations of           | Meaning                                                                                  |
-| -------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `request_sent`       | Owner, requester                      | A contract request was sent                                                              |
-| `request_accepted`   | Owner, requester                      | The target consented with that request. Written just before the consent event            |
-| `request_denied`     | Owner, requester                      | The target declined                                                                      |
-| `request_cancelled`  | Owner, requester                      | The request was cancelled                                                                |
-| `consent_created`    | Owner, writers, recipients, requester | New consent. The connection is live                                                      |
-| `consent_updated`    | Owner, writers, recipients, requester | Terms changed or consent was given again. `reason: "expiry_extended"` is explained below |
-| `consent_withdrawn`  | Owner, writers, recipients, requester | Consent ended. `reason: "contract_retired"` when the contract was retired                |
-| `credentials_synced` | Owner, writers, recipients, requester | The consenter shared more credentials                                                    |
-| `consent_paused`     | Owner, writers, recipients, requester | A contract update needs new consent (`reason: "needs_reconsent"`). Access is paused      |
-| `consent_suspended`  | Owner, writers, recipients, requester | The re-consent deadline passed without an answer                                         |
-| `consent_expired`    | Owner, writers, recipients, requester | The consent expired (see [Expiry](#expiry)). Can occur again after a renewal             |
-| `contract_retired`   | Owner, writers, recipients            | The contract was retired. One `consent_withdrawn` per active consent is sent as well     |
-| `integration.test`   | The Integration you tested            | Test delivery only. Never in the feed                                                    |
+| Type                 | Sent to the Integrations of | Meaning                                                                                  |
+| -------------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
+| `request_sent`       | Owner, requester            | A contract request was sent                                                              |
+| `request_accepted`   | Owner, requester            | The target consented with that request. Written just before the consent event            |
+| `request_denied`     | Owner, requester            | The target declined                                                                      |
+| `request_cancelled`  | Owner, requester            | The request was cancelled                                                                |
+| `consent_created`    | Owner, writers, recipients  | New consent. The connection is live                                                      |
+| `consent_updated`    | Owner, writers, recipients  | Terms changed or consent was given again. `reason: "expiry_extended"` is explained below |
+| `consent_withdrawn`  | Owner, writers, recipients  | Consent ended. `reason: "contract_retired"` when the contract was retired                |
+| `credentials_synced` | Owner, writers, recipients  | The consenter shared more credentials                                                    |
+| `consent_paused`     | Owner, writers, recipients  | A contract update needs new consent (`reason: "needs_reconsent"`). Access is paused      |
+| `consent_suspended`  | Owner, writers, recipients  | The re-consent deadline passed without an answer                                         |
+| `consent_expired`    | Owner, writers, recipients  | The consent expired (see [Expiry](#expiry)). Can occur again after a renewal             |
+| `contract_retired`   | Owner, writers, recipients  | The contract was retired. One `consent_withdrawn` per active consent is sent as well     |
+| `integration.test`   | The Integration you tested  | Test delivery only. Never in the feed                                                    |
 
-A requester receives a record only for events that carry its own request.
+The requester is the profile that sent the referral. It receives the request events of its own requests. It receives consent events only while it is also the contract owner, a writer or a data recipient: a profile that has been removed as a data recipient stops receiving them, even for people it referred.
 
 ### Expiry
 
@@ -515,7 +515,7 @@ global without sharing class LearnCardWebhook {
 - A worker runs about once a minute, so a first delivery normally arrives within a minute.
 - Each delivery pass sends at most 5 records per Integration and interleaves Integrations, so a busy Integration does not hold back the others. A slow endpoint slows only its own deliveries.
 - A configuration change applies to the very next delivery: disabling events, changing or removing the URL, and rotating the secret.
-- Before a record reaches the feed, LearnCard fans the source event out to the Integrations that should see it. An event that repeatedly fails to fan out is retried with a growing delay for about three days and then abandoned. Such an event never reaches the feed, so keep the safety-net feed read and the occasional snapshot described below.
+- Before a record reaches the feed, LearnCard fans the source event out to the Integrations that should see it. An event that repeatedly fails to fan out is retried with a growing delay for about three days and then abandoned. While it is being retried, later events of the same contract wait behind it; other contracts are not affected. Such an event never reaches the feed, so keep the safety-net feed read and the occasional snapshot described below.
 - A failed or rejected delivery never removes the record from the feed. Failed deliveries are not replayed after you fix your endpoint; read the feed to catch up.
 - **Disabling contract events stops deliveries.** Records that were still waiting, for a first attempt or for a retry, are closed without being sent (delivery failure reason `disabled`). They stay in the feed. Records from before a disable are not sent after events are enabled again; read the feed to catch up.
 - Use [`getIntegrationWebhook`](#read-configuration-and-health) to see whether deliveries are arriving, why the last one failed, and how many are waiting.
@@ -601,7 +601,7 @@ curl -G "https://network.learncard.com/api/consent-flow-contracts/connections" \
 {% endtabs %}
 
 - The contract owner, contract writers and data recipients can call it. It needs the `contracts-data:read` scope.
-- A requester who is none of those cannot read the snapshot. It recovers through `getContractSentRequests`, which lists its own referrals and their status.
+- A profile that only sent a referral and is no longer a data recipient cannot read the snapshot. It also no longer receives consent events for that contract, so it has nothing to resync.
 - `limit` defaults to 100, with a maximum of 200. Pages are ordered by terms id, so they stay stable while statuses change.
 - `externalReferenceId` follows the same rule as events: it is present only for contract managers and for the profile that sent that request.
 - Like events, it returns identifiers only.
@@ -626,7 +626,7 @@ Applying a record twice must give the same result, so replays are harmless.
 
 Delivery is at least once, and retries can arrive out of order. Deduplicate by `deliveryKey`. Within the feed, `sequence` is the order.
 
-`sequence` is the order in which records were written to the feed, not the order in which things happened. An event whose fan-out was delayed gets a later `sequence` than newer events of the same contract, but it keeps its original `occurredAt`. So a client must not let a record with an older `occurredAt` overwrite newer state for the same connection (`termsUri`). Keep the `occurredAt` of the last record you applied for each `termsUri`, and ignore a record that is older than it.
+Within one contract, records are written to the feed in the order things happened. If an event cannot be written, later events of the same contract wait behind it until it succeeds or is abandoned, so a newer event never overtakes an older one. There is no order guarantee between different contracts. Webhook requests can still arrive out of order because failed deliveries are retried, so apply records by `sequence`, not by arrival time. As a defence against replays, you can also keep the `occurredAt` of the last record you applied for each `termsUri` and ignore one that is older.
 
 Records written by one change share one `occurredAt` and have no defined order among themselves. For example, when a contract is retired, `contract_retired` can come before or after the `consent_withdrawn` records of that retirement.
 
