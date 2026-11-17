@@ -99,7 +99,7 @@ const readExpiryCandidates = async (
                  OR (node.expiresAt = $afterExpiresAt AND node.id > $afterId))
              ${
                  label === 'ConsentFlowTerms'
-                     ? 'AND node.expiredEventAt IS NULL AND node.status IN $statuses'
+                     ? `AND ${notYetEmittedFor('node', 'node.expiresAt')} AND node.status IN $statuses`
                      : ''
              }
          RETURN node.id AS id, node.expiresAt AS expiresAt
@@ -121,10 +121,22 @@ const readExpiryCandidates = async (
     });
 };
 
-/** Shared tail of both expiry statements: mark the terms and record its event exactly once. */
+/**
+ * Cypher predicate: true while the terms node has not emitted `consent_expired` for the given
+ * expiry instant. `terms.expiredEventFor` lists every expiry instant already emitted.
+ */
+const notYetEmittedFor = (termsAlias: string, expiresAtExpression: string): string =>
+    `NOT ${expiresAtExpression} IN coalesce(${termsAlias}.expiredEventFor, [])`;
+
+/**
+ * Shared tail of both expiry statements. Expects `terms`, `contract` and `expiredAt` (the
+ * expiry instant that passed, exactly as stored). Remembers the instant on the terms and
+ * records one event for it: the event id contains the instant, so the same expiry can never
+ * produce a second event, while a later, different expiry of the same terms produces a new one.
+ */
 const MARK_EXPIRED_CYPHER = `
-    SET terms.expiredEventAt = $now
-    MERGE (event:ConsentFlowEvent {id: terms.id + ':expired'})
+    SET terms.expiredEventFor = coalesce(terms.expiredEventFor, []) + expiredAt
+    MERGE (event:ConsentFlowEvent {id: terms.id + ':expired:' + expiredAt})
     ON CREATE SET event += {
         kind: 'consent_expired', contractId: contract.id, termsId: terms.id,
         requestId: terms.\`referral.requestId\`,
@@ -135,9 +147,16 @@ const MARK_EXPIRED_CYPHER = `
     RETURN count(terms) AS expired`;
 
 /**
- * Records one integration-only `consent_expired` event (id `${termsId}:expired`) for every
- * active terms that has expired, and sets `terms.expiredEventAt` so each terms emits once.
- * The terms status is not changed.
+ * Records one integration-only `consent_expired` event for every active terms whose expiry
+ * has passed. The terms status is not changed.
+ *
+ * An event belongs to one expiry instant: its id is `${termsId}:expired:${expiresAt}` and the
+ * instant is added to `terms.expiredEventFor`. The same expiry therefore emits exactly once,
+ * and a later, different expiry emits again: terms that expired with version 1, were renewed
+ * by accepting version 2, and expire again with version 2 get a second event. When the terms'
+ * own expiry and the accepted version's expiry are different instants and both pass, each
+ * emits one event; a receiver treats `consent_expired` for an already expired consent as a
+ * repeat.
  *
  * Expiry follows the rule of the consented-data reads (see consent-expiry.helpers): the
  * terms' own `expiresAt`, or the `expiresAt` of the contract version the consenter accepted.
@@ -190,9 +209,10 @@ export const emitExpiredConsentEvents = async (
             const result = await neogma.queryRunner.run(
                 `MATCH (terms:ConsentFlowTerms)
                  WHERE terms.expiresAt IN $expiries AND terms.id IN $ids
-                     AND terms.expiredEventAt IS NULL AND terms.status IN $statuses
+                     AND ${notYetEmittedFor('terms', 'terms.expiresAt')}
+                     AND terms.status IN $statuses
                  MATCH (terms)-[:CONSENTS_TO]->(contract:ConsentFlowContract)
-                 WITH terms, head(collect(contract)) AS contract
+                 WITH terms, head(collect(contract)) AS contract, terms.expiresAt AS expiredAt
                  ${MARK_EXPIRED_CYPHER}`,
                 {
                     expiries: [...new Set(due.map(candidate => candidate.expiresAt))],
@@ -231,9 +251,11 @@ export const emitExpiredConsentEvents = async (
                      WHERE accepted.expiresAt = $expiresAt AND accepted.id = $id
                      MATCH (contract:ConsentFlowContract)-[:HAS_VERSION]->(accepted)
                      MATCH (terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
-                     WHERE terms.expiredEventAt IS NULL AND terms.status IN $statuses
+                     WHERE ${notYetEmittedFor('terms', 'accepted.expiresAt')}
+                         AND terms.status IN $statuses
                          AND ${ACCEPTED_VERSION_PREDICATE}
-                     WITH contract, terms ORDER BY terms.id LIMIT $limit
+                     WITH contract, terms, accepted.expiresAt AS expiredAt
+                     ORDER BY terms.id LIMIT $limit
                      ${MARK_EXPIRED_CYPHER}`,
                     { ...version, statuses: ACTIVE_STATUSES, now, limit: int(batchSize) }
                 );

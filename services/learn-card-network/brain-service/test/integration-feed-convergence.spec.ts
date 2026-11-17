@@ -393,11 +393,38 @@ describe('a client that uses only the feed and the snapshot', () => {
         expect(lateA.state()).toEqual(await reference(contractA));
         expect(lateB.state()).toEqual(await reference(contractB));
 
-        // ---- Version 2 of contract A expires too: nobody is left. ----
+        // ---- l1, whose consent expired with version 1, renews it by accepting version 2. ----
+        await l1.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsA[1]!,
+            terms: normalFullTerms,
+            acceptVersion: 2,
+        });
+        await runJobs();
+        await clientA.sync();
+        await lateA.sync();
+
+        expect(await reference(contractA)).toEqual({
+            [l0.profileId]: 'live',
+            [l1.profileId]: 'live',
+        });
+        expect(clientA.state()).toEqual(await reference(contractA));
+        expect(lateA.state()).toEqual(await reference(contractA));
+
+        // ---- Version 2 of contract A expires too: nobody is left. l1 expires a second time,
+        // so its terms must emit consent_expired again or the feed would keep it live. ----
         await expireVersion(contractA, 2);
         await runJobs();
         await clientA.sync();
         await lateA.sync();
+
+        const l1Expiries = await run(
+            `MATCH (event:ConsentFlowEvent {kind: 'consent_expired', termsId: $termsId})
+             RETURN count(event) AS total`,
+            { termsId: idOf(termsA[1]!) }
+        );
+
+        expect(Number(l1Expiries.records[0]?.get('total'))).toBe(2);
+        expect(clientA.stats().snapshots).toBe(1);
 
         expect(await reference(contractA)).toEqual({});
         expect(clientA.state()).toEqual({});

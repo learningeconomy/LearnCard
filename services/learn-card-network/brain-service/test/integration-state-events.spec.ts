@@ -310,9 +310,11 @@ describe('integration-only state events', () => {
         await fanOutIntegrationEvents({ limit: 500 });
         expect(await typesSince(ownerIntegrationId, before)).toEqual([]);
 
+        const expiredAt = new Date(Date.now() - 1_000).toISOString();
+
         await run('MATCH (terms:ConsentFlowTerms {id: $id}) SET terms.expiresAt = $expiresAt', {
             id: idOf(termsA),
-            expiresAt: new Date(Date.now() - 1_000).toISOString(),
+            expiresAt: expiredAt,
         });
         // Learner B's terms have an expiry that has not passed yet, so they must not emit.
         await run('MATCH (terms:ConsentFlowTerms {id: $id}) SET terms.expiresAt = $expiresAt', {
@@ -324,11 +326,11 @@ describe('integration-only state events', () => {
         expect(first.expired).toBeGreaterThanOrEqual(1);
 
         const terms = await run(
-            'MATCH (terms:ConsentFlowTerms {id: $id}) RETURN terms.status AS status, terms.expiredEventAt AS at',
+            'MATCH (terms:ConsentFlowTerms {id: $id}) RETURN terms.status AS status, terms.expiredEventFor AS emitted',
             { id: idOf(termsA) }
         );
         expect(terms.records[0]?.get('status')).toBe('live');
-        expect(typeof terms.records[0]?.get('at')).toBe('string');
+        expect(terms.records[0]?.get('emitted')).toEqual([expiredAt]);
 
         // A second pass finds nothing new for these terms.
         await emitExpiredConsentEvents();
@@ -339,7 +341,7 @@ describe('integration-only state events', () => {
         expect(records).toHaveLength(1);
         expect(records[0]).toMatchObject({
             type: 'consent_expired',
-            eventId: `${idOf(termsA)}:expired`,
+            eventId: `${idOf(termsA)}:expired:${expiredAt}`,
             contractUri,
             termsUri: termsA,
             subject: { profileId: learnerA.profileId },
@@ -353,6 +355,26 @@ describe('integration-only state events', () => {
 
         expect(expired).toHaveLength(1);
         expect(expired[0]).not.toHaveProperty('externalReferenceId');
+
+        // A later, different expiry of the same terms is a new event; repeating it is not.
+        const expiredAgainAt = new Date(Date.now() - 500).toISOString();
+
+        await run('MATCH (terms:ConsentFlowTerms {id: $id}) SET terms.expiresAt = $expiresAt', {
+            id: idOf(termsA),
+            expiresAt: expiredAgainAt,
+        });
+        await emitExpiredConsentEvents();
+        await emitExpiredConsentEvents();
+        await fanOutIntegrationEvents({ limit: 500 });
+
+        const again = (await typesSince(ownerIntegrationId, before)).filter(
+            record => record.type === 'consent_expired'
+        );
+
+        expect(again.map(record => record.eventId)).toEqual([
+            `${idOf(termsA)}:expired:${expiredAt}`,
+            `${idOf(termsA)}:expired:${expiredAgainAt}`,
+        ]);
     });
 
     it('expiry scan: contract expiry emits consent_expired for every active terms, and skips withdrawn ones', async () => {

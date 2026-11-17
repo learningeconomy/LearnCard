@@ -82,7 +82,7 @@ export const toIntegrationEvent = (record: Record<string, unknown>): Integration
 };
 
 export type IntegrationOnlyEventInput = {
-    /** Deterministic event id, for example `${termsId}:expired`. A second call with the same id is a no-op. */
+    /** Deterministic event id, for example `${termsId}:expired:${expiresAt}`. A second call with the same id is a no-op. */
     id: string;
     kind: Exclude<IntegrationEventType, 'integration.test' | 'request_accepted'>;
     contractId: string;
