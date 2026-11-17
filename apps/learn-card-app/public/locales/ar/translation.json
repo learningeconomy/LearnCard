@@ -7583,6 +7583,7 @@
                     "rotateHint": "التدوير ينشئ سرًا جديدًا. يبقى السر الحالي صالحًا لمدة 24 ساعة.",
                     "newSecretLabel": "سر التوقيع الجديد",
                     "secretOnceWarning": "انسخ هذا السر الآن. لن تتمكن من رؤيته مرة أخرى.",
+                    "dismissSecret": "لقد حفظته",
                     "previousSecretExpires": "يبقى سرك السابق صالحًا حتى {{date}}.",
                     "copySecret": "نسخ السر",
                     "secretCopied": "تم نسخ السر",

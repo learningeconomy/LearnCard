@@ -7557,6 +7557,7 @@
                     "rotateHint": "Al rotar se crea un secreto nuevo. El actual sigue funcionando durante 24 horas.",
                     "newSecretLabel": "Tu nuevo secreto de firma",
                     "secretOnceWarning": "Copia este secreto ahora. No volverás a verlo.",
+                    "dismissSecret": "Ya lo guardé",
                     "previousSecretExpires": "Tu secreto anterior sigue funcionando hasta {{date}}.",
                     "copySecret": "Copiar secreto",
                     "secretCopied": "Secreto copiado",

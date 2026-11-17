@@ -7609,6 +7609,7 @@
                     "rotateHint": "Rotating creates a new secret. The current one keeps working for 24 hours.",
                     "newSecretLabel": "Your new signing secret",
                     "secretOnceWarning": "Copy this secret now. You will not see it again.",
+                    "dismissSecret": "I have saved it",
                     "previousSecretExpires": "Your previous secret keeps working until {{date}}.",
                     "copySecret": "Copy secret",
                     "secretCopied": "Secret copied",

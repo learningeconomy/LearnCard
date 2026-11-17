@@ -56,6 +56,7 @@ const webhookKeys = {
     secretNone: 'developerPortal.dashboards.tabs.webhooks.secretNone',
     secretExists: 'developerPortal.dashboards.tabs.webhooks.secretExists',
     rotateSecret: 'developerPortal.dashboards.tabs.webhooks.rotateSecret',
+    dismissSecret: 'developerPortal.dashboards.tabs.webhooks.dismissSecret',
     secretOnceWarning: 'developerPortal.dashboards.tabs.webhooks.secretOnceWarning',
     previousSecretExpires: 'developerPortal.dashboards.tabs.webhooks.previousSecretExpires',
     copySecret: 'developerPortal.dashboards.tabs.webhooks.copySecret',
@@ -112,8 +113,12 @@ const activeStatus: IntegrationWebhookStatus = {
     retryingDeliveries: 0,
 };
 
-const showTab = (project: LCNIntegration = integration): void => {
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+const showTab = (
+    project: LCNIntegration = integration,
+    client: QueryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    })
+): void => {
     render(
         <QueryClientProvider client={client}>
             <WebhooksTab integration={project} />
@@ -248,6 +253,108 @@ describe('Webhooks tab', () => {
                 })
             )
         ).toBeInTheDocument();
+    });
+
+    describe('a secret that outlives the tab', () => {
+        const newClient = (): QueryClient =>
+            new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+
+        it('keeps a rotated secret that arrives after the tab unmounted, until dismissed', async () => {
+            let resolveRotation: (value: { secret: string }) => void = () => undefined;
+            state.rotateIntegrationWebhookSecret.mockReturnValue(
+                new Promise(resolve => {
+                    resolveRotation = resolve;
+                })
+            );
+            const client = newClient();
+            showTab(configured, client);
+            fireEvent.click(screen.getByRole('button', { name: t('rotateSecret') }));
+            await waitFor(() => expect(state.rotateIntegrationWebhookSecret).toHaveBeenCalled());
+
+            // The developer switches dashboard tabs before the request finishes.
+            cleanup();
+            resolveRotation({ secret: SECRET });
+            await new Promise(resolve => setTimeout(resolve, 20));
+
+            showTab(configured, client);
+            expect(await screen.findByTestId('webhook-secret')).toHaveTextContent(SECRET);
+            expect(screen.getByText(t('secretOnceWarning'))).toBeInTheDocument();
+
+            // Leaving and returning again still shows it, until it is dismissed.
+            cleanup();
+            showTab(configured, client);
+            expect(await screen.findByTestId('webhook-secret')).toHaveTextContent(SECRET);
+
+            fireEvent.click(screen.getByRole('button', { name: t('dismissSecret') }));
+            await waitFor(() => expect(screen.queryByTestId('webhook-secret')).toBeNull());
+            expect(screen.getByText(t('secretExists'))).toBeInTheDocument();
+
+            cleanup();
+            showTab(configured, client);
+            await waitFor(() => expect(state.getIntegrationWebhook).toHaveBeenCalled());
+            expect(screen.queryByTestId('webhook-secret')).toBeNull();
+        });
+
+        it('keeps the first secret when the registration finishes after the tab unmounted', async () => {
+            let resolveSave: (value: { webhookUrl: string; secret: string }) => void = () =>
+                undefined;
+            state.setIntegrationWebhook.mockReturnValue(
+                new Promise(resolve => {
+                    resolveSave = resolve;
+                })
+            );
+            const client = newClient();
+            showTab(integration, client);
+            fireEvent.change(screen.getByRole('textbox', { name: t('urlTitle') }), {
+                target: { value: WEBHOOK_URL },
+            });
+            fireEvent.click(screen.getByRole('button', { name: t('saveUrl') }));
+            await waitFor(() => expect(state.setIntegrationWebhook).toHaveBeenCalled());
+
+            cleanup();
+            resolveSave({ webhookUrl: WEBHOOK_URL, secret: SECRET });
+            await new Promise(resolve => setTimeout(resolve, 20));
+
+            showTab({ ...integration, webhookUrl: WEBHOOK_URL, hasWebhookSecret: true }, client);
+            expect(await screen.findByTestId('webhook-secret')).toHaveTextContent(SECRET);
+            expect(screen.getByText(t('secretOnceWarning'))).toBeInTheDocument();
+        });
+
+        it('replaces a waiting secret with the next rotation and shows only its own integration', async () => {
+            const client = newClient();
+            showTab(configured, client);
+            fireEvent.click(screen.getByRole('button', { name: t('rotateSecret') }));
+            expect(await screen.findByTestId('webhook-secret')).toHaveTextContent(SECRET);
+
+            state.rotateIntegrationWebhookSecret.mockResolvedValue({ secret: 'whsec_newer' });
+            fireEvent.click(screen.getByRole('button', { name: t('rotateSecret') }));
+            await waitFor(() =>
+                expect(screen.getByTestId('webhook-secret')).toHaveTextContent('whsec_newer')
+            );
+
+            cleanup();
+            showTab({ ...configured, id: 'another-project' }, client);
+            expect(screen.queryByTestId('webhook-secret')).toBeNull();
+        });
+
+        it('never writes the secret to web storage or logs it', async () => {
+            const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+            const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+            showTab(configured);
+            fireEvent.click(screen.getByRole('button', { name: t('rotateSecret') }));
+            expect(await screen.findByTestId('webhook-secret')).toHaveTextContent(SECRET);
+
+            const stored = (storage: Storage): string =>
+                Array.from({ length: storage.length }, (_, i) => {
+                    const key = storage.key(i) ?? '';
+                    return `${key}=${storage.getItem(key)}`;
+                }).join('\n');
+            expect(stored(localStorage)).not.toContain(SECRET);
+            expect(stored(sessionStorage)).not.toContain(SECRET);
+            expect(JSON.stringify([...log.mock.calls, ...info.mock.calls])).not.toContain(SECRET);
+            log.mockRestore();
+            info.mockRestore();
+        });
     });
 
     it('reports a failed rotation without showing a secret', async () => {

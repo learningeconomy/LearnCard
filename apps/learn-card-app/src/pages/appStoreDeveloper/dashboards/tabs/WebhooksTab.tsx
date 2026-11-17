@@ -52,9 +52,6 @@ const formatDate = (value: string, locale: string): string => {
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString(locale);
 };
 
-/** A signing secret that was just returned. It is shown once and kept in component state only. */
-type RevealedSecret = { secret: string; previousSecretExpiresAt?: string };
-
 const STATE_BADGE_CLASS: Record<IntegrationWebhookState, string> = {
     active: 'bg-emerald-100 text-emerald-700',
     failing: 'bg-red-100 text-red-700',
@@ -145,6 +142,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
         useSetIntegrationWebhook,
         useIntegrationWebhook,
         useRotateIntegrationWebhookSecret,
+        useRevealedWebhookSecret,
         useSendIntegrationTestEvent,
     } = useDeveloperPortal();
 
@@ -152,6 +150,8 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
     const setWebhook = useSetIntegrationWebhook();
     const health = useIntegrationWebhook(integration.id);
     const rotateSecret = useRotateIntegrationWebhookSecret();
+    // Kept in the query cache, not here, so it survives leaving this tab until dismissed.
+    const { revealed, dismiss: dismissSecret } = useRevealedWebhookSecret(integration.id);
     const sendTestEvent = useSendIntegrationTestEvent();
 
     const savedUrl = integration.webhookUrl ?? '';
@@ -159,7 +159,6 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
     const eventsEnabled = Boolean(eventsEnabledAt);
 
     const [urlInput, setUrlInput] = useState(savedUrl);
-    const [revealed, setRevealed] = useState<RevealedSecret | null>(null);
     const [secretCopied, setSecretCopied] = useState(false);
     const [testResult, setTestResult] = useState<IntegrationTestEventResult | null>(null);
 
@@ -167,9 +166,10 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
         setUrlInput(savedUrl);
     }, [savedUrl]);
 
-    // A secret and a test result belong to one integration only.
+    // A secret and a test result belong to one integration only. The secret is keyed by
+    // integration id in the cache, so only this integration's secret is ever shown.
     useEffect(() => {
-        setRevealed(null);
+        setSecretCopied(false);
         setTestResult(null);
     }, [integration.id]);
 
@@ -187,17 +187,13 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
         if (!urlIsValid || !urlChanged) return;
 
         try {
-            const registration = await setWebhook.mutateAsync({
+            // The secret returned by the first registration is stored by the mutation hook,
+            // so it survives this tab unmounting. It is never logged or written to web storage.
+            await setWebhook.mutateAsync({
                 id: integration.id,
                 webhookUrl: trimmedUrl,
             });
-
-            // Only the call that creates the first secret returns it. It stays in component
-            // state only and is never logged or stored.
-            if (registration.secret) {
-                setRevealed({ secret: registration.secret });
-                setSecretCopied(false);
-            }
+            setSecretCopied(false);
 
             setTestResult(null);
             presentToast(m['developerPortal.dashboards.tabs.webhooks.urlSaved'](), {
@@ -242,8 +238,8 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
 
     const rotate = async (): Promise<void> => {
         try {
-            // The secret stays in component state only. It is never logged or stored.
-            setRevealed(await rotateSecret.mutateAsync(integration.id));
+            // The new secret is stored by the mutation hook, so it survives this tab unmounting.
+            await rotateSecret.mutateAsync(integration.id);
             setSecretCopied(false);
         } catch {
             showError(m['developerPortal.dashboards.tabs.webhooks.rotateFailed']());
@@ -523,6 +519,13 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                                 })}
                             </p>
                         )}
+                        <button
+                            type="button"
+                            onClick={dismissSecret}
+                            className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                        >
+                            {m['developerPortal.dashboards.tabs.webhooks.dismissSecret']()}
+                        </button>
                     </div>
                 ) : (
                     <p className="text-sm text-grayscale-600">

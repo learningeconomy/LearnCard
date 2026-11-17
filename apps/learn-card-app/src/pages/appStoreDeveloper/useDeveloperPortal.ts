@@ -26,9 +26,54 @@ export type ListingSigningAuthorityInfo = {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-developer-portal');
 
+/** A webhook signing secret that was just returned. It is shown once, then dismissed. */
+export type RevealedWebhookSecret = { secret: string; previousSecretExpiresAt?: string };
+
+// The secret lives in the in-memory query cache only, so it outlives the Webhooks tab (tabs
+// unmount when you switch) without ever being written to web storage or logged. The key is
+// deliberately outside ['developer', 'integration', id], which the mutations invalidate.
+const revealedWebhookSecretKey = (integrationId: string) =>
+    ['developer', 'revealed-webhook-secret', integrationId] as const;
+
 export const useDeveloperPortal = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+
+    // Hook-level mutation callbacks still run after the calling component has unmounted,
+    // which call-site `mutate(..., { onSuccess })` callbacks do not.
+    const storeRevealedWebhookSecret = (
+        integrationId: string,
+        revealed: RevealedWebhookSecret
+    ): void => {
+        const key = revealedWebhookSecretKey(integrationId);
+
+        // With no observer (tab unmounted) the default garbage collection would drop it.
+        queryClient.setQueryDefaults(key, { gcTime: Infinity, staleTime: Infinity });
+        queryClient.setQueryData<RevealedWebhookSecret>(key, revealed);
+    };
+
+    // The secret still waiting to be saved by the developer, if any. Never fetched: it only
+    // exists once a registration or rotation has stored it.
+    const useRevealedWebhookSecret = (integrationId: string | null) => {
+        const query = useQuery<RevealedWebhookSecret | null>({
+            queryKey: revealedWebhookSecretKey(integrationId ?? ''),
+            queryFn: () => null,
+            enabled: false,
+            gcTime: Infinity,
+            staleTime: Infinity,
+        });
+
+        const dismiss = (): void => {
+            if (!integrationId) return;
+
+            queryClient.setQueryData<RevealedWebhookSecret | null>(
+                revealedWebhookSecretKey(integrationId),
+                null
+            );
+        };
+
+        return { revealed: integrationId ? (query.data ?? null) : null, dismiss };
+    };
 
     const APP_SIGNING_AUTHORITY_PREFIX = 'app-';
     const MAX_SIGNING_AUTHORITY_NAME_LENGTH = 15;
@@ -191,7 +236,10 @@ export const useDeveloperPortal = () => {
 
                 return wallet.invoke.setIntegrationWebhook(id, webhookUrl);
             },
-            onSuccess: (_data, variables) => {
+            onSuccess: (data, variables) => {
+                // Only the call that creates the first secret returns it.
+                if (data.secret) storeRevealedWebhookSecret(variables.id, { secret: data.secret });
+
                 queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
                 // Also covers the webhook health query, whose key starts with this one.
                 queryClient.invalidateQueries({
@@ -224,7 +272,13 @@ export const useDeveloperPortal = () => {
 
                 return wallet.invoke.rotateIntegrationWebhookSecret(id);
             },
-            onSuccess: (_data, id) => {
+            onSuccess: (data, id) => {
+                // A rotation replaces any secret still waiting to be saved.
+                storeRevealedWebhookSecret(id, {
+                    secret: data.secret,
+                    previousSecretExpiresAt: data.previousSecretExpiresAt,
+                });
+
                 queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
                 queryClient.invalidateQueries({ queryKey: ['developer', 'integration', id] });
             },
@@ -713,6 +767,7 @@ export const useDeveloperPortal = () => {
         useSetIntegrationWebhook,
         useIntegrationWebhook,
         useRotateIntegrationWebhookSecret,
+        useRevealedWebhookSecret,
         useSendIntegrationTestEvent,
 
         // Listing hooks

@@ -7557,6 +7557,7 @@
                     "rotateHint": "Le renouvellement crée un nouveau secret. Le secret actuel reste valide pendant 24 heures.",
                     "newSecretLabel": "Votre nouveau secret de signature",
                     "secretOnceWarning": "Copiez ce secret maintenant. Vous ne le reverrez plus.",
+                    "dismissSecret": "Je l'ai enregistré",
                     "previousSecretExpires": "Votre ancien secret reste valide jusqu'au {{date}}.",
                     "copySecret": "Copier le secret",
                     "secretCopied": "Secret copié",
