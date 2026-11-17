@@ -1,6 +1,10 @@
 import type { CampaignAudienceResult } from '@learncard/types';
 import type {
     SendContractRequest,
+    IntegrationWebhookSecretRotation,
+    IntegrationTestEventResult,
+    IntegrationEventsResponse,
+    PaginatedContractConnections,
     ConsentFlowContractRequestForProfile,
     GuardianApprovalRequestStatus,
 } from '@learncard/types';
@@ -141,10 +145,6 @@ import {
     LCNIntegrationUpdateType,
     LCNIntegrationQueryType,
     PaginatedLCNIntegrationsType,
-    IntegrationWebhookSecretRotation,
-    IntegrationTestEventResult,
-    IntegrationEventsResponse,
-    PaginatedContractConnections,
     // App Store
     AppStoreListing,
     AppStoreListingCreateType,
