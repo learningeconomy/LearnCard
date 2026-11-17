@@ -3,6 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { neogma } from '@instance';
 import { Integration, Profile } from '@models';
 import * as notificationTransport from '@helpers/notification-webhook-fetch.helpers';
+import * as webhookAccess from '@accesslayer/integration/webhook';
 import {
     createIntegrationOnlyEvent,
     dispatchIntegrationWebhooks,
@@ -381,6 +382,28 @@ describe('dispatchIntegrationWebhooks', () => {
                 lastFailureReason: 'http_500',
             });
         });
+    });
+
+    it('does not change webhook health when an internal error stops a delivery before any request', async () => {
+        await seedEvent('health-internal-1');
+        vi.spyOn(webhookAccess, 'getIntegrationWebhookDeliverySnapshot').mockRejectedValue(
+            new Error('database hiccup')
+        );
+
+        await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({ pending: 1 });
+
+        expect(fetchSpy).not.toHaveBeenCalled();
+
+        const record = await stored('health-internal-1');
+        const after = await userA.clients.fullAuth.integrations.getIntegrationWebhook({
+            id: integrationId,
+        });
+
+        expect(record.deliveryState).toBe('pending');
+        expect(record.failureReason).toBe('delivery_error');
+        expect(after.state).toBe('active');
+        expect(after).not.toHaveProperty('lastFailureAt');
+        expect(after).not.toHaveProperty('lastFailureReason');
     });
 
     it('rejects pending and retrying records once contract events are disabled', async () => {

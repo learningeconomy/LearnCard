@@ -815,15 +815,16 @@ const isDeliveryDisabled = (config: WebhookDeliveryConfig, occurredAt: unknown):
  * with failureReason `disabled`. A failed or refused delivery only changes delivery
  * bookkeeping; the record always stays in the feed.
  *
- * Webhook health: every attempt that reached the send step (delivered, refused, failed, or an
- * internal delivery error) is remembered per integration and webhook URL, and the latest success and the latest failure of
- * the pass are written to the Integration node once per URL, after the loop, only while the
- * Integration still has that URL. That
- * is at most one extra write per integration per pass instead of one per record, and it keeps
- * the Integration node's write lock (shared with sequence allocation and feed reads) out of
- * the per-record statements. Records closed without a request (`no_webhook`, `disabled`,
- * `retry_expired`, `retry_exhausted`) do not change health: they say nothing new about the
- * receiver. A crash before the final write loses only that pass's health update.
+ * Webhook health: every attempt that reached the send step (delivered, refused or failed) is
+ * remembered per integration and webhook URL. The latest success and the latest failure of the
+ * pass are written to the Integration node once per URL, after the loop, and only while the
+ * Integration still has that URL. That is at most one extra write per integration per pass
+ * instead of one per record, and it keeps the Integration node's write lock (shared with
+ * sequence allocation and feed reads) out of the per-record statements. An internal error
+ * before a request is sent (a failed config read, say) changes no health, and neither do
+ * records closed without a request (`no_webhook`, `disabled`, `retry_expired`,
+ * `retry_exhausted`): they say nothing new about the receiver. A crash before the final write
+ * loses only that pass's health update.
  */
 export const dispatchIntegrationWebhooks = async ({
     limit = 100,
@@ -990,10 +991,8 @@ export const dispatchIntegrationWebhooks = async ({
                 }
             }
         } catch {
+            // A fault on our side (sending never throws): not a statement about the receiver.
             failureReason = 'delivery_error';
-            const cached = configs.get(integrationId)?.config;
-
-            if (cached) remember(integrationId, cached.webhookUrl, false, failureReason);
             if (attempts >= MAX_WEBHOOK_ATTEMPTS) state = 'failed';
         }
 
