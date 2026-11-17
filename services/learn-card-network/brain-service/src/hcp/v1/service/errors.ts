@@ -1,6 +1,6 @@
 /**
  * Draft 3 §5.5 Core errors that v1 raises. The service throws these; the router
- * maps them to tRPC codes in one place (router.ts `toTRPCError`).
+ * maps them to tRPC codes and the `data.hcp` Core error in one place (router.ts).
  */
 export type HcpV1ErrorType =
     'malformed-request' | 'invalid-token' | 'scope-denied' | 'version-conflict';

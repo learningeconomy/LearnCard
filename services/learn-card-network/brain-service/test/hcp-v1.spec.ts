@@ -1,12 +1,19 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { randomUUID } from 'node:crypto';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import Fastify, { type FastifyInstance } from 'fastify';
+import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
+import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
 
 import { Profile } from '@models';
 import { neogma } from '@instance';
+import { setValidChallengeForDid } from '@cache/challenges';
 
+import { appRouter, createContext } from '../src/app';
 import { getClient, getUser } from './helpers/getClient';
 
 const PURPOSE = 'https://purpose.example/tutoring';
 const GENERAL = 'https://hcp.example/spec/profiles/general-context/2.0';
+const BADGES = 'https://learncard.com/hcp/categories/badges';
 const LABELS = [
     'HcpV1ContextEntry',
     'HcpV1EntryVersion',
@@ -24,7 +31,7 @@ const entry = (subjectDid: string, value: string, extra: Record<string, unknown>
     schema: 'https://hcp.example/spec/entry/2.0' as const,
     subject: { id: subjectDid },
     content: { profile: GENERAL as typeof GENERAL, value },
-    classification: { categories: ['education_learner_profile' as const] },
+    classification: { categories: ['education_learner_profile'] },
     assertion: { declarationType: 'person-declared' as const },
     record: { provenance: { source: 'person-input' } },
     ...extra,
@@ -60,13 +67,16 @@ describe('HCP v1 router (hcp.v1.*)', () => {
     it('requires DID auth with a valid challenge, and the hcp scope for API tokens', async () => {
         await expect(
             getClient().hcp.v1.entries.query({ query: 'x', purpose: PURPOSE })
-        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED', hcp: { type: 'invalid-token' } });
         await expect(
             agent.clients.partialAuth.hcp.v1.entries.query({ query: 'x', purpose: PURPOSE })
         ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         await expect(
             readOnlyToken.clients.fullAuth.hcp.v1.entries.query({ query: 'x', purpose: PURPOSE })
-        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        ).rejects.toMatchObject({
+            code: 'UNAUTHORIZED',
+            hcp: { type: 'invalid-token', detail: 'This operation requires hcp:read scope' },
+        });
     });
 
     it('runs the grant lifecycle end to end for a profile-less agent DID', async () => {
@@ -87,7 +97,10 @@ describe('HCP v1 router (hcp.v1.*)', () => {
             asAgent.entries.query({ query: 'examples', purpose: PURPOSE })
         ).rejects.toMatchObject({
             code: 'FORBIDDEN',
-            message: expect.stringMatching(/^scope-denied: /),
+            hcp: {
+                type: 'scope-denied',
+                detail: "The request is outside the caller's grant, or the entry does not exist.",
+            },
         });
         await expect(
             asAgent.grants.create({
@@ -167,10 +180,7 @@ describe('HCP v1 router (hcp.v1.*)', () => {
                 reason: 'race',
                 record: { provenance: { source: 'conversation' } },
             })
-        ).rejects.toMatchObject({
-            code: 'CONFLICT',
-            message: expect.stringMatching(/^version-conflict: /),
-        });
+        ).rejects.toMatchObject({ code: 'CONFLICT', hcp: { type: 'version-conflict' } });
 
         await expect(
             asAgent.entries.withdraw({ grantId: grant.grantId, ref, reason: 'outdated' })
@@ -221,18 +231,70 @@ describe('HCP v1 router (hcp.v1.*)', () => {
 
         await expect(
             own.entries.create(entry(subjectDid, 'x', { classification: { categories: [] } }))
-        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST', hcp: { type: 'malformed-request' } });
         await expect(
             own.entries.create(
                 entry(subjectDid, 'x', { assertion: { declarationType: 'model-inferred' } })
             )
         ).rejects.toMatchObject({
             code: 'BAD_REQUEST',
-            message: expect.stringMatching(/^malformed-request: /),
+            message: 'model-inferred entries require assertion.confidence.',
+            hcp: {
+                type: 'malformed-request',
+                detail: 'model-inferred entries require assertion.confidence.',
+            },
         });
         await expect(
             own.entries.get({ entryId: 'urn:uuid:a', ref: 'b', purpose: PURPOSE })
         ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    });
+
+    it('stores, queries and grants custom categories through the router (Draft 3 §4.5)', async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const own = subject.clients.fullAuth.hcp.v1;
+        const asAgent = agent.clients.fullAuth.hcp.v1;
+
+        await own.entries.create(
+            entry(subjectDid, 'Earned the robotics badge', {
+                classification: { categories: [BADGES] },
+            })
+        );
+        await own.entries.create(entry(subjectDid, 'Learns robotics with worked examples'));
+
+        const mine = await own.entries.query({ query: 'robotics', purpose: PURPOSE });
+        expect(mine.entries).toHaveLength(2);
+        expect(mine.categoriesSearched).toContain(BADGES);
+
+        const grant = await own.grants.create({
+            client: { id: agent.learnCard.id.did(), name: 'Badge Agent' },
+            access: [
+                {
+                    actions: ['read'],
+                    categories: [BADGES],
+                    purposes: [{ code: PURPOSE, description: 'Tutoring' }],
+                },
+            ],
+        });
+        expect(grant.scopes).toEqual([]);
+        const read = await asAgent.entries.query({
+            grantId: grant.grantId,
+            query: 'robotics',
+            purpose: PURPOSE,
+        });
+        expect(read.entries.map(e => e.content.value)).toEqual(['Earned the robotics badge']);
+        await expect(
+            asAgent.entries.query({
+                grantId: grant.grantId,
+                query: 'robotics',
+                purpose: PURPOSE,
+                categories: ['education_learner_profile'],
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN', hcp: { type: 'scope-denied' } });
+        await expect(
+            own.entries.create(
+                entry(subjectDid, 'x', { classification: { categories: ['urn:learncard:x'] } })
+            )
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST', hcp: { type: 'malformed-request' } });
     });
 
     it('documents every v1 procedure in the OpenAPI document under /hcp/v1', async () => {
@@ -252,5 +314,178 @@ describe('HCP v1 router (hcp.v1.*)', () => {
             '/hcp/v1/grants/{grantId}',
             '/hcp/v1/meta',
         ]);
+    });
+});
+
+describe('HCP v1 Core errors over HTTP (Draft 3 §5.5)', () => {
+    let server: FastifyInstance;
+
+    const bearer = async (user: Awaited<ReturnType<typeof getUser>>): Promise<string> => {
+        const challenge = randomUUID();
+        await setValidChallengeForDid(user.learnCard.id.did(), challenge);
+        const token = await user.learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+        return `Bearer ${token}`;
+    };
+
+    /** OpenAPI: POST /api/hcp/v1/...; the error body is the tRPC error shape. */
+    const rest = async (path: string, body: object, user?: Awaited<ReturnType<typeof getUser>>) => {
+        const response = await server.inject({
+            method: 'POST',
+            url: `/api/hcp/v1${path}`,
+            payload: body,
+            headers: user ? { authorization: await bearer(user) } : {},
+        });
+        return { status: response.statusCode, body: response.json() };
+    };
+
+    /** tRPC HTTP: the error is `{ error: shape }`. */
+    const trpcQuery = async (
+        procedure: string,
+        input: object,
+        user?: Awaited<ReturnType<typeof getUser>>
+    ) => {
+        const response = await server.inject({
+            method: 'GET',
+            url: `/trpc/hcp.v1.${procedure}?input=${encodeURIComponent(JSON.stringify(input))}`,
+            headers: user ? { authorization: await bearer(user) } : {},
+        });
+        return { status: response.statusCode, body: response.json() };
+    };
+
+    beforeAll(async () => {
+        subject = await getUser('a'.repeat(64));
+        agent = await getUser('b'.repeat(64));
+        server = Fastify();
+        await server.register(fastifyTRPCOpenApiPlugin, {
+            basePath: '/api',
+            router: appRouter,
+            createContext,
+        });
+        await server.register(fastifyTRPCPlugin, {
+            prefix: '/trpc',
+            trpcOptions: { router: appRouter, createContext },
+        });
+    });
+
+    afterAll(async () => {
+        await server.close();
+    });
+
+    beforeEach(async () => {
+        await resetHcp();
+        await Profile.delete({ detach: true, where: {} });
+        await subject.clients.fullAuth.profile.createProfile({ profileId: 'hcp-subject' });
+    });
+
+    const QUERY = { query: 'examples', purpose: PURPOSE };
+
+    it('invalid-token: no DID auth', async () => {
+        const viaRest = await rest('/entries/query', QUERY);
+        expect(viaRest.status).toBe(401);
+        expect(viaRest.body).toMatchObject({
+            code: 'UNAUTHORIZED',
+            data: {
+                hcp: {
+                    type: 'invalid-token',
+                    detail: 'Missing, malformed, or expired authorization evidence.',
+                },
+            },
+        });
+
+        const viaTrpc = await trpcQuery('entries.query', QUERY);
+        expect(viaTrpc.status).toBe(401);
+        expect(viaTrpc.body.error.data).toMatchObject({
+            code: 'UNAUTHORIZED',
+            hcp: { type: 'invalid-token' },
+        });
+    });
+
+    it('scope-denied: an agent without a grant', async () => {
+        const viaRest = await rest('/entries/query', QUERY, agent);
+        expect(viaRest.status).toBe(403);
+        expect(viaRest.body).toMatchObject({
+            code: 'FORBIDDEN',
+            message: "The request is outside the caller's grant, or the entry does not exist.",
+            data: {
+                hcp: {
+                    type: 'scope-denied',
+                    detail: "The request is outside the caller's grant, or the entry does not exist.",
+                },
+            },
+        });
+
+        const viaTrpc = await trpcQuery('entries.query', QUERY, agent);
+        expect(viaTrpc.status).toBe(403);
+        expect(viaTrpc.body.error.data.hcp).toEqual({
+            type: 'scope-denied',
+            detail: "The request is outside the caller's grant, or the entry does not exist.",
+        });
+    });
+
+    it('malformed-request: a service rule and a schema failure', async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const rule = await rest(
+            '/entries',
+            entry(subjectDid, 'x', { assertion: { declarationType: 'model-inferred' } }),
+            subject
+        );
+        expect(rule.status).toBe(400);
+        expect(rule.body.data.hcp).toEqual({
+            type: 'malformed-request',
+            detail: 'model-inferred entries require assertion.confidence.',
+        });
+
+        const schema = await rest(
+            '/entries',
+            entry(subjectDid, 'x', { classification: { categories: ['not_a_category'] } }),
+            subject
+        );
+        expect(schema.status).toBe(400);
+        expect(schema.body).toMatchObject({
+            code: 'BAD_REQUEST',
+            message: 'Input validation failed',
+            data: {
+                hcp: {
+                    type: 'malformed-request',
+                    detail: expect.stringMatching(/^classification\.categories\.0: /),
+                },
+            },
+        });
+        expect(schema.body.issues).toHaveLength(1);
+    });
+
+    it('version-conflict: a stale expectedVersion', async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const created = await rest('/entries', entry(subjectDid, 'Learns by doing'), subject);
+        expect(created.status).toBe(200);
+        const revise = (expectedVersion: number) => ({
+            entryId: created.body.id,
+            expectedVersion,
+            content: { profile: GENERAL, value: 'Learns by doing and reading' },
+            reason: 'Updated',
+            record: { provenance: { source: 'person-input' } },
+        });
+        expect((await rest('/entries/revisions', revise(1), subject)).status).toBe(200);
+
+        const stale = await rest('/entries/revisions', revise(1), subject);
+        expect(stale.status).toBe(409);
+        expect(stale.body).toMatchObject({
+            code: 'CONFLICT',
+            data: {
+                hcp: {
+                    type: 'version-conflict',
+                    detail: "expectedVersion is not the entry's current version.",
+                },
+            },
+        });
+    });
+
+    it('leaves other routes without data.hcp', async () => {
+        const response = await server.inject({
+            method: 'GET',
+            url: `/trpc/profile.getProfile`,
+        });
+        expect(response.statusCode).toBe(401);
+        expect(response.json().error.data).not.toHaveProperty('hcp');
     });
 });

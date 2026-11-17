@@ -76,6 +76,15 @@ export type RequiredScope = { requiredScope?: string };
 
 export type RouteMetadata = OpenApiMeta & RequiredScope;
 
+/**
+ * HCP routes throw a TRPCError carrying the HCP Core error (`{ type, detail }`,
+ * Draft 3 §5.5) as `hcp`; it is surfaced as `data.hcp`. Other routes are unchanged.
+ */
+const hcpErrorData = (error: TRPCError): { hcp?: { type: string; detail: string } } =>
+    'hcp' in error && typeof error.hcp === 'object' && error.hcp !== null
+        ? { hcp: error.hcp as { type: string; detail: string } }
+        : {};
+
 export const t = initTRPC
     .context<Context>()
     .meta<RouteMetadata>()
@@ -94,6 +103,7 @@ export const t = initTRPC
                     error.cause.code === CONTRACT_APPROVAL_REQUIRED
                         ? CONTRACT_APPROVAL_REQUIRED
                         : undefined,
+                ...hcpErrorData(error),
             },
         }),
     });

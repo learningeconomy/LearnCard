@@ -61,22 +61,63 @@ const TRPC_CODES: Record<HcpV1ErrorType, TRPCError['code']> = {
     'version-conflict': 'CONFLICT',
 };
 
-/** The one place v1 domain errors become transport errors. Message: `<hcp code>: <detail>`. */
-export const toTRPCError = (error: HcpV1Error): TRPCError =>
-    new TRPCError({
-        code: TRPC_CODES[error.type],
-        message: `${error.type}: ${error.message}`,
-        cause: error,
-    });
+/** Draft 3 §5.5: a Core error is an object with `type`, its code, and `detail`. */
+export type HcpV1CoreError = { type: HcpV1ErrorType; detail: string };
 
-const mapDomainErrors = t.middleware(async ({ next }) => {
+/**
+ * A transport error that carries its Core error. The brain's errorFormatter copies
+ * `hcp` to `data.hcp`, which tRPC and OpenAPI clients both receive.
+ */
+class HcpV1TRPCError extends TRPCError {
+    readonly hcp: HcpV1CoreError;
+
+    constructor(hcp: HcpV1CoreError, cause: unknown) {
+        super({ code: TRPC_CODES[hcp.type], message: hcp.detail, cause });
+        this.hcp = hcp;
+    }
+}
+
+const UNAUTHENTICATED_DETAIL = 'Missing, malformed, or expired authorization evidence.';
+
+const firstIssue = (error: z.ZodError): string => {
+    const issue = error.issues[0];
+    if (!issue) return 'The request failed schema validation.';
+    const at = issue.path.map(String).join('.');
+    return at ? `${at}: ${issue.message}` : issue.message;
+};
+
+/** The one place v1 errors become transport errors. Message: the Core error's detail. */
+export const toTRPCError = (error: HcpV1Error): TRPCError =>
+    new HcpV1TRPCError({ type: error.type, detail: error.message }, error);
+
+/**
+ * The Core error for a failure on an HCP route, or null to pass it through. Covers
+ * the service's own errors and the two the transport raises before the service
+ * runs: failed DID auth or scope (`invalid-token`) and failed input validation
+ * (`malformed-request`, keeping the ZodError as cause so OpenAPI still lists issues).
+ */
+const toCoreError = (error: TRPCError): TRPCError | null => {
+    if (error instanceof HcpV1TRPCError) return null;
+    if (error.cause instanceof HcpV1Error) return toTRPCError(error.cause);
+    if (error.code === 'UNAUTHORIZED') {
+        const detail = error.message === 'UNAUTHORIZED' ? UNAUTHENTICATED_DETAIL : error.message;
+        return new HcpV1TRPCError({ type: 'invalid-token', detail }, error.cause);
+    }
+    if (error.code === 'BAD_REQUEST' && error.cause instanceof z.ZodError) {
+        const detail = firstIssue(error.cause);
+        return new HcpV1TRPCError({ type: 'malformed-request', detail }, error.cause);
+    }
+    return null;
+};
+
+const mapToCoreErrors = t.middleware(async ({ next }) => {
     const result = await next();
-    if (!result.ok && result.error.cause instanceof HcpV1Error)
-        throw toTRPCError(result.error.cause);
-    return result;
+    if (result.ok) return result;
+    throw toCoreError(result.error) ?? result.error;
 });
 
-const hcpRoute = privateScopedRoute.use(mapDomainErrors);
+/** Core-error mapping wraps the whole auth chain, so auth failures are mapped too. */
+const hcpRoute = t.procedure.use(mapToCoreErrors).concat(privateScopedRoute);
 
 const callerOf = (user: { did: string; profile: { did: string } | null }): HcpV1Caller => ({
     did: user.did,
