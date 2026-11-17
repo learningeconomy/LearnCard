@@ -15,6 +15,7 @@ import {
     canManageContractRequests,
     resolveContractRequest,
 } from '@helpers/contract-requests.helpers';
+import { sendContractRequestToEmail } from '@helpers/contract-request-invites.helpers';
 import { environment } from '@environment';
 import {
     smartResumeFingerprint,
@@ -2294,12 +2295,16 @@ export const contractsRouter = t.router({
                 path: '/consent-flow-contracts/request',
                 tags: ['Contracts'],
                 summary: 'Send an attributed contract request',
+                description:
+                    'Send to a profile (targetProfileId) or to an email address (targetEmail), never both. Returns the request ID. An email-addressed send always answers pending.',
             },
         })
         .input(SendContractRequestValidator)
         .output(SendContractRequestResultValidator)
         .mutation(async ({ ctx, input }) =>
-            sendGenericContractRequest(input, ctx.user.profile, ctx.domain)
+            input.targetEmail
+                ? sendContractRequestToEmail(input, ctx.user.profile, ctx.domain, ctx.tenant)
+                : sendGenericContractRequest(input, ctx.user.profile, ctx.domain)
         ),
 
     getContractRequest: profileRoute

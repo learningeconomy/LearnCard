@@ -1,10 +1,20 @@
+import { TRPCError } from '@trpc/server';
 import { resolveBranding } from '@learncard/email-templates';
-import type { TenantBranding } from '@learncard/email-templates';
+import type { ResolvedTenant, TenantBranding } from '@learncard/email-templates';
+import type { SendContractRequest, SendContractRequestResult } from '@learncard/types';
+
+import { createContractRequestInvite } from '@accesslayer/contract-request-invite/create';
+import { claimContractRequestInviteEmail } from '@accesslayer/contract-request-invite/update';
+import {
+    getContractOwnerDisplayName,
+    getProfileIdsWithVerifiedEmail,
+} from '@accesslayer/contract-request-invite/read';
+import { normalizeInviteEmail } from './invite-email.helpers';
 
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import { getPendingContractRequestInvitesForProfile } from '@accesslayer/contract-request-invite/read';
 import type { ProfileType } from 'types/profile';
-import { createRequestForProfile } from './contract-requests.helpers';
+import { authorizeContractRequestSend, createRequestForProfile } from './contract-requests.helpers';
 
 /** The most invites one call converts. Bounds the work done inside a request. */
 export const CONTRACT_REQUEST_INVITE_ATTACH_LIMIT = 20;
@@ -79,4 +89,56 @@ export const sendContractRequestInviteEmail = async ({
         console.warn('contract_request_invite: email_failed');
         return false;
     }
+};
+
+/**
+ * Sends a contract request to an email address. It always creates (or reuses) an invite and
+ * always answers `{ requestId, status: 'pending' }`, so the answer does not reveal whether the
+ * email has an account or what that account's consent state is.
+ */
+export const sendContractRequestToEmail = async (
+    input: SendContractRequest,
+    profile: ProfileType,
+    domain: string,
+    tenant?: Pick<ResolvedTenant, 'id' | 'emailBranding'>
+): Promise<SendContractRequestResult> => {
+    const contract = await authorizeContractRequestSend(input.contractUri, profile);
+    const email = normalizeInviteEmail(input.targetEmail ?? '');
+    if (!email) throw new TRPCError({ code: 'BAD_REQUEST', message: 'targetEmail is required' });
+
+    const result = await createContractRequestInvite({
+        contractId: contract.id,
+        email,
+        senderProfileId: profile.profileId,
+        externalReferenceId: input.externalReferenceId,
+        message: input.message,
+        tenantId: tenant?.id,
+    });
+    if (!result)
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'The contract changed. Review it and try again.',
+        });
+
+    // An identical pending retry returns the same request ID and sends nothing.
+    if (result.created) {
+        try {
+            const profileIds = await getProfileIdsWithVerifiedEmail(email);
+            if (profileIds.length === 0) {
+                if (await claimContractRequestInviteEmail(contract.id, result.invite.id))
+                    await sendContractRequestInviteEmail({
+                        email,
+                        referrerName: profile.displayName,
+                        contractOwnerName: await getContractOwnerDisplayName(contract.id),
+                        branding: tenant?.emailBranding,
+                    });
+            } else {
+                for (const profileId of profileIds)
+                    await attachContractRequestInvitesForProfile({ profileId }, domain);
+            }
+        } catch {
+            console.warn('contract_request_invite: delivery_failed');
+        }
+    }
+    return { requestId: result.invite.id, status: 'pending' };
 };

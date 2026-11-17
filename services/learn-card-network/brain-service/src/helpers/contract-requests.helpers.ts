@@ -173,6 +173,8 @@ export const sendGenericContractRequest = async (
     domain: string
 ): Promise<SendContractRequestResult> => {
     const contract = await authorizeContractRequestSend(input.contractUri, profile);
+    if (!input.targetProfileId)
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'targetProfileId is required' });
     const target = await resolveContractRequestTarget(input.targetProfileId, domain);
     if (target.profileId === profile.profileId)
         throw new TRPCError({

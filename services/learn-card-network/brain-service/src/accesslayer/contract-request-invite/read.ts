@@ -95,3 +95,15 @@ export const getPendingContractRequestInvitesForProfile = async (
         invite: record.get('invite'),
     }));
 };
+
+/** Display name of the contract owner, for the invite email. */
+export const getContractOwnerDisplayName = async (
+    contractId: string
+): Promise<string | undefined> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (:ConsentFlowContract {id: $contractId})-[:CREATED_BY]->(owner:Profile)
+         RETURN owner.displayName AS displayName LIMIT 1`,
+        { contractId }
+    );
+    return result.records[0]?.get('displayName') ?? undefined;
+};
