@@ -2,11 +2,18 @@ import { int } from 'neo4j-driver';
 
 import { neogma } from '@instance';
 import { ensureContractEventMaintenance } from './contract-event-maintenance.helpers';
-import { ACCEPTED_VERSION_PREDICATE } from './consent-expiry.helpers';
+import { ACCEPTED_VERSION_PREDICATE, isConsentUnexpired } from './consent-expiry.helpers';
+import {
+    computeNextShareUntilFromProperties,
+    shareUntilEntriesOfProperties,
+} from './consent-share-until.helpers';
 
 export type ConsentFlowSuspensionSummary = { suspended: number };
 export type ConsentFlowExpirySummary = { expired: number };
-export type ConsentFlowDeadlineSummary = ConsentFlowSuspensionSummary & ConsentFlowExpirySummary;
+export type ConsentFlowShareUntilSummary = { shareUntilPassed: number };
+export type ConsentFlowDeadlineSummary = ConsentFlowSuspensionSummary &
+    ConsentFlowExpirySummary &
+    ConsentFlowShareUntilSummary;
 
 type BatchOptions = {
     /** Terms handled per statement. */
@@ -175,8 +182,8 @@ const MARK_EXPIRED_CYPHER = `
  * re-reads the same versions on every pass, a version whose terms were all walked records
  * `expiryEventsEmittedFor = expiresAt` and is skipped while its expiry is unchanged. The watermark only
  * advances when the range was read to the end, so an interrupted pass is repeated. The first
- * pass starts at now, not at the beginning of history. Category-level `shareUntil` is out of
- * scope.
+ * pass starts at now, not at the beginning of history. Category-level `shareUntil` is handled by
+ * `emitShareUntilPassedEvents`.
  */
 export const emitExpiredConsentEvents = async (
     now = new Date().toISOString(),
@@ -340,27 +347,256 @@ export const emitExpiredConsentEvents = async (
     return { expired };
 };
 
+const SHARE_UNTIL_BACKFILL_STATE_ID = 'share-until-backfill-v1';
+
+type ShareUntilWrite = {
+    termsId: string;
+    expectedNext: string;
+    next: string | null;
+    contractId: string | null;
+    emits: { id: string; category: string }[];
+};
+
 /**
- * One pass of the consentFlowDeadline job: suspend overdue re-consents, then record expiry
- * events. A failing expiry scan is retried by the next pass and never hides the suspensions.
+ * Records one integration-only `consent_updated` event (reason `share_until_passed`) for each
+ * category whose `shareUntil` date has passed. The consent stays live: only that category's
+ * shared data stops being returned by the data reads.
+ *
+ * Work is found through the index on `terms.nextShareUntil`, the earliest date in the future
+ * among a consent's shared categories (kept up to date by every terms write, see
+ * consent-share-until.helpers). Terms with `nextShareUntil <= now` are read in bounded batches
+ * and the comparison is repeated exactly in JS. Each terms is handled in one statement that
+ * creates the events and moves `nextShareUntil` to the next future date (or removes it), so a
+ * crash cannot repeat a date forever. The statement only applies while `nextShareUntil` still
+ * has the value that was read, so a concurrent terms write wins. The event id
+ * `${termsId}:share_until:${category}:${shareUntilIso}` is merged, so a retry creates nothing.
+ *
+ * Only categories dated at or after the stored `nextShareUntil` are reported: that value was the
+ * earliest future date when the terms were written, so anything earlier had already passed
+ * before and is never reported. Only live, needs_reconsent and suspended terms whose consent has
+ * not expired emit; other terms just lose `nextShareUntil`. Failures are left to the caller.
+ */
+export const emitShareUntilPassedEvents = async (
+    now = new Date().toISOString(),
+    { limit = 200, budgetMs = 20_000 }: BatchOptions = {}
+): Promise<ConsentFlowShareUntilSummary> => {
+    const deadline = Date.now() + budgetMs;
+    const batchSize = batchSizeOf(limit);
+    const nowMs = Date.parse(now);
+    let shareUntilPassed = 0;
+
+    await ensureContractEventMaintenance();
+
+    do {
+        const found = await neogma.queryRunner.run(
+            `MATCH (terms:ConsentFlowTerms)
+             USING INDEX terms:ConsentFlowTerms(nextShareUntil)
+             WHERE terms.nextShareUntil <= $now
+             WITH terms ORDER BY terms.nextShareUntil, terms.id LIMIT $limit
+             OPTIONAL MATCH (terms)-[:CONSENTS_TO]->(contract:ConsentFlowContract)
+             OPTIONAL MATCH (contract)-[:HAS_VERSION]->(accepted:ConsentFlowContractVersion)
+                 WHERE ${ACCEPTED_VERSION_PREDICATE}
+             RETURN properties(terms) AS props, contract.id AS contractId,
+                 accepted IS NOT NULL AS hasAcceptedVersion,
+                 accepted.expiresAt AS acceptedExpiresAt`,
+            { now, limit: int(batchSize) }
+        );
+        const writes: ShareUntilWrite[] = [];
+
+        for (const row of found.records) {
+            const props: Record<string, unknown> = row.get('props');
+            const expectedNext = props.nextShareUntil;
+            const termsId = props.id;
+
+            if (typeof expectedNext !== 'string' || typeof termsId !== 'string') continue;
+
+            const contractId: unknown = row.get('contractId');
+            const active =
+                typeof props.status === 'string' && ACTIVE_STATUSES.includes(props.status);
+            const unexpired = isConsentUnexpired(
+                {
+                    termsExpiresAt: props.expiresAt,
+                    hasAcceptedVersion: row.get('hasAcceptedVersion') === true,
+                    acceptedVersionExpiresAt: row.get('acceptedExpiresAt'),
+                },
+                nowMs
+            );
+            const expectedMs = Date.parse(expectedNext);
+            const emits =
+                active && unexpired && typeof contractId === 'string'
+                    ? shareUntilEntriesOfProperties(props)
+                          .filter(entry => entry.at <= nowMs && entry.at >= expectedMs)
+                          .map(entry => ({
+                              id: `${termsId}:share_until:${entry.category}:${entry.shareUntil}`,
+                              category: entry.category,
+                          }))
+                    : [];
+
+            writes.push({
+                termsId,
+                expectedNext,
+                next:
+                    active && unexpired ? computeNextShareUntilFromProperties(props, nowMs) : null,
+                contractId: typeof contractId === 'string' ? contractId : null,
+                emits,
+            });
+        }
+
+        if (writes.length === 0) break;
+
+        const result = await neogma.queryRunner.run(
+            `UNWIND $writes AS write
+             MATCH (terms:ConsentFlowTerms {id: write.termsId})
+             WHERE terms.nextShareUntil = write.expectedNext
+             SET terms.nextShareUntil = write.next
+             FOREACH (emit IN write.emits |
+                 MERGE (event:ConsentFlowEvent {id: emit.id})
+                 ON CREATE SET event += {
+                     kind: 'consent_updated', reason: 'share_until_passed',
+                     contractId: write.contractId, termsId: terms.id,
+                     requestId: terms.\`referral.requestId\`,
+                     requestedBy: terms.\`referral.requestedBy\`,
+                     externalReferenceId: terms.\`referral.externalReferenceId\`,
+                     integrationFanoutPending: true, createdAt: $now
+                 })
+             RETURN count(terms) AS handled`,
+            { writes, now }
+        );
+
+        shareUntilPassed += result.summary.counters.updates().nodesCreated;
+
+        // A terms that could not be updated (a concurrent write changed it) is read again next pass.
+        if (toNumber(result.records[0]?.get('handled')) === 0) break;
+        if (found.records.length < batchSize) break;
+    } while (Date.now() < deadline);
+
+    return { shareUntilPassed };
+};
+
+/**
+ * One-off backfill of `nextShareUntil` for consents written before the field existed. A
+ * `ConsentFlowJobState` cursor walks the terms in id order, a bounded batch at a time; once the
+ * end is reached the state records `completedAt` and later calls read only that node. Dates that
+ * have already passed yield no value, so no events are emitted for them. A value is only written
+ * for terms that have none yet, and only while the terms still have the `mutationVersion` that was read, so a concurrent terms write
+ * (which sets the field itself) is never overwritten. Safe to repeat and to run concurrently.
+ */
+export const backfillNextShareUntil = async (
+    now = new Date().toISOString(),
+    { limit = 200, budgetMs = 20_000 }: BatchOptions = {}
+): Promise<{ backfilled: number; done: boolean }> => {
+    const deadline = Date.now() + budgetMs;
+    const batchSize = batchSizeOf(limit);
+    const nowMs = Date.parse(now);
+    let backfilled = 0;
+
+    await ensureContractEventMaintenance();
+
+    const state = await neogma.queryRunner.run(
+        `MERGE (state:ConsentFlowJobState {id: $id})
+         RETURN state.completedAt AS completedAt, state.cursor AS cursor`,
+        { id: SHARE_UNTIL_BACKFILL_STATE_ID }
+    );
+
+    if (state.records[0]?.get('completedAt')) return { backfilled, done: true };
+
+    const storedCursor: unknown = state.records[0]?.get('cursor');
+    let cursor = typeof storedCursor === 'string' ? storedCursor : '';
+
+    do {
+        const page = await neogma.queryRunner.run(
+            `MATCH (terms:ConsentFlowTerms)
+             WHERE terms.id > $cursor
+             WITH terms ORDER BY terms.id LIMIT $limit
+             RETURN properties(terms) AS props`,
+            { cursor, limit: int(batchSize) }
+        );
+        const writes = page.records.flatMap(row => {
+            const props: Record<string, unknown> = row.get('props');
+            const active =
+                typeof props.status === 'string' && ACTIVE_STATUSES.includes(props.status);
+            const next = active ? computeNextShareUntilFromProperties(props, nowMs) : null;
+
+            if (typeof props.id !== 'string') return [];
+            // A value that is already there was written by a terms write; keep it, even when due.
+            if (next === null || props.nextShareUntil != null) return [];
+
+            return [
+                {
+                    termsId: props.id,
+                    mutationVersion: int(toNumber(props.mutationVersion)),
+                    next,
+                },
+            ];
+        });
+
+        if (writes.length > 0) {
+            const result = await neogma.queryRunner.run(
+                `UNWIND $writes AS write
+                 MATCH (terms:ConsentFlowTerms {id: write.termsId})
+                 WHERE coalesce(terms.mutationVersion, 0) = write.mutationVersion
+                 SET terms.nextShareUntil = write.next
+                 RETURN count(terms) AS updated`,
+                { writes }
+            );
+
+            backfilled += toNumber(result.records[0]?.get('updated'));
+        }
+
+        const last: unknown = page.records.at(-1)?.get('props')?.id;
+
+        if (typeof last === 'string') cursor = last;
+
+        const finished = page.records.length < batchSize;
+
+        await neogma.queryRunner.run(
+            `MATCH (state:ConsentFlowJobState {id: $id})
+             SET state.cursor = $cursor
+             FOREACH (_ IN CASE WHEN $finished THEN [1] ELSE [] END |
+                 SET state.completedAt = coalesce(state.completedAt, $now))`,
+            { id: SHARE_UNTIL_BACKFILL_STATE_ID, cursor, finished, now }
+        );
+
+        if (finished) return { backfilled, done: true };
+    } while (Date.now() < deadline);
+
+    return { backfilled, done: false };
+};
+
+/**
+ * One pass of the consentFlowDeadline job: suspend overdue re-consents, record expiry events, then
+ * record share-until events and advance the one-off `nextShareUntil` backfill. A failing scan is
+ * retried by the next pass and never hides the earlier work.
  */
 export const runConsentFlowDeadlinePass = async ({
     limit = 200,
     budgetMs = 20_000,
 }: BatchOptions = {}): Promise<ConsentFlowDeadlineSummary> => {
     const startedAt = Date.now();
+    const remaining = (): number => Math.max(0, budgetMs - (Date.now() - startedAt));
     const { suspended } = await suspendExpiredConsentFlowTerms(undefined, { limit, budgetMs });
     let expired = 0;
+    let shareUntilPassed = 0;
 
     try {
         ({ expired } = await emitExpiredConsentEvents(undefined, {
             limit,
-            budgetMs: Math.max(0, budgetMs - (Date.now() - startedAt)),
+            budgetMs: remaining(),
         }));
     } catch {
         // Never log identifiers.
         console.warn('integration_events: expiry_scan_failed');
     }
 
-    return { suspended, expired };
+    try {
+        ({ shareUntilPassed } = await emitShareUntilPassedEvents(undefined, {
+            limit,
+            budgetMs: remaining(),
+        }));
+        await backfillNextShareUntil(undefined, { limit, budgetMs: remaining() });
+    } catch {
+        console.warn('integration_events: share_until_scan_failed');
+    }
+
+    return { suspended, expired, shareUntilPassed };
 };

@@ -18,6 +18,7 @@ import { BindParam, QueryBuilder } from 'neogma';
 import { DbContractType, FlatDbTermsType } from 'types/consentflowcontract';
 import { BoostType } from 'types/boost';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
+import { computeNextShareUntil } from '@helpers/consent-share-until.helpers';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import {
     reconsentTerms,
@@ -188,6 +189,7 @@ export const consentToContract = async (
                         audienceVersion: audienceVersion ?? null,
                         expectedRequestId: expectedRequestId ?? null,
                         consenterProfileId: consenter.profileId,
+                        nextShareUntil: computeNextShareUntil(terms),
                     })
                 ),
                 contract.id
@@ -248,6 +250,7 @@ export const consentToContract = async (
                     ],
                 })
                 .set('terms += $params')
+                .set('terms.nextShareUntil = $nextShareUntil')
                 .set('transaction += $params')
                 .with('terms, contract, transaction'),
             {

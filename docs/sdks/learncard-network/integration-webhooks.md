@@ -300,21 +300,21 @@ The record carries identifiers only. It never contains shared credentials or per
 
 ### Event types
 
-| Type                 | Sent to the Integrations of | Meaning                                                                                  |
-| -------------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
-| `request_sent`       | Owner, requester            | A contract request was sent                                                              |
-| `request_accepted`   | Owner, requester            | The target consented with that request. Written just before the consent event            |
-| `request_denied`     | Owner, requester            | The target declined                                                                      |
-| `request_cancelled`  | Owner, requester            | The request was cancelled                                                                |
-| `consent_created`    | Owner, writers, recipients  | New consent. The connection is live                                                      |
-| `consent_updated`    | Owner, writers, recipients  | Terms changed or consent was given again. `reason: "expiry_extended"` is explained below |
-| `consent_withdrawn`  | Owner, writers, recipients  | Consent ended. `reason: "contract_retired"` when the contract was retired                |
-| `credentials_synced` | Owner, writers, recipients  | The consenter shared more credentials                                                    |
-| `consent_paused`     | Owner, writers, recipients  | A contract update needs new consent (`reason: "needs_reconsent"`). Access is paused      |
-| `consent_suspended`  | Owner, writers, recipients  | The re-consent deadline passed without an answer                                         |
-| `consent_expired`    | Owner, writers, recipients  | The consent expired (see [Expiry](#expiry)). Can occur again after a renewal             |
-| `contract_retired`   | Owner, writers, recipients  | The contract was retired. One `consent_withdrawn` per active consent is sent as well     |
-| `integration.test`   | The Integration you tested  | Test delivery only. Never in the feed                                                    |
+| Type                 | Sent to the Integrations of           | Meaning                                                                                                                          |
+| -------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `request_sent`       | Owner, requester                      | A contract request was sent                                                                                                      |
+| `request_accepted`   | Owner, requester                      | The target consented with that request. Written just before the consent event                                                    |
+| `request_denied`     | Owner, requester                      | The target declined                                                                                                              |
+| `request_cancelled`  | Owner, requester                      | The request was cancelled                                                                                                        |
+| `consent_created`    | Owner, writers, recipients            | New consent. The connection is live                                                                                              |
+| `consent_updated`    | Owner, writers, recipients, requester | Terms changed or consent was given again. `reason` is `"expiry_extended"` or `"share_until_passed"` in the cases explained below |
+| `consent_withdrawn`  | Owner, writers, recipients            | Consent ended. `reason: "contract_retired"` when the contract was retired                                                        |
+| `credentials_synced` | Owner, writers, recipients            | The consenter shared more credentials                                                                                            |
+| `consent_paused`     | Owner, writers, recipients            | A contract update needs new consent (`reason: "needs_reconsent"`). Access is paused                                              |
+| `consent_suspended`  | Owner, writers, recipients            | The re-consent deadline passed without an answer                                                                                 |
+| `consent_expired`    | Owner, writers, recipients            | The consent expired (see [Expiry](#expiry)). Can occur again after a renewal                                                     |
+| `contract_retired`   | Owner, writers, recipients            | The contract was retired. One `consent_withdrawn` per active consent is sent as well                                             |
+| `integration.test`   | The Integration you tested            | Test delivery only. Never in the feed                                                                                            |
 
 The requester is the profile that sent the referral. It receives the request events of its own requests. It receives consent events only while it is also the contract owner, a writer or a data recipient: a profile that has been removed as a data recipient stops receiving them, even for people it referred.
 
@@ -333,9 +333,15 @@ When a non-breaking contract update moves a consent that had expired onto a cont
 
 The terms status is not changed by expiry, and the [connections snapshot](#connections-snapshot) leaves expired consents out by the same rule.
 
-{% hint style="warning" %}
-**A category's `shareUntil` passing is not an expiry.** `shareUntil` is set per credential category inside the terms. When it passes, the consented data reads stop returning that category's data, but the connection stays live: it does not emit `consent_expired`, and the connection snapshot is unaffected. The consented data read is always the source of truth for what a category currently returns.
-{% endhint %}
+### Category share-until
+
+`shareUntil` is set per credential category inside the terms. When it passes, the consented data reads stop returning that category's data, and you receive `consent_updated` with `reason: "share_until_passed"`.
+
+- The connection stays live: it is not withdrawn or expired, and the [connections snapshot](#connections-snapshot) still lists it. Only that category's shared data stops being returned.
+- Re-read that person's shared data when you receive the event.
+- The event id is unique per category and date (`<termsId>:share_until:<category>:<shareUntil>`), so the same date is never sent twice. Two categories with different dates send two events.
+- It is sent only for consents that are live, awaiting re-consent or suspended and have not expired. Dates that passed before this event existed are not sent.
+- Like other state events, it creates no notification for the person.
 
 ## Verify the signature
 
@@ -620,15 +626,15 @@ curl -G "https://network.learncard.com/api/consent-flow-contracts/connections" \
 
 Both patterns keep a table of connections keyed by `termsUri`. Apply each record like this:
 
-| Type                                   | Effect on your table                                                                                         |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `consent_created`, `consent_updated`   | Insert or update the connection as `live` (this includes `consent_updated` with `reason: "expiry_extended"`) |
-| `consent_paused`                       | Set status `needs_reconsent`, but only for a connection you hold                                             |
-| `consent_suspended`                    | Set status `suspended`, but only for a connection you hold                                                   |
-| `consent_withdrawn`, `consent_expired` | Remove the connection (a no-op if already removed)                                                           |
-| `contract_retired`                     | Remove every connection of that contract                                                                     |
-| `credentials_synced`                   | No status change. Read the consented data again                                                              |
-| `request_*`                            | Update your own request tracking; no connection change                                                       |
+| Type                                   | Effect on your table                                                                                                                                                                               |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consent_created`, `consent_updated`   | Insert or update the connection as `live` (this includes `reason: "expiry_extended"`). Exception: with `reason: "share_until_passed"`, leave the status as it is and read the consented data again |
+| `consent_paused`                       | Set status `needs_reconsent`, but only for a connection you hold                                                                                                                                   |
+| `consent_suspended`                    | Set status `suspended`, but only for a connection you hold                                                                                                                                         |
+| `consent_withdrawn`, `consent_expired` | Remove the connection (a no-op if already removed)                                                                                                                                                 |
+| `contract_retired`                     | Remove every connection of that contract                                                                                                                                                           |
+| `credentials_synced`                   | No status change. Read the consented data again                                                                                                                                                    |
+| `request_*`                            | Update your own request tracking; no connection change                                                                                                                                             |
 
 Applying a record twice must give the same result, so replays are harmless.
 

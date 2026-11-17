@@ -44,6 +44,7 @@ export default createVitestConfig(brainServicePreset, {
             'src/helpers/integration-events.helpers.test.ts',
             'src/helpers/contract-connections-cursor.helpers.test.ts',
             'src/helpers/consent-expiry.helpers.test.ts',
+            'src/helpers/consent-share-until.helpers.test.ts',
             'src/helpers/notification-webhook-fetch.helpers.test.ts',
             'src/helpers/notification-delivery-boundary.helpers.test.ts',
             'src/helpers/inbox-batch-http.helpers.test.ts',
