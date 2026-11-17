@@ -6,11 +6,14 @@ import {
     DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
 import { TRPCError } from '@trpc/server';
+import { TRPC_ERROR_CODES_BY_KEY } from '@trpc/server/rpc';
+import { IssueInboxCredentialResponseValidator } from '@learncard/types';
 import type {
     InboxBatchReceipt,
     InboxBatchStatus,
     IssueInboxCredentialBatch,
     IssueInboxCredentialBatchItemResult,
+    IssueInboxCredentialType,
 } from '@learncard/types';
 import { getInboxBatchRuntimeEnvironment } from '@environment';
 import type { Context } from '@routes';
@@ -243,6 +246,58 @@ export const processInboxQueueMessage = async (body: string): Promise<void> => {
         success: result.results[0]!.success,
         queueAgeMs: Date.now() - Number(job.createdAt),
     });
+};
+
+/**
+ * Single-request adapter over the existing durable batch lifecycle. A concurrent
+ * queue worker and this request compete for the same item lease, never two sends.
+ */
+export const issueKeyedInboxCredential = async (
+    profile: ProfileType,
+    input: IssueInboxCredentialType,
+    ctx: Context
+): Promise<ReturnType<typeof IssueInboxCredentialResponseValidator.parse>> => {
+    if (!input.idempotencyKey || input.refresh) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'An ordinary issuance key is required.',
+        });
+    }
+    const receipt = await submitInboxBatch(
+        profile,
+        {
+            // Namespace admission replay without changing the shared issuer/item-key identity.
+            requestId: `inbox.issue:${fingerprint(input.idempotencyKey)}`,
+            items: [input],
+        },
+        ctx
+    );
+    await processInboxQueueMessage(JSON.stringify({ itemId: `${receipt.batchId}:0` }));
+    const batch = await getInboxBatch(profile.profileId, receipt.batchId);
+    const result = batch.items[0]?.result;
+    if (!result) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message:
+                'Issuance is in progress. Retry this same idempotency key; do not issue with a new key.',
+        });
+    }
+    if (!result.success) {
+        const code = Object.prototype.hasOwnProperty.call(
+            TRPC_ERROR_CODES_BY_KEY,
+            result.error.code
+        )
+            ? (result.error.code as keyof typeof TRPC_ERROR_CODES_BY_KEY)
+            : 'INTERNAL_SERVER_ERROR';
+        throw new TRPCError({
+            code,
+            message: result.issuanceId
+                ? `${result.error.message} Issuance ID: ${result.issuanceId}.`
+                : result.error.message,
+        });
+    }
+    // Strip batch-only metadata so first response and replay have the single-route shape.
+    return IssueInboxCredentialResponseValidator.parse(result);
 };
 
 export const processInboxDeadLetter = async (body: string): Promise<void> => {

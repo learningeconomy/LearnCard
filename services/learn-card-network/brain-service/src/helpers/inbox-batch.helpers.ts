@@ -164,9 +164,8 @@ export const issueInboxBatch = async (
                 }
                 // Parse only after merging. Parsing each partial configuration first would apply
                 // defaults too early and make an omitted item field override the batch default.
-                // Batch idempotency predates refresh issuance and is handled by this worker's
-                // replay cache. Do not pass that key through the single-issue validator, where
-                // idempotencyKey is reserved for refresh requests.
+                // This worker owns batch and ordinary single-request replay keys. Strip the
+                // key before fingerprinting/issuance so managed refresh does not also own it.
                 const { idempotencyKey: _batchIdempotencyKey, ...issueInput } = item;
                 const parsed = IssueInboxCredentialValidator.safeParse({
                     ...issueInput,
