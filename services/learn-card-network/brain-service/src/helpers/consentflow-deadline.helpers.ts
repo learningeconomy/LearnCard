@@ -125,6 +125,9 @@ const readExpiryCandidates = async (
     });
 };
 
+/** Terms ids read by one walk of a contract when a version of it expired. */
+const EXPIRY_WALK_WINDOW = 5_000;
+
 /**
  * Cypher predicate: true while the terms node has not emitted `consent_expired` for the given
  * expiry instant. `terms.expiredEventFor` lists every expiry instant already emitted.
@@ -252,8 +255,10 @@ export const emitExpiredConsentEvents = async (
                 // Leaving here, the version is not marked, so the next pass walks it again.
                 if (Date.now() >= deadline) return { expired };
 
-                // Only the terms that accepted exactly this version expire with it.
-                const result = await neogma.queryRunner.run(
+                // One walk of the contract's terms finds a window of ids; they are then marked by
+                // id. Walking the contract once per small batch instead would cost a full walk
+                // for every batch. Only the terms that accepted exactly this version expire with it.
+                const found = await neogma.queryRunner.run(
                     `MATCH (accepted:ConsentFlowContractVersion)
                      WHERE accepted.expiresAt = $expiresAt AND accepted.id = $id
                      MATCH (contract:ConsentFlowContract)-[:HAS_VERSION]->(accepted)
@@ -261,16 +266,45 @@ export const emitExpiredConsentEvents = async (
                      WHERE ${notYetEmittedFor('terms', 'accepted.expiresAt')}
                          AND terms.status IN $statuses
                          AND ${ACCEPTED_VERSION_PREDICATE}
-                     WITH contract, terms, accepted.expiresAt AS expiredAt
-                     ORDER BY terms.id LIMIT $limit
-                     ${MARK_EXPIRED_CYPHER}`,
-                    { ...version, statuses: ACTIVE_STATUSES, now, limit: int(batchSize) }
+                     RETURN terms.id AS termsId
+                     ORDER BY termsId LIMIT $window`,
+                    { ...version, statuses: ACTIVE_STATUSES, window: int(EXPIRY_WALK_WINDOW) }
                 );
-                const count = toNumber(result.records[0]?.get('expired'));
+                const termsIds = found.records.flatMap(row => {
+                    const termsId: unknown = row.get('termsId');
 
-                expired += count;
+                    return typeof termsId === 'string' ? [termsId] : [];
+                });
 
-                if (count < batchSize) break;
+                for (let index = 0; index < termsIds.length; index += batchSize) {
+                    if (Date.now() >= deadline) return { expired };
+
+                    // The conditions are checked again: a terms may have changed since the read.
+                    const result = await neogma.queryRunner.run(
+                        `MATCH (accepted:ConsentFlowContractVersion)
+                         WHERE accepted.expiresAt = $expiresAt AND accepted.id = $id
+                         MATCH (contract:ConsentFlowContract)-[:HAS_VERSION]->(accepted)
+                         MATCH (terms:ConsentFlowTerms)
+                         USING INDEX terms:ConsentFlowTerms(id)
+                         WHERE terms.id IN $termsIds
+                             AND ${notYetEmittedFor('terms', 'accepted.expiresAt')}
+                             AND terms.status IN $statuses
+                             AND ${ACCEPTED_VERSION_PREDICATE}
+                             AND (terms)-[:CONSENTS_TO]->(contract)
+                         WITH contract, terms, accepted.expiresAt AS expiredAt
+                         ${MARK_EXPIRED_CYPHER}`,
+                        {
+                            ...version,
+                            termsIds: termsIds.slice(index, index + batchSize),
+                            statuses: ACTIVE_STATUSES,
+                            now,
+                        }
+                    );
+
+                    expired += toNumber(result.records[0]?.get('expired'));
+                }
+
+                if (termsIds.length < EXPIRY_WALK_WINDOW) break;
             }
 
             // The terms walk reached its end, so this expiry instant is fully handled. A later

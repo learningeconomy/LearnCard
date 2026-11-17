@@ -545,6 +545,7 @@ describe('integration-only state events', () => {
 
     describe('version expiry marker', () => {
         const VERSION_WALK = 'accepted.expiresAt = $expiresAt';
+        const VERSION_MARK = 'terms.id IN $termsIds';
 
         const expireVersionOne = async (expiresAt: string): Promise<void> => {
             await run(
@@ -607,13 +608,34 @@ describe('integration-only state events', () => {
             ).toHaveLength(4);
         });
 
+        it('walks the contract once per pass, not once per batch', async () => {
+            const expiresAt = new Date(Date.now() - 2_000).toISOString();
+
+            await expireVersionOne(expiresAt);
+
+            const spy = vi.spyOn(neogma.queryRunner, 'run');
+            const result = await emitExpiredConsentEvents(undefined, { limit: 1 });
+            const statements = spy.mock.calls.map(([query]) => String(query));
+            const reads = statements.filter(
+                query => query.includes(VERSION_WALK) && !query.includes(VERSION_MARK)
+            );
+            const marks = statements.filter(query => query.includes(VERSION_MARK));
+
+            // Two terms accepted version one: a batch size of one needs two marking statements
+            // but only a single walk of the contract's terms.
+            expect(result.expired).toBe(2);
+            expect(marks).toHaveLength(2);
+            expect(reads).toHaveLength(1);
+            expect(await markerOf()).toBe(expiresAt);
+        });
+
         it('does not mark a version whose terms walk was cut short, and finishes it on the next pass', async () => {
             const before = (await recordsFor(ownerIntegrationId)).length;
             const expiresAt = new Date(Date.now() - 2_000).toISOString();
 
             await expireVersionOne(expiresAt);
 
-            // The budget runs out right after the first walk statement (one terms per statement).
+            // The budget runs out right after the first marking statement (one terms per statement).
             const realNow = Date.now.bind(Date);
             let skewMs = 0;
             let cutShort = true;
@@ -625,7 +647,7 @@ describe('integration-only state events', () => {
             vi.spyOn(neogma.queryRunner, 'run').mockImplementation(async (query, params) => {
                 const result = await original(query, params);
 
-                if (cutShort && String(query).includes(VERSION_WALK)) skewMs = 10 * 60_000;
+                if (cutShort && String(query).includes(VERSION_MARK)) skewMs = 10 * 60_000;
 
                 return result;
             });
