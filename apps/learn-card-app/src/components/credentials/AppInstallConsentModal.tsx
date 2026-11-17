@@ -18,7 +18,7 @@ import {
     ModalTypes,
     useToast,
     ToastTypeEnum,
-    enqueuePendingContractSync,
+    enqueuePendingContractSyncSafely,
 } from 'learn-card-base';
 import { checkAppInstallEligibility } from '@learncard/helpers';
 import { AnalyticsEvents, useAnalytics } from '@analytics';
@@ -228,7 +228,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                 const profileDid = await wallet.id.did();
 
                 // enqueue background contract sync
-                await enqueuePendingContractSync({
+                await enqueuePendingContractSyncSafely({
                     profileDid,
                     contractUri,
                     termsUri: consentResult.termsUri,

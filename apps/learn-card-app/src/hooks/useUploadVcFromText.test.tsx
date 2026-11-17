@@ -3,8 +3,8 @@ import {
     clearPendingContractSyncJob,
     hydratePendingContractSyncJobs,
     pendingContractSyncStore,
-    enqueuePendingContractSync,
 } from '../../../../packages/learn-card-base/src/stores/pendingContractSyncStore';
+import { enqueuePendingContractSyncSafely } from '../../../../packages/learn-card-base/src/stores/pendingContractSyncStore';
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -27,8 +27,7 @@ vi.mock('learn-card-base', () => ({
     switchedProfileStore: { get: { switchedDid: () => 'did:example:upload-account' } },
     invalidateVisibleCredentialCounts: mocks.invalidateCounts,
     useWallet: () => ({ initWallet: mocks.initWallet, syncCredentialToContracts: mocks.sync }),
-    enqueuePendingContractSync: (input: Parameters<typeof enqueuePendingContractSync>[0]) =>
-        enqueuePendingContractSync(input),
+    enqueuePendingContractSyncSafely,
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: mocks.category,
@@ -158,6 +157,40 @@ describe('useUploadVcFromText contract synchronization', () => {
         ]);
         expect(mocks.sync).not.toHaveBeenCalled();
     });
+
+    it.each(['single', 'bulk', 'openbadge', 'paste'] as const)(
+        'keeps a committed %s import successful when queue persistence rejects',
+        async path => {
+            vi.spyOn(pendingContractSyncStore.set, 'enqueueContractSyncJob').mockRejectedValueOnce(
+                new Error('queue unavailable')
+            );
+            const { result } = renderHook(() => useUploadVcFromText());
+            const response =
+                path === 'paste'
+                    ? await result.current.uploadVcFromTextAndAddToWallet(credential)
+                    : await result.current.uploadVcFromText(
+                          JSON.stringify(
+                              path === 'openbadge'
+                                  ? {
+                                        '@context': 'https://openbadges.org/openbadges/v2',
+                                        name: 'badge',
+                                    }
+                                  : path === 'bulk'
+                                    ? [credential, { ...credential, id: 'second' }]
+                                    : credential
+                          )
+                      );
+            if (path === 'paste') {
+                expect(response?.success).toBe(true);
+            } else {
+                expect(response.success).toBe(true);
+                expect(response.addedCount).toBe(path === 'bulk' ? 2 : 1);
+                expect(response.results.every(item => item.success)).toBe(true);
+            }
+            expect(mocks.add).toHaveBeenCalledTimes(path === 'bulk' ? 2 : 1);
+            expect(mocks.invalidateQueries).toHaveBeenCalled();
+        }
+    );
 
     it('queues the wrapped OpenBadgeV2 credential after indexing', async () => {
         const { result } = renderHook(() => useUploadVcFromText());

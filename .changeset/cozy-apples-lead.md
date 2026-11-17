@@ -18,3 +18,7 @@ Treat blank legacy category expiries as no expiry while preserving the server's 
 Persist pending delivery updates transactionally across tabs, retain legacy retry checkpoints, and recover abandoned attempts without losing other saved credentials. Successful background delivery reports completed progress.
 
 Initialize cross-tab notifications only when browser event APIs are available, preserving credential-helper imports in storage-only environments.
+
+Keep committed credential saves and consent successful if retry persistence fails, while still awaiting a healthy durable handoff. Import late jobs from older tabs without resurrecting removed deliveries, and update progress without repeatedly scanning the whole queue.
+
+Retain personal uploads across key-to-network identity resolution without crossing switched profiles. Skip contended job locks so other deliveries can proceed, and stop future sharing mutations when an attempt loses its lease.

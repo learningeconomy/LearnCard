@@ -7,6 +7,8 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     activeDid: 'did:example:learner',
+    keyDid: 'did:key:learner',
+    switchedDid: undefined as string | undefined,
     initWallet: vi.fn(),
     sync: vi.fn(),
     contracts: vi.fn(),
@@ -18,15 +20,17 @@ vi.mock('./useWallet', () => ({
     useWallet: () => ({ initWallet: mocks.initWallet, syncCredentialToContracts: mocks.sync }),
 }));
 vi.mock('../stores/walletStore', () => {
-    const wallet = { id: { did: () => mocks.activeDid } };
+    const wallet = {
+        id: { did: (method?: string) => (method === 'key' ? mocks.keyDid : mocks.activeDid) },
+    };
     return {
         walletStore: {
             use: { wallet: () => wallet },
             get: { wallet: () => wallet },
         },
         switchedProfileStore: {
-            use: { switchedDid: () => undefined },
-            get: { switchedDid: () => undefined },
+            use: { switchedDid: () => mocks.switchedDid },
+            get: { switchedDid: () => mocks.switchedDid },
         },
     };
 });
@@ -80,8 +84,10 @@ beforeEach(async () => {
         Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
     );
     mocks.activeDid = 'did:example:learner';
+    mocks.keyDid = 'did:key:learner';
+    mocks.switchedDid = undefined;
     mocks.initWallet.mockImplementation(async () => ({
-        id: { did: () => mocks.activeDid },
+        id: { did: (method?: string) => (method === 'key' ? mocks.keyDid : mocks.activeDid) },
         index: { LearnCloud: { get: mocks.readIndex } },
         invoke: { syncCredentialsToContract: mocks.syncContract },
     }));
@@ -93,6 +99,7 @@ beforeEach(async () => {
 afterEach(() => {
     cleanup();
     vi.useRealTimers();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
 });
 
@@ -331,3 +338,161 @@ it('recovers an abandoned running attempt after its lease without Web Locks', as
     );
     expect(mocks.sync).toHaveBeenCalledTimes(1);
 });
+
+it('delivers a key-DID upload after the same wallet resolves its network identity', async () => {
+    const job = await enqueuePendingContractSync({
+        kind: 'credential',
+        profileDid: 'did:key:learner',
+        record: source,
+        category: 'Achievement',
+    });
+    const unrelated = await enqueuePendingContractSync({
+        kind: 'credential',
+        profileDid: 'did:key:another-account',
+        record: { ...source, id: 'other', uri: 'credential:other' },
+        category: 'Achievement',
+    });
+    mocks.activeDid = 'did:web:network.example:users:learner';
+    mount();
+    await waitFor(() =>
+        expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
+            status: 'done',
+            completedCredentials: 1,
+            retryCount: 0,
+        })
+    );
+    expect(pendingContractSyncStore.get.jobs()[unrelated.id]).toMatchObject({
+        status: 'queued',
+        retryCount: 0,
+    });
+    expect(mocks.sync).toHaveBeenCalledTimes(1);
+});
+
+it('does not deliver a personal key-DID job under a switched organization profile', async () => {
+    const job = await enqueuePendingContractSync({
+        kind: 'credential',
+        profileDid: 'did:key:learner',
+        record: source,
+        category: 'Achievement',
+    });
+    mocks.activeDid = 'did:web:network.example:users:organization';
+    mocks.switchedDid = mocks.activeDid;
+    const hook = mount();
+    await act(async () => {});
+    expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
+        status: 'queued',
+        retryCount: 0,
+    });
+    expect(mocks.sync).not.toHaveBeenCalled();
+    mocks.switchedDid = undefined;
+    mocks.activeDid = 'did:web:network.example:users:learner';
+    hook.rerender();
+    await waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
+});
+
+it('processes an available job while another tab holds the oldest job lock and retries that lock later', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    const held = await enqueue();
+    const nextSource = { ...source, id: 'next', uri: 'credential:next' };
+    const available = await enqueuePendingContractSync({
+        kind: 'credential',
+        profileDid: 'did:example:learner',
+        record: nextSource,
+        category: 'Achievement',
+    });
+    mocks.readIndex.mockResolvedValue([source, nextSource]);
+    let lockHeld = true;
+    vi.stubGlobal('navigator', {
+        locks: {
+            request: async (
+                name: string,
+                _options: unknown,
+                callback: (lock: object | null) => Promise<void>
+            ) => callback(lockHeld && name.endsWith(held.id) ? null : {}),
+        },
+    });
+    mount();
+    await vi.waitFor(() =>
+        expect(pendingContractSyncStore.get.jobs()[available.id].status).toBe('done')
+    );
+    expect(pendingContractSyncStore.get.jobs()[held.id]).toMatchObject({
+        status: 'queued',
+        retryCount: 0,
+    });
+    lockHeld = false;
+    await act(async () => {
+        await vi.advanceTimersByTimeAsync(1_000);
+    });
+    await vi.waitFor(() =>
+        expect(pendingContractSyncStore.get.jobs()[held.id].status).toBe('done')
+    );
+});
+
+it.each(['reclaimed', 'renewal-denied', 'renewal-failed'])(
+    'does not publish materialized credentials after the attempt lease is %s',
+    async loss => {
+        vi.stubGlobal('navigator', {});
+        // Keep IndexedDB's task scheduling real while controlling the heartbeat.
+        const setInterval = globalThis.setInterval;
+        let heartbeat!: () => void;
+        vi.spyOn(globalThis, 'setInterval').mockImplementation((callback, delay, ...args) => {
+            if (delay === 20_000) {
+                heartbeat = callback as () => void;
+                return setInterval(() => {}, delay);
+            }
+            return setInterval(callback, delay, ...args);
+        });
+        const job = await enqueuePendingContractSync({
+            profileDid: 'did:example:learner',
+            contractUri: 'contract-original',
+            termsUri: 'terms-original',
+            ownerDid: 'did:example:owner',
+        });
+        mocks.contracts.mockResolvedValue([
+            {
+                uri: 'terms-original',
+                status: 'live',
+                contract: { uri: 'contract-original', owner: { did: 'did:example:owner' } },
+                terms: {
+                    read: {
+                        credentials: {
+                            categories: { Achievement: { shareAll: true, sharing: true } },
+                        },
+                    },
+                },
+            },
+        ]);
+        let completeMaterialization!: (uri: string) => void;
+        mocks.share.mockImplementation(
+            () =>
+                new Promise(resolve => {
+                    completeMaterialization = resolve;
+                })
+        );
+        const renew = vi.spyOn(pendingContractSyncStore.set, 'renewProcessingLease');
+        if (loss === 'renewal-denied') renew.mockResolvedValue(false);
+        if (loss === 'renewal-failed') renew.mockRejectedValue(new Error('Database unavailable'));
+        mount();
+        await waitFor(() => expect(mocks.share).toHaveBeenCalled());
+        const nextDelivery = await enqueue();
+        if (loss === 'reclaimed') {
+            vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 60_001);
+            await pendingContractSyncStore.set.claimJob(job.id);
+        } else {
+            await act(async () => {
+                heartbeat();
+            });
+        }
+        await act(async () => {
+            completeMaterialization('shared-uri');
+        });
+        await waitFor(() =>
+            expect(pendingContractSyncStore.get.jobs()[nextDelivery.id].status).toBe('done')
+        );
+        expect(mocks.syncContract).not.toHaveBeenCalled();
+        expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
+            status: 'running',
+            retryCount: 0,
+        });
+    }
+);

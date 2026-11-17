@@ -5,6 +5,7 @@ import {
     MAX_JOB_RETRIES,
     pendingContractSyncStore,
 } from 'learn-card-base/stores/pendingContractSyncStore';
+import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 
 export interface PendingSyncStatus {
     status: 'syncing' | 'ready' | 'error';
@@ -41,8 +42,17 @@ export const getPendingSyncStatus = (
                 retryCount: 0,
             },
         };
+    const wallet = walletStore.get.wallet();
+    const personalKeyDid =
+        !switchedProfileStore.get.switchedDid() && wallet?.id.did() === profileDid
+            ? wallet.id.did('key')
+            : undefined;
     const jobs = Object.values(pendingContractSyncStore.get.jobs()).filter(job => {
-        if (job.profileDid !== profileDid) return false;
+        if (
+            job.profileDid !== profileDid &&
+            !(job.kind === 'credential' && job.profileDid === personalKeyDid)
+        )
+            return false;
         if (!contractUri) return true;
         // Unknown destinations delay readiness only while delivery is active.
         // Terminal failures belong to the contracts that actually failed, not every partner.

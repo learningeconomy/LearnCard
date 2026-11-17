@@ -853,7 +853,45 @@ it('does not mark unavailable shared credentials as successfully synced', async 
     expect(completed.size).toBe(0);
     expect(mocks.syncContract).not.toHaveBeenCalled();
     await expect(hooks.syncCredentialToContracts(input, undefined, completed)).resolves.toBe(true);
+
     expect(completed).toEqual(new Set(['terms-a']));
+});
+
+it('rechecks the staged lease after audience materialization before network mutation', async () => {
+    mocks.getConsentedContracts.mockResolvedValue([
+        {
+            uri: 'terms-a',
+            status: 'live',
+            contract: { uri: 'contract-a', owner: { did: 'did:key:owner' } },
+            terms: {
+                read: {
+                    credentials: { categories: { Achievement: { shareAll: true, sharing: true } } },
+                },
+            },
+        },
+    ]);
+    const hooks = useWallet();
+    const beforeSync = vi
+        .fn()
+        .mockImplementationOnce(() => undefined)
+        .mockImplementationOnce(() => {
+            throw new Error('lease lost');
+        });
+    await expect(
+        hooks.syncCredentialToContracts(
+            {
+                record: { id: 'record', uri: 'credential', category: 'Achievement' },
+                category: 'Achievement',
+            },
+            undefined,
+            new Set(),
+            { beforeSync }
+        )
+    ).rejects.toMatchObject({
+        errors: [expect.objectContaining({ message: 'lease lost' })],
+    });
+    expect(mocks.sharedUri).toHaveBeenCalledOnce();
+    expect(mocks.syncContract).not.toHaveBeenCalled();
 });
 
 it('queues Partner Connect sharing after the index write without waiting for network delivery', async () => {
@@ -894,6 +932,32 @@ it('queues Partner Connect sharing after the index write without waiting for net
     expect(pendingContractSyncStore.get.jobs()).toEqual({});
 });
 
+it('keeps a Partner Connect save successful when durable queue persistence rejects', async () => {
+    vi.spyOn(pendingContractSyncStore.set, 'enqueueContractSyncJob').mockRejectedValueOnce(
+        new Error('queue unavailable')
+    );
+    const saved = await useWallet().storeAndAddVCToWallet(
+        credential,
+        { title: 'Partner badge' },
+        'LearnCloud',
+        true
+    );
+    expect(saved).toMatchObject({ result: true, credentialUri: 'encrypted-uri' });
+    expect(mocks.add).toHaveBeenCalledOnce();
+});
+
+it('keeps direct-sync fallback successful when retry persistence rejects', async () => {
+    mocks.getConsentedContracts.mockRejectedValueOnce(new Error('contract lookup unavailable'));
+    vi.spyOn(pendingContractSyncStore.set, 'enqueueContractSyncJob').mockRejectedValueOnce(
+        new Error('queue unavailable')
+    );
+    await expect(
+        useWallet().syncCredentialToContracts({
+            record: { id: 'record', uri: 'credential', category: 'Achievement' },
+            category: 'Achievement',
+        })
+    ).resolves.toBe(false);
+});
 it('does not queue automatic sharing when a caller explicitly defers it', async () => {
     const saved = await useWallet().storeAndAddVCToWallet(
         credential,

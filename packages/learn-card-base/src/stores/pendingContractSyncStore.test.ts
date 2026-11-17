@@ -184,4 +184,35 @@ describe('pendingContractSyncStore', () => {
             syncedSharedUrisByCategory: { Achievement: ['current-copy'] },
         });
     });
+    it('projects targeted progress updates and retains durable retry checkpoints', async () => {
+        const job = await enqueuePendingContractSync({
+            kind: 'credential',
+            profileDid: JOB_INPUT.profileDid,
+            record: { id: 'checkpoint', uri: 'credential:checkpoint', category: 'Achievement' },
+            category: 'Achievement',
+        });
+        const claimed = await pendingContractSyncStore.set.claimJob(job.id);
+        expect(claimed).toBeDefined();
+        await pendingContractSyncStore.set.recordTermsSynced(
+            job.id,
+            'terms:checkpoint',
+            claimed?.processingAttemptId
+        );
+        await pendingContractSyncStore.set.recordCredentialProcessed(
+            job.id,
+            claimed?.processingAttemptId
+        );
+        await pendingContractSyncStore.set.markError(
+            job.id,
+            'retry me',
+            claimed?.processingAttemptId
+        );
+        await hydratePendingContractSyncJobs();
+        expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
+            status: 'error',
+            retryCount: 1,
+            processedCredentials: 1,
+            syncedTermsUris: ['terms:checkpoint'],
+        });
+    });
 });

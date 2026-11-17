@@ -1,5 +1,27 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+
+const identity = vi.hoisted(() => ({
+    walletDid: undefined as string | undefined,
+    keyDid: 'did:key:learner',
+    switchedDid: undefined as string | undefined,
+}));
+vi.mock('learn-card-base/stores/walletStore', () => ({
+    walletStore: {
+        get: {
+            wallet: () =>
+                identity.walletDid
+                    ? {
+                          id: {
+                              did: (method?: string) =>
+                                  method === 'key' ? identity.keyDid : identity.walletDid,
+                          },
+                      }
+                    : null,
+        },
+    },
+    switchedProfileStore: { get: { switchedDid: () => identity.switchedDid } },
+}));
 import {
     enqueuePendingContractSync,
     clearPendingContractSyncJob,
@@ -34,6 +56,9 @@ const exhaustRetries = async (id: string) => {
 };
 
 beforeEach(async () => {
+    identity.walletDid = undefined;
+    identity.keyDid = 'did:key:learner';
+    identity.switchedDid = undefined;
     vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
     vi.setSystemTime(1000);
     await hydratePendingContractSyncJobs();
@@ -154,4 +179,34 @@ it('keeps an unrelated partner ready after newer completed contract jobs are pru
     expect(pendingContractSyncStore.get.jobs()[failed.id].status).toBe('error');
     expect(getPendingSyncStatus(LEARNER, 'contract-b').status).toBe('ready');
     expect(getPendingSyncStatus(LEARNER, CONTRACT).status).toBe('error');
+});
+
+it('keeps pending key-DID uploads visible after the same wallet resolves its network profile', async () => {
+    const keyDid = 'did:key:learner';
+    const networkDid = 'did:web:network.example:users:learner';
+    identity.walletDid = keyDid;
+    const job = await enqueueCredential(keyDid);
+    identity.walletDid = networkDid;
+    expect(getPendingSyncStatus(networkDid, CONTRACT).status).toBe('syncing');
+    expect(getPendingSyncStatus('did:web:network.example:users:other', CONTRACT).status).toBe(
+        'ready'
+    );
+    await pendingContractSyncStore.set.claimJob(job.id);
+    await pendingContractSyncStore.set.setTotals(job.id, 1);
+    await pendingContractSyncStore.set.recordCredentialSynced(job.id, 'Achievement', 'shared-uri');
+    await pendingContractSyncStore.set.markDone(job.id);
+    expect(getPendingSyncStatus(networkDid)).toMatchObject({
+        status: 'ready',
+        progress: { totalCredentials: 1, completedCredentials: 1 },
+    });
+});
+
+it('does not expose personal key-DID jobs to a switched profile or another wallet key', async () => {
+    await enqueueCredential('did:key:learner');
+    identity.walletDid = 'did:web:network.example:users:organization';
+    identity.switchedDid = identity.walletDid;
+    expect(getPendingSyncStatus(identity.walletDid, CONTRACT).status).toBe('ready');
+    identity.switchedDid = undefined;
+    identity.keyDid = 'did:key:another-wallet';
+    expect(getPendingSyncStatus(identity.walletDid, CONTRACT).status).toBe('ready');
 });

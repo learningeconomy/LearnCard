@@ -130,24 +130,90 @@ const channel =
 const onQueueChanged = (): void => {
     void refreshJobs().catch(error => log.error('Failed to refresh pending sync jobs', error));
 };
+const LEGACY_STORE_KEY = 'pendingContractSyncStore';
+const importLegacyJobs = async (snapshot?: string | null): Promise<void> => {
+    if (typeof window === 'undefined') return;
+    let source = snapshot;
+    if (source === undefined) {
+        try {
+            source = window.localStorage.getItem(LEGACY_STORE_KEY);
+        } catch (error) {
+            log.warn('Could not read legacy pending sync jobs', error);
+            return;
+        }
+    }
+    if (!source) return;
+    let parsed: { state?: { jobs?: Record<string, PendingContractSyncJob> } };
+    try {
+        parsed = JSON.parse(source) as typeof parsed;
+    } catch (error) {
+        log.warn('Could not parse legacy pending sync jobs', error);
+        return;
+    }
+    const database = await openDatabase();
+    try {
+        let imported = false;
+        await new Promise<void>((resolve, reject) => {
+            const transaction = database.transaction([JOB_STORE, METADATA_STORE], 'readwrite');
+            const jobs = transaction.objectStore(JOB_STORE);
+            const metadata = transaction.objectStore(METADATA_STORE);
+            for (const job of Object.values(parsed.state?.jobs ?? {})) {
+                const tombstone = metadata.get(`legacy-tombstone:${job.id}`);
+                tombstone.onsuccess = () => {
+                    if (typeof tombstone.result === 'number' && job.updatedAt <= tombstone.result)
+                        return;
+                    const existing = jobs.get(job.id);
+                    existing.onsuccess = () => {
+                        if (!existing.result) {
+                            jobs.put(job);
+                            imported = true;
+                        }
+                    };
+                };
+            }
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () =>
+                reject(transaction.error ?? new Error('Legacy queue import failed'));
+            transaction.onabort = () =>
+                reject(transaction.error ?? new Error('Legacy queue import aborted'));
+        });
+        if (imported) notifyQueueChanged();
+        try {
+            if (window.localStorage.getItem(LEGACY_STORE_KEY) === source) {
+                window.localStorage.removeItem(LEGACY_STORE_KEY);
+            }
+        } catch (error) {
+            // The import is committed; a retained legacy copy must not disable the durable queue.
+            log.warn('Could not remove imported legacy pending sync jobs', error);
+        }
+    } finally {
+        database.close();
+    }
+};
+
 channel?.addEventListener('message', onQueueChanged);
 if (hasWindowEvents) {
     window.addEventListener('storage', event => {
         if (event.key === `${DB_NAME}:updates`) onQueueChanged();
+        if (event.key === LEGACY_STORE_KEY) {
+            void importLegacyJobs(event.newValue)
+                .then(refreshJobs)
+                .catch(error => log.error('Failed to import legacy pending sync jobs', error));
+        }
     });
     window.addEventListener('focus', onQueueChanged);
 }
 
 const notifyQueueChanged = (): void => {
-    if (channel) {
-        channel.postMessage('updated');
-    } else if (typeof window !== 'undefined') {
-        try {
+    try {
+        if (channel) {
+            channel.postMessage('updated');
+        } else if (typeof window !== 'undefined') {
             window.localStorage.setItem(`${DB_NAME}:updates`, createAttemptId());
-        } catch (error) {
-            // The queue is already committed; notification failure cannot undo the handoff.
-            log.warn('Failed to notify other tabs about pending sync jobs', error);
         }
+    } catch (error) {
+        // The queue is already committed; notification failure cannot undo the handoff.
+        log.warn('Failed to notify other tabs about pending sync jobs', error);
     }
 };
 
@@ -162,57 +228,14 @@ const readAllJobs = (database: IDBDatabase): Promise<PendingContractSyncJob[]> =
             reject(transaction.error ?? new Error('Pending sync read aborted'));
     });
 
-const migrateLegacyJobs = (database: IDBDatabase): Promise<void> =>
-    new Promise((resolve, reject) => {
-        const transaction = database.transaction([JOB_STORE, METADATA_STORE], 'readwrite');
-        const jobs = transaction.objectStore(JOB_STORE);
-        const metadata = transaction.objectStore(METADATA_STORE);
-        const migrated = metadata.get('legacy-migrated');
-        migrated.onsuccess = () => {
-            if (migrated.result) return;
-            try {
-                const legacy =
-                    typeof window === 'undefined'
-                        ? null
-                        : window.localStorage.getItem('pendingContractSyncStore');
-                const parsed = legacy
-                    ? (JSON.parse(legacy) as {
-                          state?: { jobs?: Record<string, PendingContractSyncJob> };
-                      })
-                    : undefined;
-                for (const job of Object.values(parsed?.state?.jobs ?? {})) {
-                    const existing = jobs.get(job.id);
-                    existing.onsuccess = () => {
-                        if (!existing.result) jobs.put(job);
-                    };
-                }
-                metadata.put(true, 'legacy-migrated');
-            } catch (error) {
-                transaction.abort();
-                reject(error);
-            }
-        };
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () =>
-            reject(transaction.error ?? new Error('Legacy queue migration failed'));
-        transaction.onabort = () =>
-            reject(transaction.error ?? new Error('Legacy queue migration aborted'));
-    });
-
 let hydration: Promise<void> | undefined;
 let isHydrated = false;
 export const isPendingContractSyncHydrated = (): boolean => isHydrated;
 const hydrate = (): Promise<void> => {
     if (hydration) return hydration;
     hydration = (async () => {
-        const database = await openDatabase();
-        try {
-            await migrateLegacyJobs(database);
-            await refreshJobs();
-            isHydrated = true;
-        } finally {
-            database.close();
-        }
+        await refreshJobs();
+        isHydrated = true;
     })().catch(error => {
         hydration = undefined;
         throw error;
@@ -223,19 +246,107 @@ export const hydratePendingContractSyncJobs = (): Promise<void> =>
     isHydrated ? refreshJobs() : hydrate();
 
 let refreshQueue = Promise.resolve();
+let refreshInFlight: Promise<void> | undefined;
+let refreshRequested = false;
+let projectionVersion = 0;
 const refreshJobs = (): Promise<void> => {
+    refreshRequested = true;
+    if (refreshInFlight) return refreshInFlight;
     const refresh = refreshQueue.then(async () => {
-        const database = await openDatabase();
-        try {
-            const jobs = await readAllJobs(database);
-            pendingContractSyncStore.set.jobs(Object.fromEntries(jobs.map(job => [job.id, job])));
-        } finally {
-            database.close();
-        }
+        do {
+            refreshRequested = false;
+            await importLegacyJobs();
+            const version = projectionVersion;
+            const database = await openDatabase();
+            try {
+                const jobs = await readAllJobs(database);
+                if (version !== projectionVersion) {
+                    refreshRequested = true;
+                    continue;
+                }
+                const previous = pendingContractSyncStore.get.jobs();
+                const next = Object.fromEntries(
+                    jobs.map(job => [
+                        job.id,
+                        JSON.stringify(previous[job.id]) === JSON.stringify(job)
+                            ? previous[job.id]
+                            : job,
+                    ])
+                );
+                if (
+                    Object.keys(previous).length !== jobs.length ||
+                    jobs.some(job => next[job.id] !== previous[job.id])
+                )
+                    pendingContractSyncStore.set.jobs(next);
+            } finally {
+                database.close();
+            }
+        } while (refreshRequested);
     });
     // A failed read must not prevent a later explicit refresh from trying again.
     refreshQueue = refresh.catch(() => {});
-    return refresh;
+    refreshInFlight = refresh.finally(() => {
+        refreshInFlight = undefined;
+    });
+    return refreshInFlight;
+};
+
+type JobMutation<T> = (job: PendingContractSyncJob | undefined) => {
+    job?: PendingContractSyncJob;
+    result: T;
+    remove?: boolean;
+};
+const mutateJob = async <T>(id: string, mutation: JobMutation<T>): Promise<T> => {
+    await hydrate();
+    const database = await openDatabase();
+    try {
+        let result!: T;
+        let changed = false;
+        let committed: PendingContractSyncJob | undefined;
+        await new Promise<void>((resolve, reject) => {
+            const transaction = database.transaction([JOB_STORE, METADATA_STORE], 'readwrite');
+            const store = transaction.objectStore(JOB_STORE);
+            const request = store.get(id);
+            request.onsuccess = () => {
+                try {
+                    const outcome = mutation(request.result as PendingContractSyncJob | undefined);
+                    result = outcome.result;
+                    committed = outcome.remove ? undefined : outcome.job;
+                    if (outcome.remove) {
+                        transaction
+                            .objectStore(METADATA_STORE)
+                            .put(now(), `legacy-tombstone:${id}`);
+                        store.delete(id);
+                        changed = true;
+                    } else if (outcome.job && outcome.job !== request.result) {
+                        store.put(outcome.job);
+                        changed = true;
+                    }
+                } catch (error) {
+                    transaction.abort();
+                    reject(error);
+                }
+            };
+            request.onerror = () =>
+                reject(request.error ?? new Error('Could not read pending sync job'));
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () =>
+                reject(transaction.error ?? new Error('Pending sync write failed'));
+            transaction.onabort = () =>
+                reject(transaction.error ?? new Error('Pending sync write aborted'));
+        });
+        if (changed) {
+            projectionVersion += 1;
+            const jobs = { ...pendingContractSyncStore.get.jobs() };
+            if (committed) jobs[id] = committed;
+            else delete jobs[id];
+            pendingContractSyncStore.set.jobs(jobs);
+            notifyQueueChanged();
+        }
+        return result;
+    } finally {
+        database.close();
+    }
 };
 
 type JobsMutation<T = void> = (jobs: Record<string, PendingContractSyncJob>) => T;
@@ -246,7 +357,7 @@ const mutateJobs = async <T = void>(mutation: JobsMutation<T>): Promise<T> => {
         let result!: T;
         let changed = false;
         await new Promise<T>((resolve, reject) => {
-            const transaction = database.transaction(JOB_STORE, 'readwrite');
+            const transaction = database.transaction([JOB_STORE, METADATA_STORE], 'readwrite');
             const store = transaction.objectStore(JOB_STORE);
             const request = store.getAll();
             request.onsuccess = () => {
@@ -265,6 +376,9 @@ const mutateJobs = async <T = void>(mutation: JobsMutation<T>): Promise<T> => {
                     for (const id of Object.keys(previous)) {
                         if (!(id in jobs)) {
                             store.delete(id);
+                            transaction
+                                .objectStore(METADATA_STORE)
+                                .put(now(), `legacy-tombstone:${id}`);
                             changed = true;
                         }
                     }
@@ -282,6 +396,7 @@ const mutateJobs = async <T = void>(mutation: JobsMutation<T>): Promise<T> => {
                 reject(transaction.error ?? new Error('Pending sync write aborted'));
         });
         if (changed) {
+            projectionVersion += 1;
             await refreshJobs();
             notifyQueueChanged();
         }
@@ -361,20 +476,20 @@ export const pendingContractSyncStore = createStore(
         return result;
     },
     recordTermsSynced: (id: string, termsUri: string, attemptId?: string) =>
-        mutateJobs(jobs => {
-            const job = jobs[id];
-            if (job?.kind === 'credential' && canUpdateAttempt(job, attemptId)) {
-                jobs[id] = {
-                    ...job,
-                    syncedTermsUris: [...new Set([...(job.syncedTermsUris ?? []), termsUri])],
-                    updatedAt: now(),
-                };
-            }
-        }),
+        mutateJob(id, job => ({
+            result: undefined,
+            job:
+                job?.kind === 'credential' && canUpdateAttempt(job, attemptId)
+                    ? {
+                          ...job,
+                          syncedTermsUris: [...new Set([...(job.syncedTermsUris ?? []), termsUri])],
+                          updatedAt: now(),
+                      }
+                    : job,
+        })),
     claimJob: (id: string) =>
-        mutateJobs<PendingContractSyncJob | undefined>(jobs => {
-            const job = jobs[id];
-            if (!job || !isJobReadyToProcess(job)) return undefined;
+        mutateJob<PendingContractSyncJob | undefined>(id, job => {
+            if (!job || !isJobReadyToProcess(job)) return { result: undefined, job };
             const timestamp = now();
             const claimed: PendingContractSyncJob = {
                 ...job,
@@ -387,101 +502,102 @@ export const pendingContractSyncStore = createStore(
                 updatedAt: timestamp,
                 lastError: undefined,
             };
-            jobs[id] = claimed;
-            return claimed;
+            return { result: claimed, job: claimed };
         }),
     renewProcessingLease: (id: string, attemptId: string) =>
-        mutateJobs<boolean>(jobs => {
-            const job = jobs[id];
-            if (job?.processingAttemptId !== attemptId || job.status !== 'running') return false;
+        mutateJob(id, job => {
+            if (job?.processingAttemptId !== attemptId || job.status !== 'running')
+                return { result: false, job };
             const timestamp = now();
-            jobs[id] = {
-                ...job,
-                processingLeaseUntil: timestamp + PROCESSING_LEASE_MS,
-                updatedAt: timestamp,
+            return {
+                result: true,
+                job: {
+                    ...job,
+                    processingLeaseUntil: timestamp + PROCESSING_LEASE_MS,
+                    updatedAt: timestamp,
+                },
             };
-            return true;
         }),
     setFailedContractUris: (id: string, uris: string[], attemptId?: string) =>
-        mutateJobs(jobs => {
-            const job = jobs[id];
-            if (job?.kind === 'credential' && canUpdateAttempt(job, attemptId)) {
-                jobs[id] = {
-                    ...job,
-                    failedContractUris: [...new Set(uris)],
-                    updatedAt: now(),
-                };
-            }
-        }),
+        mutateJob(id, job => ({
+            result: undefined,
+            job:
+                job?.kind === 'credential' && canUpdateAttempt(job, attemptId)
+                    ? { ...job, failedContractUris: [...new Set(uris)], updatedAt: now() }
+                    : job,
+        })),
     setTotals: (id: string, totalCredentials: number, attemptId?: string) =>
-        mutateJobs(jobs => {
-            const job = jobs[id];
-            if (job && canUpdateAttempt(job, attemptId)) {
-                jobs[id] = { ...job, totalCredentials, updatedAt: now() };
-            }
-        }),
+        mutateJob(id, job => ({
+            result: undefined,
+            job:
+                job && canUpdateAttempt(job, attemptId)
+                    ? { ...job, totalCredentials, updatedAt: now() }
+                    : job,
+        })),
     recordCredentialProcessed: (id: string, attemptId?: string) =>
-        mutateJobs(jobs => {
-            const job = jobs[id];
-            if (job && canUpdateAttempt(job, attemptId)) {
-                jobs[id] = {
-                    ...job,
-                    processedCredentials: job.processedCredentials + 1,
-                    updatedAt: now(),
-                };
-            }
-        }),
+        mutateJob(id, job => ({
+            result: undefined,
+            job:
+                job && canUpdateAttempt(job, attemptId)
+                    ? {
+                          ...job,
+                          processedCredentials: job.processedCredentials + 1,
+                          updatedAt: now(),
+                      }
+                    : job,
+        })),
     recordCredentialSynced: (id: string, category: string, sharedUri: string, attemptId?: string) =>
-        mutateJobs(jobs => {
-            const job = jobs[id];
-            if (!job || !canUpdateAttempt(job, attemptId)) return;
+        mutateJob(id, job => {
+            if (!job || !canUpdateAttempt(job, attemptId)) return { result: undefined, job };
             const syncedSharedUrisByCategory = {
                 ...job.syncedSharedUrisByCategory,
                 [category]: [
                     ...new Set([...(job.syncedSharedUrisByCategory[category] ?? []), sharedUri]),
                 ],
             };
-            jobs[id] = {
-                ...job,
-                syncedSharedUrisByCategory,
-                completedCredentials: Object.values(syncedSharedUrisByCategory).reduce(
-                    (total, uris) => total + uris.length,
-                    0
-                ),
-                updatedAt: now(),
+            return {
+                result: undefined,
+                job: {
+                    ...job,
+                    syncedSharedUrisByCategory,
+                    completedCredentials: Object.values(syncedSharedUrisByCategory).reduce(
+                        (total, uris) => total + uris.length,
+                        0
+                    ),
+                    updatedAt: now(),
+                },
             };
         }),
     recordCredentialFailed: (id: string, error: string, attemptId?: string) =>
-        mutateJobs(jobs => {
-            const job = jobs[id];
-            if (job && canUpdateAttempt(job, attemptId)) {
-                jobs[id] = {
-                    ...job,
-                    failedCredentials: job.failedCredentials + 1,
-                    lastError: error,
-                    updatedAt: now(),
-                };
-            }
-        }),
+        mutateJob(id, job => ({
+            result: undefined,
+            job:
+                job && canUpdateAttempt(job, attemptId)
+                    ? {
+                          ...job,
+                          failedCredentials: job.failedCredentials + 1,
+                          lastError: error,
+                          updatedAt: now(),
+                      }
+                    : job,
+        })),
     markDone: (id: string, attemptId?: string) =>
-        mutateJobs(jobs => {
-            const job = jobs[id];
-            if (job && canUpdateAttempt(job, attemptId)) {
-                jobs[id] = {
-                    ...job,
-                    status: 'done',
-                    finishedAt: now(),
-                    updatedAt: now(),
-                    lastError: undefined,
-                    processingAttemptId: undefined,
-                    processingLeaseUntil: undefined,
-                };
-            }
-        }),
-    removeJob: (id: string) =>
-        mutateJobs(jobs => {
-            delete jobs[id];
-        }),
+        mutateJob(id, job => ({
+            result: undefined,
+            job:
+                job && canUpdateAttempt(job, attemptId)
+                    ? {
+                          ...job,
+                          status: 'done',
+                          finishedAt: now(),
+                          updatedAt: now(),
+                          lastError: undefined,
+                          processingAttemptId: undefined,
+                          processingLeaseUntil: undefined,
+                      }
+                    : job,
+        })),
+    removeJob: (id: string) => mutateJob(id, () => ({ result: undefined, remove: true })),
     pruneDoneJobs: (ttlMs: number = DONE_JOB_TTL_MS) =>
         mutateJobs(jobs => {
             const cutoff = now() - ttlMs;
@@ -491,26 +607,42 @@ export const pendingContractSyncStore = createStore(
             });
         }),
     markError: (id: string, error: string, attemptId?: string) =>
-        mutateJobs(jobs => {
-            const job = jobs[id];
-            if (job && canUpdateAttempt(job, attemptId)) {
-                jobs[id] = {
-                    ...job,
-                    status: 'error',
-                    retryCount: job.retryCount + 1,
-                    lastError: error,
-                    finishedAt: now(),
-                    updatedAt: now(),
-                    processingAttemptId: undefined,
-                    processingLeaseUntil: undefined,
-                };
-            }
-        }),
+        mutateJob(id, job => ({
+            result: undefined,
+            job:
+                job && canUpdateAttempt(job, attemptId)
+                    ? {
+                          ...job,
+                          status: 'error',
+                          retryCount: job.retryCount + 1,
+                          lastError: error,
+                          finishedAt: now(),
+                          updatedAt: now(),
+                          processingAttemptId: undefined,
+                          processingLeaseUntil: undefined,
+                      }
+                    : job,
+        })),
 }));
 
 if (typeof indexedDB !== 'undefined') {
     void hydrate().catch(error => log.error('Failed to hydrate pending sync jobs', error));
 }
 export const enqueuePendingContractSync = pendingContractSyncStore.set.enqueueContractSyncJob;
+
+/** Await the retry handoff without failing an already-committed save or consent. */
+export const enqueuePendingContractSyncSafely = async (
+    input: PendingContractSyncInput
+): Promise<PendingContractSyncJob | undefined> => {
+    try {
+        return await pendingContractSyncStore.set.enqueueContractSyncJob(input);
+    } catch (error) {
+        log.error(
+            'Failed to persist background delivery after the primary operation committed',
+            error
+        );
+        return undefined;
+    }
+};
 export const usePendingContractSyncJobs = pendingContractSyncStore.use.jobs;
 export const clearPendingContractSyncJob = pendingContractSyncStore.set.removeJob;

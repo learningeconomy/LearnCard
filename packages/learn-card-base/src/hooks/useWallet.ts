@@ -32,7 +32,7 @@ import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPassport';
 import { getLogger } from '../logging/logger';
-import { enqueuePendingContractSync } from '../stores/pendingContractSyncStore';
+import { enqueuePendingContractSyncSafely } from '../stores/pendingContractSyncStore';
 import {
     addCredentialSummary,
     getCredentialFactsEpoch,
@@ -326,6 +326,8 @@ export const useWallet = () => {
             onTermsSynced?: (termsUri: string) => void | Promise<void>;
             /** Replaces the failed destinations after a completed discovery pass. */
             onContractsFailed?: (contractUris: string[]) => void | Promise<void>;
+            /** Synchronous lease/identity guard around audience preparation and mutation. */
+            beforeSync?: () => void;
         }
     ) => {
         const learnCard = wallet ?? (await getWallet());
@@ -365,6 +367,7 @@ export const useWallet = () => {
                     ) {
                         if (!record.uri) return;
 
+                        callbacks?.beforeSync?.();
                         const audience = await loadContractAudience(learnCard, contract.uri);
                         const sharedUri = await getOrCreateSharedUriForWallet(
                             learnCard,
@@ -382,6 +385,7 @@ export const useWallet = () => {
                                 category,
                                 sharedUri,
                             });
+                            callbacks?.beforeSync?.();
                             await learnCard.invoke.syncCredentialsToContract(
                                 termsUri,
                                 {
@@ -461,7 +465,7 @@ export const useWallet = () => {
         } catch (error) {
             // Staged claim flows own their retries; ordinary saves must remain successful.
             if (completedTerms) throw error;
-            await enqueuePendingContractSync({
+            await enqueuePendingContractSyncSafely({
                 kind: 'credential',
                 profileDid: learnCard.id.did(),
                 record: { id: record.id, uri: record.uri, category },
@@ -662,7 +666,7 @@ export const useWallet = () => {
                 if (result) void recordCredentialClaim(wallet, uri2, vc, category);
                 if (result && !deferContractSync) {
                     // Persist before returning; the singleton worker owns network delivery.
-                    await enqueuePendingContractSync({
+                    await enqueuePendingContractSyncSafely({
                         kind: 'credential',
                         profileDid: wallet.id.did(),
                         record: { id: record.id, uri: record.uri, category },
