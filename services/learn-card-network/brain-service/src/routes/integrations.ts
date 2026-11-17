@@ -277,7 +277,7 @@ export const integrationsRouter = t.router({
                 tags: ['Integrations'],
                 summary: 'Get Integration Webhook',
                 description:
-                    'Read the webhook configuration and delivery health of an Integration: the URL, its state (`active`, `failing` or `disabled`), when the last delivery succeeded and failed, the fixed code of the last failure (for example `http_401`, `timeout`, `network_error`, or `invalid_webhook` for a redirect or an unsafe address), how many feed records are waiting for a first attempt or for a retry, and the version of the signing secret. The secret itself is never returned.',
+                    'Read the webhook configuration and delivery health of an Integration: the URL, its state (`active`, `failing` or `disabled`), when the last delivery succeeded and failed, the fixed code of the last failure (for example `http_401`, `timeout`, `network_error`, `redirect` when the endpoint answered with a redirect, which is not followed, or `invalid_webhook` when the address was refused before any request), how many feed records are waiting for a first attempt or for a retry, and the version of the signing secret. The secret itself is never returned.',
             },
             requiredScope: 'integrations:read',
         })
@@ -351,7 +351,7 @@ export const integrationsRouter = t.router({
                 tags: ['Integrations'],
                 summary: 'Send Integration Test Event',
                 description:
-                    'Send one signed `integration.test` event to the webhook URL of an Integration right away and return the result in the same response: `delivered`, the `httpStatus` the receiver answered with, `latencyMs` (only when a request was made), and a fixed `error` code when it was not delivered (for example `http_401`, `timeout`, `network_error`, `invalid_webhook`, `no_webhook`). The test event is not written to the change feed. It is sent whenever the Integration has a webhook URL and a signing secret, also while contract events are disabled, so a receiver can be checked before events are enabled. The result also updates the delivery health read by Get Integration Webhook. Limited to 10 test events per Integration per minute; every call counts toward that limit, including calls that end in `no_webhook`, and more are refused with TOO_MANY_REQUESTS. The call is refused with an error when the rate-limit service is unavailable.',
+                    'Send one signed `integration.test` event to the webhook URL of an Integration right away and return the result in the same response: `delivered`, the `httpStatus` the receiver answered with, `latencyMs` (only when a request was made, so not for `invalid_webhook` or `no_webhook`), and a fixed `error` code when it was not delivered (`http_<status>`, `timeout`, `network_error`, `redirect` for an endpoint that answered with a redirect (not followed; `httpStatus` is its 3xx code), `invalid_webhook` for an unsafe or invalid address, `no_webhook`). The test event is not written to the change feed. It is sent whenever the Integration has a webhook URL and a signing secret, also while contract events are disabled, so a receiver can be checked before events are enabled. The result also updates the delivery health read by Get Integration Webhook. Limited to 10 test events per Integration per minute; every call counts toward that limit, including calls that end in `no_webhook`, and more are refused with TOO_MANY_REQUESTS. The call is refused with an error when the rate-limit service is unavailable.',
             },
             requiredScope: 'integrations:write',
         })
@@ -418,7 +418,8 @@ export const integrationsRouter = t.router({
             return {
                 delivered: result.delivered,
                 ...(result.status !== undefined ? { httpStatus: result.status } : {}),
-                // No request was made when the address was refused before sending.
+                // No request was made when the address was refused before sending. A redirect
+                // was answered, so it has a status and a latency like any other answer.
                 ...(result.error === 'invalid_webhook' ? {} : { latencyMs: result.latencyMs }),
                 ...(result.error ? { error: result.error } : {}),
             };

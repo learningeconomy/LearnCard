@@ -384,6 +384,45 @@ describe('dispatchIntegrationWebhooks', () => {
         });
     });
 
+    it('rejects a record sent to a redirecting endpoint and counts it as a failed attempt', async () => {
+        await seedEvent('redirect-1');
+        fetchSpy.mockRejectedValue(new notificationTransport.NotificationWebhookRedirectError(302));
+
+        await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({
+            rejected: 1,
+            pending: 0,
+        });
+
+        const record = await stored('redirect-1');
+        const after = await userA.clients.fullAuth.integrations.getIntegrationWebhook({
+            id: integrationId,
+        });
+
+        expect(fetchSpy).toHaveBeenCalledOnce();
+        expect(record.deliveryState).toBe('rejected');
+        expect(record.failureReason).toBe('redirect');
+        expect(Number(record.lastStatus)).toBe(302);
+        expect(after).toMatchObject({ state: 'failing', lastFailureReason: 'redirect' });
+        expect(after.lastFailureAt).toEqual(expect.any(String));
+    });
+
+    it('rejects a record for an unsafe address as invalid_webhook, without a status', async () => {
+        await seedEvent('unsafe-1');
+        fetchSpy.mockRejectedValue(new notificationTransport.UnsafeNotificationWebhookError());
+
+        await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({ rejected: 1 });
+
+        const record = await stored('unsafe-1');
+        const after = await userA.clients.fullAuth.integrations.getIntegrationWebhook({
+            id: integrationId,
+        });
+
+        expect(record.deliveryState).toBe('rejected');
+        expect(record.failureReason).toBe('invalid_webhook');
+        expect(record.lastStatus).toBeUndefined();
+        expect(after).toMatchObject({ state: 'failing', lastFailureReason: 'invalid_webhook' });
+    });
+
     it('does not change webhook health when an internal error stops a delivery before any request', async () => {
         await seedEvent('health-internal-1');
         vi.spyOn(webhookAccess, 'getIntegrationWebhookDeliverySnapshot').mockRejectedValue(

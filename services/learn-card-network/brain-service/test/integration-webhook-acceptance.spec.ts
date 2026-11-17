@@ -41,6 +41,8 @@ const startReceiver = async () => {
                 body: Buffer.concat(chunks).toString('utf8'),
             });
             response.statusCode = state.status;
+            if (state.status >= 300 && state.status < 400)
+                response.setHeader('location', '/somewhere-else');
             response.end('this body is never reported');
         });
     });
@@ -310,6 +312,28 @@ describe('LC-2370 acceptance: webhook setup with only an API token', () => {
         });
         expect(await token.integrations.getIntegrationWebhook({ id: integrationId })).toMatchObject(
             { state: 'failing', lastFailureReason: 'invalid_webhook' }
+        );
+    });
+
+    it('reports a redirecting endpoint with its status and latency, and does not follow it', async () => {
+        await token.integrations.setIntegrationWebhook({
+            id: integrationId,
+            webhookUrl: receiver.url,
+        });
+        receiver.state.status = 302;
+
+        await expect(
+            token.integrations.sendIntegrationTestEvent({ id: integrationId })
+        ).resolves.toEqual({
+            delivered: false,
+            httpStatus: 302,
+            latencyMs: expect.any(Number),
+            error: 'redirect',
+        });
+        // One request: the redirect target was not requested.
+        expect(receiver.received).toHaveLength(1);
+        expect(await token.integrations.getIntegrationWebhook({ id: integrationId })).toMatchObject(
+            { state: 'failing', lastFailureReason: 'redirect' }
         );
     });
 

@@ -14,6 +14,7 @@ import { INTEGRATION_EVENT_RETENTION_MS } from 'src/constants/integration-events
 import { ensureContractEventMaintenance } from './contract-event-maintenance.helpers';
 import {
     fetchNotificationWebhook,
+    NotificationWebhookRedirectError,
     UnsafeNotificationWebhookError,
 } from './notification-webhook-fetch.helpers';
 import {
@@ -587,11 +588,15 @@ const WEBHOOK_TIMEOUT_MS = 6_000;
 
 export type IntegrationWebhookSendResult = {
     delivered: boolean;
-    /** HTTP status, when the receiver answered. */
+    /** HTTP status, when the receiver answered (also the 3xx code of a redirect). */
     status?: number;
     /** false when retrying cannot help (bad URL, or a 4xx other than 408, 425, 429). */
     retryable: boolean;
-    /** Short fixed code such as http_500, timeout, network_error, invalid_webhook. Never a URL. */
+    /**
+     * Short fixed code: http_<status>, timeout, network_error, redirect (the endpoint answered
+     * with a redirect, which is never followed) or invalid_webhook (the address was refused
+     * before any request). Never a URL.
+     */
     error?: string;
     /** Wall time of the HTTP attempt in milliseconds, from just before the request to its result. */
     latencyMs: number;
@@ -724,6 +729,17 @@ export const sendSignedIntegrationWebhook = async ({
             latencyMs: latency(),
         };
     } catch (error) {
+        // A request was sent and answered, so this has a status and counts as a real attempt.
+        if (error instanceof NotificationWebhookRedirectError) {
+            return {
+                delivered: false,
+                status: error.status,
+                retryable: false,
+                error: 'redirect',
+                latencyMs: latency(),
+            };
+        }
+
         if (error instanceof UnsafeNotificationWebhookError) {
             return {
                 delivered: false,

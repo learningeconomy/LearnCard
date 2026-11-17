@@ -2263,7 +2263,9 @@ export type IntegrationWebhookState = z.infer<typeof IntegrationWebhookStateVali
  * `state` is `disabled` when there is no webhook URL or contract events are disabled,
  * `failing` when the most recent delivery attempt failed, and `active` otherwise.
  * `lastFailureReason` is a short fixed code such as `http_500`, `timeout`, `network_error` or
- * `invalid_webhook`; it never contains a URL or a response body.
+ * `redirect` (the endpoint answered with a redirect, which is not followed) or
+ * `invalid_webhook` (the address was refused before any request); it never contains a URL or a
+ * response body.
  */
 export const IntegrationWebhookStatusValidator = z.object({
     webhookUrl: z.string().nullable(),
@@ -2299,8 +2301,11 @@ export type IntegrationWebhookSecretRotation = z.infer<
 
 /**
  * Result of one synchronous test ping. `httpStatus` is present when the receiver answered,
- * `latencyMs` when a request was made (not for `invalid_webhook` or `no_webhook`), and `error` is a short fixed code (`http_401`,
- * `timeout`, `network_error`, `invalid_webhook`, `no_webhook`) when it was not delivered.
+ * `latencyMs` when a request was made (not for `invalid_webhook` or `no_webhook`), and `error` is a
+ * short fixed code (`http_<status>`, `timeout`, `network_error`, `redirect`, `invalid_webhook`,
+ * `no_webhook`) when it was not delivered. `redirect` means the endpoint answered with a
+ * redirect, which is never followed: `httpStatus` is its 3xx code. `invalid_webhook` means the
+ * address was refused before any request was sent.
  */
 export const IntegrationTestEventResultValidator = z.object({
     delivered: z.boolean(),
