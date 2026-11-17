@@ -204,6 +204,33 @@ describe('integration-only state events', () => {
         expect(Number(pending.records[0]?.get('total'))).toBe(0);
     });
 
+    it('retire: a consumed terms is withdrawn without a consent_withdrawn event', async () => {
+        await run("MATCH (terms:ConsentFlowTerms {id: $id}) SET terms.status = 'consumed'", {
+            id: idOf(termsB),
+        });
+        await fanOutIntegrationEvents({ limit: 500 });
+
+        const before = (await recordsFor(ownerIntegrationId)).length;
+
+        await owner.clients.fullAuth.contracts.deleteConsentFlowContract({ uri: contractUri });
+        await fanOutIntegrationEvents({ limit: 500 });
+
+        const records = await typesSince(ownerIntegrationId, before);
+
+        expect(records.map(record => record.type).sort()).toEqual([
+            'consent_withdrawn',
+            'contract_retired',
+        ]);
+        expect(records.find(record => record.type === 'consent_withdrawn')?.termsUri).toBe(termsA);
+
+        const statuses = await run(
+            'MATCH (terms:ConsentFlowTerms) WHERE terms.id IN $ids RETURN terms.status AS status',
+            { ids: [idOf(termsA), idOf(termsB)] }
+        );
+
+        expect(statuses.records.map(row => row.get('status'))).toEqual(['withdrawn', 'withdrawn']);
+    });
+
     it('version update: consent_paused per terms moved to needs_reconsent, and only those', async () => {
         // Learner B withdraws first, so only learner A is live when the contract changes.
         await learnerB.clients.fullAuth.contracts.withdrawConsent({ uri: termsB });
