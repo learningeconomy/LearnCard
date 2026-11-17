@@ -3,16 +3,7 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
 import { IonPopover } from '@ionic/react';
-import { lazyWithRetry } from '../../helpers/lazyWithRetry';
-import type { BecomeTrustedIssuerFormProps } from './BecomeTrustedIssuerForm';
-
-// The form embeds Typeform (~70 KB); load it when the user opens it.
-const LazyBecomeTrustedIssuerForm = lazyWithRetry(() => import('./BecomeTrustedIssuerForm'));
-const BecomeTrustedIssuerForm: React.FC<BecomeTrustedIssuerFormProps> = props => (
-    <React.Suspense fallback={null}>
-        <LazyBecomeTrustedIssuerForm {...props} />
-    </React.Suspense>
-);
+import BecomeTrustedIssuerForm from './LazyBecomeTrustedIssuerForm';
 
 import useModal from '../modals/useModal';
 
