@@ -950,7 +950,7 @@ export const pruneDeletedUrisFromConsentTerms = async (
                 updatedAt: transaction.date,
             };
 
-            await new QueryBuilder(
+            const update = new QueryBuilder(
                 new BindParam({
                     params: paramsForSet,
                     transactionParams: flattenObject(transaction),
@@ -968,8 +968,8 @@ export const pruneDeletedUrisFromConsentTerms = async (
                     ],
                 })
                 .set('transaction += $transactionParams')
-                .raw(termsReferralSnapshotCypher())
-                .run(dbTransaction);
+                .raw(termsReferralSnapshotCypher());
+            await dbTransaction.run(update.getStatement(), update.getBindParam().get());
             return removedSharedUris;
         });
     } finally {
