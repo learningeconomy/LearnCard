@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { useSQLiteInitWeb } from '../../src/SQL/useSQLiteInitWeb';
 import { withSQLiteDatabase } from '../../src/SQL/connection';
 import { sqliteStore } from '../../src/stores/sqliteStore';
+import { markFirstScreenPainted } from '../../src/helpers/firstScreen';
 
 /** Production-build fixture: real component, Capacitor web driver, WASM and IndexedDB. */
 const Probe = () => {
     useSQLiteInitWeb();
+    // This probe is the landing screen. Web SQLite starts after the first screen paints (the app's
+    // DashboardPage marks it), so mark it here instead of waiting for the 10 s fallback.
+    useEffect(() => markFirstScreenPainted(), []);
     const db = sqliteStore.use.db();
     const [status, setStatus] = useState('Waiting for bundled SQLite');
     const check = async (write: boolean) => {
