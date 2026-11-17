@@ -100,7 +100,7 @@ const readExpiryCandidates = async (
              ${
                  label === 'ConsentFlowTerms'
                      ? `AND ${notYetEmittedFor('node', 'node.expiresAt')} AND node.status IN $statuses`
-                     : ''
+                     : 'AND (node.expiryEventsEmittedFor IS NULL OR node.expiryEventsEmittedFor <> node.expiresAt)'
              }
          RETURN node.id AS id, node.expiresAt AS expiresAt
          ORDER BY node.expiresAt, node.id LIMIT $limit`,
@@ -164,7 +164,9 @@ const MARK_EXPIRED_CYPHER = `
  * update expire with the version they accepted, not with the newest one.
  *
  * Work is found through the `expiresAt` indexes (terms and contract versions) over a bounded
- * range: from a stored watermark (minus a fixed overlap) up to now. The watermark only
+ * range: from a stored watermark (minus a fixed overlap) up to now. Because that overlap
+ * re-reads the same versions on every pass, a version whose terms were all walked records
+ * `expiryEventsEmittedFor = expiresAt` and is skipped while its expiry is unchanged. The watermark only
  * advances when the range was read to the end, so an interrupted pass is repeated. The first
  * pass starts at now, not at the beginning of history. Category-level `shareUntil` is out of
  * scope.
@@ -243,6 +245,7 @@ export const emitExpiredConsentEvents = async (
 
         for (const version of versions.filter(hasExpired)) {
             for (;;) {
+                // Leaving here, the version is not marked, so the next pass walks it again.
                 if (Date.now() >= deadline) return { expired };
 
                 // Only the terms that accepted exactly this version expire with it.
@@ -265,6 +268,15 @@ export const emitExpiredConsentEvents = async (
 
                 if (count < batchSize) break;
             }
+
+            // The terms walk reached its end, so this expiry instant is fully handled. A later
+            // change of the version's expiresAt no longer matches the marker and is scanned again.
+            await neogma.queryRunner.run(
+                `MATCH (version:ConsentFlowContractVersion {id: $id})
+                 WHERE version.expiresAt = $expiresAt
+                 SET version.expiryEventsEmittedFor = $expiresAt`,
+                version
+            );
         }
 
         if (versions.length < batchSize) break;

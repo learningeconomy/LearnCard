@@ -497,4 +497,113 @@ describe('integration-only state events', () => {
         expect(records.map(record => record.type)).toEqual(['consent_expired', 'consent_expired']);
         expect(records.map(record => record.termsUri).sort()).toEqual([termsA, termsB].sort());
     });
+
+    describe('version expiry marker', () => {
+        const VERSION_WALK = 'accepted.expiresAt = $expiresAt';
+
+        const expireVersionOne = async (expiresAt: string): Promise<void> => {
+            await run(
+                `MATCH (contract:ConsentFlowContract {id: $id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion {version: 1})
+                 SET contract.expiresAt = $expiresAt, version.expiresAt = $expiresAt`,
+                { id: idOf(contractUri), expiresAt }
+            );
+        };
+
+        const markerOf = async (): Promise<unknown> =>
+            (
+                await run(
+                    `MATCH (:ConsentFlowContract {id: $id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion {version: 1})
+                     RETURN version.expiryEventsEmittedFor AS marker`,
+                    { id: idOf(contractUri) }
+                )
+            ).records[0]?.get('marker');
+
+        const walks = (spy: ReturnType<typeof vi.spyOn>): number =>
+            spy.mock.calls.filter(([query]) => String(query).includes(VERSION_WALK)).length;
+
+        it('skips a version whose events were emitted, and walks it again when its expiry changes', async () => {
+            const before = (await recordsFor(ownerIntegrationId)).length;
+            const firstExpiry = new Date(Date.now() - 2_000).toISOString();
+
+            await expireVersionOne(firstExpiry);
+
+            const spy = vi.spyOn(neogma.queryRunner, 'run');
+
+            await emitExpiredConsentEvents();
+            expect(walks(spy)).toBeGreaterThan(0);
+            expect(await markerOf()).toBe(firstExpiry);
+
+            spy.mockClear();
+            await emitExpiredConsentEvents();
+            await emitExpiredConsentEvents();
+            expect(walks(spy)).toBe(0);
+
+            await fanOutIntegrationEvents({ limit: 500 });
+            expect(
+                (await typesSince(ownerIntegrationId, before)).filter(
+                    record => record.type === 'consent_expired'
+                )
+            ).toHaveLength(2);
+
+            // A different past expiry no longer matches the marker, so it is processed again.
+            const secondExpiry = new Date(Date.now() - 1_000).toISOString();
+
+            await expireVersionOne(secondExpiry);
+            spy.mockClear();
+            await emitExpiredConsentEvents();
+            expect(walks(spy)).toBeGreaterThan(0);
+            expect(await markerOf()).toBe(secondExpiry);
+
+            await fanOutIntegrationEvents({ limit: 500 });
+            expect(
+                (await typesSince(ownerIntegrationId, before)).filter(
+                    record => record.type === 'consent_expired'
+                )
+            ).toHaveLength(4);
+        });
+
+        it('does not mark a version whose terms walk was cut short, and finishes it on the next pass', async () => {
+            const before = (await recordsFor(ownerIntegrationId)).length;
+            const expiresAt = new Date(Date.now() - 2_000).toISOString();
+
+            await expireVersionOne(expiresAt);
+
+            // The budget runs out right after the first walk statement (one terms per statement).
+            const realNow = Date.now.bind(Date);
+            let skewMs = 0;
+            let cutShort = true;
+
+            vi.spyOn(Date, 'now').mockImplementation(() => realNow() + skewMs);
+
+            const original = neogma.queryRunner.run.bind(neogma.queryRunner);
+
+            vi.spyOn(neogma.queryRunner, 'run').mockImplementation(async (query, params) => {
+                const result = await original(query, params);
+
+                if (cutShort && String(query).includes(VERSION_WALK)) skewMs = 10 * 60_000;
+
+                return result;
+            });
+
+            const first = await emitExpiredConsentEvents(undefined, { limit: 1 });
+
+            expect(first.expired).toBe(1);
+            expect(await markerOf()).toBeFalsy();
+
+            skewMs = 0;
+            cutShort = false;
+
+            const second = await emitExpiredConsentEvents(undefined, { limit: 1 });
+
+            expect(second.expired).toBe(1);
+            expect(await markerOf()).toBe(expiresAt);
+
+            await fanOutIntegrationEvents({ limit: 500 });
+            expect(
+                (await typesSince(ownerIntegrationId, before)).filter(
+                    record => record.type === 'consent_expired'
+                )
+            ).toHaveLength(2);
+        });
+    });
 });
