@@ -56,9 +56,9 @@ describe('sendIntegrationTestEvent and the worker pass', () => {
             name: 'Test event',
             whitelistedDomains: [],
         });
-        await userA.clients.fullAuth.integrations.updateIntegration({
+        await userA.clients.fullAuth.integrations.setIntegrationWebhook({
             id: integrationId,
-            updates: { webhookUrl: WEBHOOK_URL },
+            webhookUrl: WEBHOOK_URL,
         });
         secret = (
             await userA.clients.fullAuth.integrations.rotateIntegrationWebhookSecret({
@@ -121,9 +121,9 @@ describe('sendIntegrationTestEvent and the worker pass', () => {
     });
 
     it('reports no_webhook without sending when there is no webhook URL', async () => {
-        await userA.clients.fullAuth.integrations.updateIntegration({
+        await userA.clients.fullAuth.integrations.setIntegrationWebhook({
             id: integrationId,
-            updates: { webhookUrl: null },
+            webhookUrl: null,
         });
 
         await expect(

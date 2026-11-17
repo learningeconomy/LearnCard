@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+    IntegrationWebhookRegistrationValidator,
     IntegrationWebhookUrlValidator,
     LCNIntegrationUpdateValidator,
     LCNIntegrationValidator,
@@ -91,33 +92,10 @@ describe('IntegrationWebhookUrlValidator', () => {
 });
 
 describe('LCNIntegrationUpdateValidator webhook fields', () => {
-    it('accepts an http(s) webhook URL', () => {
+    it('does not accept a webhook URL: it is set with setIntegrationWebhook', () => {
         expect(
             LCNIntegrationUpdateValidator.parse({ webhookUrl: 'https://hooks.example.com/a' })
-                .webhookUrl
-        ).toBe('https://hooks.example.com/a');
-    });
-
-    it('accepts null to clear the webhook URL', () => {
-        expect(LCNIntegrationUpdateValidator.parse({ webhookUrl: null }).webhookUrl).toBeNull();
-    });
-
-    it.each([
-        'not a url',
-        'ftp://example.com/hook',
-        'httpx://example.com/hook',
-        'httpss://example.com/hook',
-        'http:example.com/hook',
-        'javascript:alert(1)',
-        '',
-    ])('rejects webhook URL %j', webhookUrl => {
-        expect(LCNIntegrationUpdateValidator.safeParse({ webhookUrl }).success).toBe(false);
-    });
-
-    it('rejects a webhook URL longer than 2048 characters', () => {
-        const webhookUrl = `https://example.com/${'a'.repeat(2048)}`;
-
-        expect(LCNIntegrationUpdateValidator.safeParse({ webhookUrl }).success).toBe(false);
+        ).not.toHaveProperty('webhookUrl');
     });
 
     it('accepts contractEventsEnabled as a boolean only', () => {
@@ -138,5 +116,28 @@ describe('LCNIntegrationUpdateValidator webhook fields', () => {
 
         expect(parsed).not.toHaveProperty('webhookSecret');
         expect(parsed).not.toHaveProperty('webhookSecretEnc');
+    });
+});
+
+describe('IntegrationWebhookRegistrationValidator', () => {
+    it('carries the secret only when one is given', () => {
+        expect(
+            IntegrationWebhookRegistrationValidator.parse({
+                webhookUrl: 'https://hooks.example.com/a',
+                secret: 'whsec_abc',
+                contractEventsEnabledAt: '2026-01-01T00:00:00.000Z',
+            })
+        ).toEqual({
+            webhookUrl: 'https://hooks.example.com/a',
+            secret: 'whsec_abc',
+            contractEventsEnabledAt: '2026-01-01T00:00:00.000Z',
+        });
+        expect(IntegrationWebhookRegistrationValidator.parse({ webhookUrl: null })).toEqual({
+            webhookUrl: null,
+        });
+    });
+
+    it('requires webhookUrl to be a string or null', () => {
+        expect(IntegrationWebhookRegistrationValidator.safeParse({}).success).toBe(false);
     });
 });

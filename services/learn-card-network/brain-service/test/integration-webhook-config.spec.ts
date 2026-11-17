@@ -43,9 +43,16 @@ describe('Integration webhook configuration (access layer)', () => {
         });
         const stored = await readStored(integrationId);
 
-        expect(updated).toBe(true);
+        expect(updated).toEqual({
+            webhookUrl: 'https://hooks.example.com/a',
+            secret: expect.stringMatching(SECRET_PATTERN),
+            contractEventsEnabledAt: stored.contractEventsEnabledAt,
+        });
         expect(stored.webhookUrl).toBe('https://hooks.example.com/a');
         expect(typeof stored.contractEventsEnabledAt).toBe('string');
+        await expect(decryptWebhookSecret(String(stored.webhookSecretEnc))).resolves.toBe(
+            updated?.secret
+        );
         expect(String(stored.webhookSecretEnc).startsWith('lc-whsec-jwe:v1:')).toBe(true);
         expect(String(stored.webhookSecretEnc)).not.toContain('whsec_');
         await expect(decryptWebhookSecret(String(stored.webhookSecretEnc))).resolves.toMatch(
@@ -103,10 +110,24 @@ describe('Integration webhook configuration (access layer)', () => {
         expect((await readStored(integrationId)).webhookUrl).toBe('https://a.example.com');
     });
 
-    it('returns false for an unknown integration', async () => {
+    it('returns the first secret to exactly one of two concurrent registrations', async () => {
+        const results = await Promise.all([
+            setIntegrationWebhookConfig({ integrationId, webhookUrl: 'https://a.example.com' }),
+            setIntegrationWebhookConfig({ integrationId, webhookUrl: 'https://b.example.com' }),
+        ]);
+        const secrets = results.flatMap(result => (result?.secret ? [result.secret] : []));
+        const stored = await readStored(integrationId);
+
+        expect(secrets).toHaveLength(1);
+        await expect(decryptWebhookSecret(String(stored.webhookSecretEnc))).resolves.toBe(
+            secrets[0]
+        );
+    });
+
+    it('returns null for an unknown integration', async () => {
         await expect(
             setIntegrationWebhookConfig({ integrationId: 'missing', contractEventsEnabled: true })
-        ).resolves.toBe(false);
+        ).resolves.toBeNull();
         await expect(rotateWebhookSecretForIntegration('missing')).resolves.toBeNull();
     });
 

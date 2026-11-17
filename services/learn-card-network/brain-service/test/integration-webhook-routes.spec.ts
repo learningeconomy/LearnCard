@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Integration, Profile } from '@models';
+import { getIntegrationWebhookDeliveryConfig } from '@accesslayer/integration/webhook';
 
 import { getUser } from './helpers/getClient';
 
@@ -35,7 +36,7 @@ describe('Integration webhook routes', () => {
         });
     });
 
-    it('updateIntegration sets the webhook URL and exposes only public fields', async () => {
+    it('setIntegrationWebhook returns the signing secret once, when it creates the first one', async () => {
         const before = await userA.clients.fullAuth.integrations.getIntegration({
             id: integrationId,
         });
@@ -44,12 +45,19 @@ describe('Integration webhook routes', () => {
         expect(before?.webhookUrl).toBeUndefined();
         expect(before?.contractEventsEnabledAt).toBeUndefined();
 
-        await expect(
-            userA.clients.fullAuth.integrations.updateIntegration({
-                id: integrationId,
-                updates: { webhookUrl: 'https://hooks.example.com/learncard' },
-            })
-        ).resolves.toBe(true);
+        const registration = await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+            id: integrationId,
+            webhookUrl: 'https://hooks.example.com/learncard',
+        });
+
+        expect(registration.webhookUrl).toBe('https://hooks.example.com/learncard');
+        expect(registration.secret).toMatch(SECRET_PATTERN);
+        expect(typeof registration.contractEventsEnabledAt).toBe('string');
+
+        // The returned secret is the one deliveries are signed with.
+        const config = await getIntegrationWebhookDeliveryConfig(integrationId);
+
+        expect(config?.secrets).toEqual([registration.secret]);
 
         const after = await userA.clients.fullAuth.integrations.getIntegration({
             id: integrationId,
@@ -57,12 +65,161 @@ describe('Integration webhook routes', () => {
 
         expect(after?.webhookUrl).toBe('https://hooks.example.com/learncard');
         expect(after?.hasWebhookSecret).toBe(true);
-        expect(typeof after?.contractEventsEnabledAt).toBe('string');
+        expect(after?.contractEventsEnabledAt).toBe(registration.contractEventsEnabledAt);
         expect(JSON.stringify(after)).not.toContain('whsec');
         expect(after).not.toHaveProperty('webhookSecretEnc');
     });
 
-    it('updateIntegration can change the name and the webhook in one call', async () => {
+    it('setIntegrationWebhook keeps the secret and does not return it when the URL is replaced', async () => {
+        const first = await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+            id: integrationId,
+            webhookUrl: 'https://hooks.example.com/a',
+        });
+        const second = await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+            id: integrationId,
+            webhookUrl: 'https://hooks.example.com/b',
+        });
+
+        expect(second).toEqual({
+            webhookUrl: 'https://hooks.example.com/b',
+            contractEventsEnabledAt: first.contractEventsEnabledAt,
+        });
+
+        const config = await getIntegrationWebhookDeliveryConfig(integrationId);
+
+        expect(config?.webhookUrl).toBe('https://hooks.example.com/b');
+        expect(config?.secrets).toEqual([first.secret]);
+    });
+
+    it('setIntegrationWebhook removes the URL with null and keeps the secret and enabled time', async () => {
+        const first = await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+            id: integrationId,
+            webhookUrl: 'https://hooks.example.com/learncard',
+        });
+
+        await expect(
+            userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                id: integrationId,
+                webhookUrl: null,
+            })
+        ).resolves.toEqual({
+            webhookUrl: null,
+            contractEventsEnabledAt: first.contractEventsEnabledAt,
+        });
+
+        const after = await userA.clients.fullAuth.integrations.getIntegration({
+            id: integrationId,
+        });
+
+        expect(after?.webhookUrl).toBeUndefined();
+        expect(after?.hasWebhookSecret).toBe(true);
+
+        // Setting a URL again reuses the secret, so nothing is returned.
+        const again = await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+            id: integrationId,
+            webhookUrl: 'https://hooks.example.com/learncard',
+        });
+
+        expect(again.secret).toBeUndefined();
+    });
+
+    it('setIntegrationWebhook returns no secret when one was already created by a rotation', async () => {
+        await userA.clients.fullAuth.integrations.rotateIntegrationWebhookSecret({
+            id: integrationId,
+        });
+
+        const registration = await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+            id: integrationId,
+            webhookUrl: 'https://hooks.example.com/learncard',
+        });
+
+        expect(registration.secret).toBeUndefined();
+        expect(registration.webhookUrl).toBe('https://hooks.example.com/learncard');
+    });
+
+    it('setIntegrationWebhook with null on a new integration creates nothing', async () => {
+        await expect(
+            userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                id: integrationId,
+                webhookUrl: null,
+            })
+        ).resolves.toEqual({ webhookUrl: null });
+
+        const after = await userA.clients.fullAuth.integrations.getIntegration({
+            id: integrationId,
+        });
+
+        expect(after?.hasWebhookSecret).toBe(false);
+        expect(after?.contractEventsEnabledAt).toBeUndefined();
+    });
+
+    it.each([
+        'ftp://hooks.example.com/learncard',
+        'httpx://hooks.example.com/learncard',
+        'httpss://hooks.example.com/learncard',
+        'not a url',
+    ])('setIntegrationWebhook rejects %j', async webhookUrl => {
+        await expect(
+            userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                id: integrationId,
+                webhookUrl,
+            })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    });
+
+    it.each(['http://hooks.example.com/learncard', 'https://hooks.example.com/learncard'])(
+        'setIntegrationWebhook accepts %j',
+        async webhookUrl => {
+            await expect(
+                userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                    id: integrationId,
+                    webhookUrl,
+                })
+            ).resolves.toMatchObject({ webhookUrl });
+        }
+    );
+
+    it('setIntegrationWebhook is refused for another profile and without integrations:write', async () => {
+        await expect(
+            userB.clients.fullAuth.integrations.setIntegrationWebhook({
+                id: integrationId,
+                webhookUrl: 'https://hooks.example.com/learncard',
+            })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(
+            readOnlyA.clients.fullAuth.integrations.setIntegrationWebhook({
+                id: integrationId,
+                webhookUrl: 'https://hooks.example.com/learncard',
+            })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+        const after = await userA.clients.fullAuth.integrations.getIntegration({
+            id: integrationId,
+        });
+
+        expect(after?.webhookUrl).toBeUndefined();
+    });
+
+    it('updateIntegration no longer sets a webhook URL', async () => {
+        await userA.clients.fullAuth.integrations.updateIntegration({
+            id: integrationId,
+            // The field was removed from the validator; an old client that still sends it is ignored.
+            updates: { name: 'Renamed', webhookUrl: 'https://hooks.example.com/learncard' } as {
+                name: string;
+            },
+        });
+
+        const after = await userA.clients.fullAuth.integrations.getIntegration({
+            id: integrationId,
+        });
+
+        expect(after?.name).toBe('Renamed');
+        expect(after?.webhookUrl).toBeUndefined();
+        expect(after?.hasWebhookSecret).toBe(false);
+        expect(after?.contractEventsEnabledAt).toBeUndefined();
+    });
+
+    it('updateIntegration can change the name and enable contract events in one call', async () => {
         await userA.clients.fullAuth.integrations.updateIntegration({
             id: integrationId,
             updates: { name: 'Renamed', contractEventsEnabled: true },
@@ -77,38 +234,29 @@ describe('Integration webhook routes', () => {
         expect(after?.hasWebhookSecret).toBe(false);
     });
 
-    it('updateIntegration removes the URL with null and disables events with false', async () => {
-        await userA.clients.fullAuth.integrations.updateIntegration({
+    it('updateIntegration disables events with false and leaves the URL and secret alone', async () => {
+        await userA.clients.fullAuth.integrations.setIntegrationWebhook({
             id: integrationId,
-            updates: { webhookUrl: 'https://hooks.example.com/learncard' },
+            webhookUrl: 'https://hooks.example.com/learncard',
         });
         await userA.clients.fullAuth.integrations.updateIntegration({
             id: integrationId,
-            updates: { webhookUrl: null, contractEventsEnabled: false },
+            updates: { contractEventsEnabled: false },
         });
 
         const after = await userA.clients.fullAuth.integrations.getIntegration({
             id: integrationId,
         });
 
-        expect(after?.webhookUrl).toBeUndefined();
+        expect(after?.webhookUrl).toBe('https://hooks.example.com/learncard');
         expect(after?.contractEventsEnabledAt).toBeUndefined();
         expect(after?.hasWebhookSecret).toBe(true);
     });
 
-    it('updateIntegration rejects a URL that is not http(s)', async () => {
-        await expect(
-            userA.clients.fullAuth.integrations.updateIntegration({
-                id: integrationId,
-                updates: { webhookUrl: 'ftp://hooks.example.com/learncard' },
-            })
-        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
-    });
-
     it('getIntegrations never returns secrets', async () => {
-        await userA.clients.fullAuth.integrations.updateIntegration({
+        await userA.clients.fullAuth.integrations.setIntegrationWebhook({
             id: integrationId,
-            updates: { webhookUrl: 'https://hooks.example.com/learncard' },
+            webhookUrl: 'https://hooks.example.com/learncard',
         });
 
         const page = await userA.clients.fullAuth.integrations.getIntegrations();

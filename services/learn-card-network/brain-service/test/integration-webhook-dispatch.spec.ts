@@ -49,6 +49,8 @@ vi.setConfig({ hookTimeout: 30_000 });
 describe('dispatchIntegrationWebhooks', () => {
     let integrationId: string;
     let secret: string;
+    /** The first secret, returned once when the webhook URL was registered. */
+    let registrationSecret: string | undefined;
     let fetchSpy: ReturnType<
         typeof vi.spyOn<typeof notificationTransport, 'fetchNotificationWebhook'>
     >;
@@ -79,10 +81,12 @@ describe('dispatchIntegrationWebhooks', () => {
             name: 'Dispatch',
             whitelistedDomains: [],
         });
-        await userA.clients.fullAuth.integrations.updateIntegration({
-            id: integrationId,
-            updates: { webhookUrl: WEBHOOK_URL },
-        });
+        registrationSecret = (
+            await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                id: integrationId,
+                webhookUrl: WEBHOOK_URL,
+            })
+        ).secret;
         secret = (
             await userA.clients.fullAuth.integrations.rotateIntegrationWebhookSecret({
                 id: integrationId,
@@ -128,6 +132,14 @@ describe('dispatchIntegrationWebhooks', () => {
         expect(parts).toHaveLength(3);
         expect(parts[1]).toBe(
             `v1=${signIntegrationWebhookBody({ secret, timestamp, body: request.body })}`
+        );
+        expect(registrationSecret).toBeDefined();
+        expect(parts[2]).toBe(
+            `v1=${signIntegrationWebhookBody({
+                secret: String(registrationSecret),
+                timestamp,
+                body: request.body,
+            })}`
         );
 
         expect(record.deliveryState).toBe('delivered');
@@ -252,9 +264,9 @@ describe('dispatchIntegrationWebhooks', () => {
 
     it('rejects a record whose integration no longer has a webhook URL', async () => {
         await seedEvent('dispatch-7');
-        await userA.clients.fullAuth.integrations.updateIntegration({
+        await userA.clients.fullAuth.integrations.setIntegrationWebhook({
             id: integrationId,
-            updates: { webhookUrl: null },
+            webhookUrl: null,
         });
 
         await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({ rejected: 1 });
@@ -352,9 +364,9 @@ describe('dispatchIntegrationWebhooks', () => {
     });
 
     it('never sends records of an integration without a webhook', async () => {
-        await userA.clients.fullAuth.integrations.updateIntegration({
+        await userA.clients.fullAuth.integrations.setIntegrationWebhook({
             id: integrationId,
-            updates: { webhookUrl: null },
+            webhookUrl: null,
         });
         await seedEvent('dispatch-9');
 

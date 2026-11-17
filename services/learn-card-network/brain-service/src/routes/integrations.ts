@@ -33,7 +33,9 @@ import {
     LCNIntegrationUpdateValidator,
     LCNIntegrationQueryValidator,
     PaginatedLCNIntegrationsValidator,
+    IntegrationWebhookRegistrationValidator,
     IntegrationWebhookSecretRotationValidator,
+    IntegrationWebhookUrlValidator,
     IntegrationEventsResponseValidator,
     IntegrationTestEventResultValidator,
     type IntegrationEvent,
@@ -197,17 +199,58 @@ export const integrationsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
             }
 
-            const { webhookUrl, contractEventsEnabled } = input.updates;
+            const { contractEventsEnabled } = input.updates;
 
-            if (webhookUrl !== undefined || contractEventsEnabled !== undefined) {
+            // The webhook URL has its own route (setIntegrationWebhook), which can return the
+            // signing secret once. Only the contract-events switch is written here.
+            if (contractEventsEnabled !== undefined) {
                 await setIntegrationWebhookConfig({
                     integrationId: input.id,
-                    webhookUrl,
                     contractEventsEnabled,
                 });
             }
 
             return updateIntegrationAccess(integration, input.updates);
+        }),
+
+    setIntegrationWebhook: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/integration/{id}/webhook',
+                tags: ['Integrations'],
+                summary: 'Set Integration Webhook',
+                description:
+                    'Set, replace or remove (`null`) the webhook URL that receives signed contract events for an Integration. The first time a URL is set, a signing secret is created and returned once in `secret`; store it then, it cannot be read again. Replacing or removing the URL keeps the existing secret and returns none. Setting a URL also enables contract events if they are not enabled yet.',
+            },
+            requiredScope: 'integrations:write',
+        })
+        .input(z.object({ id: z.string(), webhookUrl: IntegrationWebhookUrlValidator.nullable() }))
+        .output(IntegrationWebhookRegistrationValidator)
+        .mutation(async ({ input, ctx }) => {
+            const associated = await isIntegrationAssociatedWithProfile(
+                input.id,
+                ctx.user.profile.profileId
+            );
+
+            if (!associated) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'This Integration is not associated with you!',
+                });
+            }
+
+            const registration = await setIntegrationWebhookConfig({
+                integrationId: input.id,
+                webhookUrl: input.webhookUrl,
+            });
+
+            if (!registration) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+            }
+
+            return registration;
         }),
 
     rotateIntegrationWebhookSecret: profileRoute
@@ -219,7 +262,7 @@ export const integrationsRouter = t.router({
                 tags: ['Integrations'],
                 summary: 'Rotate Integration Webhook Secret',
                 description:
-                    'Create a new webhook signing secret for an Integration and return it once. The previous secret stays valid for 24 hours. Also used to reveal the secret for the first time.',
+                    'Create a new webhook signing secret for an Integration and return it once. The previous secret stays valid for 24 hours. The first secret is returned by Set Integration Webhook when the webhook URL is first set; a secret cannot be read again later, only replaced here.',
             },
             requiredScope: 'integrations:write',
         })

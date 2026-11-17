@@ -19,33 +19,51 @@ export type IntegrationWebhookSecretRotationResult = {
     previousSecretExpiresAt?: string;
 };
 
+export type IntegrationWebhookConfigResult = {
+    /** The webhook URL after the write. null when the Integration has none. */
+    webhookUrl: string | null;
+    /** Plaintext signing secret. Only present when this call created the first secret. */
+    secret?: string;
+    /** When contract events were enabled. Absent while they are disabled. */
+    contractEventsEnabledAt?: string;
+};
+
 /**
- * Writes the webhook URL and the contract-events switch of an Integration.
- * Returns false when the Integration does not exist.
+ * Writes the webhook URL and the contract-events switch of an Integration and returns the
+ * resulting configuration. The first time a URL is set a signing secret is created and
+ * returned in plaintext; that is the only time it is returned. Returns null when the
+ * Integration does not exist.
  */
 export const setIntegrationWebhookConfig = async ({
     integrationId,
     webhookUrl,
     contractEventsEnabled,
-}: IntegrationWebhookConfigInput): Promise<boolean> => {
+}: IntegrationWebhookConfigInput): Promise<IntegrationWebhookConfigResult | null> => {
     const settingUrl = typeof webhookUrl === 'string';
 
-    // Only used by the query when the Integration has no secret yet.
-    const newSecretEnc = settingUrl ? await encryptWebhookSecret(generateWebhookSecret()) : null;
+    // Only stored by the query when the Integration has no secret yet.
+    const newSecret = settingUrl ? generateWebhookSecret() : null;
+    const newSecretEnc = newSecret ? await encryptWebhookSecret(newSecret) : null;
 
+    // The first SET takes the node's write lock before "has no secret yet" is evaluated, so of
+    // two concurrent calls exactly one creates the secret and is told so.
     const result = await neogma.queryRunner.run(
         `MATCH (integration:Integration {id: $id})
+         SET integration.updatedAt = $now
+         WITH integration,
+             ($webhookUrl IS NOT NULL AND integration.webhookSecretEnc IS NULL) AS createsSecret
          SET integration.webhookUrl = CASE WHEN $setUrl THEN $webhookUrl ELSE integration.webhookUrl END,
              integration.webhookSecretEnc = CASE
-                 WHEN $webhookUrl IS NOT NULL AND integration.webhookSecretEnc IS NULL THEN $newSecretEnc
+                 WHEN createsSecret THEN $newSecretEnc
                  ELSE integration.webhookSecretEnc END,
              integration.contractEventsEnabledAt = CASE
                  WHEN $contractEventsEnabled = false THEN null
                  WHEN ($contractEventsEnabled = true OR $webhookUrl IS NOT NULL)
                      AND integration.contractEventsEnabledAt IS NULL THEN $now
-                 ELSE integration.contractEventsEnabledAt END,
-             integration.updatedAt = $now
-         RETURN integration.id AS id`,
+                 ELSE integration.contractEventsEnabledAt END
+         RETURN integration.webhookUrl AS webhookUrl,
+             integration.contractEventsEnabledAt AS contractEventsEnabledAt,
+             createsSecret`,
         {
             id: integrationId,
             setUrl: webhookUrl !== undefined,
@@ -55,8 +73,20 @@ export const setIntegrationWebhookConfig = async ({
             now: new Date().toISOString(),
         }
     );
+    const record = result.records[0];
 
-    return result.records.length > 0;
+    if (!record) return null;
+
+    const storedUrl: unknown = record.get('webhookUrl');
+    const enabledAt: unknown = record.get('contractEventsEnabledAt');
+
+    return {
+        webhookUrl: typeof storedUrl === 'string' && storedUrl.length > 0 ? storedUrl : null,
+        ...(newSecret && record.get('createsSecret') === true ? { secret: newSecret } : {}),
+        ...(typeof enabledAt === 'string' && enabledAt.length > 0
+            ? { contractEventsEnabledAt: enabledAt }
+            : {}),
+    };
 };
 
 /**

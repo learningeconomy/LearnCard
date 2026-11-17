@@ -2137,10 +2137,7 @@ export const LCNIntegrationUpdateValidator = z.object({
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).optional(),
     rotatePublishableKey: z.boolean().optional(),
 
-    // Contract event webhook and change feed (LC-2370)
-    webhookUrl: IntegrationWebhookUrlValidator.nullable()
-        .optional()
-        .describe('HTTP(S) URL that receives signed contract events. null removes it.'),
+    // Contract event change feed (LC-2370). The webhook URL is set with setIntegrationWebhook.
     contractEventsEnabled: z
         .boolean()
         .optional()
@@ -2227,6 +2224,20 @@ export const IntegrationEventsResponseValidator = z.object({
     hasMore: z.boolean(),
 });
 export type IntegrationEventsResponse = z.infer<typeof IntegrationEventsResponseValidator>;
+
+/**
+ * Result of setting, replacing or removing an Integration's webhook URL. `secret` is the
+ * plaintext signing secret and is only present when this call created the Integration's first
+ * secret; it is never returned again.
+ */
+export const IntegrationWebhookRegistrationValidator = z.object({
+    webhookUrl: z.string().nullable(),
+    secret: z.string().optional(),
+    contractEventsEnabledAt: z.string().optional(),
+});
+export type IntegrationWebhookRegistration = z.infer<
+    typeof IntegrationWebhookRegistrationValidator
+>;
 
 export const IntegrationWebhookSecretRotationValidator = z.object({
     secret: z.string(),
