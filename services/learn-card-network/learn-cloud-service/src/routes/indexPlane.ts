@@ -36,6 +36,9 @@ import {
 } from '@cache/indexPlane';
 import { getAllDidsForDid } from '@accesslayer/user/read';
 import { MAX_INDEX_PAGE_LIMIT } from 'src/constants/limits';
+import { withInternalError } from '@helpers/error.helpers';
+
+const INDEX_READ_ERROR = 'Could not read index';
 
 export const indexRouter = t.router({
     get: didAndChallengeRoute
@@ -87,13 +90,16 @@ export const indexRouter = t.router({
                 return encrypt ? encryptObject(cachedResponse, ctx.domain, [did]) : cachedResponse;
             }
 
-            const rawResults = await getCredentialRecordsForDid(
-                did,
-                query,
-                sort,
-                cursor,
-                limit + 1,
-                includeAssociatedDids
+            // Throws on a failed read, so only a real result reaches the cache below.
+            const rawResults = await withInternalError(INDEX_READ_ERROR, () =>
+                getCredentialRecordsForDid(
+                    did,
+                    query,
+                    sort,
+                    cursor,
+                    limit + 1,
+                    includeAssociatedDids
+                )
             );
             const results = rawResults.map(record => {
                 const {
@@ -162,7 +168,9 @@ export const indexRouter = t.router({
 
             if (isEncrypted(query)) query = await decryptObject(query as JWE);
 
-            const count = await countCredentialRecordsForDid(did, query, includeAssociatedDids);
+            const count = await withInternalError(INDEX_READ_ERROR, () =>
+                countCredentialRecordsForDid(did, query, includeAssociatedDids)
+            );
 
             if (encrypt) return encryptObject(count, ctx.domain, [did]);
 
