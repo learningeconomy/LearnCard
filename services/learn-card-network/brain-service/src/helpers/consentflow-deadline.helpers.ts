@@ -18,9 +18,13 @@ type BatchOptions = {
 const ACTIVE_STATUSES = ['live', 'needs_reconsent', 'suspended'];
 
 /**
- * How far behind the watermark each expiry scan starts. `expiresAt` is a free-form ISO string,
- * so a value written with a UTC offset can sort up to 12 hours before its real time. The scan
- * re-reads that much of the index range so such a value is still found once it really expires.
+ * How far behind the watermark each expiry scan starts. `expiresAt` of terms is a free-form ISO
+ * string, so a value written with a UTC offset does not sort at its real instant. A value with a
+ * negative offset sorts before its real instant (up to 12 hours): the overlap re-reads that much
+ * of the index range, so it is still caught once it really expires. A value with a positive
+ * offset sorts after its real instant (up to about 14 hours): it is found late, once the scan
+ * range reaches its sort position, rather than missed. Version `expiresAt` is validated as UTC,
+ * so this concerns terms `expiresAt`.
  */
 const EXPIRY_SCAN_OVERLAP_MS = 15 * 60 * 60_000;
 const EXPIRY_SCAN_STATE_ID = 'consent-expiry-scan';

@@ -301,6 +301,68 @@ describe('a client that uses only the feed and the snapshot', () => {
         expect(late.state()).toEqual({});
     });
 
+    it('keeps an expired consent out when a breaking update and its deadline come after the expiry', async () => {
+        const [l0, l1] = learners as [Actor, Actor, Actor, Actor, Actor, Actor];
+        const termsL0 = await consent(l0);
+        const termsL1 = await consent(l1);
+
+        await runJobs();
+
+        const client = createFeedOnlyClient(owner, integrationId, contractUri);
+        const expectEveryoneAgrees = async (expected: Connections): Promise<void> => {
+            const late = createFeedOnlyClient(owner, integrationId, contractUri);
+
+            await client.sync();
+            await late.sync();
+
+            expect(await reference()).toEqual(expected);
+            expect(client.state()).toEqual(expected);
+            expect(late.state()).toEqual(expected);
+        };
+
+        await client.sync();
+        await expectEveryoneAgrees({ [l0.profileId]: 'live', [l1.profileId]: 'live' });
+
+        // l0's consent expires (consent_expired); the status stays live.
+        await setTerms(termsL0, { expiresAt: new Date(Date.now() - 1_000).toISOString() });
+        await runJobs();
+        await expectEveryoneAgrees({ [l1.profileId]: 'live' });
+
+        // A breaking update pauses every live terms, including the expired one: the feed carries
+        // consent_paused for l0, which the client ignores because it holds no such connection.
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri: contractUri,
+            changes: { name: 'Convergence contract, new identity' },
+            reason: 'Review the new request identity.',
+            reconsentDeadline: new Date(Date.now() + 60 * 60_000).toISOString(),
+        });
+        await runJobs();
+
+        const paused = await run(
+            `MATCH (event:ConsentFlowEvent {kind: 'consent_paused', termsId: $id}) RETURN count(event) AS total`,
+            { id: idOf(termsL0) }
+        );
+
+        expect(Number(paused.records[0]?.get('total'))).toBe(1);
+        await expectEveryoneAgrees({ [l1.profileId]: 'needs_reconsent' });
+
+        // The re-consent deadline passes for both: consent_suspended for l0 is ignored as well.
+        const passed = new Date(Date.now() - 60_000).toISOString();
+
+        await setTerms(termsL0, { reconsentDeadline: passed });
+        await setTerms(termsL1, { reconsentDeadline: passed });
+        await runJobs();
+
+        const suspended = await run(
+            `MATCH (event:ConsentFlowEvent {kind: 'consent_suspended', termsId: $id}) RETURN count(event) AS total`,
+            { id: idOf(termsL0) }
+        );
+
+        expect(Number(suspended.records[0]?.get('total'))).toBe(1);
+        await expectEveryoneAgrees({ [l1.profileId]: 'suspended' });
+        expect(client.stats().snapshots).toBe(1);
+    });
+
     it('follows the accepted version when a contract update changed the expiry', async () => {
         const [l0, l1, l2, l3] = learners as [Actor, Actor, Actor, Actor, Actor, Actor];
         const inOneHour = new Date(Date.now() + 60 * 60_000).toISOString();
