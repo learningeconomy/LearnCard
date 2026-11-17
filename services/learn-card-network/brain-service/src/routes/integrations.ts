@@ -358,7 +358,7 @@ export const integrationsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/integrations/{id}/events',
+                path: '/integration/{id}/events',
                 tags: ['Integrations'],
                 summary: 'Get Integration Events',
                 description:
