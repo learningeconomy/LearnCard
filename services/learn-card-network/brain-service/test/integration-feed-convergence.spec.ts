@@ -129,14 +129,14 @@ describe('a client that uses only the feed and the snapshot', () => {
     let contractUri: string;
 
     /** What the existing data-for-did read says about every learner, for this contract. */
-    const reference = async (): Promise<Connections> => {
+    const reference = async (uri: string = contractUri): Promise<Connections> => {
         const state: Connections = {};
 
         for (const learner of learners) {
             const data = await owner.clients.fullAuth.contracts.getConsentedDataForDid({
                 did: learner.learnCard.id.did(),
             });
-            const record = data.records.find(entry => entry.contractUri === contractUri);
+            const record = data.records.find(entry => entry.contractUri === uri);
 
             if (record?.status) state[learner.profileId] = record.status;
         }
@@ -144,9 +144,9 @@ describe('a client that uses only the feed and the snapshot', () => {
         return Object.fromEntries(Object.entries(state).sort());
     };
 
-    const consent = async (learner: Actor): Promise<string> => {
+    const consent = async (learner: Actor, uri: string = contractUri): Promise<string> => {
         const { termsUri } = await learner.clients.fullAuth.contracts.consentToContract({
-            contractUri,
+            contractUri: uri,
             terms: normalFullTerms,
         });
 
@@ -158,6 +158,20 @@ describe('a client that uses only the feed and the snapshot', () => {
             id: idOf(termsUri),
             props,
         });
+    };
+
+    /** Lets time pass for one version of a contract: its expiry date is now in the past. */
+    const expireVersion = async (uri: string, version: number): Promise<void> => {
+        const expiresAt = new Date(Date.now() - 1_000).toISOString();
+
+        // The contract node mirrors the newest version, as a contract update would leave it.
+        await run(
+            `MATCH (contract:ConsentFlowContract {id: $id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion {version: $version})
+             SET version.expiresAt = $expiresAt
+             FOREACH (_ IN CASE WHEN coalesce(contract.currentVersion, 1) = $version THEN [1] ELSE [] END |
+                 SET contract.expiresAt = $expiresAt)`,
+            { id: idOf(uri), version, expiresAt }
+        );
     };
 
     /** What the scheduled jobs do every minute: deadlines, expiry, then integration fan-out. */
@@ -285,5 +299,108 @@ describe('a client that uses only the feed and the snapshot', () => {
 
         await late.sync();
         expect(late.state()).toEqual({});
+    });
+
+    it('follows the accepted version when a contract update changed the expiry', async () => {
+        const [l0, l1, l2, l3] = learners as [Actor, Actor, Actor, Actor, Actor, Actor];
+        const inOneHour = new Date(Date.now() + 60 * 60_000).toISOString();
+        const inTwoHours = new Date(Date.now() + 2 * 60 * 60_000).toISOString();
+
+        // ---- Contract A: version 1 expires, version 2 expires later. ----
+        const contractA = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Expiry moved later',
+            contract: normalContract,
+            expiresAt: inOneHour,
+        });
+        const termsA: string[] = [];
+
+        for (const learner of [l0, l1, l2]) termsA.push(await consent(learner, contractA));
+
+        // ---- Contract B: version 1 never expires, version 2 does. ----
+        const contractB = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Expiry added',
+            contract: normalContract,
+        });
+
+        await consent(l3, contractB);
+        await runJobs();
+
+        const clientA = createFeedOnlyClient(owner, integrationId, contractA);
+        const clientB = createFeedOnlyClient(owner, integrationId, contractB);
+
+        await clientA.sync();
+        await clientB.sync();
+        expect(Object.keys(clientA.state())).toHaveLength(3);
+        expect(clientA.state()).toEqual(await reference(contractA));
+        expect(clientB.state()).toEqual({ [l3.profileId]: 'live' });
+        expect(clientB.state()).toEqual(await reference(contractB));
+
+        // Both contracts get a version 2 with a different expiry; everyone must re-consent.
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri: contractA,
+            changes: { name: 'Expiry moved later, new identity', expiresAt: inTwoHours },
+            reason: 'Review the new request identity.',
+            reconsentDeadline: inTwoHours,
+        });
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri: contractB,
+            changes: { name: 'Expiry added, new identity', expiresAt: inOneHour },
+            reason: 'Review the new request identity.',
+            reconsentDeadline: inTwoHours,
+        });
+        // Only l0 accepts version 2 of contract A. l1, l2 and l3 keep awaiting re-consent.
+        await l0.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsA[0]!,
+            terms: normalFullTerms,
+            acceptVersion: 2,
+        });
+        await runJobs();
+        await clientA.sync();
+        await clientB.sync();
+
+        expect(clientA.state()).toEqual({
+            [l0.profileId]: 'live',
+            [l1.profileId]: 'needs_reconsent',
+            [l2.profileId]: 'needs_reconsent',
+        });
+        expect(clientA.state()).toEqual(await reference(contractA));
+        expect(clientB.state()).toEqual({ [l3.profileId]: 'needs_reconsent' });
+        expect(clientB.state()).toEqual(await reference(contractB));
+
+        // ---- Version 1 of contract A expires. The contract itself (version 2) has not. ----
+        await expireVersion(contractA, 1);
+        // ---- Version 2 of contract B expires. l3 accepted version 1, which never expires. ----
+        await expireVersion(contractB, 2);
+        await runJobs();
+        await clientA.sync();
+        await clientB.sync();
+
+        // data-for-did judges each consenter by the version they accepted.
+        expect(await reference(contractA)).toEqual({ [l0.profileId]: 'live' });
+        expect(await reference(contractB)).toEqual({ [l3.profileId]: 'needs_reconsent' });
+        // The feed says the same ...
+        expect(clientA.state()).toEqual(await reference(contractA));
+        expect(clientB.state()).toEqual(await reference(contractB));
+        expect(clientA.stats().snapshots).toBe(1);
+        expect(clientB.stats().snapshots).toBe(1);
+
+        // ... and so does a snapshot taken now.
+        const lateA = createFeedOnlyClient(owner, integrationId, contractA);
+        const lateB = createFeedOnlyClient(owner, integrationId, contractB);
+
+        await lateA.sync();
+        await lateB.sync();
+        expect(lateA.state()).toEqual(await reference(contractA));
+        expect(lateB.state()).toEqual(await reference(contractB));
+
+        // ---- Version 2 of contract A expires too: nobody is left. ----
+        await expireVersion(contractA, 2);
+        await runJobs();
+        await clientA.sync();
+        await lateA.sync();
+
+        expect(await reference(contractA)).toEqual({});
+        expect(clientA.state()).toEqual({});
+        expect(lateA.state()).toEqual({});
     });
 });

@@ -264,18 +264,30 @@ describe('getContractConnections', () => {
         );
     });
 
-    it('has no connections once the contract has expired or is retired', async () => {
+    it('has no connections once the accepted contract version has expired or the contract is retired', async () => {
+        // The contract node alone does not decide: data-for-did reads the accepted version.
         await run('MATCH (contract:ConsentFlowContract {id: $id}) SET contract.expiresAt = $at', {
             id: idOf(contractUri),
             at: '2000-01-01T00:00:00.000Z',
         });
         await expect(
             owner.clients.fullAuth.contracts.getContractConnections({ contractUri })
+        ).resolves.toMatchObject({ records: expect.arrayContaining([expect.anything()]) });
+
+        await run(
+            `MATCH (:ConsentFlowContract {id: $id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion)
+             SET version.expiresAt = $at`,
+            { id: idOf(contractUri), at: '2000-01-01T00:00:00.000Z' }
+        );
+        await expect(
+            owner.clients.fullAuth.contracts.getContractConnections({ contractUri })
         ).resolves.toEqual({ records: [], hasMore: false });
 
-        await run('MATCH (contract:ConsentFlowContract {id: $id}) REMOVE contract.expiresAt', {
-            id: idOf(contractUri),
-        });
+        await run(
+            `MATCH (contract:ConsentFlowContract {id: $id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion)
+             REMOVE contract.expiresAt, version.expiresAt`,
+            { id: idOf(contractUri) }
+        );
         await expect(
             owner.clients.fullAuth.contracts.getContractConnections({ contractUri })
         ).resolves.toMatchObject({ records: expect.arrayContaining([expect.anything()]) });

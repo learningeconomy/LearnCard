@@ -2,6 +2,7 @@ import { int } from 'neo4j-driver';
 
 import { neogma } from '@instance';
 import { ensureContractEventMaintenance } from './contract-event-maintenance.helpers';
+import { ACCEPTED_VERSION_PREDICATE } from './consent-expiry.helpers';
 
 export type ConsentFlowSuspensionSummary = { suspended: number };
 export type ConsentFlowExpirySummary = { expired: number };
@@ -85,7 +86,7 @@ type ExpiryCandidate = { id: string; expiresAt: string };
 
 /** Reads one page of an indexed `expiresAt` range, after the given (expiresAt, id) position. */
 const readExpiryCandidates = async (
-    label: 'ConsentFlowTerms' | 'ConsentFlowContract',
+    label: 'ConsentFlowTerms' | 'ConsentFlowContractVersion',
     range: { from: string; now: string },
     after: ExpiryCandidate | undefined,
     batchSize: number
@@ -135,13 +136,19 @@ const MARK_EXPIRED_CYPHER = `
 
 /**
  * Records one integration-only `consent_expired` event (id `${termsId}:expired`) for every
- * active terms whose own `expiresAt`, or whose contract's `expiresAt`, has passed, and sets
- * `terms.expiredEventAt` so each terms emits once. The terms status is not changed.
+ * active terms that has expired, and sets `terms.expiredEventAt` so each terms emits once.
+ * The terms status is not changed.
  *
- * Work is found through the `expiresAt` indexes over a bounded range: from a stored watermark
- * (minus a fixed overlap) up to now. The watermark only advances when the range was read to
- * the end, so an interrupted pass is repeated. The first pass starts at now, not at the
- * beginning of history. Category-level `shareUntil` is out of scope.
+ * Expiry follows the rule of the consented-data reads (see consent-expiry.helpers): the
+ * terms' own `expiresAt`, or the `expiresAt` of the contract version the consenter accepted.
+ * The contract node's `expiresAt` is not used, so terms awaiting re-consent after a contract
+ * update expire with the version they accepted, not with the newest one.
+ *
+ * Work is found through the `expiresAt` indexes (terms and contract versions) over a bounded
+ * range: from a stored watermark (minus a fixed overlap) up to now. The watermark only
+ * advances when the range was read to the end, so an interrupted pass is repeated. The first
+ * pass starts at now, not at the beginning of history. Category-level `shareUntil` is out of
+ * scope.
  */
 export const emitExpiredConsentEvents = async (
     now = new Date().toISOString(),
@@ -207,25 +214,28 @@ export const emitExpiredConsentEvents = async (
     for (;;) {
         if (Date.now() >= deadline) return { expired };
 
-        const contracts = await readExpiryCandidates(
-            'ConsentFlowContract',
+        const versions = await readExpiryCandidates(
+            'ConsentFlowContractVersion',
             range,
             after,
             batchSize
         );
 
-        for (const contract of contracts.filter(hasExpired)) {
+        for (const version of versions.filter(hasExpired)) {
             for (;;) {
                 if (Date.now() >= deadline) return { expired };
 
+                // Only the terms that accepted exactly this version expire with it.
                 const result = await neogma.queryRunner.run(
-                    `MATCH (contract:ConsentFlowContract)
-                     WHERE contract.expiresAt = $expiresAt AND contract.id = $id
+                    `MATCH (accepted:ConsentFlowContractVersion)
+                     WHERE accepted.expiresAt = $expiresAt AND accepted.id = $id
+                     MATCH (contract:ConsentFlowContract)-[:HAS_VERSION]->(accepted)
                      MATCH (terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
                      WHERE terms.expiredEventAt IS NULL AND terms.status IN $statuses
+                         AND ${ACCEPTED_VERSION_PREDICATE}
                      WITH contract, terms ORDER BY terms.id LIMIT $limit
                      ${MARK_EXPIRED_CYPHER}`,
-                    { ...contract, statuses: ACTIVE_STATUSES, now, limit: int(batchSize) }
+                    { ...version, statuses: ACTIVE_STATUSES, now, limit: int(batchSize) }
                 );
                 const count = toNumber(result.records[0]?.get('expired'));
 
@@ -235,8 +245,8 @@ export const emitExpiredConsentEvents = async (
             }
         }
 
-        if (contracts.length < batchSize) break;
-        after = contracts[contracts.length - 1];
+        if (versions.length < batchSize) break;
+        after = versions[versions.length - 1];
     }
 
     // Both ranges were read to the end, so the next pass can start from here.

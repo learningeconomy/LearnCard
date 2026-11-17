@@ -116,7 +116,7 @@ it('boots from the secrets bundle and keeps warm deadline work independent of se
     ]);
     // The expiry scan reads both indexed ranges, 15 hours behind the stored watermark up to
     // the server's own clock, then advances the watermark.
-    for (const label of ['ConsentFlowTerms', 'ConsentFlowContract']) {
+    for (const label of ['ConsentFlowTerms', 'ConsentFlowContractVersion']) {
         expect(callsMatching(`USING INDEX node:${label}(expiresAt)`)).toEqual([
             [
                 expect.any(String),
