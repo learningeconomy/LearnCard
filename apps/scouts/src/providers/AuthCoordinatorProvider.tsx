@@ -90,6 +90,7 @@ import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorag
 
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { deriveDidKeyFromPrivateKey } from './didFromPrivateKey';
+import { resolveMigrationKey } from './resolveMigrationKey';
 
 // Firebase-specific auth provider / sign-in adapter registration lives in
 // this seam so provider-agnostic code (this file) never imports the Firebase
@@ -361,6 +362,7 @@ const AuthSessionManager: React.FC<{
     authProvider: AuthProvider | null;
 }> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
+    const { keyDerivation } = coordinator;
     const { presentToast } = useToast();
     const signInAdapter = useSignInAdapter();
     const queryClient = useQueryClient();
@@ -493,12 +495,10 @@ const AuthSessionManager: React.FC<{
         } else {
             setShowEmailLinkGate(false);
         }
-    }, [coordinator.state, authConfig]);
+    }, [coordinator.state, authConfig, keyDerivation.capabilities.contactMethodUpgrade]);
 
     // --- Device link modal ---
     const [deviceLinkVisible, setDeviceLinkVisible] = useState(false);
-
-    const { keyDerivation } = coordinator;
 
     // --- Auto-open approver from push notification ---
     useEffect(() => {
@@ -626,6 +626,7 @@ const AuthSessionManager: React.FC<{
 
     // --- Web3Auth key extraction for migration ---
     const migrationKeyFetchedRef = useRef(false);
+    const migrationAttemptRef = useRef(0);
     const migrationCoordinatorRef = useRef(coordinator);
     migrationCoordinatorRef.current = coordinator;
 
@@ -634,47 +635,111 @@ const AuthSessionManager: React.FC<{
             return;
         if (!authProvider) return;
 
+        const migrationData = coordinator.state.migrationData ?? {};
+        if (migrationData.web3AuthKey) return;
+
         migrationKeyFetchedRef.current = true;
+        const migrationAttempt = migrationAttemptRef.current;
+        const migrationUserId = coordinator.state.authUser?.id;
+        const isCurrentAttempt = (): boolean => {
+            const latestState = migrationCoordinatorRef.current.state;
+            return (
+                migrationAttemptRef.current === migrationAttempt &&
+                latestState.status === 'needs_migration' &&
+                latestState.authUser?.id === migrationUserId
+            );
+        };
+        const canFallBack = migrationData.provisionalRederive === true;
+
+        if (canFallBack && window.sessionStorage.getItem('qr_login_device_share')) {
+            coordinator.fallBackToRecovery();
+            return;
+        }
+
+        const fallBack = (): void => {
+            if (canFallBack && isCurrentAttempt()) {
+                migrationCoordinatorRef.current.fallBackToRecovery();
+            }
+        };
+
+        const deriveLegacyKey = async (): Promise<string | null> => {
+            const w3a = authConfig.providerConfig.web3Auth ?? {};
+            // Preserve each app's existing token refresh policy, including
+            // native token retrieval through the provider abstraction.
+            const token = await authProvider.getIdToken(false);
+            if (!token) return null;
+
+            return deriveWeb3AuthKey(
+                {
+                    clientId: (w3a.clientId as string) ?? '',
+                    web3AuthNetwork: (w3a.network as string) ?? '',
+                    verifier: (w3a.verifierId as string) ?? '',
+                    usePnPKey: true,
+                    chainConfig: {
+                        rpcTarget: (w3a.rpcTarget as string) ?? 'https://rpc.ankr.com/eth',
+                    },
+                    isSessionCurrent: async uid => {
+                        const provider = resolveAuthProvider(getAuthConfig());
+                        if (!provider) return false;
+                        return (await provider.getCurrentUser())?.id === uid;
+                    },
+                },
+                token
+            );
+        };
 
         const extractAndInject = async (): Promise<void> => {
             try {
-                const w3a = authConfig.providerConfig.web3Auth ?? {};
-                // Preserve each app's existing token refresh policy, including
-                // native token retrieval through the provider abstraction.
-                const token = await authProvider.getIdToken(false);
-                if (!token) {
+                emitAuthDebugEvent('web3auth:migration_key', 'Extracting account upgrade key');
+                const resolved = await resolveMigrationKey({
+                    fetchArchivedKey: async () => {
+                        if (!coordinator.keyDerivation.fetchArchivedKey) return null;
+                        const token = await authProvider.getIdToken(true);
+                        return coordinator.keyDerivation.fetchArchivedKey(
+                            token,
+                            authProvider.getProviderType()
+                        );
+                    },
+                    deriveLegacyKey,
+                    getExistingExpectedDid: () => {
+                        const latestState = migrationCoordinatorRef.current.state;
+                        const expectedDid =
+                            latestState.status === 'needs_migration'
+                                ? latestState.migrationData?.expectedDid
+                                : undefined;
+                        return typeof expectedDid === 'string' ? expectedDid : undefined;
+                    },
+                    isCurrentAttempt,
+                });
+                if (!resolved) {
+                    if (!isCurrentAttempt()) return;
                     emitAuthError('web3auth:migration_key', 'No sign-in session available');
+                    fallBack();
                     return;
                 }
 
-                emitAuthDebugEvent('web3auth:migration_key', 'Extracting account upgrade key');
-                const privateKey = await deriveWeb3AuthKey(
-                    {
-                        clientId: (w3a.clientId as string) ?? '',
-                        web3AuthNetwork: (w3a.network as string) ?? '',
-                        verifier: (w3a.verifierId as string) ?? '',
-                        usePnPKey: true,
-                        chainConfig: {
-                            rpcTarget: (w3a.rpcTarget as string) ?? 'https://rpc.ankr.com/eth',
-                        },
-                        isSessionCurrent: async uid => {
-                            const provider = resolveAuthProvider(getAuthConfig());
-                            if (!provider) return false;
-                            return (await provider.getCurrentUser())?.id === uid;
-                        },
-                    },
-                    token
-                );
-
                 // A sign-out or completed upgrade may occur while this tab waits.
                 const latestCoordinator = migrationCoordinatorRef.current;
-                if (latestCoordinator.state.status !== 'needs_migration') return;
+                if (!isCurrentAttempt()) return;
+                if (resolved.source === 'archive') {
+                    emitAuthSuccess('web3auth:migration_key', 'Account upgrade key restored');
+                    latestCoordinator.setMigrationData({
+                        web3AuthKey: resolved.privateKey,
+                        source: 'archive',
+                        expectedDid: resolved.expectedDid,
+                    });
+                    return;
+                }
                 emitAuthSuccess('web3auth:migration_key', 'Account upgrade key extracted');
-                latestCoordinator.setMigrationData({ web3AuthKey: privateKey });
+                latestCoordinator.setMigrationData({
+                    web3AuthKey: resolved.privateKey,
+                    source: 'derived',
+                });
             } catch {
                 // Provider and Torus errors can embed credentials. Shared strategy
                 // diagnostics retain safe outcome metadata; never forward raw errors.
                 emitAuthError('web3auth:migration_key', 'Could not prepare account upgrade');
+                fallBack();
             }
         };
 
@@ -684,6 +749,7 @@ const AuthSessionManager: React.FC<{
     useEffect(() => {
         if (coordinator.state.status !== 'needs_migration') {
             migrationKeyFetchedRef.current = false;
+            migrationAttemptRef.current += 1;
         }
     }, [coordinator.state.status]);
 
@@ -932,11 +998,13 @@ const AuthSessionManager: React.FC<{
     const availableMethods = useMemo(() => {
         if (coordinator.state.status !== 'needs_recovery') return [];
 
-        return coordinator.state.recoveryMethods.map(m => ({
-            type: m.type,
-            credentialId: m.credentialId,
+        return coordinator.state.recoveryMethods.map(method => ({
+            type: method.type,
+            credentialId: method.credentialId,
             createdAt:
-                m.createdAt instanceof Date ? m.createdAt.toISOString() : String(m.createdAt),
+                method.createdAt instanceof Date
+                    ? method.createdAt.toISOString()
+                    : String(method.createdAt),
         }));
     }, [coordinator.state]);
 
@@ -1499,8 +1567,7 @@ const getCachedPrivateKey = async (): Promise<string | null> => {
 const AuthCoordinatorSessionProvider: React.FC<ScoutsAuthCoordinatorProviderProps> = ({
     children,
 }) => {
-    const authConfig = getAuthConfig();
-    const { serverUrl } = getSSSConfig();
+    const [authConfig] = useState(getAuthConfig);
     const queryClient = useQueryClient();
     const { clearDB } = useSQLiteStorage();
 
@@ -1533,10 +1600,7 @@ const AuthCoordinatorSessionProvider: React.FC<ScoutsAuthCoordinatorProviderProp
     );
 
     // Resolve key derivation strategy from the provider registry (env-var driven)
-    const keyDerivation = useMemo(
-        () => resolveKeyDerivation(authConfig),
-        [authConfig.keyDerivation, serverUrl]
-    );
+    const keyDerivation = useMemo(() => resolveKeyDerivation(authConfig), [authConfig]);
 
     // Debug event handler — forward to the in-memory event system so
     // AuthKeyDebugWidget can display events in its timeline.
@@ -1611,7 +1675,7 @@ const AuthCoordinatorSessionProvider: React.FC<ScoutsAuthCoordinatorProviderProp
             onLogout={handleAppLogout}
             onDebugEvent={handleDebugEvent}
             legacyAccountThresholdMs={5 * 60 * 1000}
-            // Always enabled — switch backends via VITE_KEY_DERIVATION env var.
+            // Always enabled — the tenant config selects the key derivation strategy.
             enabled={true}
         >
             <AuthSessionManager authProvider={authProvider}>{children}</AuthSessionManager>

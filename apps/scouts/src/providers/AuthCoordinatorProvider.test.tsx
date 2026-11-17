@@ -4,16 +4,36 @@ import { createRoot } from 'react-dom/client';
 import { screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { UnifiedAuthState } from 'learn-card-base';
+import type { AuthProvider, UnifiedAuthState } from 'learn-card-base';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
 const mocks = vi.hoisted(() => ({
     coordinator: {
         state: { status: 'idle' } as UnifiedAuthState,
         hasEndedAuthSession: false,
-        keyDerivation: { name: 'web3auth', capabilities: { recovery: false } },
+        keyDerivation: {
+            name: 'sss',
+            capabilities: { recovery: false },
+            fetchArchivedKey: vi.fn(),
+        },
+        setMigrationData: vi.fn(),
+        fallBackToRecovery: vi.fn(),
     },
-    config: { authProvider: 'firebase', keyDerivation: 'web3auth', providerConfig: {} },
+    config: {
+        authProvider: 'firebase',
+        keyDerivation: 'sss',
+        providerConfig: {
+            web3Auth: {
+                clientId: 'synthetic-client',
+                network: 'cyan',
+                verifierId: 'scoutPass-firebase-cyan-mainnet',
+                rpcTarget: 'https://rpc.example.test',
+            },
+        },
+    },
+    authProvider: null as AuthProvider | null,
+    getIdToken: vi.fn(),
+    deriveWeb3AuthKey: vi.fn(),
     build: vi.fn(),
     persist: vi.fn(),
     push: vi.fn(),
@@ -38,7 +58,7 @@ vi.mock('learn-card-base', async () => {
         AuthCoordinatorProvider: passThrough,
         SignInAdapterProvider: passThrough,
         useAuthCoordinator: () => mocks.coordinator,
-        useAuthSessionProvider: () => null,
+        useAuthSessionProvider: () => mocks.authProvider,
         useAuthCoordinatorAutoSetup: vi.fn(),
         useIdleAuthCleanup,
         useSignInAdapter: () => ({ getCurrentUser: () => null }),
@@ -52,7 +72,7 @@ vi.mock('learn-card-base', async () => {
         resolveKeyDerivation: () => mocks.coordinator.keyDerivation,
         resolveAuthProvider: () => null,
         createWeb3AuthStrategy: vi.fn(),
-        deriveWeb3AuthKey: vi.fn(),
+        deriveWeb3AuthKey: mocks.deriveWeb3AuthKey,
         authUserStore: {
             use: { currentUser: () => null },
             get: { currentUser: () => null },
@@ -146,7 +166,10 @@ vi.mock('../components/auth/ReAuthOverlay', () => ({ default: () => null }));
 vi.mock('../i18n', () => ({ useLocale: () => 'en' }));
 vi.mock('../i18n/preAuthEmail', () => ({ createPreAuthEmailPayload: vi.fn() }));
 vi.mock('../i18n/storage', () => ({ clearStoragePreservingLocale: vi.fn() }));
-vi.mock('../paraglide/messages.js', () => ({}));
+vi.mock('../paraglide/messages.js', () => ({
+    'auth.upgradeAcct': () => 'Upgrading account',
+    'auth.upgradeDesc': () => 'Please wait.',
+}));
 
 import { AuthCoordinatorProvider, useAppAuth } from './AuthCoordinatorProvider';
 
@@ -220,10 +243,127 @@ beforeEach(() => {
     mocks.push.mockResolvedValue(undefined);
     window.sessionStorage.clear();
     mocks.resolvedTenant = null;
+    mocks.authProvider = null;
 });
 afterEach(() => {
     unmounts.splice(0).forEach(unmount => unmount());
     vi.unstubAllGlobals();
+});
+
+describe('ScoutPass archive-first account upgrade', () => {
+    const archived = { privateKey: 'a'.repeat(64), did: 'did:key:zArchive' };
+    const migration = (migrationData = {}): UnifiedAuthState => ({
+        status: 'needs_migration',
+        authUser: { id: 'synthetic-user', providerType: 'firebase' },
+        migrationData,
+    });
+
+    beforeEach(() => {
+        mocks.authProvider = {
+            getIdToken: mocks.getIdToken,
+            getProviderType: () => 'firebase',
+            getCurrentUser: async () => null,
+            signOut: vi.fn(),
+        };
+        mocks.getIdToken.mockResolvedValue('synthetic-token');
+        mocks.coordinator.state = migration();
+        mocks.coordinator.keyDerivation.fetchArchivedKey.mockResolvedValue(archived);
+        mocks.deriveWeb3AuthKey.mockResolvedValue('legacy-key');
+    });
+
+    it.each([undefined, 'did:key:zPrimary'])(
+        'restores the archive with a fresh token and expected DID %s',
+        async expectedDid => {
+            mocks.coordinator.state = migration({ expectedDid });
+            mount();
+            await waitFor(() =>
+                expect(mocks.coordinator.setMigrationData).toHaveBeenCalledWith({
+                    web3AuthKey: archived.privateKey,
+                    source: 'archive',
+                    expectedDid: expectedDid ?? archived.did,
+                })
+            );
+            expect(mocks.getIdToken).toHaveBeenCalledExactlyOnceWith(true);
+            expect(
+                mocks.coordinator.keyDerivation.fetchArchivedKey
+            ).toHaveBeenCalledExactlyOnceWith('synthetic-token', 'firebase');
+            expect(mocks.deriveWeb3AuthKey).not.toHaveBeenCalled();
+        }
+    );
+
+    it.each(['miss', 'error', 'token-error'])(
+        'preserves legacy derivation after archive %s',
+        async outcome => {
+            if (outcome === 'miss')
+                mocks.coordinator.keyDerivation.fetchArchivedKey.mockResolvedValue(null);
+            if (outcome === 'error')
+                mocks.coordinator.keyDerivation.fetchArchivedKey.mockRejectedValue(
+                    new Error('unavailable')
+                );
+            if (outcome === 'token-error')
+                mocks.getIdToken.mockRejectedValueOnce(new Error('refresh failed'));
+            mount();
+            await waitFor(() =>
+                expect(mocks.coordinator.setMigrationData).toHaveBeenCalledWith({
+                    web3AuthKey: 'legacy-key',
+                    source: 'derived',
+                })
+            );
+            expect(mocks.getIdToken.mock.calls).toEqual([[true], [false]]);
+            expect(mocks.deriveWeb3AuthKey).toHaveBeenCalledExactlyOnceWith(
+                {
+                    clientId: 'synthetic-client',
+                    web3AuthNetwork: 'cyan',
+                    verifier: 'scoutPass-firebase-cyan-mainnet',
+                    usePnPKey: true,
+                    chainConfig: { rpcTarget: 'https://rpc.example.test' },
+                    isSessionCurrent: expect.any(Function),
+                },
+                'synthetic-token'
+            );
+        }
+    );
+
+    it('does not replace an already supplied migration key', async () => {
+        mocks.coordinator.state = migration({ web3AuthKey: 'cached-key', source: 'cached' });
+        mount();
+        await act(async () => {});
+        expect(mocks.getIdToken).not.toHaveBeenCalled();
+        expect(mocks.coordinator.setMigrationData).not.toHaveBeenCalled();
+    });
+
+    it('discards an archive response after sign-out', async () => {
+        const lookup = deferred<typeof archived>();
+        mocks.coordinator.keyDerivation.fetchArchivedKey.mockReturnValue(lookup.promise);
+        const changeState = mount();
+        await waitFor(() =>
+            expect(mocks.coordinator.keyDerivation.fetchArchivedKey).toHaveBeenCalled()
+        );
+        changeState({ status: 'idle' });
+        await act(async () => lookup.resolve(archived));
+        expect(mocks.coordinator.setMigrationData).not.toHaveBeenCalled();
+        expect(mocks.deriveWeb3AuthKey).not.toHaveBeenCalled();
+    });
+
+    it('returns provisional accounts to recovery when legacy derivation fails', async () => {
+        mocks.coordinator.state = migration({ provisionalRederive: true });
+        mocks.coordinator.keyDerivation.fetchArchivedKey.mockResolvedValue(null);
+        mocks.deriveWeb3AuthKey.mockRejectedValue(new Error('unavailable'));
+        mount();
+        await waitFor(() => expect(mocks.coordinator.fallBackToRecovery).toHaveBeenCalledOnce());
+        expect(mocks.coordinator.setMigrationData).not.toHaveBeenCalled();
+    });
+
+    it('does not ask either legacy source for a new account needing setup', async () => {
+        mocks.coordinator.state = {
+            status: 'needs_setup',
+            authUser: { id: 'new-user', providerType: 'firebase' },
+        };
+        mount();
+        await act(async () => {});
+        expect(mocks.coordinator.keyDerivation.fetchArchivedKey).not.toHaveBeenCalled();
+        expect(mocks.deriveWeb3AuthKey).not.toHaveBeenCalled();
+    });
 });
 
 describe('ScoutPass interrupted account initialization', () => {
