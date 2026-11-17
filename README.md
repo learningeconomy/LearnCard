@@ -1,3 +1,5 @@
+> **Frozen reference implementation.** This branch is frozen as the EducationOS reference implementation; security fixes only. Active development: learningeconomy/educationos-platform.
+
 [<img src="https://github.com/user-attachments/assets/3bff1da1-8293-4ddf-856b-6f9aee6747d0" width="215"/>](https://learncard.com)
 
 # LearnCard
