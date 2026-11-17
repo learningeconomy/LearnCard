@@ -2,6 +2,7 @@ import {
     SendContractRequestValidator,
     SendContractRequestResultValidator,
     ContractRequestFieldsValidator,
+    ContractRequestValidator,
 } from '@learncard/types';
 import {
     sendGenericContractRequest,
@@ -81,6 +82,7 @@ import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import {
     getContractByUri,
     getStoredContractRequest,
+    getContractRequestById,
     getRequestedForList,
     getRequestedForForUser,
     getContractById,
@@ -148,6 +150,27 @@ const resolveRecipientProfileId = async (identifier: string, domain: string): Pr
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid recipient identifier' });
     return profileId;
 };
+
+/** An email-addressed request shows only its email to other parties until it is accepted. */
+const contractRequestTarget = (
+    domain: string,
+    request: {
+        addressedByEmail?: boolean;
+        status?: string | null;
+        email?: string;
+        profile?: ProfileType;
+    }
+) =>
+    request.profile && !(request.addressedByEmail && request.status !== 'accepted')
+        ? {
+              profile: stripSensitiveProfileListFields(
+                  sanitizeProfileForTier(
+                      updateDidForProfile(domain, request.profile),
+                      'authenticated'
+                  )
+              ),
+          }
+        : { email: request.email ?? '' };
 
 const LATEST_CONTRACT_APPROVAL_REQUIRED =
     'User has not yet approved the latest version of this contract';
@@ -2274,6 +2297,43 @@ export const contractsRouter = t.router({
         .mutation(async ({ ctx, input }) =>
             sendGenericContractRequest(input, ctx.user.profile, ctx.domain)
         ),
+
+    getContractRequest: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/consent-flow-contracts/request',
+                tags: ['Contracts'],
+                summary: 'Get one contract request by its request ID',
+                description:
+                    'Returns the status of a request sent with sendContractRequest. A request addressed to an email shows only that email until it is accepted.',
+            },
+        })
+        .input(z.object({ contractUri: z.string(), requestId: z.string() }))
+        .output(ContractRequestValidator)
+        .query(async ({ ctx, input }) => {
+            const contract = await getContractByUri(input.contractUri);
+            if (!contract)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+            const request = await getContractRequestById(
+                contract.id,
+                input.requestId,
+                ctx.user.profile.profileId
+            );
+            if (!request)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract request not found' });
+            return {
+                requestId: request.requestId,
+                status: request.status,
+                ...(request.externalReferenceId
+                    ? { externalReferenceId: request.externalReferenceId }
+                    : {}),
+                ...(request.requestedAt ? { requestedAt: request.requestedAt } : {}),
+                ...(request.expiresAt ? { expiresAt: request.expiresAt } : {}),
+                target: contractRequestTarget(ctx.domain, request),
+            };
+        }),
 
     denyContractRequest: profileRoute
         .meta({
