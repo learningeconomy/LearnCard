@@ -164,7 +164,12 @@ const importLegacyJobs = async (snapshot?: string | null): Promise<void> => {
                         return;
                     const existing = jobs.get(job.id);
                     existing.onsuccess = () => {
-                        if (!existing.result) {
+                        const current = existing.result as PendingContractSyncJob | undefined;
+                        const isNewDelivery =
+                            current?.status === 'done' &&
+                            job.status !== 'done' &&
+                            job.updatedAt > (current.finishedAt ?? current.updatedAt);
+                        if (!current || isNewDelivery) {
                             jobs.put(job);
                             imported = true;
                         }

@@ -109,6 +109,47 @@ it('imports late legacy jobs without overwriting or resurrecting durable jobs', 
     expect(store.pendingContractSyncStore.get.jobs()[id]).toEqual(newDelivery);
 });
 
+it.each([
+    { status: 'queued', updatedAt: 101, finishedAt: 100, replaces: true },
+    { status: 'error', updatedAt: 101, finishedAt: 100, replaces: true },
+    { status: 'running', updatedAt: 101, finishedAt: 100, replaces: true },
+    { status: 'queued', updatedAt: 101, finishedAt: undefined, replaces: true },
+    { status: 'queued', updatedAt: 100, finishedAt: 100, replaces: false },
+    { status: 'queued', updatedAt: 99, finishedAt: 100, replaces: false },
+    { status: 'done', updatedAt: 101, finishedAt: 100, replaces: false },
+])(
+    'imports $status legacy delivery at $updatedAt over completion $finishedAt only when newer: $replaces',
+    async ({ status, updatedAt, finishedAt, replaces }) => {
+        const id = 'completed-job';
+        const completed = {
+            ...legacyContractJob(id),
+            status: 'done',
+            updatedAt: 100,
+            ...(finishedAt === undefined ? {} : { finishedAt }),
+        };
+        localStorage.setItem(
+            'pendingContractSyncStore',
+            JSON.stringify({ state: { jobs: { [id]: completed } } })
+        );
+        const store = await import('./pendingContractSyncStore');
+        await store.hydratePendingContractSyncJobs();
+        const incoming = { ...legacyContractJob(id), status, updatedAt };
+        localStorage.setItem(
+            'pendingContractSyncStore',
+            JSON.stringify({ state: { jobs: { [id]: incoming } } })
+        );
+        await store.hydratePendingContractSyncJobs();
+        expect(localStorage.getItem('pendingContractSyncStore')).toBeNull();
+
+        vi.resetModules();
+        const reloaded = await import('./pendingContractSyncStore');
+        await reloaded.hydratePendingContractSyncJobs();
+        expect(reloaded.pendingContractSyncStore.get.jobs()[id]).toEqual(
+            replaces ? incoming : completed
+        );
+    }
+);
+
 it('does not remove a legacy map that changes while its jobs are being imported', async () => {
     const store = await import('./pendingContractSyncStore');
     await store.hydratePendingContractSyncJobs();

@@ -78,6 +78,8 @@ The app awaits a durable retry handoff when browser storage is working. If queue
 
 Newly queued jobs from older tabs are imported on storage changes or refresh. Imported legacy snapshots are removed only after persistence, without resurrecting deliveries already removed from the durable queue. Personal uploads queued under a key identity remain eligible when that same account resolves its network identity, but not under a switched profile.
 
+A newer unfinished legacy delivery can replace a retained completed job with the same identity. Older snapshots cannot reopen completed work or overwrite an unfinished durable delivery.
+
 Progress and acknowledgment updates touch their own job rather than rescanning all deliveries. A tab skips locks held by another tab and continues other ready jobs. An attempt that loses its lease stops future sharing calls; a request already in flight cannot be recalled.
 
 ### The send convenience method

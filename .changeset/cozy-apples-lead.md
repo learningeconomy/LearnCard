@@ -22,3 +22,5 @@ Initialize cross-tab notifications only when browser event APIs are available, p
 Keep committed credential saves and consent successful if retry persistence fails, while still awaiting a healthy durable handoff. Import late jobs from older tabs without resurrecting removed deliveries, and update progress without repeatedly scanning the whole queue.
 
 Retain personal uploads across key-to-network identity resolution without crossing switched profiles. Skip contended job locks so other deliveries can proceed, and stop future sharing mutations when an attempt loses its lease.
+
+Preserve newer unfinished deliveries from older tabs even while a completed job with the same identity is retained.
