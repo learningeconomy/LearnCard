@@ -409,6 +409,10 @@ export const purgeExpiredIntegrationEvents = async ({
 
     await ensureContractEventMaintenance();
 
+    // Order matters inside the statement: the watermark is written (which takes the write lock
+    // of the Integration node) before any of its records is deleted, and both commit together.
+    // readIntegrationEventPage takes the same lock, so a feed read sees either none of a batch
+    // or all of it together with the advanced watermark.
     do {
         const result = await neogma.queryRunner.run(
             `MATCH (record:IntegrationEvent)

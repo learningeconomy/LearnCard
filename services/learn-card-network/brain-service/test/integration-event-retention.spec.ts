@@ -9,6 +9,8 @@ import {
     purgeExpiredIntegrationEvents,
 } from '@helpers/integration-events.helpers';
 
+import { readIntegrationEventPage } from '@accesslayer/integration-event/read';
+
 import { getUser } from './helpers/getClient';
 
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -137,6 +139,113 @@ describe('purgeExpiredIntegrationEvents', () => {
         });
 
         expect(fromBoundary.records.map(record => record.sequence)).toEqual([4, 5]);
+    });
+
+    it('rejects a cursor that retention overtakes while the feed is being read', async () => {
+        await expireThrough(integrationId, 3);
+
+        // Retention runs at the worst moment: right before the page of records is read.
+        const original = neogma.queryRunner.run.bind(neogma.queryRunner);
+        let interleaved = false;
+        const spy = vi
+            .spyOn(neogma.queryRunner, 'run')
+            .mockImplementation(async (...args: Parameters<typeof original>) => {
+                if (!interleaved && args[0].includes('record.sequence > $afterSequence')) {
+                    interleaved = true;
+                    await purgeExpiredIntegrationEvents();
+                }
+
+                return original(...args);
+            });
+
+        try {
+            await expect(
+                userA.clients.fullAuth.integrations.getIntegrationEvents({
+                    id: integrationId,
+                    since: encodeIntegrationEventCursor(1),
+                })
+            ).rejects.toMatchObject({
+                code: 'CONFLICT',
+                message: expect.stringMatching(/^CURSOR_EXPIRED: /),
+            });
+            expect(interleaved).toBe(true);
+        } finally {
+            spy.mockRestore();
+        }
+    });
+
+    it('waits for a purge that is in progress instead of reading around it', async () => {
+        const session = neogma.driver.session();
+        const transaction = session.beginTransaction();
+
+        try {
+            // An uncommitted purge of sequences 1 to 3: watermark first, then the records.
+            await transaction.run(
+                `MATCH (integration:Integration {id: $integrationId})
+                 SET integration.eventPurgedThroughSeq = 3
+                 WITH integration
+                 MATCH (record:IntegrationEvent {integrationId: $integrationId})
+                 WHERE record.sequence <= 3
+                 DETACH DELETE record`,
+                { integrationId }
+            );
+
+            let settled = false;
+            const read = userA.clients.fullAuth.integrations
+                .getIntegrationEvents({ id: integrationId, since: encodeIntegrationEventCursor(1) })
+                .then(
+                    () => 'returned',
+                    (error: { message?: string }) => error.message ?? 'failed'
+                )
+                .finally(() => {
+                    settled = true;
+                });
+
+            await new Promise(resolve => setTimeout(resolve, 750));
+            expect(settled).toBe(false);
+
+            await transaction.commit();
+
+            await expect(read).resolves.toMatch(/^CURSOR_EXPIRED: /);
+        } finally {
+            if (transaction.isOpen()) await transaction.rollback();
+            await session.close();
+        }
+    });
+
+    it('reads the sequence state and the page in one statement', async () => {
+        await expireThrough(integrationId, 3);
+        await purgeExpiredIntegrationEvents();
+
+        const page = await readIntegrationEventPage({
+            integrationId,
+            afterSequence: 3,
+            limit: 10,
+        });
+
+        expect(page?.eventSeq).toBe(5);
+        expect(page?.eventPurgedThroughSeq).toBe(3);
+        expect(page?.records.map(record => record.sequence)).toEqual([4, 5]);
+
+        const limited = await readIntegrationEventPage({
+            integrationId,
+            afterSequence: 0,
+            limit: 1,
+        });
+
+        expect(limited?.records.map(record => record.sequence)).toEqual([4]);
+
+        const empty = await readIntegrationEventPage({
+            integrationId,
+            afterSequence: 5,
+            limit: 10,
+        });
+
+        expect(empty).toEqual({ eventSeq: 5, eventPurgedThroughSeq: 3, records: [] });
+
+        await expect(
+            readIntegrationEventPage({ integrationId: 'missing', afterSequence: 0, limit: 10 })
+        ).resolves.toBeNull();
     });
 
     it('uses the retention window of 30 days from the given time', async () => {

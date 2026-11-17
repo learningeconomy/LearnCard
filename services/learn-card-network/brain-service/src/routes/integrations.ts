@@ -21,10 +21,7 @@ import {
 } from '@accesslayer/integration/webhook';
 import { sendSignedIntegrationWebhook } from '@helpers/integration-events.helpers';
 import { constructUri } from '@helpers/uri.helpers';
-import {
-    getIntegrationEventSequenceState,
-    getIntegrationEventsAfter,
-} from '@accesslayer/integration-event/read';
+import { readIntegrationEventPage } from '@accesslayer/integration-event/read';
 import {
     decodeIntegrationEventCursor,
     encodeIntegrationEventCursor,
@@ -340,12 +337,6 @@ export const integrationsRouter = t.router({
                 });
             }
 
-            const state = await getIntegrationEventSequenceState(input.id);
-
-            if (!state) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
-            }
-
             let afterSequence = 0;
 
             if (input.since !== undefined) {
@@ -354,21 +345,29 @@ export const integrationsRouter = t.router({
                 } catch {
                     throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid cursor' });
                 }
-
-                if (afterSequence < state.eventPurgedThroughSeq) {
-                    throw new TRPCError({
-                        code: CURSOR_EXPIRED_TRPC_CODE,
-                        message: CURSOR_EXPIRED_MESSAGE,
-                    });
-                }
             }
 
+            // One statement: the purge watermark and the page must come from the same state,
+            // or retention could remove unseen records between the check and the read.
             const limit = input.limit ?? 100;
-            const results = await getIntegrationEventsAfter({
+            const state = await readIntegrationEventPage({
                 integrationId: input.id,
                 afterSequence,
                 limit: limit + 1,
             });
+
+            if (!state) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+            }
+
+            if (input.since !== undefined && afterSequence < state.eventPurgedThroughSeq) {
+                throw new TRPCError({
+                    code: CURSOR_EXPIRED_TRPC_CODE,
+                    message: CURSOR_EXPIRED_MESSAGE,
+                });
+            }
+
+            const results = state.records;
             const hasMore = results.length > limit;
             const records = hasMore ? results.slice(0, limit) : results;
             const last = records[records.length - 1];
