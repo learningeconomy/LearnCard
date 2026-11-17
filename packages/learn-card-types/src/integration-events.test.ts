@@ -134,9 +134,13 @@ describe('webhook route result validators', () => {
     });
 
     it('validates a test event result', () => {
-        expect(IntegrationTestEventResultValidator.parse({ delivered: true, status: 200 })).toEqual(
-            { delivered: true, status: 200 }
-        );
+        expect(
+            IntegrationTestEventResultValidator.parse({
+                delivered: true,
+                httpStatus: 200,
+                latencyMs: 42,
+            })
+        ).toEqual({ delivered: true, httpStatus: 200, latencyMs: 42 });
         expect(
             IntegrationTestEventResultValidator.parse({ delivered: false, error: 'timeout' })
         ).toEqual({ delivered: false, error: 'timeout' });
