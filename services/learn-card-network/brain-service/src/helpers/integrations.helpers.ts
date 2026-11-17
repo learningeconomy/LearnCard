@@ -1,13 +1,20 @@
+import type { IntegrationWebhookState } from '@learncard/types';
+
 import { IntegrationType } from 'types/integration';
 
 /**
- * Stored Integration properties that must never leave the access layer:
- * encrypted webhook secrets and the event sequence bookkeeping.
+ * Stored Integration properties that are never part of the public Integration:
+ * encrypted webhook secrets, the event sequence bookkeeping, and webhook delivery health
+ * (which only the getIntegrationWebhook route returns, in its own shape).
  */
 export const PRIVATE_INTEGRATION_PROPERTIES = [
     'webhookSecretEnc',
     'webhookSecretPrevEnc',
     'webhookSecretPrevExpiresAt',
+    'webhookSecretVersion',
+    'webhookLastSuccessAt',
+    'webhookLastFailureAt',
+    'webhookLastFailureReason',
     'eventSeq',
     'eventPurgedThroughSeq',
     'eventSeqLock',
@@ -37,6 +44,29 @@ export const parseIntegration = (integration: IntegrationType): IntegrationType 
     }
 
     return parsed;
+};
+
+/**
+ * State of an Integration's webhook: `disabled` without a URL or while contract events are
+ * disabled, `failing` when the most recent delivery attempt failed (a failure later than the
+ * last success, or failures and no success yet), `active` otherwise.
+ */
+export const deriveIntegrationWebhookState = ({
+    webhookUrl,
+    contractEventsEnabledAt,
+    lastSuccessAt,
+    lastFailureAt,
+}: {
+    webhookUrl: string | null;
+    contractEventsEnabledAt?: string;
+    lastSuccessAt?: string;
+    lastFailureAt?: string;
+}): IntegrationWebhookState => {
+    if (!webhookUrl || !contractEventsEnabledAt) return 'disabled';
+    if (!lastFailureAt) return 'active';
+    if (!lastSuccessAt) return 'failing';
+
+    return Date.parse(lastFailureAt) > Date.parse(lastSuccessAt) ? 'failing' : 'active';
 };
 
 /**

@@ -35,6 +35,11 @@ export const Integration = ModelFactory<FlatIntegrationType, IntegrationRelation
             webhookSecretEnc: { type: 'string', required: false },
             webhookSecretPrevEnc: { type: 'string', required: false },
             webhookSecretPrevExpiresAt: { type: 'string', required: false },
+            webhookSecretVersion: { type: 'number', required: false },
+            // Delivery health, only exposed through getIntegrationWebhook.
+            webhookLastSuccessAt: { type: 'string', required: false },
+            webhookLastFailureAt: { type: 'string', required: false },
+            webhookLastFailureReason: { type: 'string', required: false },
             contractEventsEnabledAt: { type: 'string', required: false },
             eventSeq: { type: 'number', required: false },
             eventPurgedThroughSeq: { type: 'number', required: false },

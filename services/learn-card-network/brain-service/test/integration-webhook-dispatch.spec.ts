@@ -274,6 +274,43 @@ describe('dispatchIntegrationWebhooks', () => {
         expect(fetchSpy).not.toHaveBeenCalled();
     });
 
+    it('records webhook health for attempts only, not for records closed without a request', async () => {
+        const health = () =>
+            userA.clients.fullAuth.integrations.getIntegrationWebhook({ id: integrationId });
+
+        // Closed without a request: older than the retry window.
+        await seedEvent('dispatch-health-expired');
+        await run(
+            `MATCH (record:IntegrationEvent {eventId: 'dispatch-health-expired'})
+             SET record.createdAt = '2020-01-01T00:00:00.000Z'`
+        );
+        await dispatchIntegrationWebhooks();
+
+        expect(fetchSpy).not.toHaveBeenCalled();
+        expect(await health()).toMatchObject({ state: 'active' });
+        expect(await health()).not.toHaveProperty('lastFailureAt');
+
+        // One pass with a success and then a failure: the failure is the latest outcome.
+        await seedEvent('dispatch-health-ok');
+        await seedEvent('dispatch-health-bad');
+        fetchSpy.mockResolvedValueOnce(answer(200)).mockImplementationOnce(async () => {
+            await new Promise(resolve => setTimeout(resolve, 5));
+
+            return answer(500);
+        });
+        await dispatchIntegrationWebhooks();
+
+        const after = await health();
+
+        expect(after).toMatchObject({
+            state: 'failing',
+            lastFailureReason: 'http_500',
+            pendingDeliveries: 0,
+            retryingDeliveries: 1,
+        });
+        expect(Date.parse(after.lastFailureAt!)).toBeGreaterThan(Date.parse(after.lastSuccessAt!));
+    });
+
     it('rejects pending and retrying records once contract events are disabled', async () => {
         await seedEvent('dispatch-disabled-pending');
         await seedEvent('dispatch-disabled-retrying');
