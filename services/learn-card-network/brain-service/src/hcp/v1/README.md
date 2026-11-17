@@ -73,11 +73,65 @@ Every procedure except `meta` uses the brain's DID-auth chain with a valid chall
 6. Withdraw sets status `deleted` (soft): hidden from clients, kept for the subject
    and export. Withdraw and revoke are idempotent and record one event.
 
-Errors are Draft 3 §5.5 codes, thrown by the service as `HcpV1Error` and mapped once
-in `router.ts`: `malformed-request` → `BAD_REQUEST`, `scope-denied` → `FORBIDDEN`,
-`version-conflict` → `CONFLICT`. The tRPC message starts with the HCP code. Every
-not-authorized outcome has the same detail, so a response never says whether an
-entry exists.
+### Categories
+
+A category is a Draft 3 §4.5 registered slug (the 9 in registry version 1) or a
+**custom category**: an absolute URI under a domain its definer controls. v1 accepts
+a custom category when it is an `https:` or `http:` URI whose host is a DNS name
+(not an IP or a single label, not the spec's `hcp.example` namespace, §1.7), with no
+userinfo, in canonical form (`new URL(id).href === id`, so `https://LearnCard.com`
+is rejected; write `https://learncard.com/`). Anything else, including an
+unregistered slug, is `malformed-request`.
+
+- Custom categories are matched as exact strings everywhere: grants, queries,
+  disclosures, stores. Lists are ordered registry-first, then custom sorted.
+- A subject query with no `categories` has no category filter, so it finds custom
+  entries; `categoriesSearched` is the registered set plus custom categories found.
+  A client query with no `categories` still searches exactly what its grant reads.
+- Custom categories appear in a grant's `access` but never in `scopes` (§6.1.1:
+  their colons would make a scope string ambiguous).
+- `meta.supported_categories` lists only the registered categories: custom ones
+  are per subject and `meta` is public. `meta.custom_categories` (LearnCard
+  addition) says how they are accepted and declares them `high` sensitivity
+  (§4.5: never `low`; v1 cannot know what an arbitrary one holds).
+
+### Errors
+
+Errors are Draft 3 §5.5 Core errors, `{ type, detail }`. The service throws
+`HcpV1Error`; `router.ts` maps every failure on an HCP route once, including the
+two the transport raises before the service runs:
+
+| `type`              | tRPC code      | HTTP | Raised by                                         |
+| ------------------- | -------------- | ---- | ------------------------------------------------- |
+| `malformed-request` | `BAD_REQUEST`  | 400  | the service, or input schema validation           |
+| `invalid-token`     | `UNAUTHORIZED` | 401  | the DID-auth chain or a missing `hcp:*` API scope |
+| `scope-denied`      | `FORBIDDEN`    | 403  | the service                                       |
+| `version-conflict`  | `CONFLICT`     | 409  | the service                                       |
+
+The Core error is `data.hcp` in both the tRPC error shape and the OpenAPI error
+body (the brain `errorFormatter` copies it; other routes get no `data.hcp`). The
+message is the detail. Schema failures keep `issues` in the OpenAPI body.
+
+```json
+{
+    "message": "expectedVersion is not the entry's current version.",
+    "code": "CONFLICT",
+    "data": {
+        "code": "CONFLICT",
+        "httpStatus": 409,
+        "path": "hcp.v1.entries.revise",
+        "hcp": {
+            "type": "version-conflict",
+            "detail": "expectedVersion is not the entry's current version."
+        }
+    }
+}
+```
+
+Every not-authorized outcome has the same detail, so a response never says whether
+an entry exists. Statuses follow the brain's tRPC mapping, not the §9.7 HTTP binding
+(which would make `malformed-request` 422 and use `application/problem+json`): see
+`conformsTo` below.
 
 ## Layout
 
@@ -127,7 +181,7 @@ Idempotency-Key (§9.6), onward sharing and `context.shared` (§5.2.8), standing
 and directives (§6.3, §6.4), confirmation (§3.8), recategorize and restrict purposes,
 hard delete and import (§5.4), narrowed grants (§6.1.5.1), the `provenance` action
 (§7.4.1), relationships and conflicts (§4.2.3, §4.7), VC evidence ingest (§14),
-custom categories, the MCP binding. Relevance ordering is `lexical` (§7.3).
+the MCP binding. Relevance ordering is `lexical` (§7.3).
 `conformsTo` is not claimed: tRPC paths are not the Draft 3 HTTP binding.
 
 ## Tests
