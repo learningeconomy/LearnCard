@@ -16,8 +16,8 @@ vi.mock('@tanstack/react-query', () => ({
     onlineManager: { setEventListener: vi.fn() },
 }));
 
-vi.mock('@tanstack/react-query-persist-client', () => ({
-    PersistQueryClientProvider: ({ children }: { children: React.ReactNode }) => children,
+vi.mock('./providers/BatchedPersistQueryClientProvider', () => ({
+    BatchedPersistQueryClientProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock('@tanstack/query-async-storage-persister', () => ({

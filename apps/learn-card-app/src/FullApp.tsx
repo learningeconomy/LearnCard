@@ -4,7 +4,7 @@ import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { BatchedPersistQueryClientProvider } from './providers/BatchedPersistQueryClientProvider';
 import { connectivityStore, networkStore } from 'learn-card-base';
 import {
     isLikelyTransportError,
@@ -205,7 +205,7 @@ const FullApp: React.FC = () => {
     }, []);
 
     return (
-        <PersistQueryClientProvider
+        <BatchedPersistQueryClientProvider
             client={client}
             persistOptions={{ persister, maxAge: CACHE_TTL, buster: QUERY_CACHE_BUSTER }}
         >
@@ -293,7 +293,7 @@ const FullApp: React.FC = () => {
                     </Suspense>
                 </IonReactRouter>
             </AnalyticsContextProvider>
-        </PersistQueryClientProvider>
+        </BatchedPersistQueryClientProvider>
     );
 };
 
