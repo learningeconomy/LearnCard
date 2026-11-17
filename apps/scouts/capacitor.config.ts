@@ -1,12 +1,14 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 import { nativeBrowserCompatibility } from '../../packages/learn-card-base/src/config/nativeBrowserCompatibility';
+import { NATIVE_BRIDGE_LOGGING } from '../../packages/learn-card-base/src/config/nativeBridgeLogging';
 
 const config: CapacitorConfig = {
     appId: 'org.scoutpass.app',
     appName: 'ScoutPass',
     webDir: 'build',
-    bundledWebRuntime: false,
     ...nativeBrowserCompatibility({ android: { adjustMarginsForEdgeToEdge: 'force' } }),
+    // Never let Capacitor log plugin payloads (SQLite rows include the private key).
+    ...NATIVE_BRIDGE_LOGGING,
     plugins: {
         SplashScreen: {
             launchShowDuration: 6000,
