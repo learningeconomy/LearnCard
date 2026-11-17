@@ -335,10 +335,16 @@ const fanOutEvent = async (event: Record<string, unknown>): Promise<number> => {
     return created;
 };
 
+const MAX_FANOUT_ATTEMPTS = 12;
+const FANOUT_INITIAL_RETRY_DELAY_MS = 60_000;
+const FANOUT_MAX_RETRY_DELAY_MS = 60 * 60_000;
+
 /**
  * Turns every ConsentFlowEvent flagged with integrationFanoutPending into one IntegrationEvent
  * per subscribed integration, then removes the flag. Safe to run concurrently and to retry:
  * records are MERGEd by id and a sequence number is only consumed when a record is created.
+ * A failing event is retried with a backoff (60 seconds doubling to 1 hour) and given up on
+ * after 12 attempts: the flag is removed and integrationFanoutFailedAt is set.
  */
 export const fanOutIntegrationEvents = async ({
     eventId,
@@ -355,16 +361,22 @@ export const fanOutIntegrationEvents = async ({
 
     if (!eventId) await ensureContractEventMaintenance();
 
+    // An event that failed is not due again until its backoff has passed, so a few failing
+    // events cannot fill the batch and starve newer ones. The set behind the index seek is only
+    // the flagged events, which is small; the filter and the sort run on that set.
     const pending = await neogma.queryRunner.run(
         eventId
             ? `MATCH (event:ConsentFlowEvent {id: $eventId})
                WHERE event.integrationFanoutPending = true
+                   AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
                RETURN event LIMIT $limit`
             : `MATCH (event:ConsentFlowEvent)
                USING INDEX event:ConsentFlowEvent(integrationFanoutPending)
                WHERE event.integrationFanoutPending = true
-               RETURN event ORDER BY event.createdAt, event.id LIMIT $limit`,
-        { eventId: eventId ?? null, limit: batchLimit }
+                   AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
+               RETURN event ORDER BY coalesce(event.integrationFanoutNextAt, event.createdAt), event.id
+               LIMIT $limit`,
+        { eventId: eventId ?? null, limit: batchLimit, now: new Date().toISOString() }
     );
 
     for (const row of pending.records) {
@@ -375,13 +387,52 @@ export const fanOutIntegrationEvents = async ({
         try {
             summary.records += await fanOutEvent(event);
             await neogma.queryRunner.run(
-                'MATCH (event:ConsentFlowEvent {id: $id}) REMOVE event.integrationFanoutPending',
+                `MATCH (event:ConsentFlowEvent {id: $id})
+                 REMOVE event.integrationFanoutPending, event.integrationFanoutAttempts,
+                     event.integrationFanoutNextAt`,
                 { id: event.id }
             );
             summary.events++;
         } catch {
-            // Never log identifiers. The flag stays set, so the next pass retries this event.
-            console.warn('integration_events: fanout_pending');
+            // Never log identifiers.
+            const attempts =
+                (event.integrationFanoutAttempts === undefined
+                    ? 0
+                    : toNumber(event.integrationFanoutAttempts)) + 1;
+            const abandoned = attempts >= MAX_FANOUT_ATTEMPTS;
+            const delayMs = Math.min(
+                FANOUT_INITIAL_RETRY_DELAY_MS * 2 ** (attempts - 1),
+                FANOUT_MAX_RETRY_DELAY_MS
+            );
+
+            console.warn(
+                abandoned
+                    ? 'integration_events: fanout_abandoned'
+                    : 'integration_events: fanout_pending'
+            );
+
+            try {
+                await neogma.queryRunner.run(
+                    `MATCH (event:ConsentFlowEvent {id: $id})
+                     SET event.integrationFanoutAttempts =
+                         coalesce(event.integrationFanoutAttempts, 0) + 1
+                     WITH event
+                     FOREACH (_ IN CASE WHEN event.integrationFanoutAttempts >= $maxAttempts THEN [1] ELSE [] END |
+                         REMOVE event.integrationFanoutPending, event.integrationFanoutNextAt
+                         SET event.integrationFanoutFailedAt = $now)
+                     FOREACH (_ IN CASE WHEN event.integrationFanoutAttempts < $maxAttempts THEN [1] ELSE [] END |
+                         SET event.integrationFanoutNextAt = $nextAt)`,
+                    {
+                        id: event.id,
+                        maxAttempts: int(MAX_FANOUT_ATTEMPTS),
+                        now: new Date().toISOString(),
+                        nextAt: new Date(Date.now() + delayMs).toISOString(),
+                    }
+                );
+            } catch {
+                // The flag stays set without a backoff, so the next pass retries this event.
+                console.warn('integration_events: fanout_backoff_failed');
+            }
         }
     }
 

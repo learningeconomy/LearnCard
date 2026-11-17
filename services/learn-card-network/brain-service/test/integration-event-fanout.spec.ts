@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { neogma } from '@instance';
 import { getDidWeb } from '@helpers/did.helpers';
@@ -366,5 +366,193 @@ describe('fanOutIntegrationEvents', () => {
 
         expect(ownerRecord?.type).toBe('request_sent');
         expect(ownerRecord).not.toHaveProperty('subject');
+    });
+
+    describe('failing events', () => {
+        const POISON_PREFIX = 'poison-';
+
+        /** Makes the audience lookup throw for events of contracts whose id starts with poison-. */
+        const failPoisonContracts = (): { attempts: () => number } => {
+            const original = neogma.queryRunner.run.bind(neogma.queryRunner);
+            let count = 0;
+
+            vi.spyOn(neogma.queryRunner, 'run').mockImplementation(((
+                query: string,
+                params?: Record<string, unknown>
+            ) => {
+                if (
+                    query.includes('(contract:ConsentFlowContract {id: $contractId})') &&
+                    String(params?.contractId).startsWith(POISON_PREFIX)
+                ) {
+                    count++;
+
+                    return Promise.reject(new Error('audience failed'));
+                }
+
+                return original(query, params);
+            }) as typeof neogma.queryRunner.run);
+
+            return { attempts: (): number => count };
+        };
+
+        const eventState = async (eventId: string): Promise<Record<string, unknown>> => {
+            const result = await run('MATCH (event:ConsentFlowEvent {id: $eventId}) RETURN event', {
+                eventId,
+            });
+
+            return result.records[0]?.get('event').properties ?? {};
+        };
+
+        const makeDue = (eventId: string): Promise<unknown> =>
+            run(
+                `MATCH (event:ConsentFlowEvent {id: $eventId})
+                 SET event.integrationFanoutNextAt = '2000-01-01T00:00:00.000Z'`,
+                { eventId }
+            );
+
+        const createEvent = (
+            id: string,
+            contractId: string,
+            occurredAt: string
+        ): Promise<boolean> =>
+            createIntegrationOnlyEvent({
+                id,
+                kind: 'contract_retired',
+                contractId,
+                occurredAt,
+                domain: DOMAIN,
+            });
+
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
+        it('does not let more failing events than the batch limit block a newer healthy event', async () => {
+            const spy = failPoisonContracts();
+
+            await createEvent('bad-1', 'poison-1', '2026-02-01T00:00:00.000Z');
+            await createEvent('bad-2', 'poison-2', '2026-02-01T00:00:01.000Z');
+            await createEvent('bad-3', 'poison-3', '2026-02-01T00:00:02.000Z');
+            await createEvent('good', 'fan-contract', '2026-02-02T00:00:00.000Z');
+
+            const first = await fanOutIntegrationEvents({ limit: 2 });
+
+            expect(first.events).toBe(0);
+            expect(spy.attempts()).toBe(2);
+
+            // The two failed events are backing off, so this pass reaches bad-3 and the healthy event.
+            const second = await fanOutIntegrationEvents({ limit: 2 });
+
+            expect(second.events).toBe(1);
+            expect(await isFlagged('good')).toBe(false);
+            expect(await isFlagged('bad-1')).toBe(true);
+            expect(await isFlagged('bad-3')).toBe(true);
+            expect(Number((await eventState('bad-1')).integrationFanoutAttempts)).toBe(1);
+            expect(Number((await eventState('bad-3')).integrationFanoutAttempts)).toBe(1);
+        });
+
+        it('retries a failing event only after its backoff, which doubles up to one hour', async () => {
+            const spy = failPoisonContracts();
+
+            await createEvent('bad', 'poison-1', OCCURRED_AT);
+
+            const before = Date.now();
+            await fanOutIntegrationEvents();
+
+            expect(spy.attempts()).toBe(1);
+
+            const first = await eventState('bad');
+            const firstDelay = Date.parse(String(first.integrationFanoutNextAt)) - before;
+
+            expect(Number(first.integrationFanoutAttempts)).toBe(1);
+            expect(firstDelay).toBeGreaterThanOrEqual(59_000);
+            expect(firstDelay).toBeLessThanOrEqual(70_000);
+
+            await fanOutIntegrationEvents();
+            await fanOutIntegrationEvents({ eventId: 'bad' });
+            expect(spy.attempts()).toBe(1);
+
+            await makeDue('bad');
+            const secondStart = Date.now();
+            await fanOutIntegrationEvents();
+
+            expect(spy.attempts()).toBe(2);
+
+            const second = await eventState('bad');
+            const secondDelay = Date.parse(String(second.integrationFanoutNextAt)) - secondStart;
+
+            expect(Number(second.integrationFanoutAttempts)).toBe(2);
+            expect(secondDelay).toBeGreaterThanOrEqual(119_000);
+            expect(secondDelay).toBeLessThanOrEqual(130_000);
+
+            await run(
+                `MATCH (event:ConsentFlowEvent {id: 'bad'})
+                 SET event.integrationFanoutAttempts = 10, event.integrationFanoutNextAt = '2000-01-01T00:00:00.000Z'`
+            );
+            const capStart = Date.now();
+            await fanOutIntegrationEvents();
+
+            const capped = await eventState('bad');
+            const cappedDelay = Date.parse(String(capped.integrationFanoutNextAt)) - capStart;
+
+            expect(cappedDelay).toBeGreaterThanOrEqual(3_599_000);
+            expect(cappedDelay).toBeLessThanOrEqual(3_610_000);
+        });
+
+        it('abandons an event after 12 attempts and keeps the attempt count', async () => {
+            const spy = failPoisonContracts();
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+            await createEvent('bad', 'poison-1', OCCURRED_AT);
+
+            for (let attempt = 1; attempt <= 12; attempt++) {
+                await fanOutIntegrationEvents();
+                if (attempt < 12) {
+                    expect(await isFlagged('bad')).toBe(true);
+                    await makeDue('bad');
+                }
+            }
+
+            expect(spy.attempts()).toBe(12);
+            expect(await isFlagged('bad')).toBe(false);
+
+            const state = await eventState('bad');
+
+            expect(Number(state.integrationFanoutAttempts)).toBe(12);
+            expect(typeof state.integrationFanoutFailedAt).toBe('string');
+            expect(state.integrationFanoutNextAt).toBeUndefined();
+            expect(warn).toHaveBeenCalledWith('integration_events: fanout_abandoned');
+
+            await fanOutIntegrationEvents();
+            expect(spy.attempts()).toBe(12);
+        });
+
+        it('does not let a failing event block the inline path and clears attempts on success', async () => {
+            const spy = failPoisonContracts();
+
+            await createEvent('bad', 'poison-1', OCCURRED_AT);
+            await createEvent('good', 'fan-contract', OCCURRED_AT);
+            await run(
+                `MATCH (event:ConsentFlowEvent {id: 'good'})
+                 SET event.integrationFanoutAttempts = 3, event.integrationFanoutNextAt = '2000-01-01T00:00:00.000Z'`
+            );
+            await fanOutIntegrationEvents({ eventId: 'bad' });
+            expect(spy.attempts()).toBe(1);
+
+            // Not due yet: the inline path skips it.
+            await expect(fanOutIntegrationEvents({ eventId: 'bad' })).resolves.toEqual({
+                events: 0,
+                records: 0,
+            });
+            expect(spy.attempts()).toBe(1);
+
+            const summary = await fanOutIntegrationEvents({ eventId: 'good' });
+            const state = await eventState('good');
+
+            expect(summary.events).toBe(1);
+            expect(state.integrationFanoutPending).toBeUndefined();
+            expect(state.integrationFanoutAttempts).toBeUndefined();
+            expect(state.integrationFanoutNextAt).toBeUndefined();
+        });
     });
 });
