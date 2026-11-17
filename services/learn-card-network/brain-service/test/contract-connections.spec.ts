@@ -323,4 +323,70 @@ describe('getContractConnections', () => {
             recipient.clients.fullAuth.contracts.getContractConnections({ contractUri })
         ).resolves.toEqual({ records: [], hasMore: false });
     });
+
+    it('reads a bounded number of rows per request when many terms are expired but still live', async () => {
+        const extra = await Promise.all(
+            Array.from({ length: 12 }, (_, index) => actor(`x${index}`))
+        );
+        for (const learner of extra) termsUris.push(await consent(learner));
+
+        // The first 12 terms by id are expired; the 4 after them are current.
+        const ordered = [...termsUris].sort((a, b) => (idOf(a) < idOf(b) ? -1 : 1));
+        const expired = ordered.slice(0, 12);
+        const live = ordered.slice(12);
+
+        for (const termsUri of expired) {
+            await setTerms(termsUri, { expiresAt: '2000-01-01T00:00:00.000Z' });
+        }
+
+        const unbounded = await owner.clients.fullAuth.contracts.getContractConnections({
+            contractUri,
+            limit: 200,
+        });
+
+        expect(unbounded.records.map(record => record.termsUri)).toEqual(live);
+
+        // Count the terms rows each request reads.
+        const original = neogma.queryRunner.run.bind(neogma.queryRunner);
+        let rowsRead = 0;
+
+        vi.spyOn(neogma.queryRunner, 'run').mockImplementation(async (query, params) => {
+            const result = await original(query, params);
+
+            if (String(query).includes('<-[:CONSENTS_TO]-(terms:ConsentFlowTerms)')) {
+                rowsRead += result.records.length;
+            }
+
+            return result;
+        });
+
+        const limit = 1;
+        const seen: string[] = [];
+        const sizes: number[] = [];
+        let cursor: string | undefined;
+        let pages = 0;
+
+        do {
+            rowsRead = 0;
+
+            const page = await owner.clients.fullAuth.contracts.getContractConnections({
+                contractUri,
+                limit,
+                cursor,
+            });
+
+            expect(rowsRead).toBeLessThanOrEqual(10 * limit);
+            expect(page.records.length).toBeLessThanOrEqual(limit);
+            expect(page.hasMore).toBe(page.cursor !== undefined);
+            seen.push(...page.records.map(record => record.termsUri));
+            sizes.push(page.records.length);
+            cursor = page.cursor;
+            pages++;
+        } while (cursor && pages < 50);
+
+        // The first page read only expired rows and came back empty with more to follow.
+        expect(sizes[0]).toBe(0);
+        expect(pages).toBeGreaterThan(live.length);
+        expect(seen).toEqual(unbounded.records.map(record => record.termsUri));
+    });
 });

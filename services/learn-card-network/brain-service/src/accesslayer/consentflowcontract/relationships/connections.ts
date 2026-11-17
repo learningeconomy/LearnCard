@@ -14,6 +14,9 @@ import {
 } from '@helpers/contract-connections-cursor.helpers';
 import { ACCEPTED_VERSION_PREDICATE, isConsentUnexpired } from '@helpers/consent-expiry.helpers';
 
+/** At most this many terms rows are read per request, per page-size unit. */
+const SCAN_CAP_FACTOR = 10;
+
 const optionalString = (value: unknown): string | undefined =>
     typeof value === 'string' && value.length > 0 ? value : undefined;
 
@@ -28,6 +31,10 @@ const optionalString = (value: unknown): string | undefined =>
  * `externalReferenceId` is returned only to a contract manager (owner or writer) or to the
  * profile recorded as the requester on that referral, the same rule as integration events.
  * The caller's right to read the contract's data is checked by the route.
+ *
+ * A request reads at most `10 × limit` terms rows. Rows that fail the expiry check count as read,
+ * so a page can hold fewer than `limit` records, or none, while `hasMore` is true; the cursor
+ * then sits after the last row read, and the next request continues from there.
  */
 export const getContractConnections = async (
     contractId: string,
@@ -54,11 +61,15 @@ export const getContractConnections = async (
     const termsIds: string[] = [];
     // One extra row tells whether another page exists.
     const wanted = limit + 1;
+    const scanCap = limit * SCAN_CAP_FACTOR;
     let after = cursor ? decodeContractConnectionsCursor(cursor) : '';
+    let scanned = 0;
+    let capped = false;
 
     // Expiry is checked after reading, in bounded batches, so a stored date that cannot be
     // parsed never fails the query and expired terms cannot shorten a page.
     while (records.length < wanted) {
+        const batchSize = Math.min(wanted, scanCap - scanned);
         const result = await neogma.queryRunner.run(
             `MATCH (contract:ConsentFlowContract {id: $contractId})<-[:CONSENTS_TO]-(terms:ConsentFlowTerms)<-[:CREATED_BY]-(consenter:Profile)
              WHERE terms.status IN ['live', 'needs_reconsent', 'suspended'] AND terms.id > $after
@@ -77,7 +88,7 @@ export const getContractConnections = async (
                  terms.\`referral.externalReferenceId\` AS externalReferenceId,
                  consenter.profileId AS profileId, consenter.did AS didKey
              ORDER BY termsId`,
-            { contractId, after, limit: int(wanted) }
+            { contractId, after, limit: int(batchSize) }
         );
 
         for (const row of result.records) {
@@ -87,6 +98,7 @@ export const getContractConnections = async (
             const didKey = optionalString(row.get('didKey'));
 
             after = termsId;
+            scanned++;
 
             if (!status.success || !profileId || !didKey) continue;
             if (
@@ -121,7 +133,21 @@ export const getContractConnections = async (
             if (records.length === wanted) break;
         }
 
-        if (result.records.length < wanted) break;
+        if (result.records.length < batchSize) break;
+
+        if (scanned >= scanCap) {
+            capped = true;
+            break;
+        }
+    }
+
+    if (records.length <= limit && capped) {
+        // The scan stopped before the end of the range: continue after the last row read.
+        return {
+            records,
+            hasMore: true,
+            cursor: encodeContractConnectionsCursor(after),
+        };
     }
 
     const hasMore = records.length > limit;

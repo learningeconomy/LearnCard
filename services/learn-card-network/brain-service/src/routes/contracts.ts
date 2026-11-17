@@ -790,7 +790,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Get the current connections of a contract',
                 description:
-                    'Snapshot of who is currently connected to a contract: one record per consenter whose terms are live, awaiting re-consent or suspended, and not expired. Identifiers only. To stay in sync, read `latestCursor` from the Integration event feed, page through this snapshot, then follow the feed from that cursor; take a new snapshot when the feed answers CURSOR_EXPIRED. The caller must be the contract owner, a contract writer or a data recipient. A requester who is none of these recovers through getContractSentRequests, which lists their own referrals.',
+                    'Snapshot of who is currently connected to a contract: one record per consenter whose terms are live, awaiting re-consent or suspended, and not expired. Identifiers only. To stay in sync, read `latestCursor` from the Integration event feed, page through this snapshot, then follow the feed from that cursor; take a new snapshot when the feed answers CURSOR_EXPIRED. The caller must be the contract owner, a contract writer or a data recipient. A requester who is none of these recovers through getContractSentRequests, which lists their own referrals. Each request reads a bounded number of rows, so a page can hold fewer than `limit` records, or none, while `hasMore` is true: keep following `cursor` until `hasMore` is false.',
             },
             requiredScope: 'contracts-data:read',
         })
