@@ -19,7 +19,8 @@ import { v4 as uuid } from 'uuid';
  * `contract_retired`, and one `consent_withdrawn` with reason `contract_retired` per terms it
  * withdraws that was live, awaiting re-consent or suspended (consumed terms are withdrawn too,
  * but are not part of the connections snapshot, so they get no event). The contract node and
- * its CREATED_BY / CAN_WRITE / SHARES_DATA_WITH relationships are kept, so the worker can still resolve the audience of these events after retirement.
+ * its CREATED_BY / CAN_WRITE / SHARES_DATA_WITH relationships are kept, so the worker can
+ * still resolve the audience of these events after retirement.
  */
 export const deleteConsentFlowContract = async (
     contract: DbContractType,
