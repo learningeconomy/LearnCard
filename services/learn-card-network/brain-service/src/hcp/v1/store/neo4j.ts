@@ -44,7 +44,10 @@ const SCHEMA_QUERIES = [
 
 let schemaReady: Promise<void> | undefined;
 
-/** Idempotent; competing cold starts may race on DDL, which is tolerated. */
+/**
+ * Idempotent; competing cold starts may race on DDL, which is tolerated.
+ * TODO(before real users): create these in a migration, not lazily (README).
+ */
 const ensureSchema = (): Promise<void> => {
     schemaReady ??= (async (): Promise<void> => {
         const session = neogma.driver.session();

@@ -79,6 +79,7 @@ const entryText = (record: EntryRecord): string => {
 /**
  * Lexical relevance ordering (Draft 3 §7.3, method `lexical`): distinct query terms
  * the entry contains, most first; ties go to the most recently updated entry.
+ * TODO(before real users): drop entries that match no query term (README).
  */
 export const rankLexically = (query: string, records: EntryRecord[]): EntryRecord[] => {
     const terms = [...tokens(query)];

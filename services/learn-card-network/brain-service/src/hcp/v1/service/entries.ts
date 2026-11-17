@@ -32,7 +32,10 @@ import { rankLexically, toDisclosure, toEntry } from './views';
 /** Draft 3 §5.2.1 default and §7.2 ceiling. */
 export const DEFAULT_MAX_ENTRIES = 5;
 export const MAX_ENTRIES_CEILING = 20;
-/** Most recently updated entries considered for relevance ordering per query. */
+/**
+ * Most recently updated entries considered for relevance ordering per query.
+ * TODO(before real users): page through every entry instead of capping (README).
+ */
 export const QUERY_CANDIDATE_LIMIT = 500;
 
 const NOT_DELETED: readonly EntryStatus[] = [

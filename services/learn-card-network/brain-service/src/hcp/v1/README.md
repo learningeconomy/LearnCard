@@ -133,11 +133,35 @@ an entry exists. Statuses follow the brain's tRPC mapping, not the §9.7 HTTP bi
 (which would make `malformed-request` 422 and use `application/problem+json`): see
 `conformsTo` below.
 
+### Audit atomicity
+
+Every store method that changes an entry or grant (`insertEntry`, `appendVersion`,
+`transitionEntryStatus`, `insertGrant`, `transitionGrantStatus`) takes the audit
+event that records the change and writes both in one Neo4j transaction: they commit
+together or not at all, and a change that does not happen (`false`) writes no event.
+This covers create, revise, withdraw, lazy entry expiry, grant issue, revoke and
+lazy grant expiry. The memory store checks the event before it mutates anything.
+`ActivitySink` is only for events with no state change of their own:
+`context.exported` today, and the LC-2422 access log (`context.read`, denials)
+later. Lifecycle events never go through it.
+
+### Profile delete
+
+Deleting a profile deletes all of that person's HCP data, keyed by the profile DID
+(the same `profile.did` the router uses as `subjectDid`): entries and every version,
+grants where they are the subject, refs under those grants or to those entries, and
+their audit events. `accesslayer/profile/delete.ts` calls
+`deleteHcpDataForSubject` (from `src/hcp/index.ts`) first. The cascade is one
+transaction; if it fails, the profile delete fails and the profile stays, so
+nothing is orphaned and the delete can be retried. The audit log goes with the
+person: nothing about them remains. A new HCP version adds its store to
+`deleteHcpDataForSubject`.
+
 ## Layout
 
 ```
 src/hcp/
-  index.ts              hcpRouter = { v1 }   (the only file app.ts imports)
+  index.ts              hcpRouter = { v1 }; deleteHcpDataForSubject (profile delete)
   structure.test.ts     enforces the coupling rules below
   v1/
     router.ts           tRPC procedures, OpenAPI meta, error mapping
@@ -155,7 +179,9 @@ src/hcp/
 
 ## Coupling
 
-- Only `src/app.ts` imports `src/hcp`; nothing outside `src/hcp` imports `src/hcp/v1`.
+- Only `src/app.ts` (the router) and `src/accesslayer/profile/delete.ts` (the
+  cascade) import `src/hcp`, and only its index; nothing outside `src/hcp` imports
+  `src/hcp/v1`.
 - Inside v1, brain internals are imported only by `ports.ts`, `store/neo4j.ts`
   (`@instance`) and `router.ts` (`@routes` builders).
 - Versions never import each other.
@@ -170,8 +196,22 @@ src/hcp/
 | Seam           | Where              | Today                                                          | Follow-up                                    |
 | -------------- | ------------------ | -------------------------------------------------------------- | -------------------------------------------- |
 | `WritePolicy`  | `service/seams.ts` | always `{ kind: 'write' }`                                     | LC-2423 suggest vs write                     |
-| `ActivitySink` | `service/seams.ts` | records lifecycle events                                       | LC-2422 access log (`context.read`, denials) |
+| `ActivitySink` | `service/seams.ts` | records events with no state change (`context.exported`)       | LC-2422 access log (`context.read`, denials) |
 | grant `source` | `schemas.ts`       | `{ type: 'direct' }` only; `consentflow` is typed and rejected | LC-2421 consent-flow versioning              |
+
+## Decisions
+
+- Neo4j labels stay version-named (`HcpV1*`). A future v2 gets its own `HcpV2*`
+  labels and a one-time copy of v1 data, not a shared or migrated label set.
+
+## Before real users
+
+- **Schema by migration.** Constraints and indexes are created lazily on the first
+  query (`store/neo4j.ts` `ensureSchema`). Create them in a migration instead.
+- **Query paging.** A query considers only the 500 most recently updated entries
+  (`QUERY_CANDIDATE_LIMIT`); older ones are never found. Page through all of them.
+- **Non-matching entries.** Lexical ranking orders entries but drops none, so a
+  query can return entries that share no term with it. Return only matches.
 
 ## Not in v1
 
@@ -190,7 +230,8 @@ the MCP binding. Relevance ordering is `lexical` (§7.3).
 # unit: service against the memory store, memory store contract, coupling rules
 bunx vitest run --config vitest.config.ts src/hcp
 
-# Neo4j (testcontainers, needs Docker): store contract + router through appRouter
+# Neo4j (testcontainers, needs Docker): store contract, router through appRouter,
+# Core errors over HTTP, profile delete cascade
 bunx vitest run --config vitest.integration.config.ts test/hcp-v1-store.neo4j.spec.ts test/hcp-v1.spec.ts
 ```
 
