@@ -1,26 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 import ModalLayout from '../../layout/ModalLayout';
 
 import * as m from '../../paraglide/messages.js';
 import CategoryDescriptor from '../../components/category-descriptor/CategoryDescriptor';
 import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
+import useTheme from '../../theme/hooks/useTheme';
 
 const CategoryDescriptorModal: React.FC<{
     handleCloseModal: () => void;
     title?: string;
     category: CredentialCategoryEnum;
 }> = ({ handleCloseModal, title, category }) => {
-    const [failedImageSrc, setFailedImageSrc] = useState<string>();
-    const FallbackIcon = categoryMetadata[category].IconWithShape;
+    const { getThemedCategoryIcons } = useTheme();
+    const { Icon: CategoryIcon } = getThemedCategoryIcons(category);
     const categoryTitle = title ?? categoryMetadata[category].title;
-    const imgSrc =
-        category === CredentialCategoryEnum.id
-            ? 'https://cdn.filestackcontent.com/9z6i0x3hSlG43paNZHag'
-            : category === CredentialCategoryEnum.aiInsight ||
-                category === CredentialCategoryEnum.aiPathway
-              ? 'https://cdn.filestackcontent.com/QAC1JmfQgGFccwM7EF0L'
-              : categoryMetadata[category].defaultImageSrc;
 
     return (
         <div className="relative h-full">
@@ -29,17 +23,10 @@ const CategoryDescriptorModal: React.FC<{
                 buttonText={m['wallet.categoryDescriptor.gotIt']()}
             >
                 <div className="p-[30px]">
-                    {failedImageSrc === imgSrc ? (
-                        <div aria-hidden="true" className="w-[100px] h-[100px] m-auto">
-                            <FallbackIcon className="w-full h-full" />
+                    {CategoryIcon && (
+                        <div className="flex justify-center">
+                            <CategoryIcon className="w-[100px] h-[100px]" />
                         </div>
-                    ) : (
-                        <img
-                            src={imgSrc}
-                            alt=""
-                            onError={() => setFailedImageSrc(imgSrc)}
-                            className="w-[100px] h-[100px] m-auto"
-                        />
                     )}
                     <p className="text-center text-[22px] font-poppins font-normal leading-[130%] text-grayscale-900">
                         <strong>

@@ -3,13 +3,17 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const assets = vi.hoisted(() => ({ textLogoDark: '/branding/logo.svg' }));
+const themeMocks = vi.hoisted(() => ({ getThemedCategoryIcons: vi.fn() }));
 vi.mock('react-router-dom', () => ({
     useLocation: () => ({ pathname: '/home' }),
     useHistory: () => ({ push: vi.fn() }),
 }));
 vi.mock('../config/brandingAssets', () => ({ useTenantBrandingAssets: () => assets }));
 vi.mock('../theme/hooks/useTheme', () => ({
-    default: () => ({ getThemedCategoryColors: () => ({}) }),
+    default: () => ({
+        getThemedCategoryColors: () => ({}),
+        getThemedCategoryIcons: themeMocks.getThemedCategoryIcons,
+    }),
 }));
 vi.mock('../stores/headerScrollStore', () => ({
     default: { use: { scrolled: () => false } },
@@ -47,12 +51,22 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import HeaderBranding from './headerBranding/HeaderBranding';
 import CategoryDescriptorModal from './category-descriptor/CategoryDescriptorModal';
 
+const ColorfulBadgeIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg data-testid="colorful-badge-icon" className={className} />
+);
+
+const FormalBadgeIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg data-testid="formal-badge-icon" className={className} />
+);
+
 beforeEach(() => {
     assets.textLogoDark = '/branding/logo.svg';
+    themeMocks.getThemedCategoryIcons.mockReset();
+    themeMocks.getThemedCategoryIcons.mockReturnValue({ Icon: ColorfulBadgeIcon });
 });
 afterEach(cleanup);
 
-describe('asset load failures', () => {
+describe('asset rendering', () => {
     it('keeps header navigation readable after a logo failure and tries a changed URL', () => {
         const { rerender } = render(<HeaderBranding branding={BrandingEnum.learncard} />);
         fireEvent.error(screen.getByRole('img', { name: 'LearnCard' }));
@@ -67,24 +81,32 @@ describe('asset load failures', () => {
         );
     });
 
-    it('uses the category icon on image failure without suppressing another category image', () => {
+    it('uses the active themed category icon instead of a legacy image', () => {
         const { container, rerender } = render(
             <CategoryDescriptorModal
                 category={CredentialCategoryEnum.socialBadge}
                 handleCloseModal={vi.fn()}
             />
         );
-        fireEvent.error(container.querySelector('img')!);
-        expect(container.querySelector('img')).toBeNull();
-        expect(screen.getByTestId('category-fallback')).toBeVisible();
 
+        expect(container.querySelector('img')).toBeNull();
+        expect(themeMocks.getThemedCategoryIcons).toHaveBeenCalledWith(
+            CredentialCategoryEnum.socialBadge
+        );
+        expect(screen.getByTestId('colorful-badge-icon')).toHaveAttribute(
+            'class',
+            'w-[100px] h-[100px]'
+        );
+
+        themeMocks.getThemedCategoryIcons.mockReturnValue({ Icon: FormalBadgeIcon });
         rerender(
             <CategoryDescriptorModal
-                category={CredentialCategoryEnum.achievement}
+                category={CredentialCategoryEnum.socialBadge}
                 handleCloseModal={vi.fn()}
             />
         );
-        expect(container.querySelector('img')).toHaveAttribute('src', '/achievement.png');
-        expect(screen.queryByTestId('category-fallback')).toBeNull();
+
+        expect(screen.queryByTestId('colorful-badge-icon')).toBeNull();
+        expect(screen.getByTestId('formal-badge-icon')).toBeVisible();
     });
 });
