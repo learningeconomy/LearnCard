@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { BindParam, QueryBuilder } from 'neogma';
 import { TRPCError } from '@trpc/server';
+import { neogma } from '@instance';
 import type { SendContractRequest, SendContractRequestResult } from '@learncard/types';
 import {
     getContractByUri,
@@ -234,6 +235,41 @@ export const decideGenericContractRequest = async ({
         });
     await tryDispatchContractEvent(result.records[0]!.get('eventId'));
     return true;
+};
+
+/** Cancels by request ID. Unknown IDs and callers without permission both get NOT_FOUND. */
+export const cancelContractRequestById = async ({
+    contract,
+    requestId,
+    actorProfileId,
+    domain,
+}: {
+    contract: DbContractType;
+    requestId: string;
+    actorProfileId: string;
+    domain: string;
+}): Promise<boolean> => {
+    const notFound = new TRPCError({ code: 'NOT_FOUND', message: 'Contract request not found' });
+    const result = await neogma.queryRunner.run(
+        `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR]->(target:Profile)
+         WHERE request.requestId = $requestId
+         RETURN target.profileId AS targetProfileId`,
+        { contractId: contract.id, requestId }
+    );
+    const targetProfileId: string | undefined = result.records[0]?.get('targetProfileId');
+    if (!targetProfileId) throw notFound;
+    try {
+        return await decideGenericContractRequest({
+            contract,
+            targetProfileId,
+            actorProfileId,
+            status: 'cancelled',
+            domain,
+        });
+    } catch (error) {
+        if (error instanceof TRPCError && error.code === 'UNAUTHORIZED') throw notFound;
+        throw error;
+    }
 };
 
 export const markGenericContractRequestSeen = async (

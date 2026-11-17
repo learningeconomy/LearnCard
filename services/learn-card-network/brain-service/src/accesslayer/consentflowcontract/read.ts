@@ -288,6 +288,7 @@ export const getContractRequestById = async (
 export type StoredContractRequest = ContractRequestFields & {
     status?: 'pending' | 'accepted' | 'denied' | 'cancelled' | null;
     readStatus?: 'unseen' | 'seen' | null;
+    addressedByEmail?: boolean;
 };
 
 export const getStoredContractRequest = async (

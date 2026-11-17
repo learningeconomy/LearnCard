@@ -7,6 +7,7 @@ import {
 import {
     sendGenericContractRequest,
     decideGenericContractRequest,
+    cancelContractRequestById,
     markGenericContractRequestSeen,
     assertGenericRequestWriteScope,
     canManageContractRequests,
@@ -2754,19 +2755,42 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Cancels/removes a contract request',
                 description:
-                    'Cancels a pending generic request while retaining its history. Owner/writers, the requesting recipient, or the target may cancel. Legacy requests retain deletion behavior.',
+                    'Cancels a pending generic request while retaining its history. Owner/writers, the requesting recipient, or the target may cancel. Pass requestId, or targetProfileId for a request addressed to a profile. Legacy requests retain deletion behavior.',
             },
         })
         .input(
-            z.object({
-                contractUri: z.string(),
-                targetProfileId: z.string(),
-            })
+            z
+                .object({
+                    contractUri: z.string(),
+                    targetProfileId: z.string().optional(),
+                    requestId: z.string().optional(),
+                })
+                .refine(value => Boolean(value.targetProfileId) !== Boolean(value.requestId), {
+                    message: 'Provide exactly one of targetProfileId or requestId',
+                })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { contractUri, targetProfileId } = input;
+            const { contractUri, targetProfileId, requestId } = input;
+
+            if (requestId) {
+                assertGenericRequestWriteScope(ctx.user.scope);
+                const contract = await getContractByUri(contractUri);
+                if (!contract)
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+                return cancelContractRequestById({
+                    contract,
+                    requestId,
+                    actorProfileId: profile.profileId,
+                    domain: ctx.domain,
+                });
+            }
+            if (!targetProfileId)
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'targetProfileId is required',
+                });
 
             const resolvedTargetProfileId = await getProfileIdFromString(
                 targetProfileId,
@@ -2785,6 +2809,26 @@ export const contractsRouter = t.router({
                 contractByUri.id,
                 resolvedTargetProfileId
             );
+            if (
+                request?.requestId &&
+                request.addressedByEmail &&
+                request.status !== 'accepted' &&
+                profile.profileId !== resolvedTargetProfileId
+            ) {
+                // Answer exactly as if no request existed, so the caller cannot link the
+                // email it invited to this profile. It must cancel by request ID instead.
+                const managers = await getWritersForContract(contractByUri);
+                if (!managers.some(manager => manager.profileId === profile.profileId))
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message:
+                            'You do not have permission to view this request status. You must be a contract writer or checking your own status.',
+                    });
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'No request found for this user',
+                });
+            }
             if (request?.requestId) {
                 assertGenericRequestWriteScope(ctx.user.scope);
                 return decideGenericContractRequest({
