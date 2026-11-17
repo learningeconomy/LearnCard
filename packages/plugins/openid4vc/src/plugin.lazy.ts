@@ -22,11 +22,28 @@ export const getOpenID4VCPlugin = (
         ...config,
         fetch: config.fetch ?? globalThis.fetch,
     };
+    // Keep a loaded implementation for the plugin's lifetime, but never a failed load. A failed
+    // import is retried once in place (as the app's lazyWithRetry does); if that fails too, the call
+    // rejects with the first import error, unchanged so the app's stale-chunk recovery
+    // (isStaleChunkError) still matches it, and the next call imports again instead of replaying the
+    // same rejection until the wallet is rebuilt.
     let impl: Promise<Methods> | undefined;
-    const load = (): Promise<Methods> =>
-        (impl ??= import('./plugin').then(
-            m => m.getOpenID4VCPlugin(learnCard, implConfig).methods
-        ));
+    const importImpl = () => import('./plugin');
+    const load = (): Promise<Methods> => {
+        if (impl) return impl;
+        const pending = importImpl()
+            .catch(firstError =>
+                importImpl().catch(() => {
+                    throw firstError;
+                })
+            )
+            .then(m => m.getOpenID4VCPlugin(learnCard, implConfig).methods);
+        impl = pending;
+        pending.catch(() => {
+            if (impl === pending) impl = undefined;
+        });
+        return pending;
+    };
     const lazy = <K extends keyof Methods>(name: K): Methods[K] =>
         (async (...args: unknown[]) => {
             const methods = await load();

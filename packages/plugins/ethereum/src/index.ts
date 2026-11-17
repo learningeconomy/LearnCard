@@ -16,16 +16,32 @@ import hardcodedTokens from './hardcodedTokens';
 export * from './types';
 
 // The Uniswap token list is ~175 KB of JSON that only token lookups need; load it on first use so it
-// stays out of wallet start-up.
+// stays out of wallet start-up. A failed import (stale chunk after a deploy, flaky fetch) is retried
+// once in place; if that fails too, the lookup rejects with the first import error and the next
+// lookup imports again instead of replaying the cached rejection.
 let defaultTokenListPromise: Promise<TokenList> | undefined;
-const getDefaultTokenList = (): Promise<TokenList> =>
-    (defaultTokenListPromise ??=
-        import('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').then(module => {
+const importTokenList = () =>
+    import('@uniswap/default-token-list/build/uniswap-default.tokenlist.json');
+const getDefaultTokenList = (): Promise<TokenList> => {
+    if (defaultTokenListPromise) return defaultTokenListPromise;
+    const pending = importTokenList()
+        .catch(firstError =>
+            importTokenList().catch(() => {
+                throw firstError;
+            })
+        )
+        .then(module => {
             const list = ((module as { default?: unknown }).default ?? module) as {
                 tokens: TokenList;
             };
             return list.tokens.concat(hardcodedTokens);
-        }));
+        });
+    defaultTokenListPromise = pending;
+    pending.catch(() => {
+        if (defaultTokenListPromise === pending) defaultTokenListPromise = undefined;
+    });
+    return pending;
+};
 
 /**
  * @group Plugins
