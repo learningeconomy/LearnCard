@@ -1,5 +1,8 @@
 import React from 'react';
-import { SkinTones, EmojiClickData } from 'emoji-picker-react';
+// Type-only: a runtime import of emoji-picker-react (~300 KB) for one enum value put the whole picker on the startup path.
+import type { EmojiClickData } from 'emoji-picker-react';
+
+const NEUTRAL_SKIN_TONE: string = 'neutral'; // SkinTones.NEUTRAL
 import { getLogger } from 'learn-card-base';
 const log = getLogger('family-c-m-s-emoji-renderer');
 
@@ -47,7 +50,7 @@ const EmojiRenderer: React.FC<EmojiRendererProps> = ({
         try {
             const { unified, unifiedWithoutSkinTone, activeSkinTone } = emojiData;
 
-            if (activeSkinTone && activeSkinTone !== SkinTones.NEUTRAL) {
+            if (activeSkinTone && activeSkinTone !== NEUTRAL_SKIN_TONE) {
                 // Combine base emoji with skin tone modifier
                 return String.fromCodePoint(
                     parseInt(unified || unifiedWithoutSkinTone, 16),

@@ -64,5 +64,6 @@
             "require": "./dist/index.js",
             "default": "./dist/sss-key-manager.esm.js"
         }
-    }
+    },
+    "sideEffects": false
 }

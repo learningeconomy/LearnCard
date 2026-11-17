@@ -32,4 +32,3 @@ const SvgProperty1AppsDefault = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgProperty1AppsDefault;
-

@@ -12,10 +12,15 @@ import {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-consent-flow');
 
-import FullScreenConsentFlow from './FullScreenConsentFlow';
-import FullScreenGameFlow from '../consentFlow/GameFlow/FullScreenGameFlow';
+import { lazyModalContent } from '../../components/generic/lazyModalContent';
 
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
+
+// AppRouter calls this hook on every start; the flows (game login, phone input...) load when opened.
+const FullScreenConsentFlow = lazyModalContent(() => import('./FullScreenConsentFlow'));
+const FullScreenGameFlow = lazyModalContent(
+    () => import('../consentFlow/GameFlow/FullScreenGameFlow')
+);
 
 export const useConsentFlow = (
     contract?: ConsentFlowContractDetails,

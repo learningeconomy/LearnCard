@@ -1,4 +1,3 @@
-import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import type { HashAlgorithm, PresentationFrame, Signer as SdJwtLibSigner } from '@sd-jwt/types';
 import type { VerificationCheck } from '@learncard/types';
 
@@ -298,6 +297,8 @@ export const presentSdJwtVc = async (
 
     const hashAlg = rawSdAlg as HashAlgorithm;
 
+    // @sd-jwt/sd-jwt-vc pulls the status-list decoder (pako); load it with the first SD-JWT.
+    const { SDJwtVcInstance } = await import('@sd-jwt/sd-jwt-vc');
     const instance = new SDJwtVcInstance({
         hasher: sha256Hasher,
         hashAlg,

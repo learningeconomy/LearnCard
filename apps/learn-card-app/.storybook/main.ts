@@ -6,6 +6,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import { mergeConfig, type PluginOption } from 'vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { paraglideMissingKeyOnWarn } from '../paraglideOnWarn';
+import { LOCALE_LOADER_MODULE } from '../src/i18n/paraglideLazyLocales';
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import stdlibbrowser from 'node-stdlib-browser';
 import fs from 'fs';
@@ -45,6 +46,20 @@ const stripPrebuiltSvgDuplicateExports = (): PluginOption => ({
     },
 });
 
+/**
+ * Storybook bundles Paraglide's default output with every locale, so serve the app's lazy-locale
+ * loader module (`virtual:paraglide-lazy-locales`, see src/i18n/paraglideLazyLocales.ts) as the
+ * no-op it is in dev and tests.
+ */
+const paraglideLazyLocalesNoop = (): PluginOption => ({
+    name: 'paraglide-lazy-locales-noop',
+    resolveId: id => (id === LOCALE_LOADER_MODULE ? `\0${LOCALE_LOADER_MODULE}` : undefined),
+    load: id =>
+        id === `\0${LOCALE_LOADER_MODULE}`
+            ? 'export const loadLocaleMessages = () => Promise.resolve();\nexport const isLocaleMessagesLoaded = () => true;\n'
+            : undefined,
+});
+
 const config: StorybookConfig = {
     stories: ['../src/**/*.stories.@(ts|tsx)'],
     addons: [
@@ -74,6 +89,7 @@ const config: StorybookConfig = {
                     project: path.resolve(__dirname, '../project.inlang'),
                     outdir: path.resolve(__dirname, '../src/paraglide'),
                 }),
+                paraglideLazyLocalesNoop(),
                 tsconfigPaths({
                     projects: [path.resolve(__dirname, '../tsconfig.json')],
                     ignoreConfigErrors: true,

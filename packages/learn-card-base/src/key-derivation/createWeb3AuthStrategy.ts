@@ -16,9 +16,6 @@
  */
 
 import { Capacitor } from '@capacitor/core';
-import { SDK_MODE, Web3Auth } from '@web3auth/single-factor-auth';
-import { CHAIN_NAMESPACES } from '@web3auth/base';
-import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 
 import type { KeyDerivationStrategy, ServerKeyStatus } from '@learncard/types';
 import { AuthSessionError } from '@learncard/types';
@@ -356,6 +353,15 @@ export const createWeb3AuthStrategy = (
         uid: string,
         progress: { stage: Web3AuthSetupStage }
     ): Promise<string> => {
+        // The Web3Auth SDK (torus, bn.js, elliptic, stream polyfills: ~1 MB) loads only when a key is
+        // actually derived through Web3Auth, not on every app start.
+        const [{ SDK_MODE, Web3Auth }, { CHAIN_NAMESPACES }, { EthereumPrivateKeyProvider }] =
+            await Promise.all([
+                import('@web3auth/single-factor-auth'),
+                import('@web3auth/base'),
+                import('@web3auth/ethereum-provider'),
+            ]);
+
         const privateKeyProvider = new EthereumPrivateKeyProvider({
             config: {
                 chainConfig: {
