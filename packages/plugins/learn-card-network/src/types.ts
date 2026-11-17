@@ -1308,6 +1308,8 @@ export type LearnCardNetworkPluginMethods = {
         uri: string
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;
 
+    /** Authenticated HCP management/context client, typed from the brain AppRouter. */
+    getHcpClient: () => Promise<LCNClient['hcp']['v1']>;
     getLCNClient: () => LCNClient;
 
     // Activity

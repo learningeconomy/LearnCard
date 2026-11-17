@@ -4022,6 +4022,10 @@ export async function getLearnCardNetworkPlugin(
                     .parseAsync(result);
             },
 
+            getHcpClient: async () => {
+                await ensureUser();
+                return client.hcp.v1;
+            },
             getLCNClient: () => client,
 
             // Activity
