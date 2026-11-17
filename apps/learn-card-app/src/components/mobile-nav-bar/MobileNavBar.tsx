@@ -19,12 +19,7 @@ import {
     useIsLoggedIn,
     walletStore,
     WalletSyncState,
-    lazyWithRetry,
 } from 'learn-card-base';
-
-const Routes = lazyWithRetry(() =>
-    import('../../Routes').then(module => ({ default: module.Routes }))
-);
 
 import useTheme from '../../theme/hooks/useTheme';
 import { IconSetEnum, NavbarIcons } from '../../theme/icons';
@@ -33,14 +28,11 @@ import { ColorSetEnum } from '../../theme/colors';
 import * as m from '../../paraglide/messages.js';
 import { getNavBarLinkLabel } from './mobileNavBarI18n';
 import { NATIVE_CREDENTIAL_PATH } from '../../native-digital-credentials/types';
+import { RoutesOutlet } from './RoutesOutlet';
 
-export enum MobileNavBarLinks {
-    dashboard = 'dashboard',
-    wallet = 'wallet',
-    plus = '/boost',
-    launchpad = 'launchpad',
-    notification = 'notification',
-}
+import { MobileNavBarLinks } from './mobileNavBarLinks';
+
+export { MobileNavBarLinks };
 
 const MobileNavBar: React.FC = () => {
     const { getIconSet, getColorSet, theme } = useTheme();
@@ -105,7 +97,7 @@ const MobileNavBar: React.FC = () => {
         <GenericErrorBoundary>
             <IonTabs className={`${getNavBarColor(activePathname)}`}>
                 <IonRouterOutlet animated={!prefersReducedMotion}>
-                    <Routes />
+                    <RoutesOutlet />
                 </IonRouterOutlet>
                 {isLoggedIn &&
                 activePathname !== NATIVE_CREDENTIAL_PATH &&

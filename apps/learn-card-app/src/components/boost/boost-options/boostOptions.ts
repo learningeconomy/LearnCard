@@ -1044,27 +1044,6 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
 export const defaultIDCardImage =
     'https://cdn.filestackcontent.com/rotate=deg:exif/resize=width:600/auto_image/CH8dyPGwSyChmczTdIY4';
 
-export const defaultCategoryThumbImages = [
-    // social badge
-    'https://cdn.filestackcontent.com/hnnK9FFQL6XjlKdkd8Hs',
-    // achievement trophy
-    'https://cdn.filestackcontent.com/P9zICsCHQP2NJs1EzYj5',
-    // courses ladder
-    'https://cdn.filestackcontent.com/zBtHw5EqTJDb5r6Pw7cg',
-    // experience mountain
-    'https://cdn.filestackcontent.com/qCnVK8dReWkRjoQCSH6Q',
-    // user id tag
-    'https://cdn.filestackcontent.com/9z6i0x3hSlG43paNZHag',
-    // skill puzzle piece
-    'https://cdn.filestackcontent.com/9lKwrJdoRPmv9chLFJQv',
-    // membership key
-    'https://cdn.filestackcontent.com/EwXi4MnoT6eDgM6cmJuH',
-    // accommodation hands
-    'https://cdn.filestackcontent.com/I4T9X90XQGSlk1YpcGGc',
-    // family cats
-    'https://cdn.filestackcontent.com/yfeWgdSWQ7Ckl4sVuGLc',
-];
-
 export const BOOST_CATEGORY_TO_WALLET_ROUTE = {
     ['ID']: 'ids',
     ['Learning History']: 'learninghistory',

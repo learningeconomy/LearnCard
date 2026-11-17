@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { IonRadio, IonRadioGroup, IonInput } from '@ionic/react';
 import { useQueryClient } from '@tanstack/react-query';
-import _ from 'lodash-es';
+import { shuffle } from 'lodash-es';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('admin-tools-network');
 
@@ -95,7 +95,7 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
     const handleSwitchNetwork = async (switchStorage: boolean) => {
         try {
             newModal(
-                <GenericLoader overrideText={_.shuffle(getNetworkSwitchMessages())} />,
+                <GenericLoader overrideText={shuffle(getNetworkSwitchMessages())} />,
                 {
                     disableCloseHandlers: true,
                 },

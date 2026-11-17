@@ -9,7 +9,7 @@ import AddressBookContactList from '../addressBook-contact-list/AddressBookConta
 import { useGetBlockedProfiles } from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 const ReaperGhost = '/lotties/reaperghost.json';
-import Lottie from 'react-lottie-player';
+import Lottie from '../../../components/lottie/LazyLottie';
 
 const AddressBookBlockedContacts: React.FC<{
     activeTab: AddressBookTabsEnum;

@@ -123,6 +123,49 @@ export const ensureSQLiteSchema = (
     return result;
 };
 
+export interface SQLiteSchema {
+    /** Same key `ensureSQLiteSchema` memoizes under, so batched and single calls share state. */
+    name: string;
+    statements: string;
+}
+
+/**
+ * Ensure several idempotent schemas in ONE `execute` (one native bridge round trip instead of
+ * one per schema). Schemas already ensured or in flight on this connection are reused; each
+ * newly ensured name is memoized exactly as `ensureSQLiteSchema` would, and forgotten again if
+ * the batch fails so a later call retries it.
+ */
+export const ensureSQLiteSchemas = (
+    db: Pick<SQLiteDBConnection, 'open' | 'close' | 'execute'>,
+    specs: readonly SQLiteSchema[]
+): Promise<void> => {
+    let initialized = schemas.get(db);
+    if (!initialized) {
+        initialized = new Map();
+        schemas.set(db, initialized);
+    }
+    const known = initialized;
+    const waits: Promise<void>[] = [];
+    const missing: SQLiteSchema[] = [];
+    for (const spec of specs) {
+        const existing = known.get(spec.name);
+        if (existing) waits.push(existing);
+        else if (!missing.some(m => m.name === spec.name)) missing.push(spec);
+    }
+    if (missing.length) {
+        const result = withSQLiteDatabase(db, async connection => {
+            await connection.execute(missing.map(spec => spec.statements).join('\n'));
+        });
+        for (const spec of missing) known.set(spec.name, result);
+        void result.catch(() => {
+            for (const spec of missing)
+                if (known.get(spec.name) === result) known.delete(spec.name);
+        });
+        waits.push(result);
+    }
+    return Promise.all(waits).then(() => undefined);
+};
+
 /** Invalidate schema knowledge after the owning connection's database is deleted. */
 export const forgetSQLiteSchema = (db: SQLiteConnectionAccess): void => {
     schemas.delete(db);
