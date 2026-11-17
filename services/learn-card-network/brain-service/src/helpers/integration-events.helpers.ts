@@ -623,6 +623,8 @@ export const recordIntegrationWebhookOutcomes = async (
 ): Promise<void> => {
     if (!success && !failure) return;
 
+    // The forward-only guard below compares ISO strings with `<`. That is correct only because
+    // every writer stores toISOString() values.
     try {
         await neogma.queryRunner.run(
             `MATCH (integration:Integration {id: $id})

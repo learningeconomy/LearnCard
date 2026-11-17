@@ -351,7 +351,7 @@ export const integrationsRouter = t.router({
                 tags: ['Integrations'],
                 summary: 'Send Integration Test Event',
                 description:
-                    'Send one signed `integration.test` event to the webhook URL of an Integration right away and return the result in the same response: `delivered`, the `httpStatus` the receiver answered with, `latencyMs`, and a fixed `error` code when it was not delivered (for example `http_401`, `timeout`, `network_error`, `invalid_webhook`, `no_webhook`). The test event is not written to the change feed. It is sent whenever the Integration has a webhook URL and a signing secret, also while contract events are disabled, so a receiver can be checked before events are enabled. The result also updates the delivery health read by Get Integration Webhook. Limited to 10 test events per Integration per minute; more are refused with TOO_MANY_REQUESTS.',
+                    'Send one signed `integration.test` event to the webhook URL of an Integration right away and return the result in the same response: `delivered`, the `httpStatus` the receiver answered with, `latencyMs` (only when a request was made), and a fixed `error` code when it was not delivered (for example `http_401`, `timeout`, `network_error`, `invalid_webhook`, `no_webhook`). The test event is not written to the change feed. It is sent whenever the Integration has a webhook URL and a signing secret, also while contract events are disabled, so a receiver can be checked before events are enabled. The result also updates the delivery health read by Get Integration Webhook. Limited to 10 test events per Integration per minute; every call counts toward that limit, including calls that end in `no_webhook`, and more are refused with TOO_MANY_REQUESTS. The call is refused with an error when the rate-limit service is unavailable.',
             },
             requiredScope: 'integrations:write',
         })
@@ -418,7 +418,8 @@ export const integrationsRouter = t.router({
             return {
                 delivered: result.delivered,
                 ...(result.status !== undefined ? { httpStatus: result.status } : {}),
-                latencyMs: result.latencyMs,
+                // No request was made when the address was refused before sending.
+                ...(result.error === 'invalid_webhook' ? {} : { latencyMs: result.latencyMs }),
                 ...(result.error ? { error: result.error } : {}),
             };
         }),

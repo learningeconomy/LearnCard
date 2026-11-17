@@ -306,7 +306,6 @@ describe('LC-2370 acceptance: webhook setup with only an API token', () => {
             token.integrations.sendIntegrationTestEvent({ id: integrationId })
         ).resolves.toEqual({
             delivered: false,
-            latencyMs: expect.any(Number),
             error: 'invalid_webhook',
         });
         expect(await token.integrations.getIntegrationWebhook({ id: integrationId })).toMatchObject(

@@ -2299,7 +2299,7 @@ export type IntegrationWebhookSecretRotation = z.infer<
 
 /**
  * Result of one synchronous test ping. `httpStatus` is present when the receiver answered,
- * `latencyMs` when a request was made, and `error` is a short fixed code (`http_401`,
+ * `latencyMs` when a request was made (not for `invalid_webhook` or `no_webhook`), and `error` is a short fixed code (`http_401`,
  * `timeout`, `network_error`, `invalid_webhook`, `no_webhook`) when it was not delivered.
  */
 export const IntegrationTestEventResultValidator = z.object({
