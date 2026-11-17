@@ -28,7 +28,15 @@ import {
 import { DIDKitPlugin, DidMethod } from './types';
 
 /**
- j
+ * Starts (or joins) the single DIDKit WASM init without building a plugin. Hosts can call it
+ * early so the first wallet build finds DIDKit warm. A rejection is safe to ignore: the next
+ * `initDidKit` / `getDidKitPlugin` call retries.
+ *
+ * @group Plugins
+ */
+export const initDidKit = (input?: InitInput | Promise<InitInput>): Promise<void> => init(input);
+
+/**
  * @group Plugins
  */
 export const getDidKitPlugin = async (

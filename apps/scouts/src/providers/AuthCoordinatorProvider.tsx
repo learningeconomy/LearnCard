@@ -89,6 +89,7 @@ import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
 
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import { deriveDidKeyFromPrivateKey } from './didFromPrivateKey';
 
 // Firebase-specific auth provider / sign-in adapter registration lives in
 // this seam so provider-agnostic code (this file) never imports the Firebase
@@ -597,10 +598,7 @@ const AuthSessionManager: React.FC<{
         };
     }, [showRecoverySetup, authProvider, coordinator]);
 
-    const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getSigningLearnCard(privateKey);
-        return lc?.id.did() || '';
-    }, []);
+    const didFromPrivateKey = useCallback(deriveDidKeyFromPrivateKey, []);
 
     // --- DID-Auth VP signing (for recovery setup write ops) ---
     const signDidAuthVp = useCallback(
@@ -1515,11 +1513,8 @@ const AuthCoordinatorSessionProvider: React.FC<ScoutsAuthCoordinatorProviderProp
     const clearDBRef = useRef(clearDB);
     clearDBRef.current = clearDB;
 
-    // DID derivation helper — uses getSigningLearnCard (no network) for deterministic did:key
-    const didFromPrivateKey = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getSigningLearnCard(privateKey);
-        return lc?.id.did() || '';
-    }, []);
+    // DID derivation helper — plain-JS did:key from the private key (no DIDKit WASM, no wallet)
+    const didFromPrivateKey = useCallback(deriveDidKeyFromPrivateKey, []);
 
     // DID-Auth VP signing — proves private key ownership to the server on write ops.
     // Uses getSigningLearnCard (no network) so did:key is used deterministically.

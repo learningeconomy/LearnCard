@@ -2,7 +2,7 @@ import { isEqual } from 'lodash';
 import { initLearnCard, type LearnCardFromSeed } from '@learncard/init';
 import type { CredentialRecord } from '@learncard/types';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
-import { installWalletDidWebDocumentFetchCache } from '@learncard/didkit-plugin';
+import { initDidKit, installWalletDidWebDocumentFetchCache } from '@learncard/didkit-plugin';
 import { getLCAPlugin } from '@learncard/lca-api-plugin';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
@@ -55,6 +55,21 @@ export const getSigningLearnCard = async (seed: string) => {
     );
 
     return SIGNING_LEARN_CARDS[seed];
+};
+
+/**
+ * Starts the bundled DIDKit WASM init at app entry without waiting for it, so the first
+ * wallet build finds DIDKit warm. A failure is logged and dropped: DIDKit clears a failed
+ * init, so the real wallet build retries it.
+ */
+export const prewarmDidKit = (): void => {
+    try {
+        initDidKit(didkit).catch(error =>
+            log.warn('DIDKit prewarm failed; wallet build retries', error)
+        );
+    } catch (error) {
+        log.warn('DIDKit prewarm failed; wallet build retries', error);
+    }
 };
 
 export interface GetBespokeLearnCardOptions {

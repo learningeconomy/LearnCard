@@ -208,7 +208,9 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                     walkedAt: Date.now(),
                 };
             } catch (error: unknown) {
-                log.error(error);
+                // React Query aborts the signal when the key changes or the last observer leaves.
+                // That cancellation is not a failure, so it is not reported.
+                if (!signal.aborted) log.error(error);
                 throw error;
             }
         },
@@ -387,7 +389,8 @@ export const useGetCredentialCount = (category?: CredentialCategory, enabled: bo
                 signal.throwIfAborted();
                 return credentialsCount;
             } catch (error) {
-                log.error(error);
+                // A cancelled count (key change, unmount) is not a failure; see useGetCredentialList.
+                if (!signal.aborted) log.error(error);
                 return Promise.reject(new Error(error));
             }
         },
