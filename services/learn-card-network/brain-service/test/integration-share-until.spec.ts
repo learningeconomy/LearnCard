@@ -277,6 +277,43 @@ describe('share-until events', () => {
         expect(await nextShareUntilOf(termsUri)).toBeNull();
     });
 
+    it('keeps tracking later dates while a consent is expired', async () => {
+        const later = hoursFromNow(9);
+        const termsUri = await consent(termsWith({ Achievement: hoursFromNow(1), ID: later }));
+        const passed = new Date(Date.now() - 60_000).toISOString();
+
+        await setStoredDate(termsUri, 'Achievement', passed, passed);
+        await run('MATCH (terms:ConsentFlowTerms {id: $id}) SET terms.expiresAt = $expiresAt', {
+            id: idOf(termsUri),
+            expiresAt: new Date(Date.now() - 1_000).toISOString(),
+        });
+
+        expect(await process()).toBe(0);
+        expect(await nextShareUntilOf(termsUri)).toBe(new Date(later).toISOString());
+    });
+
+    it('reports a date for a paused consent without changing its status', async () => {
+        const termsUri = await consent(termsWith({ Achievement: hoursFromNow(1) }));
+        const passed = new Date(Date.now() - 60_000).toISOString();
+
+        await setStoredDate(termsUri, 'Achievement', passed, passed);
+        await run(`MATCH (terms:ConsentFlowTerms {id: $id}) SET terms.status = 'needs_reconsent'`, {
+            id: idOf(termsUri),
+        });
+
+        expect(await process()).toBe(1);
+        expect(await shareUntilEvents()).toHaveLength(1);
+
+        const status = await run(
+            'MATCH (terms:ConsentFlowTerms {id: $id}) RETURN terms.status AS status',
+            {
+                id: idOf(termsUri),
+            }
+        );
+
+        expect(status.records[0]?.get('status')).toBe('needs_reconsent');
+    });
+
     it('updating the terms recomputes nextShareUntil', async () => {
         const termsUri = await consent(termsWith({ Achievement: hoursFromNow(5) }));
         const sooner = hoursFromNow(1);

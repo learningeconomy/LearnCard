@@ -374,7 +374,8 @@ type ShareUntilWrite = {
  * Only categories dated at or after the stored `nextShareUntil` are reported: that value was the
  * earliest future date when the terms were written, so anything earlier had already passed
  * before and is never reported. Only live, needs_reconsent and suspended terms whose consent has
- * not expired emit; other terms just lose `nextShareUntil`. Failures are left to the caller.
+ * not expired emit. An expired consent emits nothing but keeps tracking its later dates;
+ * withdrawn terms lose `nextShareUntil`. Failures are left to the caller.
  */
 export const emitShareUntilPassedEvents = async (
     now = new Date().toISOString(),
@@ -435,8 +436,9 @@ export const emitShareUntilPassedEvents = async (
             writes.push({
                 termsId,
                 expectedNext,
-                next:
-                    active && unexpired ? computeNextShareUntilFromProperties(props, nowMs) : null,
+                // An expired consent keeps its later dates: a contract update can make it live
+                // again (expiry_extended) without a terms write to recompute them.
+                next: active ? computeNextShareUntilFromProperties(props, nowMs) : null,
                 contractId: typeof contractId === 'string' ? contractId : null,
                 emits,
             });
