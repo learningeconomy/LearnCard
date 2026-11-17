@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
     decodeContractConnectionsCursor,
     encodeContractConnectionsCursor,
+    InvalidContractConnectionsCursorError,
 } from './contract-connections-cursor.helpers';
 
 describe('contract connections cursor', () => {
@@ -18,6 +19,9 @@ describe('contract connections cursor', () => {
     it.each(['', 'not-a-cursor', Buffer.from('ccv1:').toString('base64url'), 'Y2N2MTphYmM='])(
         'rejects %j',
         cursor => {
+            expect(() => decodeContractConnectionsCursor(cursor)).toThrow(
+                InvalidContractConnectionsCursorError
+            );
             expect(() => decodeContractConnectionsCursor(cursor)).toThrow(
                 'Invalid contract connections cursor'
             );

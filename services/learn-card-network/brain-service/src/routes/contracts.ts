@@ -87,6 +87,7 @@ import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
 import { removeRequestedForRelationship } from '@accesslayer/consentflowcontract/relationships/delete';
 import { getContractConnections } from '@accesslayer/consentflowcontract/relationships/connections';
+import { InvalidContractConnectionsCursorError } from '@helpers/contract-connections-cursor.helpers';
 import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile, getProfileIdFromString } from '@helpers/did.helpers';
 import {
@@ -823,7 +824,7 @@ export const contractsRouter = t.router({
                     domain: ctx.domain,
                 });
             } catch (error) {
-                if (error instanceof Error && error.message.startsWith('Invalid contract')) {
+                if (error instanceof InvalidContractConnectionsCursorError) {
                     throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid cursor' });
                 }
 
