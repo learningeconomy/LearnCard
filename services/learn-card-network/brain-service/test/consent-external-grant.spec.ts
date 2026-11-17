@@ -1,5 +1,15 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const pruningMocks = vi.hoisted(() => ({ prune: vi.fn() }));
+vi.mock('@accesslayer/consentflowcontract/relationships/update', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@accesslayer/consentflowcontract/relationships/update')
+        >();
+    pruningMocks.prune.mockImplementation(actual.pruneDeletedUrisFromConsentTerms);
+    return { ...actual, pruneDeletedUrisFromConsentTerms: pruningMocks.prune };
+});
+
 const signingAuthorityMocks = vi.hoisted(() => ({ issueCredential: vi.fn() }));
 vi.mock('@helpers/signingAuthority.helpers', async importOriginal => {
     const actual = await importOriginal<typeof import('@helpers/signingAuthority.helpers')>();
@@ -172,6 +182,51 @@ describe('Consent external grant issuance fence', () => {
             );
             await expectNoDelivery(fixture.termsUri);
         });
+    });
+
+    it('stale route pruning preserves a newer grant and rejects the old expectation', async () => {
+        const fixture = await setupConsent();
+        const sharingTerms = {
+            ...normalFullTerms,
+            externalGrant,
+            read: {
+                ...normalFullTerms.read,
+                credentials: {
+                    ...normalFullTerms.read.credentials,
+                    categories: {
+                        ...normalFullTerms.read.credentials.categories,
+                        Achievement: { sharing: true, shared: ['delete-uri', 'keep-uri'] },
+                    },
+                },
+            },
+        };
+        await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: fixture.termsUri,
+            terms: sharingTerms,
+        });
+        const newerGrant = { ...externalGrant, revision: 1, hash: 'grant-hash-v1' };
+        const realPrune = pruningMocks.prune.getMockImplementation();
+        if (!realPrune) throw new Error('Real pruning helper was not initialized');
+        // The route has loaded its old snapshot; commit a real update before it prunes.
+        pruningMocks.prune.mockImplementationOnce(async (terms, deletedUris) => {
+            expect(terms.terms.externalGrant).toEqual(externalGrant);
+            await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: fixture.termsUri,
+                terms: { ...sharingTerms, externalGrant: newerGrant },
+            });
+            return realPrune(terms, deletedUris);
+        });
+        const result = await userB.clients.fullAuth.contracts.deleteCredentialFromAllContracts({
+            deletedUris: ['delete-uri'],
+        });
+        expect(result).toEqual({ contractsUpdated: 1, removedSharedUris: 1 });
+        const stored = (await getContractTermsByUri(fixture.termsUri))!.terms.terms;
+        expect(stored.externalGrant).toEqual(newerGrant);
+        expect(stored.read.credentials.categories.Achievement?.shared).toEqual(['keep-uri']);
+        await expect(writeCredential('direct', fixture, expectedGrant)).rejects.toMatchObject(
+            conflict
+        );
+        await expectNoDelivery(fixture.termsUri);
     });
 
     // Ordered in-flight issuance races, NOT simultaneous database transactions.

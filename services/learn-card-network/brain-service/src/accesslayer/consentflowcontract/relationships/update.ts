@@ -14,7 +14,7 @@ import {
 } from '@learncard/types';
 import { ConsentFlowTerms, ConsentFlowTransaction, ConsentFlowContract } from '@models';
 import { neogma } from '@instance';
-import { flattenObject } from '@helpers/objects.helpers';
+import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { DbContractType, DbTermsType } from 'types/consentflowcontract';
 import { getBoostUri, sendBoost, stampIssuanceDate } from '@helpers/boost.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
@@ -900,69 +900,81 @@ export const pruneDeletedUrisFromConsentTerms = async (
     const deletedUriSet = new Set(deletedUris.filter((uri): uri is string => Boolean(uri)));
     if (!deletedUriSet.size) return 0;
 
-    const updatedTerms = JSON.parse(JSON.stringify(terms.terms)) as ConsentFlowTermsType;
+    const session = neogma.driver.session();
+    try {
+        return await session.executeWrite(async dbTransaction => {
+            // The route's snapshot can predate a consent update. Lock the same
+            // contract as delivery/withdrawal before reading current sharing data.
+            const locked = await dbTransaction.run(
+                `MATCH (terms:ConsentFlowTerms {id:$termsId})-[:CONSENTS_TO]->(contract:ConsentFlowContract)
+                 SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1
+                 WITH terms, contract
+                 WHERE coalesce(terms.status, 'live') = 'live'
+                 RETURN properties(terms) AS terms`,
+                { termsId: terms.id }
+            );
+            if (!locked.records.length) return 0;
+            const current = inflateObject(locked.records[0]!.get('terms')) as DbTermsType;
+            const updatedTerms = current.terms;
+            const existingFlat = flattenObject({ terms: updatedTerms });
+            let removedSharedUris = 0;
 
-    if (!updatedTerms.read) updatedTerms.read = {} as any;
-    if (!updatedTerms.read.credentials) updatedTerms.read.credentials = {} as any;
-    if (!updatedTerms.read.credentials.categories) updatedTerms.read.credentials.categories = {};
+            for (const categoryInfo of Object.values(
+                updatedTerms.read?.credentials?.categories ?? {}
+            )) {
+                const previousShared = categoryInfo.shared ?? [];
+                const nextShared = previousShared.filter(uri => !deletedUriSet.has(uri));
+                removedSharedUris += previousShared.length - nextShared.length;
+                categoryInfo.shared = nextShared;
+            }
+            if (!removedSharedUris) return 0;
 
-    let removedSharedUris = 0;
+            const newFlat = flattenObject({ terms: updatedTerms });
+            // Limit maintenance writes to shared URI lists, including removed indexes.
+            // Never copy grant bindings, permissions, expiry or one-time state back.
+            const isSharedKey = (key: string): boolean =>
+                /^terms\.read\.credentials\.categories\..+\.shared(?:\.\d+)?$/.test(key);
+            const transaction = {
+                id: uuid(),
+                action: 'sync',
+                date: new Date().toISOString(),
+                terms: updatedTerms,
+            } as const satisfies ConsentFlowTransactionType;
+            const paramsForSet = {
+                ...Object.fromEntries(Object.entries(newFlat).filter(([key]) => isSharedKey(key))),
+                ...Object.fromEntries(
+                    Object.keys(existingFlat)
+                        .filter(key => isSharedKey(key) && !(key in newFlat))
+                        .map(key => [key, null])
+                ),
+                updatedAt: transaction.date,
+            };
 
-    for (const categoryInfo of Object.values(updatedTerms.read.credentials.categories)) {
-        const previousShared = categoryInfo.shared ?? [];
-        const nextShared = previousShared.filter(uri => !deletedUriSet.has(uri));
-
-        removedSharedUris += previousShared.length - nextShared.length;
-        categoryInfo.shared = nextShared;
+            await new QueryBuilder(
+                new BindParam({
+                    params: paramsForSet,
+                    transactionParams: flattenObject(transaction),
+                })
+            )
+                .match({ model: ConsentFlowTerms, where: { id: terms.id }, identifier: 'terms' })
+                .set('terms += $params')
+                .set('terms.mutationVersion = coalesce(terms.mutationVersion, 0) + 1')
+                .with('terms')
+                .create({
+                    related: [
+                        { identifier: 'transaction', model: ConsentFlowTransaction },
+                        ConsentFlowTransaction.getRelationshipByAlias('isFor'),
+                        { identifier: 'terms' },
+                    ],
+                })
+                .set('transaction += $transactionParams')
+                .raw(termsReferralSnapshotCypher())
+                .run(dbTransaction);
+            return removedSharedUris;
+        });
+    } finally {
+        await session.close();
     }
-
-    if (!removedSharedUris) return 0;
-
-    const existingFlat = flattenObject({ terms: terms.terms });
-    const newFlatInner = flattenObject({ terms: updatedTerms });
-
-    const keysToRemove = Object.keys(existingFlat).filter(key => !(key in newFlatInner));
-
-    const transaction = {
-        id: uuid(),
-        action: 'sync',
-        date: new Date().toISOString(),
-        terms: updatedTerms,
-    } as const satisfies ConsentFlowTransactionType;
-
-    const paramsForSet = {
-        ...newFlatInner,
-        updatedAt: new Date().toISOString(),
-        ...(typeof terms.expiresAt === 'string' ? { expiresAt: terms.expiresAt } : {}),
-        ...(typeof terms.oneTime === 'boolean' ? { oneTime: terms.oneTime } : {}),
-        ...Object.fromEntries(keysToRemove.map(k => [k, null as any])),
-    };
-
-    const result = await new QueryBuilder(
-        new BindParam({
-            params: paramsForSet,
-            transactionParams: (flattenObject as any)(transaction),
-        })
-    )
-        .match({
-            model: ConsentFlowTerms,
-            where: { id: terms.id },
-            identifier: 'terms',
-        })
-        .set('terms += $params')
-        .with('terms')
-        .create({
-            related: [
-                { identifier: 'transaction', model: ConsentFlowTransaction },
-                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
-                { identifier: 'terms' },
-            ],
-        })
-        .set('transaction += $transactionParams')
-        .raw(termsReferralSnapshotCypher())
-        .run();
-
-    return result.summary.counters.containsUpdates() ? removedSharedUris : 0;
 };
 
 export const upsertRequestedForRelationship = async (
