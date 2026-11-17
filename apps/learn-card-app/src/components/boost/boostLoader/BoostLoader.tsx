@@ -1,5 +1,5 @@
 import React from 'react';
-import Lottie from 'react-lottie-player';
+import Lottie from '../../lottie/LazyLottie';
 
 import * as m from '../../../paraglide/messages.js';
 
