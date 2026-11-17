@@ -229,21 +229,24 @@ const fanOutEvent = async (event: Record<string, unknown>): Promise<number> => {
     const consenterId = optionalString(row.get('consenterId'));
     const requesterId = optionalString(event.requestedBy);
 
+    const isRequestEvent = REQUEST_EVENT_TYPES.includes(type.data);
+
     // A profile with several roles gets one, in this order.
     const roleOf = (profileId: string): IntegrationEventRole | undefined => {
         if (profileId === ownerId) return 'owner';
         if (writerIds.includes(profileId)) return 'writer';
         if (recipientIds.includes(profileId)) return 'recipient';
-        if (profileId === requesterId) return 'requester';
+        // The requester role only exists on request records; consent events never add it.
+        if (isRequestEvent && profileId === requesterId) return 'requester';
 
         return undefined;
     };
 
-    const isRequestEvent = REQUEST_EVENT_TYPES.includes(type.data);
+    // Same audience as profile notifications: request events go to the owner and the requester;
+    // consent and lifecycle events go to the owner, writers and CURRENT data recipients only. A
+    // requester that was removed from the contract no longer hears about it.
     const mainProfiles = unique(
-        isRequestEvent
-            ? [ownerId, requesterId]
-            : [ownerId, ...writerIds, ...recipientIds, requesterId]
+        isRequestEvent ? [ownerId, requesterId] : [ownerId, ...writerIds, ...recipientIds]
     );
     const acceptedProfiles = event.requestAccepted === true ? unique([ownerId, requesterId]) : [];
 
@@ -290,7 +293,12 @@ const fanOutEvent = async (event: Record<string, unknown>): Promise<number> => {
     for (const record of integrations.records) {
         const integrationId: string = record.get('integrationId');
         const profileId: string = record.get('profileId');
-        const role = roleOf(profileId);
+        // The request_accepted record always goes to the requester, whatever its current access.
+        const role =
+            roleOf(profileId) ??
+            (acceptedProfiles.includes(profileId) && profileId === requesterId
+                ? 'requester'
+                : undefined);
 
         if (!role) continue;
 
