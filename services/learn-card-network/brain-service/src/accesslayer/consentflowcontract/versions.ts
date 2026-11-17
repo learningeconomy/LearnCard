@@ -660,21 +660,40 @@ export const updateConsentFlowContractVersion = async (
     });
     // Live consents that were expired by the shared rule and are live again under this version.
     // Integrations were told `consent_expired`; they need to hear that the consent is back.
+    //
+    // This read runs before the locked statement below, so a consent that re-consents in that gap
+    // can get one extra or one missing `expiry_extended` event. A concurrent version change is
+    // rejected by the version check of the locked statement.
+    //
+    // A consent can only go from expired to unexpired through the version it accepted, so the
+    // read is skipped unless some version of this contract has already expired, and it only
+    // fetches terms whose accepted version has expired (or has no version node at all).
     const nowMs = Date.now();
     const unexpiredTermsIds: string[] = [];
     if (kind !== 'requires_consent' && isConsentExpiryActive(next.expiresAt, nowMs)) {
-        const candidates = await neogma.queryRunner.run(
-            `MATCH (c:ConsentFlowContract {id:$id})<-[:CONSENTS_TO]-(terms:ConsentFlowTerms)
-             WHERE terms.status = 'live'
-             OPTIONAL MATCH (c)-[:HAS_VERSION]->(accepted:ConsentFlowContractVersion)
-             WHERE ${ACCEPTED_VERSION_PREDICATE}
-             WITH terms, head(collect(accepted)) AS accepted
-             WHERE accepted IS NULL OR accepted.expiresAt IS NOT NULL OR terms.expiresAt IS NOT NULL
-             RETURN terms.id AS termsId, terms.expiresAt AS termsExpiresAt,
-                 accepted IS NOT NULL AS hasAcceptedVersion,
-                 accepted.expiresAt AS acceptedVersionExpiresAt`,
-            { id: contractId }
+        // The string bound is one second wide of now; the exact comparison is made in JS below.
+        const nowBound = new Date(nowMs + 1_000).toISOString();
+        const expiredVersion = await neogma.queryRunner.run(
+            `MATCH (:ConsentFlowContract {id:$id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion)
+             WHERE version.expiresAt IS NOT NULL AND version.expiresAt <= $nowBound
+             RETURN version.id AS id LIMIT 1`,
+            { id: contractId, nowBound }
         );
+        const candidates = expiredVersion.records.length
+            ? await neogma.queryRunner.run(
+                  `MATCH (c:ConsentFlowContract {id:$id})<-[:CONSENTS_TO]-(terms:ConsentFlowTerms)
+                   WHERE terms.status = 'live'
+                   OPTIONAL MATCH (c)-[:HAS_VERSION]->(accepted:ConsentFlowContractVersion)
+                   WHERE ${ACCEPTED_VERSION_PREDICATE}
+                   WITH terms, head(collect(accepted)) AS accepted
+                   WHERE accepted IS NULL
+                       OR (accepted.expiresAt IS NOT NULL AND accepted.expiresAt <= $nowBound)
+                   RETURN terms.id AS termsId, terms.expiresAt AS termsExpiresAt,
+                       accepted IS NOT NULL AS hasAcceptedVersion,
+                       accepted.expiresAt AS acceptedVersionExpiresAt`,
+                  { id: contractId, nowBound }
+              )
+            : { records: [] };
         for (const row of candidates.records) {
             const termsId: unknown = row.get('termsId');
             const termsExpiresAt: unknown = row.get('termsExpiresAt');

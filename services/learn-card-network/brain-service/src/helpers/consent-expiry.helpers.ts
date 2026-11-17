@@ -29,6 +29,10 @@ export const ACCEPTED_VERSION_PREDICATE = 'accepted.version = coalesce(terms.con
 /**
  * true while a consent is not expired: its own expiry is active, the version it accepted
  * exists, and that version's expiry is active.
+ *
+ * A missing accepted version counts as expired. Legacy terms with no version node therefore
+ * count as "was expired" and can receive `expiry_extended` without an earlier `consent_expired`
+ * (they never get one), which is consistent with the connections snapshot leaving them out.
  */
 export const isConsentUnexpired = (
     {

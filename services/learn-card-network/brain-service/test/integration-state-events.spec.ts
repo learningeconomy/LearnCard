@@ -323,6 +323,24 @@ describe('integration-only state events', () => {
             expect(await typesSince(ownerIntegrationId, before)).toEqual([]);
         });
 
+        it('does not read the revival candidates when no version of the contract has expired', async () => {
+            const spy = vi.spyOn(neogma.queryRunner, 'run');
+
+            await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: contractUri,
+                changes: { contract: optionalAddition },
+            });
+
+            const statements = spy.mock.calls.map(([query]) => String(query));
+
+            expect(statements.some(query => query.includes('version.expiresAt <= $nowBound'))).toBe(
+                true
+            );
+            expect(statements.some(query => query.includes('AS acceptedVersionExpiresAt'))).toBe(
+                false
+            );
+        });
+
         it('emits nothing when the update still leaves the consent expired', async () => {
             await expireVersionOne(60_000);
 
