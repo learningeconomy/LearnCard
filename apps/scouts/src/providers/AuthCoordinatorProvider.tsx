@@ -21,7 +21,7 @@ import React, {
 import { Capacitor } from '@capacitor/core';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 
-import type { LCNProfile } from '@learncard/types';
+import type { LCNVisibleProfile } from '@learncard/types';
 
 import {
     AuthCoordinatorProvider as BaseAuthCoordinatorProvider,
@@ -84,7 +84,7 @@ import {
     createAdaptiveStorage,
     isPublicComputerMode,
 } from '@learncard/sss-key-manager';
-import type { RecoverySetupInput } from '@learncard/sss-key-manager';
+import type { RecoverySetupInput, RecoverySetupResult } from '@learncard/sss-key-manager';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
 
@@ -218,10 +218,10 @@ const ScoutsDeviceLinkOverlay: React.FC<{
             const scanResult = new Promise<string | null>(resolve => {
                 resolveScan = resolve;
             });
-            const listener = await BarcodeScanner.addListener('barcodeScanned', async result => {
+            const listener = await BarcodeScanner.addListener('barcodesScanned', async result => {
                 await listener.remove();
                 await BarcodeScanner.stopScan();
-                resolveScan(result.barcode?.rawValue ?? null);
+                resolveScan(result.barcodes[0]?.rawValue ?? null);
             });
 
             await BarcodeScanner.startScan({
@@ -315,7 +315,7 @@ export interface AppAuthContextValue extends AuthCoordinatorContextValue {
     wallet: BespokeLearnCard | null;
     walletReady: boolean;
     isLoggedIn: boolean;
-    lcnProfile: LCNProfile | null;
+    lcnProfile: LCNVisibleProfile | null;
     lcnProfileLoading: boolean;
     hasLCNAccount: boolean;
     refetchLCNProfile: () => Promise<void>;
@@ -371,7 +371,7 @@ const AuthSessionManager: React.FC<{
 
     // --- Enriched state ---
     const [wallet, setWallet] = useState<BespokeLearnCard | null>(null);
-    const [lcnProfile, setLcnProfile] = useState<LCNProfile | null>(null);
+    const [lcnProfile, setLcnProfile] = useState<LCNVisibleProfile | null>(null);
     const [lcnProfileLoading, setLcnProfileLoading] = useState(false);
 
     const walletInitRef = useRef(false);
@@ -735,11 +735,13 @@ const AuthSessionManager: React.FC<{
                     web3AuthKey: resolved.privateKey,
                     source: 'derived',
                 });
-            } catch {
+            } catch (error) {
                 // Provider and Torus errors can embed credentials. Shared strategy
                 // diagnostics retain safe outcome metadata; never forward raw errors.
                 emitAuthError('web3auth:migration_key', 'Could not prepare account upgrade');
-                fallBack();
+                if (isCurrentAttempt()) {
+                    migrationCoordinatorRef.current.handleMigrationKeyError(error);
+                }
             }
         };
 
@@ -1342,7 +1344,7 @@ const AuthSessionManager: React.FC<{
                             phone?: string;
                             providerType: string;
                         } | null
-                    ) => {
+                    ): Promise<RecoverySetupResult> => {
                         log.debug('[setupMethod] starting', {
                             privateKeyLength: currentPrivateKey?.length,
                             method: input.method,
@@ -1374,7 +1376,7 @@ const AuthSessionManager: React.FC<{
                             input,
                             authUser: authUser ?? undefined,
                             signDidAuthVp,
-                        });
+                        }) as Promise<RecoverySetupResult>;
                     };
 
                     const confirmMethod = async (
