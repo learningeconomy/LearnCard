@@ -44,8 +44,12 @@ export const getEthereumPlugin = (
     }
 
     const privateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
-    let ethersWallet = new ethers.Wallet(privateKey);
-    const publicKey: string = ethersWallet.address;
+    // Constructing an ethers Wallet precomputes secp256k1 tables (~35 ms on a desktop CPU, several
+    // times that on phones), and every wallet start would pay it. Build it on first use instead.
+    let wallet: ethers.Wallet | undefined;
+    const getWallet = (): ethers.Wallet => (wallet ??= new ethers.Wallet(privateKey));
+    let address: string | undefined;
+    const getAddress = (): string => (address ??= getWallet().address);
 
     // Provider
     const getProvider = () => {
@@ -56,7 +60,7 @@ export const getEthereumPlugin = (
             provider = ethers.getDefaultProvider(network);
         }
 
-        ethersWallet = ethersWallet.connect(provider);
+        wallet = getWallet().connect(provider);
         return provider;
     };
     let provider: ethers.providers.Provider;
@@ -75,7 +79,7 @@ export const getEthereumPlugin = (
 
     const getErc20TokenBalance = async (
         tokenContractAddress: string,
-        walletPublicAddress = publicKey
+        walletPublicAddress = getAddress()
     ) => {
         if (!provider) provider = getProvider();
 
@@ -93,7 +97,7 @@ export const getEthereumPlugin = (
     };
 
     // Core Methods
-    const getBalance = async (walletAddress = publicKey, tokenSymbolOrAddress = 'ETH') => {
+    const getBalance = async (walletAddress = getAddress(), tokenSymbolOrAddress = 'ETH') => {
         if (!provider) provider = getProvider();
 
         if (!tokenSymbolOrAddress || tokenSymbolOrAddress === 'ETH') {
@@ -120,10 +124,10 @@ export const getEthereumPlugin = (
         displayName: 'Ethereum',
         description: 'Provides access to currency',
         methods: {
-            getEthereumAddress: () => publicKey,
+            getEthereumAddress: () => getAddress(),
 
             getBalance: async (_learnCard, symbolOrAddress = 'ETH') =>
-                getBalance(publicKey, symbolOrAddress),
+                getBalance(getAddress(), symbolOrAddress),
             getBalanceForAddress: async (_learnCard, walletAddress, symbolOrAddress) =>
                 getBalance(walletAddress, symbolOrAddress),
 
@@ -138,7 +142,7 @@ export const getEthereumPlugin = (
                         value: ethers.utils.parseEther(amount.toString()),
                     };
 
-                    return (await ethersWallet.sendTransaction(transaction)).hash;
+                    return (await getWallet().sendTransaction(transaction)).hash;
                 }
 
                 const tokenAddress = await getTokenAddress(tokenSymbolOrAddress);
@@ -148,7 +152,7 @@ export const getEthereumPlugin = (
                     );
                 }
 
-                const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, ethersWallet);
+                const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, getWallet());
 
                 return (
                     await tokenContract.transfer(
