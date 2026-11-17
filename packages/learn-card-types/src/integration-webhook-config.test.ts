@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { LCNIntegrationUpdateValidator, LCNIntegrationValidator } from './lcn';
+import {
+    IntegrationWebhookUrlValidator,
+    LCNIntegrationUpdateValidator,
+    LCNIntegrationValidator,
+} from './lcn';
 
 const baseIntegration = {
     id: 'integration-1',
@@ -51,6 +55,41 @@ describe('LCNIntegrationValidator webhook fields', () => {
     });
 });
 
+describe('IntegrationWebhookUrlValidator', () => {
+    it.each(['http://example.com/hook', 'https://example.com/hook', 'http://localhost:3000/hook'])(
+        'accepts %j',
+        webhookUrl => {
+            expect(IntegrationWebhookUrlValidator.parse(webhookUrl)).toBe(webhookUrl);
+        }
+    );
+
+    it.each([
+        'httpx://example.com/hook',
+        'httpss://example.com/hook',
+        'ftp://example.com/hook',
+        'ws://example.com/hook',
+        'http:example.com/hook',
+        'http://',
+        'https://',
+        'javascript:alert(1)',
+        'not a url',
+        '',
+    ])('rejects %j', webhookUrl => {
+        expect(IntegrationWebhookUrlValidator.safeParse(webhookUrl).success).toBe(false);
+    });
+
+    it('rejects a URL longer than 2048 characters', () => {
+        expect(
+            IntegrationWebhookUrlValidator.safeParse(`https://example.com/${'a'.repeat(2048)}`)
+                .success
+        ).toBe(false);
+        expect(
+            IntegrationWebhookUrlValidator.safeParse(`https://example.com/${'a'.repeat(2028)}`)
+                .success
+        ).toBe(true);
+    });
+});
+
 describe('LCNIntegrationUpdateValidator webhook fields', () => {
     it('accepts an http(s) webhook URL', () => {
         expect(
@@ -63,12 +102,17 @@ describe('LCNIntegrationUpdateValidator webhook fields', () => {
         expect(LCNIntegrationUpdateValidator.parse({ webhookUrl: null }).webhookUrl).toBeNull();
     });
 
-    it.each(['not a url', 'ftp://example.com/hook', 'javascript:alert(1)', ''])(
-        'rejects webhook URL %j',
-        webhookUrl => {
-            expect(LCNIntegrationUpdateValidator.safeParse({ webhookUrl }).success).toBe(false);
-        }
-    );
+    it.each([
+        'not a url',
+        'ftp://example.com/hook',
+        'httpx://example.com/hook',
+        'httpss://example.com/hook',
+        'http:example.com/hook',
+        'javascript:alert(1)',
+        '',
+    ])('rejects webhook URL %j', webhookUrl => {
+        expect(LCNIntegrationUpdateValidator.safeParse({ webhookUrl }).success).toBe(false);
+    });
 
     it('rejects a webhook URL longer than 2048 characters', () => {
         const webhookUrl = `https://example.com/${'a'.repeat(2048)}`;

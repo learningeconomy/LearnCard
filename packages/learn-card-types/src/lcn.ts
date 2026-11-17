@@ -2125,6 +2125,12 @@ export const LCNIntegrationCreateValidator = z.object({
 
 export type LCNIntegrationCreateType = z.infer<typeof LCNIntegrationCreateValidator>;
 
+/**
+ * URL of an Integration's contract-event webhook: an absolute URL whose scheme is exactly
+ * `http` or `https`, at most 2048 characters.
+ */
+export const IntegrationWebhookUrlValidator = z.url({ protocol: /^https?$/ }).max(2048);
+
 export const LCNIntegrationUpdateValidator = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
@@ -2132,12 +2138,7 @@ export const LCNIntegrationUpdateValidator = z.object({
     rotatePublishableKey: z.boolean().optional(),
 
     // Contract event webhook and change feed (LC-2370)
-    webhookUrl: z
-        .string()
-        .url()
-        .startsWith('http')
-        .max(2048)
-        .nullable()
+    webhookUrl: IntegrationWebhookUrlValidator.nullable()
         .optional()
         .describe('HTTP(S) URL that receives signed contract events. null removes it.'),
     contractEventsEnabled: z
