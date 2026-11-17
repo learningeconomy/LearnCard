@@ -343,6 +343,111 @@ describe('dispatchIntegrationWebhooks', () => {
         expect((await stored('dispatch-before-disable')).failureReason).toBe('disabled');
     });
 
+    describe('configuration changes during a pass', () => {
+        const seedThree = async (): Promise<void> => {
+            await seedEvent('midpass-1');
+            await seedEvent('midpass-2');
+            await seedEvent('midpass-3');
+        };
+
+        /** Runs `change` once, right after the first delivery of the pass. */
+        const changeAfterFirstSend = (change: () => Promise<unknown>): void => {
+            let calls = 0;
+
+            fetchSpy.mockImplementation(async () => {
+                calls++;
+                if (calls === 1) await change();
+
+                return answer(200);
+            });
+        };
+
+        it('stops sending once contract events are disabled mid-pass', async () => {
+            await seedThree();
+            changeAfterFirstSend(() =>
+                userA.clients.fullAuth.integrations.updateIntegration({
+                    id: integrationId,
+                    updates: { contractEventsEnabled: false },
+                })
+            );
+
+            await expect(dispatchIntegrationWebhooks()).resolves.toEqual({
+                delivered: 1,
+                pending: 0,
+                rejected: 2,
+                failed: 0,
+            });
+            expect(fetchSpy).toHaveBeenCalledOnce();
+            expect((await stored('midpass-2')).failureReason).toBe('disabled');
+            expect((await stored('midpass-3')).failureReason).toBe('disabled');
+        });
+
+        it('sends the rest of the pass to a replaced URL', async () => {
+            const newUrl = 'https://new.example.com/learncard';
+
+            await seedThree();
+            changeAfterFirstSend(() =>
+                userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                    id: integrationId,
+                    webhookUrl: newUrl,
+                })
+            );
+
+            await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({ delivered: 3 });
+            expect(fetchSpy.mock.calls.map(([destination]) => destination)).toEqual([
+                WEBHOOK_URL,
+                newUrl,
+                newUrl,
+            ]);
+        });
+
+        it('stops sending once the URL is removed mid-pass', async () => {
+            await seedThree();
+            changeAfterFirstSend(() =>
+                userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                    id: integrationId,
+                    webhookUrl: null,
+                })
+            );
+
+            await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({
+                delivered: 1,
+                rejected: 2,
+            });
+            expect(fetchSpy).toHaveBeenCalledOnce();
+            expect((await stored('midpass-2')).failureReason).toBe('no_webhook');
+            expect((await stored('midpass-3')).failureReason).toBe('no_webhook');
+        });
+
+        it('signs the rest of the pass with a rotated secret', async () => {
+            let rotated: string | undefined;
+
+            await seedThree();
+            changeAfterFirstSend(async () => {
+                rotated = (
+                    await userA.clients.fullAuth.integrations.rotateIntegrationWebhookSecret({
+                        id: integrationId,
+                    })
+                ).secret;
+            });
+
+            await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({ delivered: 3 });
+
+            const [, request] = fetchSpy.mock.calls[2]!;
+            const parts = String(request.headers['X-LearnCard-Signature']).split(',');
+            const timestamp = Number(parts[0]!.slice(2));
+
+            expect(rotated).toBeDefined();
+            expect(parts[1]).toBe(
+                `v1=${signIntegrationWebhookBody({
+                    secret: String(rotated),
+                    timestamp,
+                    body: request.body,
+                })}`
+            );
+        });
+    });
+
     it('does not send a record that another worker holds a lease on', async () => {
         await seedEvent('dispatch-8');
         await run(

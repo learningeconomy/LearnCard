@@ -728,9 +728,14 @@ export const dispatchIntegrationWebhooks = async ({
     if (dueRecords.length === 0) return summary;
 
     // Loaded lazily: decrypting secrets pulls in the wallet stack (rule 11).
-    const { getIntegrationWebhookDeliveryConfig } =
+    const { getIntegrationWebhookDeliverySnapshot, getIntegrationWebhookDeliveryFingerprint } =
         await import('@accesslayer/integration/webhook');
-    const configs = new Map<string, WebhookDeliveryConfig | null>();
+    // Cached for the pass, but re-validated before every send: the owner may disable events or
+    // change the URL or secret while the pass runs, and that must apply to the very next delivery.
+    const configs = new Map<
+        string,
+        { fingerprint: string | null; config: WebhookDeliveryConfig | null }
+    >();
 
     for (const record of dueRecords) {
         if (Date.now() >= deadline) break;
@@ -776,14 +781,18 @@ export const dispatchIntegrationWebhooks = async ({
                 failureReason =
                     retryWindowEndsAt <= Date.now() ? 'retry_expired' : 'retry_exhausted';
             } else {
-                if (!configs.has(integrationId)) {
-                    configs.set(
-                        integrationId,
-                        await getIntegrationWebhookDeliveryConfig(integrationId)
-                    );
+                let entry = configs.get(integrationId);
+
+                if (
+                    !entry ||
+                    (await getIntegrationWebhookDeliveryFingerprint(integrationId)) !==
+                        entry.fingerprint
+                ) {
+                    entry = await getIntegrationWebhookDeliverySnapshot(integrationId);
+                    configs.set(integrationId, entry);
                 }
 
-                const config = configs.get(integrationId);
+                const config = entry.config;
 
                 if (!config) {
                     state = 'rejected';

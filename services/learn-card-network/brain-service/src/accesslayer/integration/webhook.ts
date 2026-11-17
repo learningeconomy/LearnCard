@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { neogma } from '@instance';
 import { WEBHOOK_SECRET_PREVIOUS_TTL_MS } from 'src/constants/integration-events';
 import {
@@ -135,14 +137,17 @@ export type IntegrationWebhookDeliveryConfig = {
     contractEventsEnabledAt?: string;
 };
 
-/**
- * Reads what signed delivery needs: the webhook URL, the decrypted signing secrets and whether
- * contract events are enabled. Returns null when the Integration does not exist, has no webhook
- * URL, or has no secret. The result must never be returned by a route or written to a log.
- */
-export const getIntegrationWebhookDeliveryConfig = async (
+type StoredDeliveryState = {
+    webhookUrl: unknown;
+    secretEnc: unknown;
+    previousEnc: unknown;
+    previousExpiresAt: unknown;
+    contractEventsEnabledAt: unknown;
+};
+
+const readStoredDeliveryState = async (
     integrationId: string
-): Promise<IntegrationWebhookDeliveryConfig | null> => {
+): Promise<StoredDeliveryState | null> => {
     const result = await neogma.queryRunner.run(
         `MATCH (integration:Integration {id: $id})
          RETURN integration.webhookUrl AS webhookUrl,
@@ -156,30 +161,55 @@ export const getIntegrationWebhookDeliveryConfig = async (
 
     if (!record) return null;
 
-    const webhookUrl: unknown = record.get('webhookUrl');
-    const secretEnc: unknown = record.get('secretEnc');
-    const previousEnc: unknown = record.get('previousEnc');
-    const previousExpiresAt: unknown = record.get('previousExpiresAt');
+    return {
+        webhookUrl: record.get('webhookUrl'),
+        secretEnc: record.get('secretEnc'),
+        previousEnc: record.get('previousEnc'),
+        previousExpiresAt: record.get('previousExpiresAt'),
+        contractEventsEnabledAt: record.get('contractEventsEnabledAt'),
+    };
+};
+
+const isUsablePrevious = (state: StoredDeliveryState): boolean =>
+    typeof state.previousEnc === 'string' &&
+    typeof state.previousExpiresAt === 'string' &&
+    Date.parse(state.previousExpiresAt) > Date.now();
+
+/**
+ * SHA-256 hex of everything the delivery configuration is built from (URL, enabled time and the
+ * stored encrypted secrets). It identifies a configuration without exposing or decrypting any
+ * secret, and changes whenever the URL, the switch or a secret changes.
+ */
+const fingerprintOf = (state: StoredDeliveryState): string =>
+    createHash('sha256')
+        .update(
+            JSON.stringify([
+                state.webhookUrl ?? null,
+                state.contractEventsEnabledAt ?? null,
+                state.secretEnc ?? null,
+                isUsablePrevious(state) ? state.previousEnc : null,
+            ])
+        )
+        .digest('hex');
+
+const buildDeliveryConfig = async (
+    state: StoredDeliveryState
+): Promise<IntegrationWebhookDeliveryConfig | null> => {
+    const { webhookUrl, secretEnc, previousEnc, contractEventsEnabledAt } = state;
 
     if (typeof webhookUrl !== 'string' || webhookUrl.length === 0) return null;
     if (typeof secretEnc !== 'string' || secretEnc.length === 0) return null;
 
     const secrets = [await decryptWebhookSecret(secretEnc)];
 
-    if (
-        typeof previousEnc === 'string' &&
-        typeof previousExpiresAt === 'string' &&
-        Date.parse(previousExpiresAt) > Date.now()
-    ) {
+    if (isUsablePrevious(state)) {
         try {
-            secrets.push(await decryptWebhookSecret(previousEnc));
+            secrets.push(await decryptWebhookSecret(String(previousEnc)));
         } catch {
             // The current secret alone still produces a valid signature.
             console.warn('integration_events: previous_secret_unreadable');
         }
     }
-
-    const contractEventsEnabledAt: unknown = record.get('contractEventsEnabledAt');
 
     return {
         webhookUrl,
@@ -188,4 +218,46 @@ export const getIntegrationWebhookDeliveryConfig = async (
             ? { contractEventsEnabledAt }
             : {}),
     };
+};
+
+/**
+ * Reads what signed delivery needs: the webhook URL, the decrypted signing secrets and whether
+ * contract events are enabled. Returns null when the Integration does not exist, has no webhook
+ * URL, or has no secret. The result must never be returned by a route or written to a log.
+ */
+export const getIntegrationWebhookDeliveryConfig = async (
+    integrationId: string
+): Promise<IntegrationWebhookDeliveryConfig | null> => {
+    const state = await readStoredDeliveryState(integrationId);
+
+    return state ? buildDeliveryConfig(state) : null;
+};
+
+export type IntegrationWebhookDeliverySnapshot = {
+    /** Fingerprint of the stored state the config was built from. null when there is no Integration. */
+    fingerprint: string | null;
+    config: IntegrationWebhookDeliveryConfig | null;
+};
+
+/** Like getIntegrationWebhookDeliveryConfig, plus the fingerprint of the state it was read from. */
+export const getIntegrationWebhookDeliverySnapshot = async (
+    integrationId: string
+): Promise<IntegrationWebhookDeliverySnapshot> => {
+    const state = await readStoredDeliveryState(integrationId);
+
+    if (!state) return { fingerprint: null, config: null };
+
+    return { fingerprint: fingerprintOf(state), config: await buildDeliveryConfig(state) };
+};
+
+/**
+ * One cheap read that tells whether the delivery configuration changed: returns the fingerprint
+ * of the stored state without decrypting anything. null when the Integration does not exist.
+ */
+export const getIntegrationWebhookDeliveryFingerprint = async (
+    integrationId: string
+): Promise<string | null> => {
+    const state = await readStoredDeliveryState(integrationId);
+
+    return state ? fingerprintOf(state) : null;
 };
