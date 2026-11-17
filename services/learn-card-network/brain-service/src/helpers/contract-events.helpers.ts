@@ -136,7 +136,8 @@ export const requestEventCypher = `
         ownerId: owner.profileId, domain: $domain, kind: $eventKind, createdAt: $now,
         requestId: request.requestId, requestedBy: request.requestedBy,
         externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false, cleanupPending: true,
-        targetId: target.profileId, integrationFanoutPending: true}
+        targetId: target.profileId, integrationFanoutPending: true,
+        hideActor: coalesce(request.addressedByEmail, false) AND $eventFrom = target.profileId}
     WITH request, event, owner, target,
         CASE WHEN coalesce(event.fanoutCreated, false) THEN []
             WHEN $eventKind = 'request_sent' THEN [target.profileId]
@@ -168,6 +169,8 @@ type StoredEvent = {
     externalReferenceId?: string;
     message?: string;
     requestAccepted?: boolean;
+    /** True when the target of an email-addressed request made this decision. */
+    hideActor?: boolean;
 };
 type StoredDelivery = {
     id: string;
@@ -299,6 +302,9 @@ const buildNotification = async (
     });
     const requesterDecision = delivery.role === 'requester';
     const legacyAi = event.messageKey === 'consentFlowInsightsShared';
+    // The target of an email-addressed request stays private until it accepts.
+    const hideActor = event.hideActor === true;
+    const sender = hideActor ? owner : from;
     const transaction =
         event.payload && delivery.role !== 'requester' && delivery.role !== 'target'
             ? ConsentFlowTransactionValidator.parse({
@@ -317,8 +323,8 @@ const buildNotification = async (
     const notification: LCNNotification = {
         type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
         from: {
-            ...stripSensitiveProfileListFields(sanitizeProfileForTier(from, 'unauthenticated')),
-            did: from.did,
+            ...stripSensitiveProfileListFields(sanitizeProfileForTier(sender, 'unauthenticated')),
+            did: sender.did,
         },
         to,
         sent: event.createdAt,
@@ -329,14 +335,18 @@ const buildNotification = async (
                     : eventKind === 'request_accepted'
                       ? 'contractRequestAccepted'
                       : eventKind === 'request_denied'
-                        ? 'contractRequestDenied'
-                        : 'contractRequestCancelled'),
+                        ? hideActor
+                            ? 'contractRequestDeniedByInvitee'
+                            : 'contractRequestDenied'
+                        : hideActor
+                          ? 'contractRequestCancelledByInvitee'
+                          : 'contractRequestCancelled'),
             resolveRecipientLocale(to),
             {
-                name: from.displayName,
-                referrer: from.displayName || from.profileId,
+                name: sender.displayName,
+                referrer: sender.displayName || sender.profileId,
                 contractOwner: owner.displayName || owner.profileId,
-                consenter: from.displayName,
+                consenter: sender.displayName,
                 contractName: contract?.name ?? '',
                 totalCredentials: String(
                     transaction?.terms
