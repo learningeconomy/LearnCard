@@ -82,7 +82,7 @@ export const toIntegrationEvent = (record: Record<string, unknown>): Integration
 };
 
 export type IntegrationOnlyEventInput = {
-    /** Deterministic event id, for example `${termsId}:expired`. A second call with the same id is a no-op. */
+    /** Deterministic event id, for example `${termsId}:expired:${expiresAt}`. A second call with the same id is a no-op. */
     id: string;
     kind: Exclude<IntegrationEventType, 'integration.test' | 'request_accepted'>;
     contractId: string;
@@ -229,21 +229,24 @@ const fanOutEvent = async (event: Record<string, unknown>): Promise<number> => {
     const consenterId = optionalString(row.get('consenterId'));
     const requesterId = optionalString(event.requestedBy);
 
+    const isRequestEvent = REQUEST_EVENT_TYPES.includes(type.data);
+
     // A profile with several roles gets one, in this order.
     const roleOf = (profileId: string): IntegrationEventRole | undefined => {
         if (profileId === ownerId) return 'owner';
         if (writerIds.includes(profileId)) return 'writer';
         if (recipientIds.includes(profileId)) return 'recipient';
-        if (profileId === requesterId) return 'requester';
+        // The requester role only exists on request records; consent events never add it.
+        if (isRequestEvent && profileId === requesterId) return 'requester';
 
         return undefined;
     };
 
-    const isRequestEvent = REQUEST_EVENT_TYPES.includes(type.data);
+    // Same audience as profile notifications: request events go to the owner and the requester;
+    // consent and lifecycle events go to the owner, writers and CURRENT data recipients only. A
+    // requester that was removed from the contract no longer hears about it.
     const mainProfiles = unique(
-        isRequestEvent
-            ? [ownerId, requesterId]
-            : [ownerId, ...writerIds, ...recipientIds, requesterId]
+        isRequestEvent ? [ownerId, requesterId] : [ownerId, ...writerIds, ...recipientIds]
     );
     const acceptedProfiles = event.requestAccepted === true ? unique([ownerId, requesterId]) : [];
 
@@ -290,7 +293,12 @@ const fanOutEvent = async (event: Record<string, unknown>): Promise<number> => {
     for (const record of integrations.records) {
         const integrationId: string = record.get('integrationId');
         const profileId: string = record.get('profileId');
-        const role = roleOf(profileId);
+        // The request_accepted record always goes to the requester, whatever its current access.
+        const role =
+            roleOf(profileId) ??
+            (acceptedProfiles.includes(profileId) && profileId === requesterId
+                ? 'requester'
+                : undefined);
 
         if (!role) continue;
 
@@ -348,16 +356,33 @@ const FANOUT_MAX_RETRY_DELAY_MS = 60 * 60_000;
  * Turns every ConsentFlowEvent flagged with integrationFanoutPending into one IntegrationEvent
  * per subscribed integration, then removes the flag. Safe to run concurrently and to retry:
  * records are MERGEd by id and a sequence number is only consumed when a record is created.
+ *
+ * Events are always taken oldest first. With `eventId`, the pass covers that event and every
+ * older flagged event of the same contract; with `contractId`, every flagged event of that
+ * contract. This keeps a contract's feed in the order things happened even when an earlier
+ * event (for example one written by a scheduled job) was still waiting for the worker.
+ *
  * A failing event is retried with a backoff (60 seconds doubling to 1 hour) and given up on
  * after MAX_FANOUT_ATTEMPTS (about three days): the flag is removed and
  * integrationFanoutFailedAt is set, so the event can be found and re-flagged by hand.
+ *
+ * The feed keeps the order of a contract's events: an event is never fanned out while an older
+ * flagged event of the same contract is still waiting, in backoff or not yet processed. A failing
+ * event therefore holds back only the newer events of its own contract (until it succeeds or is
+ * abandoned); other contracts are unaffected. Within a pass a contract's events run oldest first
+ * and the rest of that contract is skipped once one fails. The inline `eventId` pass fans out
+ * nothing for a target whose contract has an older event in backoff, and the `contractId` pass
+ * stops at the first event of the contract that is in backoff. An abandoned event leaves a gap
+ * in the feed and unblocks the events behind it.
  */
 export const fanOutIntegrationEvents = async ({
     eventId,
+    contractId,
     limit = 100,
     budgetMs = 20_000,
 }: {
     eventId?: string;
+    contractId?: string;
     limit?: number;
     budgetMs?: number;
 } = {}): Promise<IntegrationFanOutSummary> => {
@@ -365,30 +390,62 @@ export const fanOutIntegrationEvents = async ({
     const summary: IntegrationFanOutSummary = { events: 0, records: 0 };
     const batchLimit = int(Math.max(1, Math.min(500, Math.trunc(limit))));
 
-    if (!eventId) await ensureContractEventMaintenance();
+    if (!eventId && !contractId) await ensureContractEventMaintenance();
 
-    // An event that failed is not due again until its backoff has passed, so a few failing
-    // events cannot fill the batch and starve newer ones. The set behind the index seek is only
-    // the flagged events, which is small; the filter and the sort run on that set.
+    // The worker only takes events that are due and have no older flagged event of the same
+    // contract in backoff, oldest first, so a contract's eligible events are a prefix of its
+    // queue and a few failing events cannot fill the batch (they sit in backoff). The set behind
+    // the index seek is only the flagged events, which is small; the filters and the sort run on
+    // that set. The other variants read the flagged events of one contract and stop at the first
+    // one in backoff.
+    const now = new Date().toISOString();
     const pending = await neogma.queryRunner.run(
         eventId
-            ? `MATCH (event:ConsentFlowEvent {id: $eventId})
+            ? `MATCH (target:ConsentFlowEvent {id: $eventId})
+               WHERE target.integrationFanoutPending = true
+               MATCH (event:ConsentFlowEvent)
                WHERE event.integrationFanoutPending = true
-                   AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
-               RETURN event LIMIT $limit`
-            : `MATCH (event:ConsentFlowEvent)
-               USING INDEX event:ConsentFlowEvent(integrationFanoutPending)
-               WHERE event.integrationFanoutPending = true
-                   AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
-               RETURN event ORDER BY coalesce(event.integrationFanoutNextAt, event.createdAt), event.id
-               LIMIT $limit`,
-        { eventId: eventId ?? null, limit: batchLimit, now: new Date().toISOString() }
+                   AND (event.id = target.id OR (event.contractId = target.contractId
+                       AND (event.createdAt < target.createdAt
+                           OR (event.createdAt = target.createdAt AND event.id < target.id))))
+               RETURN event ORDER BY event.createdAt, event.id LIMIT $limit`
+            : contractId
+              ? `MATCH (event:ConsentFlowEvent)
+                 WHERE event.integrationFanoutPending = true AND event.contractId = $contractId
+                 RETURN event ORDER BY event.createdAt, event.id LIMIT $limit`
+              : `MATCH (event:ConsentFlowEvent)
+                 USING INDEX event:ConsentFlowEvent(integrationFanoutPending)
+                 WHERE event.integrationFanoutPending = true
+                     AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
+                     AND NOT EXISTS {
+                         MATCH (older:ConsentFlowEvent)
+                         WHERE older.integrationFanoutPending = true
+                             AND older.contractId = event.contractId
+                             AND older.integrationFanoutNextAt > $now
+                             AND (older.createdAt < event.createdAt
+                                 OR (older.createdAt = event.createdAt AND older.id < event.id))
+                     }
+                 RETURN event ORDER BY event.createdAt, event.id
+                 LIMIT $limit`,
+        {
+            eventId: eventId ?? null,
+            contractId: contractId ?? null,
+            limit: batchLimit,
+            now,
+        }
     );
+    // Contracts whose remaining events must wait: one of their events is in backoff or just failed.
+    const held = new Set<string>();
 
     for (const row of pending.records) {
         if (Date.now() >= deadline) break;
 
         const event: Record<string, unknown> = row.get('event').properties;
+        const eventContractId = optionalString(event.contractId) ?? '';
+        const nextAt = optionalString(event.integrationFanoutNextAt);
+
+        if (nextAt !== undefined && nextAt > now) held.add(eventContractId);
+        if (held.has(eventContractId)) continue;
 
         try {
             summary.records += await fanOutEvent(event);
@@ -400,6 +457,8 @@ export const fanOutIntegrationEvents = async ({
             );
             summary.events++;
         } catch {
+            held.add(eventContractId);
+
             // Never log identifiers.
             const attempts =
                 (event.integrationFanoutAttempts === undefined

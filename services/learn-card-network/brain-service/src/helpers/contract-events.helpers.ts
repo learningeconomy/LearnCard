@@ -39,6 +39,8 @@ const INITIAL_RETRY_DELAY_MS = 60_000;
 const MAX_RETRY_DELAY_MS = 60 * 60_000;
 // At most 50 data recipients, the owner, and a requester outside the data audience.
 const MAX_INLINE_EVENT_DELIVERIES = 50 + 1 + 1;
+// Inline integration fan-out stops here or after one second; the worker continues.
+const MAX_INLINE_INTEGRATION_FANOUT = 50;
 
 export type ContractEventDispatchSummary = {
     delivered: number;
@@ -573,8 +575,29 @@ export const tryDispatchContractEvent = async (eventId: string): Promise<void> =
         console.warn('contract_events: dispatch_pending');
     }
     // Integrations are told in the same request when possible; the worker retries otherwise.
+    // Older events of the same contract that are still waiting go first, to keep feed order.
     try {
-        await fanOutIntegrationEvents({ eventId, limit: 1, budgetMs: 1_000 });
+        await fanOutIntegrationEvents({
+            eventId,
+            limit: MAX_INLINE_INTEGRATION_FANOUT,
+            budgetMs: 1_000,
+        });
+    } catch {
+        console.warn('integration_events: fanout_pending');
+    }
+};
+
+/**
+ * Inline fan-out of a contract's integration-only events (retirement, re-consent pause) right
+ * after the mutation that wrote them committed. Bounded; the worker finishes what is left.
+ */
+export const tryFanOutContractIntegrationEvents = async (contractId: string): Promise<void> => {
+    try {
+        await fanOutIntegrationEvents({
+            contractId,
+            limit: MAX_INLINE_INTEGRATION_FANOUT,
+            budgetMs: 1_000,
+        });
     } catch {
         console.warn('integration_events: fanout_pending');
     }

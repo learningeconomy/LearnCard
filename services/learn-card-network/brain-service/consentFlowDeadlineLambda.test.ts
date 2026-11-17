@@ -78,8 +78,15 @@ it('boots from the secrets bundle and keeps warm deadline work independent of se
         return { SecretString: JSON.stringify(secrets) };
     });
     send.mockRejectedValue(new Error('Secrets Manager unavailable after cold start'));
-    databaseRun.mockResolvedValue({
-        records: [{ get: () => ({ toNumber: () => 2 }) }],
+    // Two terms are suspended; the expiry scan finds its watermark and no candidates.
+    databaseRun.mockImplementation(async (query: string) => {
+        if (query.includes("SET terms.status = 'suspended'")) {
+            return { records: [{ get: () => ({ toNumber: () => 2 }) }] };
+        }
+        if (query.includes('ConsentFlowJobState') && query.includes('RETURN')) {
+            return { records: [{ get: () => '2026-01-01T23:59:00.000Z' }] };
+        }
+        return { records: [] };
     });
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-01-02T00:00:00.000Z'));
@@ -90,7 +97,7 @@ it('boots from the secrets bundle and keeps warm deadline work independent of se
     // The forwarded context must prevent database writes after a slow cold start.
     await expect(
         consentFlowDeadlineHandler({}, { getRemainingTimeInMillis: () => 1_000 } as Context)
-    ).resolves.toEqual({ suspended: 0 });
+    ).resolves.toEqual({ suspended: 0, expired: 0 });
     expect(databaseRun).not.toHaveBeenCalled();
     expect(loadedEnvironment).toHaveBeenCalledExactlyOnceWith(expect.objectContaining(secrets));
 
@@ -99,10 +106,27 @@ it('boots from the secrets bundle and keeps warm deadline work independent of se
         consentFlowDeadlineHandler({ now: '2099-01-01T00:00:00.000Z' }, {
             getRemainingTimeInMillis: () => 30_000,
         } as Context)
-    ).resolves.toEqual({ suspended: 2 });
-    expect(databaseRun).toHaveBeenCalledExactlyOnceWith(expect.any(String), {
-        now: '2026-01-02T00:00:00.000Z',
-    });
+    ).resolves.toEqual({ suspended: 2, expired: 0 });
+    const now = '2026-01-02T00:00:00.000Z';
+    const callsMatching = (text: string): unknown[][] =>
+        databaseRun.mock.calls.filter(([query]) => String(query).includes(text));
+
+    expect(callsMatching("SET terms.status = 'suspended'")).toEqual([
+        [expect.any(String), expect.objectContaining({ now })],
+    ]);
+    // The expiry scan reads both indexed ranges, 15 hours behind the stored watermark up to
+    // the server's own clock, then advances the watermark.
+    for (const label of ['ConsentFlowTerms', 'ConsentFlowContractVersion']) {
+        expect(callsMatching(`USING INDEX node:${label}(expiresAt)`)).toEqual([
+            [
+                expect.any(String),
+                expect.objectContaining({ from: '2026-01-01T08:59:00.000Z', now }),
+            ],
+        ]);
+    }
+    expect(callsMatching('WHERE state.through IS NULL OR state.through < $now')).toHaveLength(1);
+    // No statement may contain a line comment: the query runner collapses whitespace.
+    for (const [query] of databaseRun.mock.calls) expect(String(query)).not.toContain('//');
     expect(send).toHaveBeenCalledOnce();
     expect(deadlineAppImport).toHaveBeenCalledOnce();
 });

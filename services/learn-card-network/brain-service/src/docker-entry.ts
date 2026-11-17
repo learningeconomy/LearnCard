@@ -5,7 +5,7 @@ import {
     purgeExpiredIntegrationEvents,
     runIntegrationEventPass,
 } from '@helpers/integration-events.helpers';
-import { suspendExpiredConsentFlowTerms } from '@helpers/consentflow-deadline.helpers';
+import { runConsentFlowDeadlinePass } from '@helpers/consentflow-deadline.helpers';
 import { configureInboxBatchBodyLimit } from '@helpers/inbox-batch-http.helpers';
 import { environment } from '@environment';
 import Fastify from 'fastify';
@@ -83,7 +83,7 @@ const runContractEventPass = (): void => {
 };
 const runConsentDeadlinePass = (): void => {
     if (consentDeadlineStopped) return;
-    consentDeadlinePass = suspendExpiredConsentFlowTerms()
+    consentDeadlinePass = runConsentFlowDeadlinePass()
         .catch(() => {
             console.warn('consent_deadline: recovery_pending');
         })

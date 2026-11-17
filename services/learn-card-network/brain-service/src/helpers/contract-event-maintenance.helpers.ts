@@ -11,6 +11,10 @@ export const contractEventMaintenanceSchema = [
     'CREATE INDEX integration_event_feed IF NOT EXISTS FOR (r:IntegrationEvent) ON (r.integrationId, r.sequence)',
     'CREATE INDEX integration_event_due IF NOT EXISTS FOR (r:IntegrationEvent) ON (r.deliveryState, r.nextAttemptAt)',
     'CREATE INDEX integration_event_purge IF NOT EXISTS FOR (r:IntegrationEvent) ON (r.purgeAt)',
+    'CREATE CONSTRAINT consent_job_state_id IF NOT EXISTS FOR (s:ConsentFlowJobState) REQUIRE s.id IS UNIQUE',
+    'CREATE INDEX consent_terms_expiry IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.expiresAt)',
+    'CREATE INDEX consent_terms_id IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.id)',
+    'CREATE INDEX consent_contract_version_expiry IF NOT EXISTS FOR (v:ConsentFlowContractVersion) ON (v.expiresAt)',
 ];
 
 let schemaReady: Promise<void> | undefined;

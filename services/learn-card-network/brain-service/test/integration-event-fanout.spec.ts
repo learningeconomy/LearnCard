@@ -105,7 +105,7 @@ describe('fanOutIntegrationEvents', () => {
 
         const summary = await fanOutIntegrationEvents({ limit: 10, budgetMs: 20_000 });
 
-        expect(summary).toEqual({ events: 1, records: 4 });
+        expect(summary).toEqual({ events: 1, records: 3 });
         expect(await isFlagged('event-consent')).toBe(false);
 
         const subject = {
@@ -144,12 +144,8 @@ describe('fanOutIntegrationEvents', () => {
         expect(recipientRecord).not.toHaveProperty('externalReferenceId');
         expect(recipientRecord?.termsUri).toBe(termsUri);
 
-        // The requester sees the reference and the subject, but not the terms URI.
-        const [requesterRecord] = await recordsFor('int-requester');
-        expect(requesterRecord?.role).toBe('requester');
-        expect(requesterRecord?.externalReferenceId).toBe('case-9');
-        expect(requesterRecord?.subject).toEqual(subject);
-        expect(requesterRecord).not.toHaveProperty('termsUri');
+        // A requester that is not a current recipient no longer hears about consent events.
+        expect(await recordsFor('int-requester')).toEqual([]);
 
         // Not enabled, enabled after the event, or not part of the audience: nothing.
         expect(await recordsFor('int-disabled')).toEqual([]);
@@ -303,8 +299,8 @@ describe('fanOutIntegrationEvents', () => {
 
         const summary = await fanOutIntegrationEvents();
 
-        // owner 2, requester 2, writer 1, recipient 1
-        expect(summary).toEqual({ events: 1, records: 6 });
+        // owner 2, requester 1 (the acceptance only), writer 1, recipient 1
+        expect(summary).toEqual({ events: 1, records: 5 });
 
         const ownerRecords = await recordsFor('int-owner');
 
@@ -318,9 +314,10 @@ describe('fanOutIntegrationEvents', () => {
         expect(ownerRecords[0]).not.toHaveProperty('termsUri');
         expect(ownerRecords[0]?.subject?.profileId).toBe('fan-veteran');
 
-        expect((await recordsFor('int-requester')).map(record => record.type)).toEqual([
-            'request_accepted',
-            'consent_created',
+        const requesterRecords = await recordsFor('int-requester');
+
+        expect(requesterRecords.map(record => [record.type, record.role])).toEqual([
+            ['request_accepted', 'requester'],
         ]);
         expect((await recordsFor('int-writer')).map(record => record.type)).toEqual([
             'consent_created',
@@ -367,6 +364,74 @@ describe('fanOutIntegrationEvents', () => {
 
         expect(ownerRecord?.type).toBe('request_sent');
         expect(ownerRecord).not.toHaveProperty('subject');
+    });
+
+    describe('audience of consent events', () => {
+        const withdraw = (id: string, requestedBy: string, occurredAt: string): Promise<boolean> =>
+            createIntegrationOnlyEvent({
+                id,
+                kind: 'consent_withdrawn',
+                contractId: 'fan-contract',
+                termsId: 'fan-terms',
+                requestedBy,
+                externalReferenceId: 'case-77',
+                occurredAt,
+                domain: DOMAIN,
+            });
+
+        it('gives a requester that is a current recipient the recipient role and its own reference', async () => {
+            await withdraw('event-aud-1', 'fan-recipient', OCCURRED_AT);
+            await fanOutIntegrationEvents();
+
+            const [record] = await recordsFor('int-recipient');
+
+            expect(record?.role).toBe('recipient');
+            expect(record?.externalReferenceId).toBe('case-77');
+            expect(record?.termsUri).toBe(constructUri('terms', 'fan-terms', DOMAIN));
+        });
+
+        it('stops consent events for a requester that was removed from the contract, but not its request events', async () => {
+            await run(
+                `MATCH (:ConsentFlowContract {id: 'fan-contract'})-[share:SHARES_DATA_WITH]->(:Profile {profileId: 'fan-recipient'})
+                 DELETE share`
+            );
+            await withdraw('event-aud-2', 'fan-recipient', OCCURRED_AT);
+            await createIntegrationOnlyEvent({
+                id: 'event-aud-3',
+                kind: 'consent_updated',
+                contractId: 'fan-contract',
+                termsId: 'fan-terms',
+                requestedBy: 'fan-recipient',
+                occurredAt: '2026-02-02T00:00:00.000Z',
+                domain: DOMAIN,
+            });
+            await fanOutIntegrationEvents();
+
+            expect(await recordsFor('int-recipient')).toEqual([]);
+            expect((await recordsFor('int-owner')).map(record => record.type)).toEqual([
+                'consent_withdrawn',
+                'consent_updated',
+            ]);
+
+            await createIntegrationOnlyEvent({
+                id: 'event-aud-4',
+                kind: 'request_cancelled',
+                contractId: 'fan-contract',
+                subjectProfileId: 'fan-veteran',
+                requestedBy: 'fan-recipient',
+                externalReferenceId: 'case-78',
+                occurredAt: '2026-02-03T00:00:00.000Z',
+                domain: DOMAIN,
+            });
+            await fanOutIntegrationEvents();
+
+            const records = await recordsFor('int-recipient');
+
+            expect(records.map(record => [record.type, record.role])).toEqual([
+                ['request_cancelled', 'requester'],
+            ]);
+            expect(records[0]?.externalReferenceId).toBe('case-78');
+        });
     });
 
     describe('failing events', () => {
@@ -423,6 +488,140 @@ describe('fanOutIntegrationEvents', () => {
                 occurredAt,
                 domain: DOMAIN,
             });
+
+        /** Makes the audience lookup of one contract throw until stop() is called. */
+        const failContract = (target: string): { stop: () => void; attempts: () => number } => {
+            const original = neogma.queryRunner.run.bind(neogma.queryRunner);
+            let failing = true;
+            let count = 0;
+
+            vi.spyOn(neogma.queryRunner, 'run').mockImplementation(((
+                query: string,
+                params?: Record<string, unknown>
+            ) => {
+                if (
+                    failing &&
+                    query.includes('(contract:ConsentFlowContract {id: $contractId})') &&
+                    params?.contractId === target
+                ) {
+                    count++;
+
+                    return Promise.reject(new Error('audience failed'));
+                }
+
+                return original(query, params);
+            }) as typeof neogma.queryRunner.run);
+
+            return {
+                stop: (): void => {
+                    failing = false;
+                },
+                attempts: (): number => count,
+            };
+        };
+
+        const ownerTypesAndIds = async (): Promise<string[]> =>
+            (await recordsFor('int-owner')).map(record => record.eventId);
+
+        const setupOrdering = async (): Promise<void> => {
+            await run(
+                `MATCH (owner:Profile {profileId: 'fan-owner'})
+                 CREATE (other:ConsentFlowContract {id: 'fan-contract-2'})-[:CREATED_BY]->(owner)`
+            );
+            await createEvent('x-old', 'fan-contract', '2026-02-01T00:00:00.000Z');
+            await createEvent('x-new', 'fan-contract', '2026-02-02T00:00:00.000Z');
+            await createEvent('y-old', 'fan-contract-2', '2026-02-01T00:00:00.000Z');
+        };
+
+        it('holds back newer events of a contract while an older one is in backoff, without touching other contracts', async () => {
+            const spy = failContract('fan-contract');
+
+            await setupOrdering();
+
+            const first = await fanOutIntegrationEvents();
+
+            // x-old failed, x-new was skipped in the same pass, y-old went through.
+            expect(first.events).toBe(1);
+            expect(spy.attempts()).toBe(1);
+            expect(await isFlagged('x-old')).toBe(true);
+            expect(await isFlagged('x-new')).toBe(true);
+            expect(Number((await eventState('x-new')).integrationFanoutAttempts || 0)).toBe(0);
+            expect(await ownerTypesAndIds()).toEqual(['y-old']);
+
+            // Later passes keep waiting while x-old is in backoff.
+            const second = await fanOutIntegrationEvents();
+
+            expect(second.events).toBe(0);
+            expect(spy.attempts()).toBe(1);
+            expect(await ownerTypesAndIds()).toEqual(['y-old']);
+        });
+
+        it('fans a contract out in order once the older event succeeds', async () => {
+            const spy = failContract('fan-contract');
+
+            await setupOrdering();
+            await fanOutIntegrationEvents();
+            spy.stop();
+            await makeDue('x-old');
+
+            const summary = await fanOutIntegrationEvents();
+
+            expect(summary.events).toBe(2);
+            expect(await ownerTypesAndIds()).toEqual(['y-old', 'x-old', 'x-new']);
+            expect(await isFlagged('x-old')).toBe(false);
+            expect(await isFlagged('x-new')).toBe(false);
+        });
+
+        it('lets the newer events flow once the older one is abandoned', async () => {
+            const spy = failContract('fan-contract');
+
+            vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            await setupOrdering();
+            await run(
+                `MATCH (event:ConsentFlowEvent {id: 'x-old'})
+                 SET event.integrationFanoutAttempts = $attempts`,
+                { attempts: MAX_FANOUT_ATTEMPTS - 1 }
+            );
+            await fanOutIntegrationEvents();
+
+            expect(spy.attempts()).toBe(1);
+            expect(await isFlagged('x-old')).toBe(false);
+            expect(await isFlagged('x-new')).toBe(true);
+
+            spy.stop();
+
+            const summary = await fanOutIntegrationEvents();
+
+            expect(summary.events).toBe(1);
+            expect(await ownerTypesAndIds()).toEqual(['y-old', 'x-new']);
+        });
+
+        it('does not fan out a newer event inline while an older event of its contract is in backoff', async () => {
+            const spy = failContract('fan-contract');
+
+            await setupOrdering();
+            await fanOutIntegrationEvents({ eventId: 'x-old' });
+            expect(spy.attempts()).toBe(1);
+            spy.stop();
+
+            await expect(fanOutIntegrationEvents({ eventId: 'x-new' })).resolves.toEqual({
+                events: 0,
+                records: 0,
+            });
+            await expect(fanOutIntegrationEvents({ contractId: 'fan-contract' })).resolves.toEqual({
+                events: 0,
+                records: 0,
+            });
+            expect(await isFlagged('x-new')).toBe(true);
+            expect(await ownerTypesAndIds()).toEqual([]);
+
+            await makeDue('x-old');
+
+            const summary = await fanOutIntegrationEvents({ eventId: 'x-new' });
+
+            expect(summary.events).toBe(2);
+            expect(await ownerTypesAndIds()).toEqual(['x-old', 'x-new']);
+        });
 
         afterEach(() => {
             vi.restoreAllMocks();

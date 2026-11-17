@@ -34,6 +34,7 @@ import {
     ConsentFlowDataQueryValidator,
     ConsentFlowDataForDidQueryValidator,
     PaginatedConsentFlowDataForDidValidator,
+    PaginatedContractConnectionsValidator,
     PaginatedContractCredentialsValidator,
     VCValidator,
     JWEValidator,
@@ -85,6 +86,8 @@ import {
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
 import { removeRequestedForRelationship } from '@accesslayer/consentflowcontract/relationships/delete';
+import { getContractConnections } from '@accesslayer/consentflowcontract/relationships/connections';
+import { InvalidContractConnectionsCursorError } from '@helpers/contract-connections-cursor.helpers';
 import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile, getProfileIdFromString } from '@helpers/did.helpers';
 import {
@@ -127,6 +130,7 @@ import {
     addRecipientToContract,
     removeRecipientFromContract,
     canReadContractData,
+    canReadContractConnections,
 } from '@accesslayer/consentflowcontract/relationships/recipients';
 
 const publicContractRecipient = (domain: string, recipient: ProfileType) => {
@@ -775,6 +779,57 @@ export const contractsRouter = t.router({
                 cursor: results.nextCursor,
                 records: data,
             };
+        }),
+
+    getContractConnections: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/consent-flow-contracts/connections',
+                tags: ['Contracts'],
+                summary: 'Get the current connections of a contract',
+                description:
+                    'Snapshot of who is currently connected to a contract: one record per consenter whose terms are live, awaiting re-consent or suspended, and not expired. Identifiers only. To stay in sync, read `latestCursor` from the Integration event feed, page through this snapshot, then follow the feed from that cursor; take a new snapshot when the feed answers CURSOR_EXPIRED. The caller must be the contract owner, a contract writer or a data recipient. A profile that only sent a referral and is no longer a data recipient cannot read it, and receives no consent events for the contract either. Each request reads a bounded number of rows, so a page can hold fewer than `limit` records, or none, while `hasMore` is true: keep following `cursor` until `hasMore` is false.',
+            },
+            requiredScope: 'contracts-data:read',
+        })
+        .input(
+            z.object({
+                contractUri: z.string(),
+                limit: z.number().int().min(1).max(200).default(100),
+                cursor: z.string().optional(),
+            })
+        )
+        .output(PaginatedContractConnectionsValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const contract = await getContractByUri(decodeURIComponent(input.contractUri));
+
+            if (!contract) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
+            }
+
+            if (!(await canReadContractConnections(contract.id, profile.profileId))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not in the contract data audience',
+                });
+            }
+
+            try {
+                return await getContractConnections(contract.id, profile.profileId, {
+                    limit: input.limit,
+                    cursor: input.cursor,
+                    domain: ctx.domain,
+                });
+            } catch (error) {
+                if (error instanceof InvalidContractConnectionsCursorError) {
+                    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid cursor' });
+                }
+
+                throw error;
+            }
         }),
 
     getConsentedData: profileRoute
