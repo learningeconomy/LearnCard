@@ -318,7 +318,7 @@ One event is sent per expiry time, and its `eventId` contains that time (`<terms
 The terms status is not changed by expiry, and the [connections snapshot](#connections-snapshot) leaves expired consents out by the same rule.
 
 {% hint style="warning" %}
-**A category's `shareUntil` passing does not emit an event.** `shareUntil` is set per credential category inside the terms. When it passes, the consented data reads stop returning that category's data, but the connection stays live: no `consent_expired`, no `consent_updated`, and the connection snapshot is unaffected. If your system depends on a category's data, read the consented data again when you need it (or on a schedule) instead of waiting for an event.
+**A category's `shareUntil` passing is not an expiry.** `shareUntil` is set per credential category inside the terms. When it passes, the consented data reads stop returning that category's data, but the connection stays live: it does not emit `consent_expired`, and the connection snapshot is unaffected. The consented data read is always the source of truth for what a category currently returns.
 {% endhint %}
 
 ## Verify the signature

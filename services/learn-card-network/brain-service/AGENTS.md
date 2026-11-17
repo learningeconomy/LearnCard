@@ -717,7 +717,7 @@ A failure of the integration pass is caught and logged; it must never stop profi
 - **Never log** webhook URLs, secrets, subject identifiers or reference ids. Log lines are fixed strings such as `integration_events: delivery_failed`.
 - **The secret is returned in two places only, once each:** `setIntegrationWebhook` when it creates the Integration's first secret, and `rotateIntegrationWebhookSecret`. The webhook URL is written only by `setIntegrationWebhook` (`updateIntegration` does not accept it). No read route returns a secret, encrypted or not.
 - `sendIntegrationTestEvent` posts an `integration.test` event synchronously, returns `{ delivered, httpStatus, latencyMs, error }`, never writes it to the feed, works while events are disabled, and is limited to 10 per Integration per minute with `enforceRateLimits` (Redis fixed window, key `integration-webhook-test:<id>`, fails closed).
-- `consent_expired` is keyed by the expiry instant (`${termsId}:expired:${expiresAt}`, instants remembered in `terms.expiredEventFor`), so a renewed consent that expires again emits again. A category's `shareUntil` passing emits nothing.
+- `consent_expired` is keyed by the expiry instant (`${termsId}:expired:${expiresAt}`, instants remembered in `terms.expiredEventFor`), so a renewed consent that expires again emits again. A category's `shareUntil` passing is not an expiry and never emits `consent_expired`.
 - Routes authorize with `isIntegrationAssociatedWithProfile`: the caller must own the Integration.
 
 ### Key Files
