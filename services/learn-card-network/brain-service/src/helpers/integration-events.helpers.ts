@@ -643,9 +643,14 @@ export const recordIntegrationWebhookOutcomes = async (
 
     // The forward-only guard below compares ISO strings with `<`. That is correct only because
     // every writer stores toISOString() values.
+    // The statement takes the Integration node's write lock before it reads the URL and the
+    // stored health, so two overlapping writers (worker passes, a test ping) cannot both decide
+    // from the same stale values, and a URL change cannot slip in between the check and the write.
     try {
         await neogma.queryRunner.run(
             `MATCH (integration:Integration {id: $id})
+             SET integration.eventSeqLock = coalesce(integration.eventSeqLock, 0) + 1
+             WITH integration
              WHERE integration.webhookUrl = $webhookUrl
              WITH integration,
                  ($successAt IS NOT NULL AND (integration.webhookLastSuccessAt IS NULL
