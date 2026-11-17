@@ -28,7 +28,10 @@ import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { getBoostById } from '@accesslayer/boost/read';
 import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
-import { tryDispatchContractEvent } from '@helpers/contract-events.helpers';
+import {
+    tryDispatchContractEvent,
+    tryFanOutContractIntegrationEvents,
+} from '@helpers/contract-events.helpers';
 
 export type StoredContractVersion = {
     id: string;
@@ -718,7 +721,14 @@ export const updateConsentFlowContractVersion = async (
                      term.newOptionsUntil=CASE WHEN $kind = 'expanded_optional' THEN $optionsUntil ELSE term.newOptionsUntil END,
                      term.updatedAt=$createdAt)
              FOREACH (_ IN CASE WHEN $kind = 'requires_consent' AND term.status = 'live' THEN [1] ELSE [] END |
-                 SET term.status='needs_reconsent', term.reconsentDeadline=coalesce(term.reconsentDeadline,$deadline), term.updatedAt=$createdAt))
+                 SET term.status='needs_reconsent', term.reconsentDeadline=coalesce(term.reconsentDeadline,$deadline), term.updatedAt=$createdAt
+                 CREATE (:ConsentFlowEvent {
+                     id:term.id + $pausedEventSuffix, contractId:c.id, termsId:term.id,
+                     domain:$eventDomain, kind:'consent_paused', reason:'needs_reconsent',
+                     requestId:term.\`referral.requestId\`, requestedBy:term.\`referral.requestedBy\`,
+                     externalReferenceId:term.\`referral.externalReferenceId\`,
+                     integrationFanoutPending:true, createdAt:$createdAt
+                 })))
          CREATE (event:ConsentFlowEvent {
              id:$eventId, contractId:c.id, fromId:owner.profileId, ownerId:owner.profileId,
              domain:$eventDomain, kind:'contract_updated', payload:$eventPayload,
@@ -778,6 +788,8 @@ export const updateConsentFlowContractVersion = async (
             eventId,
             eventDomain: domain,
             eventPayload: JSON.stringify(notificationData),
+            // Integration-only event per terms paused by this version.
+            pausedEventSuffix: `:paused:${currentVersion + 1}`,
         }
     );
     if (!committed.records.length)
@@ -786,5 +798,6 @@ export const updateConsentFlowContractVersion = async (
             message: 'Contract changed concurrently; retry the update',
         });
     await tryDispatchContractEvent(eventId);
+    await tryFanOutContractIntegrationEvents(contractId);
     return result;
 };

@@ -348,16 +348,26 @@ const FANOUT_MAX_RETRY_DELAY_MS = 60 * 60_000;
  * Turns every ConsentFlowEvent flagged with integrationFanoutPending into one IntegrationEvent
  * per subscribed integration, then removes the flag. Safe to run concurrently and to retry:
  * records are MERGEd by id and a sequence number is only consumed when a record is created.
+ *
+ * Events are always taken oldest first. With `eventId`, the pass covers that event and every
+ * older flagged event of the same contract; with `contractId`, every flagged event of that
+ * contract. This keeps a contract's feed in the order things happened even when an earlier
+ * event (for example one written by a scheduled job) was still waiting for the worker.
+ *
  * A failing event is retried with a backoff (60 seconds doubling to 1 hour) and given up on
  * after MAX_FANOUT_ATTEMPTS (about three days): the flag is removed and
  * integrationFanoutFailedAt is set, so the event can be found and re-flagged by hand.
+ * An event in backoff is skipped by every variant, so one failing event cannot hold back the
+ * rest of its contract; that event then reaches the feed later than newer ones.
  */
 export const fanOutIntegrationEvents = async ({
     eventId,
+    contractId,
     limit = 100,
     budgetMs = 20_000,
 }: {
     eventId?: string;
+    contractId?: string;
     limit?: number;
     budgetMs?: number;
 } = {}): Promise<IntegrationFanOutSummary> => {
@@ -365,24 +375,38 @@ export const fanOutIntegrationEvents = async ({
     const summary: IntegrationFanOutSummary = { events: 0, records: 0 };
     const batchLimit = int(Math.max(1, Math.min(500, Math.trunc(limit))));
 
-    if (!eventId) await ensureContractEventMaintenance();
+    if (!eventId && !contractId) await ensureContractEventMaintenance();
 
     // An event that failed is not due again until its backoff has passed, so a few failing
     // events cannot fill the batch and starve newer ones. The set behind the index seek is only
     // the flagged events, which is small; the filter and the sort run on that set.
     const pending = await neogma.queryRunner.run(
         eventId
-            ? `MATCH (event:ConsentFlowEvent {id: $eventId})
+            ? `MATCH (target:ConsentFlowEvent {id: $eventId})
+               WHERE target.integrationFanoutPending = true
+               MATCH (event:ConsentFlowEvent)
                WHERE event.integrationFanoutPending = true
                    AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
-               RETURN event LIMIT $limit`
-            : `MATCH (event:ConsentFlowEvent)
-               USING INDEX event:ConsentFlowEvent(integrationFanoutPending)
-               WHERE event.integrationFanoutPending = true
-                   AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
-               RETURN event ORDER BY coalesce(event.integrationFanoutNextAt, event.createdAt), event.id
-               LIMIT $limit`,
-        { eventId: eventId ?? null, limit: batchLimit, now: new Date().toISOString() }
+                   AND (event.id = target.id OR (event.contractId = target.contractId
+                       AND event.createdAt < target.createdAt))
+               RETURN event ORDER BY event.createdAt, event.id LIMIT $limit`
+            : contractId
+              ? `MATCH (event:ConsentFlowEvent)
+                 WHERE event.integrationFanoutPending = true AND event.contractId = $contractId
+                     AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
+                 RETURN event ORDER BY event.createdAt, event.id LIMIT $limit`
+              : `MATCH (event:ConsentFlowEvent)
+                 USING INDEX event:ConsentFlowEvent(integrationFanoutPending)
+                 WHERE event.integrationFanoutPending = true
+                     AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
+                 RETURN event ORDER BY coalesce(event.integrationFanoutNextAt, event.createdAt), event.id
+                 LIMIT $limit`,
+        {
+            eventId: eventId ?? null,
+            contractId: contractId ?? null,
+            limit: batchLimit,
+            now: new Date().toISOString(),
+        }
     );
 
     for (const row of pending.records) {
