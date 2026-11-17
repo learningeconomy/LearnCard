@@ -7,7 +7,7 @@ const buildOptions = {
     // target: 'es6',
     target: 'es2020',
     sourcemap: true,
-    external: ['isomorphic-fetch', 'isomorphic-webcrypto', '@learncard/ceramic-plugin', '@learncard/core', '@learncard/types'],
+    external: ['isomorphic-fetch', '@learncard/ceramic-plugin', '@learncard/core', '@learncard/types'],
 };
 
 const configurations = [

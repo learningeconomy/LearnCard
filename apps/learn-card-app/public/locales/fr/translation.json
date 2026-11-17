@@ -1900,7 +1900,7 @@
             }
         },
         "transcript": {
-            "title": "Votre relevé de notes officiel, dans votre poche.",
+            "title": "Votre relevé de notes, dans votre poche.",
             "desc": "Recevez vos registres scolaires directement dans votre compte.",
             "get": "Obtenir Mon Relevé",
             "notNow": "Pas Maintenant",
@@ -4179,6 +4179,7 @@
             "noPathways": "Aucun parcours d'apprentissage disponible pour cette session.",
             "pathwayModalSubtitle": "Sélectionnez un parcours pour continuer à explorer ce sujet",
             "pathwayModalTitle": "Poursuivez votre parcours d'apprentissage",
+            "personalizedSuggestionsUnavailable": "Les suggestions personnalisées ne sont pas disponibles. Vous pouvez continuer à discuter.",
             "placeholderInsights": "Posez n'importe quelle question...",
             "placeholderTutor": "Dites ce que vous voulez...",
             "resumeTopicEmphasis": "Sélectionnez un sujet",
@@ -10477,8 +10478,8 @@
         "connectWithClassLink": "Se connecter avec ClassLink",
         "notNow": "Pas maintenant",
         "heroTitle": "Vos dossiers scolaires, entre vos mains",
-        "heroSubhead": "Connectez votre compte scolaire pour accéder à vos dossiers officiels.",
-        "benefit1": "Demandez votre relevé de notes officiel",
+        "heroSubhead": "Connectez votre compte scolaire pour accéder à vos dossiers scolaires.",
+        "benefit1": "Demandez votre relevé de notes",
         "benefit2": "Partagez-le avec les universités et les employeurs",
         "benefit3": "Vous décidez qui le voit",
         "chooseProvider": "Choisissez comment votre école se connecte",

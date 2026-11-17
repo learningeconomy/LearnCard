@@ -17,6 +17,7 @@ import { applyNativeViewportRestrictions } from './helpers/applyNativeViewportRe
 import { getLaunchDarklyProviderProps } from './constants/runtimeLaunchDarkly';
 import App from './App';
 import { markStartupPhase } from './helpers/startupDiagnostics';
+import { prewarmDidKit } from 'learn-card-base/helpers/walletHelpers';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
@@ -34,6 +35,9 @@ applyNativeViewportRestrictions(Capacitor.isNativePlatform());
 installInsetSimulator();
 
 markStartupPhase('entry');
+
+// Warm DIDKit's WASM while tenant config and flags load; the wallet build awaits the same init.
+prewarmDidKit();
 
 (async () => {
     // Native analytics can collect independently of React. On web this call

@@ -47,26 +47,36 @@ export const useMyCampaigns = (): CampaignMessageSource => {
         };
     }, [scope, initWallet]);
 
+    // The LearnCard Network plugin reports did:key until its profile loads, then the profile's
+    // did:web, on the same wallet. That is the same account, not a profile change (LEARN-CARD-APP-M7A).
+    // A switched profile is still matched by DID only.
+    const isSameAccount = useCallback(
+        (current: typeof wallet | undefined) =>
+            Boolean(
+                current && (current.id.did() === accountDid || (!switchedDid && current === wallet))
+            ),
+        [wallet, accountDid, switchedDid]
+    );
     // Cached queries can outlive one host mount. Validate the live identity rather
     // than rejecting a read solely because its original component unmounted.
-    const isCurrentProfile = useCallback(
-        () =>
-            Boolean(
-                scope &&
-                currentUserStore.get.currentUser() &&
-                networkStore.get.networkUrl() === network &&
-                (switchedProfileStore.get.switchedDid() ?? walletStore.get.wallet()?.id.did()) ===
-                    accountDid
-            ),
-        [scope, network, accountDid]
-    );
+    const isCurrentProfile = useCallback(() => {
+        const liveSwitchedDid = switchedProfileStore.get.switchedDid();
+        return Boolean(
+            scope &&
+            currentUserStore.get.currentUser() &&
+            networkStore.get.networkUrl() === network &&
+            (liveSwitchedDid
+                ? liveSwitchedDid === accountDid
+                : isSameAccount(walletStore.get.wallet()))
+        );
+    }, [scope, network, accountDid, isSameAccount]);
     const getWallet = useCallback(async () => {
         if (!isCurrentProfile()) throw new Error('Campaign profile changed');
         const current = await initRef.current();
-        if (!isCurrentProfile() || current.id.did() !== accountDid)
+        if (!isCurrentProfile() || !isSameAccount(current))
             throw new Error('Campaign profile changed');
         return current;
-    }, [isCurrentProfile, accountDid]);
+    }, [isCurrentProfile, isSameAccount]);
 
     const query = useQuery<MyCampaign[]>({
         queryKey: ['useMyCampaigns', network, accountDid],
