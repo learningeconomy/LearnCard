@@ -27,6 +27,7 @@ import type {
     ConsentFlowContractUpdateResult,
     ConsentFlowContractVersion,
     ConsentFlowConsentStatus,
+    ConsentFlowExternalGrantExpectation,
 } from '@learncard/types';
 import {
     LCNProfile,
@@ -814,7 +815,11 @@ export type LearnCardNetworkPluginMethods = {
         did: string,
         contractUri: string,
         credential: VC | JWE,
-        boostUri: string
+        boostUri: string,
+        options?: {
+            /** Require this external consent revision/hash at the locked delivery gate. */
+            expectedExternalGrant?: ConsentFlowExternalGrantExpectation;
+        }
     ) => Promise<string>;
 
     consentToContract: (

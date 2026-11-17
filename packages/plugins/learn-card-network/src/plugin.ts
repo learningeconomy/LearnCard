@@ -2969,7 +2969,8 @@ export async function getLearnCardNetworkPlugin(
                 did,
                 contractUri,
                 credential,
-                boostUri
+                boostUri,
+                options
             ) => {
                 await ensureUser();
 
@@ -2978,6 +2979,9 @@ export async function getLearnCardNetworkPlugin(
                     contractUri,
                     credential,
                     boostUri,
+                    ...(options?.expectedExternalGrant !== undefined
+                        ? { expectedExternalGrant: options.expectedExternalGrant }
+                        : {}),
                 });
             },
 
