@@ -4,7 +4,6 @@ import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
-import IntroSlides from './components/intro-slides/IntroSlides';
 import { IonApp, setupIonicReact } from '@ionic/react';
 
 import { lazyWithRetry, useIsLoggedIn } from 'learn-card-base';
@@ -51,6 +50,8 @@ setupIonicReact({ swipeBackEnabled: false });
 
 // Dynamically import the component
 const LazyFullApp = lazyWithRetry(() => import('./FullApp'));
+// Native first launch only (signed out, slides not yet seen); keeps Swiper out of every other start.
+const IntroSlides = lazyWithRetry(() => import('./components/intro-slides/IntroSlides'));
 
 const App: React.FC = () => {
     useIntroSlidesCompleted();
@@ -71,7 +72,9 @@ const App: React.FC = () => {
         return (
             <IonReactRouter history={history}>
                 <IonApp>
-                    <IntroSlides />
+                    <React.Suspense fallback={null}>
+                        <IntroSlides />
+                    </React.Suspense>
                 </IonApp>
             </IonReactRouter>
         );
