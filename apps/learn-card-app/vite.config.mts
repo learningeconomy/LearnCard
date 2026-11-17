@@ -152,6 +152,56 @@ const collectWorkspacePackages = (): string[] => {
 
 const workspacePackages = collectWorkspacePackages();
 
+/**
+ * Production builds: resolve the root entry of each @learncard/* workspace package to its TypeScript
+ * source (the `development` export) instead of its prebuilt ESM dist. Several dist bundles inline their
+ * own copies of zod and @learncard/types (brain-client, openid4vc, render-method, sss-key-manager, helpers...),
+ * so the startup bundle carried ~6 copies that Rollup cannot dedupe or tree-shake. Only root entries of
+ * @learncard/* are redirected; npm packages keep production export conditions (a global `development`
+ * condition would pull dev builds of e.g. micromark). didkit keeps its dist (wasm asset wiring).
+ */
+const SOURCE_ENTRY_EXCLUDE = new Set(['@learncard/didkit-plugin', '@learncard/didkit-plugin-node']);
+const collectWorkspaceSourceEntries = (): Map<string, string> => {
+    const entries = new Map<string, string>();
+    const walk = (dir: string, depth: number): void => {
+        if (depth < 0 || !existsSync(dir)) return;
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            if (!entry.isDirectory() || ['node_modules', 'dist', 'src'].includes(entry.name)) continue;
+            const child = path.join(dir, entry.name);
+            const pkgPath = path.join(child, 'package.json');
+            if (existsSync(pkgPath)) {
+                try {
+                    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
+                        name?: string;
+                        exports?: Record<string, unknown>;
+                    };
+                    const root = pkg.exports?.['.'] as { development?: unknown } | undefined;
+                    const dev = typeof root?.development === 'string' ? root.development : undefined;
+                    if (pkg.name?.startsWith('@learncard/') && dev && !SOURCE_ENTRY_EXCLUDE.has(pkg.name)) {
+                        const file = path.join(child, dev);
+                        if (existsSync(file)) entries.set(pkg.name, file);
+                    }
+                } catch {
+                    // Ignore unreadable/partial package.json files during the scan.
+                }
+            }
+            walk(child, depth - 1);
+        }
+    };
+    walk(path.resolve(__dirname, '../../packages'), 2);
+    return entries;
+};
+
+const workspaceSourceEntries = (): Plugin => {
+    const entries = collectWorkspaceSourceEntries();
+    return {
+        name: 'learncard-workspace-source-entries',
+        enforce: 'pre',
+        apply: 'build',
+        resolveId: id => entries.get(id) ?? null,
+    };
+};
+
 export default defineConfig(async ({ mode, command }) => {
     const loadedEnvironment = loadEnv(mode, __dirname, '');
     const environment = parseLearnCardAppEnvironment(
@@ -188,6 +238,7 @@ export default defineConfig(async ({ mode, command }) => {
     return {
         plugins: [
             devCacheRevalidation,
+            ...(useSourceConditions ? [] : [workspaceSourceEntries()]),
             tailwindcss(),
             registryProxyDevServer(),
             i18nImportGuard(),
