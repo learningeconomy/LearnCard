@@ -750,7 +750,8 @@ export const syncCredentialsToContract = async (
     },
     categories: Record<string, string[]>,
     audienceVersion?: number,
-    domain?: string
+    domain?: string,
+    automatic = false
 ): Promise<boolean> => {
     if (
         relationship.terms.status === 'needs_reconsent' ||
@@ -829,6 +830,9 @@ export const syncCredentialsToContract = async (
                     new BindParam({
                         expectedContractVersion: Number(relationship.contract.currentVersion ?? 1),
                         audienceVersion: audienceVersion ?? null,
+                        // Automatic delivery must still have category-wide consent at the write.
+                        // Explicit selections keep the existing selective-sharing behavior.
+                        automaticCategories: automatic ? Object.keys(categories) : [],
                         termsMutationVersion: Number(relationship.terms.mutationVersion ?? 0),
                         now: new Date().toISOString(),
                         params: flattenObject({
@@ -851,6 +855,12 @@ export const syncCredentialsToContract = async (
                 .where(
                     `coalesce(terms.mutationVersion, 0) = $termsMutationVersion AND terms.status = 'live'
             AND (CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END)
+            AND all(category IN $automaticCategories WHERE
+                terms['terms.read.credentials.categories.' + category + '.sharing'] = true
+                AND terms['terms.read.credentials.categories.' + category + '.shareAll'] = true
+                AND (CASE WHEN terms['terms.read.credentials.categories.' + category + '.shareUntil'] IS NULL
+                    OR trim(toString(terms['terms.read.credentials.categories.' + category + '.shareUntil'])) = ''
+                    THEN true ELSE datetime(terms['terms.read.credentials.categories.' + category + '.shareUntil']) > datetime.realtime() END))
             AND (CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END)`
                 )
                 .set('terms += $params')

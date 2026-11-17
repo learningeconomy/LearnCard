@@ -3071,7 +3071,8 @@ export async function getLearnCardNetworkPlugin(
                 _learnCard,
                 termsUri,
                 categories,
-                audienceVersion
+                audienceVersion,
+                automatic
             ) => {
                 await ensureUser();
 
@@ -3079,6 +3080,7 @@ export async function getLearnCardNetworkPlugin(
                     termsUri,
                     categories,
                     audienceVersion,
+                    automatic,
                 });
             },
 
