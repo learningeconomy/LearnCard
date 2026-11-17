@@ -858,8 +858,9 @@ export const syncCredentialsToContract = async (
             AND all(category IN $automaticCategories WHERE
                 terms['terms.read.credentials.categories.' + category + '.sharing'] = true
                 AND terms['terms.read.credentials.categories.' + category + '.shareAll'] = true
-                AND (terms['terms.read.credentials.categories.' + category + '.shareUntil'] IS NULL
-                    OR datetime(terms['terms.read.credentials.categories.' + category + '.shareUntil']) > datetime.realtime()))
+                AND (CASE WHEN terms['terms.read.credentials.categories.' + category + '.shareUntil'] IS NULL
+                    OR trim(toString(terms['terms.read.credentials.categories.' + category + '.shareUntil'])) = ''
+                    THEN true ELSE datetime(terms['terms.read.credentials.categories.' + category + '.shareUntil']) > datetime.realtime() END))
             AND (CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END)`
                 )
                 .set('terms += $params')

@@ -453,6 +453,35 @@ describe('contract data recipients', () => {
         }
     );
 
+    it.each([
+        ['empty', ''],
+        ['whitespace-only', '   '],
+        ['null', null],
+        ['future', '2999-01-01T00:00:00Z'],
+    ] as const)(
+        'accepts automatic delivery with %s category expiry',
+        async (_label, shareUntil) => {
+            const uri = await create();
+            const { termsUri } = await accept(uri);
+            const categoryKey = 'terms.read.credentials.categories.Achievement.shareUntil';
+            await neogma.queryRunner.run(
+                'MATCH (terms:ConsentFlowTerms {id: $id}) SET terms[$key] = $shareUntil',
+                { id: getIdFromUri(termsUri), key: categoryKey, shareUntil }
+            );
+            await expect(
+                learner.clients.fullAuth.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: { Achievement: [`urn:synthetic:automatic-${_label}`] },
+                    automatic: true,
+                })
+            ).resolves.toBe(true);
+            const data = await owner.clients.fullAuth.contracts.getConsentedDataForContract({
+                uri,
+            });
+            expect(JSON.stringify(data)).toContain(`urn:synthetic:automatic-${_label}`);
+        }
+    );
+
     it('accepts automatic delivery with current consent and explicit selective delivery', async () => {
         const uri = await create();
         const { termsUri } = await accept(uri);
