@@ -302,6 +302,26 @@ describe('share-until events', () => {
         expect(await nextShareUntilOf(termsUri)).toBe(later);
     });
 
+    it('still reports a due date when the terms are updated before the job runs', async () => {
+        const termsUri = await consent(
+            termsWith({ Achievement: hoursFromNow(5), ID: hoursFromNow(9) })
+        );
+        const passed = new Date(Date.now() - 60_000).toISOString();
+
+        // The Achievement date passes, and the learner edits the terms before the job has run.
+        await setStoredDate(termsUri, 'Achievement', passed, passed);
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms: termsWith({ Achievement: passed, ID: hoursFromNow(9) }),
+        });
+        expect(await nextShareUntilOf(termsUri)).toBe(passed);
+
+        expect(await process()).toBe(1);
+        expect(await shareUntilEvents()).toHaveLength(1);
+        expect(await nextShareUntilOf(termsUri)).not.toBe(passed);
+        expect(await process()).toBe(0);
+    });
+
     it('backfills existing terms in bounded batches and stops once done', async () => {
         const termsUri = await consent(termsWith({ Achievement: hoursFromNow(4) }));
         const expected = await nextShareUntilOf(termsUri);
