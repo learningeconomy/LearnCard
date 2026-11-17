@@ -1,8 +1,11 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense } from 'react';
 import type LottiePlayer from 'react-lottie-player';
+import { lazyWithRetry } from 'learn-card-base/helpers/lazyWithRetry';
 
-// react-lottie-player bundles lottie-web (~300 KB). Load it the first time an animation renders, not at startup.
-const Lottie = lazy(() => import('react-lottie-player'));
+// react-lottie-player bundles lottie-web (~300 KB). Load it the first time an animation renders, not at
+// startup. lazyWithRetry, like the app's other lazy components: a stale chunk after a deploy is retried
+// once in place, then reloads within the shared budget, instead of failing the first render.
+const Lottie = lazyWithRetry(() => import('react-lottie-player'));
 
 type LottieProps = React.ComponentProps<typeof LottiePlayer>;
 
