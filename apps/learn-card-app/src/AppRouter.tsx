@@ -56,7 +56,7 @@ import { useFirebase } from './hooks/useFirebase';
 import { useKeycloakRedirect } from './auth/useKeycloakRedirect';
 import { assertCurrentKeycloakReauth } from './auth/keycloakReauth';
 import MyLearnCardModal from './components/learncard/MyLearnCardModal';
-import { useSentryIdentify } from './constants/sentry';
+import { useSentryIdentify } from './constants/useSentryIdentify';
 
 import { Modals, getLogger } from 'learn-card-base';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';

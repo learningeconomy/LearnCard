@@ -20,7 +20,7 @@ import { applyNativeViewportRestrictions } from './helpers/applyNativeViewportRe
 import { getLaunchDarklyProviderProps } from './constants/runtimeLaunchDarkly';
 import App from './App';
 import { markStartupPhase } from './helpers/startupDiagnostics';
-import { prewarmDidKit } from 'learn-card-base/helpers/walletHelpers';
+import { prewarmDidKit } from 'learn-card-base/helpers/didkitPrewarm';
 import { startNativeSQLiteInit } from 'learn-card-base/hooks/useSQLiteStorage';
 import { loadDeferredFontStylesheets } from './deferredFontStylesheets';
 
