@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import useCurrentUser from './useGetCurrentUser';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
 import { useWallet } from 'learn-card-base';
@@ -10,6 +10,10 @@ import { getContactEmail } from '../helpers/syntheticEmail';
 import { getLogger } from '../logging/logger';
 const log = getLogger('use-launch-darkly-identify');
 
+type LDClient = NonNullable<ReturnType<typeof useLDClient>>;
+type LDIdentifyContext = Parameters<LDClient['identify']>[0];
+type IdentifyCallback = NonNullable<Parameters<LDClient['identify']>[2]>;
+
 export type UseLaunchDarklyOptions = {
     debug?: boolean;
 };
@@ -20,6 +24,27 @@ export const useLaunchDarklyIdentify = (options: UseLaunchDarklyOptions = {}) =>
 
     const ldClient = useLDClient();
     const { getDID } = useWallet();
+    // useWallet() returns a new getDID every render. Read it through a ref so it is not
+    // an identify dependency.
+    const getDIDRef = useRef(getDID);
+    useEffect(() => {
+        getDIDRef.current = getDID;
+    }, [getDID]);
+
+    // The context LaunchDarkly was last asked to identify. Every identify call cancels
+    // the flag request of the one before it, so re-identifying the same context on
+    // re-render can leave flags unloaded until renders stop (LC-2433).
+    const lastContextKeyRef = useRef<string | null>(null);
+    const identifyOnce = useCallback(
+        (context: LDIdentifyContext, onDone: IdentifyCallback) => {
+            if (!ldClient) return;
+            const contextKey = JSON.stringify(context);
+            if (lastContextKeyRef.current === contextKey) return;
+            lastContextKeyRef.current = contextKey;
+            ldClient.identify(context, undefined, onDone);
+        },
+        [ldClient]
+    );
 
     const { data: webDid, isLoading: webDidLoading } = useGetDid(
         'web',
@@ -48,7 +73,7 @@ export const useLaunchDarklyIdentify = (options: UseLaunchDarklyOptions = {}) =>
                 }
 
                 if (!did) {
-                    const fallback = await getDID();
+                    const fallback = await getDIDRef.current();
                     if (typeof fallback === 'string') did = fallback;
                 }
 
@@ -64,7 +89,7 @@ export const useLaunchDarklyIdentify = (options: UseLaunchDarklyOptions = {}) =>
 
                 if (options.debug) log.debug('🔍 LaunchDarkly User Context Identified', context);
 
-                ldClient.identify(context, undefined, (err, flags) => {
+                identifyOnce(context, (err, flags) => {
                     if (err) {
                         log.error('❌ Error Updating LaunchDarkly Context', err);
                     } else if (options.debug) {
@@ -78,7 +103,7 @@ export const useLaunchDarklyIdentify = (options: UseLaunchDarklyOptions = {}) =>
                 );
             }
         } else {
-            ldClient?.identify(ANONYMOUS_CONTEXT, undefined, (err, flags) => {
+            identifyOnce(ANONYMOUS_CONTEXT, (err, flags) => {
                 if (err) {
                     log.error('❌ Error Revoking LaunchDarkly Context', err);
                 } else if (options.debug) {
@@ -99,7 +124,7 @@ export const useLaunchDarklyIdentify = (options: UseLaunchDarklyOptions = {}) =>
         webDidLoading,
         keyDid,
         keyDidLoading,
-        getDID,
+        identifyOnce,
         options.debug,
     ]);
 
@@ -111,6 +136,7 @@ export const useLaunchDarklyIdentify = (options: UseLaunchDarklyOptions = {}) =>
     // connection returns — LaunchDarkly's flag stream can go stale while offline,
     // and re-identifying forces an immediate flag refresh for whoever is active.
     useOnReconnect(() => {
+        lastContextKeyRef.current = null;
         identify();
     });
 };
