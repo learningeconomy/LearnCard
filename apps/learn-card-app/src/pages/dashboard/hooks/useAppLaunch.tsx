@@ -12,7 +12,10 @@ import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
 import * as m from '../../../paraglide/messages.js';
 
-import AppStoreDetailModal from '../../launchPad/AppStoreDetailModal';
+import { lazyModalContent } from '../../../components/generic/lazyModalContent';
+
+// Opened from an app tile; not needed to paint the dashboard.
+const AppStoreDetailModal = lazyModalContent(() => import('../../launchPad/AppStoreDetailModal'));
 import { EmbedIframeModal } from '../../launchPad/EmbedIframeModal';
 import AiTutorConnectedView from '../../launchPad/AiTutorConnectedView';
 import GuardianConsentLaunchModal from '../../launchPad/GuardianConsentLaunchModal';

@@ -7,7 +7,10 @@ import {
 } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 
-import ClaimBoost from '../../pages/claimBoost/ClaimBoost';
+import { lazyModalContent } from '../generic/lazyModalContent';
+
+// Opened after a scan; FullApp mounts this listener at startup.
+const ClaimBoost = lazyModalContent(() => import('../../pages/claimBoost/ClaimBoost'));
 import AddContactView, {
     AddContactViewMode,
 } from '../../pages/addressBook/addContactView/AddContactView';
