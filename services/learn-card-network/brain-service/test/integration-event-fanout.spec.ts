@@ -424,6 +424,140 @@ describe('fanOutIntegrationEvents', () => {
                 domain: DOMAIN,
             });
 
+        /** Makes the audience lookup of one contract throw until stop() is called. */
+        const failContract = (target: string): { stop: () => void; attempts: () => number } => {
+            const original = neogma.queryRunner.run.bind(neogma.queryRunner);
+            let failing = true;
+            let count = 0;
+
+            vi.spyOn(neogma.queryRunner, 'run').mockImplementation(((
+                query: string,
+                params?: Record<string, unknown>
+            ) => {
+                if (
+                    failing &&
+                    query.includes('(contract:ConsentFlowContract {id: $contractId})') &&
+                    params?.contractId === target
+                ) {
+                    count++;
+
+                    return Promise.reject(new Error('audience failed'));
+                }
+
+                return original(query, params);
+            }) as typeof neogma.queryRunner.run);
+
+            return {
+                stop: (): void => {
+                    failing = false;
+                },
+                attempts: (): number => count,
+            };
+        };
+
+        const ownerTypesAndIds = async (): Promise<string[]> =>
+            (await recordsFor('int-owner')).map(record => record.eventId);
+
+        const setupOrdering = async (): Promise<void> => {
+            await run(
+                `MATCH (owner:Profile {profileId: 'fan-owner'})
+                 CREATE (other:ConsentFlowContract {id: 'fan-contract-2'})-[:CREATED_BY]->(owner)`
+            );
+            await createEvent('x-old', 'fan-contract', '2026-02-01T00:00:00.000Z');
+            await createEvent('x-new', 'fan-contract', '2026-02-02T00:00:00.000Z');
+            await createEvent('y-old', 'fan-contract-2', '2026-02-01T00:00:00.000Z');
+        };
+
+        it('holds back newer events of a contract while an older one is in backoff, without touching other contracts', async () => {
+            const spy = failContract('fan-contract');
+
+            await setupOrdering();
+
+            const first = await fanOutIntegrationEvents();
+
+            // x-old failed, x-new was skipped in the same pass, y-old went through.
+            expect(first.events).toBe(1);
+            expect(spy.attempts()).toBe(1);
+            expect(await isFlagged('x-old')).toBe(true);
+            expect(await isFlagged('x-new')).toBe(true);
+            expect(Number((await eventState('x-new')).integrationFanoutAttempts || 0)).toBe(0);
+            expect(await ownerTypesAndIds()).toEqual(['y-old']);
+
+            // Later passes keep waiting while x-old is in backoff.
+            const second = await fanOutIntegrationEvents();
+
+            expect(second.events).toBe(0);
+            expect(spy.attempts()).toBe(1);
+            expect(await ownerTypesAndIds()).toEqual(['y-old']);
+        });
+
+        it('fans a contract out in order once the older event succeeds', async () => {
+            const spy = failContract('fan-contract');
+
+            await setupOrdering();
+            await fanOutIntegrationEvents();
+            spy.stop();
+            await makeDue('x-old');
+
+            const summary = await fanOutIntegrationEvents();
+
+            expect(summary.events).toBe(2);
+            expect(await ownerTypesAndIds()).toEqual(['y-old', 'x-old', 'x-new']);
+            expect(await isFlagged('x-old')).toBe(false);
+            expect(await isFlagged('x-new')).toBe(false);
+        });
+
+        it('lets the newer events flow once the older one is abandoned', async () => {
+            const spy = failContract('fan-contract');
+
+            vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            await setupOrdering();
+            await run(
+                `MATCH (event:ConsentFlowEvent {id: 'x-old'})
+                 SET event.integrationFanoutAttempts = $attempts`,
+                { attempts: MAX_FANOUT_ATTEMPTS - 1 }
+            );
+            await fanOutIntegrationEvents();
+
+            expect(spy.attempts()).toBe(1);
+            expect(await isFlagged('x-old')).toBe(false);
+            expect(await isFlagged('x-new')).toBe(true);
+
+            spy.stop();
+
+            const summary = await fanOutIntegrationEvents();
+
+            expect(summary.events).toBe(1);
+            expect(await ownerTypesAndIds()).toEqual(['y-old', 'x-new']);
+        });
+
+        it('does not fan out a newer event inline while an older event of its contract is in backoff', async () => {
+            const spy = failContract('fan-contract');
+
+            await setupOrdering();
+            await fanOutIntegrationEvents({ eventId: 'x-old' });
+            expect(spy.attempts()).toBe(1);
+            spy.stop();
+
+            await expect(fanOutIntegrationEvents({ eventId: 'x-new' })).resolves.toEqual({
+                events: 0,
+                records: 0,
+            });
+            await expect(fanOutIntegrationEvents({ contractId: 'fan-contract' })).resolves.toEqual({
+                events: 0,
+                records: 0,
+            });
+            expect(await isFlagged('x-new')).toBe(true);
+            expect(await ownerTypesAndIds()).toEqual([]);
+
+            await makeDue('x-old');
+
+            const summary = await fanOutIntegrationEvents({ eventId: 'x-new' });
+
+            expect(summary.events).toBe(2);
+            expect(await ownerTypesAndIds()).toEqual(['x-old', 'x-new']);
+        });
+
         afterEach(() => {
             vi.restoreAllMocks();
         });

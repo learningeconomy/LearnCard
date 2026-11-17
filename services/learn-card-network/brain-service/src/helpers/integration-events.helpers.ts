@@ -357,8 +357,15 @@ const FANOUT_MAX_RETRY_DELAY_MS = 60 * 60_000;
  * A failing event is retried with a backoff (60 seconds doubling to 1 hour) and given up on
  * after MAX_FANOUT_ATTEMPTS (about three days): the flag is removed and
  * integrationFanoutFailedAt is set, so the event can be found and re-flagged by hand.
- * An event in backoff is skipped by every variant, so one failing event cannot hold back the
- * rest of its contract; that event then reaches the feed later than newer ones.
+ *
+ * The feed keeps the order of a contract's events: an event is never fanned out while an older
+ * flagged event of the same contract is still waiting, in backoff or not yet processed. A failing
+ * event therefore holds back only the newer events of its own contract (until it succeeds or is
+ * abandoned); other contracts are unaffected. Within a pass a contract's events run oldest first
+ * and the rest of that contract is skipped once one fails. The inline `eventId` pass fans out
+ * nothing for a target whose contract has an older event in backoff, and the `contractId` pass
+ * stops at the first event of the contract that is in backoff. An abandoned event leaves a gap
+ * in the feed and unblocks the events behind it.
  */
 export const fanOutIntegrationEvents = async ({
     eventId,
@@ -377,42 +384,60 @@ export const fanOutIntegrationEvents = async ({
 
     if (!eventId && !contractId) await ensureContractEventMaintenance();
 
-    // An event that failed is not due again until its backoff has passed, so a few failing
-    // events cannot fill the batch and starve newer ones. The set behind the index seek is only
-    // the flagged events, which is small; the filter and the sort run on that set.
+    // The worker only takes events that are due and have no older flagged event of the same
+    // contract in backoff, oldest first, so a contract's eligible events are a prefix of its
+    // queue and a few failing events cannot fill the batch (they sit in backoff). The set behind
+    // the index seek is only the flagged events, which is small; the filters and the sort run on
+    // that set. The other variants read the flagged events of one contract and stop at the first
+    // one in backoff.
+    const now = new Date().toISOString();
     const pending = await neogma.queryRunner.run(
         eventId
             ? `MATCH (target:ConsentFlowEvent {id: $eventId})
                WHERE target.integrationFanoutPending = true
                MATCH (event:ConsentFlowEvent)
                WHERE event.integrationFanoutPending = true
-                   AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
                    AND (event.id = target.id OR (event.contractId = target.contractId
-                       AND event.createdAt < target.createdAt))
+                       AND (event.createdAt < target.createdAt
+                           OR (event.createdAt = target.createdAt AND event.id < target.id))))
                RETURN event ORDER BY event.createdAt, event.id LIMIT $limit`
             : contractId
               ? `MATCH (event:ConsentFlowEvent)
                  WHERE event.integrationFanoutPending = true AND event.contractId = $contractId
-                     AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
                  RETURN event ORDER BY event.createdAt, event.id LIMIT $limit`
               : `MATCH (event:ConsentFlowEvent)
                  USING INDEX event:ConsentFlowEvent(integrationFanoutPending)
                  WHERE event.integrationFanoutPending = true
                      AND (event.integrationFanoutNextAt IS NULL OR event.integrationFanoutNextAt <= $now)
-                 RETURN event ORDER BY coalesce(event.integrationFanoutNextAt, event.createdAt), event.id
+                     AND NOT EXISTS {
+                         MATCH (older:ConsentFlowEvent)
+                         WHERE older.integrationFanoutPending = true
+                             AND older.contractId = event.contractId
+                             AND older.integrationFanoutNextAt > $now
+                             AND (older.createdAt < event.createdAt
+                                 OR (older.createdAt = event.createdAt AND older.id < event.id))
+                     }
+                 RETURN event ORDER BY event.createdAt, event.id
                  LIMIT $limit`,
         {
             eventId: eventId ?? null,
             contractId: contractId ?? null,
             limit: batchLimit,
-            now: new Date().toISOString(),
+            now,
         }
     );
+    // Contracts whose remaining events must wait: one of their events is in backoff or just failed.
+    const held = new Set<string>();
 
     for (const row of pending.records) {
         if (Date.now() >= deadline) break;
 
         const event: Record<string, unknown> = row.get('event').properties;
+        const eventContractId = optionalString(event.contractId) ?? '';
+        const nextAt = optionalString(event.integrationFanoutNextAt);
+
+        if (nextAt !== undefined && nextAt > now) held.add(eventContractId);
+        if (held.has(eventContractId)) continue;
 
         try {
             summary.records += await fanOutEvent(event);
@@ -424,6 +449,8 @@ export const fanOutIntegrationEvents = async ({
             );
             summary.events++;
         } catch {
+            held.add(eventContractId);
+
             // Never log identifiers.
             const attempts =
                 (event.integrationFanoutAttempts === undefined

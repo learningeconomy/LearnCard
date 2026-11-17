@@ -363,6 +363,83 @@ describe('a client that uses only the feed and the snapshot', () => {
         expect(client.stats().snapshots).toBe(1);
     });
 
+    it('keeps the order of a contract when the fan-out of consent_paused fails once', async () => {
+        const [l0, l1] = learners as [Actor, Actor, Actor, Actor, Actor, Actor];
+        const termsL0 = await consent(l0);
+
+        await consent(l1);
+        await runJobs();
+
+        const client = createFeedOnlyClient(owner, integrationId, contractUri);
+
+        await client.sync();
+
+        // The audience lookup of this contract fails until `failing` is cleared.
+        const original = neogma.queryRunner.run.bind(neogma.queryRunner);
+        let failing = true;
+
+        vi.spyOn(neogma.queryRunner, 'run').mockImplementation(((
+            query: string,
+            params?: Record<string, unknown>
+        ) => {
+            if (
+                failing &&
+                query.includes('(contract:ConsentFlowContract {id: $contractId})') &&
+                params?.contractId === idOf(contractUri)
+            ) {
+                return Promise.reject(new Error('audience failed'));
+            }
+
+            return original(query, params);
+        }) as typeof neogma.queryRunner.run);
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri: contractUri,
+            changes: { name: 'Convergence contract, new identity' },
+            reason: 'Review the new request identity.',
+            reconsentDeadline: new Date(Date.now() + 60 * 60_000).toISOString(),
+        });
+        await runJobs();
+
+        // The failure was a one-off: consent_paused now waits for its retry (in backoff).
+        failing = false;
+
+        // l0 re-consents while consent_paused is still waiting for its retry.
+        await l0.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsL0,
+            terms: normalFullTerms,
+            acceptVersion: 2,
+        });
+        await runJobs();
+        await client.sync();
+
+        // Nothing reached the feed out of order: the newer event waits behind the older one.
+        expect(client.state()[l0.profileId]).toBe('live');
+
+        await run(
+            `MATCH (event:ConsentFlowEvent)
+             WHERE event.integrationFanoutPending = true AND event.integrationFanoutNextAt IS NOT NULL
+             SET event.integrationFanoutNextAt = '2000-01-01T00:00:00.000Z'`
+        );
+        await runJobs();
+        await client.sync();
+
+        const expected = await reference();
+
+        expect(expected).toEqual({
+            [l0.profileId]: 'live',
+            [l1.profileId]: 'needs_reconsent',
+        });
+        expect(client.state()).toEqual(expected);
+
+        const late = createFeedOnlyClient(owner, integrationId, contractUri);
+
+        await late.sync();
+        expect(late.state()).toEqual(expected);
+        expect(client.stats().snapshots).toBe(1);
+    });
+
     it('follows the accepted version when a contract update changed the expiry', async () => {
         const [l0, l1, l2, l3] = learners as [Actor, Actor, Actor, Actor, Actor, Actor];
         const inOneHour = new Date(Date.now() + 60 * 60_000).toISOString();
