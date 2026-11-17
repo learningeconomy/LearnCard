@@ -400,7 +400,6 @@ const composeConfiguration = async (state: StackState): Promise<Record<string, u
             delete environment.SKILL_EMBEDDING_GOOGLE_API_KEY;
             if (name === 'brain') {
                 Object.assign(environment, {
-                    READABLE_DELIVERY_ENABLED: 'true',
                     READABLE_DELIVERY_LOCAL_KEY: randomBytes(32).toString('hex'),
                     READABLE_DELIVERY_KMS_KEY_ARN: '',
                     READABLE_DELIVERY_CLOUD_URL: `http://localhost:${state.ports.cloud}`,

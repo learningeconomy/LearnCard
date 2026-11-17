@@ -45,7 +45,6 @@ export const isLocalDeliveryRuntime = (): boolean =>
     !environment.LAMBDA_STAGE;
 
 const custody = (): ReturnType<typeof createDeliveryKeyCustody> => {
-    if (!environment.READABLE_DELIVERY_ENABLED) throw unavailable();
     if (
         !isLocalDeliveryRuntime() &&
         (environment.AWS_ENDPOINT_URL || environment.AWS_ENDPOINT_URL_KMS)

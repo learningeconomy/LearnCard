@@ -25,7 +25,6 @@ const mocks = vi.hoisted(() => ({
     verify: vi.fn(),
     trust: vi.fn(),
     environment: {
-        READABLE_DELIVERY_ENABLED: true,
         IS_OFFLINE: true,
         NODE_ENV: 'test',
         SKIP_DIDKIT_NAPI: true,
@@ -131,7 +130,6 @@ const vc = {
 
 beforeEach(() => {
     vi.resetAllMocks();
-    mocks.environment.READABLE_DELIVERY_ENABLED = true;
     mocks.provision.mockResolvedValue(undefined);
     mocks.generateKey.mockReturnValue({ kty: 'OKP', crv: 'Ed25519', x: 'public', d: 'private' });
     mocks.encryptKey.mockResolvedValue({ provider: 'local-v1', ciphertext: 'encrypted-key' });
@@ -200,13 +198,6 @@ describe('readable delivery authorization and projection', () => {
         expect(result.records[0]?.credential?.issuer).toBe(did);
         expect(JSON.stringify(result)).not.toContain('not-in-summary');
         expect(JSON.stringify(result)).not.toContain('logo.png');
-    });
-    it('fails closed while the feature is disabled', async () => {
-        mocks.environment.READABLE_DELIVERY_ENABLED = false;
-        await expect(readReadableDelivery('recipient', domain, input)).rejects.toMatchObject({
-            code: 'PRECONDITION_FAILED',
-        });
-        expect(mocks.decryptKey).not.toHaveBeenCalled();
     });
     it('rejects a malformed local DID that resolves to a different profile', async () => {
         await expect(

@@ -93,7 +93,6 @@ export const brainServiceEnvironmentShape = {
     OIDC_TRUSTED_ISSUERS: optionalEnvironmentString,
     OIDC_EXPECTED_AUDIENCE: optionalEnvironmentString,
     AWS_REGION: optionalEnvironmentString,
-    READABLE_DELIVERY_ENABLED: optionalEnvironmentBoolean.default(false),
     READABLE_DELIVERY_KMS_KEY_ARN: optionalEnvironmentString,
     READABLE_DELIVERY_LOCAL_KEY: optionalEnvironmentString,
     READABLE_DELIVERY_CLOUD_URL: optionalEnvironmentUrl,
