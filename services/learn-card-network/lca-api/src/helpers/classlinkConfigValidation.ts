@@ -1,4 +1,9 @@
 import {
+    ACCOUNT_CONTINUITY_CODE_DEFAULT,
+    AccountContinuityOverrideValidator,
+    type AccountContinuityPolicy,
+} from '../types/accountContinuity';
+import {
     ClassLinkTenantsValidator,
     TranscriptIssuersValidator,
     type ClassLinkConfig,
@@ -23,6 +28,15 @@ const isAllowedTranscriptIssuerEndpoint = (url: string, nodeEnv?: string): boole
 export const parseClassLinkTenants = (value?: string): ClassLinkConfig['tenants'] =>
     value?.trim() ? ClassLinkTenantsValidator.parse(JSON.parse(value)) : {};
 
+/**
+ * The code default with `CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT` applied. Throws when the value
+ * is not JSON matching `AccountContinuityOverrideValidator` (unknown keys included).
+ */
+export const parseAccountContinuityDefault = (value?: string): AccountContinuityPolicy => ({
+    ...ACCOUNT_CONTINUITY_CODE_DEFAULT,
+    ...(value?.trim() ? AccountContinuityOverrideValidator.parse(JSON.parse(value)) : {}),
+});
+
 /** Parse the only issuer source, applying the runtime transport policy. */
 export const parseTranscriptIssuers = (value?: string, nodeEnv?: string): TranscriptIssuers => {
     const issuers = value?.trim() ? TranscriptIssuersValidator.parse(JSON.parse(value)) : {};
@@ -42,8 +56,15 @@ export const parseTranscriptIssuers = (value?: string, nodeEnv?: string): Transc
 export const collectClassLinkConfigProblems = (
     env: Readonly<Record<string, string | undefined>>
 ): string[] => {
-    if (!env.CLASSLINK_TENANTS?.trim()) return [];
     const problems: string[] = [];
+    try {
+        parseAccountContinuityDefault(env.CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT);
+    } catch {
+        problems.push(
+            'CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT must be JSON matching the account-continuity schema.'
+        );
+    }
+    if (!env.CLASSLINK_TENANTS?.trim()) return problems;
     let tenants: ClassLinkConfig['tenants'] | undefined;
     let issuers: TranscriptIssuers | undefined;
     try {
@@ -58,6 +79,16 @@ export const collectClassLinkConfigProblems = (
             'TRANSCRIPT_ISSUERS must match the issuer schema (endpoint, audience, did, optional profileId); endpoints require HTTPS, except loopback HTTP outside production.'
         );
     }
+
+    Object.values(tenants ?? {}).forEach((tenant, index) => {
+        if (
+            tenant.accountContinuity !== undefined &&
+            !AccountContinuityOverrideValidator.safeParse(tenant.accountContinuity).success
+        )
+            problems.push(
+                `CLASSLINK_TENANTS entry ${index + 1} has an invalid accountContinuity value (personal email is off for that district).`
+            );
+    });
 
     if (tenants && issuers) {
         Object.values(tenants).forEach((tenant, index) => {
@@ -105,4 +136,38 @@ export const collectClassLinkConfigProblems = (
         );
     }
     return problems;
+};
+
+/**
+ * Account-continuity settings that are valid but risky. Like the problems above, messages
+ * never include configuration values or tenant IDs.
+ */
+export const collectAccountContinuityWarnings = (
+    env: Readonly<Record<string, string | undefined>>
+): string[] => {
+    const warnings: string[] = [];
+    let defaultPolicy: AccountContinuityPolicy;
+    let tenants: ClassLinkConfig['tenants'];
+    try {
+        defaultPolicy = parseAccountContinuityDefault(env.CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT);
+        tenants = parseClassLinkTenants(env.CLASSLINK_TENANTS);
+    } catch {
+        return warnings; // Reported as problems.
+    }
+    const check = (label: string, policy: AccountContinuityPolicy): void => {
+        if (policy.personalEmail !== 'all') return;
+        if (policy.minimumAge === undefined)
+            warnings.push(`${label} lets students add a personal email with no minimumAge.`);
+        if (policy.approval === 'guardian')
+            warnings.push(
+                `${label} requires guardian approval, which does not exist yet, so every student is refused.`
+            );
+    };
+    check('CLASSLINK_ACCOUNT_CONTINUITY_DEFAULT', defaultPolicy);
+    Object.values(tenants).forEach((tenant, index) => {
+        const parsed = AccountContinuityOverrideValidator.safeParse(tenant.accountContinuity);
+        if (tenant.accountContinuity !== undefined && parsed.success)
+            check(`CLASSLINK_TENANTS entry ${index + 1}`, { ...defaultPolicy, ...parsed.data });
+    });
+    return warnings;
 };

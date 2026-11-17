@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { client } from '@mongo';
 import cache from '@cache';
 import {
+    createRecoverySession,
     getRecoveryOtpAttemptsCacheKey,
     getRecoveryOtpCacheKey,
     getRecoveryOtpLockCacheKey,
@@ -18,7 +19,17 @@ import {
 } from '@models';
 import * as delivery from '../src/services/delivery';
 import { Collection } from 'mongodb';
-import { getClassLinkIdentitiesCollection } from '../src/models/ClassLinkIdentity';
+import {
+    getClassLinkIdentitiesCollection,
+    upsertClassLinkIdentity,
+} from '../src/models/ClassLinkIdentity';
+import { getAuthSubjectsCollection } from '../src/models/AuthSubject';
+import { getClassLinkConfig } from '../src/helpers/classlink.config';
+
+vi.mock('../src/helpers/classlink.config', async importOriginal => {
+    const actual = await importOriginal<typeof import('../src/helpers/classlink.config')>();
+    return { ...actual, getClassLinkConfig: vi.fn(actual.getClassLinkConfig) };
+});
 
 import { getClient, getUser } from './helpers/getClient';
 
@@ -594,6 +605,204 @@ describe('P0-3 lost-identity recovery sessions', () => {
             vi.restoreAllMocks();
             await collection.deleteMany({ recoveryEmail });
             await cache.node.flushall();
+        }
+    });
+});
+
+describe('ClassLink account continuity (LC-2409)', () => {
+    const tenantId = 'tenant-keep';
+    const now = new Date();
+    const confirmed = (type: 'passkey' | 'escrow', credentialId?: string) => ({
+        type,
+        createdAt: now,
+        confirmationStatus: 'confirmed' as const,
+        confirmedAt: now,
+        shareVersion: 1,
+        ...(credentialId ? { credentialId } : {}),
+    });
+    const captureSend = () => {
+        const send = vi.fn().mockResolvedValue(undefined);
+        vi.spyOn(delivery, 'getDeliveryService').mockReturnValue({ send });
+        return send;
+    };
+    const lastCode = (send: ReturnType<typeof vi.fn>): string =>
+        String(
+            (send.mock.calls.at(-1)?.[0] as { templateModel?: { verificationCode?: string } })
+                ?.templateModel?.verificationCode
+        );
+
+    afterEach(async () => {
+        vi.restoreAllMocks();
+        vi.mocked(getClassLinkConfig).mockReset();
+        await cache.node.flushall();
+    });
+
+    it('lets a student who verified a personal email and a passkey recover a lost school login', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const uid = `classlink_${suffix}`;
+        const personal = `personal-${suffix}@example.com`;
+        const { learnCard } = await getUser('3'.repeat(64));
+        const did = learnCard.id.did();
+        const collection = getUserKeysCollection();
+        const student = makeRecoverableUser(
+            `${uid}@users.classlink.invalid`,
+            'unused@example.com',
+            uid,
+            did
+        );
+        delete student.recoveryEmail;
+        delete student.recoveryEmailVerifiedAt;
+        student.recoveryMethods = [confirmed('passkey', `cred-${suffix}`)];
+        await collection.insertOne(student);
+        await upsertClassLinkIdentity({
+            identityKey: `classlink:${tenantId}:${suffix}`,
+            tenantId,
+            sub: 'upstream',
+            role: 'student',
+            isMinorHint: true,
+            sealedStateStudentId: null,
+            state: 'XX',
+            firebaseUid: uid,
+            subject: `subject-${suffix}`,
+            lastAuthTime: now,
+        });
+        vi.mocked(getClassLinkConfig).mockReturnValue({
+            clientId: 'test',
+            clientSecret: 'test',
+            discoveryUrl: 'https://example.edu/discovery',
+            redirectUris: [],
+            maxAuthAgeSeconds: 86400,
+            tenants: {},
+            accountContinuity: {
+                enabled: true,
+                defaultPolicy: { personalEmail: 'all', approval: 'none' },
+                tenants: {},
+            },
+        });
+
+        try {
+            const owner = getClient({ did, isChallengeValid: true });
+            let send = captureSend();
+            await owner.classlink.startPersonalEmail({ email: personal });
+            await expect(
+                owner.classlink.verifyPersonalEmail({ email: personal, code: lastCode(send) })
+            ).resolves.toEqual({ success: true, recoveryEmailSet: true });
+
+            // The school login is lost: the personal email now drives the OTP recovery.
+            send = captureSend();
+            await getClient().keys.startRecoverySession({ email: personal });
+            expect(send).toHaveBeenCalledWith(expect.objectContaining({ to: personal }));
+            const verified = await getClient().keys.verifyRecoverySession({
+                email: personal,
+                code: lastCode(send),
+            });
+            expect(verified.recoveryMethods).toEqual([
+                expect.objectContaining({ type: 'passkey' }),
+            ]);
+            const record = JSON.parse(
+                (await cache.node.get(getRecoverySessionCacheKey(verified.recoverySessionToken)))!
+            ) as { proof?: string };
+            expect(record.proof).toBe('email-otp');
+
+            const recovered = await getClient().keys.useRecoverySession({
+                recoverySessionToken: verified.recoverySessionToken,
+                type: 'passkey',
+                credentialId: `cred-${suffix}`,
+            });
+            const newUid = `new-${suffix}`;
+            await expect(
+                owner.keys.completeRecoveryRebind({
+                    recoverySessionToken: recovered.rebindSessionToken,
+                    newAuthToken: makeMockToken(`new-${suffix}@example.com`, newUid),
+                    providerType: 'firebase',
+                    primaryDid: did,
+                    authShare: { encryptedData: 'rotated', encryptedDek: '', iv: '' },
+                })
+            ).resolves.toMatchObject({ success: true });
+            expect((await collection.findOne({ primaryDid: did }))?.authProviders).toEqual([
+                { type: 'firebase', id: newUid },
+            ]);
+        } finally {
+            await collection.deleteMany({ primaryDid: did });
+            await getClassLinkIdentitiesCollection().deleteMany({ tenantId });
+            await getAuthSubjectsCollection().deleteMany({ identityKey: `email:${personal}` });
+        }
+    });
+
+    it('refuses a recover token earned by any proof other than the email OTP', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const recoveryEmail = `recovery-proof-${suffix}@example.com`;
+        const uid = `old-${suffix}`;
+        const { learnCard } = await getUser('4'.repeat(64));
+        const collection = getUserKeysCollection();
+        await collection.insertOne(
+            makeRecoverableUser(
+                `old-proof-${suffix}@example.edu`,
+                recoveryEmail,
+                uid,
+                learnCard.id.did()
+            )
+        );
+        const authProvider = { type: 'firebase' as const, id: uid };
+
+        try {
+            for (const proof of ['passkey', 'phrase', 'EMAIL-OTP']) {
+                const forged = await createRecoverySession({
+                    scope: 'recover',
+                    authProvider,
+                    proof: proof as 'email-otp',
+                });
+                await expect(
+                    getClient().keys.useRecoverySession({
+                        recoverySessionToken: forged,
+                        type: 'phrase',
+                    })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            }
+            // Tokens minted before the field existed (no proof) and email-OTP tokens still work.
+            for (const proof of [undefined, 'email-otp' as const]) {
+                const token = await createRecoverySession({
+                    scope: 'recover',
+                    authProvider,
+                    ...(proof ? { proof } : {}),
+                });
+                await expect(
+                    getClient().keys.useRecoverySession({
+                        recoverySessionToken: token,
+                        type: 'phrase',
+                    })
+                ).resolves.toMatchObject({ shareVersion: 1 });
+            }
+        } finally {
+            await collection.deleteMany({ recoveryEmail });
+        }
+    });
+
+    it('counts a confirmed escrow method alone for the recovery gate', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const recoveryEmail = `recovery-escrow-only-${suffix}@example.com`;
+        const { learnCard } = await getUser('5'.repeat(64));
+        const collection = getUserKeysCollection();
+        const userKey = makeRecoverableUser(
+            `old-escrow-only-${suffix}@example.edu`,
+            recoveryEmail,
+            `old-${suffix}`,
+            learnCard.id.did()
+        );
+        userKey.recoveryMethods = [confirmed('escrow')];
+        await collection.insertOne(userKey);
+
+        try {
+            const send = captureSend();
+            await getClient().keys.startRecoverySession({ email: recoveryEmail });
+            expect(send).toHaveBeenCalledTimes(1);
+            const verified = await getClient().keys.verifyRecoverySession({
+                email: recoveryEmail,
+                code: lastCode(send),
+            });
+            expect(verified.recoveryMethods.map(method => method.type)).toEqual(['escrow']);
+        } finally {
+            await collection.deleteMany({ recoveryEmail });
         }
     });
 });

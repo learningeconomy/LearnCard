@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { JWTPayload } from 'jose';
+import type { AccountContinuitySettings } from './accountContinuity';
 
 /** Lowercase alphanumeric plus hyphens, 1-64 chars, starting with a letter or digit. */
 export const TRANSCRIPT_ISSUER_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -82,6 +83,12 @@ export const ClassLinkTenantConfigValidator = z.object({
      * per student so the transcript flow can be tested end to end. Ignored in production.
      */
     testStateStudentIds: z.boolean().optional(),
+    /**
+     * Account-continuity override (`AccountContinuityOverrideValidator`). Parsed per district by
+     * `getClassLinkConfig`, so an invalid value turns personal email off for this district only
+     * instead of failing the whole tenant map.
+     */
+    accountContinuity: z.unknown().optional(),
 });
 
 export const ClassLinkTenantsValidator = z.record(z.string(), ClassLinkTenantConfigValidator);
@@ -106,6 +113,7 @@ export type ClassLinkConfig = {
     redirectUris: string[];
     tenants: z.infer<typeof ClassLinkTenantsValidator>;
     maxAuthAgeSeconds: number;
+    accountContinuity: AccountContinuitySettings;
 };
 
 export interface ClassLinkClaims extends JWTPayload {

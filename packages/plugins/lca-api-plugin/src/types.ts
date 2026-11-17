@@ -12,6 +12,29 @@ import {
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 
+/** Stable reasons a ClassLink account may not add a personal email. */
+export type ClassLinkAccountContinuityReason =
+    | 'disabled'
+    | 'district_off'
+    | 'students_excluded'
+    | 'status_unknown'
+    | 'below_minimum_age'
+    | 'age_unknown'
+    | 'approval_required';
+
+/** `classlink.getAccountContinuity`; never includes the district, policy or date of birth. */
+export type ClassLinkAccountContinuity = {
+    personalEmail: { allowed: boolean; reason?: ClassLinkAccountContinuityReason };
+    emailVerified: boolean;
+    maskedEmail?: string;
+    recoveryEmailVerified: boolean;
+    /** Any confirmed recovery method, escrow included (what the server's recovery gate counts). */
+    hasServerConfirmedMethod: boolean;
+    /** A confirmed method the user holds: passkey, phrase, backup file or email backup. */
+    hasUserRecoveryMethod: boolean;
+    nextStep: 'email' | 'method' | 'done';
+};
+
 export type SchoolConnection = {
     available: boolean;
     canConnect: boolean;
@@ -352,10 +375,17 @@ export type LCAPluginMethods = {
     ) => Promise<{ success: boolean; message?: string; token?: string }>;
     classlinkGetPersonalEmail: () => Promise<{ email?: string; verified: boolean }>;
     classlinkStartPersonalEmail: (args: { email: string }) => Promise<{ success: boolean }>;
-    classlinkVerifyPersonalEmail: (args: {
-        email: string;
-        code: string;
-    }) => Promise<{ success: boolean }>;
+    classlinkVerifyPersonalEmail: (args: { email: string; code: string }) => Promise<{
+        success: boolean;
+        /** The address also became the account's recovery email. */
+        recoveryEmailSet: boolean;
+        /** Not set as the recovery email: another account already uses it for recovery. */
+        recoveryEmailSkipped?: 'shared';
+    }>;
+    /** What a ClassLink account still needs to keep working after losing school access. */
+    classlinkGetAccountContinuity: () => Promise<ClassLinkAccountContinuity>;
+    /** Remove the personal email (sign-in link, matching recovery email, identity fields). */
+    classlinkRemovePersonalEmail: () => Promise<{ success: boolean }>;
     classlinkGetAuthorizeUrl: (args: {
         redirectUri: string;
         codeChallenge: string;

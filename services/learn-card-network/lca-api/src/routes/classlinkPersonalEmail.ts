@@ -1,11 +1,17 @@
 import { createHash, randomInt } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { accountRoute } from '@routes';
+import { accountRoute, type Context } from '@routes';
 import cache from '@cache';
+import {
+    loadAccountContinuity,
+    logAccountContinuityEvent,
+} from '@helpers/accountContinuity.helpers';
 import { resolveClassLinkContext } from '@helpers/classlinkContext.helpers';
 import { canDeletePersonalEmailSubject } from '@helpers/classlinkDeletion.helpers';
+import { maskEmail } from '@helpers/maskEmail';
 import { isSyntheticEmail } from '@helpers/syntheticEmail.helpers';
+import { ACCOUNT_CONTINUITY_REASONS, type AccountContinuityReason } from 'types/accountContinuity';
 import { getDeliveryService, getFrom } from '../services/delivery';
 import {
     findAuthSubjectByIdentityKey,
@@ -13,7 +19,17 @@ import {
     getAuthSubjectsCollection,
     getOrCreateAuthSubjectLinkedTo,
 } from '../models/AuthSubject';
-import { updateClassLinkIdentity } from '../models/ClassLinkIdentity';
+import {
+    getClassLinkIdentitiesCollection,
+    updateClassLinkIdentity,
+} from '../models/ClassLinkIdentity';
+import {
+    clearRecoveryEmailIfUnchanged,
+    hasOtherVerifiedRecoveryEmailHolder,
+    isRecoveryMethodConfirmed,
+    setRecoveryEmailByUserKeyId,
+    type MongoUserKeyType,
+} from '../models/UserKey';
 
 const personalEmail = z.string().trim().toLowerCase().email().max(254);
 const conflict = (): never => {
@@ -23,9 +39,20 @@ const conflict = (): never => {
     });
 };
 
-/** Address checks (start or verify) allowed per DID per 10 minutes. */
+/** Refusal copy per reason. Clients should key off the reason code, not this text. */
+const CONTINUITY_REFUSALS: Record<AccountContinuityReason, string> = {
+    disabled: 'Adding a personal email is not available yet.',
+    district_off: 'Your school has not turned on personal emails.',
+    students_excluded: 'Your school does not let students add a personal email.',
+    status_unknown: 'We could not check your account. Please try again later.',
+    below_minimum_age: 'You are not old enough to add a personal email.',
+    age_unknown: 'Add your date of birth to your profile to add a personal email.',
+    approval_required: 'A parent or guardian needs to approve this first.',
+};
+
+/** Address checks (start or verify) allowed per account per 10 minutes. */
 const PERSONAL_EMAIL_CHECK_LIMIT = 20;
-/** Codes sent per DID per 10 minutes. */
+/** Codes sent per account per 10 minutes. */
 const PERSONAL_EMAIL_SEND_LIMIT = 3;
 /** Wrong codes allowed per issued code before it is invalidated. */
 const PERSONAL_EMAIL_ATTEMPT_LIMIT = 5;
@@ -72,7 +99,7 @@ return 'wrong'
 const getRedis = () => cache.redis ?? cache.node;
 
 /**
- * Count one use of a per-DID budget and refuse once it is spent. The increment and the
+ * Count one use of a per-account budget and refuse once it is spent. The increment and the
  * check are one atomic script, so a burst of parallel calls cannot overrun the budget.
  * Fails open on Redis errors, like the shared limiter: the budget is a speed bump, and the
  * code check below does not fail open.
@@ -98,25 +125,45 @@ const codeKey = (identityKey: string): string =>
 const attemptKey = (identityKey: string): string =>
     `classlink-personal-email-attempts:${sha256Hex(identityKey)}`;
 
+type AccountContext = Pick<Context, 'authorizationHeader' | 'tenant'> & {
+    user: { did: string; isChallengeValid: boolean; accountDid: string };
+};
+
 /**
- * Validate the address for the caller's ClassLink account. Rate-limited per DID so the
+ * Validate the address for the caller's ClassLink account. Rate-limited per account so the
  * flow cannot be used to probe which addresses have LearnCard accounts. Whether the address
  * is already taken is only revealed once the caller has proven they read the code (see
- * `assertEmailAvailable`), so `start` answers the same for every address.
+ * `assertEmailAvailable`), so `start` answers the same for every address. Refuses with
+ * `FORBIDDEN` and `cause.reason` (a stable `AccountContinuityReason`) when the account
+ * continuity policy does not allow a personal email for this account.
  */
-const validateEmail = async (did: string, email: string) => {
+const validateEmail = async (ctx: AccountContext, email: string) => {
     await consumeBudget(
-        `classlink:rate:personal-email-check:${sha256Hex(did)}`,
+        `classlink:rate:personal-email-check:${sha256Hex(ctx.user.accountDid)}`,
         PERSONAL_EMAIL_CHECK_LIMIT,
         600,
         'Too many attempts. Please try again later.'
     );
-    const context = await resolveClassLinkContext(did);
+    const context = await resolveClassLinkContext(ctx.user.accountDid);
     if (!context.tenant)
         throw new TRPCError({
             code: 'PRECONDITION_FAILED',
             message: 'School settings are unavailable. Please try again later.',
         });
+    const continuity = await loadAccountContinuity(ctx, context.matched);
+    if (!continuity.decision.allowed) {
+        const { reason } = continuity.decision;
+        logAccountContinuityEvent('denied', {
+            tenantId: continuity.tenantId,
+            reason,
+            policyHash: continuity.policyHash,
+        });
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: CONTINUITY_REFUSALS[reason],
+            cause: { reason },
+        });
+    }
     if (isSyntheticEmail(email))
         throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -133,7 +180,30 @@ const validateEmail = async (did: string, email: string) => {
             message: 'Use a personal email, not your school email',
         });
     }
-    return context;
+    return { ...context, continuity };
+};
+
+/**
+ * Whether verifying `email` should also make it the account's recovery email. Never replaces
+ * a different recovery email the user verified themselves, and skips (without failing the
+ * sign-in link) an address another account already uses as its verified recovery email.
+ * `replaces` lists the stored verified values the later write may overwrite (see
+ * `setRecoveryEmailByUserKeyId`), so a change made in between is never overwritten.
+ */
+const planRecoveryEmail = async (
+    userKey: MongoUserKeyType,
+    previous: string | undefined,
+    email: string
+): Promise<{ set: boolean; skipped?: 'shared'; replaces: string[] }> => {
+    const current = userKey.recoveryEmail?.trim().toLowerCase();
+    const matches = current === previous || current === email;
+    const replaceable = !current || !userKey.recoveryEmailVerifiedAt || matches;
+    if (!replaceable || !userKey._id) return { set: false, replaces: [] };
+    if (await hasOtherVerifiedRecoveryEmailHolder(email, userKey._id))
+        return { set: false, skipped: 'shared', replaces: [] };
+    const replaces = [email, ...(previous ? [previous] : [])];
+    if (matches && userKey.recoveryEmail) replaces.push(userKey.recoveryEmail);
+    return { set: true, replaces };
 };
 
 /** Refuse an address another account already signs in with. Call only after code proof. */
@@ -152,13 +222,67 @@ export const personalEmailProcedures = {
                 verified: Boolean(identity.personalEmail && identity.personalEmailVerifiedAt),
             };
         }),
+    /**
+     * What the account still needs to keep working after losing school access. Never returns
+     * the tenant ID, the policy or the date of birth. `nextStep` is `done` only with a
+     * verified personal email, a verified recovery email and a confirmed recovery method the
+     * user holds (escrow does not count). `email` also covers a recovery email that was
+     * skipped because another account uses that address.
+     */
+    getAccountContinuity: accountRoute
+        .output(
+            z.object({
+                personalEmail: z.object({
+                    allowed: z.boolean(),
+                    reason: z.enum(ACCOUNT_CONTINUITY_REASONS).optional(),
+                }),
+                emailVerified: z.boolean(),
+                maskedEmail: z.string().optional(),
+                recoveryEmailVerified: z.boolean(),
+                hasServerConfirmedMethod: z.boolean(),
+                hasUserRecoveryMethod: z.boolean(),
+                nextStep: z.enum(['email', 'method', 'done']),
+            })
+        )
+        .query(async ({ ctx }) => {
+            const { identity, userKey, matched } = await resolveClassLinkContext(
+                ctx.user.accountDid
+            );
+            const { decision } = await loadAccountContinuity(ctx, matched);
+            const confirmed = (userKey.recoveryMethods ?? []).filter(method =>
+                isRecoveryMethodConfirmed(userKey, method)
+            );
+            const emailVerified = Boolean(
+                identity.personalEmail && identity.personalEmailVerifiedAt
+            );
+            const recoveryEmailVerified = Boolean(
+                userKey.recoveryEmail && userKey.recoveryEmailVerifiedAt
+            );
+            const hasUserRecoveryMethod = confirmed.some(method => method.type !== 'escrow');
+            return {
+                personalEmail: decision,
+                emailVerified,
+                ...(identity.personalEmail
+                    ? { maskedEmail: maskEmail(identity.personalEmail) }
+                    : {}),
+                recoveryEmailVerified,
+                hasServerConfirmedMethod: confirmed.length > 0,
+                hasUserRecoveryMethod,
+                nextStep:
+                    !emailVerified || !recoveryEmailVerified
+                        ? ('email' as const)
+                        : hasUserRecoveryMethod
+                          ? ('done' as const)
+                          : ('method' as const),
+            };
+        }),
     startPersonalEmail: accountRoute
         .input(z.object({ email: personalEmail }))
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ input: { email }, ctx }) => {
-            const { identity } = await validateEmail(ctx.user.accountDid, email);
+            const { identity } = await validateEmail(ctx, email);
             await consumeBudget(
-                `classlink:rate:personal-email-send:${sha256Hex(ctx.user.did)}`,
+                `classlink:rate:personal-email-send:${sha256Hex(ctx.user.accountDid)}`,
                 PERSONAL_EMAIL_SEND_LIMIT,
                 600,
                 'Too many codes requested. Please try again later.'
@@ -188,11 +312,22 @@ export const personalEmailProcedures = {
             }
             return { success: true };
         }),
+    /**
+     * Prove the code, then link the address as a future sign-in and (see `planRecoveryEmail`)
+     * make it the recovery email. No transactions: every write is idempotent and the identity
+     * update comes last as the completion marker, so a retry after a failure converges.
+     */
     verifyPersonalEmail: accountRoute
         .input(z.object({ email: personalEmail, code: z.string().regex(/^\d{6}$/) }))
-        .output(z.object({ success: z.boolean() }))
+        .output(
+            z.object({
+                success: z.boolean(),
+                recoveryEmailSet: z.boolean(),
+                recoveryEmailSkipped: z.literal('shared').optional(),
+            })
+        )
         .mutation(async ({ input: { email, code }, ctx }) => {
-            const { identity, userKey } = await validateEmail(ctx.user.accountDid, email);
+            const { identity, userKey, continuity } = await validateEmail(ctx, email);
             const result = await getRedis().eval(
                 CHECK_CODE,
                 2,
@@ -209,6 +344,9 @@ export const personalEmailProcedures = {
                 });
             // The caller proved they read the code, so it is safe to say the address is taken.
             await assertEmailAvailable(email, identity.subject);
+            // Decide before any write, so a shared address never leaves a half-finished link.
+            const previous = identity.personalEmail?.trim().toLowerCase();
+            const recoveryEmail = await planRecoveryEmail(userKey, previous, email);
             // Reserve without modifying existing attributes, including when another
             // account races the initial lookup. Subjects are immutable after insertion.
             await ensureAuthSubjectIndexes();
@@ -242,9 +380,13 @@ export const personalEmailProcedures = {
                 email,
                 emailVerified: true,
             });
+            // False when the recovery email changed after the plan (compare-and-set).
+            const recoveryEmailSet =
+                recoveryEmail.set && userKey._id
+                    ? await setRecoveryEmailByUserKeyId(userKey._id, email, recoveryEmail.replaces)
+                    : false;
             // Release the replaced address, so it stops signing in to this account and is
             // not left behind by account deletion (which only knows the current address).
-            const previous = identity.personalEmail?.trim().toLowerCase();
             if (
                 previous &&
                 previous !== email &&
@@ -258,6 +400,41 @@ export const personalEmailProcedures = {
                 personalEmail: email,
                 personalEmailVerifiedAt: new Date(),
             });
+            const audit = { tenantId: continuity.tenantId, policyHash: continuity.policyHash };
+            logAccountContinuityEvent('verified', audit);
+            if (recoveryEmailSet) logAccountContinuityEvent('recovery_email_set', audit);
+            return {
+                success: true,
+                recoveryEmailSet,
+                ...(recoveryEmail.skipped ? { recoveryEmailSkipped: recoveryEmail.skipped } : {}),
+            };
+        }),
+    /**
+     * Remove the personal email from all three stores: its `email:` sign-in link (under the
+     * same guard as the deletion cascade), the recovery email when it is still this address,
+     * and last the identity fields. Always allowed, whatever the continuity policy.
+     */
+    removePersonalEmail: accountRoute
+        .output(z.object({ success: z.boolean() }))
+        .mutation(async ({ ctx }) => {
+            const { identity, userKey } = await resolveClassLinkContext(ctx.user.accountDid);
+            const address = identity.personalEmail?.trim().toLowerCase();
+            if (!address) return { success: true };
+            if (await canDeletePersonalEmailSubject(address, identity.subject, userKey))
+                await getAuthSubjectsCollection().deleteOne({
+                    identityKey: `email:${address}`,
+                    subject: identity.subject,
+                });
+            if (userKey._id && userKey.recoveryEmail?.trim().toLowerCase() === address)
+                await clearRecoveryEmailIfUnchanged(userKey._id, userKey.recoveryEmail);
+            await getClassLinkIdentitiesCollection().updateOne(
+                { identityKey: identity.identityKey },
+                {
+                    $unset: { personalEmail: '', personalEmailVerifiedAt: '' },
+                    $set: { updatedAt: new Date() },
+                }
+            );
+            logAccountContinuityEvent('removed', { tenantId: identity.tenantId });
             return { success: true };
         }),
 };

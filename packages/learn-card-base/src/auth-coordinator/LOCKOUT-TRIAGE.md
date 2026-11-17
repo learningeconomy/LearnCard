@@ -25,6 +25,8 @@ Use the user's symptoms and server-side `UserKey` fields to diagnose the issue.
 | "I logged in on my old phone and it says Needs Recovery."   | **Version Skew**      | Check `shareVersion`. The old phone has a stale device share from before a rotation.                 | Direct user to use a recovery method, or log in on their newer device. (History is purged on security rotation).                            |
 | "I started migrating but now I'm back on the old system."   | **Provisional State** | Check if `provisionalCreatedAt` is older than 30 days (TTL purged).                                  | Direct user to restart the security upgrade process. (They are not locked out).                                                             |
 
+**ClassLink students who lost their school login.** A ClassLink student who verified a personal email in the app (LC-2409) is recoverable through the same **Lost School Login / Identity Rebind** flow, because verifying it also makes it the account's `recoveryEmail`. Check `ClassLinkIdentity.personalEmailVerifiedAt`, that `UserKey.recoveryEmail` is that address with `recoveryEmailVerifiedAt` set, and that `recoveryMethods` has a confirmed passkey, phrase or backup method. Escrow-only accounts with a synthetic contact are unverified (it is not proven that escrow or PIN recovery completes for them), so escalate. The student still proves the address with the emailed OTP. If verification reported the recovery email as skipped (`shared`: another account already recovers with that address), the recovery email was not changed; check `UserKey.recoveryEmail`. It may be unset (see **Lost School Login + No Recovery Email** below), or it may still be the previous personal email.
+
 ## 3. Escalation: Unrecoverable Scenarios
 
 Some scenarios are mathematically unrecoverable by design. Support **cannot** bypass these.
@@ -34,6 +36,8 @@ Some scenarios are mathematically unrecoverable by design. Support **cannot** by
 | **Lost Device + Zero Confirmed Methods**  | The user lost their device share and never completed Phase B enrollment (`confirmedAt` is missing for all methods).                            | _"Because LearnCard is non-custodial, we don't hold your keys. Since a recovery method wasn't fully confirmed before the device was lost, the account cannot be restored."_    |
 | **Lost Device + Lost Recovery Methods**   | The user lost their device share AND lost access to all confirmed recovery methods (e.g., lost phrase, lost passkey device, lost backup file). | _"Your account is secured by keys only you control. Without your original device or your backup methods, the cryptographic key cannot be rebuilt. We cannot override this."_   |
 | **Lost School Login + No Recovery Email** | The user lost their Firebase identity and never verified a personal `recoveryEmail` for the OTP rebind flow.                                   | _"To link a new login to your existing account, we need to verify it's you via your backup email. Since no backup email was verified, we cannot safely transfer the account."_ |
+
+A ClassLink student who verified a personal email in the app is not in the last case; see the ClassLink note in section 2.
 
 ## 4. What Support Must NEVER Do
 

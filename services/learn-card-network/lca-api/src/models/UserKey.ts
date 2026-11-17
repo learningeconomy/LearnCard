@@ -521,20 +521,44 @@ export const findUserKeyByDid = async (did: string): Promise<MongoUserKeyType | 
     });
 };
 
+/** Case-insensitive exact match on a verified recovery email. */
+const verifiedRecoveryEmailFilter = (email: string) => {
+    const escapedEmail = email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return {
+        recoveryEmail: { $regex: `^${escapedEmail}$`, $options: 'i' },
+        recoveryEmailVerifiedAt: { $exists: true },
+    };
+};
+
 /** Recovery email is a proof channel, never account identity. Ambiguous matches are rejected. */
 export const findUniqueUserKeyByVerifiedRecoveryEmail = async (
     email: string
 ): Promise<MongoUserKeyType | null> => {
-    const escapedEmail = email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const matches = await getUserKeysCollection()
-        .find({
-            recoveryEmail: { $regex: `^${escapedEmail}$`, $options: 'i' },
-            recoveryEmailVerifiedAt: { $exists: true },
-        })
+        .find(verifiedRecoveryEmailFilter(email))
         .limit(2)
         .toArray();
 
     return matches.length === 1 ? matches[0]! : null;
+};
+
+/**
+ * Whether an account other than `userKeyId` holds this address as a verified recovery email.
+ * Setting it here too would make `findUniqueUserKeyByVerifiedRecoveryEmail` ambiguous, so
+ * recovery would fail closed for both accounts.
+ */
+export const hasOtherVerifiedRecoveryEmailHolder = async (
+    email: string,
+    userKeyId: MongoUserKeyType['_id']
+): Promise<boolean> => {
+    const holder = await getUserKeysCollection().findOne(
+        {
+            ...verifiedRecoveryEmailFilter(email),
+            ...(userKeyId ? { _id: { $ne: userKeyId } } : {}),
+        },
+        { projection: { _id: 1 } }
+    );
+    return Boolean(holder);
 };
 
 /**
@@ -1773,6 +1797,51 @@ export const setRecoveryEmailByAuthProvider = async (
             updatedAt: new Date(),
         },
     });
+};
+
+/**
+ * Set a verified recovery email on one account, but only while its current recovery email is
+ * unset, unverified, or one of `replaces` (compare-and-set, so a recovery email verified after
+ * the caller read the account is never overwritten). Idempotent. Returns whether it was set.
+ */
+export const setRecoveryEmailByUserKeyId = async (
+    userKeyId: NonNullable<MongoUserKeyType['_id']>,
+    email: string,
+    replaces: string[]
+): Promise<boolean> => {
+    const result = await getUserKeysCollection().updateOne(
+        {
+            _id: userKeyId,
+            $or: [
+                // Unset (missing or null, as stored for an `undefined` insert) or replaceable.
+                { recoveryEmail: { $not: { $type: 'string' } } },
+                { recoveryEmail: { $in: replaces } },
+                { recoveryEmailVerifiedAt: { $not: { $type: 'date' } } },
+            ],
+        },
+        {
+            $set: {
+                recoveryEmail: email.trim().toLowerCase(),
+                recoveryEmailVerifiedAt: new Date(),
+                updatedAt: new Date(),
+            },
+        }
+    );
+    return result.matchedCount === 1;
+};
+
+/** Remove the account's recovery email only while it is still `email`. Idempotent. */
+export const clearRecoveryEmailIfUnchanged = async (
+    userKeyId: NonNullable<MongoUserKeyType['_id']>,
+    email: string
+): Promise<void> => {
+    await getUserKeysCollection().updateOne(
+        { _id: userKeyId, recoveryEmail: email },
+        {
+            $unset: { recoveryEmail: '', recoveryEmailVerifiedAt: '' },
+            $set: { updatedAt: new Date() },
+        }
+    );
 };
 
 export const upgradeContactMethod = async (

@@ -1103,6 +1103,18 @@ describe('A6 escrow recovery', () => {
 
     it('5: accepts one-use recover sessions and hides invalid or unavailable identities', async () => {
         await enroll();
+        // Only an email-OTP proof (or none, for tokens minted before the field) is accepted.
+        const forged = await createRecoverySession({
+            scope: 'recover',
+            authProvider,
+            proof: 'passkey' as 'email-otp',
+        });
+        await expect(
+            getClient().escrow.startRecovery({
+                recoverySessionToken: forged,
+                clientEphemeralPublicKey: recipient.publicKey,
+            })
+        ).rejects.toMatchObject({ code: 'NOT_FOUND' });
         const recoverySessionToken = await createRecoverySession({
             scope: 'recover',
             authProvider,

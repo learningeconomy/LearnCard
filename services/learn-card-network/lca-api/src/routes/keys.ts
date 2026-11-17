@@ -275,6 +275,19 @@ export const requireRecoverySessionRecord = async (
     return session as RecoverySessionRecord & { authProvider: AuthProviderMapping };
 };
 
+/**
+ * Refuse a `recover` token earned any way other than the email OTP. Tokens minted before
+ * `proof` existed have none and are accepted. Call after consuming the token.
+ */
+export const assertRecoverProof = (session: Pick<RecoverySessionRecord, 'proof'>): void => {
+    if (session.proof !== undefined && session.proof !== 'email-otp') {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'This recovery session is invalid or expired. Start again.',
+        });
+    }
+};
+
 export const requireRecoverySession = async (
     token: string,
     scope: 'recover' | 'rebind'
@@ -565,6 +578,7 @@ export const keysRouter = t.router({
                 scope: 'recover',
                 authProvider: verification.record.authProvider,
                 securityEpoch: getSecurityEpoch(userKey),
+                proof: 'email-otp',
             });
 
             return {
@@ -605,6 +619,7 @@ export const keysRouter = t.router({
                 input.recoverySessionToken,
                 'recover'
             );
+            assertRecoverProof(recoverSession);
             const { authProvider } = recoverSession;
             if (input.type === 'escrow') {
                 throw new TRPCError({

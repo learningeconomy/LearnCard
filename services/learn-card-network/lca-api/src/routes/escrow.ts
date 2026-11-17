@@ -83,6 +83,7 @@ import {
     requireUserKey,
     assertDidOwner,
     requireRecoverySessionRecord,
+    assertRecoverProof,
     getRecoverySessionEpoch,
 } from './keys';
 import {
@@ -987,6 +988,7 @@ export const escrowRouter = t.router({
                         input.recoverySessionToken,
                         'recover'
                     );
+                    assertRecoverProof(session);
                     authProvider = session.authProvider;
                     recoverSessionEpoch = getRecoverySessionEpoch(session);
                 } catch (error) {
