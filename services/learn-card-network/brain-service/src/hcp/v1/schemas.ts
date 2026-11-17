@@ -62,19 +62,76 @@ export const REGISTERED_CATEGORIES = {
     },
 } as const;
 
-export const CATEGORIES = Object.keys(REGISTERED_CATEGORIES) as [
-    keyof typeof REGISTERED_CATEGORIES,
-    ...(keyof typeof REGISTERED_CATEGORIES)[],
+export type RegisteredCategory = keyof typeof REGISTERED_CATEGORIES;
+
+/** Registered category slugs, in registry order. Not the set of valid categories. */
+export const REGISTERED_CATEGORY_IDS = Object.keys(REGISTERED_CATEGORIES) as [
+    RegisteredCategory,
+    ...RegisteredCategory[],
 ];
 
-export const CategorySchema = z.enum(CATEGORIES);
+export const isRegisteredCategory = (id: string): id is RegisteredCategory =>
+    Object.hasOwn(REGISTERED_CATEGORIES, id);
+
+/**
+ * Draft 3 §4.5: custom categories have the sensitivity their provider declares,
+ * never `low`. v1 cannot know what an arbitrary custom category holds, so it
+ * declares every one `high`.
+ */
+export const CUSTOM_CATEGORY_SENSITIVITY = 'high' as const;
+
+const MAX_CATEGORY_LENGTH = 2048;
+const MAX_CATEGORIES_PER_LIST = 20;
+const DNS_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+/** Draft 3 §1.7: the spec's own placeholder namespace, not a definer's domain. */
+const SPEC_NAMESPACE = 'hcp.example';
+
+/**
+ * Draft 3 §4.5: a custom category is an absolute URI under a domain its definer
+ * controls. v1 accepts `https:` and `http:` URIs whose host is a DNS name (not an
+ * IP, not a single label, not the spec namespace), with no userinfo, written in
+ * canonical form (WHATWG URL serialization) so that one category has one spelling
+ * and grant matching stays exact-string.
+ */
+export const isCustomCategory = (id: string): boolean => {
+    if (id.length > MAX_CATEGORY_LENGTH || !URL.canParse(id)) return false;
+    const url = new URL(id);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
+    if (url.href !== id || url.username !== '' || url.password !== '') return false;
+    const labels = url.hostname.split('.');
+    if (labels.length < 2 || !labels.every(label => DNS_LABEL.test(label))) return false;
+    if (/^\d+$/.test(labels.at(-1)!)) return false;
+    return url.hostname !== SPEC_NAMESPACE && !url.hostname.endsWith(`.${SPEC_NAMESPACE}`);
+};
+
+/**
+ * A registered category slug, or a custom category URI (Draft 3 §4.5). Anything
+ * else, including an unregistered slug, is an invalid request.
+ */
+export const CategorySchema = z
+    .string()
+    .min(1)
+    .max(MAX_CATEGORY_LENGTH)
+    .refine(id => isRegisteredCategory(id) || isCustomCategory(id), {
+        message:
+            'must be a registered category slug or a custom category URI under a domain you control (Draft 3 §4.5)',
+    });
 export type Category = z.infer<typeof CategorySchema>;
 
-const uniqueCategories = (max: number) =>
+/** Registered categories in registry order, then custom categories sorted; no repeats. */
+export const orderCategories = (ids: Iterable<Category>): Category[] => {
+    const all = new Set(ids);
+    return [
+        ...REGISTERED_CATEGORY_IDS.filter(id => all.has(id)),
+        ...[...all].filter(id => !isRegisteredCategory(id)).sort(),
+    ];
+};
+
+const uniqueCategories = () =>
     z
         .array(CategorySchema)
         .min(1)
-        .max(max)
+        .max(MAX_CATEGORIES_PER_LIST)
         .refine(list => new Set(list).size === list.length, 'categories must not repeat');
 
 const Did = z
@@ -168,7 +225,7 @@ export const CreateEntryInputSchema = z.object({
     content: ContentSchema,
     evidence: z.array(EvidenceItemSchema).max(20).optional(),
     classification: z.object({
-        categories: uniqueCategories(CATEGORIES.length),
+        categories: uniqueCategories(),
         dimension: z.string().min(1).max(512).nullish(),
     }),
     assertion: z.object({ declarationType: DeclarationTypeSchema, ...AssertionFields }),
@@ -179,7 +236,7 @@ export type CreateEntryInput = z.infer<typeof CreateEntryInputSchema>;
 export const QueryInputSchema = z.object({
     ...GrantRef,
     query: z.string().min(1).max(2000),
-    categories: uniqueCategories(CATEGORIES.length).optional(),
+    categories: uniqueCategories().optional(),
     purpose: PurposeCode,
     purposeDescription: z.string().max(2000).optional(),
     maxEntries: z.number().int().min(1).optional(),
@@ -329,7 +386,7 @@ export const AccessDetailSchema = z.object({
         .array(GrantActionSchema)
         .min(1)
         .refine(list => new Set(list).size === list.length, 'actions must not repeat'),
-    categories: uniqueCategories(CATEGORIES.length),
+    categories: uniqueCategories(),
     purposes: z.array(PurposeSchema).min(1).max(50),
 });
 export type AccessDetail = z.infer<typeof AccessDetailSchema>;
@@ -495,6 +552,12 @@ export const MetaSchema = z.object({
         })
     ),
     category_registry: z.string(),
+    /** LearnCard addition: how v1 accepts custom categories (Draft 3 §4.5). */
+    custom_categories: z.object({
+        accepted: z.literal('uri'),
+        schemes: z.array(z.string()),
+        sensitivity: z.literal(CUSTOM_CATEGORY_SENSITIVITY),
+    }),
     accepts_entry_schemas: z.array(z.string()),
     content_profiles: z.array(z.string()),
     minimization_method: z.literal('lexical'),

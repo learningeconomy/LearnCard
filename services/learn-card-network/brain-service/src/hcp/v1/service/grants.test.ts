@@ -277,6 +277,28 @@ describe('HCP v1 export', () => {
     });
 });
 
+describe('HCP v1 grants: custom categories', () => {
+    it('keeps a custom category in access and leaves it out of scope strings (§6.1.1)', async () => {
+        const h = makeHarness();
+        const badges = 'https://learncard.com/hcp/categories/badges';
+        const grant = await createGrant(
+            h.deps,
+            subject,
+            grantInput({ actions: ['read'], categories: [badges, 'general_preferences'] })
+        );
+        expect(grant.access[0]?.categories).toEqual(['general_preferences', badges]);
+        expect(grant.scopes).toEqual(['hcp:general_preferences:read']);
+        await expect(getGrant(h.deps, client, grant.grantId)).resolves.toMatchObject({
+            access: [{ categories: ['general_preferences', badges] }],
+        });
+    });
+
+    it('rejects a malformed custom category in a grant', () => {
+        expect(() => grantInput({ categories: ['urn:learncard:badges'] })).toThrow();
+        expect(() => grantInput({ categories: ['https://hcp.example/badges'] })).toThrow();
+    });
+});
+
 describe('HCP v1 meta', () => {
     it('pins the spec and lists operations', () => {
         const meta = hcpV1Meta();
@@ -284,5 +306,10 @@ describe('HCP v1 meta', () => {
         expect(meta.api_version).toBe('v1');
         expect(meta.operations).toContain('entries.query');
         expect(meta.supported_categories.map(c => c.id)).toContain('health_context');
+        expect(meta.custom_categories).toEqual({
+            accepted: 'uri',
+            schemes: ['https', 'http'],
+            sensitivity: 'high',
+        });
     });
 });

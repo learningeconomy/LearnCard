@@ -1,8 +1,9 @@
 import {
-    CATEGORIES,
+    CUSTOM_CATEGORY_SENSITIVITY,
     GENERAL_CONTEXT_PROFILE,
     HCP_ENTRY_SCHEMA,
     REGISTERED_CATEGORIES,
+    REGISTERED_CATEGORY_IDS,
     type Meta,
 } from '../schemas';
 
@@ -35,12 +36,18 @@ export const hcpV1Meta = (): Meta => ({
     api_version: 'v1',
     spec: { ...HCP_SPEC_PIN },
     operations: [...HCP_V1_OPERATIONS],
-    supported_categories: CATEGORIES.map(id => ({
+    // Registered categories only: custom ones are per subject and meta is public.
+    supported_categories: REGISTERED_CATEGORY_IDS.map(id => ({
         id,
         ...REGISTERED_CATEGORIES[id],
         registry: '1',
     })),
     category_registry: '1',
+    custom_categories: {
+        accepted: 'uri',
+        schemes: ['https', 'http'],
+        sensitivity: CUSTOM_CATEGORY_SENSITIVITY,
+    },
     accepts_entry_schemas: [HCP_ENTRY_SCHEMA],
     content_profiles: [GENERAL_CONTEXT_PROFILE],
     minimization_method: 'lexical',

@@ -7,7 +7,8 @@
 import { requireSubject, settleGrantExpiry } from '../auth';
 import type { StoredGrant } from '../store/port';
 import {
-    CATEGORIES,
+    isRegisteredCategory,
+    orderCategories,
     type AccessDetail,
     type CreateGrantInput,
     type Grant,
@@ -27,19 +28,23 @@ const normalizeAccess = (access: AccessDetail[]): AccessDetail[] =>
     access.map(detail => ({
         type: detail.type,
         actions: detail.actions,
-        categories: CATEGORIES.filter(category => detail.categories.includes(category)),
+        categories: orderCategories(detail.categories),
         purposes: detail.purposes.filter(
             (purpose, index, all) => all.findIndex(p => p.code === purpose.code) === index
         ),
     }));
 
-/** Draft 3 §6.1.1: `hcp:{category}:{action}`, derived from `access`, never wider. */
+/**
+ * Draft 3 §6.1.1: `hcp:{category}:{action}`, derived from `access`, never wider.
+ * Custom categories are URIs whose colons would make a scope ambiguous, so they
+ * appear only in `access`, never here.
+ */
 const scopesFor = (access: AccessDetail[]): string[] =>
     unique(
         access.flatMap(detail =>
-            detail.categories.flatMap(category =>
-                detail.actions.map(action => `hcp:${category}:${action}`)
-            )
+            detail.categories
+                .filter(isRegisteredCategory)
+                .flatMap(category => detail.actions.map(action => `hcp:${category}:${action}`))
         )
     ).sort();
 

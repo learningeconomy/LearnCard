@@ -153,6 +153,28 @@ export const describeHcpV1StoreContract = (
             expect(limited.map(r => r.header.id)).toEqual(['urn:uuid:e']);
         });
 
+        it('filters by a custom category with exact matching (Draft 3 §4.5)', async () => {
+            const badges = 'https://learncard.com/hcp/categories/badges';
+            await store.insertEntry(entry('urn:uuid:a', { minute: 1, categories: [badges] }));
+            await store.insertEntry(
+                entry('urn:uuid:b', { minute: 2, categories: ['general_preferences', badges] })
+            );
+            await store.insertEntry(
+                entry('urn:uuid:c', { minute: 3, categories: [`${badges}/sub`] })
+            );
+
+            const found = await store.listEntries(SUBJECT, { categories: [badges], limit: 10 });
+            expect(found.map(r => r.header.id)).toEqual(['urn:uuid:b', 'urn:uuid:a']);
+            expect(found[0]?.header.categories).toEqual(['general_preferences', badges]);
+
+            const unfiltered = await store.listEntries(SUBJECT, { limit: 10 });
+            expect(unfiltered.map(r => r.header.id)).toEqual([
+                'urn:uuid:c',
+                'urn:uuid:b',
+                'urn:uuid:a',
+            ]);
+        });
+
         it('appends a version only from the expected version, keeping prior versions', async () => {
             await store.insertEntry(entry('urn:uuid:v'));
 

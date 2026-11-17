@@ -8,7 +8,8 @@ import {
 } from '../auth';
 import type { EntryRecord, EntryVersion, StoredEvent } from '../store/port';
 import {
-    CATEGORIES,
+    orderCategories,
+    REGISTERED_CATEGORY_IDS,
     type Assertion,
     type AuditEventType,
     type Category,
@@ -243,7 +244,7 @@ export const createEntry = async (
             subjectDid: actor.subjectDid,
             status: 'active',
             version: 1,
-            categories: CATEGORIES.filter(category => categories.includes(category)),
+            categories: orderCategories(categories),
             dimension: input.classification.dimension ?? null,
             permittedPurposes: null,
             createdAt: at,
@@ -274,13 +275,21 @@ export const queryEntries = async (
     input: QueryInput
 ): Promise<QueryResult> => {
     const actor = await resolveActor(deps, caller, input.grantId);
-    const categoriesSearched = queryCategories(actor, input.categories, input.purpose);
+    const limitedTo = queryCategories(actor, input.categories, input.purpose);
 
     const candidates = await deps.store.listEntries(actor.subjectDid, {
-        categories: categoriesSearched,
+        categories: limitedTo ?? undefined,
         statuses: ['active'],
         limit: QUERY_CANDIDATE_LIMIT,
     });
+    // Unfiltered (the subject named none): every registered category, plus the
+    // custom categories the candidates hold.
+    const categoriesSearched =
+        limitedTo ??
+        orderCategories([
+            ...REGISTERED_CATEGORY_IDS,
+            ...candidates.flatMap(record => record.header.categories),
+        ]);
     const settled = await Promise.all(candidates.map(record => settleEntryExpiry(deps, record)));
 
     const reachable: { record: EntryRecord; visible: Category[] }[] = [];

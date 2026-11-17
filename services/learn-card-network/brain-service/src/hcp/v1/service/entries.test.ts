@@ -544,3 +544,71 @@ describe('HCP v1 entries: denied requests change nothing', () => {
         expect(await h.snapshot()).toEqual(before);
     });
 });
+
+describe('HCP v1 entries: custom categories (Draft 3 §4.5)', () => {
+    const BADGES = 'https://learncard.com/hcp/categories/badges';
+    const CLUBS = 'https://learncard.com/hcp/categories/clubs';
+
+    it('lets the subject write and query a custom category', async () => {
+        const h = makeHarness();
+        const created = await subjectCreate(h, {
+            value: 'answers with badge counts',
+            categories: [BADGES, 'general_preferences'],
+        });
+        expect(created.classification.categories).toEqual(['general_preferences', BADGES]);
+
+        const unfiltered = await queryEntries(h.deps, subject, query());
+        expect(unfiltered.entries).toEqual([created]);
+        expect(unfiltered.categoriesSearched).toHaveLength(10);
+        expect(unfiltered.categoriesSearched).toContain(BADGES);
+
+        const named = await queryEntries(h.deps, subject, query({ categories: [BADGES] }));
+        expect(named.entries).toEqual([created]);
+        expect(named.categoriesSearched).toEqual([BADGES]);
+        expect(
+            (await queryEntries(h.deps, subject, query({ categories: [CLUBS] }))).entries
+        ).toEqual([]);
+    });
+
+    it('lets a client read a custom category its grant covers, and nothing more', async () => {
+        const h = makeHarness();
+        await subjectCreate(h, { value: 'answers with badge counts', categories: [BADGES] });
+        await subjectCreate(h, { value: 'answers about chess club', categories: [CLUBS] });
+        await subjectCreate(h, { value: 'answers in bullet points' });
+        const grantId = await issueGrant(h.deps, { categories: [BADGES] });
+
+        const all = await queryEntries(h.deps, client, query({ grantId }));
+        expect(all.categoriesSearched).toEqual([BADGES]);
+        expect(all.entries.map(e => e.content.value)).toEqual(['answers with badge counts']);
+        expect(all.entries[0]?.classification.categories).toEqual([BADGES]);
+
+        const named = await queryEntries(h.deps, client, query({ grantId, categories: [BADGES] }));
+        expect(named.entries).toHaveLength(1);
+        const ref = (named.entries[0] as Disclosure).ref;
+        await expect(
+            getEntry(h.deps, client, { grantId, ref, purpose: PURPOSE })
+        ).resolves.toMatchObject({ entry: { ref, classification: { categories: [BADGES] } } });
+    });
+
+    it('denies a client a custom category its grant does not cover', async () => {
+        const h = makeHarness();
+        await subjectCreate(h, { value: 'answers with badge counts', categories: [BADGES] });
+        const general = await issueGrant(h.deps);
+        const clubs = await issueGrant(h.deps, { categories: [CLUBS], actions: ['read', 'write'] });
+
+        expect((await queryEntries(h.deps, client, query({ grantId: general }))).entries).toEqual(
+            []
+        );
+        for (const grantId of [general, clubs]) {
+            await expect(
+                queryEntries(h.deps, client, query({ grantId, categories: [BADGES] }))
+            ).rejects.toMatchObject(DENIED);
+        }
+        await expect(
+            createEntry(h.deps, client, entryInput({ grantId: clubs, categories: [BADGES] }))
+        ).rejects.toMatchObject(DENIED);
+        await expect(
+            createEntry(h.deps, client, entryInput({ grantId: clubs, categories: [CLUBS] }))
+        ).resolves.toMatchObject({ classification: { categories: [CLUBS] } });
+    });
+});

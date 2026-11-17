@@ -10,7 +10,7 @@ import type { HcpV1Caller, HcpV1Deps } from './service/deps';
 import { urn } from './service/deps';
 import { scopeDenied } from './service/errors';
 import type { StoredGrant } from './store/port';
-import { CATEGORIES, type Category, type GrantAction } from './schemas';
+import { orderCategories, type Category, type GrantAction } from './schemas';
 
 /** The Context Subject acting on their own data, or a Context Client acting under a grant. */
 export type Actor =
@@ -80,7 +80,10 @@ export const requireSubject = (caller: HcpV1Caller): string => {
     return caller.subjectDid;
 };
 
-/** Categories a grant lets its client take `action` on; for reads, only under `purpose`. */
+/**
+ * Categories a grant lets its client take `action` on; for reads, only under
+ * `purpose`. Registered and custom alike: a granted category is never dropped.
+ */
 export const grantedCategories = (
     grant: StoredGrant,
     action: GrantAction,
@@ -92,26 +95,27 @@ export const grantedCategories = (
         if (purpose !== undefined && !detail.purposes.some(p => p.code === purpose)) continue;
         detail.categories.forEach(category => categories.add(category));
     }
-    return CATEGORIES.filter(category => categories.has(category));
+    return orderCategories(categories);
 };
 
 /**
- * The categories a query searches (Draft 3 §5.2.1). Named categories must all be
- * readable for the purpose; omitted means every category the grant reads for it.
- * The result is never wider than the grant.
+ * The categories a query is limited to (Draft 3 §5.2.1). Named categories must all
+ * be readable for the purpose; omitted means every category the grant reads for it.
+ * The result is never wider than the grant. `null` means no category filter: only
+ * the Context Subject, reading their own context, gets it.
  */
 export const queryCategories = (
     actor: Actor,
     requested: readonly Category[] | undefined,
     purpose: string
-): Category[] => {
-    if (actor.kind === 'subject') return requested ? [...requested] : [...CATEGORIES];
+): Category[] | null => {
+    if (actor.kind === 'subject') return requested ? orderCategories(requested) : null;
 
     const readable = grantedCategories(actor.grant, 'read', purpose);
     if (readable.length === 0) throw scopeDenied();
     if (!requested) return readable;
     if (!requested.every(category => readable.includes(category))) throw scopeDenied();
-    return [...requested];
+    return orderCategories(requested);
 };
 
 /**
