@@ -101,10 +101,6 @@ describe('getContractConnections', () => {
         await expect(
             stranger.clients.fullAuth.contracts.getContractConnections({ contractUri })
         ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
-        // A writer manages referrals but is not in the data audience.
-        await expect(
-            writer.clients.fullAuth.contracts.getContractConnections({ contractUri })
-        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         // A consenter is not in the data audience either.
         await expect(
             learners[0]!.clients.fullAuth.contracts.getContractConnections({ contractUri })
@@ -118,6 +114,36 @@ describe('getContractConnections', () => {
         await expect(
             recipient.clients.fullAuth.contracts.getContractConnections({ contractUri })
         ).resolves.toMatchObject({ hasMore: false });
+    });
+
+    it('lets a writer who is not a recipient recover the snapshot, with references', async () => {
+        // The writer was created only as a writer, never as a recipient.
+        const page = await writer.clients.fullAuth.contracts.getContractConnections({
+            contractUri,
+        });
+
+        expect(page.records).toHaveLength(learners.length);
+        const byProfile = Object.fromEntries(
+            page.records.map(record => [record.profileId, record.externalReferenceId])
+        );
+        expect(byProfile).toMatchObject({
+            [learners[0]!.profileId]: 'crm-requester',
+            [learners[1]!.profileId]: 'crm-writer',
+        });
+    });
+
+    it('still refuses a requester who is no longer owner, writer or recipient', async () => {
+        await owner.clients.fullAuth.contracts.removeContractRecipient({
+            contractUri,
+            recipient: requester.profileId,
+        });
+
+        await expect(
+            requester.clients.fullAuth.contracts.getContractConnections({ contractUri })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(
+            stranger.clients.fullAuth.contracts.getContractConnections({ contractUri })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
     });
 
     it('returns one identifier-only row per current connection, ordered by terms id', async () => {

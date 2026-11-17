@@ -129,6 +129,7 @@ import {
     addRecipientToContract,
     removeRecipientFromContract,
     canReadContractData,
+    canReadContractConnections,
 } from '@accesslayer/consentflowcontract/relationships/recipients';
 
 const publicContractRecipient = (domain: string, recipient: ProfileType) => {
@@ -788,7 +789,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Get the current connections of a contract',
                 description:
-                    'Snapshot of who is currently connected to a contract: one record per consenter whose terms are live, awaiting re-consent or suspended, and not expired. Identifiers only. To stay in sync, read `latestCursor` from the Integration event feed, page through this snapshot, then follow the feed from that cursor; take a new snapshot when the feed answers CURSOR_EXPIRED. The caller must be the contract owner or a data recipient.',
+                    'Snapshot of who is currently connected to a contract: one record per consenter whose terms are live, awaiting re-consent or suspended, and not expired. Identifiers only. To stay in sync, read `latestCursor` from the Integration event feed, page through this snapshot, then follow the feed from that cursor; take a new snapshot when the feed answers CURSOR_EXPIRED. The caller must be the contract owner, a contract writer or a data recipient. A requester who is none of these recovers through getContractSentRequests, which lists their own referrals.',
             },
             requiredScope: 'contracts-data:read',
         })
@@ -808,7 +809,7 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
             }
 
-            if (!(await canReadContractData(contract.id, profile.profileId))) {
+            if (!(await canReadContractConnections(contract.id, profile.profileId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile is not in the contract data audience',
