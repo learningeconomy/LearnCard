@@ -337,7 +337,7 @@ The terms status is not changed by expiry, and the [connections snapshot](#conne
 
 `shareUntil` is set per credential category inside the terms. When it passes, the consented data reads stop returning that category's data, and you receive `consent_updated` with `reason: "share_until_passed"`.
 
-- The connection stays live: it is not withdrawn or expired, and the [connections snapshot](#connections-snapshot) still lists it. Only that category's shared data stops being returned.
+- The connection keeps its current status (live, awaiting re-consent or suspended): it is not withdrawn or expired, and the [connections snapshot](#connections-snapshot) still lists it. Do not change the status you hold for it. Only that category's shared data stops being returned.
 - Re-read that person's shared data when you receive the event.
 - The event id is unique per category and date (`<termsId>:share_until:<category>:<shareUntil>`), so the same date is never sent twice. Two categories with different dates send two events.
 - It is sent only for consents that are live, awaiting re-consent or suspended and have not expired. Dates that passed before this event existed are not sent.
