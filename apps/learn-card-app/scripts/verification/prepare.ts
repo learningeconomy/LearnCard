@@ -51,6 +51,15 @@ export const prepareVerification = async (
     config.domain = `localhost:${stack.ports.app}`;
     config.devDomain = config.domain;
     config.stage = 'local';
+    config.verifiableDataSchemas = {
+        demo: {
+            label: 'Demo profile',
+            fields: {
+                branch: { type: 'select', label: 'Demo branch', values: ['North', 'South'] },
+                birthDate: { type: 'date', label: 'Demo birth date' },
+            },
+        },
+    };
     // Replace rather than merge: no inherited production keys or endpoints.
     config.apis = {
         brainService: stack.brain,

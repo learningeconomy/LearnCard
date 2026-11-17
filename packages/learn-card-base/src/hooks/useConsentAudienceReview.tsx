@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import type { ConsentFlowContractDetails } from '@learncard/types';
+import { ConsentProfileFields, type FieldReview } from './ConsentProfileFields';
+import type { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import { useModal } from '../components/modals/useModal';
 import { ModalTypes } from '../components/modals/types/Modals';
 import { FullCredentialDisclosure } from '../components/FullCredentialDisclosure';
@@ -7,12 +8,14 @@ import { useT } from '../i18n';
 
 const ConsentAudienceReview = ({
     contract,
+    fieldReview,
     onConfirm,
     onCancel,
     onDismiss,
 }: {
     contract: ConsentFlowContractDetails;
-    onConfirm: () => void;
+    fieldReview?: FieldReview;
+    onConfirm: (terms?: ConsentFlowTerms) => void;
     onCancel: () => void;
     onDismiss: () => void;
 }) => {
@@ -54,6 +57,13 @@ const ConsentAudienceReview = ({
                     </li>
                 ))}
             </ul>
+            {fieldReview && (
+                <ConsentProfileFields
+                    contract={contract}
+                    review={fieldReview}
+                    onConfirm={onConfirm}
+                />
+            )}
             <div className="flex gap-3">
                 <button
                     type="button"
@@ -62,13 +72,15 @@ const ConsentAudienceReview = ({
                 >
                     {t('consentAudience.cancel')}
                 </button>
-                <button
-                    type="button"
-                    onClick={onConfirm}
-                    className="flex-1 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                    {t('consentAudience.confirm')}
-                </button>
+                {!fieldReview && (
+                    <button
+                        type="button"
+                        onClick={() => onConfirm()}
+                        className="flex-1 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                    >
+                        {t('consentAudience.confirm')}
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -88,8 +100,12 @@ export const useConsentAudienceReview = () => {
         },
         []
     );
-    return async (contract: ConsentFlowContractDetails): Promise<void> => {
+    return async (
+        contract: ConsentFlowContractDetails,
+        fieldReview?: FieldReview
+    ): Promise<ConsentFlowTerms | undefined> => {
         if (
+            !fieldReview &&
             !(contract.audienceVersion ?? 0) &&
             !contract.recipients?.length &&
             !contract.readableDeliveryRecipients?.some(
@@ -97,6 +113,7 @@ export const useConsentAudienceReview = () => {
             )
         )
             return;
+        let result: ConsentFlowTerms | undefined;
         const accepted = await new Promise<boolean>(resolve => {
             let settled = false;
             const settle = (value: boolean) => {
@@ -108,9 +125,12 @@ export const useConsentAudienceReview = () => {
             pending.current.add(settle);
             newModal(
                 <ConsentAudienceReview
+                    fieldReview={fieldReview}
                     contract={contract}
                     onDismiss={() => settle(false)}
-                    onConfirm={() => {
+                    onConfirm={terms => {
+                        if (settled) return;
+                        result = terms;
                         settle(true);
                         closeModal();
                     }}
@@ -123,5 +143,6 @@ export const useConsentAudienceReview = () => {
             );
         });
         if (!accepted) throw new Error('Sharing canceled.');
+        return result;
     };
 };

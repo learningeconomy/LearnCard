@@ -104,9 +104,12 @@ const getCategoryInfoForTerms = (
     const exactMatch = terms.read.credentials.categories[category];
     if (exactMatch) return { categoryInfo: exactMatch };
 
+    // Consent to a profile field is exact. Legacy spelling aliases cannot authorize it.
+    if (category.startsWith('VerifiableData:')) return {};
     const normalizedCategory = normalizeCategoryKey(category);
     const fallbackEntry = Object.entries(terms.read.credentials.categories).find(
-        ([key]) => normalizeCategoryKey(key) === normalizedCategory
+        ([key]) =>
+            !key.startsWith('VerifiableData:') && normalizeCategoryKey(key) === normalizedCategory
     );
 
     if (!fallbackEntry) return {};

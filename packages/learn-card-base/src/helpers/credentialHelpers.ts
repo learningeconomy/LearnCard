@@ -550,6 +550,15 @@ export const getDefaultCategoryForCredential = (
 ): CredentialCategory => {
     const _credential = unwrapBoostCredential(credential);
 
+    if (
+        _credential.type.includes('VerifiableData') &&
+        !Array.isArray(_credential.credentialSubject)
+    ) {
+        const key = _credential.credentialSubject?.dataKey;
+        if (typeof key === 'string' && key.startsWith('VerifiableData:'))
+            return key as CredentialCategory;
+    }
+
     // An explicit `lc:category` display-hint tag is a deliberate issuer choice and takes priority over all type inference below.
     const lcCategory = parseLcTags(getCredentialSubjectAchievement(_credential)?.tag).category;
     if (lcCategory) return lcCategory as CredentialCategory;

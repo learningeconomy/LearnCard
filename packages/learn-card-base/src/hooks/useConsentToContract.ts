@@ -106,7 +106,20 @@ export const useConsentToContract = (
             clearPublicationRetry();
 
             const audience = await loadContractAudience(wallet, uri);
-            await reviewAudience(audience.contract);
+            if (
+                Object.keys(audience.contract.contract?.read.credentials.categories ?? {}).some(
+                    category => category.startsWith('VerifiableData:')
+                )
+            ) {
+                const reviewed = await reviewAudience(audience.contract, {
+                    wallet,
+                    terms: submission.terms,
+                });
+                if (!reviewed) throw new Error('Profile field review was interrupted.');
+                submission.terms = reviewed;
+            } else {
+                await reviewAudience(audience.contract);
+            }
             const terms =
                 skipSharedUriMaterialization &&
                 Object.values(submission.terms.read.credentials.categories).every(

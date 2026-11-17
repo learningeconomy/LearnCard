@@ -46,7 +46,20 @@ export const useUpdateTerms = (
                 resolvedContractUri = record.contract.uri;
             }
             const audience = await loadContractAudience(wallet, resolvedContractUri);
-            await reviewAudience(audience.contract);
+            if (
+                Object.keys(audience.contract.contract?.read.credentials.categories ?? {}).some(
+                    category => category.startsWith('VerifiableData:')
+                )
+            ) {
+                const reviewed = await reviewAudience(audience.contract, {
+                    wallet,
+                    terms: submission.terms,
+                });
+                if (!reviewed) throw new Error('Profile field review was interrupted.');
+                submission.terms = reviewed;
+            } else {
+                await reviewAudience(audience.contract);
+            }
             const terms = await getTermsWithSharedUrisForWallet(
                 wallet,
                 audience.recipients,

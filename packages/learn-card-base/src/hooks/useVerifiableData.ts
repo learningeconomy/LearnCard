@@ -92,6 +92,8 @@ const storeVerifiableData = async <T>(
     options?: Pick<VerifiableDataOptions, 'name' | 'description'>
 ): Promise<string> => {
     const indexId = getVerifiableDataIndexId(key);
+    // Profile answers belong only in the encrypted credential, never in index metadata.
+    const indexPayload = key.startsWith('VerifiableData:') ? {} : { verifiableData: data };
 
     // Check whether an index record already exists for this key
     const existingRecords = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
@@ -111,13 +113,12 @@ const storeVerifiableData = async <T>(
 
     if (existingRecords?.length > 0) {
         // Update the existing index record in place
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await wallet.index.LearnCloud.update(indexId, {
             uri,
             category,
             title: `VerifiableData: ${key}`,
             hidden: true,
-            verifiableData: data as any,
+            ...indexPayload,
             issuanceDate,
             sharedUris: {},
         });
@@ -129,7 +130,7 @@ const storeVerifiableData = async <T>(
             category,
             title: `VerifiableData: ${key}`,
             hidden: true,
-            verifiableData: data,
+            ...indexPayload,
             issuanceDate,
         });
     }
@@ -138,6 +139,7 @@ const storeVerifiableData = async <T>(
 };
 
 type VerifiableDataResult<T> = {
+    uri?: string;
     data: T | undefined;
     issuanceDate: string | undefined;
 };
@@ -145,7 +147,7 @@ type VerifiableDataResult<T> = {
 /**
  * Retrieves verifiable data for a given key.
  */
-const getVerifiableData = async <T>(
+export const getVerifiableData = async <T>(
     wallet: BespokeLearnCard,
     key: string
 ): Promise<VerifiableDataResult<T>> => {
@@ -153,10 +155,12 @@ const getVerifiableData = async <T>(
         id: getVerifiableDataIndexId(key),
     });
 
-    if (records?.length > 0 && records[0].verifiableData !== undefined) {
+    const scopedField = key.startsWith('VerifiableData:');
+    if (!scopedField && records?.length > 0 && records[0].verifiableData !== undefined) {
         // Return the data from the index record directly (faster)
         return {
             data: records[0].verifiableData,
+            uri: records[0].uri,
             issuanceDate: records[0].issuanceDate,
         };
     }
@@ -170,13 +174,21 @@ const getVerifiableData = async <T>(
                 ? credential.credentialSubject[0]
                 : credential?.credentialSubject;
 
+            if (
+                scopedField &&
+                (Array.isArray(credential?.credentialSubject) || subject?.dataKey !== key)
+            ) {
+                return { data: undefined, issuanceDate: undefined };
+            }
             if (subject?.dataPayload !== undefined) {
                 return {
                     data: subject.dataPayload as T,
+                    uri: records[0].uri,
                     issuanceDate: credential?.validFrom ?? records[0].issuanceDate,
                 };
             }
         } catch (e) {
+            if (scopedField) throw e;
             log.warn('Failed to read verifiable data credential:', e);
         }
     }
