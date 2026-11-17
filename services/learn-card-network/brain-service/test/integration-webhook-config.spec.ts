@@ -6,6 +6,8 @@ import { Integration, Profile } from '@models';
 import { createIntegration } from '@accesslayer/integration/create';
 import { readIntegrationById } from '@accesslayer/integration/read';
 import {
+    getIntegrationWebhookDeliveryConfig,
+    readIntegrationWebhookStatus,
     rotateWebhookSecretForIntegration,
     setIntegrationWebhookConfig,
 } from '@accesslayer/integration/webhook';
@@ -163,6 +165,65 @@ describe('Integration webhook configuration (access layer)', () => {
         await expect(decryptWebhookSecret(String(stored.webhookSecretEnc))).resolves.toBe(
             second?.secret
         );
+    });
+
+    it('overlapping rotations each keep the secret of the one before as previous', async () => {
+        const created = await setIntegrationWebhookConfig({
+            integrationId,
+            webhookUrl: 'https://hooks.example.com/a',
+        });
+        const original = String(created?.secret);
+        const ROTATIONS = 8;
+
+        // Hold the node's write lock in another transaction while the rotations start, so all of
+        // them are in flight together. Rotations that read the secret before taking the lock all
+        // see the original one; rotations that lock first queue up and see each other's.
+        const session = neogma.driver.session();
+        const holder = session.beginTransaction();
+
+        let rotations: Awaited<ReturnType<typeof rotateWebhookSecretForIntegration>>[];
+
+        try {
+            await holder.run(
+                'MATCH (integration:Integration {id: $id}) SET integration.lockProbe = 1',
+                {
+                    id: integrationId,
+                }
+            );
+
+            const pending = Array.from({ length: ROTATIONS }, () =>
+                rotateWebhookSecretForIntegration(integrationId)
+            );
+
+            await new Promise(resolve => setTimeout(resolve, 1_000));
+            await holder.commit();
+            rotations = await Promise.all(pending);
+        } finally {
+            await session.close();
+        }
+
+        const returned = rotations.map(rotation => String(rotation?.secret));
+        const config = await getIntegrationWebhookDeliveryConfig(integrationId);
+        const status = await readIntegrationWebhookStatus(integrationId);
+
+        // Every rotation counted exactly once.
+        expect(new Set(returned).size).toBe(ROTATIONS);
+        expect(status?.secretVersion).toBe(1 + ROTATIONS);
+        // Every rotation had a previous secret to keep.
+        expect(
+            rotations.every(rotation => typeof rotation?.previousSecretExpiresAt === 'string')
+        ).toBe(true);
+
+        // The stored pair is two of the returned secrets: the last rotation's secret and the one
+        // the rotation before it made current. The original is no longer kept.
+        expect(config?.secrets).toHaveLength(2);
+
+        const [current, previous] = config?.secrets ?? [];
+
+        expect(returned).toContain(current);
+        expect(returned).toContain(previous);
+        expect(previous).not.toBe(current);
+        expect(config?.secrets).not.toContain(original);
     });
 
     it('never exposes secrets through readIntegrationById', async () => {

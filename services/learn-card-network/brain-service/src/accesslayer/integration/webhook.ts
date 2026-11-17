@@ -107,7 +107,9 @@ export const setIntegrationWebhookConfig = async ({
 /**
  * Stores a new signing secret and returns it in plaintext. The secret it replaces stays valid
  * for 24 hours. The secret version goes up by one; a secret stored before versions existed
- * counts as version 1. Returns null when the Integration does not exist.
+ * counts as version 1. Returns null when the Integration does not exist. The first SET takes the
+ * node's write lock before the current secret is read, so overlapping rotations run one after
+ * the other and each one's previous secret is the one the rotation before it stored.
  */
 export const rotateWebhookSecretForIntegration = async (
     integrationId: string
@@ -121,6 +123,7 @@ export const rotateWebhookSecretForIntegration = async (
 
     const result = await neogma.queryRunner.run(
         `MATCH (integration:Integration {id: $id})
+         SET integration.updatedAt = $now
          WITH integration, integration.webhookSecretEnc AS previous
          SET integration.webhookSecretPrevEnc = previous,
              integration.webhookSecretPrevExpiresAt = CASE
