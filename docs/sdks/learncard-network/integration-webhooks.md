@@ -19,29 +19,30 @@ Integration events are separate from **profile notification webhooks** (`notific
 
 Events are recorded for an Integration from the moment they are enabled. Events that happened before that moment are never added.
 
-| You want         | Do this                            | Result                                                                                    |
-| ---------------- | ---------------------------------- | ----------------------------------------------------------------------------------------- |
-| Webhook and feed | Set `webhookUrl`                   | Creates a signing secret if there is none, and enables events if they are not enabled yet |
-| Feed only        | Set `contractEventsEnabled: true`  | Enables events with no webhook                                                            |
-| Stop the webhook | Set `webhookUrl: null`             | Removes the URL. Events stay enabled and the feed keeps filling                           |
-| Stop everything  | Set `contractEventsEnabled: false` | No new records and no deliveries                                                          |
+| You want         | Do this                                                   | Result                                                                                                              |
+| ---------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Webhook and feed | `setIntegrationWebhook(id, url)`                          | Stores the URL, creates the signing secret if there is none and returns it once, and enables events if they are off |
+| Feed only        | `updateIntegration(id, { contractEventsEnabled: true })`  | Enables events with no webhook                                                                                      |
+| Stop the webhook | `setIntegrationWebhook(id, null)`                         | Removes the URL. Events stay enabled and the feed keeps filling. The secret is kept                                 |
+| Stop everything  | `updateIntegration(id, { contractEventsEnabled: false })` | No new records, and deliveries stop at once (see [Delivery and retries](#delivery-and-retries))                     |
 
-In the LearnCard app, open your integration in the developer portal and use the **Webhooks** tab. From code:
+In the LearnCard app, open your integration in the developer portal and use the **Webhooks** tab. Everything on that tab can also be done with an API token alone; see [API-only setup](#api-only-setup).
+
+### Register the webhook and store the secret
 
 {% tabs %}
 {% tab title="SDK" %}
 
 ```typescript
-// Webhook and feed
-await learnCard.invoke.updateIntegration(integrationId, {
-    webhookUrl: 'https://example.com/learncard/webhook',
-});
+const registration = await learnCard.invoke.setIntegrationWebhook(
+    integrationId,
+    'https://example.com/learncard/webhook'
+);
+// registration.webhookUrl               the stored URL
+// registration.contractEventsEnabledAt  when events were enabled
+// registration.secret                   "whsec_..." — only when this call created the first secret
 
-// Feed only
-await learnCard.invoke.updateIntegration(integrationId, { contractEventsEnabled: true });
-
-const integration = await learnCard.invoke.getIntegration(integrationId);
-// integration.webhookUrl, integration.hasWebhookSecret, integration.contractEventsEnabledAt
+if (registration.secret) await storeSecret(registration.secret);
 ```
 
 {% endtab %}
@@ -49,20 +50,27 @@ const integration = await learnCard.invoke.getIntegration(integrationId);
 {% tab title="REST" %}
 
 ```bash
-curl -X POST "https://network.learncard.com/api/integration/update/$INTEGRATION_ID" \
+curl -X POST "https://network.learncard.com/api/integration/$INTEGRATION_ID/webhook" \
   -H "Authorization: Bearer $API_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "updates": { "webhookUrl": "https://example.com/learncard/webhook" } }'
+  -d '{ "webhookUrl": "https://example.com/learncard/webhook" }'
+# { "webhookUrl": "https://example.com/learncard/webhook",
+#   "secret": "whsec_...",
+#   "contractEventsEnabledAt": "2026-11-17T10:00:00.000Z" }
 ```
 
 {% endtab %}
 {% endtabs %}
 
-`webhookUrl` must be an `http(s)` URL of at most 2048 characters. At delivery time LearnCard connects only to public addresses and does not follow redirects. The caller must own the Integration. Updates need the `integrations:write` scope; reads need `integrations:read`.
+- **The secret is returned once**, by the call that creates it: the first time a URL is set for the Integration. Store it then. No route returns it again.
+- Replacing the URL, or removing it with `null`, keeps the same secret and returns no `secret`.
+- If you lose the secret, replace it with a rotation (below).
+- `webhookUrl` must be an `http(s)` URL of at most 2048 characters. At delivery time LearnCard connects only to public addresses and does not follow redirects.
+- The caller must own the Integration. Writes need the `integrations:write` scope; reads need `integrations:read`.
 
-### Get the signing secret
+### Rotate the secret
 
-The secret is returned only by the rotate call, and only once. Use it to reveal the secret for the first time and to replace it later.
+Rotation is for later: to replace a secret on a schedule, or one that was lost or exposed. You do not need it to get the first secret.
 
 ```typescript
 const { secret, previousSecretExpiresAt } =
@@ -72,20 +80,167 @@ const { secret, previousSecretExpiresAt } =
 
 REST: `POST /integration/{id}/webhook-secret/rotate`.
 
-Each call creates a new secret. The secret it replaces stays valid for 24 hours, until `previousSecretExpiresAt`; that field is absent when there was no earlier secret. During those 24 hours every request is signed with both secrets, so you can deploy the new one without dropping events.
+Each call creates a new secret and raises `secretVersion` by one. The secret it replaces stays valid for 24 hours, until `previousSecretExpiresAt`. During those 24 hours every request is signed with both secrets, so you can deploy the new one without dropping events.
 
-### Send a test event
+### Send a test ping
 
 ```typescript
 const result = await learnCard.invoke.sendIntegrationTestEvent(integrationId);
-// { delivered: true, status: 200 }
-// { delivered: false, status: 500, error: 'http_500' }
-// { delivered: false, error: 'timeout' | 'network_error' | 'invalid_webhook' | 'no_webhook' }
+// { delivered: true,  httpStatus: 200, latencyMs: 84 }
+// { delivered: false, httpStatus: 401, latencyMs: 120, error: 'http_401' }
+// { delivered: false, latencyMs: 6001, error: 'timeout' }
+// { delivered: false, latencyMs: 12, error: 'network_error' | 'invalid_webhook' }
+// { delivered: false, error: 'no_webhook' }
 ```
 
 REST: `POST /integration/{id}/webhook/test`.
 
-This posts one signed event with `type: "integration.test"` and `sequence: 0` to your URL and reports the result. It is sent once, is not retried, and is not written to the feed.
+This posts one signed event with `type: "integration.test"` and `sequence: 0` to your URL right away and returns the result in the same response. It is sent once, is not retried, and is not written to the feed. It also works while contract events are disabled, so you can check a receiver before you enable them.
+
+| Field        | Meaning                                                                     |
+| ------------ | --------------------------------------------------------------------------- |
+| `delivered`  | `true` when your endpoint answered `2xx`                                    |
+| `httpStatus` | The status your endpoint answered with. Absent when there was no answer     |
+| `latencyMs`  | How long the request took. Absent when no request was made (`no_webhook`)   |
+| `error`      | A fixed code when it was not delivered. See [failure codes](#failure-codes) |
+
+You can send **10 test pings per Integration per minute**. More are refused with HTTP 429 (tRPC code `TOO_MANY_REQUESTS`).
+
+### Read configuration and health
+
+{% tabs %}
+{% tab title="SDK" %}
+
+```typescript
+const webhook = await learnCard.invoke.getIntegrationWebhook(integrationId);
+```
+
+{% endtab %}
+
+{% tab title="REST" %}
+
+```bash
+curl "https://network.learncard.com/api/integration/$INTEGRATION_ID/webhook" \
+  -H "Authorization: Bearer $API_TOKEN"
+```
+
+{% endtab %}
+{% endtabs %}
+
+```json
+{
+    "webhookUrl": "https://example.com/learncard/webhook",
+    "state": "failing",
+    "contractEventsEnabledAt": "2026-11-17T10:00:00.000Z",
+    "hasSecret": true,
+    "secretVersion": 2,
+    "previousSecretExpiresAt": "2026-11-18T10:05:00.000Z",
+    "lastSuccessAt": "2026-11-17T10:01:12.000Z",
+    "lastFailureAt": "2026-11-17T10:07:40.000Z",
+    "lastFailureReason": "http_401",
+    "pendingDeliveries": 1,
+    "retryingDeliveries": 3
+}
+```
+
+| Field                     | Meaning                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `webhookUrl`              | The stored URL, or `null`                                                                               |
+| `state`                   | `active`, `failing` or `disabled` (below)                                                               |
+| `contractEventsEnabledAt` | When events were enabled. Absent while they are disabled                                                |
+| `hasSecret`               | Whether a signing secret exists                                                                         |
+| `secretVersion`           | `0` with no secret, `1` for the first secret, plus one for every rotation. The secret is never returned |
+| `previousSecretExpiresAt` | Until when the previous secret also signs requests. Present for 24 hours after a rotation               |
+| `lastSuccessAt`           | When a request to the URL last got a `2xx` answer                                                       |
+| `lastFailureAt`           | When a request to the URL last failed                                                                   |
+| `lastFailureReason`       | The [failure code](#failure-codes) of that failure. Never a URL or a response body                      |
+| `pendingDeliveries`       | Feed records waiting for their first delivery attempt                                                   |
+| `retryingDeliveries`      | Feed records that failed at least once and will be tried again                                          |
+
+| State      | Meaning                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------- |
+| `active`   | A URL is set, events are enabled, and the most recent attempt succeeded (or nothing has been sent yet)        |
+| `failing`  | A URL is set, events are enabled, and the most recent attempt failed. It becomes `active` on the next success |
+| `disabled` | There is no URL, or contract events are disabled                                                              |
+
+Health counts every request made to the URL: deliveries of feed records and test pings. Storing a different URL clears `lastSuccessAt`, `lastFailureAt` and `lastFailureReason`, because they describe the old URL. The read needs only the `integrations:read` scope.
+
+### Failure codes
+
+The same fixed codes appear as `error` on a test ping and as `lastFailureReason` in health.
+
+| Code              | Meaning                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
+| `http_<status>`   | Your endpoint answered with that status, for example `http_401` or `http_503`                     |
+| `timeout`         | No answer within 6 seconds                                                                        |
+| `network_error`   | The connection failed (DNS, TLS, refused, reset)                                                  |
+| `invalid_webhook` | The URL answered with a redirect, or does not resolve to a public address. LearnCard sent nothing |
+| `no_webhook`      | Test ping only: the Integration has no URL or no secret                                           |
+| `delivery_error`  | LearnCard could not prepare the request. It is retried                                            |
+
+### API-only setup
+
+A server that holds only an API token for the Integration's owner can do the whole setup. No developer-portal access is needed. The token needs the `integrations:write` and `integrations:read` scopes.
+
+{% tabs %}
+{% tab title="SDK" %}
+
+```typescript
+import { initLearnCard } from '@learncard/init';
+
+const learnCard = await initLearnCard({ apiKey: process.env.LEARNCARD_API_TOKEN, network: true });
+
+// 1. Register the webhook. The first registration returns the secret, once.
+const { secret } = await learnCard.invoke.setIntegrationWebhook(
+    integrationId,
+    'https://example.com/learncard/webhook'
+);
+
+if (secret) await storeSecret(secret); // your receiver verifies signatures with it
+
+// 2. Test it. The answer comes back in the same call.
+const ping = await learnCard.invoke.sendIntegrationTestEvent(integrationId);
+
+if (ping.delivered) {
+    console.log(`Connected (HTTP ${ping.httpStatus}, ${ping.latencyMs} ms)`);
+} else if (ping.httpStatus) {
+    console.log(`Your endpoint returned ${ping.httpStatus}: check its settings`);
+} else {
+    console.log(`Not delivered: ${ping.error}`);
+}
+
+// 3. Read health whenever you want to show the connection's state.
+const webhook = await learnCard.invoke.getIntegrationWebhook(integrationId);
+
+console.log(webhook.state, webhook.lastFailureReason, webhook.retryingDeliveries);
+```
+
+{% endtab %}
+
+{% tab title="REST" %}
+
+```bash
+BASE="https://network.learncard.com/api"
+AUTH="Authorization: Bearer $API_TOKEN"
+
+# 1. Register the webhook. Save "secret" from this response; it is not returned again.
+curl -X POST "$BASE/integration/$INTEGRATION_ID/webhook" -H "$AUTH" \
+  -H "Content-Type: application/json" \
+  -d '{ "webhookUrl": "https://example.com/learncard/webhook" }'
+
+# 2. Test it. { "delivered": true, "httpStatus": 200, "latencyMs": 84 }
+#    or       { "delivered": false, "httpStatus": 401, "latencyMs": 120, "error": "http_401" }
+curl -X POST "$BASE/integration/$INTEGRATION_ID/webhook/test" -H "$AUTH" \
+  -H "Content-Type: application/json" -d '{}'
+
+# 3. Read health.
+curl "$BASE/integration/$INTEGRATION_ID/webhook" -H "$AUTH"
+```
+
+{% endtab %}
+{% endtabs %}
+
+A failing test ping is the quickest way to find a setup problem: `http_401` or `http_403` usually means your endpoint is not public or rejects the signature, `invalid_webhook` means the URL redirects or is not a public address, and `timeout` means the endpoint did not answer within 6 seconds.
 
 ## The event record
 
@@ -143,11 +298,28 @@ The record carries identifiers only. It never contains shared credentials or per
 | `credentials_synced` | Owner, writers, recipients, requester | The consenter shared more credentials                                                |
 | `consent_paused`     | Owner, writers, recipients, requester | A contract update needs new consent (`reason: "needs_reconsent"`). Access is paused  |
 | `consent_suspended`  | Owner, writers, recipients, requester | The re-consent deadline passed without an answer                                     |
-| `consent_expired`    | Owner, writers, recipients, requester | The terms or the contract reached their expiry time. Sent once per terms             |
+| `consent_expired`    | Owner, writers, recipients, requester | The consent expired (see [Expiry](#expiry)). Can occur again after a renewal         |
 | `contract_retired`   | Owner, writers, recipients            | The contract was retired. One `consent_withdrawn` per active consent is sent as well |
 | `integration.test`   | The Integration you tested            | Test delivery only. Never in the feed                                                |
 
 A requester receives a record only for events that carry its own request.
+
+### Expiry
+
+`consent_expired` follows the same rule as the consented data reads. A consent expires when either of these times passes:
+
+- the `expiresAt` of the consent terms themselves
+- the `expiresAt` of the **contract version the consenter accepted**
+
+The newest contract version does not count for a consenter who has not accepted it yet. After a contract update, someone who is still asked to re-consent expires with the version they accepted, not with the new one.
+
+One event is sent per expiry time, and its `eventId` contains that time (`<termsId>:expired:<expiresAt>`). The same expiry is never sent twice. `consent_expired` **can occur again** for the same terms: if the consenter renews an expired consent by accepting a newer contract version (you receive `consent_updated`), and that version later expires, you receive a second `consent_expired`. When the terms' own expiry and the accepted version's expiry are different times and both pass, you receive one event for each; treat `consent_expired` for a connection you already removed as a repeat.
+
+The terms status is not changed by expiry, and the [connections snapshot](#connections-snapshot) leaves expired consents out by the same rule.
+
+{% hint style="warning" %}
+**A category's `shareUntil` passing does not emit an event.** `shareUntil` is set per credential category inside the terms. When it passes, the consented data reads stop returning that category's data, but the connection stays live: no `consent_expired`, no `consent_updated`, and the connection snapshot is unaffected. If your system depends on a category's data, read the consented data again when you need it (or on a schedule) instead of waiting for an event.
+{% endhint %}
 
 ## Verify the signature
 
@@ -327,6 +499,8 @@ global without sharing class LearnCardWebhook {
 - A delivery gets up to **12 attempts within 24 hours** of the record being written. The wait starts at 60 seconds and doubles after each failed attempt, up to 1 hour.
 - A worker runs about once a minute, so a first delivery normally arrives within a minute.
 - A failed or rejected delivery never removes the record from the feed. Failed deliveries are not replayed after you fix your endpoint; read the feed to catch up.
+- **Disabling contract events stops deliveries.** Records that were still waiting, for a first attempt or for a retry, are closed without being sent (delivery failure reason `disabled`). They stay in the feed. Records from before a disable are not sent after events are enabled again; read the feed to catch up.
+- Use [`getIntegrationWebhook`](#read-configuration-and-health) to see whether deliveries are arriving, why the last one failed, and how many are waiting.
 - Records written while the Integration had no `webhookUrl` are feed-only. They are not sent later when a URL is added.
 
 ## Read the feed
@@ -420,7 +594,7 @@ Both patterns keep a table of connections keyed by `termsUri`. Apply each record
 | `consent_created`, `consent_updated`   | Insert or update the connection as `live`              |
 | `consent_paused`                       | Set status `needs_reconsent`                           |
 | `consent_suspended`                    | Set status `suspended`                                 |
-| `consent_withdrawn`, `consent_expired` | Remove the connection                                  |
+| `consent_withdrawn`, `consent_expired` | Remove the connection (a no-op if already removed)     |
 | `contract_retired`                     | Remove every connection of that contract               |
 | `credentials_synced`                   | No status change. Read the consented data again        |
 | `request_*`                            | Update your own request tracking; no connection change |
@@ -485,10 +659,12 @@ An event tells you that something changed. It is not permission to use data. Bef
 
 ## Reference
 
-| SDK method                              | REST route                                     | Scope                 |
-| --------------------------------------- | ---------------------------------------------- | --------------------- |
-| `updateIntegration(id, updates)`        | `POST /integration/update/{id}`                | `integrations:write`  |
-| `rotateIntegrationWebhookSecret(id)`    | `POST /integration/{id}/webhook-secret/rotate` | `integrations:write`  |
-| `sendIntegrationTestEvent(id)`          | `POST /integration/{id}/webhook/test`          | `integrations:write`  |
-| `getIntegrationEvents(id, options?)`    | `GET /integrations/{id}/events`                | `integrations:read`   |
-| `getContractConnections(uri, options?)` | `GET /consent-flow-contracts/connections`      | `contracts-data:read` |
+| SDK method                               | REST route                                     | Scope                 |
+| ---------------------------------------- | ---------------------------------------------- | --------------------- |
+| `setIntegrationWebhook(id, url \| null)` | `POST /integration/{id}/webhook`               | `integrations:write`  |
+| `getIntegrationWebhook(id)`              | `GET /integration/{id}/webhook`                | `integrations:read`   |
+| `sendIntegrationTestEvent(id)`           | `POST /integration/{id}/webhook/test`          | `integrations:write`  |
+| `rotateIntegrationWebhookSecret(id)`     | `POST /integration/{id}/webhook-secret/rotate` | `integrations:write`  |
+| `updateIntegration(id, updates)`         | `POST /integration/update/{id}`                | `integrations:write`  |
+| `getIntegrationEvents(id, options?)`     | `GET /integrations/{id}/events`                | `integrations:read`   |
+| `getContractConnections(uri, options?)`  | `GET /consent-flow-contracts/connections`      | `contracts-data:read` |

@@ -3672,6 +3672,16 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.integrations.deleteIntegration.mutate({ id });
             },
+            setIntegrationWebhook: async (_learnCard, id, webhookUrl) => {
+                await ensureUser();
+
+                return client.integrations.setIntegrationWebhook.mutate({ id, webhookUrl });
+            },
+            getIntegrationWebhook: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.integrations.getIntegrationWebhook.query({ id });
+            },
             rotateIntegrationWebhookSecret: async (_learnCard, id) => {
                 await ensureUser();
 

@@ -2,6 +2,7 @@ import * as m from '../../../../paraglide/messages.js';
 import { useLocale } from '../../../../i18n';
 import React, { useEffect, useState } from 'react';
 import {
+    Activity,
     AlertTriangle,
     Check,
     CheckCircle2,
@@ -10,6 +11,7 @@ import {
     Info,
     KeyRound,
     Loader2,
+    RefreshCw,
     Rss,
     Send,
     Trash2,
@@ -19,7 +21,7 @@ import {
 import { Clipboard } from '@capacitor/clipboard';
 import type {
     IntegrationTestEventResult,
-    IntegrationWebhookSecretRotation,
+    IntegrationWebhookState,
     LCNIntegration,
 } from '@learncard/types';
 
@@ -50,11 +52,66 @@ const formatDate = (value: string, locale: string): string => {
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString(locale);
 };
 
+/** A signing secret that was just returned. It is shown once and kept in component state only. */
+type RevealedSecret = { secret: string; previousSecretExpiresAt?: string };
+
+const STATE_BADGE_CLASS: Record<IntegrationWebhookState, string> = {
+    active: 'bg-emerald-100 text-emerald-700',
+    failing: 'bg-red-100 text-red-700',
+    disabled: 'bg-gray-100 text-gray-600',
+};
+
+const getStateLabel = (state: IntegrationWebhookState): string => {
+    switch (state) {
+        case 'active':
+            return m['developerPortal.dashboards.tabs.webhooks.healthStateActive']();
+        case 'failing':
+            return m['developerPortal.dashboards.tabs.webhooks.healthStateFailing']();
+        default:
+            return m['developerPortal.dashboards.tabs.webhooks.healthStateDisabled']();
+    }
+};
+
+const getStateHint = (state: IntegrationWebhookState): string => {
+    switch (state) {
+        case 'active':
+            return m['developerPortal.dashboards.tabs.webhooks.healthStateActiveHint']();
+        case 'failing':
+            return m['developerPortal.dashboards.tabs.webhooks.healthStateFailingHint']();
+        default:
+            return m['developerPortal.dashboards.tabs.webhooks.healthStateDisabledHint']();
+    }
+};
+
+/** Text for the fixed failure code of a delivery attempt, for example `http_401` or `timeout`. */
+const getFailureReasonText = (reason: string): string => {
+    const httpStatus = /^http_(\d{3})$/.exec(reason)?.[1];
+
+    if (httpStatus) {
+        return m['developerPortal.dashboards.tabs.webhooks.reasonHttp']({ status: httpStatus });
+    }
+
+    switch (reason) {
+        case 'timeout':
+            return m['developerPortal.dashboards.tabs.webhooks.reasonTimeout']();
+        case 'network_error':
+            return m['developerPortal.dashboards.tabs.webhooks.reasonNetwork']();
+        case 'invalid_webhook':
+            return m['developerPortal.dashboards.tabs.webhooks.reasonInvalid']();
+        default:
+            return m['developerPortal.dashboards.tabs.webhooks.reasonOther']();
+    }
+};
+
+const isRateLimitError = (error: unknown): boolean =>
+    (error as { data?: { code?: string } } | null)?.data?.code === 'TOO_MANY_REQUESTS';
+
 /** Text for a test event that was not delivered. `error` is a fixed code from the network. */
 const getTestFailureText = (result: IntegrationTestEventResult): string => {
-    if (result.status !== undefined) {
+    if (result.httpStatus !== undefined) {
         return m['developerPortal.dashboards.tabs.webhooks.testFailedStatus']({
-            status: result.status,
+            status: result.httpStatus,
+            latency: result.latencyMs ?? 0,
         });
     }
 
@@ -75,10 +132,17 @@ const getTestFailureText = (result: IntegrationTestEventResult): string => {
 export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
     const locale = useLocale();
     const { presentToast } = useToast();
-    const { useUpdateIntegration, useRotateIntegrationWebhookSecret, useSendIntegrationTestEvent } =
-        useDeveloperPortal();
+    const {
+        useUpdateIntegration,
+        useSetIntegrationWebhook,
+        useIntegrationWebhook,
+        useRotateIntegrationWebhookSecret,
+        useSendIntegrationTestEvent,
+    } = useDeveloperPortal();
 
     const updateIntegration = useUpdateIntegration();
+    const setWebhook = useSetIntegrationWebhook();
+    const health = useIntegrationWebhook(integration.id);
     const rotateSecret = useRotateIntegrationWebhookSecret();
     const sendTestEvent = useSendIntegrationTestEvent();
 
@@ -87,7 +151,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
     const eventsEnabled = Boolean(eventsEnabledAt);
 
     const [urlInput, setUrlInput] = useState(savedUrl);
-    const [rotation, setRotation] = useState<IntegrationWebhookSecretRotation | null>(null);
+    const [revealed, setRevealed] = useState<RevealedSecret | null>(null);
     const [secretCopied, setSecretCopied] = useState(false);
     const [testResult, setTestResult] = useState<IntegrationTestEventResult | null>(null);
 
@@ -97,7 +161,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
 
     // A secret and a test result belong to one integration only.
     useEffect(() => {
-        setRotation(null);
+        setRevealed(null);
         setTestResult(null);
     }, [integration.id]);
 
@@ -105,7 +169,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
     const urlIsValid = isHttpUrl(trimmedUrl);
     const urlChanged = trimmedUrl !== savedUrl;
     const showUrlError = trimmedUrl.length > 0 && !urlIsValid;
-    const isSaving = updateIntegration.isPending;
+    const isSaving = updateIntegration.isPending || setWebhook.isPending;
 
     const showError = (message: string): void => {
         presentToast(message, { type: ToastTypeEnum.Error, hasDismissButton: true });
@@ -115,10 +179,18 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
         if (!urlIsValid || !urlChanged) return;
 
         try {
-            await updateIntegration.mutateAsync({
+            const registration = await setWebhook.mutateAsync({
                 id: integration.id,
-                updates: { webhookUrl: trimmedUrl },
+                webhookUrl: trimmedUrl,
             });
+
+            // Only the call that creates the first secret returns it. It stays in component
+            // state only and is never logged or stored.
+            if (registration.secret) {
+                setRevealed({ secret: registration.secret });
+                setSecretCopied(false);
+            }
+
             setTestResult(null);
             presentToast(m['developerPortal.dashboards.tabs.webhooks.urlSaved'](), {
                 hasDismissButton: true,
@@ -130,10 +202,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
 
     const removeUrl = async (): Promise<void> => {
         try {
-            await updateIntegration.mutateAsync({
-                id: integration.id,
-                updates: { webhookUrl: null },
-            });
+            await setWebhook.mutateAsync({ id: integration.id, webhookUrl: null });
             setUrlInput('');
             setTestResult(null);
             presentToast(m['developerPortal.dashboards.tabs.webhooks.urlRemoved'](), {
@@ -163,10 +232,10 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
         }
     };
 
-    const createSecret = async (): Promise<void> => {
+    const rotate = async (): Promise<void> => {
         try {
             // The secret stays in component state only. It is never logged or stored.
-            setRotation(await rotateSecret.mutateAsync(integration.id));
+            setRevealed(await rotateSecret.mutateAsync(integration.id));
             setSecretCopied(false);
         } catch {
             showError(m['developerPortal.dashboards.tabs.webhooks.rotateFailed']());
@@ -174,10 +243,10 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
     };
 
     const copySecret = async (): Promise<void> => {
-        if (!rotation) return;
+        if (!revealed) return;
 
         try {
-            await Clipboard.write({ string: rotation.secret });
+            await Clipboard.write({ string: revealed.secret });
             setSecretCopied(true);
             setTimeout(() => setSecretCopied(false), 2000);
             presentToast(m['developerPortal.dashboards.tabs.webhooks.secretCopied'](), {
@@ -193,12 +262,17 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
 
         try {
             setTestResult(await sendTestEvent.mutateAsync(integration.id));
-        } catch {
-            showError(m['developerPortal.dashboards.tabs.webhooks.testRequestFailed']());
+        } catch (error) {
+            showError(
+                isRateLimitError(error)
+                    ? m['developerPortal.dashboards.tabs.webhooks.testRateLimited']()
+                    : m['developerPortal.dashboards.tabs.webhooks.testRequestFailed']()
+            );
         }
     };
 
-    const hasSecret = Boolean(integration.hasWebhookSecret) || rotation !== null;
+    const hasSecret = Boolean(integration.hasWebhookSecret) || revealed !== null;
+    const status = health.data ?? null;
 
     return (
         <div className="space-y-v3-6">
@@ -365,7 +439,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                     </div>
                 </div>
 
-                {rotation ? (
+                {revealed ? (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-v3-2">
                         <p className="text-xs font-medium text-gray-600">
                             {m['developerPortal.dashboards.tabs.webhooks.newSecretLabel']()}
@@ -376,7 +450,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                                 data-testid="webhook-secret"
                                 className="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded-lg text-xs font-mono break-all"
                             >
-                                {rotation.secret}
+                                {revealed.secret}
                             </code>
                             <button
                                 type="button"
@@ -398,12 +472,12 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                             <AlertTriangle aria-hidden className="w-4 h-4 shrink-0 mt-0.5" />
                             {m['developerPortal.dashboards.tabs.webhooks.secretOnceWarning']()}
                         </p>
-                        {rotation.previousSecretExpiresAt && (
+                        {revealed.previousSecretExpiresAt && (
                             <p className="text-sm text-amber-800">
                                 {m[
                                     'developerPortal.dashboards.tabs.webhooks.previousSecretExpires'
                                 ]({
-                                    date: formatDate(rotation.previousSecretExpiresAt, locale),
+                                    date: formatDate(revealed.previousSecretExpiresAt, locale),
                                 })}
                             </p>
                         )}
@@ -416,26 +490,152 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                     </p>
                 )}
 
-                <div>
-                    <button
-                        type="button"
-                        onClick={createSecret}
-                        disabled={rotateSecret.isPending}
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors"
-                    >
-                        {rotateSecret.isPending && (
-                            <Loader2 aria-hidden className="w-4 h-4 animate-spin" />
-                        )}
-                        {hasSecret
-                            ? m['developerPortal.dashboards.tabs.webhooks.rotateSecret']()
-                            : m['developerPortal.dashboards.tabs.webhooks.createSecret']()}
-                    </button>
-                    {hasSecret && (
+                {/* The first secret comes from saving a webhook URL. Rotation is for later. */}
+                {hasSecret && (
+                    <div>
+                        <button
+                            type="button"
+                            onClick={rotate}
+                            disabled={rotateSecret.isPending}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors"
+                        >
+                            {rotateSecret.isPending && (
+                                <Loader2 aria-hidden className="w-4 h-4 animate-spin" />
+                            )}
+                            {m['developerPortal.dashboards.tabs.webhooks.rotateSecret']()}
+                        </button>
                         <p className="text-xs text-gray-500 mt-2">
                             {m['developerPortal.dashboards.tabs.webhooks.rotateHint']()}
                         </p>
-                    )}
+                    </div>
+                )}
+            </section>
+
+            {/* Delivery health */}
+            <section
+                aria-labelledby="webhooks-health-title"
+                className="p-4 border border-gray-200 rounded-xl bg-white space-y-v3-3"
+            >
+                <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center shrink-0">
+                            <Activity aria-hidden className="w-5 h-5 text-sky-600" />
+                        </div>
+                        <div>
+                            <h3 id="webhooks-health-title" className="font-medium text-gray-800">
+                                {m['developerPortal.dashboards.tabs.webhooks.healthTitle']()}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                                {m['developerPortal.dashboards.tabs.webhooks.healthDescription']()}
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => health.refetch()}
+                        disabled={health.isFetching}
+                        aria-label={m['developerPortal.dashboards.tabs.webhooks.healthRefresh']()}
+                        title={m['developerPortal.dashboards.tabs.webhooks.healthRefresh']()}
+                        className="p-2 text-gray-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors shrink-0 disabled:opacity-50"
+                    >
+                        <RefreshCw
+                            aria-hidden
+                            className={`w-4 h-4 ${health.isFetching ? 'animate-spin' : ''}`}
+                        />
+                    </button>
                 </div>
+
+                {!status && health.isError && (
+                    <p role="alert" className="text-sm text-red-600">
+                        {m['developerPortal.dashboards.tabs.webhooks.healthLoadFailed']()}
+                    </p>
+                )}
+
+                {status && (
+                    <>
+                        <p className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                            <span
+                                data-testid="webhook-state"
+                                className={`px-3 py-1 rounded-full font-medium ${
+                                    STATE_BADGE_CLASS[status.state]
+                                }`}
+                            >
+                                {getStateLabel(status.state)}
+                            </span>
+                            <span>{getStateHint(status.state)}</span>
+                        </p>
+
+                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                            <div>
+                                <dt className="text-gray-500">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.webhooks.healthLastSuccess'
+                                    ]()}
+                                </dt>
+                                <dd className="text-gray-800" data-testid="webhook-last-success">
+                                    {status.lastSuccessAt
+                                        ? formatDate(status.lastSuccessAt, locale)
+                                        : m[
+                                              'developerPortal.dashboards.tabs.webhooks.healthNever'
+                                          ]()}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-gray-500">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.webhooks.healthLastFailure'
+                                    ]()}
+                                </dt>
+                                <dd className="text-gray-800" data-testid="webhook-last-failure">
+                                    {status.lastFailureAt
+                                        ? formatDate(status.lastFailureAt, locale)
+                                        : m[
+                                              'developerPortal.dashboards.tabs.webhooks.healthNever'
+                                          ]()}
+                                    {status.lastFailureAt && status.lastFailureReason && (
+                                        <span className="block text-gray-600">
+                                            {getFailureReasonText(status.lastFailureReason)}
+                                            <code dir="ltr" className="ms-2 font-mono text-xs">
+                                                {status.lastFailureReason}
+                                            </code>
+                                        </span>
+                                    )}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-gray-500">
+                                    {m['developerPortal.dashboards.tabs.webhooks.healthPending']()}
+                                </dt>
+                                <dd className="text-gray-800" data-testid="webhook-pending">
+                                    {status.pendingDeliveries}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-gray-500">
+                                    {m['developerPortal.dashboards.tabs.webhooks.healthRetrying']()}
+                                </dt>
+                                <dd className="text-gray-800" data-testid="webhook-retrying">
+                                    {status.retryingDeliveries}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-gray-500">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.webhooks.healthSecretVersion'
+                                    ]()}
+                                </dt>
+                                <dd className="text-gray-800" data-testid="webhook-secret-version">
+                                    {status.secretVersion > 0
+                                        ? status.secretVersion
+                                        : m[
+                                              'developerPortal.dashboards.tabs.webhooks.healthNoSecret'
+                                          ]()}
+                                </dd>
+                            </div>
+                        </dl>
+                    </>
+                )}
             </section>
 
             {/* Test event */}
@@ -494,11 +694,12 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                         <span>
                             {testResult.delivered
                                 ? m['developerPortal.dashboards.tabs.webhooks.testDelivered']({
-                                      status: testResult.status ?? 200,
+                                      status: testResult.httpStatus ?? 200,
+                                      latency: testResult.latencyMs ?? 0,
                                   })
                                 : getTestFailureText(testResult)}
                             {!testResult.delivered &&
-                                testResult.status === undefined &&
+                                testResult.httpStatus === undefined &&
                                 testResult.error && (
                                     <code dir="ltr" className="ms-2 font-mono text-xs">
                                         {testResult.error}

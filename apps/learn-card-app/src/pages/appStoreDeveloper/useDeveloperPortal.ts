@@ -6,7 +6,9 @@ import type {
     AppStoreListingUpdateType,
     LCNIntegration,
     LCNIntegrationUpdateType,
+    IntegrationWebhookRegistration,
     IntegrationWebhookSecretRotation,
+    IntegrationWebhookStatus,
     IntegrationTestEventResult,
     AppListingStatus,
     PromotionLevel,
@@ -174,7 +176,47 @@ export const useDeveloperPortal = () => {
         });
     };
 
-    // Mutation for creating a new webhook signing secret. The secret is returned once.
+    // Mutation for setting, replacing or removing (null) an integration's webhook URL.
+    // The first time a URL is set, the result carries the signing secret, once.
+    const useSetIntegrationWebhook = () => {
+        return useMutation({
+            mutationFn: async ({
+                id,
+                webhookUrl,
+            }: {
+                id: string;
+                webhookUrl: string | null;
+            }): Promise<IntegrationWebhookRegistration> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.setIntegrationWebhook(id, webhookUrl);
+            },
+            onSuccess: (_data, variables) => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
+                // Also covers the webhook health query, whose key starts with this one.
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'integration', variables.id],
+                });
+            },
+        });
+    };
+
+    // Query for an integration's webhook configuration and delivery health. Never a secret.
+    const useIntegrationWebhook = (integrationId: string | null) => {
+        return useQuery({
+            queryKey: ['developer', 'integration', integrationId, 'webhook'],
+            queryFn: async (): Promise<IntegrationWebhookStatus | null> => {
+                if (!integrationId) return null;
+
+                const wallet = await initWallet();
+
+                return wallet.invoke.getIntegrationWebhook(integrationId);
+            },
+            enabled: !!integrationId,
+        });
+    };
+
+    // Mutation for replacing the webhook signing secret. The new secret is returned once.
     const useRotateIntegrationWebhookSecret = () => {
         return useMutation({
             mutationFn: async (id: string): Promise<IntegrationWebhookSecretRotation> => {
@@ -196,6 +238,12 @@ export const useDeveloperPortal = () => {
                 const wallet = await initWallet();
 
                 return wallet.invoke.sendIntegrationTestEvent(id);
+            },
+            // A test event counts as a delivery attempt, so health changes with it.
+            onSuccess: (_data, id) => {
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'integration', id, 'webhook'],
+                });
             },
         });
     };
@@ -662,6 +710,8 @@ export const useDeveloperPortal = () => {
         useListingSigningAuthority,
         useCreateIntegration,
         useUpdateIntegration,
+        useSetIntegrationWebhook,
+        useIntegrationWebhook,
         useRotateIntegrationWebhookSecret,
         useSendIntegrationTestEvent,
 

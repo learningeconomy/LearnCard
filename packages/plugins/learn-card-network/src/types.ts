@@ -1,7 +1,9 @@
 import type { CampaignAudienceResult } from '@learncard/types';
 import type {
     SendContractRequest,
+    IntegrationWebhookRegistration,
     IntegrationWebhookSecretRotation,
+    IntegrationWebhookStatus,
     IntegrationTestEventResult,
     IntegrationEventsResponse,
     PaginatedContractConnections,
@@ -1137,11 +1139,30 @@ export type LearnCardNetworkPluginMethods = {
     updateIntegration: (id: string, updates: LCNIntegrationUpdateType) => Promise<boolean>;
     deleteIntegration: (id: string) => Promise<boolean>;
     /**
-     * Creates a new webhook signing secret and returns it once. The secret it replaces stays
-     * valid for 24 hours. Also used to reveal the secret for the first time.
+     * Sets, replaces or removes (`null`) the webhook URL of an integration. The first time a URL
+     * is set, the signing secret is created and returned once in `secret`; store it then, it
+     * cannot be read again. Setting a URL also enables contract events.
+     */
+    setIntegrationWebhook: (
+        id: string,
+        webhookUrl: string | null
+    ) => Promise<IntegrationWebhookRegistration>;
+    /**
+     * Reads the webhook configuration and delivery health of an integration: URL, state
+     * (`active`, `failing`, `disabled`), last success and failure with a fixed failure code,
+     * pending and retrying delivery counts, and the secret version. Never a secret.
+     */
+    getIntegrationWebhook: (id: string) => Promise<IntegrationWebhookStatus>;
+    /**
+     * Replaces the webhook signing secret and returns the new one once. The secret it replaces
+     * stays valid for 24 hours. The first secret comes from setIntegrationWebhook.
      */
     rotateIntegrationWebhookSecret: (id: string) => Promise<IntegrationWebhookSecretRotation>;
-    /** Sends one signed `integration.test` event to the integration's webhook URL. */
+    /**
+     * Sends one signed `integration.test` event to the integration's webhook URL right away
+     * and returns `{ delivered, httpStatus, latencyMs, error }`. Limited to 10 per integration
+     * per minute.
+     */
     sendIntegrationTestEvent: (id: string) => Promise<IntegrationTestEventResult>;
     /**
      * Reads the ordered change feed of contract events for an integration. Pass the returned

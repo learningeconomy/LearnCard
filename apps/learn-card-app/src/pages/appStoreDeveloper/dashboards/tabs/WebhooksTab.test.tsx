@@ -2,13 +2,15 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { LCNIntegration } from '@learncard/types';
+import type { IntegrationWebhookStatus, LCNIntegration } from '@learncard/types';
 import { WebhooksTab } from './WebhooksTab';
 import * as m from '../../../../paraglide/messages.js';
 import { setLocale } from '../../../../paraglide/runtime.js';
 
 const state = vi.hoisted(() => ({
     updateIntegration: vi.fn(),
+    setIntegrationWebhook: vi.fn(),
+    getIntegrationWebhook: vi.fn(),
     rotateIntegrationWebhookSecret: vi.fn(),
     sendIntegrationTestEvent: vi.fn(),
     presentToast: vi.fn(),
@@ -20,6 +22,8 @@ vi.mock('learn-card-base', () => ({
         initWallet: async () => ({
             invoke: {
                 updateIntegration: state.updateIntegration,
+                setIntegrationWebhook: state.setIntegrationWebhook,
+                getIntegrationWebhook: state.getIntegrationWebhook,
                 rotateIntegrationWebhookSecret: state.rotateIntegrationWebhookSecret,
                 sendIntegrationTestEvent: state.sendIntegrationTestEvent,
             },
@@ -51,7 +55,6 @@ const webhookKeys = {
     statusDisabled: 'developerPortal.dashboards.tabs.webhooks.statusDisabled',
     secretNone: 'developerPortal.dashboards.tabs.webhooks.secretNone',
     secretExists: 'developerPortal.dashboards.tabs.webhooks.secretExists',
-    createSecret: 'developerPortal.dashboards.tabs.webhooks.createSecret',
     rotateSecret: 'developerPortal.dashboards.tabs.webhooks.rotateSecret',
     secretOnceWarning: 'developerPortal.dashboards.tabs.webhooks.secretOnceWarning',
     previousSecretExpires: 'developerPortal.dashboards.tabs.webhooks.previousSecretExpires',
@@ -62,6 +65,17 @@ const webhookKeys = {
     testFailedStatus: 'developerPortal.dashboards.tabs.webhooks.testFailedStatus',
     testFailedTimeout: 'developerPortal.dashboards.tabs.webhooks.testFailedTimeout',
     testRequestFailed: 'developerPortal.dashboards.tabs.webhooks.testRequestFailed',
+    testRateLimited: 'developerPortal.dashboards.tabs.webhooks.testRateLimited',
+    healthTitle: 'developerPortal.dashboards.tabs.webhooks.healthTitle',
+    healthRefresh: 'developerPortal.dashboards.tabs.webhooks.healthRefresh',
+    healthLoadFailed: 'developerPortal.dashboards.tabs.webhooks.healthLoadFailed',
+    healthStateActive: 'developerPortal.dashboards.tabs.webhooks.healthStateActive',
+    healthStateFailing: 'developerPortal.dashboards.tabs.webhooks.healthStateFailing',
+    healthStateDisabled: 'developerPortal.dashboards.tabs.webhooks.healthStateDisabled',
+    healthNever: 'developerPortal.dashboards.tabs.webhooks.healthNever',
+    healthNoSecret: 'developerPortal.dashboards.tabs.webhooks.healthNoSecret',
+    reasonHttp: 'developerPortal.dashboards.tabs.webhooks.reasonHttp',
+    feedDescription: 'developerPortal.dashboards.tabs.webhooks.feedDescription',
     rotateFailed: 'developerPortal.dashboards.tabs.webhooks.rotateFailed',
     title: 'developerPortal.dashboards.tabs.webhooks.title',
 } as const;
@@ -80,6 +94,24 @@ const configured: LCNIntegration = {
     contractEventsEnabledAt: '2026-11-14T00:00:00.000Z',
 };
 
+const noWebhookStatus: IntegrationWebhookStatus = {
+    webhookUrl: null,
+    state: 'disabled',
+    hasSecret: false,
+    secretVersion: 0,
+    pendingDeliveries: 0,
+    retryingDeliveries: 0,
+};
+const activeStatus: IntegrationWebhookStatus = {
+    webhookUrl: WEBHOOK_URL,
+    state: 'active',
+    contractEventsEnabledAt: '2026-11-14T00:00:00.000Z',
+    hasSecret: true,
+    secretVersion: 1,
+    pendingDeliveries: 0,
+    retryingDeliveries: 0,
+};
+
 const showTab = (project: LCNIntegration = integration): void => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
     render(
@@ -93,8 +125,14 @@ beforeEach(() => {
     state.locale = 'en';
     setLocale('en', { reload: false });
     state.updateIntegration.mockReset().mockResolvedValue(true);
+    state.setIntegrationWebhook.mockReset().mockResolvedValue({ webhookUrl: WEBHOOK_URL });
+    state.getIntegrationWebhook.mockReset().mockResolvedValue(activeStatus);
     state.rotateIntegrationWebhookSecret.mockReset().mockResolvedValue({ secret: SECRET });
-    state.sendIntegrationTestEvent.mockReset().mockResolvedValue({ delivered: true, status: 204 });
+    state.sendIntegrationTestEvent.mockReset().mockResolvedValue({
+        delivered: true,
+        httpStatus: 204,
+        latencyMs: 87,
+    });
     state.presentToast.mockReset();
     state.clipboardWrite.mockReset().mockResolvedValue(undefined);
 });
@@ -119,10 +157,11 @@ describe('Webhooks tab', () => {
         fireEvent.click(save);
 
         await waitFor(() =>
-            expect(state.updateIntegration).toHaveBeenCalledWith(integration.id, {
-                webhookUrl: WEBHOOK_URL,
-            })
+            expect(state.setIntegrationWebhook).toHaveBeenCalledWith(integration.id, WEBHOOK_URL)
         );
+        expect(state.updateIntegration).not.toHaveBeenCalled();
+        // Replacing a URL returns no secret, so none is shown.
+        expect(screen.queryByTestId('webhook-secret')).toBeNull();
     });
 
     it('removes the saved webhook URL with null', async () => {
@@ -133,10 +172,9 @@ describe('Webhooks tab', () => {
         fireEvent.click(screen.getByRole('button', { name: t('removeUrl') }));
 
         await waitFor(() =>
-            expect(state.updateIntegration).toHaveBeenCalledWith(configured.id, {
-                webhookUrl: null,
-            })
+            expect(state.setIntegrationWebhook).toHaveBeenCalledWith(configured.id, null)
         );
+        expect(state.updateIntegration).not.toHaveBeenCalled();
     });
 
     it('enables the event feed without a webhook, and disables it again', async () => {
@@ -163,15 +201,25 @@ describe('Webhooks tab', () => {
         );
     });
 
-    it('reveals a first secret once, with a copy button and the one-time warning', async () => {
+    it('shows the first secret once when saving the URL creates it', async () => {
+        state.setIntegrationWebhook.mockResolvedValue({
+            webhookUrl: WEBHOOK_URL,
+            secret: SECRET,
+            contractEventsEnabledAt: '2026-11-14T00:00:00.000Z',
+        });
         showTab();
         expect(screen.getByText(t('secretNone'))).toBeInTheDocument();
         expect(screen.queryByTestId('webhook-secret')).toBeNull();
+        // Without a secret there is nothing to rotate: the first one comes from saving a URL.
+        expect(screen.queryByRole('button', { name: t('rotateSecret') })).toBeNull();
 
-        fireEvent.click(screen.getByRole('button', { name: t('createSecret') }));
+        fireEvent.change(screen.getByRole('textbox', { name: t('urlTitle') }), {
+            target: { value: WEBHOOK_URL },
+        });
+        fireEvent.click(screen.getByRole('button', { name: t('saveUrl') }));
 
         expect(await screen.findByTestId('webhook-secret')).toHaveTextContent(SECRET);
-        expect(state.rotateIntegrationWebhookSecret).toHaveBeenCalledWith(integration.id);
+        expect(state.rotateIntegrationWebhookSecret).not.toHaveBeenCalled();
         expect(screen.getByText(t('secretOnceWarning'))).toBeInTheDocument();
         expect(screen.queryByText(/previous secret/i)).toBeNull();
 
@@ -224,23 +272,32 @@ describe('Webhooks tab', () => {
     it('shows a delivered test event with its HTTP status', async () => {
         showTab(configured);
         fireEvent.click(screen.getByRole('button', { name: t('sendTest') }));
-        expect(await screen.findByText(t('testDelivered', { status: 204 }))).toBeInTheDocument();
+        expect(
+            await screen.findByText(t('testDelivered', { status: 204, latency: 87 }))
+        ).toBeInTheDocument();
         expect(state.sendIntegrationTestEvent).toHaveBeenCalledWith(configured.id);
     });
 
     it('shows the HTTP status of a rejected test event', async () => {
         state.sendIntegrationTestEvent.mockResolvedValue({
             delivered: false,
-            status: 500,
-            error: 'http_500',
+            httpStatus: 401,
+            latencyMs: 120,
+            error: 'http_401',
         });
         showTab(configured);
         fireEvent.click(screen.getByRole('button', { name: t('sendTest') }));
-        expect(await screen.findByText(t('testFailedStatus', { status: 500 }))).toBeInTheDocument();
+        expect(
+            await screen.findByText(t('testFailedStatus', { status: 401, latency: 120 }))
+        ).toBeInTheDocument();
     });
 
     it('explains a test event that got no answer and shows its error code', async () => {
-        state.sendIntegrationTestEvent.mockResolvedValue({ delivered: false, error: 'timeout' });
+        state.sendIntegrationTestEvent.mockResolvedValue({
+            delivered: false,
+            latencyMs: 6000,
+            error: 'timeout',
+        });
         showTab(configured);
         fireEvent.click(screen.getByRole('button', { name: t('sendTest') }));
         const result = await screen.findByText(t('testFailedTimeout'), { exact: false });
@@ -256,6 +313,107 @@ describe('Webhooks tab', () => {
                 t('testRequestFailed'),
                 expect.objectContaining({ type: 'error' })
             )
+        );
+    });
+
+    it('tells the developer when the test event limit is reached', async () => {
+        state.sendIntegrationTestEvent.mockRejectedValue(
+            Object.assign(new Error('Rate limit exceeded'), { data: { code: 'TOO_MANY_REQUESTS' } })
+        );
+        showTab(configured);
+        fireEvent.click(screen.getByRole('button', { name: t('sendTest') }));
+        await waitFor(() =>
+            expect(state.presentToast).toHaveBeenCalledWith(
+                t('testRateLimited'),
+                expect.objectContaining({ type: 'error' })
+            )
+        );
+    });
+
+    it('shows delivery health: state, last success and failure with its reason, counts, secret version', async () => {
+        const lastSuccessAt = '2026-11-16T09:00:00.000Z';
+        const lastFailureAt = '2026-11-17T10:30:00.000Z';
+        state.getIntegrationWebhook.mockResolvedValue({
+            ...activeStatus,
+            state: 'failing',
+            secretVersion: 3,
+            lastSuccessAt,
+            lastFailureAt,
+            lastFailureReason: 'http_401',
+            pendingDeliveries: 2,
+            retryingDeliveries: 5,
+        });
+        showTab(configured);
+
+        expect(await screen.findByTestId('webhook-state')).toHaveTextContent(
+            t('healthStateFailing')
+        );
+        expect(state.getIntegrationWebhook).toHaveBeenCalledWith(configured.id);
+        expect(screen.getByTestId('webhook-last-success')).toHaveTextContent(
+            new Date(lastSuccessAt).toLocaleString('en')
+        );
+
+        const failure = screen.getByTestId('webhook-last-failure');
+
+        expect(failure).toHaveTextContent(new Date(lastFailureAt).toLocaleString('en'));
+        expect(failure).toHaveTextContent(t('reasonHttp', { status: '401' }));
+        expect(within(failure).getByText('http_401')).toBeInTheDocument();
+        expect(screen.getByTestId('webhook-pending')).toHaveTextContent('2');
+        expect(screen.getByTestId('webhook-retrying')).toHaveTextContent('5');
+        expect(screen.getByTestId('webhook-secret-version')).toHaveTextContent('3');
+    });
+
+    it('shows a disabled webhook with no attempts and no secret', async () => {
+        state.getIntegrationWebhook.mockResolvedValue(noWebhookStatus);
+        showTab();
+
+        expect(await screen.findByTestId('webhook-state')).toHaveTextContent(
+            t('healthStateDisabled')
+        );
+        expect(screen.getByTestId('webhook-last-success')).toHaveTextContent(t('healthNever'));
+        expect(screen.getByTestId('webhook-last-failure')).toHaveTextContent(t('healthNever'));
+        expect(screen.getByTestId('webhook-secret-version')).toHaveTextContent(t('healthNoSecret'));
+    });
+
+    it('reads health again after a test event and on refresh', async () => {
+        showTab(configured);
+        expect(await screen.findByTestId('webhook-state')).toHaveTextContent(
+            t('healthStateActive')
+        );
+        expect(state.getIntegrationWebhook).toHaveBeenCalledTimes(1);
+
+        state.getIntegrationWebhook.mockResolvedValue({
+            ...activeStatus,
+            state: 'failing',
+            lastFailureAt: '2026-11-17T10:30:00.000Z',
+            lastFailureReason: 'timeout',
+        });
+        fireEvent.click(screen.getByRole('button', { name: t('sendTest') }));
+
+        await waitFor(() =>
+            expect(screen.getByTestId('webhook-state')).toHaveTextContent(t('healthStateFailing'))
+        );
+
+        state.getIntegrationWebhook.mockResolvedValue(activeStatus);
+        fireEvent.click(screen.getByRole('button', { name: t('healthRefresh') }));
+
+        await waitFor(() =>
+            expect(screen.getByTestId('webhook-state')).toHaveTextContent(t('healthStateActive'))
+        );
+    });
+
+    it('says so when health cannot be loaded', async () => {
+        state.getIntegrationWebhook.mockRejectedValue(new Error('offline'));
+        showTab(configured);
+
+        expect(await screen.findByText(t('healthLoadFailed'))).toBeInTheDocument();
+        expect(screen.queryByTestId('webhook-state')).toBeNull();
+    });
+
+    it('explains that disabling stops deliveries and keeps waiting events in the feed', () => {
+        showTab(configured);
+        expect(screen.getByText(t('feedDescription'))).toHaveTextContent(
+            /stops webhook deliveries right away.*stay in the event feed/
         );
     });
 
