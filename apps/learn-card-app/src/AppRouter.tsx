@@ -14,6 +14,9 @@ import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
 import { preloadRoutes } from './components/mobile-nav-bar/RoutesOutlet';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
+import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
+import AiSessionAssessmentPreviewContainer from './components/ai-assessment/AiSessionAssessmentPreviewContainer';
+import { RequestInsightsFromUserModalWrapper } from './pages/ai-insights/request-insights/RequestInsightsFromUserModal';
 import useAutoConsentLearnCardAi from './hooks/useAutoConsentLearnCardAi';
 
 import {
@@ -70,28 +73,6 @@ import useConsentFlow from './pages/consentFlow/useConsentFlow';
 import { runCredentialIndexBackfills } from 'learn-card-base/helpers/credentialVisibilityBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 import { observeDashboardLongTasks, useDashboardPathMark } from './helpers/dashboardPathMarks';
-import { lazyModalContent } from './components/generic/lazyModalContent';
-import type { ShareInsightsWithUserWrapper as ShareInsightsWithUserWrapperType } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
-import type { RequestInsightsFromUserModalWrapper as RequestInsightsFromUserModalWrapperType } from './pages/ai-insights/request-insights/RequestInsightsFromUserModal';
-
-// Deep-link modal bodies: load when the link opens them, not at startup.
-const AiSessionAssessmentPreviewContainer = lazyModalContent(
-    () => import('./components/ai-assessment/AiSessionAssessmentPreviewContainer')
-);
-const ShareInsightsWithUserWrapper = lazyModalContent<
-    React.ComponentProps<typeof ShareInsightsWithUserWrapperType>
->(() =>
-    import('./pages/ai-insights/share-insights/ShareInsightsWithUser').then(m => ({
-        default: m.ShareInsightsWithUserWrapper,
-    }))
-);
-const RequestInsightsFromUserModalWrapper = lazyModalContent<
-    React.ComponentProps<typeof RequestInsightsFromUserModalWrapperType>
->(() =>
-    import('./pages/ai-insights/request-insights/RequestInsightsFromUserModal').then(m => ({
-        default: m.RequestInsightsFromUserModalWrapper,
-    }))
-);
 
 const log = getLogger('app-router');
 

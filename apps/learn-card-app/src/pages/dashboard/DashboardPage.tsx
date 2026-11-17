@@ -64,12 +64,7 @@ import {
     type RawCategorizedEntry,
 } from '../skills/skills.helpers';
 import { countReviewsDueToday } from './helpers/dueReviews';
-import { lazyModalContent } from '../../components/generic/lazyModalContent';
-
-// Opened from the add button; not needed to paint the dashboard.
-const AddToPassportMenu = lazyModalContent(
-    () => import('../../components/add-to-passport/AddToPassportMenu')
-);
+import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 import useAddToLearnCardActions from './hooks/useAddToLearnCardActions';
 import useSkillProfileModal from './hooks/useSkillProfileModal';
 import useAppStore from '../launchPad/useAppStore';

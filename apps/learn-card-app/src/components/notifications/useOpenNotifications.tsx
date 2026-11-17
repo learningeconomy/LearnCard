@@ -5,10 +5,7 @@ import { useHistory } from 'react-router-dom';
 
 import { useModal, ModalTypes } from 'learn-card-base';
 
-import { lazyModalContent } from '../generic/lazyModalContent';
-
-// The dashboard bell only needs the opener; the notifications list loads when opened.
-const NotificationsModal = lazyModalContent(() => import('./NotificationsModal'));
+import NotificationsModal from './NotificationsModal';
 
 /**
  * Opens the notifications ("Alerts") list.

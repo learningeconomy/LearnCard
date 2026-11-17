@@ -1,4 +1,5 @@
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import ShareLinkCreate from '../../share-links/ShareLinkCreate';
 /* eslint-disable @typescript-eslint/no-explicit-any -- legacy credential shapes and callback APIs are intentionally untyped. */
 import React from 'react';
 import moment from 'moment';
@@ -32,12 +33,11 @@ import { IonCol } from '@ionic/react';
 import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
 
 import FamilyCard from '../../familyCMS/FamilyCard/FamilyCard';
+import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
+import ShareBoostLink from '../boost-options-menu/ShareBoostLink';
 import NonBoostPreview from '../boostCMS/BoostPreview/NonBoostPreview';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
-import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import CustomIssuerName from './helpers/CustomIssuerName';
-import { lazyModalContent } from '../../generic/lazyModalContent';
-
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
@@ -70,10 +70,6 @@ import {
 import { useCredentialStatus } from '../../../hooks/useCredentialStatus';
 import CredentialUpdatedIndicator from '../../credentials/credential-history/CredentialUpdatedIndicator';
 import { useMarkCredentialUpdateRead } from '../../credentials/credential-history/useMarkCredentialUpdateRead';
-
-// Modal bodies opened from a card tap or its menu; dashboard activity cards only need the card itself.
-const ShareLinkCreate = lazyModalContent(() => import('../../share-links/ShareLinkCreate'));
-const ShareBoostLink = lazyModalContent(() => import('../boost-options-menu/ShareBoostLink'));
 
 type BoostEarnedCardProps = {
     credential?: VC;

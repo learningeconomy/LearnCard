@@ -12,14 +12,11 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import { LCR } from 'learn-card-base/types/credential-records';
+import BoostOptionsMenu from '../boost-options-menu/BoostOptionsMenu';
 import CredentialHistoryModal from '../../credentials/credential-history/CredentialHistoryModal';
-import { lazyModalContent } from '../../generic/lazyModalContent';
 
 import { UnsignedVC, VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
-
-// The menu body loads when opened, not with every credential card.
-const BoostOptionsMenu = lazyModalContent(() => import('../boost-options-menu/BoostOptionsMenu'));
 
 export enum BoostMenuType {
     managed = 'MANAGED',
