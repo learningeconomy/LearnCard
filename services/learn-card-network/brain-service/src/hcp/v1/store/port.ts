@@ -147,4 +147,12 @@ export interface HcpV1Store {
         filter: EventFilter,
         page: { limit: number; after?: EventPosition }
     ): Promise<StoredEvent[]>;
+
+    /**
+     * Deletes everything v1 holds for a subject, in one transaction: entries, all
+     * their versions, grants where they are the subject, refs under those grants or
+     * to those entries, and their audit events. Idempotent. Used when the profile
+     * is deleted; nothing of the subject remains, not even the audit log.
+     */
+    deleteSubjectData(subjectDid: string): Promise<void>;
 }

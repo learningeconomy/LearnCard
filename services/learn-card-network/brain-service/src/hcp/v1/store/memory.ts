@@ -186,5 +186,25 @@ export const createMemoryHcpV1Store = (): HcpV1Store => {
                 .slice(0, page.limit)
                 .map(clone);
         },
+
+        async deleteSubjectData(subjectDid): Promise<void> {
+            const entryIds = new Set(
+                [...headers.values()].filter(h => h.subjectDid === subjectDid).map(h => h.id)
+            );
+            const grantIds = new Set(
+                [...grants.values()].filter(g => g.subjectDid === subjectDid).map(g => g.grantId)
+            );
+            for (const key of [...refs.keys()]) {
+                const [grantId, entryId] = key.split('\u0000');
+                if (grantIds.has(grantId!) || entryIds.has(entryId!)) refs.delete(key);
+            }
+            for (const id of entryIds) {
+                headers.delete(id);
+                versions.delete(id);
+            }
+            for (const id of grantIds) grants.delete(id);
+            for (let i = events.length - 1; i >= 0; i -= 1)
+                if (events[i]!.subjectDid === subjectDid) events.splice(i, 1);
+        },
     };
 };

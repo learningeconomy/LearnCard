@@ -449,5 +449,57 @@ export const describeHcpV1StoreContract = (
                 });
             });
         });
+
+        it("deletes all of one subject's data and nothing of another's", async () => {
+            const seed = async (subjectDid: string, tag: string): Promise<void> => {
+                const id = `urn:uuid:${tag}-e`;
+                await store.insertEntry(entry(id, { subjectDid }), audit({ subjectDid }));
+                await store.appendVersion(
+                    id,
+                    1,
+                    version(id, 2, subjectDid),
+                    'active',
+                    at(5),
+                    audit({ subjectDid })
+                );
+                const grantId = `urn:uuid:${tag}-g`;
+                await store.insertGrant(grant(grantId, { subjectDid }), audit({ subjectDid }));
+                await store.transitionGrantStatus(grantId, 'revoked', at(6), audit({ subjectDid }));
+                await store.insertGrant(
+                    grant(`${grantId}2`, { subjectDid }),
+                    audit({ subjectDid })
+                );
+                await store.refFor(grantId, id, `${tag}-ref`);
+                await store.refFor(`${grantId}2`, id, `${tag}-ref2`);
+                await store.appendEvent(audit({ subjectDid, eventType: 'context.exported' }));
+            };
+            await seed(SUBJECT, 'mine');
+            await seed(OTHER_SUBJECT, 'theirs');
+
+            await store.deleteSubjectData(SUBJECT);
+            await store.deleteSubjectData(SUBJECT);
+
+            expect(await store.getEntry(SUBJECT, 'urn:uuid:mine-e')).toBeNull();
+            expect(await store.getEntryVersion('urn:uuid:mine-e', 1)).toBeNull();
+            expect(await store.listEntries(SUBJECT, { limit: 10 })).toEqual([]);
+            expect(await store.listVersions(SUBJECT)).toEqual([]);
+            for (const status of ['active', 'revoked', 'expired'] as const)
+                expect(await store.listGrants(SUBJECT, status)).toEqual([]);
+            expect(await store.getGrant('urn:uuid:mine-g')).toBeNull();
+            expect(await store.resolveRef('urn:uuid:mine-g', 'mine-ref')).toBeNull();
+            expect(await store.resolveRef('urn:uuid:mine-g2', 'mine-ref2')).toBeNull();
+            expect(await store.listEvents(SUBJECT, {}, { limit: 100 })).toEqual([]);
+
+            expect((await store.getEntry(OTHER_SUBJECT, 'urn:uuid:theirs-e'))?.header.version).toBe(
+                2
+            );
+            expect(await store.listVersions(OTHER_SUBJECT)).toHaveLength(2);
+            expect(await store.listGrants(OTHER_SUBJECT, 'active')).toHaveLength(1);
+            expect(await store.listGrants(OTHER_SUBJECT, 'revoked')).toHaveLength(1);
+            expect(await store.resolveRef('urn:uuid:theirs-g', 'theirs-ref')).toBe(
+                'urn:uuid:theirs-e'
+            );
+            expect(await store.listEvents(OTHER_SUBJECT, {}, { limit: 100 })).toHaveLength(6);
+        });
     });
 };

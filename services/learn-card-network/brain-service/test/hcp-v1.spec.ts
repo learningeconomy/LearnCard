@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
@@ -7,6 +7,8 @@ import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
 import { Profile } from '@models';
 import { neogma } from '@instance';
 import { setValidChallengeForDid } from '@cache/challenges';
+import { deleteProfile } from '@accesslayer/profile/delete';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
 
 import { appRouter, createContext } from '../src/app';
 import { getClient, getUser } from './helpers/getClient';
@@ -295,6 +297,111 @@ describe('HCP v1 router (hcp.v1.*)', () => {
                 entry(subjectDid, 'x', { classification: { categories: ['urn:learncard:x'] } })
             )
         ).rejects.toMatchObject({ code: 'BAD_REQUEST', hcp: { type: 'malformed-request' } });
+    });
+
+    describe('profile delete cascade', () => {
+        const PURPOSE_GRANT = [{ code: PURPOSE, description: 'Tutoring' }];
+
+        /** Counts HcpV1 nodes for a subject; refs are reached through the subject's grants. */
+        const hcpNodes = async (subjectDid: string, grantIds: string[]) => {
+            const result = await neogma.queryRunner.run(
+                `UNWIND $labels AS label
+                CALL (label) {
+                    MATCH (n) WHERE label IN labels(n)
+                      AND (n.subjectDid = $subjectDid OR n.grantId IN $grantIds)
+                    RETURN count(n) AS c
+                }
+                RETURN label, c`,
+                { labels: LABELS, subjectDid, grantIds }
+            );
+            return Object.fromEntries(
+                result.records.map(r => [r.get('label'), Number(r.get('c'))])
+            );
+        };
+
+        /** Entries with a revision, a grant the agent reads under (refs), and audit events. */
+        const seed = async (user: typeof subject, value: string): Promise<string> => {
+            const did = user.learnCard.id.did();
+            const own = user.clients.fullAuth.hcp.v1;
+            const created = await own.entries.create(entry(did, value));
+            await own.entries.revise({
+                entryId: (created as { id: string }).id,
+                expectedVersion: 1,
+                content: { profile: GENERAL, value: `${value}, revised` },
+                reason: 'Updated',
+                record: { provenance: { source: 'person-input' } },
+            });
+            const grant = await own.grants.create({
+                client: { id: agent.learnCard.id.did(), name: 'Tutor Agent' },
+                access: [
+                    {
+                        actions: ['read'],
+                        categories: ['education_learner_profile'],
+                        purposes: PURPOSE_GRANT,
+                    },
+                ],
+            });
+            const read = await agent.clients.fullAuth.hcp.v1.entries.query({
+                grantId: grant.grantId,
+                query: value.split(' ')[0]!,
+                purpose: PURPOSE,
+            });
+            expect(read.entries).toHaveLength(1);
+            return grant.grantId;
+        };
+
+        it("deletes every HcpV1 node of the profile through the real route, and no one else's", async () => {
+            await otherAgent.clients.fullAuth.profile.createProfile({ profileId: 'hcp-other' });
+            const profile = await getProfileByProfileId('hcp-subject');
+            const mineDid = subject.learnCard.id.did();
+            const theirsDid = otherAgent.learnCard.id.did();
+            const mineGrant = await seed(subject, 'Worked examples help');
+            const theirsGrant = await seed(otherAgent, 'Diagrams help');
+
+            // The cascade's key is exactly the subjectDid HCP stored for this profile.
+            expect(profile?.did).toBe(mineDid);
+            const before = await hcpNodes(mineDid, [mineGrant]);
+            expect(before).toEqual({
+                HcpV1ContextEntry: 1,
+                HcpV1EntryVersion: 2,
+                HcpV1EntryRef: 1,
+                HcpV1Grant: 1,
+                HcpV1Event: 3,
+            });
+            const theirsBefore = await hcpNodes(theirsDid, [theirsGrant]);
+            expect(theirsBefore).toEqual(before);
+
+            await expect(subject.clients.fullAuth.profile.deleteProfile()).resolves.toBe(true);
+
+            expect(await getProfileByProfileId('hcp-subject')).toBeFalsy();
+            expect(await hcpNodes(mineDid, [mineGrant])).toEqual({
+                HcpV1ContextEntry: 0,
+                HcpV1EntryVersion: 0,
+                HcpV1EntryRef: 0,
+                HcpV1Grant: 0,
+                HcpV1Event: 0,
+            });
+            expect(await hcpNodes(theirsDid, [theirsGrant])).toEqual(theirsBefore);
+        });
+
+        it('keeps the profile when the HCP cascade fails', async () => {
+            const profile = await getProfileByProfileId('hcp-subject');
+            await seed(subject, 'Worked examples help');
+            const session = vi.spyOn(neogma.driver, 'session').mockImplementationOnce(() => {
+                throw new Error('neo4j unavailable');
+            });
+            try {
+                await expect(deleteProfile(profile!)).rejects.toThrow('neo4j unavailable');
+            } finally {
+                session.mockRestore();
+            }
+            expect(await getProfileByProfileId('hcp-subject')).toBeTruthy();
+            const left = await subject.clients.fullAuth.hcp.v1.entries.query({
+                query: 'examples',
+                purpose: PURPOSE,
+            });
+            expect(left.entries).toHaveLength(1);
+        });
     });
 
     it('documents every v1 procedure in the OpenAPI document under /hcp/v1', async () => {

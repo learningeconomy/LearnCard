@@ -421,4 +421,31 @@ export const createNeo4jHcpV1Store = (): HcpV1Store => ({
         );
         return result.records.map(row => toEvent(props(row.get('n'))));
     },
+
+    async deleteSubjectData(subjectDid): Promise<void> {
+        await write(async tx => {
+            // Refs carry no subjectDid: reach them through the subject's grants and entries.
+            await tx.run(
+                `MATCH (g:HcpV1Grant {subjectDid: $subjectDid})
+                MATCH (r:HcpV1EntryRef {grantId: g.grantId})
+                DETACH DELETE r`,
+                { subjectDid }
+            );
+            await tx.run(
+                `MATCH (e:HcpV1ContextEntry {subjectDid: $subjectDid})
+                MATCH (r:HcpV1EntryRef {entryId: e.id})
+                DETACH DELETE r`,
+                { subjectDid }
+            );
+            for (const label of [
+                'HcpV1EntryVersion',
+                'HcpV1ContextEntry',
+                'HcpV1Grant',
+                'HcpV1Event',
+            ])
+                await tx.run(`MATCH (n:${label} {subjectDid: $subjectDid}) DETACH DELETE n`, {
+                    subjectDid,
+                });
+        });
+    },
 });

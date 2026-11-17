@@ -1,6 +1,7 @@
 /**
  * Enforces the HCP coupling rule (see v1/README.md "Coupling"):
- *  - only `src/app.ts` imports `src/hcp`;
+ *  - only `src/app.ts` (the router) and the profile delete (the subject-data
+ *    cascade) import `src/hcp`, and only its index;
  *  - nothing outside `src/hcp` imports a version folder;
  *  - inside a version, brain internals are imported only by its ports, its Neo4j
  *    adapter (`@instance`) and its router (`@routes` for tRPC builders).
@@ -35,6 +36,9 @@ const target = (file: string, specifier: string): string | null => {
     return null;
 };
 
+/** Files outside `src/hcp` that may import its index, and nothing deeper. */
+const ROOT_IMPORTERS = new Set(['app.ts', 'accesslayer/profile/delete.ts']);
+
 const inside = (path: string, dir: string): boolean => !relative(dir, path).startsWith('..');
 
 /** Allowed brain-internal imports per file, relative to a version folder. */
@@ -52,14 +56,16 @@ describe('HCP module coupling', () => {
         expect(versions).toContain('v1');
     });
 
-    it('is imported only by app.ts, and never by version folder from outside', () => {
+    it('is imported only by app.ts and the profile delete, and only through its index', () => {
         const violations = srcFiles
             .filter(file => !inside(file, HCP))
             .flatMap(file =>
                 importsOf(file)
                     .map(specifier => ({ specifier, to: target(file, specifier) }))
                     .filter(({ to }) => to !== null && inside(to, HCP))
-                    .filter(({ to }) => relative(SRC, file) !== 'app.ts' || resolve(to!) !== HCP)
+                    .filter(
+                        ({ to }) => !ROOT_IMPORTERS.has(relative(SRC, file)) || resolve(to!) !== HCP
+                    )
                     .map(({ specifier }) => `${relative(SRC, file)} -> ${specifier}`)
             );
         expect(violations).toEqual([]);
