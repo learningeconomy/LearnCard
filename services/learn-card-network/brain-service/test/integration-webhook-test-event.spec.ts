@@ -125,6 +125,28 @@ describe('sendIntegrationTestEvent and the worker pass', () => {
         });
     });
 
+    it('does not mark a URL replaced during the ping as failing', async () => {
+        fetchSpy.mockImplementation(async () => {
+            await userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                id: integrationId,
+                webhookUrl: 'https://new.example.com/learncard',
+            });
+
+            return answer(503);
+        });
+
+        await expect(
+            userA.clients.fullAuth.integrations.sendIntegrationTestEvent({ id: integrationId })
+        ).resolves.toMatchObject({ delivered: false, httpStatus: 503 });
+
+        const after = await userA.clients.fullAuth.integrations.getIntegrationWebhook({
+            id: integrationId,
+        });
+
+        expect(after.state).toBe('active');
+        expect(after).not.toHaveProperty('lastFailureAt');
+    });
+
     it('reports no_webhook without sending when there is no webhook URL', async () => {
         await userA.clients.fullAuth.integrations.setIntegrationWebhook({
             id: integrationId,

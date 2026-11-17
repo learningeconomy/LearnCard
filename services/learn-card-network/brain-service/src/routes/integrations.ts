@@ -411,6 +411,7 @@ export const integrationsRouter = t.router({
 
             await recordIntegrationWebhookOutcomes(
                 input.id,
+                config.webhookUrl,
                 result.delivered ? { success: outcome } : { failure: outcome }
             );
 

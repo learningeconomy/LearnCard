@@ -609,10 +609,13 @@ export type IntegrationWebhookOutcome = {
  * Records the result of one delivery attempt on the Integration node, for the webhook health
  * read: `webhookLastSuccessAt`, or `webhookLastFailureAt` with `webhookLastFailureReason`.
  * A value is only replaced by a later one, so overlapping workers cannot move health back.
+ * `webhookUrl` is the address the outcomes were produced against: nothing is written when the
+ * Integration has another URL by now, because health describes the current address only.
  * Never throws: health is advisory and must not fail a delivery or a test ping.
  */
 export const recordIntegrationWebhookOutcomes = async (
     integrationId: string,
+    webhookUrl: string,
     {
         success,
         failure,
@@ -623,6 +626,7 @@ export const recordIntegrationWebhookOutcomes = async (
     try {
         await neogma.queryRunner.run(
             `MATCH (integration:Integration {id: $id})
+             WHERE integration.webhookUrl = $webhookUrl
              WITH integration,
                  ($successAt IS NOT NULL AND (integration.webhookLastSuccessAt IS NULL
                      OR integration.webhookLastSuccessAt < $successAt)) AS newSuccess,
@@ -637,6 +641,7 @@ export const recordIntegrationWebhookOutcomes = async (
                      WHEN newFailure THEN $failureAt ELSE integration.webhookLastFailureAt END`,
             {
                 id: integrationId,
+                webhookUrl,
                 successAt: success?.at ?? null,
                 failureAt: failure?.at ?? null,
                 failureReason: failure?.reason ?? 'delivery_failed',
@@ -811,8 +816,9 @@ const isDeliveryDisabled = (config: WebhookDeliveryConfig, occurredAt: unknown):
  * bookkeeping; the record always stays in the feed.
  *
  * Webhook health: every attempt that reached the send step (delivered, refused, failed, or an
- * internal delivery error) is remembered per integration, and the latest success and the
- * latest failure of the pass are written to the Integration node once, after the loop. That
+ * internal delivery error) is remembered per integration and webhook URL, and the latest success and the latest failure of
+ * the pass are written to the Integration node once per URL, after the loop, only while the
+ * Integration still has that URL. That
  * is at most one extra write per integration per pass instead of one per record, and it keeps
  * the Integration node's write lock (shared with sequence allocation and feed reads) out of
  * the per-record statements. Records closed without a request (`no_webhook`, `disabled`,
@@ -873,16 +879,28 @@ export const dispatchIntegrationWebhooks = async ({
         string,
         { fingerprint: string | null; config: WebhookDeliveryConfig | null }
     >();
+    // Keyed by integration and webhook URL: an outcome describes the address it was sent to.
     const outcomes = new Map<
         string,
-        { success?: IntegrationWebhookOutcome; failure?: IntegrationWebhookOutcome }
+        {
+            integrationId: string;
+            webhookUrl: string;
+            success?: IntegrationWebhookOutcome;
+            failure?: IntegrationWebhookOutcome;
+        }
     >();
-    const remember = (integrationId: string, delivered: boolean, reason?: string): void => {
-        const entry = outcomes.get(integrationId) ?? {};
+    const remember = (
+        integrationId: string,
+        webhookUrl: string,
+        delivered: boolean,
+        reason?: string
+    ): void => {
+        const key = `${integrationId}\n${webhookUrl}`;
+        const entry = outcomes.get(key) ?? { integrationId, webhookUrl };
         const outcome = { at: new Date().toISOString(), delivered, reason };
 
         outcomes.set(
-            integrationId,
+            key,
             delivered ? { ...entry, success: outcome } : { ...entry, failure: outcome }
         );
     };
@@ -962,10 +980,10 @@ export const dispatchIntegrationWebhooks = async ({
 
                     if (result.delivered) {
                         state = 'delivered';
-                        remember(integrationId, true);
+                        remember(integrationId, config.webhookUrl, true);
                     } else {
                         failureReason = result.error ?? 'delivery_failed';
-                        remember(integrationId, false, failureReason);
+                        remember(integrationId, config.webhookUrl, false, failureReason);
                         if (!result.retryable) state = 'rejected';
                         else if (attempts >= MAX_WEBHOOK_ATTEMPTS) state = 'failed';
                     }
@@ -973,7 +991,9 @@ export const dispatchIntegrationWebhooks = async ({
             }
         } catch {
             failureReason = 'delivery_error';
-            remember(integrationId, false, failureReason);
+            const cached = configs.get(integrationId)?.config;
+
+            if (cached) remember(integrationId, cached.webhookUrl, false, failureReason);
             if (attempts >= MAX_WEBHOOK_ATTEMPTS) state = 'failed';
         }
 
@@ -1014,8 +1034,8 @@ export const dispatchIntegrationWebhooks = async ({
         );
     }
 
-    for (const [integrationId, entry] of outcomes) {
-        await recordIntegrationWebhookOutcomes(integrationId, entry);
+    for (const { integrationId, webhookUrl, ...entry } of outcomes.values()) {
+        await recordIntegrationWebhookOutcomes(integrationId, webhookUrl, entry);
     }
 
     return summary;

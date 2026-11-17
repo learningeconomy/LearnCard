@@ -7,6 +7,7 @@ import {
     createIntegrationOnlyEvent,
     dispatchIntegrationWebhooks,
     fanOutIntegrationEvents,
+    recordIntegrationWebhookOutcomes,
     toIntegrationEvent,
 } from '@helpers/integration-events.helpers';
 import { signIntegrationWebhookBody } from '@helpers/integration-webhook-signature.helpers';
@@ -309,6 +310,77 @@ describe('dispatchIntegrationWebhooks', () => {
             retryingDeliveries: 1,
         });
         expect(Date.parse(after.lastFailureAt!)).toBeGreaterThan(Date.parse(after.lastSuccessAt!));
+    });
+
+    describe('webhook health follows the URL it was measured against', () => {
+        const NEW_URL = 'https://new.example.com/learncard';
+        const health = () =>
+            userA.clients.fullAuth.integrations.getIntegrationWebhook({ id: integrationId });
+        const replaceUrl = () =>
+            userA.clients.fullAuth.integrations.setIntegrationWebhook({
+                id: integrationId,
+                webhookUrl: NEW_URL,
+            });
+
+        it('does not put a failure of the old URL on a URL replaced during the pass', async () => {
+            await seedEvent('health-url-1');
+            fetchSpy.mockImplementationOnce(async () => {
+                await replaceUrl();
+
+                return answer(500);
+            });
+
+            await expect(dispatchIntegrationWebhooks()).resolves.toMatchObject({ pending: 1 });
+
+            const after = await health();
+
+            expect(after.state).toBe('active');
+            expect(after).not.toHaveProperty('lastFailureAt');
+            expect(after).not.toHaveProperty('lastSuccessAt');
+        });
+
+        it('keeps the outcomes of the old and the new URL apart within one pass', async () => {
+            await seedEvent('health-url-2');
+            await seedEvent('health-url-3');
+            fetchSpy.mockImplementationOnce(async () => {
+                await replaceUrl();
+
+                return answer(500);
+            });
+
+            await dispatchIntegrationWebhooks();
+
+            expect(fetchSpy.mock.calls.map(([destination]) => destination)).toEqual([
+                WEBHOOK_URL,
+                NEW_URL,
+            ]);
+
+            const after = await health();
+
+            expect(after.state).toBe('active');
+            expect(after).toHaveProperty('lastSuccessAt');
+            expect(after).not.toHaveProperty('lastFailureAt');
+            expect(after).not.toHaveProperty('lastFailureReason');
+        });
+
+        it('ignores an outcome remembered for a URL that is no longer the integration URL', async () => {
+            const failure = { at: new Date().toISOString(), delivered: false, reason: 'http_500' };
+
+            await replaceUrl();
+            await recordIntegrationWebhookOutcomes(integrationId, WEBHOOK_URL, { failure });
+
+            const after = await health();
+
+            expect(after.state).toBe('active');
+            expect(after).not.toHaveProperty('lastFailureAt');
+
+            await recordIntegrationWebhookOutcomes(integrationId, NEW_URL, { failure });
+
+            expect(await health()).toMatchObject({
+                state: 'failing',
+                lastFailureReason: 'http_500',
+            });
+        });
     });
 
     it('rejects pending and retrying records once contract events are disabled', async () => {
