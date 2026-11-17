@@ -107,3 +107,20 @@ export const getContractOwnerDisplayName = async (
     );
     return result.records[0]?.get('displayName') ?? undefined;
 };
+
+/** Pending invites whose expiry has passed, oldest first. */
+export const getOverdueContractRequestInvites = async (
+    limit: number
+): Promise<{ contractId: string; inviteId: string }[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (contract:ConsentFlowContract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
+         WHERE invite.status = 'pending' AND invite.expiresAt <= $now
+         RETURN contract.id AS contractId, invite.id AS inviteId
+         ORDER BY invite.expiresAt, invite.id LIMIT $limit`,
+        { now: new Date().toISOString(), limit: int(limit) }
+    );
+    return result.records.map(record => ({
+        contractId: record.get('contractId'),
+        inviteId: record.get('inviteId'),
+    }));
+};

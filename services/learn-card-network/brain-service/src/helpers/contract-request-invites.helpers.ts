@@ -4,9 +4,13 @@ import type { ResolvedTenant, TenantBranding } from '@learncard/email-templates'
 import type { SendContractRequest, SendContractRequestResult } from '@learncard/types';
 
 import { createContractRequestInvite } from '@accesslayer/contract-request-invite/create';
-import { claimContractRequestInviteEmail } from '@accesslayer/contract-request-invite/update';
+import {
+    claimContractRequestInviteEmail,
+    expireContractRequestInvite,
+} from '@accesslayer/contract-request-invite/update';
 import {
     getContractOwnerDisplayName,
+    getOverdueContractRequestInvites,
     getProfileIdsWithVerifiedEmail,
 } from '@accesslayer/contract-request-invite/read';
 import type { ContractRequestInviteType } from '@accesslayer/contract-request-invite/read';
@@ -170,3 +174,29 @@ export const contractRequestFromInvite = (
     expiresAt: invite.expiresAt,
     target: { email: invite.email },
 });
+
+const INVITE_EXPIRY_BATCH_SIZE = 200;
+const INVITE_EXPIRY_MAX_BATCHES = 10;
+
+/**
+ * Daily maintenance: marks overdue pending invites expired. Attached invites never expire.
+ * Bounded per run; what is left is handled by the next run. Returns the number expired.
+ */
+export const expireContractRequestInvites = async (): Promise<number> => {
+    let expired = 0;
+    for (let batch = 0; batch < INVITE_EXPIRY_MAX_BATCHES; batch += 1) {
+        const overdue = await getOverdueContractRequestInvites(INVITE_EXPIRY_BATCH_SIZE);
+        let expiredInBatch = 0;
+        for (const { contractId, inviteId } of overdue) {
+            try {
+                const invite = await expireContractRequestInvite(contractId, inviteId);
+                if (invite) expiredInBatch += 1;
+            } catch {
+                console.warn('contract_request_invite: expire_failed');
+            }
+        }
+        expired += expiredInBatch;
+        if (overdue.length < INVITE_EXPIRY_BATCH_SIZE || expiredInBatch === 0) break;
+    }
+    return expired;
+};

@@ -9,6 +9,7 @@ import {
     CONTRACT_REQUEST_INVITE_EMAIL_LIMIT,
     CONTRACT_REQUEST_INVITE_EMAIL_WINDOW_MS,
 } from '@helpers/invite-email.helpers';
+import type { ContractRequestInviteType } from './read';
 
 /**
  * Reserves the right to send the invite email, under the contract lock.
@@ -70,4 +71,24 @@ export const cancelContractRequestInvite = async (
         RETURN invite.id AS id
     `);
     return (await runAudienceMutation(query)).records.length > 0;
+};
+
+/**
+ * Marks one overdue pending invite expired, under the contract lock.
+ * Returns the invite, or null when it is no longer pending or not overdue.
+ */
+export const expireContractRequestInvite = async (
+    contractId: string,
+    inviteId: string
+): Promise<ContractRequestInviteType | null> => {
+    const query = lockContractAudience(
+        new QueryBuilder(new BindParam({ inviteId, now: new Date().toISOString() })),
+        contractId
+    ).raw(`
+        MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite {id: $inviteId})
+        WHERE invite.status = 'pending' AND invite.expiresAt <= $now
+        SET invite.status = 'expired', invite.expiredAt = $now
+        RETURN properties(invite) AS invite
+    `);
+    return (await runAudienceMutation(query)).records[0]?.get('invite') ?? null;
 };
