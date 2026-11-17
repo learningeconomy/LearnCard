@@ -116,6 +116,21 @@ describe('Index', () => {
                 })) as PaginatedEncryptedCredentialRecordsType;
                 expect(page.records).toHaveLength(2);
             });
+
+            it('does not serve an empty page cached under the pre-LC-2434 key', async () => {
+                const did = userA.learnCard.id.did();
+                // What the old code left in Redis after a failed read: the unversioned hash.
+                await cache.hset(
+                    `index:${did}`,
+                    getIndexFieldKey({}, { limit: 25, sort: 'newestFirst' }),
+                    JSON.stringify({ records: [], hasMore: false })
+                );
+
+                const page = (await userA.clients.fullAuth.index.get({
+                    encrypt: false,
+                })) as PaginatedEncryptedCredentialRecordsType;
+                expect(page.records).toHaveLength(2);
+            });
         });
 
         it('should allow querying encrypted fields', async () => {
