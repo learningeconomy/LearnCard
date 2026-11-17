@@ -267,7 +267,7 @@ export const CAPABILITIES: readonly Capability[] = [
                 '/integration/{id}/webhook/test',
                 '/integration/{id}/webhook-secret/rotate',
                 '/integration/update/{id}',
-                '/integrations/{id}/events',
+                '/integration/{id}/events',
                 '/consent-flow-contracts/connections',
             ],
         },
