@@ -10527,5 +10527,93 @@
         "loadingTitle": "Preparando tu solicitud",
         "loadingDescription": "Comprobando los datos que puedes compartir.",
         "returnToApp": "Volver a la aplicación"
+    },
+    "hcp": {
+        "title": "Apps que pueden ver tu información",
+        "subtitle": "Elige qué saben las apps sobre ti. No se comparte nada hasta que lo permitas.",
+        "tabs": {
+            "info": "Mi información",
+            "apps": "Apps con acceso",
+            "activity": "Actividad"
+        },
+        "categories": {
+            "generalPreferences": "Preferencias",
+            "goalsAndConstraints": "Metas",
+            "healthContext": "Salud",
+            "educationLearnerProfile": "Aprendizaje",
+            "workContext": "Trabajo",
+            "purchaseHistoryPreferences": "Compras",
+            "valuesAndEthics": "Valores",
+            "locationContext": "Lugares",
+            "coordinationContext": "Horario"
+        },
+        "info": {
+            "add": "Agregar información",
+            "topic": "Tema",
+            "textLabel": "¿Qué deberían saber las apps?",
+            "textPlaceholder": "Por ejemplo: aprendo mejor con ejemplos cortos",
+            "remove": "Quitar",
+            "removeConfirm": "¿Quitar esto? Las apps ya no lo verán.",
+            "notShared": "Ya no se comparte",
+            "emptyTitle": "Aún no hay nada",
+            "emptyBody": "Agrega algo que quieras que las apps sepan. No se comparte nada hasta que lo permitas.",
+            "removing": "Eliminando...",
+            "truncated": "Se muestran tus primeros 500 elementos."
+        },
+        "apps": {
+            "canSee": "Puede ver: {{categories}}",
+            "why": "Por qué: {{purpose}}",
+            "until": "Hasta {{date}}",
+            "untilStopped": "Hasta que dejes de compartir",
+            "stop": "Dejar de compartir",
+            "stopping": "Deteniendo...",
+            "stopConfirm": "¿Dejar de compartir con {{app}}? No verá nada nuevo, pero puede conservar lo que ya vio.",
+            "emptyTitle": "Ninguna app puede ver tu información",
+            "emptyBody": "Cuando permitas una app, aparecerá aquí."
+        },
+        "activity": {
+            "anApp": "Una app",
+            "youAdded": "Agregaste información a {{categories}}",
+            "appAdded": "{{app}} agregó información a tu {{categories}}",
+            "youUpdated": "Actualizaste tu {{categories}}",
+            "appUpdated": "{{app}} actualizó tu {{categories}}",
+            "youRemoved": "Quitaste información de {{categories}}",
+            "appRemoved": "{{app}} quitó información de tu {{categories}}",
+            "expired": "Parte de tu información de {{categories}} venció",
+            "exported": "Descargaste una copia de tu información",
+            "allowed": "Permitiste que {{app}} vea tu {{categories}}",
+            "youStopped": "Dejaste de compartir con {{app}}",
+            "appStopped": "{{app}} dejó de usar tu información",
+            "ended": "Terminó el acceso de {{app}}",
+            "more": "Mostrar más",
+            "emptyTitle": "Aún no hay actividad",
+            "emptyBody": "Cuando tú o una app usen tu información, lo verás aquí."
+        },
+        "connect": {
+            "heading": "Compartir tu información",
+            "title": "{{app}} quiere ver parte de tu información",
+            "readOnly": "Solo puede mirar. No puede cambiar nada.",
+            "whatLabel": "Qué puede ver",
+            "whyLabel": "Por qué",
+            "howLongLabel": "Por cuánto tiempo",
+            "for1h": "1 hora",
+            "for4h": "4 horas",
+            "for24h": "24 horas",
+            "untilStopped": "Hasta que dejes de compartir",
+            "stopAnytime": "Puedes dejar de compartir cuando quieras en Apps con acceso.",
+            "allow": "Permitir",
+            "allowing": "Permitiendo...",
+            "deny": "No permitir",
+            "badTitle": "Este enlace no funciona",
+            "badBody": "Pide a la app un enlace nuevo e inténtalo de nuevo.",
+            "unverified": "Permite solo apps en las que confíes. LearnCard no puede confirmar quién creó este enlace."
+        },
+        "error": {
+            "title": "Algo salió mal",
+            "body": "No se pudo cargar ahora. Puedes intentarlo de nuevo con seguridad.",
+            "save": "No se pudo guardar. Inténtalo de nuevo.",
+            "allow": "No se pudo permitir el acceso. Inténtalo de nuevo.",
+            "remove": "No se pudo eliminar. Inténtalo de nuevo."
+        }
     }
 }

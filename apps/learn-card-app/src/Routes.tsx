@@ -1,3 +1,4 @@
+import { useHcpEnabled } from './pages/hcp/useHcpEnabled';
 import UnsubscribePage from './pages/unsubscribe/UnsubscribePage';
 import React, { Suspense } from 'react';
 import { Redirect, Route, Switch, useLocation } from 'react-router-dom';
@@ -59,6 +60,8 @@ const IssueCredentialPage = lazyWithRetry(() => import('./pages/issue/IssueCrede
 const BoostAFriendPage = lazyWithRetry(() => import('./pages/boostAFriend/BoostAFriendPage'));
 const SkillsPage = lazyWithRetry(() => import('./pages/skills/SkillsPage'));
 const AiInsights = lazyWithRetry(() => import('./pages/ai-insights/AiInsights'));
+const HcpPage = lazyWithRetry(() => import('./pages/hcp/HcpPage'));
+const HcpConnectPage = lazyWithRetry(() => import('./pages/hcp/HcpConnectPage'));
 const PrivacySettingsPage = lazyWithRetry(
     () => import('./pages/privacy-settings/PrivacySettingsPage')
 );
@@ -202,7 +205,9 @@ const PrivateRoute = ({
                       ? '/login?redirectTo=%2Fnotifications'
                       : rest.path === '/account/secure'
                         ? '/login?redirectTo=%2Faccount%2Fsecure'
-                        : '/login'
+                        : rest.path === '/hcp' || rest.path === '/hcp/connect'
+                          ? `/login?redirectTo=${encodeURIComponent(location.pathname + location.search)}`
+                          : '/login'
             }
         />
     );
@@ -219,6 +224,7 @@ export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
     const flags = useFlags();
+    const hcpEnabled = useHcpEnabled();
     const learnCardAssistantEnabled = environment.DEV || Boolean(flags.enableLearnCardAssistant);
     // Pathways v2 visibility — see `usePathwaysEnabled` for the
     // tenant + LaunchDarkly layering. Same hook is used by the side
@@ -348,6 +354,10 @@ export const Routes: React.FC = () => {
                             path="/privacy-and-data"
                             component={PrivacySettingsPage}
                         />
+                        {hcpEnabled && <PrivateRoute exact path="/hcp" component={HcpPage} />}
+                        {hcpEnabled && (
+                            <PrivateRoute exact path="/hcp/connect" component={HcpConnectPage} />
+                        )}
                         <PrivateRoute exact path="/resume-builder" component={ResumeBuilderPage} />
                         <PrivateRoute exact path="/ai/pathways" component={AiPathways} />
                         <Route

@@ -10616,5 +10616,93 @@
         "loadingTitle": "جارٍ إعداد طلبك",
         "loadingDescription": "نتحقق من التفاصيل التي يمكنك مشاركتها.",
         "returnToApp": "العودة إلى التطبيق"
+    },
+    "hcp": {
+        "title": "التطبيقات التي يمكنها رؤية معلوماتك",
+        "subtitle": "اختر ما تعرفه التطبيقات عنك. لا تتم مشاركة أي شيء حتى تسمح بذلك.",
+        "tabs": {
+            "info": "معلوماتي",
+            "apps": "تطبيقات لديها وصول",
+            "activity": "النشاط"
+        },
+        "categories": {
+            "generalPreferences": "التفضيلات",
+            "goalsAndConstraints": "الأهداف",
+            "healthContext": "الصحة",
+            "educationLearnerProfile": "التعلّم",
+            "workContext": "العمل",
+            "purchaseHistoryPreferences": "التسوّق",
+            "valuesAndEthics": "القيم",
+            "locationContext": "الأماكن",
+            "coordinationContext": "الجدول"
+        },
+        "info": {
+            "add": "إضافة معلومات",
+            "topic": "الموضوع",
+            "textLabel": "ماذا يجب أن تعرف التطبيقات؟",
+            "textPlaceholder": "مثلاً: أتعلّم أفضل بأمثلة قصيرة",
+            "remove": "إزالة",
+            "removeConfirm": "إزالة هذا؟ لن تراه التطبيقات بعد الآن.",
+            "notShared": "لم تعد مُشارَكة",
+            "emptyTitle": "لا شيء هنا بعد",
+            "emptyBody": "أضف ما تريد أن تعرفه التطبيقات. لا تتم مشاركة أي شيء حتى تسمح بذلك.",
+            "removing": "جارٍ الحذف...",
+            "truncated": "يتم عرض أول 500 عنصر."
+        },
+        "apps": {
+            "canSee": "يمكنه رؤية: {{categories}}",
+            "why": "السبب: {{purpose}}",
+            "until": "حتى {{date}}",
+            "untilStopped": "حتى توقف المشاركة",
+            "stop": "إيقاف المشاركة",
+            "stopping": "جارٍ الإيقاف...",
+            "stopConfirm": "إيقاف المشاركة مع {{app}}؟ لن يرى أي شيء جديد، لكنه قد يحتفظ بما رآه.",
+            "emptyTitle": "لا توجد تطبيقات ترى معلوماتك",
+            "emptyBody": "عندما تسمح لتطبيق، سيظهر هنا."
+        },
+        "activity": {
+            "anApp": "تطبيق",
+            "youAdded": "أضفت معلومات إلى {{categories}}",
+            "appAdded": "أضاف {{app}} معلومات إلى {{categories}}",
+            "youUpdated": "حدّثت {{categories}}",
+            "appUpdated": "حدّث {{app}} {{categories}}",
+            "youRemoved": "أزلت معلومات من {{categories}}",
+            "appRemoved": "أزال {{app}} معلومات من {{categories}}",
+            "expired": "انتهت صلاحية بعض معلومات {{categories}}",
+            "exported": "نزّلت نسخة من معلوماتك",
+            "allowed": "سمحت لـ {{app}} برؤية {{categories}}",
+            "youStopped": "أوقفت المشاركة مع {{app}}",
+            "appStopped": "توقف {{app}} عن استخدام معلوماتك",
+            "ended": "انتهت المشاركة مع {{app}}",
+            "more": "عرض المزيد",
+            "emptyTitle": "لا يوجد نشاط بعد",
+            "emptyBody": "عندما تستخدم أنت أو تطبيق معلوماتك، ستراه هنا."
+        },
+        "connect": {
+            "heading": "مشاركة معلوماتك",
+            "title": "يرغب {{app}} في رؤية بعض معلوماتك",
+            "readOnly": "يمكنه النظر فقط. لا يمكنه تغيير أي شيء.",
+            "whatLabel": "ما يمكنه رؤيته",
+            "whyLabel": "السبب",
+            "howLongLabel": "المدة",
+            "for1h": "ساعة واحدة",
+            "for4h": "4 ساعات",
+            "for24h": "24 ساعة",
+            "untilStopped": "حتى توقف المشاركة",
+            "stopAnytime": "يمكنك إيقاف المشاركة في أي وقت من تطبيقات لديها وصول.",
+            "allow": "سماح",
+            "allowing": "جارٍ السماح...",
+            "deny": "عدم السماح",
+            "badTitle": "هذا الرابط لا يعمل",
+            "badBody": "اطلب رابطاً جديداً من التطبيق وحاول مرة أخرى.",
+            "unverified": "اسمح فقط للتطبيقات التي تثق بها. لا يمكن لـ LearnCard التأكد من الجهة التي أنشأت هذا الرابط."
+        },
+        "error": {
+            "title": "حدث خطأ ما",
+            "body": "تعذّر التحميل الآن. يمكنك المحاولة مرة أخرى بأمان.",
+            "save": "تعذّر الحفظ. يرجى المحاولة مرة أخرى.",
+            "allow": "تعذّر السماح بالوصول. يرجى المحاولة مرة أخرى.",
+            "remove": "تعذّر الحذف. يرجى المحاولة مرة أخرى."
+        }
     }
 }

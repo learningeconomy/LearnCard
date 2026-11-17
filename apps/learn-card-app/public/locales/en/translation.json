@@ -10590,5 +10590,93 @@
         "loadingTitle": "Preparing your request",
         "loadingDescription": "Checking the details you can share.",
         "returnToApp": "Return to app"
+    },
+    "hcp": {
+        "title": "Apps that can see your info",
+        "subtitle": "Choose what apps know about you. Nothing is shared until you allow it.",
+        "tabs": {
+            "info": "My info",
+            "apps": "Apps with access",
+            "activity": "Activity"
+        },
+        "categories": {
+            "generalPreferences": "Preferences",
+            "goalsAndConstraints": "Goals",
+            "healthContext": "Health",
+            "educationLearnerProfile": "Learning",
+            "workContext": "Work",
+            "purchaseHistoryPreferences": "Shopping",
+            "valuesAndEthics": "Values",
+            "locationContext": "Places",
+            "coordinationContext": "Schedule"
+        },
+        "info": {
+            "add": "Add info",
+            "topic": "Topic",
+            "textLabel": "What should apps know?",
+            "textPlaceholder": "For example: I learn best with short examples",
+            "remove": "Remove",
+            "removeConfirm": "Remove this? Apps won't see it anymore.",
+            "notShared": "Not shared anymore",
+            "emptyTitle": "Nothing here yet",
+            "emptyBody": "Add something you'd like apps to know. Nothing is shared until you allow it.",
+            "removing": "Removing...",
+            "truncated": "Showing your first 500 items."
+        },
+        "apps": {
+            "canSee": "Can see: {{categories}}",
+            "why": "Why: {{purpose}}",
+            "until": "Until {{date}}",
+            "untilStopped": "Until you stop sharing",
+            "stop": "Stop sharing",
+            "stopping": "Stopping...",
+            "stopConfirm": "Stop sharing with {{app}}? It won't see anything new, but it may keep what it already saw.",
+            "emptyTitle": "No apps can see your info",
+            "emptyBody": "When you allow an app, it shows up here."
+        },
+        "activity": {
+            "anApp": "An app",
+            "youAdded": "You added info to {{categories}}",
+            "appAdded": "{{app}} added info to your {{categories}}",
+            "youUpdated": "You updated your {{categories}}",
+            "appUpdated": "{{app}} updated your {{categories}}",
+            "youRemoved": "You removed info from {{categories}}",
+            "appRemoved": "{{app}} removed info from your {{categories}}",
+            "expired": "Some of your {{categories}} info expired",
+            "exported": "You downloaded a copy of your info",
+            "allowed": "You let {{app}} see your {{categories}}",
+            "youStopped": "You stopped sharing with {{app}}",
+            "appStopped": "{{app}} stopped using your info",
+            "ended": "Sharing with {{app}} ended",
+            "more": "Show more",
+            "emptyTitle": "No activity yet",
+            "emptyBody": "When you or an app uses your info, you'll see it here."
+        },
+        "connect": {
+            "heading": "Share your info",
+            "title": "{{app}} would like to see some of your info",
+            "readOnly": "It can only look. It can't change anything.",
+            "whatLabel": "What it can see",
+            "whyLabel": "Why",
+            "howLongLabel": "For how long",
+            "for1h": "1 hour",
+            "for4h": "4 hours",
+            "for24h": "24 hours",
+            "untilStopped": "Until you stop sharing",
+            "stopAnytime": "You can stop sharing anytime in Apps with access.",
+            "allow": "Allow",
+            "allowing": "Allowing...",
+            "deny": "Don't Allow",
+            "badTitle": "This link doesn't work",
+            "badBody": "Ask the app for a new link and try again.",
+            "unverified": "Only allow apps you trust. LearnCard can't confirm who made this link."
+        },
+        "error": {
+            "title": "Something went wrong",
+            "body": "Couldn't load this right now. You can try again safely.",
+            "save": "Couldn't save that. Please try again.",
+            "allow": "Couldn't allow access. Please try again.",
+            "remove": "Couldn't remove that. Please try again."
+        }
     }
 }
