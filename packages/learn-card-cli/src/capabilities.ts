@@ -230,10 +230,12 @@ export const CAPABILITIES: readonly Capability[] = [
         id: 'contract-requests',
         title: 'Contract requests',
         summary:
-            'Ask a specific profile to consent to a contract, poll the request status, and sync credentials into it.',
+            'Ask a specific profile to consent to a contract, track the request by its request ID, and sync credentials into it.',
         cli: [],
         call: [
             'sendContractRequest',
+            'getContractRequest',
+            'cancelContractRequest',
             'getContractSentRequests',
             'getRequestStatusForProfile',
             'syncCredentialsToContract',
