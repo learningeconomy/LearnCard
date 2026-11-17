@@ -11,32 +11,17 @@ export const getCredentialRecordsForDid = async (
     limit = 25,
     includeAssociatedDids = true
 ): Promise<MongoCredentialRecordType[]> => {
-    try {
-        if (!includeAssociatedDids) {
-            return await CredentialRecords.find({
-                ...query,
-                did,
-                ...(cursor ? { cursor: { [sort === 'newestFirst' ? '$lt' : '$gt']: cursor } } : {}),
-            })
-                .sort({ cursor: sort === 'newestFirst' ? -1 : 1 })
-                .limit(limit)
-                .toArray();
-        }
+    // Failures throw: an empty array here means "no records", and index.get caches it (LC-2434).
+    const dids = includeAssociatedDids ? { $in: await getAllDidsForDid(did) } : did;
 
-        const dids = await getAllDidsForDid(did);
-
-        return await CredentialRecords.find({
-            ...query,
-            did: { $in: dids },
-            ...(cursor ? { cursor: { [sort === 'newestFirst' ? '$lt' : '$gt']: cursor } } : {}),
-        })
-            .sort({ cursor: sort === 'newestFirst' ? -1 : 1 })
-            .limit(limit)
-            .toArray();
-    } catch (e) {
-        console.error(e);
-        return [];
-    }
+    return CredentialRecords.find({
+        ...query,
+        did: dids,
+        ...(cursor ? { cursor: { [sort === 'newestFirst' ? '$lt' : '$gt']: cursor } } : {}),
+    })
+        .sort({ cursor: sort === 'newestFirst' ? -1 : 1 })
+        .limit(limit)
+        .toArray();
 };
 
 export const countCredentialRecordsForDid = async (
@@ -44,24 +29,12 @@ export const countCredentialRecordsForDid = async (
     query: Filter<MongoCredentialRecordType> = {},
     includeAssociatedDids = true
 ): Promise<number> => {
-    try {
-        if (!includeAssociatedDids) {
-            return await CredentialRecords.countDocuments({
-                ...query,
-                did,
-            });
-        }
+    // Failures throw rather than read as 0 (LC-2434).
+    if (!includeAssociatedDids) return CredentialRecords.countDocuments({ ...query, did });
 
-        const user = await getUserForDid(did);
+    const user = await getUserForDid(did);
 
-        const dids = [user?.did ?? did, ...(user?.associatedDids ?? [])];
+    const dids = [user?.did ?? did, ...(user?.associatedDids ?? [])];
 
-        return await CredentialRecords.countDocuments({
-            ...query,
-            did: { $in: dids },
-        });
-    } catch (e) {
-        console.error(e);
-        return 0;
-    }
+    return CredentialRecords.countDocuments({ ...query, did: { $in: dids } });
 };

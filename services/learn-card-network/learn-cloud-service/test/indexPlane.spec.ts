@@ -8,6 +8,7 @@ import { testRecordA, testRecordB, testRecordC } from './helpers/records';
 import { client } from '@mongo';
 import cache from '@cache';
 import { getIndexFieldKey, getIndexHashKey, setCachedIndexPageForDid } from '@cache/indexPlane';
+import { getUserCacheKey } from '@cache/user';
 import { MAX_INDEX_PAGE_LIMIT } from 'src/constants/limits';
 
 const noAuthClient = getClient();
@@ -88,6 +89,33 @@ describe('Index', () => {
             );
 
             expect(unencryptedRecords.records).toHaveLength(0);
+        });
+
+        describe('when the database read fails (LC-2434)', () => {
+            afterEach(() => {
+                vi.restoreAllMocks();
+            });
+
+            it('returns an error instead of an empty page, and caches nothing', async () => {
+                const did = userA.learnCard.id.did();
+                vi.spyOn(CredentialRecords, 'find').mockImplementationOnce(() => {
+                    throw new Error('connection pool cleared');
+                });
+
+                await expect(
+                    userA.clients.fullAuth.index.get({ encrypt: false })
+                ).rejects.toMatchObject({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Could not read index',
+                });
+                expect(await cache.node.exists(getIndexHashKey(did))).toBe(0);
+
+                // The next read goes to the database and gets the real records.
+                const page = (await userA.clients.fullAuth.index.get({
+                    encrypt: false,
+                })) as PaginatedEncryptedCredentialRecordsType;
+                expect(page.records).toHaveLength(2);
+            });
         });
 
         it('should allow querying encrypted fields', async () => {
@@ -386,6 +414,42 @@ describe('Index', () => {
             const count = Number(await userA.learnCard.invoke.decryptDagJwe(encryptedCount as JWE));
 
             expect(count).toEqual(1);
+        });
+
+        describe('when the database read fails (LC-2434)', () => {
+            afterEach(() => {
+                vi.restoreAllMocks();
+            });
+
+            it('returns an error instead of 0', async () => {
+                vi.spyOn(CredentialRecords, 'countDocuments').mockRejectedValueOnce(
+                    new Error('connection pool cleared')
+                );
+
+                // Encrypted, as the app asks: before LC-2434 this came back as an encrypted 0.
+                await expect(userA.clients.fullAuth.index.count()).rejects.toMatchObject({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Could not read index',
+                });
+
+                const encryptedCount = await userA.clients.fullAuth.index.count();
+                const count = Number(
+                    await userA.learnCard.invoke.decryptDagJwe(encryptedCount as JWE)
+                );
+                expect(count).toEqual(2);
+            });
+
+            it('returns an error, not a count of only the signed-in DID, when the user lookup fails', async () => {
+                // Drop the cached user so the lookup reaches the database.
+                await cache.delete([getUserCacheKey(userA.learnCard.id.did())]);
+                vi.spyOn(Users, 'findOne').mockRejectedValueOnce(
+                    new Error('connection pool cleared')
+                );
+
+                await expect(userA.clients.fullAuth.index.count()).rejects.toMatchObject({
+                    code: 'INTERNAL_SERVER_ERROR',
+                });
+            });
         });
     });
 

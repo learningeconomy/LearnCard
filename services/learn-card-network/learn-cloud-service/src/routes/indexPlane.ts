@@ -37,6 +37,22 @@ import {
 import { getAllDidsForDid } from '@accesslayer/user/read';
 import { MAX_INDEX_PAGE_LIMIT } from 'src/constants/limits';
 
+/**
+ * A failed index read becomes a 500, never an empty page or 0. Mongo's message stays in the cause
+ * (logs, Sentry), not in the response.
+ */
+const readIndex = async <T>(read: () => Promise<T>): Promise<T> => {
+    try {
+        return await read();
+    } catch (cause) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Could not read index',
+            cause,
+        });
+    }
+};
+
 export const indexRouter = t.router({
     get: didAndChallengeRoute
         .meta({
@@ -87,13 +103,16 @@ export const indexRouter = t.router({
                 return encrypt ? encryptObject(cachedResponse, ctx.domain, [did]) : cachedResponse;
             }
 
-            const rawResults = await getCredentialRecordsForDid(
-                did,
-                query,
-                sort,
-                cursor,
-                limit + 1,
-                includeAssociatedDids
+            // Throws on a failed read, so only a real result reaches the cache below.
+            const rawResults = await readIndex(() =>
+                getCredentialRecordsForDid(
+                    did,
+                    query,
+                    sort,
+                    cursor,
+                    limit + 1,
+                    includeAssociatedDids
+                )
             );
             const results = rawResults.map(record => {
                 const {
@@ -162,7 +181,9 @@ export const indexRouter = t.router({
 
             if (isEncrypted(query)) query = await decryptObject(query as JWE);
 
-            const count = await countCredentialRecordsForDid(did, query, includeAssociatedDids);
+            const count = await readIndex(() =>
+                countCredentialRecordsForDid(did, query, includeAssociatedDids)
+            );
 
             if (encrypt) return encryptObject(count, ctx.domain, [did]);
 
