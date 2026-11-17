@@ -12,3 +12,7 @@ Keep background discovery out of contract-sync banners, and keep contract-scoped
 Persist failed contract destinations so an exhausted credential delivery reports an error only to affected partners. Unattributed failures remain visible in account-wide status without blocking unrelated contracts indefinitely.
 
 Guard automatic deliveries against current category consent at the server write while preserving explicit selective sharing. Uploads persist account-scoped delivery jobs immediately after successful indexing, before network sharing starts.
+
+Treat blank legacy category expiries as no expiry while preserving the server's automatic-sharing consent and expiry guards.
+
+Persist pending delivery updates transactionally across tabs, retain legacy retry checkpoints, and recover abandoned attempts without losing other saved credentials. Successful background delivery reports completed progress.

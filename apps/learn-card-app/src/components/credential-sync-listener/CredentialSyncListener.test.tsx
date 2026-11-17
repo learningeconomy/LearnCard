@@ -1,8 +1,11 @@
+import 'fake-indexeddb/auto';
 import React from 'react';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import {
+    clearPendingContractSyncJob,
     enqueuePendingContractSync,
+    hydratePendingContractSyncJobs,
     pendingContractSyncStore,
 } from 'learn-card-base/stores/pendingContractSyncStore';
 
@@ -23,27 +26,31 @@ vi.mock('learn-card-base', async () => {
     return { usePendingContractSyncJobs };
 });
 
-beforeEach(() => {
-    vi.useFakeTimers();
+beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(1000);
     mocks.track.mockClear();
-    pendingContractSyncStore.set.jobs({});
+    await hydratePendingContractSyncJobs();
+    await Promise.all(
+        Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
+    );
 });
 afterEach(() => {
     cleanup();
     vi.useRealTimers();
 });
 
-it('reports contract progress and completion even when a credential job is newer', () => {
-    const contract = enqueuePendingContractSync({
+it('reports contract progress and completion even when a credential job is newer', async () => {
+    const contract = await enqueuePendingContractSync({
         profileDid: 'did:example:learner',
         contractUri: 'contract-a',
         termsUri: 'terms-a',
         ownerDid: 'did:example:owner',
     });
-    pendingContractSyncStore.set.markRunning(contract.id);
+    const contractAttempt = (await pendingContractSyncStore.set.claimJob(contract.id))!
+        .processingAttemptId!;
     vi.setSystemTime(2000);
-    const credential = enqueuePendingContractSync({
+    const credential = await enqueuePendingContractSync({
         kind: 'credential',
         profileDid: 'did:example:learner',
         record: { id: 'saved', uri: 'credential-a', category: 'Achievement' },
@@ -55,11 +62,11 @@ it('reports contract progress and completion even when a credential job is newer
         'sync-job',
         expect.objectContaining({ contractUri: 'contract-a', phase: 'running' })
     );
-    act(() => {
+    await act(async () => {
         vi.setSystemTime(3000);
-        pendingContractSyncStore.set.markDone(contract.id);
+        await pendingContractSyncStore.set.markDone(contract.id, contractAttempt);
         vi.setSystemTime(4000);
-        pendingContractSyncStore.set.markRunning(credential.id);
+        await pendingContractSyncStore.set.claimJob(credential.id);
     });
     expect(screen.getByText('Syncing complete')).toBeVisible();
     expect(screen.queryByText('Syncing')).not.toBeInTheDocument();
@@ -76,22 +83,19 @@ it('reports contract progress and completion even when a credential job is newer
     );
 });
 
-it('does not show active or complete contract banners for background credential delivery', () => {
-    const job = enqueuePendingContractSync({
+it('does not show active or complete contract banners for background credential delivery', async () => {
+    const job = await enqueuePendingContractSync({
         kind: 'credential',
         profileDid: 'did:example:learner',
         record: { id: 'saved', uri: 'credential-a', category: 'Achievement' },
         category: 'Achievement',
     });
+    const attemptId = (await pendingContractSyncStore.set.claimJob(job.id))!.processingAttemptId!;
     render(<CredentialSyncListener />);
     expect(screen.queryByText(/Syncing/)).not.toBeInTheDocument();
-    act(() => {
-        pendingContractSyncStore.set.markRunning(job.id);
-        pendingContractSyncStore.set.setTotals(job.id, 1);
-    });
-    expect(screen.queryByText(/Syncing/)).not.toBeInTheDocument();
-    act(() => {
-        pendingContractSyncStore.set.markDone(job.id);
+    await act(async () => {
+        await pendingContractSyncStore.set.setTotals(job.id, 1, attemptId);
+        await pendingContractSyncStore.set.markDone(job.id, attemptId);
     });
     expect(screen.queryByText(/Syncing/)).not.toBeInTheDocument();
     expect(mocks.track).not.toHaveBeenCalled();

@@ -323,9 +323,9 @@ export const useWallet = () => {
         // Supplying this also makes partial failures visible to the recovery UI.
         completedTerms?: Set<string>,
         callbacks?: {
-            onTermsSynced?: (termsUri: string) => void;
+            onTermsSynced?: (termsUri: string) => void | Promise<void>;
             /** Replaces the failed destinations after a completed discovery pass. */
-            onContractsFailed?: (contractUris: string[]) => void;
+            onContractsFailed?: (contractUris: string[]) => void | Promise<void>;
         }
     ) => {
         const learnCard = wallet ?? (await getWallet());
@@ -360,7 +360,7 @@ export const useWallet = () => {
                     if (
                         categoryInfo?.shareAll &&
                         categoryInfo.sharing &&
-                        (!categoryInfo.shareUntil ||
+                        (!categoryInfo.shareUntil?.trim() ||
                             categoryInfo.shareUntil > new Date().toISOString())
                     ) {
                         if (!record.uri) return;
@@ -392,7 +392,7 @@ export const useWallet = () => {
                             );
                             // Remember the acknowledged mutation before any cache/refresh work.
                             syncedTerms.add(termsUri);
-                            callbacks?.onTermsSynced?.(termsUri);
+                            await callbacks?.onTermsSynced?.(termsUri);
                             logWalletSync('syncCredentialsToContract completed', {
                                 ownerDid: contract.owner.did,
                                 contractUri: contract.uri,
@@ -449,7 +449,7 @@ export const useWallet = () => {
                 failedContracts.push(allContracts[index].contract.uri);
             });
             failedContractUris = failedContracts;
-            callbacks?.onContractsFailed?.(failedContracts);
+            await callbacks?.onContractsFailed?.(failedContracts);
             if (failures.length > 0) {
                 throw new AggregateError(failures, 'Some consented contracts could not be synced');
             }
@@ -461,7 +461,7 @@ export const useWallet = () => {
         } catch (error) {
             // Staged claim flows own their retries; ordinary saves must remain successful.
             if (completedTerms) throw error;
-            enqueuePendingContractSync({
+            await enqueuePendingContractSync({
                 kind: 'credential',
                 profileDid: learnCard.id.did(),
                 record: { id: record.id, uri: record.uri, category },
@@ -662,7 +662,7 @@ export const useWallet = () => {
                 if (result) void recordCredentialClaim(wallet, uri2, vc, category);
                 if (result && !deferContractSync) {
                     // Persist before returning; the singleton worker owns network delivery.
-                    enqueuePendingContractSync({
+                    await enqueuePendingContractSync({
                         kind: 'credential',
                         profileDid: wallet.id.did(),
                         record: { id: record.id, uri: record.uri, category },

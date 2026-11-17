@@ -70,6 +70,10 @@ The terms must belong to the caller, remain live, and not be expired. Categories
 
 Automatic delivery calls `syncCredentialsToContract(termsUri, categories, audienceVersion, true)` (the HTTP input field is `automatic: true`). The server checks that every category still has `sharing` and `shareAll` enabled and an unexpired `shareUntil` at the database write. A changed consent snapshot is rejected without appending credentials. Refresh consent before retrying. Omit the fourth argument for intentionally selected credentials; selective sharing does not require `shareAll`.
 
+An absent, null, empty, or whitespace-only category `shareUntil` means no category expiry. A nonblank expiry must still be in the future; blank legacy values do not disable automatic sharing.
+
+LearnCard App keeps pending delivery in this browser's account-scoped queue, shared across tabs. Reloading preserves acknowledged destinations. Abandoned attempts become eligible again after a 60-second lease; delivery can repeat if a tab closes before a successful network request is acknowledged.
+
 ### The send convenience method
 
 `send()` supports a **top-level** `contractUri` alongside `type: 'boost'`, `recipient`, and the template or signed credential. `SendOptionsValidator` has **no** `contractUri` field: do not put it inside `options`.

@@ -169,7 +169,7 @@ export const useUploadVcFromText = () => {
                     };
                 }
                 // Persist the handoff before any network delivery; the account-scoped worker owns it.
-                enqueuePendingContractSync({
+                await enqueuePendingContractSync({
                     kind: 'credential',
                     profileDid: wallet.id.did(),
                     record: { id: record.id, uri: record.uri, category: record.category },
@@ -233,7 +233,7 @@ export const useUploadVcFromText = () => {
                             };
                         }
                         // Persist the handoff before any network delivery; the account-scoped worker owns it.
-                        enqueuePendingContractSync({
+                        await enqueuePendingContractSync({
                             kind: 'credential',
                             profileDid: wallet.id.did(),
                             record: { id: record.id, uri: record.uri, category: record.category },
@@ -372,7 +372,7 @@ export const useUploadVcFromText = () => {
                             };
                         }
                         // Persist the handoff before any network delivery; the account-scoped worker owns it.
-                        enqueuePendingContractSync({
+                        await enqueuePendingContractSync({
                             kind: 'credential',
                             profileDid: wallet.id.did(),
                             record: { id: record.id, uri: record.uri, category: record.category },

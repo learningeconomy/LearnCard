@@ -1,6 +1,7 @@
 import type { LCR } from '../types/credential-records';
 import type { CredentialCategory } from '../types/credentials';
 import { createStore } from '@udecode/zustood';
+import { getLogger } from '../logging/logger';
 
 export type PendingContractSyncStatus = 'queued' | 'running' | 'done' | 'error';
 
@@ -43,6 +44,8 @@ export type PendingContractSyncJob = PendingContractSyncInput & {
     updatedAt: number;
     startedAt?: number;
     finishedAt?: number;
+    processingAttemptId?: string;
+    processingLeaseUntil?: number;
 };
 
 export type PendingContractSyncState = {
@@ -64,16 +67,13 @@ export const DONE_JOB_TTL_MS = 24 * 60 * 60 * 1000;
 const now = (): number => Date.now();
 
 /**
- * Earliest timestamp at which a failed job is eligible to be retried, based on an
- * exponential backoff of its retryCount. A job that has never failed (retryCount 0)
- * is eligible immediately. Capped at RETRY_BACKOFF_MAX_MS.
+ * Earliest retry time, including an active worker's lease. A closed tab's running
+ * job becomes eligible again when that lease expires.
  */
 export const getNextRetryAt = (job: PendingContractSyncJob): number => {
-    if (job.retryCount <= 0) return 0;
-
     const delay = Math.min(RETRY_BACKOFF_BASE_MS * 2 ** (job.retryCount - 1), RETRY_BACKOFF_MAX_MS);
-
-    return (job.finishedAt ?? job.updatedAt) + delay;
+    const retryAt = job.retryCount > 0 ? (job.finishedAt ?? job.updatedAt) + delay : 0;
+    return Math.max(retryAt, job.status === 'running' ? (job.processingLeaseUntil ?? 0) : 0);
 };
 
 /** True when a non-done job is eligible to be (re)processed by the worker right now. */
@@ -98,252 +98,417 @@ export const getPendingContractSyncJobId = ({
     ownerDid: string;
 }): string => [profileDid, contractUri, termsUri, ownerDid].join('::');
 
+const DB_NAME = 'learn-card-pending-contract-sync';
+const DB_VERSION = 1;
+const JOB_STORE = 'jobs';
+const METADATA_STORE = 'metadata';
+const log = getLogger('pending-contract-sync-store');
+// On platforms without Web Locks, a renewable lease recovers abandoned workers.
+// Attempt IDs fence stale writes if a suspended worker resumes after another tab claims the job.
+const PROCESSING_LEASE_MS = 60_000;
+const createAttemptId = (): string =>
+    globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+
+const openDatabase = (): Promise<IDBDatabase> =>
+    new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+            request.result.createObjectStore(JOB_STORE, { keyPath: 'id' });
+            request.result.createObjectStore(METADATA_STORE);
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () =>
+            reject(request.error ?? new Error('Could not open pending sync database'));
+    });
+
+const channel =
+    typeof window === 'undefined' || typeof BroadcastChannel === 'undefined'
+        ? undefined
+        : new BroadcastChannel(`${DB_NAME}:updates`);
+const onQueueChanged = (): void => {
+    void refreshJobs().catch(error => log.error('Failed to refresh pending sync jobs', error));
+};
+channel?.addEventListener('message', onQueueChanged);
+if (typeof window !== 'undefined') {
+    window.addEventListener('storage', event => {
+        if (event.key === `${DB_NAME}:updates`) onQueueChanged();
+    });
+    window.addEventListener('focus', onQueueChanged);
+}
+
+const notifyQueueChanged = (): void => {
+    if (channel) {
+        channel.postMessage('updated');
+    } else if (typeof window !== 'undefined') {
+        try {
+            window.localStorage.setItem(`${DB_NAME}:updates`, createAttemptId());
+        } catch (error) {
+            // The queue is already committed; notification failure cannot undo the handoff.
+            log.warn('Failed to notify other tabs about pending sync jobs', error);
+        }
+    }
+};
+
+const readAllJobs = (database: IDBDatabase): Promise<PendingContractSyncJob[]> =>
+    new Promise((resolve, reject) => {
+        const transaction = database.transaction(JOB_STORE, 'readonly');
+        const request = transaction.objectStore(JOB_STORE).getAll();
+        transaction.oncomplete = () => resolve(request.result as PendingContractSyncJob[]);
+        transaction.onerror = () =>
+            reject(transaction.error ?? new Error('Could not read pending sync jobs'));
+        transaction.onabort = () =>
+            reject(transaction.error ?? new Error('Pending sync read aborted'));
+    });
+
+const migrateLegacyJobs = (database: IDBDatabase): Promise<void> =>
+    new Promise((resolve, reject) => {
+        const transaction = database.transaction([JOB_STORE, METADATA_STORE], 'readwrite');
+        const jobs = transaction.objectStore(JOB_STORE);
+        const metadata = transaction.objectStore(METADATA_STORE);
+        const migrated = metadata.get('legacy-migrated');
+        migrated.onsuccess = () => {
+            if (migrated.result) return;
+            try {
+                const legacy =
+                    typeof window === 'undefined'
+                        ? null
+                        : window.localStorage.getItem('pendingContractSyncStore');
+                const parsed = legacy
+                    ? (JSON.parse(legacy) as {
+                          state?: { jobs?: Record<string, PendingContractSyncJob> };
+                      })
+                    : undefined;
+                for (const job of Object.values(parsed?.state?.jobs ?? {})) {
+                    const existing = jobs.get(job.id);
+                    existing.onsuccess = () => {
+                        if (!existing.result) jobs.put(job);
+                    };
+                }
+                metadata.put(true, 'legacy-migrated');
+            } catch (error) {
+                transaction.abort();
+                reject(error);
+            }
+        };
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () =>
+            reject(transaction.error ?? new Error('Legacy queue migration failed'));
+        transaction.onabort = () =>
+            reject(transaction.error ?? new Error('Legacy queue migration aborted'));
+    });
+
+let hydration: Promise<void> | undefined;
+let isHydrated = false;
+export const isPendingContractSyncHydrated = (): boolean => isHydrated;
+const hydrate = (): Promise<void> => {
+    if (hydration) return hydration;
+    hydration = (async () => {
+        const database = await openDatabase();
+        try {
+            await migrateLegacyJobs(database);
+            await refreshJobs();
+            isHydrated = true;
+        } finally {
+            database.close();
+        }
+    })().catch(error => {
+        hydration = undefined;
+        throw error;
+    });
+    return hydration;
+};
+export const hydratePendingContractSyncJobs = (): Promise<void> =>
+    isHydrated ? refreshJobs() : hydrate();
+
+let refreshQueue = Promise.resolve();
+const refreshJobs = (): Promise<void> => {
+    const refresh = refreshQueue.then(async () => {
+        const database = await openDatabase();
+        try {
+            const jobs = await readAllJobs(database);
+            pendingContractSyncStore.set.jobs(Object.fromEntries(jobs.map(job => [job.id, job])));
+        } finally {
+            database.close();
+        }
+    });
+    // A failed read must not prevent a later explicit refresh from trying again.
+    refreshQueue = refresh.catch(() => {});
+    return refresh;
+};
+
+type JobsMutation<T = void> = (jobs: Record<string, PendingContractSyncJob>) => T;
+const mutateJobs = async <T = void>(mutation: JobsMutation<T>): Promise<T> => {
+    await hydrate();
+    const database = await openDatabase();
+    try {
+        let result!: T;
+        let changed = false;
+        await new Promise<T>((resolve, reject) => {
+            const transaction = database.transaction(JOB_STORE, 'readwrite');
+            const store = transaction.objectStore(JOB_STORE);
+            const request = store.getAll();
+            request.onsuccess = () => {
+                const previous = Object.fromEntries(
+                    (request.result as PendingContractSyncJob[]).map(job => [job.id, job])
+                );
+                const jobs = { ...previous };
+                try {
+                    result = mutation(jobs);
+                    for (const [id, job] of Object.entries(jobs)) {
+                        if (job !== previous[id]) {
+                            store.put(job);
+                            changed = true;
+                        }
+                    }
+                    for (const id of Object.keys(previous)) {
+                        if (!(id in jobs)) {
+                            store.delete(id);
+                            changed = true;
+                        }
+                    }
+                } catch (error) {
+                    transaction.abort();
+                    reject(error);
+                }
+            };
+            request.onerror = () =>
+                reject(request.error ?? new Error('Could not read pending sync jobs'));
+            transaction.oncomplete = () => resolve(result);
+            transaction.onerror = () =>
+                reject(transaction.error ?? new Error('Pending sync write failed'));
+            transaction.onabort = () =>
+                reject(transaction.error ?? new Error('Pending sync write aborted'));
+        });
+        if (changed) {
+            await refreshJobs();
+            notifyQueueChanged();
+        }
+        return result;
+    } finally {
+        database.close();
+    }
+};
+
+const canUpdateAttempt = (job: PendingContractSyncJob, attemptId?: string): boolean =>
+    !attemptId || job.processingAttemptId === attemptId;
+
 export const pendingContractSyncStore = createStore(
     'pendingContractSyncStore'
-)<PendingContractSyncState>(
-    { jobs: {} },
-    { persist: { name: 'pendingContractSyncStore', enabled: true } }
-).extendActions((set, get) => ({
-    enqueueContractSyncJob: (input: PendingContractSyncInput) => {
-        const id =
-            input.kind === 'credential'
-                ? ['credential', input.profileDid, input.category, input.record.uri].join('::')
-                : getPendingContractSyncJobId(input);
-
-        const jobs = get.jobs(); // get existing jobs
-        const existing = jobs[id]; // look up existing job
-
-        const timestamp = now(); // set current timestamp
-
-        const job: PendingContractSyncJob = {
-            id,
-            ...(input.kind === 'credential'
-                ? {
-                      ...input,
-                      syncedTermsUris: [
-                          ...new Set([
-                              ...(existing?.kind === 'credential' && existing.status !== 'done'
-                                  ? (existing.syncedTermsUris ?? [])
-                                  : []),
-                              ...(input.syncedTermsUris ?? []),
-                          ]),
-                      ],
-                      failedContractUris:
-                          input.failedContractUris ??
-                          (existing?.kind === 'credential' && existing.status !== 'done'
-                              ? existing.failedContractUris
-                              : undefined),
-                  }
-                : input),
-            status: existing?.status === 'running' ? 'running' : 'queued',
-            retryCount: existing?.status === 'running' ? existing.retryCount : 0,
-            totalCredentials: existing?.status === 'running' ? existing.totalCredentials : 0,
-            processedCredentials:
-                existing?.status === 'running' ? existing.processedCredentials : 0,
-            completedCredentials:
-                existing?.status === 'running' ? existing.completedCredentials : 0,
-            failedCredentials: existing?.status === 'running' ? existing.failedCredentials : 0,
-            syncedSharedUrisByCategory:
-                existing?.status === 'running' ? existing.syncedSharedUrisByCategory : {},
-            lastError: existing?.status === 'running' ? existing.lastError : undefined,
-            createdAt: existing?.createdAt ?? timestamp,
-            updatedAt: timestamp,
-            startedAt: existing?.status === 'running' ? existing.startedAt : undefined,
-            finishedAt: undefined,
-        };
-
-        // Drop stale done jobs so the persisted store doesn't grow forever, then
-        // persist the latest job snapshot so the worker can resume after reload.
-        const timestampForPrune = timestamp;
-        const prunedJobs = Object.fromEntries(
-            Object.entries(jobs).filter(
-                ([jobId, existingJob]) =>
-                    jobId === id ||
-                    existingJob.status !== 'done' ||
-                    timestampForPrune - (existingJob.finishedAt ?? existingJob.updatedAt) <
-                        DONE_JOB_TTL_MS
-            )
-        );
-
-        set.jobs({ ...prunedJobs, [id]: job });
-        return job;
-    },
-    recordTermsSynced: (id: string, termsUri: string) => {
-        const jobs = get.jobs();
-        const job = jobs[id];
-        if (!job || job.kind !== 'credential') return;
-        set.jobs({
-            ...jobs,
-            [id]: {
-                ...job,
-                syncedTermsUris: [...new Set([...(job.syncedTermsUris ?? []), termsUri])],
-                updatedAt: now(),
-            },
+)<PendingContractSyncState>({ jobs: {} }).extendActions(() => ({
+    enqueueContractSyncJob: async (
+        input: PendingContractSyncInput
+    ): Promise<PendingContractSyncJob> => {
+        let result!: PendingContractSyncJob;
+        await mutateJobs(jobs => {
+            const id =
+                input.kind === 'credential'
+                    ? ['credential', input.profileDid, input.category, input.record.uri].join('::')
+                    : getPendingContractSyncJobId(input);
+            const existing = jobs[id];
+            const timestamp = now();
+            result = {
+                id,
+                ...(input.kind === 'credential'
+                    ? {
+                          ...input,
+                          syncedTermsUris: [
+                              ...new Set([
+                                  ...(existing?.kind === 'credential' && existing.status !== 'done'
+                                      ? (existing.syncedTermsUris ?? [])
+                                      : []),
+                                  ...(input.syncedTermsUris ?? []),
+                              ]),
+                          ],
+                          failedContractUris:
+                              input.failedContractUris ??
+                              (existing?.kind === 'credential' && existing.status !== 'done'
+                                  ? existing.failedContractUris
+                                  : undefined),
+                      }
+                    : input),
+                status: existing?.status === 'running' ? 'running' : 'queued',
+                retryCount: existing?.status === 'running' ? existing.retryCount : 0,
+                totalCredentials: existing?.status === 'running' ? existing.totalCredentials : 0,
+                processedCredentials:
+                    existing?.status === 'running' ? existing.processedCredentials : 0,
+                completedCredentials:
+                    existing?.status === 'running' ? existing.completedCredentials : 0,
+                failedCredentials: existing?.status === 'running' ? existing.failedCredentials : 0,
+                syncedSharedUrisByCategory:
+                    existing?.status === 'running' ? existing.syncedSharedUrisByCategory : {},
+                lastError: existing?.status === 'running' ? existing.lastError : undefined,
+                createdAt: existing?.createdAt ?? timestamp,
+                updatedAt: timestamp,
+                startedAt: existing?.status === 'running' ? existing.startedAt : undefined,
+                finishedAt: undefined,
+                processingAttemptId:
+                    existing?.status === 'running' ? existing.processingAttemptId : undefined,
+                processingLeaseUntil:
+                    existing?.status === 'running' ? existing.processingLeaseUntil : undefined,
+            };
+            Object.entries(jobs).forEach(([jobId, job]) => {
+                if (
+                    jobId !== id &&
+                    job.status === 'done' &&
+                    timestamp - (job.finishedAt ?? job.updatedAt) >= DONE_JOB_TTL_MS
+                )
+                    delete jobs[jobId];
+            });
+            jobs[id] = result;
         });
+        return result;
     },
-    setFailedContractUris: (id: string, contractUris: string[]) => {
-        const jobs = get.jobs();
-        const job = jobs[id];
-        if (!job || job.kind !== 'credential') return;
-        set.jobs({
-            ...jobs,
-            [id]: {
-                ...job,
-                failedContractUris: [...new Set(contractUris)],
-                updatedAt: now(),
-            },
-        });
-    },
-    markRunning: (id: string) => {
-        const jobs = get.jobs();
-        const job = jobs[id];
-
-        if (!job) return;
-
-        // Starting a fresh attempt clears attempt-local errors, but preserves
-        // already-synced shared URIs so retry runs stay idempotent.
-        set.jobs({
-            ...jobs,
-            [id]: {
+    recordTermsSynced: (id: string, termsUri: string, attemptId?: string) =>
+        mutateJobs(jobs => {
+            const job = jobs[id];
+            if (job?.kind === 'credential' && canUpdateAttempt(job, attemptId)) {
+                jobs[id] = {
+                    ...job,
+                    syncedTermsUris: [...new Set([...(job.syncedTermsUris ?? []), termsUri])],
+                    updatedAt: now(),
+                };
+            }
+        }),
+    claimJob: (id: string) =>
+        mutateJobs<PendingContractSyncJob | undefined>(jobs => {
+            const job = jobs[id];
+            if (!job || !isJobReadyToProcess(job)) return undefined;
+            const timestamp = now();
+            const claimed: PendingContractSyncJob = {
                 ...job,
                 status: 'running',
+                processingAttemptId: createAttemptId(),
+                processingLeaseUntil: timestamp + PROCESSING_LEASE_MS,
                 processedCredentials: 0,
                 failedCredentials: 0,
-                startedAt: job.startedAt ?? now(),
-                updatedAt: now(),
+                startedAt: job.startedAt ?? timestamp,
+                updatedAt: timestamp,
                 lastError: undefined,
-            },
-        });
-    },
-    setTotals: (id: string, totalCredentials: number) => {
-        const jobs = get.jobs();
-        const job = jobs[id];
-
-        if (!job) return;
-
-        set.jobs({
-            ...jobs,
-            [id]: { ...job, totalCredentials, updatedAt: now() },
-        });
-    },
-    recordCredentialProcessed: (id: string) => {
-        const jobs = get.jobs();
-        const job = jobs[id];
-
-        if (!job) return;
-
-        set.jobs({
-            ...jobs,
-            [id]: {
+            };
+            jobs[id] = claimed;
+            return claimed;
+        }),
+    renewProcessingLease: (id: string, attemptId: string) =>
+        mutateJobs<boolean>(jobs => {
+            const job = jobs[id];
+            if (job?.processingAttemptId !== attemptId || job.status !== 'running') return false;
+            const timestamp = now();
+            jobs[id] = {
                 ...job,
-                processedCredentials: job.processedCredentials + 1,
-                updatedAt: now(),
-            },
-        });
-    },
-    recordCredentialSynced: (id: string, category: string, sharedUri: string) => {
-        const jobs = get.jobs();
-        const job = jobs[id];
-
-        if (!job) return;
-
-        // Track unique shared URIs per category; duplicates are ignored.
-        const previousCategoryUris = job.syncedSharedUrisByCategory[category] ?? [];
-        const nextCategoryUris = [...new Set([...previousCategoryUris, sharedUri])];
-        const nextSyncedSharedUrisByCategory = {
-            ...job.syncedSharedUrisByCategory,
-            [category]: nextCategoryUris,
-        };
-        const completedCredentials = Object.values(nextSyncedSharedUrisByCategory).reduce(
-            (total, uris) => total + uris.length,
-            0
-        );
-
-        set.jobs({
-            ...jobs,
-            [id]: {
+                processingLeaseUntil: timestamp + PROCESSING_LEASE_MS,
+                updatedAt: timestamp,
+            };
+            return true;
+        }),
+    setFailedContractUris: (id: string, uris: string[], attemptId?: string) =>
+        mutateJobs(jobs => {
+            const job = jobs[id];
+            if (job?.kind === 'credential' && canUpdateAttempt(job, attemptId)) {
+                jobs[id] = {
+                    ...job,
+                    failedContractUris: [...new Set(uris)],
+                    updatedAt: now(),
+                };
+            }
+        }),
+    setTotals: (id: string, totalCredentials: number, attemptId?: string) =>
+        mutateJobs(jobs => {
+            const job = jobs[id];
+            if (job && canUpdateAttempt(job, attemptId)) {
+                jobs[id] = { ...job, totalCredentials, updatedAt: now() };
+            }
+        }),
+    recordCredentialProcessed: (id: string, attemptId?: string) =>
+        mutateJobs(jobs => {
+            const job = jobs[id];
+            if (job && canUpdateAttempt(job, attemptId)) {
+                jobs[id] = {
+                    ...job,
+                    processedCredentials: job.processedCredentials + 1,
+                    updatedAt: now(),
+                };
+            }
+        }),
+    recordCredentialSynced: (id: string, category: string, sharedUri: string, attemptId?: string) =>
+        mutateJobs(jobs => {
+            const job = jobs[id];
+            if (!job || !canUpdateAttempt(job, attemptId)) return;
+            const syncedSharedUrisByCategory = {
+                ...job.syncedSharedUrisByCategory,
+                [category]: [
+                    ...new Set([...(job.syncedSharedUrisByCategory[category] ?? []), sharedUri]),
+                ],
+            };
+            jobs[id] = {
                 ...job,
-                completedCredentials,
-                syncedSharedUrisByCategory: nextSyncedSharedUrisByCategory,
+                syncedSharedUrisByCategory,
+                completedCredentials: Object.values(syncedSharedUrisByCategory).reduce(
+                    (total, uris) => total + uris.length,
+                    0
+                ),
                 updatedAt: now(),
-            },
-        });
-    },
-    recordCredentialFailed: (id: string, error: string) => {
-        const jobs = get.jobs();
-        const job = jobs[id];
-
-        if (!job) return;
-
-        set.jobs({
-            ...jobs,
-            [id]: {
-                ...job,
-                failedCredentials: job.failedCredentials + 1,
-                lastError: error,
-                updatedAt: now(),
-            },
-        });
-    },
-    markDone: (id: string) => {
-        const jobs = get.jobs();
-        const job = jobs[id];
-
-        if (!job) return;
-
-        set.jobs({
-            ...jobs,
-            [id]: {
-                ...job,
-                status: 'done',
-                finishedAt: now(),
-                updatedAt: now(),
-                lastError: undefined,
-            },
-        });
-    },
-    removeJob: (id: string) => {
-        const jobs = get.jobs();
-        if (!jobs[id]) return;
-
-        const nextJobs = { ...jobs };
-        delete nextJobs[id];
-        set.jobs(nextJobs);
-    },
-    pruneDoneJobs: (ttlMs: number = DONE_JOB_TTL_MS) => {
-        const jobs = get.jobs();
-        const cutoff = now() - ttlMs;
-
-        const nextJobs = Object.fromEntries(
-            Object.entries(jobs).filter(
-                ([, job]) => job.status !== 'done' || (job.finishedAt ?? job.updatedAt) >= cutoff
-            )
-        );
-
-        if (Object.keys(nextJobs).length !== Object.keys(jobs).length) set.jobs(nextJobs);
-    },
-    markError: (id: string, error: string) => {
-        const jobs = get.jobs();
-        const job = jobs[id];
-
-        if (!job) return;
-
-        // Errors are counted as retries so the worker can stop after repeated
-        // failures instead of looping forever on a bad credential or contract.
-        set.jobs({
-            ...jobs,
-            [id]: {
-                ...job,
-                status: 'error',
-                retryCount: job.retryCount + 1,
-                lastError: error,
-                finishedAt: now(),
-                updatedAt: now(),
-            },
-        });
-    },
+            };
+        }),
+    recordCredentialFailed: (id: string, error: string, attemptId?: string) =>
+        mutateJobs(jobs => {
+            const job = jobs[id];
+            if (job && canUpdateAttempt(job, attemptId)) {
+                jobs[id] = {
+                    ...job,
+                    failedCredentials: job.failedCredentials + 1,
+                    lastError: error,
+                    updatedAt: now(),
+                };
+            }
+        }),
+    markDone: (id: string, attemptId?: string) =>
+        mutateJobs(jobs => {
+            const job = jobs[id];
+            if (job && canUpdateAttempt(job, attemptId)) {
+                jobs[id] = {
+                    ...job,
+                    status: 'done',
+                    finishedAt: now(),
+                    updatedAt: now(),
+                    lastError: undefined,
+                    processingAttemptId: undefined,
+                    processingLeaseUntil: undefined,
+                };
+            }
+        }),
+    removeJob: (id: string) =>
+        mutateJobs(jobs => {
+            delete jobs[id];
+        }),
+    pruneDoneJobs: (ttlMs: number = DONE_JOB_TTL_MS) =>
+        mutateJobs(jobs => {
+            const cutoff = now() - ttlMs;
+            Object.entries(jobs).forEach(([id, job]) => {
+                if (job.status === 'done' && (job.finishedAt ?? job.updatedAt) < cutoff)
+                    delete jobs[id];
+            });
+        }),
+    markError: (id: string, error: string, attemptId?: string) =>
+        mutateJobs(jobs => {
+            const job = jobs[id];
+            if (job && canUpdateAttempt(job, attemptId)) {
+                jobs[id] = {
+                    ...job,
+                    status: 'error',
+                    retryCount: job.retryCount + 1,
+                    lastError: error,
+                    finishedAt: now(),
+                    updatedAt: now(),
+                    processingAttemptId: undefined,
+                    processingLeaseUntil: undefined,
+                };
+            }
+        }),
 }));
 
+if (typeof indexedDB !== 'undefined') {
+    void hydrate().catch(error => log.error('Failed to hydrate pending sync jobs', error));
+}
 export const enqueuePendingContractSync = pendingContractSyncStore.set.enqueueContractSyncJob;
 export const usePendingContractSyncJobs = pendingContractSyncStore.use.jobs;
 export const clearPendingContractSyncJob = pendingContractSyncStore.set.removeJob;

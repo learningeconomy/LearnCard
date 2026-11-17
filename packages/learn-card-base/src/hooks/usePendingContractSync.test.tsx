@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import 'fake-indexeddb/auto';
 import React from 'react';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -42,12 +43,13 @@ vi.mock('../logging/logger', () => ({
 }));
 import { usePendingContractSync } from './usePendingContractSync';
 import {
+    clearPendingContractSyncJob,
     enqueuePendingContractSync,
+    hydratePendingContractSyncJobs,
     pendingContractSyncStore,
 } from '../stores/pendingContractSyncStore';
-
 const source = { id: 'saved', uri: 'lc:credential:saved', category: 'Achievement' as const };
-const enqueue = () =>
+const enqueue = async () =>
     enqueuePendingContractSync({
         kind: 'credential',
         profileDid: 'did:example:learner',
@@ -62,10 +64,21 @@ const mount = () => {
         ),
     });
 };
-beforeEach(() => {
+beforeEach(async () => {
     vi.clearAllMocks();
-    localStorage.clear();
-    pendingContractSyncStore.set.jobs({});
+    vi.stubGlobal('navigator', {
+        locks: {
+            request: async (
+                _name: string,
+                _options: unknown,
+                callback: (lock: object) => Promise<void>
+            ) => callback({}),
+        },
+    });
+    await hydratePendingContractSyncJobs();
+    await Promise.all(
+        Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
+    );
     mocks.activeDid = 'did:example:learner';
     mocks.initWallet.mockImplementation(async () => ({
         id: { did: () => mocks.activeDid },
@@ -80,14 +93,12 @@ beforeEach(() => {
 afterEach(() => {
     cleanup();
     vi.useRealTimers();
+    vi.unstubAllGlobals();
 });
 
-it('persists a failed credential for reload and retries it only under its saving account', async () => {
-    const job = enqueue();
-    const persisted = JSON.parse(localStorage.getItem('pendingContractSyncStore')!);
-    expect(persisted.state.jobs[job.id].record).toEqual(source);
-    // Restore the actual persisted snapshot rather than reconstructing retry inputs.
-    pendingContractSyncStore.set.jobs(persisted.state.jobs);
+it('persists queued credentials and reports successful sync progress', async () => {
+    const job = await enqueue();
+    expect(pendingContractSyncStore.get.jobs()[job.id].record).toEqual(source);
     mocks.activeDid = 'did:example:other';
     const hook = mount();
     await act(async () => {});
@@ -96,6 +107,11 @@ it('persists a failed credential for reload and retries it only under its saving
     mocks.activeDid = 'did:example:learner';
     hook.rerender();
     await waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
+    expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
+        totalCredentials: 1,
+        completedCredentials: 1,
+        processedCredentials: 1,
+    });
     expect(mocks.sync).toHaveBeenCalledWith(
         { record: source, category: 'Achievement' },
         expect.objectContaining({ id: expect.anything() }),
@@ -108,60 +124,69 @@ it('persists a failed credential for reload and retries it only under its saving
 });
 
 it('retains a failed retry and wakes after the existing backoff', async () => {
-    vi.useFakeTimers();
-    const job = enqueue();
+    vi.useFakeTimers({
+        toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
+    });
+    const job = await enqueue();
     mocks.sync.mockRejectedValueOnce(new Error('offline'));
     await act(async () => {
         mount();
     });
-    expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('error');
+    await vi.waitFor(() =>
+        expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('error')
+    );
     expect(pendingContractSyncStore.get.jobs()[job.id].retryCount).toBe(1);
     await act(async () => {
         await vi.advanceTimersByTimeAsync(5000);
     });
-    expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done');
+    await vi.waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
     expect(mocks.sync).toHaveBeenCalledTimes(2);
 });
 
 it('persists each acknowledged term before failure and restores it on a reloaded retry', async () => {
-    vi.useFakeTimers();
-    const job = enqueue();
+    vi.useFakeTimers({
+        toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
+    });
+    const job = await enqueue();
     mocks.sync.mockImplementationOnce(async (_input, _wallet, completed, callbacks) => {
         expect(completed).toEqual(new Set());
-        callbacks.onTermsSynced('terms-a');
-        callbacks.onContractsFailed(['contract-b']);
+        await callbacks.onTermsSynced('terms-a');
+        await callbacks.onContractsFailed(['contract-b']);
         throw new Error('terms-b unavailable');
     });
     const hook = mount();
-    await act(async () => {});
+    await vi.waitFor(() =>
+        expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('error')
+    );
     hook.unmount();
-    const persisted = JSON.parse(localStorage.getItem('pendingContractSyncStore')!);
-    expect(persisted.state.jobs[job.id]).toMatchObject({
+    const persisted = pendingContractSyncStore.get.jobs()[job.id];
+    expect(persisted).toMatchObject({
         status: 'error',
         syncedTermsUris: ['terms-a'],
         failedContractUris: ['contract-b'],
     });
-    pendingContractSyncStore.set.jobs(persisted.state.jobs);
     mocks.sync.mockImplementationOnce(async (_input, _wallet, completed, callbacks) => {
         expect(completed).toEqual(new Set(['terms-a']));
-        callbacks.onTermsSynced('terms-b');
-        callbacks.onContractsFailed([]);
+        await callbacks.onTermsSynced('terms-b');
+        await callbacks.onContractsFailed([]);
         return true;
     });
     await act(async () => {
         mount();
         await vi.advanceTimersByTimeAsync(5000);
     });
-    expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
-        status: 'done',
-        syncedTermsUris: ['terms-a', 'terms-b'],
-        failedContractUris: [],
-    });
+    await vi.waitFor(() =>
+        expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
+            status: 'done',
+            syncedTermsUris: ['terms-a', 'terms-b'],
+            failedContractUris: [],
+        })
+    );
     expect(mocks.sync).toHaveBeenCalledTimes(2);
 });
 
 it('waits without spending a retry or spinning when initialization returns a stale wallet', async () => {
-    const job = enqueue();
+    const job = await enqueue();
     mocks.initWallet.mockResolvedValueOnce({ id: { did: () => 'did:example:other' } });
     const hook = mount();
     await act(async () => {});
@@ -180,7 +205,7 @@ it('waits without spending a retry or spinning when initialization returns a sta
 });
 
 it('leaves the job queued if the active account changes while initialization is pending', async () => {
-    const job = enqueue();
+    const job = await enqueue();
     let resolveWallet!: (wallet: { id: { did: () => string } }) => void;
     mocks.initWallet.mockReturnValueOnce(
         new Promise(resolve => {
@@ -204,7 +229,7 @@ it('leaves the job queued if the active account changes while initialization is 
 });
 
 it('does not share a saved credential removed before retry', async () => {
-    const job = enqueue();
+    const job = await enqueue();
     mocks.readIndex.mockResolvedValue([]);
     mount();
     await waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
@@ -212,7 +237,7 @@ it('does not share a saved credential removed before retry', async () => {
 });
 
 it('cancels an Achievement retry when the same saved credential has been moved to ID', async () => {
-    const job = enqueue();
+    const job = await enqueue();
     mocks.readIndex.mockResolvedValue([{ ...source, category: 'ID' }]);
     mount();
     await waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
@@ -223,7 +248,7 @@ it('cancels an Achievement retry when the same saved credential has been moved t
 });
 
 it('never retries stale contract terms against another contract owned by the same profile', async () => {
-    const job = enqueuePendingContractSync({
+    const job = await enqueuePendingContractSync({
         profileDid: 'did:example:learner',
         contractUri: 'contract-original',
         termsUri: 'terms-original',
@@ -247,31 +272,62 @@ it('never retries stale contract terms against another contract owned by the sam
     expect(mocks.syncContract).not.toHaveBeenCalled();
 });
 
-it('marks contract-wide background delivery as automatic at the server boundary', async () => {
-    const job = enqueuePendingContractSync({
-        profileDid: 'did:example:learner',
-        contractUri: 'contract-original',
-        termsUri: 'terms-original',
-        ownerDid: 'did:example:owner',
-    });
-    mocks.contracts.mockResolvedValue([
-        {
-            uri: 'terms-original',
-            status: 'live',
-            contract: { uri: 'contract-original', owner: { did: 'did:example:owner' } },
-            terms: {
-                read: {
-                    credentials: { categories: { Achievement: { shareAll: true, sharing: true } } },
+it.each([undefined, '', '   '])(
+    'delivers category-wide background consent with expiry %j',
+    async shareUntil => {
+        const job = await enqueuePendingContractSync({
+            profileDid: 'did:example:learner',
+            contractUri: 'contract-original',
+            termsUri: 'terms-original',
+            ownerDid: 'did:example:owner',
+        });
+        mocks.contracts.mockResolvedValue([
+            {
+                uri: 'terms-original',
+                status: 'live',
+                contract: { uri: 'contract-original', owner: { did: 'did:example:owner' } },
+                terms: {
+                    read: {
+                        credentials: {
+                            categories: {
+                                Achievement: { shareAll: true, sharing: true, shareUntil },
+                            },
+                        },
+                    },
                 },
             },
-        },
-    ]);
+        ]);
+        mount();
+        await waitFor(() =>
+            expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done')
+        );
+        expect(mocks.syncContract).toHaveBeenCalledWith(
+            'terms-original',
+            { Achievement: ['shared-uri'] },
+            2,
+            true
+        );
+    }
+);
+
+it('recovers an abandoned running attempt after its lease without Web Locks', async () => {
+    vi.stubGlobal('navigator', {});
+    vi.useFakeTimers({
+        toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
+    });
+    const job = await enqueue();
+    const abandoned = (await pendingContractSyncStore.set.claimJob(job.id))!;
     mount();
-    await waitFor(() => expect(pendingContractSyncStore.get.jobs()[job.id].status).toBe('done'));
-    expect(mocks.syncContract).toHaveBeenCalledWith(
-        'terms-original',
-        { Achievement: ['shared-uri'] },
-        2,
-        true
+    expect(mocks.sync).not.toHaveBeenCalled();
+    await act(async () => {
+        await vi.advanceTimersByTimeAsync(abandoned.processingLeaseUntil! - Date.now());
+    });
+    await vi.waitFor(() =>
+        expect(pendingContractSyncStore.get.jobs()[job.id]).toMatchObject({
+            status: 'done',
+            completedCredentials: 1,
+            retryCount: 0,
+        })
     );
+    expect(mocks.sync).toHaveBeenCalledTimes(1);
 });

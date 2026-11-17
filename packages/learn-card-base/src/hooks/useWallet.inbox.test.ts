@@ -1,4 +1,5 @@
 /// <reference lib="es2024.promise" />
+import 'fake-indexeddb/auto';
 
 import { webcrypto } from 'node:crypto';
 import { getCredentialPayloadRecordId } from '../helpers/credentialStorageIdentity';
@@ -82,7 +83,11 @@ vi.mock('learn-card-base/constants/aiPassport', () => ({
 }));
 import { InfiniteQueryObserver, QueryClient, QueryObserver } from '@tanstack/react-query';
 import { useWallet } from './useWallet';
-import { pendingContractSyncStore } from '../stores/pendingContractSyncStore';
+import {
+    clearPendingContractSyncJob,
+    hydratePendingContractSyncJobs,
+    pendingContractSyncStore,
+} from '../stores/pendingContractSyncStore';
 import {
     addCredentialSummary,
     clearCredentialFacts,
@@ -109,7 +114,10 @@ let records: { id: string; uri: string; inboxDeliveryId?: string }[];
 
 beforeEach(async () => {
     vi.clearAllMocks();
-    pendingContractSyncStore.set.jobs({});
+    await hydratePendingContractSyncJobs();
+    await Promise.all(
+        Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
+    );
     clearInAppMessageEvents();
     await clearCredentialFacts();
     vi.stubGlobal('crypto', webcrypto);
@@ -872,7 +880,9 @@ it('queues Partner Connect sharing after the index write without waiting for net
             },
         }),
     ]);
-    pendingContractSyncStore.set.jobs({});
+    await Promise.all(
+        Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
+    );
     mocks.getConsentedContracts.mockClear();
     mocks.add.mockResolvedValueOnce(false);
     expect(
@@ -923,3 +933,37 @@ it('queues an unavailable shared copy without expanding beyond live category-wid
         expect.objectContaining({ record: expect.objectContaining({ uri: 'credential' }) }),
     ]);
 });
+
+it.each(['', '   '])(
+    'shares with category-wide consent when legacy expiry is %j',
+    async shareUntil => {
+        mocks.getConsentedContracts.mockResolvedValue([
+            {
+                uri: 'terms-legacy-expiry',
+                status: 'live',
+                contract: { uri: 'contract-legacy-expiry', owner: { did: 'did:key:owner' } },
+                terms: {
+                    read: {
+                        credentials: {
+                            categories: {
+                                Achievement: { shareAll: true, sharing: true, shareUntil },
+                            },
+                        },
+                    },
+                },
+            },
+        ]);
+        await expect(
+            useWallet().syncCredentialToContracts({
+                record: { id: 'saved', uri: 'credential', category: 'Achievement' },
+                category: 'Achievement',
+            })
+        ).resolves.toBe(true);
+        expect(mocks.syncContract).toHaveBeenCalledWith(
+            'terms-legacy-expiry',
+            { Achievement: ['shared-uri'] },
+            expect.any(Number),
+            true
+        );
+    }
+);

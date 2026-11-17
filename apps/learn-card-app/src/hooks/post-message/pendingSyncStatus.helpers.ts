@@ -1,5 +1,7 @@
 import {
+    hydratePendingContractSyncJobs,
     isJobTerminal,
+    isPendingContractSyncHydrated,
     MAX_JOB_RETRIES,
     pendingContractSyncStore,
 } from 'learn-card-base/stores/pendingContractSyncStore';
@@ -19,6 +21,26 @@ export const getPendingSyncStatus = (
     profileDid: string | undefined,
     contractUri?: string
 ): PendingSyncStatus => {
+    if (!profileDid)
+        return {
+            status: 'ready',
+            progress: {
+                totalCredentials: 0,
+                completedCredentials: 0,
+                failedCredentials: 0,
+                retryCount: 0,
+            },
+        };
+    if (!isPendingContractSyncHydrated())
+        return {
+            status: 'syncing',
+            progress: {
+                totalCredentials: 0,
+                completedCredentials: 0,
+                failedCredentials: 0,
+                retryCount: 0,
+            },
+        };
     const jobs = Object.values(pendingContractSyncStore.get.jobs()).filter(job => {
         if (job.profileDid !== profileDid) return false;
         if (!contractUri) return true;
@@ -69,6 +91,7 @@ export const waitForPendingSync = async (
     contractUri?: string,
     timeoutMs = 25000
 ): Promise<PendingSyncStatus> => {
+    await hydratePendingContractSyncJobs();
     const startedAt = Date.now();
     while (Date.now() - startedAt < timeoutMs) {
         const status = getPendingSyncStatus(profileDid, contractUri);

@@ -1,4 +1,7 @@
+import 'fake-indexeddb/auto';
 import {
+    clearPendingContractSyncJob,
+    hydratePendingContractSyncJobs,
     pendingContractSyncStore,
     enqueuePendingContractSync,
 } from '../../../../packages/learn-card-base/src/stores/pendingContractSyncStore';
@@ -55,12 +58,33 @@ const credential = {
         proofValue: 'unit-test',
     },
 };
-beforeEach(() => {
+const readPersistedJobs = async (): Promise<unknown[]> => {
+    const databasePromise = Promise.withResolvers<IDBDatabase>();
+    const openRequest = indexedDB.open('learn-card-pending-contract-sync');
+    openRequest.onsuccess = () => databasePromise.resolve(openRequest.result);
+    openRequest.onerror = () => databasePromise.reject(openRequest.error);
+    const database = await databasePromise.promise;
+    try {
+        const read = Promise.withResolvers<unknown[]>();
+        const transaction = database.transaction('jobs', 'readonly');
+        const request = transaction.objectStore('jobs').getAll();
+        transaction.oncomplete = () => read.resolve(request.result);
+        transaction.onerror = () => read.reject(transaction.error);
+        transaction.onabort = () => read.reject(transaction.error);
+        return await read.promise;
+    } finally {
+        database.close();
+    }
+};
+beforeEach(async () => {
     vi.clearAllMocks();
     mocks.category.mockReturnValue('Achievement');
     mocks.invalidateQueries.mockResolvedValue(undefined);
     mocks.invalidateCounts.mockResolvedValue(undefined);
-    pendingContractSyncStore.set.jobs({});
+    await hydratePendingContractSyncJobs();
+    await Promise.all(
+        Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
+    );
     mocks.wallet = {
         id: { did: () => 'did:example:upload-account' },
         store: { LearnCloud: { uploadEncrypted: mocks.upload } },
@@ -105,8 +129,7 @@ describe('useUploadVcFromText contract synchronization', () => {
             }),
         ]);
         expect(mocks.sync).not.toHaveBeenCalled();
-        const persisted = JSON.parse(localStorage.getItem('pendingContractSyncStore')!);
-        expect(Object.values(persisted.state.jobs)).toEqual(
+        expect(await readPersistedJobs()).toEqual(
             Object.values(pendingContractSyncStore.get.jobs())
         );
     });
@@ -191,11 +214,7 @@ describe('useUploadVcFromText contract synchronization', () => {
             );
             const jobs = Object.values(pendingContractSyncStore.get.jobs());
             expect(jobs.length).toBeGreaterThan(0);
-            expect(
-                Object.values(
-                    JSON.parse(localStorage.getItem('pendingContractSyncStore')!).state.jobs
-                )
-            ).toEqual(jobs);
+            expect(await readPersistedJobs()).toEqual(jobs);
             expect(mocks.sync).not.toHaveBeenCalled();
         }
     );
