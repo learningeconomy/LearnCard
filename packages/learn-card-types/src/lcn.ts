@@ -1,6 +1,7 @@
 import type {} from 'zod-openapi';
 import { z } from 'zod/v4';
 
+import { ReadableDeliveryDisclosureVersionValidator } from './readable-delivery';
 import { PaginationResponseValidator } from './mongo';
 import { BaseStringQuery, StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
@@ -1006,7 +1007,7 @@ export const ConsentFlowContractDetailsValidator = z.object({
                 displayName: z.string(),
                 agentDid: z.string(),
                 enabled: z.boolean(),
-                disclosureVersion: z.literal('1'),
+                disclosureVersion: ReadableDeliveryDisclosureVersionValidator,
             })
         )
         .optional(),

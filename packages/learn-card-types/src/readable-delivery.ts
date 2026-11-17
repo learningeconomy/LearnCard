@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-export const READABLE_DELIVERY_DISCLOSURE_VERSION = '1' as const;
+export const READABLE_DELIVERY_DISCLOSURE_VERSION = '2' as const;
+export const ReadableDeliveryDisclosureVersionValidator = z.enum([
+    '1',
+    READABLE_DELIVERY_DISCLOSURE_VERSION,
+]);
 
 export const ReadableDeliveryRecipientValidator = z.object({
     profileId: z.string().min(3).max(40),
@@ -8,7 +12,7 @@ export const ReadableDeliveryRecipientValidator = z.object({
     displayName: z.string(),
     agentDid: z.string(),
     enabled: z.boolean(),
-    disclosureVersion: z.literal(READABLE_DELIVERY_DISCLOSURE_VERSION),
+    disclosureVersion: ReadableDeliveryDisclosureVersionValidator,
 });
 export type ReadableDeliveryRecipient = z.infer<typeof ReadableDeliveryRecipientValidator>;
 
@@ -18,7 +22,7 @@ export const CreateReadableDeliveryRecipientValidator = z.object({
     requestId: z.uuid(),
     displayName: z.string().trim().min(1).max(100),
     acceptDelegatedAuthority: z.literal(true),
-    disclosureVersion: z.literal(READABLE_DELIVERY_DISCLOSURE_VERSION),
+    disclosureVersion: ReadableDeliveryDisclosureVersionValidator,
 });
 export type CreateReadableDeliveryRecipient = z.infer<
     typeof CreateReadableDeliveryRecipientValidator
@@ -39,6 +43,8 @@ export const ReadableDeliveryCredentialValidator = z.object({
     uri: z.string(),
     category: z.string(),
     status: z.enum(['readable', 'unreadable', 'unavailable', 'invalid']),
+    /** Original decrypted credential, including issuer-defined fields and any proof, for version 2 recipients. */
+    fullCredential: z.record(z.string(), z.unknown()).optional(),
     credential: z
         .object({
             name: z.string().optional(),

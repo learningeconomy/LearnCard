@@ -4323,6 +4323,7 @@
             "expires": "Caduca"
         },
         "consentAudience": {
+            "fullCredential": "{{organizations}} puede recibir una copia completa de cada credencial que selecciones, incluidos tus datos y la firma del emisor, si la hay.",
             "title": "Revisa quién recibe tus datos",
             "description": "La información que elijas estará disponible para todas las personas que aparecen a continuación.",
             "confirm": "Confirmar uso compartido",

@@ -101,6 +101,33 @@ describe('consent account avatar', () => {
                     ...contract,
                     readableDeliveryRecipients: [
                         {
+                            profileId: 'legacy',
+                            displayName: 'Legacy Org',
+                            agentDid: 'did:key:legacy',
+                            enabled: true,
+                            disclosureVersion: '1',
+                        },
+                        {
+                            profileId: 'full',
+                            displayName: 'Full Org',
+                            agentDid: 'did:key:full',
+                            enabled: true,
+                            disclosureVersion: '2',
+                        },
+                    ],
+                }}
+            />
+        );
+        expect(screen.getByTestId('readable-delivery-disclosure').textContent).toBe(
+            'LearnCard can read your selected information on behalf of Legacy Org, Full Org.' +
+                'Full Org can receive a complete copy of each credential you select, including your details and any issuer signature.'
+        );
+        view.rerender(
+            <ConsentFlowHeader
+                contractDetails={{
+                    ...contract,
+                    readableDeliveryRecipients: [
+                        {
                             profileId: 'disabled-partner',
                             displayName: 'Disabled Organization',
                             agentDid: 'did:key:agent',

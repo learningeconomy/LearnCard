@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import {
     ConsentFlowContractDataForDidValidator,
     LCNProfileValidator,
+    ReadableDeliveryPageValidator,
     UnsignedVCValidator,
 } from '@learncard/types';
 import { verifyDeliveryCredential } from './readable-delivery-verifier.helpers';
@@ -135,6 +136,7 @@ beforeEach(() => {
     mocks.encryptKey.mockResolvedValue({ provider: 'local-v1', ciphertext: 'encrypted-key' });
     mocks.delivery.mockResolvedValue({
         enabled: true,
+        disclosureVersion: '1',
         agentProfileId: 'agent',
         agentDid: 'did:key:agent',
     });
@@ -160,7 +162,7 @@ beforeEach(() => {
 });
 
 describe('readable delivery authorization and projection', () => {
-    it('verifies the original signed nested extensions while returning only the summary', async () => {
+    it('verifies the original signed nested extensions and delivers the same complete credential under disclosure version 2', async () => {
         const { getEmptyLearnCard } =
             await vi.importActual<typeof import('./learnCard.helpers')>('./learnCard.helpers');
         const wallet = await getEmptyLearnCard();
@@ -187,6 +189,12 @@ describe('readable delivery authorization and projection', () => {
         expect((await verifyDeliveryCredential(UnsignedVCValidator.parse(signed))).proof).toBe(
             'invalid'
         );
+        mocks.delivery.mockResolvedValue({
+            enabled: true,
+            agentProfileId: 'agent',
+            agentDid: 'did:key:agent',
+            disclosureVersion: '2',
+        });
         mocks.decrypt.mockResolvedValue(signed);
         mocks.verify.mockImplementation(async credential => ({
             ...(await verifyDeliveryCredential(credential)),
@@ -196,8 +204,27 @@ describe('readable delivery authorization and projection', () => {
         expect(result.records[0]?.credential?.verification.proof).toBe('valid');
         expect(mocks.verify.mock.calls[0]?.[0]).toBe(signed);
         expect(result.records[0]?.credential?.issuer).toBe(did);
-        expect(JSON.stringify(result)).not.toContain('not-in-summary');
-        expect(JSON.stringify(result)).not.toContain('logo.png');
+        expect(ReadableDeliveryPageValidator.parse(result).records[0]?.fullCredential).toEqual(
+            signed
+        );
+    });
+    it('resumes a full-credential page at the first record that did not fit', async () => {
+        mocks.delivery.mockResolvedValue({
+            enabled: true,
+            agentProfileId: 'agent',
+            agentDid: 'did:key:agent',
+            disclosureVersion: '2',
+        });
+        mocks.decrypt.mockResolvedValue({ ...vc, evidenceNotes: 'x'.repeat(1024 * 1024) });
+        const first = await readReadableDelivery('recipient', domain, { ...input, limit: 2 });
+        expect(first.records.map(record => record.uri)).toEqual([grant.credentials[0]!.uri]);
+        expect(first.cursor).toBe('1');
+        const second = await readReadableDelivery('recipient', domain, {
+            ...input,
+            cursor: first.cursor,
+        });
+        expect(second.records.map(record => record.uri)).toEqual([grant.credentials[1]!.uri]);
+        expect(second.hasMore).toBe(false);
     });
     it('rejects a malformed local DID that resolves to a different profile', async () => {
         await expect(
@@ -263,6 +290,7 @@ describe('readable delivery authorization and projection', () => {
         mocks.delivery
             .mockResolvedValueOnce({
                 enabled: true,
+                disclosureVersion: '1',
                 agentProfileId: 'agent',
                 agentDid: 'did:key:agent',
             })
@@ -414,6 +442,7 @@ describe('readable recipient provisioning', () => {
             domain,
             profileId: 'existing',
             agentDid: 'did:key:agent',
+            disclosureVersion: request.disclosureVersion,
             displayName: request.displayName,
             enabled: true,
         });
@@ -422,7 +451,7 @@ describe('readable recipient provisioning', () => {
         );
         expect(mocks.encryptKey).not.toHaveBeenCalled();
         await expect(
-            provisionReadableDelivery('owner', domain, { ...request, displayName: 'Different' })
+            provisionReadableDelivery('owner', domain, { ...request, disclosureVersion: '2' })
         ).rejects.toMatchObject({ code: 'FORBIDDEN' });
         expect(mocks.create).not.toHaveBeenCalled();
     });
@@ -433,6 +462,7 @@ describe('readable recipient provisioning', () => {
             domain,
             profileId: 'existing',
             agentDid: 'did:key:agent',
+            disclosureVersion: request.disclosureVersion,
             displayName: request.displayName,
             enabled: true,
         });

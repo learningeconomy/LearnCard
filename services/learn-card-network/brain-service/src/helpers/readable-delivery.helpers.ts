@@ -68,7 +68,7 @@ const publicRecipient = (record: DeliveryRecord): ReadableDeliveryRecipient => (
     displayName: record.displayName,
     agentDid: record.agentDid,
     enabled: record.enabled,
-    disclosureVersion: '1',
+    disclosureVersion: record.disclosureVersion,
 });
 
 /** Opt in a new or directly managed organization before its first learner consent. */
@@ -84,6 +84,7 @@ export const provisionReadableDelivery = async (
             record.ownerProfileId !== owner ||
             record.domain !== domain ||
             record.displayName !== input.displayName ||
+            record.disclosureVersion !== input.disclosureVersion ||
             (input.profileId !== undefined && record.profileId !== input.profileId) ||
             !record.enabled
         )
@@ -117,7 +118,7 @@ export const provisionReadableDelivery = async (
             ownerProfileId: owner,
             displayName: input.displayName,
             enabled: true,
-            disclosureVersion: '1',
+            disclosureVersion: input.disclosureVersion,
         };
         await createDeliveryRecipient(record, recipientDid, input.profileId !== undefined);
         await deleteDidDocForProfile(record.profileId);
@@ -214,6 +215,9 @@ export const readReadableDelivery = async (
         ? `http://${domain.replace(/%3a/gi, ':')}`
         : undefined;
     const records: ReadableDeliveryCredential[] = [];
+    // Keep full-credential pages below the buffered Lambda response limit, including JSON framing.
+    const fullCredentialPageBytes = 2 * 1024 * 1024;
+    let payloadBytes = 0;
     const signal = AbortSignal.timeout(12_000);
     for (const item of selected) {
         let ciphertext;
@@ -251,6 +255,17 @@ export const readReadableDelivery = async (
             records.push({ ...item, status: 'invalid' });
             continue;
         }
+        const fullCredential =
+            delivery.disclosureVersion === '2' ? (plaintext as UnsignedVC) : undefined;
+        if (fullCredential) {
+            const bytes = Buffer.byteLength(JSON.stringify(fullCredential));
+            if (bytes > fullCredentialPageBytes) {
+                records.push({ ...item, status: 'unavailable' });
+                continue;
+            }
+            if (payloadBytes + bytes > fullCredentialPageBytes) break;
+            payloadBytes += bytes;
+        }
         // Parsing validates the shape but may strip signed nested extensions.
         // Verify the original payload; use the parsed value only for projection.
         const verification = await verifyDeliveryOutcome(
@@ -264,6 +279,7 @@ export const readReadableDelivery = async (
         records.push({
             ...item,
             status: 'readable',
+            ...(fullCredential && { fullCredential }),
             credential: {
                 name: text(vc.name),
                 type: vc.type,
@@ -287,7 +303,7 @@ export const readReadableDelivery = async (
     )
         throw denied();
     if (
-        selected.some(
+        records.some(
             item =>
                 !current.credentials.some(
                     now => now.uri === item.uri && now.category === item.category
@@ -295,6 +311,6 @@ export const readReadableDelivery = async (
         )
     )
         throw denied();
-    const hasMore = start + selected.length < grant.credentials.length;
-    return { records, hasMore, ...(hasMore ? { cursor: String(start + selected.length) } : {}) };
+    const hasMore = start + records.length < grant.credentials.length;
+    return { records, hasMore, ...(hasMore ? { cursor: String(start + records.length) } : {}) };
 };

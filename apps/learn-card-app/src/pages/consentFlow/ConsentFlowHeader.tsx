@@ -1,4 +1,5 @@
 import React from 'react';
+import { FullCredentialDisclosure } from 'learn-card-base/components/FullCredentialDisclosure';
 import * as m from '../../paraglide/messages';
 import Plus from 'learn-card-base/svgs/Plus';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -98,6 +99,7 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
                             .map(recipient => recipient.displayName)
                             .join(', '),
                     })}
+                    <FullCredentialDisclosure recipients={readableRecipients} />
                 </p>
             )}
         </header>

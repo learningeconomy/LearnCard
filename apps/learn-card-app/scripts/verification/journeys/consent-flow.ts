@@ -75,7 +75,7 @@ export const consentFlowFeature: FeatureDefinition = {
             requestId: randomUUID(),
             displayName: recipientName,
             acceptDelegatedAuthority: true as const,
-            disclosureVersion: '1' as const,
+            disclosureVersion: '2' as const,
         };
         const recipient = await partner.invoke.createReadableDeliveryRecipient(provision);
         expect(recipient.profileId).toBe(recipientProfileId);
@@ -107,7 +107,7 @@ export const consentFlowFeature: FeatureDefinition = {
                 displayName: recipient.displayName,
                 agentDid: recipient.agentDid,
                 enabled: true,
-                disclosureVersion: '1',
+                disclosureVersion: '2',
             });
             expect(details.recipients?.map(profile => profile.did)).toContain(recipient.did);
             const recipientDocument = await partner.invoke.resolveDid(recipient.did);
@@ -158,7 +158,7 @@ export const consentFlowFeature: FeatureDefinition = {
                 timeout: UI_TIMEOUT,
             });
             await expect(dialog.getByTestId('readable-delivery-disclosure')).toContainText(
-                recipient.displayName
+                `${recipient.displayName} can receive a complete copy of each credential you select`
             );
             await dialog.getByRole('button', { name: 'Privacy & Data', exact: true }).click();
             const privacy = page.getByTestId('consent-privacy-and-data');
@@ -330,7 +330,7 @@ export const consentFlowFeature: FeatureDefinition = {
                     },
                 },
             });
-            expect(data.records[0]?.credential).not.toHaveProperty('credentialSubject');
+            expect(data.records[0]?.fullCredential).toEqual(signedInput);
             expect(data.hasMore).toBe(false);
             for (const scope of ['contracts-data:read', 'contracts-data:decrypt', '*:read']) {
                 expect((await readDelivery(await tokenFor(scope))).status).toBe(403);

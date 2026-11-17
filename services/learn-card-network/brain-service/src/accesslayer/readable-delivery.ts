@@ -150,7 +150,7 @@ export const getDeliveryDisclosures = async (
         displayName: string;
         agentDid: string;
         enabled: boolean;
-        disclosureVersion: '1';
+        disclosureVersion: DeliveryRecord['disclosureVersion'];
     }[]
 > => {
     const result = await neogma.queryRunner.run(
@@ -165,6 +165,6 @@ export const getDeliveryDisclosures = async (
         displayName: row.get('displayName'),
         agentDid: row.get('agentDid'),
         enabled: row.get('enabled'),
-        disclosureVersion: '1',
+        disclosureVersion: row.get('disclosureVersion'),
     }));
 };

@@ -1,3 +1,5 @@
+import type { ReadableDeliveryRecipient } from '@learncard/types';
+
 export interface DeliveryKeyBinding {
     profileId: string;
     domain: string;
@@ -16,7 +18,7 @@ export interface DeliveryRecord extends DeliveryKeyBinding, DeliveryKeyEnvelope 
     agentDid: string;
     displayName: string;
     enabled: boolean;
-    disclosureVersion: '1';
+    disclosureVersion: ReadableDeliveryRecipient['disclosureVersion'];
 }
 
 export interface DeliveryKeyCustody {

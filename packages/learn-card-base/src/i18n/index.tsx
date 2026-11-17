@@ -40,6 +40,8 @@ export const EN_DEFAULTS: Record<string, string> = {
     'inAppMessages.downloading': 'Downloading… {progress}%',
     'inAppMessages.installing': 'Installing…',
     'inAppMessages.upToDate': "You're on the latest version.",
+    'consentAudience.fullCredential':
+        '{organizations} can receive a complete copy of each credential you select, including your details and any issuer signature.',
     'consentAudience.title': 'Review who receives your data',
     'consentAudience.description':
         'Your selected information will be available to everyone listed below.',

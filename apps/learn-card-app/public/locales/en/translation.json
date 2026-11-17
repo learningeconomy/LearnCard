@@ -4375,6 +4375,7 @@
             "expires": "Expires"
         },
         "consentAudience": {
+            "fullCredential": "{{organizations}} can receive a complete copy of each credential you select, including your details and any issuer signature.",
             "title": "Review who receives your data",
             "description": "Your selected information will be available to everyone listed below.",
             "confirm": "Confirm Sharing",

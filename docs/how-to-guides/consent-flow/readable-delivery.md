@@ -1,6 +1,6 @@
 # Read Consented Credentials as an Organization
 
-Readable delivery lets an organization request credential summaries through an authenticated API. Provision or enable an organization recipient **before** asking learners to consent. LearnCard then processes the selected encrypted credentials for that organization.
+Readable delivery lets an organization request selected credentials and verification summaries through an authenticated API. Provision or enable an organization recipient **before** asking learners to consent. LearnCard then processes the selected encrypted credentials for that organization.
 
 An operator must configure key custody and trusted storage origins for the network you use. Each organization explicitly opts in through recipient provisioning. It does not make existing encrypted records readable retroactively.
 
@@ -20,8 +20,8 @@ sequenceDiagram
     Network->>Network: Check consent and recipient manager
     Network->>KMS: Unwrap agent key
     Network->>LearnCloud: Fetch encrypted copy
-    Network->>Network: Decrypt, summarize, recheck consent, audit
-    Network-->>Organization: Credential summaries (no-store)
+    Network->>Network: Decrypt, verify, recheck consent, audit
+    Network-->>Organization: Selected credentials and summaries (no-store)
 ```
 
 ## Provision and request consent
@@ -34,9 +34,9 @@ Using an organization administrator's initialized SDK, call `learnCard.invoke.cr
 | `requestId`                | A UUID retained for retries of this operation                                  |
 | `displayName`              | The organization name learners will see (1–100 characters)                     |
 | `acceptDelegatedAuthority` | `true`, after accepting the delegation described above                         |
-| `disclosureVersion`        | `"1"`                                                                          |
+| `disclosureVersion`        | `"2"` for full credentials or `"1"` for summaries                              |
 
-The response contains `profileId`, `did`, `displayName`, `agentDid`, `enabled`, and `disclosureVersion`. Repeating the same request ID and name returns the same enabled recipient. With `profileId`, the existing profile must be an organization directly managed by the caller, with the same display name and no previous readable-delivery setup. None of its contracts may have ever received consent, even withdrawn consent. The check and co-manager creation are atomic with first consent and audience changes. Existing contracts get a new audience version so an already-open consent screen must reload the disclosure. An existing organization keeps its identity, visibility, and service-profile flag. Provisioning marks the new delivery agent and any newly created recipient as service profiles. Learner and family profiles cannot opt in.
+The response contains `profileId`, `did`, `displayName`, `agentDid`, `enabled`, and `disclosureVersion`. Repeating the same request ID, name and disclosure version returns the same enabled recipient. With `profileId`, the existing profile must be an organization directly managed by the caller, with the same display name and no previous readable-delivery setup. None of its contracts may have ever received consent, even withdrawn consent. The check and co-manager creation are atomic with first consent and audience changes. Existing contracts get a new audience version so an already-open consent screen must reload the disclosure. An existing organization keeps its identity, visibility, and service-profile flag. Provisioning marks the new delivery agent and any newly created recipient as service profiles. Learner and family profiles cannot opt in.
 
 Include the returned `profileId` in `recipients` when creating the consent contract. Ask the learner to select credentials and accept through the app. Adding a recipient later requires the existing audience-change and renewed-consent process. Older ciphertext does not acquire the new key.
 
@@ -46,7 +46,7 @@ From the administrator's SDK, use `addAuthGrant` with a `name`, `scope: "contrac
 
 Both permissions are required. `contracts-data:read` alone and the usual read-only wildcard `*:read` cannot decrypt. The caller must still manage the selected recipient. Provisioning and disabling require `readableDelivery:write`.
 
-## Read summaries
+## Read selected credentials
 
 Send `POST /api/readable-delivery/data` on the configured network with:
 
@@ -65,7 +65,9 @@ The response contains `records`, `hasMore`, and a continuation `cursor` when app
 | `unavailable` | The configured storage could not supply the encrypted copy                       |
 | `invalid`     | The decrypted object is not a supported credential                               |
 
-The summary includes available name, types, issuer, dates, and boost URI. It excludes the credential subject, raw credential, and proof material. Each summary has a `verification` object:
+For a version 2 recipient, each readable record also contains `fullCredential`, the original credential JSON, including subject data, issuer-defined fields, and any proof. A mediator can map its fields into Salesforce. Use `credential.verification` to decide how to handle the result, including self-reported and unverified outcomes. Version 1 recipients receive summaries only. To switch, provision a fresh version 2 recipient and obtain fresh learner consent. The version is fixed at provisioning.
+
+The API limits full credential content to 2 MiB per page. Follow the returned cursor even if fewer records than requested are returned. The summary includes available name, types, issuer, dates, and boost URI. Each summary has a `verification` object:
 
 | Field        | Values / meaning                                                                                        |
 | ------------ | ------------------------------------------------------------------------------------------------------- |
@@ -91,7 +93,7 @@ Pages reflect current consent, rather than a historical snapshot. Suspended, wit
 
 ## Stop access
 
-Learners can withdraw consent using the existing app flow. The creating administrator can also call `disableReadableDelivery(profileId)`. Disabling removes the agent as a manager and blocks this API. It cannot recall summaries already delivered. There is no re-enable operation; provision a fresh recipient and obtain fresh consent when starting again.
+Learners can withdraw consent using the existing app flow. The creating administrator can also call `disableReadableDelivery(profileId)`. Disabling removes the agent as a manager and blocks this API. It cannot recall credentials or summaries already delivered. There is no re-enable operation; provision a fresh recipient and obtain fresh consent when starting again.
 
 ## Operator configuration
 

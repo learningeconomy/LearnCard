@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import type { ConsentFlowContractDetails } from '@learncard/types';
 import { useModal } from '../components/modals/useModal';
 import { ModalTypes } from '../components/modals/types/Modals';
+import { FullCredentialDisclosure } from '../components/FullCredentialDisclosure';
 import { useT } from '../i18n';
 
 const ConsentAudienceReview = ({
@@ -40,6 +41,7 @@ const ConsentAudienceReview = ({
             <p className="text-sm text-grayscale-600 leading-relaxed">
                 {t('consentAudience.description')}
             </p>
+            <FullCredentialDisclosure recipients={contract.readableDeliveryRecipients} />
             <ul className="space-y-v3-3 max-h-64 overflow-y-auto">
                 {profiles.map(profile => (
                     <li key={profile.profileId} className="text-sm text-grayscale-700">
@@ -87,7 +89,14 @@ export const useConsentAudienceReview = () => {
         []
     );
     return async (contract: ConsentFlowContractDetails): Promise<void> => {
-        if (!(contract.audienceVersion ?? 0) && !contract.recipients?.length) return;
+        if (
+            !(contract.audienceVersion ?? 0) &&
+            !contract.recipients?.length &&
+            !contract.readableDeliveryRecipients?.some(
+                recipient => recipient.enabled && recipient.disclosureVersion === '2'
+            )
+        )
+            return;
         const accepted = await new Promise<boolean>(resolve => {
             let settled = false;
             const settle = (value: boolean) => {

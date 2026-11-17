@@ -4323,6 +4323,7 @@
             "expires": "Expire"
         },
         "consentAudience": {
+            "fullCredential": "{{organizations}} peut recevoir une copie complète de chaque justificatif que vous sélectionnez, y compris vos informations et toute signature de l’émetteur.",
             "title": "Vérifiez qui reçoit vos données",
             "description": "Les informations que vous choisissez seront accessibles à toutes les personnes ci-dessous.",
             "confirm": "Confirmer le partage",
