@@ -35,6 +35,7 @@ Mounted once in `src/app.ts` as `hcp`; every procedure is `hcp.v1.<area>.<op>`.
 | `hcp.v1.grants.list`      | `GET /hcp/v1/grants`              | §5.4 List grants                | subject only                                                    |
 | `hcp.v1.grants.get`       | `GET /hcp/v1/grants/{grantId}`    | §5.2.6 Read own grant           | subject, or the grant's client                                  |
 | `hcp.v1.grants.revoke`    | `DELETE /hcp/v1/grants/{grantId}` | §6.2 Revoke / §5.2.7 Relinquish | subject, or the grant's client                                  |
+| `hcp.v1.entries.list`     | `POST /hcp/v1/entries/list`       | none (LearnCard addition)       | subject only                                                    |
 | `hcp.v1.audit.list`       | `POST /hcp/v1/audit`              | §8.3 Read audit log             | subject only                                                    |
 | `hcp.v1.export`           | `POST /hcp/v1/export`             | §5.4.1 Export                   | subject only                                                    |
 
@@ -46,7 +47,12 @@ Every procedure except `meta` uses the brain's DID-auth chain with a valid chall
 (`privateScopedRoute`: no request input is attached to Sentry).
 
 - **Context Subject**: the caller has a LearnCard profile and sends no `grantId`. Its
-  subject id is the profile's DID.
+  subject id is the profile's stored `did` (`profile.did`). For a normal profile
+  that is its did:key. It is not the did:web
+  (`did:web:<domain>:users:<profileId>`) that `getProfile` and other profile routes
+  return. `entries.create` must name the subject id in `subject.id`. A Management
+  Client reads it from `entries.list` (`subject.id`). A Context Client reads it from
+  its grant (`subject.id`).
 - **Context Client**: an agent identified by the DID it authenticated with. It sends
   `grantId`; the grant must name that DID as `client.id`, be `active`, and be
   unexpired. Agents need no profile. No identity proofs (Taylor + Jacksón, Nov 16).
@@ -210,19 +216,112 @@ src/hcp/
   query (`store/neo4j.ts` `ensureSchema`). Create them in a migration instead.
 - **Query paging.** A query considers only the 500 most recently updated entries
   (`QUERY_CANDIDATE_LIMIT`); older ones are never found. Page through all of them.
+- **Entry list paging.** `entries.list` returns the 500 most recently updated entries
+  (`LIST_ENTRIES_LIMIT`) and sets `truncated`. Add a cursor.
 - **Non-matching entries.** Lexical ranking orders entries but drops none, so a
   query can return entries that share no term with it. Return only matches.
 
 ## Not in v1
 
 Out of scope by decision: consent-flow templates, semantic search, identity proofs.
-Not implemented yet (Draft 3 has them): `context.read` audit events (LC-2422),
+Not implemented yet (Draft 3 has them): `context.read` audit events (LC-2422). Until
+they ship, an agent's reads do not show in the app's Activity tab. The remaining gaps are
 Idempotency-Key (§9.6), onward sharing and `context.shared` (§5.2.8), standing rules
 and directives (§6.3, §6.4), confirmation (§3.8), recategorize and restrict purposes,
 hard delete and import (§5.4), narrowed grants (§6.1.5.1), the `provenance` action
 (§7.4.1), relationships and conflicts (§4.2.3, §4.7), VC evidence ingest (§14),
 the MCP binding. Relevance ordering is `lexical` (§7.3).
 `conformsTo` is not claimed: tRPC paths are not the Draft 3 HTTP binding.
+
+## Management UI (LC-2424)
+
+The app's screens live in `apps/learn-card-app/src/pages/hcp/`, and their hooks are in
+`packages/learn-card-base/src/hcp/useHcp.ts`. They call this router through the network plugin's
+`getHcpClient()`, which is the authenticated tRPC client typed from `AppRouter`. The signed-in
+(or switched-to) profile is the Context Subject.
+
+- Routes: `/hcp` (tabs My info, Apps with access, Activity) and `/hcp/connect`.
+  Both sit behind the LaunchDarkly flag `enableHcp`. Vite dev builds always enable them.
+  The entry point is a card on Privacy & data (`/privacy-and-data`).
+- Consent link: `/hcp/connect?client=<agent DID>&name=<app name>&categories=<slug or
+URI>,…&purpose=<why, plain text>[&purposeCode=<URI>][&duration=1h|4h|24h|ongoing]`.
+    - Allowing creates one read-only grant: exactly the listed categories, one purpose,
+      `temporary` for the duration (default `1h`), or `persistent` for `ongoing`.
+    - The purpose code defaults to `https://learncard.com/hcp/purposes/app-access`. An
+      agent must query with the same code.
+    - `parseConsentLink` yields an `AccessRequest`. LC-2421 can build that type from a
+      consent-flow request instead.
+
+## Try it locally
+
+You need a brain, a Neo4j it can use, and the app. Two ways to get them:
+
+- **Docker compose stack.** From `apps/learn-card-app`, run `bun run dev`. It serves the
+  brain on `localhost:4000` and the app on `localhost:3000`, which are the demo script's
+  defaults.
+- **Brain from source, on your own ports.** This is how LC-2424 was tested. It needs
+  only Docker for Neo4j. Ports 4324, 3324 and 27687 are examples; pick any free ones.
+
+    ```
+    # 1. A throwaway Neo4j on 127.0.0.1:27687
+    export NEO4J_PASSWORD=$(openssl rand -hex 16)
+    docker run -d --name hcp-neo4j -p 127.0.0.1:27687:7687 \
+      -e NEO4J_AUTH=neo4j/$NEO4J_PASSWORD neo4j:5
+
+    # 2. The brain on :4324 (from services/learn-card-network/brain-service)
+    #    SEED is the brain's own key: random, never reused.
+    NODE_ENV=development IS_OFFLINE=true PORT=4324 DOMAIN_NAME=localhost%3A4324 \
+      NEO4J_URI=bolt://127.0.0.1:27687 NEO4J_USERNAME=neo4j \
+      SEED=$(openssl rand -hex 32) \
+      bun --conditions=development src/docker-entry.ts
+
+    # 3. The app on :3324 (from apps/learn-card-app). The first command writes the
+    #    git-ignored public/tenant-config.json; then point it at your brain.
+    bun scripts/prepare-native-config.ts learncard --stage local
+    #    In public/tenant-config.json set apis.brainService to
+    #    http://localhost:4324/trpc and apis.brainServiceApi to http://localhost:4324/api.
+    bun run i18n:compile
+    npx vite --port 3324 --strictPort --host 127.0.0.1
+    ```
+
+    `docker-entry.ts` listens on `0.0.0.0`, so the brain is reachable from your LAN.
+    Keep only test data in it. Other services (cloud, AI) are not needed for these
+    screens. Rerun `prepare-native-config.ts` to undo the config change.
+
+Then, with `HCP_BRAIN_URL` and `HCP_APP_URL` set to your brain and app (defaults:
+`http://localhost:4000/trpc` and `http://localhost:3000`):
+
+1. Sign in with a test account. Open Privacy & data, then "Apps that can see your info"
+   (or go to `/hcp`). Add something under My info, under Goals or Learning.
+2. Make an agent and its consent link, from the repo root:
+
+    ```
+    HCP_BRAIN_URL=http://localhost:4324/trpc HCP_APP_URL=http://localhost:3324 \
+      bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts link
+    ```
+
+    The agent's did:key comes from a random seed. The seed is created on first run and
+    kept in `$TMPDIR/lc-hcp-demo-agent.seed` (mode 0600). It is never printed. The
+    command prints the full link, which looks like:
+
+    ```
+    http://localhost:3324/hcp/connect?client=did%3Akey%3Az6Mk…&name=Demo+Tutor&categories=goals_and_constraints%2Ceducation_learner_profile&purpose=Help+you+study&purposeCode=https%3A%2F%2Fdemo-tutor.example%2Fpurposes%2Fstudy-help&duration=1h
+    ```
+
+    Signed out, the link goes to `/login?redirectTo=<the link>`. Email sign-in returns
+    there; the dev seed-phrase import goes to `/wallet`, so open the link again after it.
+
+3. Open the link and choose Allow. Demo Tutor then shows under Apps with access, and
+   Activity shows "You let Demo Tutor see your Goals and Learning".
+4. Optional: read as the agent with `… hcp-demo-agent.ts read <grantId>`. The screens
+   don't show grant ids; copy it from the `hcp.v1.grants.list` response in the browser's
+   network tab. The agent sees only Goals and Learning. The read does not show in
+   Activity until LC-2422.
+5. Choose Stop sharing. Activity then shows "You stopped sharing with Demo Tutor", and
+   `read` now fails with `scope-denied`.
+
+`… hcp-demo-agent.ts smoke` runs the same flow over the API with a throwaway person.
+The script refuses any brain that is not on localhost.
 
 ## Tests
 
