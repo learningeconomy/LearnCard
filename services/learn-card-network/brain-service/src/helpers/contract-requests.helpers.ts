@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { BindParam, QueryBuilder } from 'neogma';
 import { TRPCError } from '@trpc/server';
 import { neogma } from '@instance';
+import { cancelContractRequestInvite } from '@accesslayer/contract-request-invite/update';
 import type { SendContractRequest, SendContractRequestResult } from '@learncard/types';
 import {
     getContractByUri,
@@ -280,7 +281,11 @@ export const cancelContractRequestById = async ({
         { contractId: contract.id, requestId }
     );
     const targetProfileId: string | undefined = result.records[0]?.get('targetProfileId');
-    if (!targetProfileId) throw notFound;
+    if (!targetProfileId) {
+        // No profile yet: the request is still an invite addressed to an email.
+        if (await cancelContractRequestInvite(contract.id, requestId, actorProfileId)) return true;
+        throw notFound;
+    }
     try {
         return await decideGenericContractRequest({
             contract,

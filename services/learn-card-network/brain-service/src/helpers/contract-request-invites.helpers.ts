@@ -9,6 +9,7 @@ import {
     getContractOwnerDisplayName,
     getProfileIdsWithVerifiedEmail,
 } from '@accesslayer/contract-request-invite/read';
+import type { ContractRequestInviteType } from '@accesslayer/contract-request-invite/read';
 import { normalizeInviteEmail } from './invite-email.helpers';
 
 import { getDeliveryService } from '@services/delivery/delivery.factory';
@@ -142,3 +143,30 @@ export const sendContractRequestToEmail = async (
     }
     return { requestId: result.invite.id, status: 'pending' };
 };
+
+/**
+ * An invite that has not become a request, in the shape of a request addressed to an email.
+ * An overdue pending invite reads as expired even before the daily job marks it.
+ */
+export const contractRequestFromInvite = (
+    invite: ContractRequestInviteType
+): {
+    requestId: string;
+    status: 'pending' | 'cancelled' | 'expired';
+    externalReferenceId?: string;
+    requestedAt: string;
+    expiresAt: string;
+    target: { email: string };
+} => ({
+    requestId: invite.id,
+    status:
+        invite.status === 'cancelled' || invite.status === 'expired'
+            ? invite.status
+            : invite.expiresAt <= new Date().toISOString()
+              ? 'expired'
+              : 'pending',
+    ...(invite.externalReferenceId ? { externalReferenceId: invite.externalReferenceId } : {}),
+    requestedAt: invite.requestedAt,
+    expiresAt: invite.expiresAt,
+    target: { email: invite.email },
+});

@@ -15,7 +15,14 @@ import {
     canManageContractRequests,
     resolveContractRequest,
 } from '@helpers/contract-requests.helpers';
-import { sendContractRequestToEmail } from '@helpers/contract-request-invites.helpers';
+import {
+    sendContractRequestToEmail,
+    contractRequestFromInvite,
+} from '@helpers/contract-request-invites.helpers';
+import {
+    getContractRequestInvite,
+    getUnattachedContractRequestInvites,
+} from '@accesslayer/contract-request-invite/read';
 import { environment } from '@environment';
 import {
     smartResumeFingerprint,
@@ -2330,8 +2337,19 @@ export const contractsRouter = t.router({
                 input.requestId,
                 ctx.user.profile.profileId
             );
-            if (!request)
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract request not found' });
+            if (!request) {
+                const invite = await getContractRequestInvite(
+                    contract.id,
+                    input.requestId,
+                    ctx.user.profile.profileId
+                );
+                if (!invite || invite.status === 'attached')
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Contract request not found',
+                    });
+                return contractRequestFromInvite(invite);
+            }
             return {
                 requestId: request.requestId,
                 status: request.status,
@@ -2565,7 +2583,7 @@ export const contractsRouter = t.router({
 
             const requests = await getRequestedForList(contractByUri.id, profile.profileId);
 
-            return requests.map(request => {
+            const rows = requests.map(request => {
                 const { addressedByEmail, email, profile: targetProfile, ...row } = request;
                 const target = contractRequestTarget(ctx.domain, {
                     addressedByEmail,
@@ -2578,6 +2596,20 @@ export const contractsRouter = t.router({
                     : // The read state would reveal that the email belongs to an account.
                       { ...row, readStatus: null, target };
             });
+            // Invites with no profile yet. They have the same fields as the redacted rows above.
+            const invites = await getUnattachedContractRequestInvites(
+                contractByUri.id,
+                profile.profileId
+            );
+            return [
+                ...rows,
+                ...invites.map(invite => ({
+                    ...contractRequestFromInvite(invite),
+                    requestedBy: invite.requestedBy,
+                    ...(invite.message ? { message: invite.message } : {}),
+                    readStatus: null,
+                })),
+            ];
         }),
 
     getRequestStatusForProfile: profileRoute
