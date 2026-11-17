@@ -18,6 +18,7 @@ import {
 import {
     sendContractRequestToEmail,
     contractRequestFromInvite,
+    attachContractRequestInvitesForProfile,
 } from '@helpers/contract-request-invites.helpers';
 import {
     getContractRequestInvite,
@@ -2939,7 +2940,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Get all contract requests for a target profile',
                 description:
-                    'Gets all contract requests from all contracts for a specified target profile. Users can query their own requests.',
+                    'Gets all contract requests from all contracts for a specified target profile. Users can query their own requests. Requests that were sent to a verified email of the profile are attached first (at most 20 per call).',
             },
         })
         .input(
@@ -2983,6 +2984,10 @@ export const contractsRouter = t.router({
                     message: 'You can only query your own contract requests.',
                 });
             }
+
+            // Safety net: convert pending invites addressed to this profile's verified emails
+            // (at most 20 per call). Never throws; a failure leaves the invite pending.
+            await attachContractRequestInvitesForProfile(profile, ctx.domain);
 
             const requests = await getAllRequestsForTargetProfile(resolvedTargetProfileId);
 
