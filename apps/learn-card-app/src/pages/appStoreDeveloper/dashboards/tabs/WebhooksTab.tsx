@@ -1,23 +1,23 @@
 import * as m from '../../../../paraglide/messages.js';
 import { useLocale } from '../../../../i18n';
 import React, { useEffect, useState } from 'react';
+import { IonIcon } from '@ionic/react';
 import {
-    Activity,
-    AlertTriangle,
-    Check,
-    CheckCircle2,
-    Copy,
-    ExternalLink,
-    Info,
-    KeyRound,
-    Loader2,
-    RefreshCw,
-    Rss,
-    Send,
-    Trash2,
-    Webhook,
-    XCircle,
-} from 'lucide-react';
+    checkmarkCircleOutline,
+    checkmarkOutline,
+    closeCircleOutline,
+    copyOutline,
+    informationCircleOutline,
+    keyOutline,
+    linkOutline,
+    openOutline,
+    pulseOutline,
+    radioOutline,
+    refreshOutline,
+    sendOutline,
+    trashOutline,
+    warningOutline,
+} from 'ionicons/icons';
 import { Clipboard } from '@capacitor/clipboard';
 import type {
     IntegrationTestEventResult,
@@ -58,7 +58,7 @@ type RevealedSecret = { secret: string; previousSecretExpiresAt?: string };
 const STATE_BADGE_CLASS: Record<IntegrationWebhookState, string> = {
     active: 'bg-emerald-100 text-emerald-700',
     failing: 'bg-red-100 text-red-700',
-    disabled: 'bg-gray-100 text-gray-600',
+    disabled: 'bg-grayscale-100 text-grayscale-600',
 };
 
 const getStateLabel = (state: IntegrationWebhookState): string => {
@@ -277,26 +277,30 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
     return (
         <div className="space-y-v3-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">
+                <h2 className="text-xl font-semibold text-grayscale-900">
                     {m['developerPortal.dashboards.tabs.webhooks.title']()}
                 </h2>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-grayscale-600">
                     {m['developerPortal.dashboards.tabs.webhooks.description']()}
                 </p>
             </div>
 
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
-                <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-700">
+            <div className="p-3 bg-grayscale-10 border border-grayscale-200 rounded-2xl flex items-start gap-2.5">
+                <IonIcon
+                    icon={informationCircleOutline}
+                    aria-hidden
+                    className="text-grayscale-900 text-lg mt-0.5 shrink-0"
+                />
+                <div className="text-sm text-grayscale-700 leading-relaxed">
                     <p>{m['developerPortal.dashboards.tabs.webhooks.separateNote']()}</p>
                     <a
                         href={INTEGRATION_WEBHOOKS_DOCS_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-1 inline-flex items-center gap-1 font-medium underline"
+                        className="mt-1 inline-flex items-center gap-1 font-medium text-grayscale-900 underline"
                     >
                         {m['developerPortal.dashboards.tabs.webhooks.docsLink']()}
-                        <ExternalLink aria-hidden className="w-3.5 h-3.5" />
+                        <IonIcon icon={openOutline} aria-hidden className="text-sm" />
                     </a>
                 </div>
             </div>
@@ -304,7 +308,9 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
             <p
                 role="status"
                 className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                    eventsEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                    eventsEnabled
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-grayscale-100 text-grayscale-600'
                 }`}
             >
                 {eventsEnabledAt
@@ -317,17 +323,21 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
             {/* Webhook URL */}
             <section
                 aria-labelledby="webhooks-url-title"
-                className="p-4 border border-gray-200 rounded-xl bg-white space-y-v3-3"
+                className="p-4 border border-grayscale-200 rounded-[20px] bg-white space-y-v3-3"
             >
                 <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center shrink-0">
-                        <Webhook aria-hidden className="w-5 h-5 text-cyan-600" />
+                    <div className="w-10 h-10 bg-grayscale-100 rounded-xl flex items-center justify-center shrink-0">
+                        <IonIcon
+                            icon={linkOutline}
+                            aria-hidden
+                            className="text-xl text-grayscale-900"
+                        />
                     </div>
                     <div>
-                        <h3 id="webhooks-url-title" className="font-medium text-gray-800">
+                        <h3 id="webhooks-url-title" className="font-medium text-grayscale-900">
                             {m['developerPortal.dashboards.tabs.webhooks.urlTitle']()}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-grayscale-600">
                             {m['developerPortal.dashboards.tabs.webhooks.urlDescription']()}
                         </p>
                     </div>
@@ -342,11 +352,11 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                     aria-invalid={showUrlError}
                     aria-describedby={showUrlError ? 'webhooks-url-error' : undefined}
                     placeholder={m['developerPortal.dashboards.tabs.webhooks.urlPlaceholder']()}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl font-mono text-sm focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
+                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl font-mono text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                 />
 
                 {showUrlError && (
-                    <p id="webhooks-url-error" className="text-sm text-red-600">
+                    <p id="webhooks-url-error" className="text-sm text-red-700">
                         {m['developerPortal.dashboards.tabs.webhooks.urlInvalid']()}
                     </p>
                 )}
@@ -356,9 +366,14 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                         type="button"
                         onClick={saveUrl}
                         disabled={isSaving || !urlIsValid || !urlChanged}
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        {isSaving && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
+                        {isSaving && (
+                            <span
+                                aria-hidden
+                                className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                            />
+                        )}
                         {m['developerPortal.dashboards.tabs.webhooks.saveUrl']()}
                     </button>
 
@@ -367,9 +382,9 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                             type="button"
                             onClick={removeUrl}
                             disabled={isSaving}
-                            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                            className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            <Trash2 aria-hidden className="w-4 h-4" />
+                            <IonIcon icon={trashOutline} aria-hidden className="text-base" />
                             {m['developerPortal.dashboards.tabs.webhooks.removeUrl']()}
                         </button>
                     )}
@@ -379,18 +394,25 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
             {/* Event feed */}
             <section
                 aria-labelledby="webhooks-feed-title"
-                className="p-4 border border-gray-200 rounded-xl bg-white"
+                className="p-4 border border-grayscale-200 rounded-[20px] bg-white"
             >
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
-                            <Rss aria-hidden className="w-5 h-5 text-violet-600" />
+                        <div className="w-10 h-10 bg-grayscale-100 rounded-xl flex items-center justify-center shrink-0">
+                            <IonIcon
+                                icon={radioOutline}
+                                aria-hidden
+                                className="text-xl text-grayscale-900"
+                            />
                         </div>
                         <div>
-                            <h3 id="webhooks-feed-title" className="font-medium text-gray-800">
+                            <h3 id="webhooks-feed-title" className="font-medium text-grayscale-900">
                                 {m['developerPortal.dashboards.tabs.webhooks.feedToggle']()}
                             </h3>
-                            <p id="webhooks-feed-description" className="text-sm text-gray-500">
+                            <p
+                                id="webhooks-feed-description"
+                                className="text-sm text-grayscale-600"
+                            >
                                 {m['developerPortal.dashboards.tabs.webhooks.feedDescription']()}
                             </p>
                         </div>
@@ -404,8 +426,8 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                         aria-describedby="webhooks-feed-description"
                         onClick={toggleEvents}
                         disabled={isSaving}
-                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
-                            eventsEnabled ? 'bg-emerald-500' : 'bg-gray-300'
+                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                            eventsEnabled ? 'bg-emerald-500' : 'bg-grayscale-300'
                         }`}
                     >
                         <span
@@ -423,32 +445,36 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
             {/* Signing secret */}
             <section
                 aria-labelledby="webhooks-secret-title"
-                className="p-4 border border-gray-200 rounded-xl bg-white space-y-v3-3"
+                className="p-4 border border-grayscale-200 rounded-[20px] bg-white space-y-v3-3"
             >
                 <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
-                        <KeyRound aria-hidden className="w-5 h-5 text-amber-600" />
+                    <div className="w-10 h-10 bg-grayscale-100 rounded-xl flex items-center justify-center shrink-0">
+                        <IonIcon
+                            icon={keyOutline}
+                            aria-hidden
+                            className="text-xl text-grayscale-900"
+                        />
                     </div>
                     <div>
-                        <h3 id="webhooks-secret-title" className="font-medium text-gray-800">
+                        <h3 id="webhooks-secret-title" className="font-medium text-grayscale-900">
                             {m['developerPortal.dashboards.tabs.webhooks.secretTitle']()}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-grayscale-600">
                             {m['developerPortal.dashboards.tabs.webhooks.secretDescription']()}
                         </p>
                     </div>
                 </div>
 
                 {revealed ? (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-v3-2">
-                        <p className="text-xs font-medium text-gray-600">
+                    <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl space-y-v3-2">
+                        <p className="text-xs font-medium text-grayscale-700">
                             {m['developerPortal.dashboards.tabs.webhooks.newSecretLabel']()}
                         </p>
                         <div className="flex items-center gap-2">
                             <code
                                 dir="ltr"
                                 data-testid="webhook-secret"
-                                className="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded-lg text-xs font-mono break-all"
+                                className="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-100 rounded-xl text-xs font-mono text-grayscale-900 break-all"
                             >
                                 {revealed.secret}
                             </code>
@@ -459,17 +485,25 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                                     'developerPortal.dashboards.tabs.webhooks.copySecret'
                                 ]()}
                                 title={m['developerPortal.dashboards.tabs.webhooks.copySecret']()}
-                                className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors shrink-0"
+                                className="p-2 text-grayscale-500 hover:text-grayscale-900 hover:bg-grayscale-10 rounded-full transition-colors shrink-0"
                             >
                                 {secretCopied ? (
-                                    <Check aria-hidden className="w-4 h-4 text-emerald-500" />
+                                    <IonIcon
+                                        icon={checkmarkOutline}
+                                        aria-hidden
+                                        className="text-base text-emerald-500"
+                                    />
                                 ) : (
-                                    <Copy aria-hidden className="w-4 h-4" />
+                                    <IonIcon icon={copyOutline} aria-hidden className="text-base" />
                                 )}
                             </button>
                         </div>
                         <p className="flex items-start gap-2 text-sm font-medium text-amber-800">
-                            <AlertTriangle aria-hidden className="w-4 h-4 shrink-0 mt-0.5" />
+                            <IonIcon
+                                icon={warningOutline}
+                                aria-hidden
+                                className="text-base shrink-0 mt-0.5"
+                            />
                             {m['developerPortal.dashboards.tabs.webhooks.secretOnceWarning']()}
                         </p>
                         {revealed.previousSecretExpiresAt && (
@@ -483,7 +517,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                         )}
                     </div>
                 ) : (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-grayscale-600">
                         {hasSecret
                             ? m['developerPortal.dashboards.tabs.webhooks.secretExists']()
                             : m['developerPortal.dashboards.tabs.webhooks.secretNone']()}
@@ -497,14 +531,17 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                             type="button"
                             onClick={rotate}
                             disabled={rotateSecret.isPending}
-                            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors"
+                            className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             {rotateSecret.isPending && (
-                                <Loader2 aria-hidden className="w-4 h-4 animate-spin" />
+                                <span
+                                    aria-hidden
+                                    className="w-4 h-4 border-2 border-grayscale-300 border-t-grayscale-700 rounded-full animate-spin"
+                                />
                             )}
                             {m['developerPortal.dashboards.tabs.webhooks.rotateSecret']()}
                         </button>
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-grayscale-500 mt-2">
                             {m['developerPortal.dashboards.tabs.webhooks.rotateHint']()}
                         </p>
                     </div>
@@ -514,18 +551,25 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
             {/* Delivery health */}
             <section
                 aria-labelledby="webhooks-health-title"
-                className="p-4 border border-gray-200 rounded-xl bg-white space-y-v3-3"
+                className="p-4 border border-grayscale-200 rounded-[20px] bg-white space-y-v3-3"
             >
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center shrink-0">
-                            <Activity aria-hidden className="w-5 h-5 text-sky-600" />
+                        <div className="w-10 h-10 bg-grayscale-100 rounded-xl flex items-center justify-center shrink-0">
+                            <IonIcon
+                                icon={pulseOutline}
+                                aria-hidden
+                                className="text-xl text-grayscale-900"
+                            />
                         </div>
                         <div>
-                            <h3 id="webhooks-health-title" className="font-medium text-gray-800">
+                            <h3
+                                id="webhooks-health-title"
+                                className="font-medium text-grayscale-900"
+                            >
                                 {m['developerPortal.dashboards.tabs.webhooks.healthTitle']()}
                             </h3>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-grayscale-600">
                                 {m['developerPortal.dashboards.tabs.webhooks.healthDescription']()}
                             </p>
                         </div>
@@ -537,24 +581,25 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                         disabled={health.isFetching}
                         aria-label={m['developerPortal.dashboards.tabs.webhooks.healthRefresh']()}
                         title={m['developerPortal.dashboards.tabs.webhooks.healthRefresh']()}
-                        className="p-2 text-gray-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors shrink-0 disabled:opacity-50"
+                        className="p-2 text-grayscale-500 hover:text-grayscale-900 hover:bg-grayscale-10 rounded-full transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        <RefreshCw
+                        <IonIcon
+                            icon={refreshOutline}
                             aria-hidden
-                            className={`w-4 h-4 ${health.isFetching ? 'animate-spin' : ''}`}
+                            className={`text-base ${health.isFetching ? 'animate-spin' : ''}`}
                         />
                     </button>
                 </div>
 
                 {!status && health.isError && (
-                    <p role="alert" className="text-sm text-red-600">
+                    <p role="alert" className="text-sm text-red-700">
                         {m['developerPortal.dashboards.tabs.webhooks.healthLoadFailed']()}
                     </p>
                 )}
 
                 {status && (
                     <>
-                        <p className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                        <p className="flex flex-wrap items-center gap-2 text-sm text-grayscale-600">
                             <span
                                 data-testid="webhook-state"
                                 className={`px-3 py-1 rounded-full font-medium ${
@@ -568,12 +613,15 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
 
                         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                             <div>
-                                <dt className="text-gray-500">
+                                <dt className="text-grayscale-500">
                                     {m[
                                         'developerPortal.dashboards.tabs.webhooks.healthLastSuccess'
                                     ]()}
                                 </dt>
-                                <dd className="text-gray-800" data-testid="webhook-last-success">
+                                <dd
+                                    className="text-grayscale-900"
+                                    data-testid="webhook-last-success"
+                                >
                                     {status.lastSuccessAt
                                         ? formatDate(status.lastSuccessAt, locale)
                                         : m[
@@ -582,19 +630,22 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                                 </dd>
                             </div>
                             <div>
-                                <dt className="text-gray-500">
+                                <dt className="text-grayscale-500">
                                     {m[
                                         'developerPortal.dashboards.tabs.webhooks.healthLastFailure'
                                     ]()}
                                 </dt>
-                                <dd className="text-gray-800" data-testid="webhook-last-failure">
+                                <dd
+                                    className="text-grayscale-900"
+                                    data-testid="webhook-last-failure"
+                                >
                                     {status.lastFailureAt
                                         ? formatDate(status.lastFailureAt, locale)
                                         : m[
                                               'developerPortal.dashboards.tabs.webhooks.healthNever'
                                           ]()}
                                     {status.lastFailureAt && status.lastFailureReason && (
-                                        <span className="block text-gray-600">
+                                        <span className="block text-grayscale-600">
                                             {getFailureReasonText(status.lastFailureReason)}
                                             <code dir="ltr" className="ms-2 font-mono text-xs">
                                                 {status.lastFailureReason}
@@ -604,28 +655,31 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                                 </dd>
                             </div>
                             <div>
-                                <dt className="text-gray-500">
+                                <dt className="text-grayscale-500">
                                     {m['developerPortal.dashboards.tabs.webhooks.healthPending']()}
                                 </dt>
-                                <dd className="text-gray-800" data-testid="webhook-pending">
+                                <dd className="text-grayscale-900" data-testid="webhook-pending">
                                     {status.pendingDeliveries}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="text-gray-500">
+                                <dt className="text-grayscale-500">
                                     {m['developerPortal.dashboards.tabs.webhooks.healthRetrying']()}
                                 </dt>
-                                <dd className="text-gray-800" data-testid="webhook-retrying">
+                                <dd className="text-grayscale-900" data-testid="webhook-retrying">
                                     {status.retryingDeliveries}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="text-gray-500">
+                                <dt className="text-grayscale-500">
                                     {m[
                                         'developerPortal.dashboards.tabs.webhooks.healthSecretVersion'
                                     ]()}
                                 </dt>
-                                <dd className="text-gray-800" data-testid="webhook-secret-version">
+                                <dd
+                                    className="text-grayscale-900"
+                                    data-testid="webhook-secret-version"
+                                >
                                     {status.secretVersion > 0
                                         ? status.secretVersion
                                         : m[
@@ -641,17 +695,21 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
             {/* Test event */}
             <section
                 aria-labelledby="webhooks-test-title"
-                className="p-4 border border-gray-200 rounded-xl bg-white space-y-v3-3"
+                className="p-4 border border-grayscale-200 rounded-[20px] bg-white space-y-v3-3"
             >
                 <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
-                        <Send aria-hidden className="w-5 h-5 text-emerald-600" />
+                    <div className="w-10 h-10 bg-grayscale-100 rounded-xl flex items-center justify-center shrink-0">
+                        <IonIcon
+                            icon={sendOutline}
+                            aria-hidden
+                            className="text-xl text-grayscale-900"
+                        />
                     </div>
                     <div>
-                        <h3 id="webhooks-test-title" className="font-medium text-gray-800">
+                        <h3 id="webhooks-test-title" className="font-medium text-grayscale-900">
                             {m['developerPortal.dashboards.tabs.webhooks.testTitle']()}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-grayscale-600">
                             {m['developerPortal.dashboards.tabs.webhooks.testDescription']()}
                         </p>
                     </div>
@@ -661,10 +719,13 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                     type="button"
                     onClick={sendTest}
                     disabled={!savedUrl || sendTestEvent.isPending}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                    className="flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     {sendTestEvent.isPending && (
-                        <Loader2 aria-hidden className="w-4 h-4 animate-spin" />
+                        <span
+                            aria-hidden
+                            className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                        />
                     )}
                     {sendTestEvent.isPending
                         ? m['developerPortal.dashboards.tabs.webhooks.sending']()
@@ -672,7 +733,7 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                 </button>
 
                 {!savedUrl && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-grayscale-500">
                         {m['developerPortal.dashboards.tabs.webhooks.testNeedsUrl']()}
                     </p>
                 )}
@@ -680,16 +741,24 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
                 {testResult && (
                     <p
                         role="status"
-                        className={`flex items-start gap-2 p-3 rounded-lg text-sm ${
+                        className={`flex items-start gap-2.5 p-3 border rounded-2xl text-sm leading-relaxed ${
                             testResult.delivered
-                                ? 'bg-emerald-50 text-emerald-800'
-                                : 'bg-red-50 text-red-800'
+                                ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                                : 'bg-red-50 border-red-100 text-red-700'
                         }`}
                     >
                         {testResult.delivered ? (
-                            <CheckCircle2 aria-hidden className="w-4 h-4 shrink-0 mt-0.5" />
+                            <IonIcon
+                                icon={checkmarkCircleOutline}
+                                aria-hidden
+                                className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                            />
                         ) : (
-                            <XCircle aria-hidden className="w-4 h-4 shrink-0 mt-0.5" />
+                            <IonIcon
+                                icon={closeCircleOutline}
+                                aria-hidden
+                                className="text-red-400 text-lg mt-0.5 shrink-0"
+                            />
                         )}
                         <span>
                             {testResult.delivered
