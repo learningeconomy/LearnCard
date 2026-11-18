@@ -94,6 +94,10 @@ Use `getContractSentRequests(contractUri)` to reconcile visible invitation statu
 
 ## Webhook events
 
+{% hint style="info" %}
+This section describes **profile notification webhooks**. A server-to-server integration that needs HMAC-signed requests, an ordered feed it can poll, or a way to rebuild its state after an outage should use [Integration Webhooks and Change Feed](integration-webhooks.md) instead. That channel also reports contract retirement, re-consent pauses, suspension and expiry, which profile webhooks do not, and offers a connections snapshot (`getContractConnections`).
+{% endhint %}
+
 Configure the receiving profile's `notificationsWebhook` using the existing profile API. Events use `type: "CONSENT_FLOW_TRANSACTION"` and a localized `message`. Correlation lives in `data.metadata`:
 
 ```json
