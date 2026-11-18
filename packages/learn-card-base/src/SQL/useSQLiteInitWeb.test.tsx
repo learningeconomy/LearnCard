@@ -37,6 +37,8 @@ vi.mock('../stores/sqliteStore', () => ({
 }));
 vi.mock('learn-card-base/SQL/sqliteReady', () => ({ markSQLiteReady: mocks.ready }));
 vi.mock('../logging/logger', () => ({ getLogger: () => ({ warn: vi.fn(), error: vi.fn() }) }));
+const firstScreen = vi.hoisted(() => ({ wait: vi.fn(() => Promise.resolve()) }));
+vi.mock('../helpers/firstScreen', () => ({ afterFirstScreen: firstScreen.wait }));
 import { useSQLiteInitWeb } from './useSQLiteInitWeb';
 beforeEach(() => {
     vi.clearAllMocks();
@@ -110,5 +112,16 @@ describe('web SQLite initialization boundary', () => {
         await waitFor(() => expect(mocks.setDb).toHaveBeenCalledOnce());
         expect(mocks.ready).toHaveBeenCalledOnce();
         replacement.unmount();
+    });
+    it('waits for the first screen before loading the web component', async () => {
+        let release: () => void = () => {};
+        firstScreen.wait.mockImplementationOnce(() => new Promise<void>(r => (release = r)));
+        mocks.platform = 'web';
+        const hook = renderHook(() => useSQLiteInitWeb());
+        await new Promise(r => setTimeout(r, 20));
+        expect(mocks.connection.initWebStore).not.toHaveBeenCalled();
+        release();
+        await waitFor(() => expect(mocks.connection.initWebStore).toHaveBeenCalled());
+        hook.unmount();
     });
 });

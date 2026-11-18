@@ -15,6 +15,7 @@ const { tmpdir } = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { summarize } = require('./summary.cjs');
+const { workspaceCheckReason } = require('./workspace-checks.cjs');
 
 const repository = path.resolve(__dirname, '../..');
 const vitest = path.join(repository, 'node_modules/vitest/vitest.mjs');
@@ -284,7 +285,16 @@ test('never retry', () => {appendFileSync('attempts','x'); throw new Error('fail
     });
 }
 
-test('every workspace Vitest config emits real CI evidence for an executed case', t => {
+const workspaceReason = workspaceCheckReason(
+    process.env.GITHUB_EVENT_NAME,
+    process.env.RETRY_BASE_SHA,
+    process.env.RETRY_HEAD_SHA,
+    repository
+);
+console.log(workspaceReason || 'Skipping two workspace checks (only unrelated files changed)');
+const workspaceTest = workspaceReason ? test : test.skip;
+
+workspaceTest('every workspace Vitest config emits real CI evidence for an executed case', t => {
     for (const manifest of workspaceVitestManifests()) {
         const f = fixture(t);
         const directory = path.dirname(manifest);
@@ -331,7 +341,7 @@ test('reported execution', () => appendFileSync('executed','x'));`
     }
 });
 
-test('shared retry changes select every workspace Vitest test target through real Nx', t => {
+workspaceTest('shared retry changes select every workspace Vitest target through Nx', t => {
     const f = fixture(t);
     const run = args =>
         spawnSync(process.execPath, [nx, ...args], {

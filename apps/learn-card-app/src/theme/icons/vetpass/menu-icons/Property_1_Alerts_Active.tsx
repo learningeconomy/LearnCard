@@ -21,4 +21,3 @@ const SvgProperty1AlertsActive = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgProperty1AlertsActive;
-

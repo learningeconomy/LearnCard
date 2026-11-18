@@ -113,8 +113,12 @@ export const readCredentialVisibilityMarker = (
     return read;
 };
 
-/** Page size for reading the whole index; one request for nearly every account. */
-export const CREDENTIAL_INDEX_SNAPSHOT_LIMIT = 1000;
+/**
+ * Page size for reading the whole index. LearnCloud serves at most 100 records per index.get
+ * page: a whole page is encrypted into one response, and 1000 records can pass the 6 MB
+ * Lambda response limit (LC-2428).
+ */
+export const CREDENTIAL_INDEX_SNAPSHOT_LIMIT = 100;
 
 const snapshotLoads = new Map<string, Promise<LCR[]>>();
 const lastSnapshots = new Map<string, { loadedAt: number; records: LCR[] }>();
@@ -123,7 +127,7 @@ const lastSnapshots = new Map<string, { loadedAt: number; records: LCR[] }>();
 export const CREDENTIAL_INDEX_SNAPSHOT_REUSE_MS = 60_000;
 
 /**
- * Every index record, in 1000-record pages. Concurrent callers (the counts' fallback and the
+ * Every index record, in 100-record pages. Concurrent callers (the counts' fallback and the
  * backfill) share one read. With `maxAgeMs`, a finished read at most that old is reused.
  * Rejects if any page fails or a page can't be continued.
  */
@@ -252,7 +256,7 @@ export const reconcileCredentialVisibility = async (
                           }),
                       ]
                     : []),
-                // Not the 1000-record read: the counts stop using it once the marker exists.
+                // Not the whole-index read: the counts stop using it once the marker exists.
                 queryClient.invalidateQueries({
                     queryKey: ['useGetCredentialCount'],
                     predicate: query => query.queryKey[4] !== 'index-snapshot',

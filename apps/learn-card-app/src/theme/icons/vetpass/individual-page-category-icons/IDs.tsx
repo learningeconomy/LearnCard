@@ -13,4 +13,3 @@ const SvgIDs = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgIDs;
-

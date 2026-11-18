@@ -17,7 +17,8 @@ sequenceDiagram
     participant U as Learner + LearnCard client
     participant S as Registered signing authority
     participant P as Partner (Hiring Our Heroes)
-    R->>N: sendContractRequest(contractUri, learner, reference)
+    R->>N: sendContractRequest(contractUri, learner profile or email, reference)
+    N-->>R: requestId, status pending
     N-->>U: Referral invitation (signed webhook)
     U->>N: Read current contract, audience and request
     U->>U: Review permissions and complete guardian approval if required
@@ -48,11 +49,17 @@ The diagram shows the logical order; webhook transport is asynchronous and at le
 
 ## What consent controls
 
-An invitation can remain pending, be accepted through consent, or be denied or cancelled. Dismissing an alert leaves it pending. Referral acceptance is bound to the reviewed request ID; the server rejects a cancelled, replaced or otherwise terminal invitation. Direct legacy consent links remain available independently of invitation decisions.
+An invitation can remain pending, be accepted through consent, or be denied or cancelled. An invitation sent to an email address that is still pending after 30 days expires, whether or not it reached an account. Dismissing an alert leaves it pending. Referral acceptance is bound to the reviewed request ID; the server rejects a cancelled, replaced or otherwise terminal invitation. Direct legacy consent links remain available independently of invitation decisions.
 
 Consent defines permitted fields, categories and receiving organizations. Recipient additions freeze after the first consent; removals revoke future API discovery and invalidate stale audience acknowledgements. Withdrawal and expiry stop future authorized reads and synchronization. Copies already delivered cannot be recalled. A one-time consent keeps its permitted snapshot until withdrawal or expiry and does not authorize live updates.
 
 Sharing all credentials in a category includes credentials from different sources. Use separate categories or individually selected credentials when partner outcome streams must stay separate. Recipients can inspect only referrals they sent; the owner and explicit writers can manage all referrals. Other audience members receive approved data without another referrer's private message or external reference.
+
+## Referring someone by email
+
+A referrer often knows a person's email address and nothing else. It can address the invitation to that email. The network answers the same way every time, with a request ID and the status `pending`, so the referrer cannot learn whether the email belongs to an account or what that person has already agreed to.
+
+If no account has verified the email, the person receives one invitation email. The invitation waits until a profile verifies that address, at sign-up or later, and then appears to the person as an ordinary pending referral. Until the person accepts, the referrer sees only the email it typed in: no profile, no DID and no read state. Acceptance through consent is the moment the person's identity reaches the referrer, together with the referrer's own reference. See [Invite by email](../../sdks/learncard-network/contract-requests-and-events.md#invite-by-email) for the API.
 
 ## Live sharing depends on the learner's client
 

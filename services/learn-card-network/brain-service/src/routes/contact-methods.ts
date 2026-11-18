@@ -30,6 +30,7 @@ import {
     validateContactMethodVerificationToken,
 } from '@helpers/contact-method.helpers';
 import { claimPendingGuardianLinksForProfile } from '@helpers/guardian-links.helpers';
+import { attachContractRequestInvitesForProfile } from '@helpers/contract-request-invites.helpers';
 import { getDidWebLearnCard, isTrustedLoginProviderDID } from '@helpers/learnCard.helpers';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import jwtDecode from 'jwt-decode';
@@ -202,6 +203,10 @@ export const contactMethodsRouter = t.router({
                     err
                 );
             }
+
+            // Turn pending contract request invites for this email into requests.
+            // Never throws; a failure leaves the invite pending.
+            await attachContractRequestInvitesForProfile(profile, ctx.domain);
 
             return {
                 message: 'Contact method verified successfully.',
@@ -529,6 +534,10 @@ export const contactMethodsRouter = t.router({
                     err
                 );
             }
+
+            // Turn pending contract request invites for this email into requests.
+            // Never throws; a failure leaves the invite pending.
+            await attachContractRequestInvitesForProfile(profile, ctx.domain);
 
             return {
                 message: 'Contact method verified successfully.',

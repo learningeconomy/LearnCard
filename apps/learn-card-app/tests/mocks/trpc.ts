@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import type { inferRouterOutputs } from '@trpc/server';
 import type { AppRouter as BrainRouter } from '@learncard/network-brain-service';
 import type { AppRouter as CloudRouter } from '@learncard/learn-cloud-service';
+import type { AppRouter as LcaRouter } from '@learncard/lca-api-service';
 
 /**
  * Response types inferred from the REAL routers. Anchoring mock payloads to
@@ -14,6 +15,7 @@ import type { AppRouter as CloudRouter } from '@learncard/learn-cloud-service';
  */
 export type BrainOutputs = inferRouterOutputs<BrainRouter>;
 export type CloudOutputs = inferRouterOutputs<CloudRouter>;
+export type LcaOutputs = inferRouterOutputs<LcaRouter>;
 
 /** Return this from a handler to fail the call (renders the retry-able error path). */
 export const ABORT = Symbol('trpc-mock-abort');

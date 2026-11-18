@@ -11,6 +11,7 @@ import {
 } from './credentialHelpers';
 import { parseLcTags } from './displayTags.helpers';
 import { getLogger } from '../logging/logger';
+import { tryFetchResolvedCredential } from '../react-query/queries/credentialResolution';
 
 const log = getLogger('qualification-category-backfill');
 
@@ -73,30 +74,51 @@ export const reconcileQualificationCategories = async (
             }
             if (page.hasMore && !page.cursor) incomplete = true;
 
-            for (const record of page?.records ?? []) {
-                if (
-                    !legacyCategories[record.category] ||
-                    record.categorySource === 'manual' ||
-                    record.boostUri
-                ) {
-                    continue;
-                }
+            const candidates = (page?.records ?? []).filter(
+                record =>
+                    Boolean(legacyCategories[record.category]) &&
+                    record.categorySource !== 'manual' &&
+                    !record.boostUri
+            );
 
-                let credential: VC | undefined;
-                try {
-                    credential = (await wallet.read.get(record.uri)) as VC | undefined;
-                } catch (error) {
-                    log.warn('Unable to resolve credential during category reconciliation', {
-                        recordId: record.id,
-                        error,
-                    });
-                    incomplete = true;
-                    continue;
+            // Start every resolve in the same tick when a QueryClient is available so
+            // tryFetch can coalesce into storage.batchResolve (and join the wallet
+            // warmer) instead of serial standalone storage.resolve — LC-2382 retake3.
+            const resolved: (VC | undefined)[] = [];
+            const loggedResolveError = new Set<number>();
+            if (queryClient) {
+                resolved.push(
+                    ...(await Promise.all(
+                        candidates.map(record =>
+                            tryFetchResolvedCredential(queryClient, wallet, record.uri)
+                        )
+                    ))
+                );
+            } else {
+                for (const record of candidates) {
+                    try {
+                        resolved.push((await wallet.read.get(record.uri)) as VC | undefined);
+                    } catch (error) {
+                        log.warn('Unable to resolve credential during category reconciliation', {
+                            recordId: record.id,
+                            error,
+                        });
+                        incomplete = true;
+                        loggedResolveError.add(resolved.length);
+                        resolved.push(undefined);
+                    }
                 }
+            }
+
+            for (let i = 0; i < candidates.length; i++) {
+                const record = candidates[i];
+                const credential = resolved[i];
                 if (!credential) {
-                    log.warn('Credential unavailable during category reconciliation', {
-                        recordId: record.id,
-                    });
+                    if (!loggedResolveError.has(i)) {
+                        log.warn('Credential unavailable during category reconciliation', {
+                            recordId: record.id,
+                        });
+                    }
                     incomplete = true;
                     continue;
                 }

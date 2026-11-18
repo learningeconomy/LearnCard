@@ -6,6 +6,10 @@ import type {
     AppStoreListingUpdateType,
     LCNIntegration,
     LCNIntegrationUpdateType,
+    IntegrationWebhookRegistration,
+    IntegrationWebhookSecretRotation,
+    IntegrationWebhookStatus,
+    IntegrationTestEventResult,
     AppListingStatus,
     PromotionLevel,
 } from '@learncard/types';
@@ -22,9 +26,56 @@ export type ListingSigningAuthorityInfo = {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-developer-portal');
 
+/** A webhook signing secret that was just returned. It is shown once, then dismissed. */
+export type RevealedWebhookSecret = { secret: string; previousSecretExpiresAt?: string };
+
+// The secret lives in the query cache so it outlives the Webhooks tab (tabs unmount when you
+// switch). The app persists that cache to IndexedDB/SQLite, so createQueryPersister strips
+// this key on every write and restore (withoutRevealedWebhookSecrets): keep the two in step.
+// It is never logged. The key is deliberately outside ['developer', 'integration', id],
+// which the mutations invalidate.
+const revealedWebhookSecretKey = (integrationId: string) =>
+    ['developer', 'revealed-webhook-secret', integrationId] as const;
+
 export const useDeveloperPortal = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+
+    // Hook-level mutation callbacks still run after the calling component has unmounted,
+    // which call-site `mutate(..., { onSuccess })` callbacks do not.
+    const storeRevealedWebhookSecret = (
+        integrationId: string,
+        revealed: RevealedWebhookSecret
+    ): void => {
+        const key = revealedWebhookSecretKey(integrationId);
+
+        // With no observer (tab unmounted) the default garbage collection would drop it.
+        queryClient.setQueryDefaults(key, { gcTime: Infinity, staleTime: Infinity });
+        queryClient.setQueryData<RevealedWebhookSecret>(key, revealed);
+    };
+
+    // The secret still waiting to be saved by the developer, if any. Never fetched: it only
+    // exists once a registration or rotation has stored it.
+    const useRevealedWebhookSecret = (integrationId: string | null) => {
+        const query = useQuery<RevealedWebhookSecret | null>({
+            queryKey: revealedWebhookSecretKey(integrationId ?? ''),
+            queryFn: () => null,
+            enabled: false,
+            gcTime: Infinity,
+            staleTime: Infinity,
+        });
+
+        const dismiss = (): void => {
+            if (!integrationId) return;
+
+            queryClient.setQueryData<RevealedWebhookSecret | null>(
+                revealedWebhookSecretKey(integrationId),
+                null
+            );
+        };
+
+        return { revealed: integrationId ? (query.data ?? null) : null, dismiss };
+    };
 
     const APP_SIGNING_AUTHORITY_PREFIX = 'app-';
     const MAX_SIGNING_AUTHORITY_NAME_LENGTH = 15;
@@ -167,6 +218,90 @@ export const useDeveloperPortal = () => {
                 queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
                 queryClient.invalidateQueries({
                     queryKey: ['developer', 'integration', variables.id],
+                });
+            },
+        });
+    };
+
+    // Mutation for setting, replacing or removing (null) an integration's webhook URL.
+    // The first time a URL is set, the result carries the signing secret, once.
+    const useSetIntegrationWebhook = () => {
+        return useMutation({
+            mutationFn: async ({
+                id,
+                webhookUrl,
+            }: {
+                id: string;
+                webhookUrl: string | null;
+            }): Promise<IntegrationWebhookRegistration> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.setIntegrationWebhook(id, webhookUrl);
+            },
+            onSuccess: (data, variables) => {
+                // Only the call that creates the first secret returns it.
+                if (data.secret) storeRevealedWebhookSecret(variables.id, { secret: data.secret });
+
+                queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
+                // Also covers the webhook health query, whose key starts with this one.
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'integration', variables.id],
+                });
+            },
+        });
+    };
+
+    // Query for an integration's webhook configuration and delivery health. Never a secret.
+    const useIntegrationWebhook = (integrationId: string | null) => {
+        return useQuery({
+            queryKey: ['developer', 'integration', integrationId, 'webhook'],
+            queryFn: async (): Promise<IntegrationWebhookStatus | null> => {
+                if (!integrationId) return null;
+
+                const wallet = await initWallet();
+
+                return wallet.invoke.getIntegrationWebhook(integrationId);
+            },
+            enabled: !!integrationId,
+            // Health changes on the server (deliveries, retries), so keep it fresh while the
+            // tab is open. React Query pauses this while the window is in the background.
+            refetchInterval: 30_000,
+        });
+    };
+
+    // Mutation for replacing the webhook signing secret. The new secret is returned once.
+    const useRotateIntegrationWebhookSecret = () => {
+        return useMutation({
+            mutationFn: async (id: string): Promise<IntegrationWebhookSecretRotation> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.rotateIntegrationWebhookSecret(id);
+            },
+            onSuccess: (data, id) => {
+                // A rotation replaces any secret still waiting to be saved.
+                storeRevealedWebhookSecret(id, {
+                    secret: data.secret,
+                    previousSecretExpiresAt: data.previousSecretExpiresAt,
+                });
+
+                queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
+                queryClient.invalidateQueries({ queryKey: ['developer', 'integration', id] });
+            },
+        });
+    };
+
+    // Mutation for sending a signed test event to an integration's webhook URL
+    const useSendIntegrationTestEvent = () => {
+        return useMutation({
+            mutationFn: async (id: string): Promise<IntegrationTestEventResult> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.sendIntegrationTestEvent(id);
+            },
+            // A test event counts as a delivery attempt, so health changes with it.
+            onSuccess: (_data, id) => {
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'integration', id, 'webhook'],
                 });
             },
         });
@@ -634,6 +769,11 @@ export const useDeveloperPortal = () => {
         useListingSigningAuthority,
         useCreateIntegration,
         useUpdateIntegration,
+        useSetIntegrationWebhook,
+        useIntegrationWebhook,
+        useRotateIntegrationWebhookSecret,
+        useRevealedWebhookSecret,
+        useSendIntegrationTestEvent,
 
         // Listing hooks
         useListingsForIntegration,

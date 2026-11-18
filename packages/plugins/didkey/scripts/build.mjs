@@ -7,7 +7,13 @@ const buildOptions = {
     // target: 'es6',
     target: 'es2020',
     sourcemap: true,
-    external: ['isomorphic-fetch', '@learncard/core', '@learncard/helpers'],
+    external: [
+        'isomorphic-fetch',
+        '@learncard/core',
+        '@learncard/helpers',
+        '@noble/ed25519',
+        '@scure/base',
+    ],
 };
 
 const configurations = [

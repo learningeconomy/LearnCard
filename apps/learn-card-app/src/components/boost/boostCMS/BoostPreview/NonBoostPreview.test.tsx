@@ -192,7 +192,7 @@ vi.mock('learn-card-base/helpers/credentials/clr/helpers', () => ({
     getDownloadableEvidence: () => [],
 }));
 
-import NonBoostPreview from './NonBoostPreview';
+import NonBoostPreview from './NonBoostPreviewContent';
 import BoostPreview from './BoostPreview';
 
 const credential = {

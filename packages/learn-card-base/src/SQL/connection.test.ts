@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SQLiteDBConnection } from '@capacitor-community/sqlite';
-import { ensureSQLiteSchema, markSQLiteReloadedOnOpen, withSQLiteDatabase } from './connection';
+import {
+    ensureSQLiteSchema,
+    ensureSQLiteSchemas,
+    markSQLiteReloadedOnOpen,
+    withSQLiteDatabase,
+} from './connection';
 
 const log = vi.hoisted(() => ({ warn: vi.fn() }));
 vi.mock('../logging/logger', () => ({ getLogger: () => log }));
@@ -172,5 +177,44 @@ describe('shared SQLite connection ownership', () => {
         await ensureSQLiteSchema(db, 'users', sql);
         await withSQLiteDatabase(db, () => ensureSQLiteSchema(db, 'users', sql));
         expect(methods.execute).toHaveBeenCalledOnce();
+    });
+
+    it('ensures a batch of schemas in one execute and memoizes every name', async () => {
+        const { db, methods } = database();
+        const specs = [
+            { name: 'a', statements: 'CREATE TABLE IF NOT EXISTS a(x);' },
+            { name: 'b', statements: 'CREATE TABLE IF NOT EXISTS b(x);' },
+        ];
+        await ensureSQLiteSchemas(db, specs);
+        expect(methods.execute).toHaveBeenCalledOnce();
+        expect(methods.execute).toHaveBeenCalledWith(
+            'CREATE TABLE IF NOT EXISTS a(x);\nCREATE TABLE IF NOT EXISTS b(x);'
+        );
+
+        // Single and batched calls share memo state: nothing re-executes.
+        await ensureSQLiteSchema(db, 'b', specs[1].statements);
+        await ensureSQLiteSchemas(db, specs);
+        expect(methods.execute).toHaveBeenCalledOnce();
+
+        // Only the schema not yet ensured goes into the next batch.
+        await ensureSQLiteSchemas(db, [...specs, { name: 'c', statements: 'C;' }]);
+        expect(methods.execute).toHaveBeenCalledTimes(2);
+        expect(methods.execute).toHaveBeenLastCalledWith('C;');
+    });
+
+    it('forgets every name in a failed batch so the next call retries it', async () => {
+        const { db, methods } = database();
+        const specs = [
+            { name: 'a', statements: 'A;' },
+            { name: 'b', statements: 'B;' },
+        ];
+        methods.execute.mockRejectedValueOnce(new Error('disk I/O error'));
+        await expect(ensureSQLiteSchemas(db, specs)).rejects.toThrow('disk I/O error');
+        await ensureSQLiteSchema(db, 'a', 'A;');
+        await ensureSQLiteSchemas(db, specs);
+        expect(methods.execute).toHaveBeenCalledTimes(3);
+        expect(methods.execute).toHaveBeenNthCalledWith(1, 'A;\nB;');
+        expect(methods.execute).toHaveBeenNthCalledWith(2, 'A;');
+        expect(methods.execute).toHaveBeenNthCalledWith(3, 'B;');
     });
 });

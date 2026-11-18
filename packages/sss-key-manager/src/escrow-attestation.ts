@@ -1,7 +1,7 @@
 import { base64ToBuffer, bufferToBase64 } from './crypto';
 import type { EscrowAttestationPolicy } from './types';
 import type { VerifiedEnclaveIdentity } from './escrow-authority.types';
-import { NitroAttestationError, verifyNitroAttestationDocument } from './escrow-nitro-attestation';
+import { NitroAttestationError } from './nitro-attestation-error';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -65,6 +65,9 @@ export const verifyEnclaveAttestation = async (
     if (attestation.mode !== policy.mode) throw new Error('Escrow attestation mode mismatch');
     if (policy.mode === 'nitro') {
         if (!nonce) throw new NitroAttestationError('nonce');
+        // X.509 / ASN.1 / CBOR parsing (~260 KB raw) is only needed here, during escrow enrollment and
+        // recovery; keep it out of wallet start-up.
+        const { verifyNitroAttestationDocument } = await import('./escrow-nitro-attestation');
         const verified = await verifyNitroAttestationDocument(attestation.document, {
             expectedNonce: nonce,
             policy,
