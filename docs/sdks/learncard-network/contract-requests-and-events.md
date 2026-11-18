@@ -66,7 +66,7 @@ await referrer.invoke.cancelContractRequest(contractUri, { requestId });
 
 `externalReferenceId` is an opaque integration reference, limited to 256 characters; `message` is limited to 500. Avoid putting sensitive data in either field. Targets may also be addressed by a resolvable network DID. Sending a request to yourself returns `BAD_REQUEST`, including when addressed by DID. A missing profile target returns `NOT_FOUND`. To invite someone whose profile you do not know, see [Invite by email](#invite-by-email). Requests are limited to 500 per hour per contract and sender.
 
-There is one request per contract/target pair in this version. An identical pending retry keeps the same request and event IDs. Conflicting sender, reference or message returns `CONFLICT`. Terminal requests and existing legacy requests are not replaced. Sending to a target with an unexpired active consent, including a one-time snapshot, also returns `CONFLICT`.
+There is one request per contract/target pair in this version. An identical pending retry keeps the same request and event IDs. Conflicting sender, reference or message returns `CONFLICT`. Terminal requests and existing legacy requests are not replaced. One exception: when you send to a profile that holds your own email invitation for this contract (pending, expired or cancelled), the new request replaces it and gets a new `requestId`. The invitation's `requestId` keeps answering as an invitation to that email until it expires. Sending to a target with an unexpired active consent, including a one-time snapshot, also returns `CONFLICT`.
 
 ## Invite by email
 
@@ -84,7 +84,7 @@ const request = await referrer.invoke.getContractRequest(contractUri, requestId)
 ```
 
 - The answer is always `{ requestId, status: 'pending' }`. It is the same whether or not the email belongs to an account, and whatever that account has already consented to. You cannot use this call to find out who has an account.
-- If no account has verified that email, LearnCard sends one invitation email with the branding of the tenant that made the call. At most 3 invitation emails go to one address per contract in 24 hours. The email does not contain your `message`.
+- Delivery happens shortly after the call, usually within a minute. If no account has verified that email, LearnCard sends one invitation email with the branding of the tenant that made the call, and retries it if delivery fails. At most 3 invitation emails go to one address per contract in 24 hours. The email does not contain your `message`.
 - When a profile verifies that email (at sign-up or later), the invitation becomes an ordinary request with the same `requestId`, and the person gets the usual in-app `request_sent` notification. If the normal request rules do not pass (for example the person already has a request or active consent for this contract), the invitation stays `pending` and expires. You cannot tell this apart from no response.
 - An identical retry (same contract, email, sender, reference and message) while the first is pending returns the same `requestId` and sends nothing.
 - An invitation expires 30 days after it was sent unless the person has accepted it. Its status is then `expired`, whether or not it reached a profile, and it can no longer be accepted, declined or cancelled (cancelling answers `CONFLICT`). The person can still consent to the contract on their own; that consent carries no referral.
@@ -94,7 +94,7 @@ const request = await referrer.invoke.getContractRequest(contractUri, requestId)
 
 Integration webhooks report an email-addressed request too: `request_sent` once when you make it, `request_denied`, `request_cancelled` and `request_expired` without a subject, and `request_accepted` with the subject. See [Integration Webhooks and Change Feed](integration-webhooks.md) for the event reference.
 
-Sending the same email to several contracts, or timing your calls, does not change these answers, but a send that also delivers an email can take longer than one that does not.
+Sending the same email to several contracts, or timing your calls, does not change these answers: the call returns before LearnCard looks the email up.
 
 ## Target actions
 
