@@ -137,6 +137,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'didToVerificationMethod',
     'discardAppStoreListingUpdate',
     'disconnectWith',
+    'dismissContractSuggestion',
     'enrollInCampaign',
     'exchangeAuthCodeForToken',
     'exchangePreAuthCodeForToken',

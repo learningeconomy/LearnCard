@@ -1,4 +1,5 @@
 ---
+'@learncard/cli': patch
 '@learncard/types': minor
 '@learncard/helpers': minor
 '@learncard/network-plugin': minor
