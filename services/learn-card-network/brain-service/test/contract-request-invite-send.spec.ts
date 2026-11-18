@@ -12,6 +12,7 @@ import cache from '@cache';
 import { neogma } from '@instance';
 import { getContractRequestInvite } from '@accesslayer/contract-request-invite/read';
 import * as notifications from '@helpers/notifications.helpers';
+import * as requestReads from '@accesslayer/consentflowcontract/read';
 import { deliverContractRequestInvites } from '@helpers/contract-request-invites.helpers';
 
 const actor = async (role: string) => {
@@ -226,5 +227,88 @@ describe('sendContractRequest with targetEmail', () => {
         const invite = await getContractRequestInvite(id(contractUri), requestId);
         expect(invite?.emailSentAt).toEqual(expect.any(String));
         expect(invite?.deliveryPending ?? null).toBeNull();
+    });
+
+    it('gives a resend after expiry a new request, whether or not the first invite attached', async () => {
+        const attachedEmail = randomEmail();
+        const unattachedEmail = randomEmail();
+        await addEmail(learner.profileId, attachedEmail);
+        const attached = await send(attachedEmail);
+        const unattached = await send(unattachedEmail);
+        expect(await learnerRequest()).toMatchObject({ requestId: attached.requestId });
+
+        // Past the expiry date, before the daily job has marked anything.
+        await neogma.queryRunner.run(
+            `MATCH (c:ConsentFlowContract {id: $contractId})-[:HAS_REQUEST_INVITE]->(i:ContractRequestInvite)
+             WHERE i.id IN $ids
+             SET i.expiresAt = $past
+             WITH c, i
+             OPTIONAL MATCH (c)-[r:REQUESTED_FOR]->(:Profile) WHERE r.requestId = i.id
+             SET r.expiresAt = $past`,
+            {
+                contractId: id(contractUri),
+                ids: [attached.requestId, unattached.requestId],
+                past: '2000-01-01T00:00:00.000Z',
+            }
+        );
+        const attachedAgain = await send(attachedEmail);
+        const unattachedAgain = await send(unattachedEmail);
+        expect(attachedAgain.requestId).not.toBe(attached.requestId);
+        expect(unattachedAgain.requestId).not.toBe(unattached.requestId);
+        expect(await learnerRequest()).toMatchObject({
+            requestId: attachedAgain.requestId,
+            status: 'pending',
+        });
+
+        const read = (requestId: string) =>
+            recipient.clients.fullAuth.contracts.getContractRequest({ contractUri, requestId });
+        const [oldAttached, oldUnattached] = await Promise.all([
+            read(attached.requestId),
+            read(unattached.requestId),
+        ]);
+        expect(oldAttached).toMatchObject({ status: 'expired', target: { email: attachedEmail } });
+        expect(oldUnattached).toMatchObject({
+            status: 'expired',
+            target: { email: unattachedEmail },
+        });
+        expect(Object.keys(oldAttached ?? {}).sort()).toEqual(
+            Object.keys(oldUnattached ?? {}).sort()
+        );
+    });
+
+    it('cancelling by ID never cancels a request that replaced it in the meantime', async () => {
+        const email = randomEmail();
+        await addEmail(learner.profileId, email);
+        const { requestId: oldId } = await send(email);
+        let newId: string | undefined;
+        const real = requestReads.getStoredContractRequest;
+        vi.spyOn(requestReads, 'getStoredContractRequest').mockImplementationOnce(
+            async (...args) => {
+                const found = await real(...args);
+                newId = (
+                    await recipient.clients.fullAuth.contracts.sendContractRequest({
+                        contractUri,
+                        targetProfileId: learner.profileId,
+                    })
+                ).requestId;
+                return found;
+            }
+        );
+
+        await expect(
+            recipient.clients.fullAuth.contracts.cancelContractRequest({
+                contractUri,
+                requestId: oldId,
+            })
+        ).resolves.toBe(true);
+        expect(newId).toBeDefined();
+        expect(newId).not.toBe(oldId);
+        expect(await learnerRequest()).toMatchObject({ requestId: newId, status: 'pending' });
+        expect(
+            await recipient.clients.fullAuth.contracts.getContractRequest({
+                contractUri,
+                requestId: oldId,
+            })
+        ).toMatchObject({ status: 'cancelled' });
     });
 });

@@ -114,6 +114,9 @@ export type CreateRequestForProfileInput = {
  * expired or cancelled) replaces it in place with the new request ID. The invite is detached
  * and keeps the status it had, so it reads and later expires exactly like an invite to an
  * address with no account: a correct guess of the profile behind an email looks like a miss.
+ * An invite from the same sender replaces their earlier email-addressed request the same way
+ * once that request is cancelled, expired or past its expiry date, so a resend after expiry
+ * reaches the profile whether or not the first invite had attached.
  * Returns null when the request rules do not pass. The caller decides what that means:
  * a profile-targeted send answers CONFLICT, an invite stays pending.
  */
@@ -148,9 +151,10 @@ export const createRequestForProfile = async (
         }
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(target)
         WITH contract, target, existing,
-            coalesce($inviteId IS NULL AND existing.addressedByEmail = true AND
-                existing.requestedBy = $senderProfileId AND
-                existing.status IN ['pending', 'expired', 'cancelled'], false) AS replacing
+            coalesce(existing.addressedByEmail = true AND existing.requestedBy = $senderProfileId AND
+                (($inviteId IS NULL AND existing.status IN ['pending', 'expired', 'cancelled']) OR
+                 ($inviteId IS NOT NULL AND (existing.status IN ['expired', 'cancelled'] OR
+                    (existing.status = 'pending' AND existing.expiresAt <= $now)))), false) AS replacing
         WITH contract, target, existing, replacing WHERE existing IS NULL OR replacing OR
             ($inviteId IS NULL AND existing.status = 'pending' AND existing.requestId IS NOT NULL AND
                 coalesce(existing.addressedByEmail, false) = false AND
@@ -173,8 +177,10 @@ export const createRequestForProfile = async (
         FOREACH (_ IN CASE WHEN replacing THEN [1] ELSE [] END |
             SET request.requestId = $requestId, request.requestedBy = $senderProfileId,
                 request.externalReferenceId = $externalReferenceId, request.message = $message,
-                request.requestedAt = $now, request.status = 'pending', request.readStatus = 'unseen',
-                request.addressedByEmail = null, request.expiresAt = null, request.expiredAt = null)
+                request.requestedAt = coalesce(invite.requestedAt, $now), request.status = 'pending',
+                request.readStatus = 'unseen',
+                request.addressedByEmail = CASE WHEN $inviteId IS NULL THEN null ELSE true END,
+                request.expiresAt = invite.expiresAt, request.expiredAt = null)
         FOREACH (_ IN CASE WHEN invite IS NULL THEN [] ELSE [1] END |
             SET invite.status = 'attached', invite.attachedProfileId = target.profileId,
                 invite.attachedAt = $now)
@@ -234,16 +240,24 @@ export const decideGenericContractRequest = async ({
     actorProfileId,
     status,
     domain,
+    requestId,
 }: {
     contract: DbContractType;
     targetProfileId: string;
     actorProfileId: string;
     status: 'denied' | 'cancelled';
     domain: string;
+    /** When set, only this request is changed: a request that replaced it is left alone. */
+    requestId?: string;
 }): Promise<boolean> => {
     const request = await getStoredContractRequest(contract.id, targetProfileId);
     if (!request?.requestId)
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract request not found' });
+    if (requestId && request.requestId !== requestId)
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Request already decided or permission changed',
+        });
     const isTarget = actorProfileId === targetProfileId;
     const writers = await getWritersForContract(contract);
     const authorized =
@@ -265,12 +279,14 @@ export const decideGenericContractRequest = async ({
                     now: new Date().toISOString(),
                     eventKind: status === 'denied' ? 'request_denied' : 'request_cancelled',
                     eventFrom: actorProfileId,
+                    requestId: requestId ?? null,
                 })
             ),
             contract.id
         ).raw(`
         MATCH (contract)-[request:REQUESTED_FOR]->(target:Profile {profileId: $targetProfileId})
         WHERE request.requestId IS NOT NULL AND request.status IN ['pending', $status]
+            AND ($requestId IS NULL OR request.requestId = $requestId)
             AND (request.status = $status OR request.expiresAt IS NULL OR request.expiresAt > $now)
             AND ($actorProfileId = $targetProfileId OR ($status = 'cancelled' AND
                 (EXISTS { MATCH (contract)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId: $actorProfileId}) } OR
@@ -311,41 +327,51 @@ export const cancelContractRequestById = async ({
                 { contractId: contract.id, requestId }
             )
         ).records[0]?.get('targetProfileId');
-    let targetProfileId = await findTarget();
-    if (!targetProfileId) {
-        // No profile yet: the request is still an invite addressed to an email.
-        const outcome = await cancelContractRequestInvite(
-            contract.id,
-            requestId,
-            actorProfileId,
-            domain
-        );
-        if (outcome === 'cancelled') {
-            await tryFanOutContractIntegrationEvents(contract.id);
-            return true;
+    // Two rounds: the ID can move between the read and the locked write, when an invite attaches
+    // or when a newer request replaces the one with this ID. Each round resolves the ID again.
+    for (let round = 0; round < 2; round += 1) {
+        const targetProfileId = await findTarget();
+        if (!targetProfileId) {
+            // No profile holds this ID: the request is still an invite addressed to an email.
+            const outcome = await cancelContractRequestInvite(
+                contract.id,
+                requestId,
+                actorProfileId,
+                domain
+            );
+            if (outcome === 'cancelled') {
+                await tryFanOutContractIntegrationEvents(contract.id);
+                return true;
+            }
+            // Same answer as an attached request that can no longer be cancelled.
+            if (outcome === 'expired')
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Request already decided or permission changed',
+                });
+            continue;
         }
-        // Same answer as an attached request that can no longer be cancelled.
-        if (outcome === 'expired')
-            throw new TRPCError({
-                code: 'CONFLICT',
-                message: 'Request already decided or permission changed',
+        try {
+            return await decideGenericContractRequest({
+                contract,
+                targetProfileId,
+                actorProfileId,
+                status: 'cancelled',
+                domain,
+                requestId,
             });
-        // The invite may have attached between the two reads.
-        targetProfileId = await findTarget();
-        if (!targetProfileId) throw notFound;
+        } catch (error) {
+            if (error instanceof TRPCError && error.code === 'UNAUTHORIZED') throw notFound;
+            if (
+                error instanceof TRPCError &&
+                error.code === 'CONFLICT' &&
+                (await findTarget()) !== targetProfileId
+            )
+                continue;
+            throw error;
+        }
     }
-    try {
-        return await decideGenericContractRequest({
-            contract,
-            targetProfileId,
-            actorProfileId,
-            status: 'cancelled',
-            domain,
-        });
-    } catch (error) {
-        if (error instanceof TRPCError && error.code === 'UNAUTHORIZED') throw notFound;
-        throw error;
-    }
+    throw notFound;
 };
 
 export const markGenericContractRequestSeen = async (

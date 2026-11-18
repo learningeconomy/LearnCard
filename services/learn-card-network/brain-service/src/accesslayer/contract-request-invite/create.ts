@@ -29,8 +29,9 @@ export type CreateContractRequestInviteInput = {
 /**
  * Creates a pending invite, or returns the existing one for an identical retry.
  * A retry is identical when contract, email, sender, reference and message match and the earlier
- * invite is still pending, or is attached to a request that is still pending. That keeps the
- * answer the same whether or not the email belongs to an account.
+ * invite has not reached its expiry and is still pending, or is attached to a request that is
+ * still pending. That keeps the answer the same whether or not the email belongs to an account,
+ * including after the expiry date and before the daily job has marked anything.
  * A new invite also records the integration `request_sent` event (no subject), in the same
  * statement. Returns null when the sender has no role on the contract or the contract has expired.
  */
@@ -63,7 +64,8 @@ export const createContractRequestInvite = async (
             WHERE existing.email = $email AND existing.requestedBy = $senderProfileId AND
                 coalesce(existing.externalReferenceId, '') = coalesce($externalReferenceId, '') AND
                 coalesce(existing.message, '') = coalesce($message, '') AND
-                ((existing.status = 'pending' AND existing.expiresAt > $now) OR
+                existing.expiresAt > $now AND
+                (existing.status = 'pending' OR
                  (existing.status = 'attached' AND EXISTS {
                     MATCH (contract)-[request:REQUESTED_FOR]->(:Profile)
                     WHERE request.requestId = existing.id AND request.status = 'pending'
