@@ -49,7 +49,7 @@ The diagram shows the logical order; webhook transport is asynchronous and at le
 
 ## What consent controls
 
-An invitation can remain pending, be accepted through consent, or be denied or cancelled. An invitation sent to an email address expires after 30 days unless the person accepts it, whether or not it reached an account. Dismissing an alert leaves it pending. Referral acceptance is bound to the reviewed request ID; the server rejects a cancelled, replaced or otherwise terminal invitation. Direct legacy consent links remain available independently of invitation decisions.
+An invitation can remain pending, be accepted through consent, or be denied or cancelled. An invitation sent to an email address that is still pending after 30 days expires, whether or not it reached an account. Dismissing an alert leaves it pending. Referral acceptance is bound to the reviewed request ID; the server rejects a cancelled, replaced or otherwise terminal invitation. Direct legacy consent links remain available independently of invitation decisions.
 
 Consent defines permitted fields, categories and receiving organizations. Recipient additions freeze after the first consent; removals revoke future API discovery and invalidate stale audience acknowledgements. Withdrawal and expiry stop future authorized reads and synchronization. Copies already delivered cannot be recalled. A one-time consent keeps its permitted snapshot until withdrawal or expiry and does not authorize live updates.
 
