@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { isInt } from 'neo4j-driver';
 import { resolveBranding } from '@learncard/email-templates';
 import type { ResolvedTenant, TenantBranding } from '@learncard/email-templates';
 import type { SendContractRequest, SendContractRequestResult } from '@learncard/types';
@@ -7,12 +8,18 @@ import { createContractRequestInvite } from '@accesslayer/contract-request-invit
 import {
     claimContractRequestInviteEmail,
     expireContractRequestInvite,
+    finishContractRequestInviteDelivery,
+    releaseContractRequestInviteEmail,
+    retryContractRequestInviteDelivery,
 } from '@accesslayer/contract-request-invite/update';
 import {
     getContractOwnerDisplayName,
+    getDueContractRequestInviteDeliveries,
     getOverdueContractRequestInvites,
     getProfileIdsWithVerifiedEmail,
 } from '@accesslayer/contract-request-invite/read';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { defaultDomain } from './integration-events.helpers';
 import type { ContractRequestInviteType } from '@accesslayer/contract-request-invite/read';
 import { normalizeInviteEmail } from './invite-email.helpers';
 
@@ -100,7 +107,8 @@ export const sendContractRequestInviteEmail = async ({
 /**
  * Sends a contract request to an email address. It always creates (or reuses) an invite and
  * always answers `{ requestId, status: 'pending' }`, so the answer does not reveal whether the
- * email has an account or what that account's consent state is.
+ * email has an account or what that account's consent state is. Delivery (attach or email) is
+ * left to `deliverContractRequestInvites`.
  */
 export const sendContractRequestToEmail = async (
     input: SendContractRequest,
@@ -120,6 +128,7 @@ export const sendContractRequestToEmail = async (
         message: input.message,
         tenantId: tenant?.id,
         domain,
+        ...(tenant?.emailBranding ? { emailBranding: tenant.emailBranding } : {}),
     });
     if (!result)
         throw new TRPCError({
@@ -127,30 +136,11 @@ export const sendContractRequestToEmail = async (
             message: 'The contract changed. Review it and try again.',
         });
 
-    // The invite's integration request_sent event goes out before an attach can add its own
-    // request events, which keeps the feed in order. The worker retries what this misses.
+    // Integrations hear about the send now. Looking the email up, attaching to a profile and
+    // sending the invite email all happen in the delivery worker, so this answer takes the same
+    // time whether or not the email has an account.
     if (result.created) await tryFanOutContractIntegrationEvents(contract.id);
 
-    // An identical pending retry returns the same request ID and sends nothing.
-    if (result.created) {
-        try {
-            const profileIds = await getProfileIdsWithVerifiedEmail(email);
-            if (profileIds.length === 0) {
-                if (await claimContractRequestInviteEmail(contract.id, result.invite.id))
-                    await sendContractRequestInviteEmail({
-                        email,
-                        referrerName: profile.displayName,
-                        contractOwnerName: await getContractOwnerDisplayName(contract.id),
-                        branding: tenant?.emailBranding,
-                    });
-            } else {
-                for (const profileId of profileIds)
-                    await attachContractRequestInvitesForProfile({ profileId }, domain);
-            }
-        } catch {
-            console.warn('contract_request_invite: delivery_failed');
-        }
-    }
     return { requestId: result.invite.id, status: 'pending' };
 };
 
@@ -208,4 +198,78 @@ export const expireContractRequestInvites = async (): Promise<number> => {
         if (overdue.length < INVITE_EXPIRY_BATCH_SIZE || handledInBatch === 0) break;
     }
     return expired;
+};
+
+const INVITE_DELIVERY_MAX_ATTEMPTS = 8;
+/** Neo4j returns stored counters as Integer objects. */
+const toNumber = (value: unknown): number =>
+    isInt(value) ? value.toNumber() : typeof value === 'number' ? value : 0;
+/** Backoff after a failed invite email: 1, 2, 4 ... minutes, capped at one hour. */
+const inviteDeliveryDelayMs = (attempts: number): number =>
+    Math.min(60 * 60_000, 60_000 * 2 ** Math.max(0, attempts));
+
+/**
+ * Worker pass for new email-addressed sends. For each invite that is due it attaches the invite
+ * to the profiles that have the email verified, or, when there are none, sends the invite email
+ * (at most 3 per contract and address in 24 hours). A failed email is retried with backoff and
+ * given up after INVITE_DELIVERY_MAX_ATTEMPTS. Never throws for one invite. Returns how many
+ * invites it finished.
+ */
+export const deliverContractRequestInvites = async ({
+    limit = 50,
+    budgetMs = 10_000,
+}: { limit?: number; budgetMs?: number } = {}): Promise<number> => {
+    const startedAt = Date.now();
+    let finished = 0;
+    for (const { contractId, invite } of await getDueContractRequestInviteDeliveries(limit)) {
+        if (Date.now() - startedAt > budgetMs) break;
+        try {
+            if (invite.status !== 'pending' || invite.attachedProfileId) {
+                await finishContractRequestInviteDelivery(invite.id);
+                finished += 1;
+                continue;
+            }
+            const domain = invite.domain ?? defaultDomain();
+            const profileIds = await getProfileIdsWithVerifiedEmail(invite.email);
+            if (profileIds.length > 0) {
+                for (const profileId of profileIds)
+                    await attachContractRequestInvitesForProfile({ profileId }, domain);
+                await finishContractRequestInviteDelivery(invite.id);
+                finished += 1;
+                continue;
+            }
+            if (!(await claimContractRequestInviteEmail(contractId, invite.id))) {
+                // Already emailed, or the address reached its limit: nothing more to send.
+                await finishContractRequestInviteDelivery(invite.id);
+                finished += 1;
+                continue;
+            }
+            const sent = await sendContractRequestInviteEmail({
+                email: invite.email,
+                referrerName: (await getProfileByProfileId(invite.requestedBy))?.displayName,
+                contractOwnerName: await getContractOwnerDisplayName(contractId),
+                ...(invite.emailBranding ? { branding: JSON.parse(invite.emailBranding) } : {}),
+            });
+            if (sent) {
+                await finishContractRequestInviteDelivery(invite.id);
+                finished += 1;
+                continue;
+            }
+            await releaseContractRequestInviteEmail(contractId, invite.id);
+            const attempts = toNumber(invite.deliveryAttempts) + 1;
+            if (attempts >= INVITE_DELIVERY_MAX_ATTEMPTS) {
+                console.warn('contract_request_invite: delivery_abandoned');
+                await finishContractRequestInviteDelivery(invite.id);
+                finished += 1;
+            } else {
+                await retryContractRequestInviteDelivery(
+                    invite.id,
+                    new Date(Date.now() + inviteDeliveryDelayMs(attempts)).toISOString()
+                );
+            }
+        } catch {
+            console.warn('contract_request_invite: delivery_failed');
+        }
+    }
+    return finished;
 };

@@ -22,6 +22,8 @@ export type CreateContractRequestInviteInput = {
     tenantId?: string | null;
     /** Domain that integration event URIs are built on. Defaults to this service's domain. */
     domain?: string;
+    /** Email branding of the sending tenant, kept for the delivery worker. */
+    emailBranding?: unknown;
 };
 
 /**
@@ -45,6 +47,8 @@ export const createContractRequestInvite = async (
                 externalReferenceId: input.externalReferenceId ?? null,
                 message: input.message ?? null,
                 tenantId: input.tenantId ?? null,
+                emailBranding:
+                    input.emailBranding === undefined ? null : JSON.stringify(input.emailBranding),
                 eventDomain: input.domain ?? defaultDomain(),
                 now: now.toISOString(),
                 expiresAt: new Date(now.getTime() + CONTRACT_REQUEST_INVITE_TTL_MS).toISOString(),
@@ -71,6 +75,7 @@ export const createContractRequestInvite = async (
             SET created += {email: $email, requestedBy: $senderProfileId,
                 externalReferenceId: $externalReferenceId, message: $message,
                 requestedAt: $now, expiresAt: $expiresAt, tenantId: $tenantId, domain: $eventDomain,
+                emailBranding: $emailBranding, deliveryPending: true, deliveryNextAt: $now,
                 status: 'pending'})
         WITH contract, existing
         MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)

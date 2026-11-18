@@ -22,6 +22,13 @@ export type ContractRequestInviteType = {
     attachedAt?: string | null;
     /** Domain of the send, used for the invite's integration events. */
     domain?: string | null;
+    /** JSON of the sending tenant's email branding. */
+    emailBranding?: string | null;
+    /** True until the delivery worker has attached the invite or emailed the address. */
+    deliveryPending?: boolean | null;
+    deliveryNextAt?: string | null;
+    /** A Neo4j Integer when read back from the database. */
+    deliveryAttempts?: unknown;
 };
 
 const inviteViewerWhere = `($viewerProfileId IS NULL OR EXISTS {
@@ -119,6 +126,23 @@ export const getContractOwnerDisplayName = async (
         { contractId }
     );
     return result.records[0]?.get('displayName') ?? undefined;
+};
+
+/** Invites waiting for the delivery worker whose next attempt is due, oldest first. */
+export const getDueContractRequestInviteDeliveries = async (
+    limit: number
+): Promise<{ contractId: string; invite: ContractRequestInviteType }[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (contract:ConsentFlowContract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
+         WHERE invite.deliveryPending = true AND invite.deliveryNextAt <= $now
+         RETURN contract.id AS contractId, properties(invite) AS invite
+         ORDER BY invite.deliveryNextAt, invite.id LIMIT $limit`,
+        { now: new Date().toISOString(), limit: int(limit) }
+    );
+    return result.records.map(record => ({
+        contractId: record.get('contractId'),
+        invite: record.get('invite'),
+    }));
 };
 
 /** Pending and attached invites whose expiry has passed, oldest first. */

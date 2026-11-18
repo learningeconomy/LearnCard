@@ -12,6 +12,7 @@ import cache from '@cache';
 import { neogma } from '@instance';
 import { getContractRequestInvite } from '@accesslayer/contract-request-invite/read';
 import * as notifications from '@helpers/notifications.helpers';
+import { deliverContractRequestInvites } from '@helpers/contract-request-invites.helpers';
 
 const actor = async (role: string) => {
     const user = await getUser(randomBytes(32).toString('hex'));
@@ -56,16 +57,20 @@ describe('sendContractRequest with targetEmail', () => {
     });
     afterEach(() => vi.restoreAllMocks());
 
-    const send = (
+    /** Sends, then runs the delivery worker pass that attaches or emails the invite. */
+    const send = async (
         targetEmail: string,
         externalReferenceId = 'synthetic-ref-1',
         sender = recipient
-    ) =>
-        sender.clients.fullAuth.contracts.sendContractRequest({
+    ) => {
+        const result = await sender.clients.fullAuth.contracts.sendContractRequest({
             contractUri,
             targetEmail,
             externalReferenceId,
         });
+        await deliverContractRequestInvites();
+        return result;
+    };
     const learnerRequest = () =>
         learner.clients.fullAuth.contracts.getRequestStatusForProfile({
             contractUri,
@@ -194,5 +199,32 @@ describe('sendContractRequest with targetEmail', () => {
         await addEmail(learner.profileId, email);
         await send(email, 'second');
         expect(JSON.stringify(spies.flatMap(spy => spy.mock.calls))).not.toContain(email);
+    });
+
+    it('leaves delivery to the worker, and retries an invite email that failed', async () => {
+        const email = randomEmail();
+        const { requestId } = await recipient.clients.fullAuth.contracts.sendContractRequest({
+            contractUri,
+            targetEmail: email,
+        });
+        expect(mocks.send).not.toHaveBeenCalled();
+
+        mocks.send.mockRejectedValueOnce(new Error('synthetic outage'));
+        await deliverContractRequestInvites();
+        expect(mocks.send).toHaveBeenCalledTimes(1);
+        const failed = await getContractRequestInvite(id(contractUri), requestId);
+        expect(failed?.emailSentAt ?? null).toBeNull();
+        expect(failed?.deliveryPending).toBe(true);
+        expect(Number(failed?.deliveryAttempts)).toBe(1);
+
+        await neogma.queryRunner.run(
+            'MATCH (i:ContractRequestInvite {id: $requestId}) SET i.deliveryNextAt = $past',
+            { requestId, past: '2000-01-01T00:00:00.000Z' }
+        );
+        await deliverContractRequestInvites();
+        expect(mocks.send).toHaveBeenCalledTimes(2);
+        const invite = await getContractRequestInvite(id(contractUri), requestId);
+        expect(invite?.emailSentAt).toEqual(expect.any(String));
+        expect(invite?.deliveryPending ?? null).toBeNull();
     });
 });

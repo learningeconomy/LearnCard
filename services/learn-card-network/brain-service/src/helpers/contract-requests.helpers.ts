@@ -110,6 +110,10 @@ export type CreateRequestForProfileInput = {
 
 /**
  * The single place that creates a REQUESTED_FOR request for a resolved profile.
+ * A profile-targeted send that meets the same sender's own email-addressed request (pending,
+ * expired or cancelled) replaces it in place with the new request ID. The invite is detached
+ * and keeps the status it had, so it reads and later expires exactly like an invite to an
+ * address with no account: a correct guess of the profile behind an email looks like a miss.
  * Returns null when the request rules do not pass. The caller decides what that means:
  * a profile-targeted send answers CONFLICT, an invite stays pending.
  */
@@ -143,15 +147,22 @@ export const createRequestForProfile = async (
                 CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END
         }
         OPTIONAL MATCH (contract)-[existing:REQUESTED_FOR]->(target)
-        WITH contract, target, existing WHERE existing IS NULL OR
+        WITH contract, target, existing,
+            coalesce($inviteId IS NULL AND existing.addressedByEmail = true AND
+                existing.requestedBy = $senderProfileId AND
+                existing.status IN ['pending', 'expired', 'cancelled'], false) AS replacing
+        WITH contract, target, existing, replacing WHERE existing IS NULL OR replacing OR
             ($inviteId IS NULL AND existing.status = 'pending' AND existing.requestId IS NOT NULL AND
                 coalesce(existing.addressedByEmail, false) = false AND
                 existing.requestedBy = $senderProfileId AND
                 coalesce(existing.externalReferenceId, '') = coalesce($externalReferenceId, '') AND
                 coalesce(existing.message, '') = coalesce($message, ''))
+        WITH contract, target, replacing,
+            CASE WHEN replacing THEN existing.requestId END AS replacedId,
+            CASE WHEN replacing THEN existing.status END AS replacedStatus
         OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
             WHERE invite.id = $inviteId
-        WITH contract, target, invite WHERE $inviteId IS NULL OR
+        WITH contract, target, invite, replacing, replacedId, replacedStatus WHERE $inviteId IS NULL OR
             (invite IS NOT NULL AND invite.status = 'pending' AND invite.expiresAt > $now)
         MERGE (contract)-[request:REQUESTED_FOR]->(target)
         ON CREATE SET request += {requestId: $requestId, requestedBy: $senderProfileId,
@@ -159,9 +170,20 @@ export const createRequestForProfile = async (
             requestedAt: coalesce(invite.requestedAt, $now), status: 'pending', readStatus: 'unseen',
             addressedByEmail: CASE WHEN $inviteId IS NULL THEN null ELSE true END,
             expiresAt: invite.expiresAt}
+        FOREACH (_ IN CASE WHEN replacing THEN [1] ELSE [] END |
+            SET request.requestId = $requestId, request.requestedBy = $senderProfileId,
+                request.externalReferenceId = $externalReferenceId, request.message = $message,
+                request.requestedAt = $now, request.status = 'pending', request.readStatus = 'unseen',
+                request.addressedByEmail = null, request.expiresAt = null, request.expiredAt = null)
         FOREACH (_ IN CASE WHEN invite IS NULL THEN [] ELSE [1] END |
             SET invite.status = 'attached', invite.attachedProfileId = target.profileId,
                 invite.attachedAt = $now)
+        WITH contract, request, target, replacing, replacedId, replacedStatus
+        OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(replaced:ContractRequestInvite)
+            WHERE replacing AND replaced.id = replacedId
+        FOREACH (_ IN CASE WHEN replaced IS NULL THEN [] ELSE [1] END |
+            SET replaced.attachedProfileId = null, replaced.attachedAt = null,
+                replaced.status = replacedStatus)
         ${requestEventCypher}
     `);
     const result = await runAudienceMutation(query);

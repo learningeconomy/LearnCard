@@ -10,7 +10,10 @@ import { IntegrationEventTypeValidator } from '@learncard/types';
 import { getUser } from './helpers/getClient';
 import { normalContract, normalFullTerms } from './helpers/contract';
 import { neogma } from '@instance';
-import { expireContractRequestInvites } from '@helpers/contract-request-invites.helpers';
+import {
+    deliverContractRequestInvites,
+    expireContractRequestInvites,
+} from '@helpers/contract-request-invites.helpers';
 import { fanOutIntegrationEvents } from '@helpers/integration-events.helpers';
 import * as notifications from '@helpers/notifications.helpers';
 
@@ -83,12 +86,16 @@ describe('integration events for contract request invites', () => {
     });
     afterEach(() => vi.restoreAllMocks());
 
-    const send = (targetEmail: string) =>
-        recipient.clients.fullAuth.contracts.sendContractRequest({
+    /** Sends, then runs the delivery worker pass that attaches or emails the invite. */
+    const send = async (targetEmail: string) => {
+        const result = await recipient.clients.fullAuth.contracts.sendContractRequest({
             contractUri,
             targetEmail,
             externalReferenceId: 'synthetic-ref-1',
         });
+        await deliverContractRequestInvites();
+        return result;
+    };
 
     /** Feed records of one integration for one request, after the worker has caught up. */
     const feed = async (integrationId: string, requestId: string): Promise<FeedRecord[]> => {
@@ -351,5 +358,65 @@ describe('integration events for contract request invites', () => {
             { eventIds: [known, unknown].map(({ requestId }) => `${requestId}:cancelled`) }
         );
         expect(deliveries.records[0]?.get('count').toNumber()).toBe(0);
+    });
+
+    it("replaces the sender's own email request when it sends to that profile, like a miss", async () => {
+        const knownEmail = randomEmail();
+        await addEmail(learner.profileId, knownEmail);
+        const hit = await send(knownEmail);
+        const other = await actor('other');
+        const miss = await send(randomEmail());
+
+        const profileSend = (target: Actor) =>
+            recipient.clients.fullAuth.contracts.sendContractRequest({
+                contractUri,
+                targetProfileId: target.profileId,
+                externalReferenceId: 'synthetic-ref-2',
+            });
+        const onHit = await profileSend(learner);
+        const onMiss = await profileSend(other);
+        expect(onHit).toEqual({ requestId: expect.any(String), status: 'pending' });
+        expect(onHit.requestId).not.toBe(hit.requestId);
+        expect(onMiss).toEqual({ requestId: expect.any(String), status: 'pending' });
+
+        const read = (requestId: string) =>
+            recipient.clients.fullAuth.contracts.getContractRequest({ contractUri, requestId });
+        const shape = (request: Awaited<ReturnType<typeof read>>) => ({
+            status: request.status,
+            hasEmail: 'email' in request.target,
+            hasProfile: 'profile' in request.target,
+        });
+        expect(shape(await read(hit.requestId))).toEqual(shape(await read(miss.requestId)));
+        expect(shape(await read(hit.requestId))).toEqual({
+            status: 'pending',
+            hasEmail: true,
+            hasProfile: false,
+        });
+        expect(await read(onHit.requestId)).toMatchObject({
+            status: 'pending',
+            target: { profile: { profileId: learner.profileId } },
+        });
+
+        await Promise.all([age(hit.requestId), age(miss.requestId)]);
+        await expireContractRequestInvites();
+        expect(shape(await read(hit.requestId))).toEqual(shape(await read(miss.requestId)));
+        expect((await read(onHit.requestId)).status).toBe('pending');
+        for (const { requestId } of [hit, miss])
+            expect((await feed(ownerIntegration, requestId)).map(record => record.type)).toEqual([
+                'request_sent',
+                'request_expired',
+            ]);
+    });
+
+    it('still answers CONFLICT when another sender collides with an email request', async () => {
+        const email = randomEmail();
+        await addEmail(learner.profileId, email);
+        await send(email);
+        await expect(
+            owner.clients.fullAuth.contracts.sendContractRequest({
+                contractUri,
+                targetProfileId: learner.profileId,
+            })
+        ).rejects.toMatchObject({ message: expect.stringContaining('already exists') });
     });
 });

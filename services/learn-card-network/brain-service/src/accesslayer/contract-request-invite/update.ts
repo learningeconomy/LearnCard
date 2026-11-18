@@ -1,4 +1,5 @@
 import { BindParam, QueryBuilder } from 'neogma';
+import { neogma } from '@instance';
 import { int } from 'neo4j-driver';
 
 import {
@@ -125,4 +126,40 @@ export const expireContractRequestInvite = async (
     `);
     const record = (await runAudienceMutation(query)).records[0];
     return record?.get('expires') === true ? record.get('invite') : null;
+};
+
+/** Gives back an email claim whose delivery failed, so a later attempt can send it. */
+export const releaseContractRequestInviteEmail = async (
+    contractId: string,
+    inviteId: string
+): Promise<void> => {
+    const query = lockContractAudience(new QueryBuilder(new BindParam({ inviteId })), contractId)
+        .raw(`
+        MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite {id: $inviteId})
+        SET invite.emailSentAt = null
+        RETURN invite.id AS id
+    `);
+    await runAudienceMutation(query);
+};
+
+/** Ends delivery work for an invite: it attached, was emailed, or there is nothing left to do. */
+export const finishContractRequestInviteDelivery = async (inviteId: string): Promise<void> => {
+    await neogma.queryRunner.run(
+        `MATCH (invite:ContractRequestInvite {id: $inviteId})
+         REMOVE invite.deliveryPending, invite.deliveryNextAt`,
+        { inviteId }
+    );
+};
+
+/** Schedules another delivery attempt after a failure. */
+export const retryContractRequestInviteDelivery = async (
+    inviteId: string,
+    nextAt: string
+): Promise<void> => {
+    await neogma.queryRunner.run(
+        `MATCH (invite:ContractRequestInvite {id: $inviteId})
+         SET invite.deliveryNextAt = $nextAt,
+             invite.deliveryAttempts = coalesce(invite.deliveryAttempts, 0) + 1`,
+        { inviteId, nextAt }
+    );
 };

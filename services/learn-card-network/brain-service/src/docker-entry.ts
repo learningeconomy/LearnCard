@@ -6,7 +6,10 @@ import {
     runIntegrationEventPass,
 } from '@helpers/integration-events.helpers';
 import { runConsentFlowDeadlinePass } from '@helpers/consentflow-deadline.helpers';
-import { expireContractRequestInvites } from '@helpers/contract-request-invites.helpers';
+import {
+    deliverContractRequestInvites,
+    expireContractRequestInvites,
+} from '@helpers/contract-request-invites.helpers';
 import { configureInboxBatchBodyLimit } from '@helpers/inbox-batch-http.helpers';
 import { environment } from '@environment';
 import Fastify from 'fastify';
@@ -74,6 +77,10 @@ const runContractEventPass = (): void => {
     contractEventPass = runIntegrationEventPass()
         .catch(() => {
             console.warn('integration_events: pass_failed');
+        })
+        .then(() => deliverContractRequestInvites())
+        .catch(() => {
+            console.warn('contract_request_invite: delivery_pending');
         })
         .then(() => dispatchContractEvents())
         .catch(() => {
