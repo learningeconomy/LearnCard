@@ -15,7 +15,7 @@ import {
 import { ConsentFlowTerms, ConsentFlowTransaction, ConsentFlowContract } from '@models';
 import { neogma } from '@instance';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
-import { DbContractType, DbTermsType } from 'types/consentflowcontract';
+import { DbContractType, DbTermsType, DbTermsValidator } from 'types/consentflowcontract';
 import { getBoostUri, sendBoost, stampIssuanceDate } from '@helpers/boost.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
@@ -905,17 +905,30 @@ export const pruneDeletedUrisFromConsentTerms = async (
         return await session.executeWrite(async dbTransaction => {
             // The route's snapshot can predate a consent update. Lock the same
             // contract as delivery/withdrawal before reading current sharing data.
-            const locked = await dbTransaction.run(
+            const parent = await dbTransaction.run(
                 `MATCH (terms:ConsentFlowTerms {id:$termsId})-[:CONSENTS_TO]->(contract:ConsentFlowContract)
-                 SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1
-                 WITH terms, contract
-                 WHERE coalesce(terms.status, 'live') = 'live'
-                 RETURN properties(terms) AS terms`,
+                 RETURN contract.id AS contractId`,
                 { termsId: terms.id }
             );
+            if (!parent.records.length) return 0;
+            const lockAndRead = lockContractAudience(
+                new QueryBuilder(new BindParam({ termsId: terms.id })),
+                parent.records[0]!.get('contractId')
+            ).raw(`MATCH (terms:ConsentFlowTerms {id:$termsId})-[:CONSENTS_TO]->(contract)
+                   WHERE coalesce(terms.status, 'live') = 'live'
+                   RETURN properties(terms) AS terms`);
+            const locked = await dbTransaction.run(
+                lockAndRead.getStatement(),
+                lockAndRead.getBindParam().get()
+            );
             if (!locked.records.length) return 0;
-            const current = inflateObject(locked.records[0]!.get('terms')) as DbTermsType;
-            const updatedTerms = current.terms;
+            const current = DbTermsValidator.safeParse(
+                inflateObject(locked.records[0]!.get('terms'))
+            );
+            // Maintenance must not rewrite malformed stored consent. Empty legacy
+            // permissions retain the canonical validator's defaults and become a no-op.
+            if (!current.success) return 0;
+            const updatedTerms = current.data.terms;
             const existingFlat = flattenObject({ terms: updatedTerms });
             let removedSharedUris = 0;
 

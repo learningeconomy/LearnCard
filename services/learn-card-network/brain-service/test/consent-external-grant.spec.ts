@@ -229,6 +229,77 @@ describe('Consent external grant issuance fence', () => {
         await expectNoDelivery(fixture.termsUri);
     });
 
+    it.each(['missing', 'invalid-sharing', 'invalid-grant'] as const)(
+        'leaves %s stored terms untouched during pruning',
+        async shape => {
+            const fixture = await setupConsent();
+            await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: fixture.termsUri,
+                terms: {
+                    ...normalFullTerms,
+                    externalGrant,
+                    read: {
+                        ...normalFullTerms.read,
+                        credentials: {
+                            ...normalFullTerms.read.credentials,
+                            categories: {
+                                ...normalFullTerms.read.credentials.categories,
+                                Achievement: {
+                                    sharing: true,
+                                    shared: ['deleted-uri', 'retained-uri'],
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+            const snapshot = (await getContractTermsByUri(fixture.termsUri))!.terms;
+            const original = await neogma.queryRunner.run(
+                'MATCH (terms:ConsentFlowTerms {id:$id}) RETURN properties(terms) AS properties',
+                { id: snapshot.id }
+            );
+            const properties: Record<string, unknown> = original.records[0]!.get('properties');
+            const malformed =
+                shape === 'missing'
+                    ? Object.fromEntries(
+                          Object.entries(properties).filter(([key]) => !key.startsWith('terms.'))
+                      )
+                    : {
+                          ...properties,
+                          ...(shape === 'invalid-sharing'
+                              ? {
+                                    'terms.read.credentials.categories.Achievement.sharing':
+                                        'not-a-boolean',
+                                }
+                              : { 'terms.externalGrant.revision': -1 }),
+                      };
+            await neogma.queryRunner.run(
+                'MATCH (terms:ConsentFlowTerms {id:$id}) SET terms = $properties',
+                { id: snapshot.id, properties: malformed }
+            );
+            const before = await neogma.queryRunner.run(
+                `MATCH (terms:ConsentFlowTerms {id:$id})
+                 OPTIONAL MATCH (transaction:ConsentFlowTransaction)-[:IS_FOR]->(terms)
+                 RETURN properties(terms) AS properties, count(transaction) AS audits`,
+                { id: snapshot.id }
+            );
+            // The caller's snapshot remains valid; maintenance must validate the
+            // fresh database node, not trust this earlier read.
+            await expect(pruningMocks.prune(snapshot, ['deleted-uri'])).resolves.toBe(0);
+            const after = await neogma.queryRunner.run(
+                `MATCH (terms:ConsentFlowTerms {id:$id})
+                 OPTIONAL MATCH (transaction:ConsentFlowTransaction)-[:IS_FOR]->(terms)
+                 RETURN properties(terms) AS properties, count(transaction) AS audits`,
+                { id: snapshot.id }
+            );
+            expect(after.records).toHaveLength(1);
+            expect(after.records[0]!.get('properties')).toEqual(
+                before.records[0]!.get('properties')
+            );
+            expect(after.records[0]!.get('audits')).toEqual(before.records[0]!.get('audits'));
+        }
+    );
+
     describe.each(['withdraw', 'revision bump'] as const)(
         'concurrent route contention: %s',
         mutation => {
