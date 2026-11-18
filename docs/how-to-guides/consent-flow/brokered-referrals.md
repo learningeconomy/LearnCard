@@ -161,6 +161,24 @@ export const sendReferral = async (referrer, { contractUri, learnerProfileId, re
         message: 'Career support is available through this partner.',
     });
 
+// Invite a person by email when you do not know their profile. The answer is always
+// { requestId, status: 'pending' }, whether or not the email has an account.
+export const sendReferralByEmail = async (referrer, { contractUri, email, reference }) =>
+    referrer.invoke.sendContractRequest({
+        contractUri,
+        targetEmail: email,
+        externalReferenceId: reference,
+        message: 'Career support is available through this partner.',
+    });
+
+// Read one request by the ID that sendContractRequest returned. An email-addressed
+// request shows target.email, and no profile or DID, until the person accepts.
+export const trackReferral = async (referrer, { contractUri, requestId }) =>
+    referrer.invoke.getContractRequest(contractUri, requestId);
+
+export const cancelReferral = async (referrer, { contractUri, requestId }) =>
+    referrer.invoke.cancelContractRequest(contractUri, { requestId });
+
 // Reconcile current state when a webhook is delayed or unavailable.
 // The caller sees only requests and data its role and current consent allow.
 export const pollReferral = async (client, { contractUri, learnerDid }) => {
@@ -185,6 +203,8 @@ export const pollReferral = async (client, { contractUri, learnerDid }) => {
 <!-- /snippet -->
 
 Call `sendReferral(referrer, { contractUri, learnerProfileId, reference: 'referral-123' })`. The reference connects later permitted events to your external referral record. Sending the invitation grants no access to learner data.
+
+The call returns `{ requestId, status }`. Store `requestId` with your referral record: `trackReferral(referrer, { contractUri, requestId })` reads the request and `cancelReferral(referrer, { contractUri, requestId })` cancels it. When you know only an email address, call `sendReferralByEmail(referrer, { contractUri, email, reference })`. The answer is always `pending`, whether or not that email has an account. If it has none, the person receives one invitation email and the request reaches them when they sign up and verify the address; an invitation that reaches nobody expires after 30 days. Until the person accepts, you see only the email in `target`, never their profile or DID. See [Invite by email](../../sdks/learncard-network/contract-requests-and-events.md#invite-by-email).
 
 The owner manages recipients before the first consent. Additions freeze after that point; removals revoke future data discovery and require clients to review the new audience version. Sending a request does not authorize data access.
 
@@ -291,7 +311,7 @@ See [the referral lifecycle concept page](../../core-concepts/consent-and-permis
 
 ## Poll when webhooks are unavailable
 
-Call `pollReferral(referrer, { contractUri, learnerDid })` from the module above on a bounded schedule suited to your integration. `getContractSentRequests` returns the caller's visible invitation statuses. The brain route `getConsentedDataForDid` is named `getConsentFlowDataForDid` in the SDK; it returns paginated current data across permitted contracts, so the example reads every page and filters by `contractUri`.
+Call `pollReferral(referrer, { contractUri, learnerDid })` from the module above on a bounded schedule suited to your integration. `getContractSentRequests` returns the caller's visible invitation statuses, including email invitations; a row for an email-addressed request has `target.email` and no `profile` until it is accepted. The brain route `getConsentedDataForDid` is named `getConsentFlowDataForDid` in the SDK; it returns paginated current data across permitted contracts, so the example reads every page and filters by `contractUri`.
 
 For HTTP-only clients, use `GET /consent-flow-contracts/sent-requests?contractUri=<encoded-uri>` and `POST /consent-flow-contract/data-for-did` with `{ "did": "<learner-did>", "limit": 25 }`, passing the read token as a bearer token. Follow `hasMore`/`cursor` for the data response. The paths are relative to `brainApiUrl`. Request status alone is not proof of current consent: an accepted referral remains accepted after withdrawal, while current data reads return no permitted record. Polling cannot recover a missed event history, or force an unclaimed/unsynchronized outcome into the data view.
 

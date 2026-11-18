@@ -11,7 +11,8 @@ const snippets = resolve(__dirname, '../../../docs/snippets/contract-requests');
 const { initializeReferralClients } = await import(`${snippets}/initialize.mjs`);
 const { configureReferralPartner } = await import(`${snippets}/configure-partner.mjs`);
 const { createReferralToken } = await import(`${snippets}/scoped-token.mjs`);
-const { sendReferral, pollReferral } = await import(`${snippets}/request-and-poll.mjs`);
+const { sendReferral, pollReferral, sendReferralByEmail, trackReferral, cancelReferral } =
+    await import(`${snippets}/request-and-poll.mjs`);
 const { writeReferralOutcome } = await import(`${snippets}/write-outcome.mjs`);
 const { claimAndShareOutcome } = await import(`${snippets}/claim-and-sync.mjs`);
 
@@ -146,4 +147,75 @@ describe('Docs: contract request integrator snippets', () => {
         await partner.invoke.revokeAuthGrant(partnerGrant.grantId);
         await referrer.invoke.revokeAuthGrant(referrerGrant.grantId);
     }, 180_000);
+
+    it('invites by email and tracks the request by its ID', async () => {
+        const suffix = randomBytes(5).toString('hex');
+        const { partner, referrer } = await initializeReferralClients({
+            partnerSeed: randomBytes(32).toString('hex'),
+            referrerSeed: randomBytes(32).toString('hex'),
+            networkUrl: 'http://localhost:4000/trpc',
+            lcaApiUrl: 'http://localhost:5200/trpc',
+            clientOptions: {
+                didkit: readFile(
+                    require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
+                ),
+                cloud: { url: 'http://localhost:4100/trpc' },
+            },
+        });
+        for (const [role, account] of [
+            ['partner', partner],
+            ['referrer', referrer],
+        ] as const) {
+            await account.invoke.createProfile({
+                profileId: `docs-inv-${role}-${suffix}`,
+                displayName: `Synthetic ${role}`,
+                bio: '',
+                shortBio: '',
+            });
+        }
+        const referrerProfile = await referrer.invoke.getProfile();
+        if (!referrerProfile) throw new Error('Missing synthetic profile');
+        const contractUri = await partner.invoke.createContract({
+            name: `Synthetic email referral ${suffix}`,
+            recipients: [referrerProfile.profileId],
+            contract: {
+                read: { personal: {}, credentials: { categories: {} } },
+                write: { personal: {}, credentials: { categories: {} } },
+            },
+        });
+
+        const email = `docs-invite-${suffix}@example.com`;
+        const sent = await sendReferralByEmail(referrer, {
+            contractUri,
+            email,
+            reference: `docs-invite-${suffix}`,
+        });
+        expect(sent).toEqual({ requestId: expect.any(String), status: 'pending' });
+        // An identical retry returns the same request.
+        expect(
+            await sendReferralByEmail(referrer, {
+                contractUri,
+                email,
+                reference: `docs-invite-${suffix}`,
+            })
+        ).toEqual(sent);
+
+        const tracked = await trackReferral(referrer, { contractUri, requestId: sent.requestId });
+        expect(tracked).toMatchObject({
+            requestId: sent.requestId,
+            status: 'pending',
+            externalReferenceId: `docs-invite-${suffix}`,
+            target: { email },
+        });
+        const listed = await referrer.invoke.getContractSentRequests(contractUri);
+        expect(listed).toHaveLength(1);
+        expect(listed[0]).not.toHaveProperty('profile');
+
+        expect(await cancelReferral(referrer, { contractUri, requestId: sent.requestId })).toBe(
+            true
+        );
+        expect(
+            (await trackReferral(referrer, { contractUri, requestId: sent.requestId })).status
+        ).toBe('cancelled');
+    }, 120_000);
 });
