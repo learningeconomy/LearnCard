@@ -254,7 +254,7 @@ test('full key calculation survives app-only second commits, invalidates SDK/con
     );
     const key = specification(f.workspace).key;
     fs.writeFileSync(path.join(f.workspace, 'apps/learn-card-app/src/app.ts'), 'frontend-v2');
-    for (const file of [uiFile, registryFile]) write(path.join(f.workspace, file), 'v2');
+    write(path.join(f.workspace, uiFile), 'v2');
     git('add', '.');
     git(
         '-c',
@@ -275,6 +275,7 @@ test('full key calculation survives app-only second commits, invalidates SDK/con
         'packages/common/source.ts',
         'docs/snippets/quickstart/send.mjs',
         uiManifest,
+        registryFile,
         otherRegistry,
     ]) {
         const previous = fs.readFileSync(path.join(f.workspace, file));
@@ -283,20 +284,17 @@ test('full key calculation survives app-only second commits, invalidates SDK/con
         fs.writeFileSync(path.join(f.workspace, file), previous);
     }
     // A dependency in either consumer graph makes that source an SDK input again.
-    for (const [role, project, root, file] of [
-        ['browser', 'base', 'packages/learn-card-base', uiFile],
-        ['service', 'registries', 'packages/learn-card-registries', registryFile],
-    ]) {
+    for (const role of ['browser', 'service']) {
         const withDependency = graphs();
         const graph = withDependency[role].graph;
-        graph.nodes[project] = { data: { root } };
-        graph.dependencies.common.push({ target: project });
+        graph.nodes.base = { data: { root: 'packages/learn-card-base' } };
+        graph.dependencies.common.push({ target: 'base' });
         write(graphFile, JSON.stringify(withDependency));
         const dependentKey = specification(f.workspace).key;
         assert.notEqual(dependentKey, key);
-        write(path.join(f.workspace, file), 'v3');
+        write(path.join(f.workspace, uiFile), 'v3');
         assert.notEqual(specification(f.workspace).key, dependentKey);
-        write(path.join(f.workspace, file), 'v2');
+        write(path.join(f.workspace, uiFile), 'v2');
     }
     write(graphFile, JSON.stringify(g));
     // Unsupported tracked inputs must disable reuse rather than hash a link target or

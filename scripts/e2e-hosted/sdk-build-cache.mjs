@@ -318,14 +318,10 @@ export const specification = workspace => {
     ) {
         throw new Error('Untracked SDK cache input');
     }
-    // These files feed the app and the published registry. Include them again if
-    // either SDK consumer starts compiling their project, directly or transitively.
+    // Hash LearnCard Base UI sources if either SDK consumer depends on their project.
     const files = tracked.filter(file => {
         if (!selected(file)) return false;
-        if (
-            file.startsWith('packages/learn-card-base/src/') ||
-            file === 'packages/learn-card-registries/trusted/registry.json'
-        ) {
+        if (file.startsWith('packages/learn-card-base/src/')) {
             return builtPlan.sourceRoots.some(root => file.startsWith(`${root}/`));
         }
         return true;
