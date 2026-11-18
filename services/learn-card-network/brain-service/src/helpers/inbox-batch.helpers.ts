@@ -6,6 +6,7 @@ import type {
     IssueInboxCredentialBatch,
     IssueInboxCredentialBatchItemResult,
     IssueInboxCredentialBatchResponse,
+    IssueInboxCredentialType,
 } from '@learncard/types';
 import {
     IssueInboxCredentialValidator,
@@ -59,7 +60,7 @@ class InboxBatchConflict extends TRPCError {
     }
 }
 
-const replayResult = (
+export const replayResult = (
     stored: string,
     requestHash: string,
     index: number
@@ -93,6 +94,26 @@ const replayResult = (
         });
     }
     return { ...result, index, deduplicated: true };
+};
+
+/** The durable item identity shared by batch and ordinary single requests. */
+export const inboxItemReplayKey = (issuer: string, key: string): string =>
+    `client:${fingerprint([issuer, key])}`;
+
+/** Use the same parsed effective input for worker and read-only replay checks. */
+export const inboxItemRequestHash = (input: IssueInboxCredentialType): string => {
+    const { idempotencyKey: _key, ...withoutKey } = input;
+    // Batch merging always materializes an empty configuration, even when the
+    // single request omitted it. Preserve that existing fingerprint representation.
+    const parsed = IssueInboxCredentialValidator.parse({
+        ...withoutKey,
+        configuration: withoutKey.configuration ?? {},
+    });
+    if (parsed.configuration?.signingAuthority) {
+        parsed.configuration.signingAuthority.name =
+            parsed.configuration.signingAuthority.name.toLowerCase();
+    }
+    return fingerprint(parsed);
 };
 
 /**
@@ -185,7 +206,7 @@ export const issueInboxBatch = async (
                     input.configuration.signingAuthority.name =
                         input.configuration.signingAuthority.name.toLowerCase();
                 }
-                const requestHash = key ? fingerprint(input) : '';
+                const requestHash = key ? inboxItemRequestHash(input) : '';
                 if (key) {
                     const stored = await replayCache.get(key);
                     if (stored === undefined) throw unavailable();
