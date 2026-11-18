@@ -4,6 +4,7 @@ import { MemoryRouter, Route } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HcpEntry, HcpGrant } from 'learn-card-base/hcp/useHcp';
 
+import ActivitySection from './ActivitySection';
 import AppsSection from './AppsSection';
 import HcpConnectPage from './HcpConnectPage';
 import HcpPage from './HcpPage';
@@ -14,6 +15,7 @@ const state = vi.hoisted(() => ({
     mutate: vi.fn(),
     grants: [] as unknown[],
     entries: [] as unknown[],
+    events: [] as unknown[],
     truncated: false,
     changeFailed: false,
     loadFailed: false,
@@ -43,6 +45,13 @@ vi.mock('learn-card-base/hcp/useHcp', () => ({
         isPending: false,
         isError: state.loadFailed,
         data: state.grants,
+        refetch: state.refetch,
+    }),
+    useHcpActivity: () => ({
+        isPending: false,
+        isError: state.loadFailed,
+        data: { pages: [{ events: state.events, nextCursor: null }] },
+        hasNextPage: false,
         refetch: state.refetch,
     }),
     useHcpEntries: () => ({
@@ -86,6 +95,7 @@ beforeEach(() => {
     state.mutate.mockReset();
     state.grants = [];
     state.entries = [];
+    state.events = [];
     state.truncated = false;
     state.changeFailed = false;
     state.loadFailed = false;
@@ -174,6 +184,44 @@ describe('HCP apps with access', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Stop sharing' }));
         expect(state.mutate).toHaveBeenCalledWith({ kind: 'revoke', grantId: 'grant-1' });
+    });
+});
+
+describe('HCP activity (LC-2422)', () => {
+    const appEvent = (eventType: string, extra: Record<string, unknown>) => ({
+        eventId: `urn:uuid:${eventType}`,
+        eventType,
+        timestamp: '2026-11-18T19:00:00.000Z',
+        participants: {
+            initiator: { role: 'context-client', id: CLIENT },
+            authorizingPrincipal: { id: 'did:key:z6MkMe' },
+            provider: { id: 'did:web:brain' },
+        },
+        entryId: null,
+        categories: [],
+        purpose: DEFAULT_PURPOSE_CODE,
+        purposeDescription: null,
+        grantId: 'grant-1',
+        data: {},
+        ...extra,
+    });
+
+    it("shows an app's read and refusal by the app's name", () => {
+        state.grants = [{ grantId: 'grant-1', client: { id: CLIENT, name: 'Demo Tutor' } }];
+        state.events = [
+            appEvent('https://learncard.com/hcp/v1/events/read-denied', {
+                data: { operation: 'query', grantStatus: 'active' },
+            }),
+            appEvent('context.read', {
+                categories: ['goals_and_constraints', 'education_learner_profile'],
+                disclosed: [{ entryId: 'urn:uuid:e1', version: 1 }],
+            }),
+        ];
+        render(<ActivitySection />);
+        expect(screen.getByText('Demo Tutor saw your Goals and Learning')).toBeTruthy();
+        expect(
+            screen.getByText("Demo Tutor asked for info it isn't allowed to see and got nothing")
+        ).toBeTruthy();
     });
 });
 

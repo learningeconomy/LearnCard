@@ -9,11 +9,13 @@ import {
 import type { EntryRecord, EntryVersion, StoredEvent } from '../store/port';
 import {
     orderCategories,
+    READ_DENIED_EVENT,
     REGISTERED_CATEGORY_IDS,
     type Assertion,
     type AuditEventType,
     type Category,
     type CreateEntryInput,
+    type DisclosedEntry,
     type EntryStatus,
     type EntryView,
     type GetEntryInput,
@@ -26,7 +28,7 @@ import {
     type WithdrawResult,
 } from '../schemas';
 import { urn, type HcpV1Caller, type HcpV1Deps } from './deps';
-import { malformed, scopeDenied, versionConflict } from './errors';
+import { HcpV1Error, malformed, scopeDenied, versionConflict } from './errors';
 import { rankLexically, toDisclosure, toEntry } from './views';
 
 /** Draft 3 §5.2.1 default and §7.2 ceiling. */
@@ -271,7 +273,119 @@ export const createEntry = async (
     return view(deps, actor, record, record.current, visible);
 };
 
-export const queryEntries = async (
+type ReadRequest = {
+    grantId?: string;
+    purpose: string;
+    purposeDescription?: string;
+};
+
+/** What `disclosed` records for one entry (Draft 3 §8.2): id, version, and any useUntil. */
+const disclosedEntry = (
+    record: EntryRecord,
+    version: EntryVersion,
+    shown: EntryView
+): DisclosedEntry => ({
+    entryId: record.header.id,
+    version: version.version,
+    ...('useUntil' in shown ? { useUntil: shown.useUntil } : {}),
+});
+
+/** Members every access-log event shares: purpose and, when stated, the task. */
+const accessEvent = (deps: HcpV1Deps, request: ReadRequest, at: string) => ({
+    eventId: urn(deps.newId()),
+    timestamp: at,
+    providerId: deps.providerId,
+    purpose: request.purpose,
+    ...(request.purposeDescription === undefined
+        ? {}
+        : { purposeDescription: request.purposeDescription }),
+});
+
+/**
+ * Draft 3 §8.1 `context.read`, for any query or get entry, the subject's own
+ * included. Recorded before the result is returned: v1 declares synchronous audit
+ * durability (§8.4), so a read whose event does not record fails, returning
+ * nothing. `categories` are those disclosed (to a client, only those its grant
+ * covers); `data.categoriesSearched` holds what a query looked in.
+ */
+const recordRead = async (
+    deps: HcpV1Deps,
+    actor: Actor,
+    request: ReadRequest,
+    read: {
+        at: string;
+        retrievalId: string;
+        entryId: string | null;
+        disclosed: { entry: DisclosedEntry; categories: Category[] }[];
+        data: Record<string, unknown>;
+    }
+): Promise<void> =>
+    deps.activity.record({
+        ...accessEvent(deps, request, read.at),
+        eventType: 'context.read',
+        subjectDid: actor.subjectDid,
+        initiator: initiator(actor),
+        entryId: read.entryId,
+        categories: orderCategories(read.disclosed.flatMap(item => item.categories)),
+        grantId: actor.kind === 'client' ? actor.grant.grantId : null,
+        retrievalId: read.retrievalId,
+        disclosed: read.disclosed.map(item => item.entry),
+        data: read.data,
+    });
+
+/**
+ * Runs a read. When a Context Client is refused under a grant issued to it, the
+ * refusal is recorded in the subject's log before the error is returned
+ * (READ_DENIED_EVENT, a LearnCard extension). A caller presenting no grant, or a
+ * grant issued to another client, is refused without an event. The response is
+ * the same `scope-denied` either way (Draft 3 §5.5).
+ */
+const loggingDenials = async <T>(
+    deps: HcpV1Deps,
+    caller: HcpV1Caller,
+    request: ReadRequest & { operation: 'query' | 'get'; categories?: Category[]; ref?: string },
+    read: () => Promise<T>
+): Promise<T> => {
+    try {
+        return await read();
+    } catch (error) {
+        if (
+            !(error instanceof HcpV1Error) ||
+            error.type !== 'scope-denied' ||
+            request.grantId === undefined
+        )
+            throw error;
+        const grant = await deps.store.getGrant(request.grantId);
+        if (!grant || grant.client.id !== caller.did) throw error;
+
+        const entryId =
+            request.ref === undefined
+                ? null
+                : await deps.store.resolveRef(grant.grantId, request.ref);
+        await deps.activity.record({
+            ...accessEvent(deps, request, deps.now().toISOString()),
+            eventType: READ_DENIED_EVENT,
+            subjectDid: grant.subjectDid,
+            initiator: { role: 'context-client', id: caller.did },
+            entryId,
+            categories: request.categories ? orderCategories(request.categories) : [],
+            grantId: grant.grantId,
+            data: { operation: request.operation, grantStatus: grant.status },
+        });
+        throw error;
+    }
+};
+
+export const queryEntries = (
+    deps: HcpV1Deps,
+    caller: HcpV1Caller,
+    input: QueryInput
+): Promise<QueryResult> =>
+    loggingDenials(deps, caller, { ...input, operation: 'query' }, () =>
+        runQuery(deps, caller, input)
+    );
+
+const runQuery = async (
     deps: HcpV1Deps,
     caller: HcpV1Caller,
     input: QueryInput
@@ -324,24 +438,48 @@ export const queryEntries = async (
         reachable.map(({ record }) => record)
     ).slice(0, limit);
 
-    // TODO(LC-2422): record `context.read` with `disclosed` through deps.activity.
-    const entries = await Promise.all(
-        ranked.map(record =>
-            view(deps, actor, record, record.current, visibleById.get(record.header.id)!)
-        )
+    const shown = await Promise.all(
+        ranked.map(async record => {
+            const visible = visibleById.get(record.header.id)!;
+            const entry = await view(deps, actor, record, record.current, visible);
+            return {
+                entry,
+                disclosed: {
+                    entry: disclosedEntry(record, record.current, entry),
+                    categories: actor.kind === 'client' ? visible : record.header.categories,
+                },
+            };
+        })
     );
 
+    const at = deps.now().toISOString();
+    const retrievalId = urn(deps.newId());
+    await recordRead(deps, actor, input, {
+        at,
+        retrievalId,
+        entryId: null,
+        disclosed: shown.map(item => item.disclosed),
+        data: { maxEntries: limit, categoriesSearched, directives: [] },
+    });
+
     return {
-        entries,
-        retrievalId: urn(deps.newId()),
+        entries: shown.map(item => item.entry),
+        retrievalId,
         minimization: { method: 'lexical' },
         categoriesSearched,
         directives: [],
-        timestamp: deps.now().toISOString(),
+        timestamp: at,
     };
 };
 
-export const getEntry = async (
+export const getEntry = (
+    deps: HcpV1Deps,
+    caller: HcpV1Caller,
+    input: GetEntryInput
+): Promise<GetEntryResult> =>
+    loggingDenials(deps, caller, { ...input, operation: 'get' }, () => runGet(deps, caller, input));
+
+const runGet = async (
     deps: HcpV1Deps,
     caller: HcpV1Caller,
     input: GetEntryInput
@@ -373,13 +511,28 @@ export const getEntry = async (
         visible = disclosable;
     }
 
-    // TODO(LC-2422): record `context.read` with `disclosed` through deps.activity.
+    const entry = await view(deps, actor, record, version, visible);
+    const at = deps.now().toISOString();
+    const retrievalId = urn(deps.newId());
+    await recordRead(deps, actor, input, {
+        at,
+        retrievalId,
+        entryId: record.header.id,
+        disclosed: [
+            {
+                entry: disclosedEntry(record, version, entry),
+                categories: actor.kind === 'client' ? visible : record.header.categories,
+            },
+        ],
+        data: { directives: [] },
+    });
+
     return {
-        entry: await view(deps, actor, record, version, visible),
-        retrievalId: urn(deps.newId()),
+        entry,
+        retrievalId,
         minimization: { method: 'none' },
         directives: [],
-        timestamp: deps.now().toISOString(),
+        timestamp: at,
     };
 };
 

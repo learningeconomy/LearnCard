@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { HcpEntry, HcpEvent } from 'learn-card-base/hcp/useHcp';
 
-import { activitySentence, appNames, categoryName, groupEntries } from './hcpModel';
+import {
+    activitySentence,
+    appNames,
+    categoryName,
+    groupEntries,
+    READ_DENIED_EVENT,
+} from './hcpModel';
 
 const entry = (id: string, categories: string[]): HcpEntry =>
     ({
@@ -23,6 +29,7 @@ const event = (overrides: Partial<HcpEvent>): HcpEvent => ({
     entryId: null,
     categories: [],
     purpose: null,
+    purposeDescription: null,
     grantId: 'grant-1',
     data: {},
     ...overrides,
@@ -101,6 +108,49 @@ describe('HCP activity sentences', () => {
         expect(
             activitySentence(event({ eventType: 'grant.expired', grantId: 'gone' }), names)
         ).toBe('Sharing with An app ended');
+    });
+
+    it('says what an app saw, where it found nothing, and when it was refused (LC-2422)', () => {
+        const byApp = {
+            participants: {
+                initiator: { role: 'context-client' as const, id: 'did:key:tutor' },
+                authorizingPrincipal: { id: 'did:key:me' },
+                provider: { id: 'did:web:brain' },
+                retrievalId: 'urn:uuid:r1',
+            },
+        };
+        expect(
+            activitySentence(
+                event({
+                    ...byApp,
+                    eventType: 'context.read',
+                    categories: ['goals_and_constraints', 'education_learner_profile'],
+                    disclosed: [{ entryId: 'urn:uuid:e1', version: 1 }],
+                }),
+                names
+            )
+        ).toBe('Demo Tutor saw your Goals and Learning');
+        expect(
+            activitySentence(
+                event({
+                    ...byApp,
+                    eventType: 'context.read',
+                    categories: [],
+                    disclosed: [],
+                    data: { categoriesSearched: ['goals_and_constraints'] },
+                }),
+                names
+            )
+        ).toBe('Demo Tutor looked in your Goals and found nothing');
+        expect(activitySentence(event({ ...byApp, eventType: READ_DENIED_EVENT }), names)).toBe(
+            "Demo Tutor asked for info it isn't allowed to see and got nothing"
+        );
+        expect(
+            activitySentence(
+                event({ eventType: 'context.read', grantId: null, categories: ['work_context'] }),
+                names
+            )
+        ).toBe('You looked up your info');
     });
 
     it('learns app names from grant.issued events', () => {

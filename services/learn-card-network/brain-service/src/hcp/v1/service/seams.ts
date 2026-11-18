@@ -6,14 +6,15 @@ import type { HcpV1Store, StoredEvent } from '../store/port';
 import type { Category } from '../schemas';
 
 /**
- * Records standalone activity (`context.exported`, then LC-2422 access/denial
- * events). State-changing lifecycle events go directly to the store alongside
- * their change so both commit atomically; never publish them through this sink.
+ * Records standalone activity: `context.exported`, and the access log
+ * (`context.read` and read denials, LC-2422). State-changing lifecycle events go
+ * directly to the store alongside their change so both commit atomically; never
+ * publish them through this sink. `record` must resolve only once the event is
+ * durable: v1 declares synchronous audit durability (Draft 3 §8.4), and a read
+ * whose event fails to record fails with it.
  */
 export interface ActivitySink {
     record(event: StoredEvent): Promise<void>;
-    // TODO(LC-2422): access log. Record `context.read` (with `disclosed`) on query and
-    // get entry, and denial events, through this same sink.
 }
 
 export const createStoreActivitySink = (store: HcpV1Store): ActivitySink => ({

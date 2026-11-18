@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { StoredEvent } from '../store/port';
 import {
     GENERAL_CONTEXT_PROFILE,
     QueryInputSchema,
+    READ_DENIED_EVENT,
     ReviseEntryInputSchema,
     type Disclosure,
     type Entry,
@@ -75,7 +77,11 @@ describe('HCP v1 entries: the Context Subject', () => {
         expect(got.minimization).toEqual({ method: 'none' });
 
         const events = await h.store.listEvents(SUBJECT_DID, {}, { limit: 10 });
-        expect(events.map(e => e.eventType)).toEqual(['context.created']);
+        expect(events.map(e => e.eventType)).toEqual([
+            'context.read',
+            'context.read',
+            'context.created',
+        ]);
     });
 
     it('rejects a write about another subject', async () => {
@@ -514,7 +520,7 @@ describe('HCP v1 entries: revise and withdraw', () => {
 });
 
 describe('HCP v1 entries: denied requests change nothing', () => {
-    it('leaves entries, versions, grants and events untouched', async () => {
+    it('leaves entries, versions, grants and events untouched, logging only the read denial', async () => {
         const h = makeHarness();
         const created = await subjectCreate(h);
         const grantId = await issueGrant(h.deps);
@@ -541,7 +547,11 @@ describe('HCP v1 entries: denied requests change nothing', () => {
             revokeGrant(h.deps, otherClient, grantId),
         ];
         for (const denial of denials) await expect(denial).rejects.toMatchObject(DENIED);
-        expect(await h.snapshot()).toEqual(before);
+
+        const after = (await h.snapshot()) as { events: StoredEvent[] };
+        const added = after.events.filter(e => e.eventType === READ_DENIED_EVENT);
+        expect(added).toHaveLength(1);
+        expect({ ...after, events: after.events.filter(e => !added.includes(e)) }).toEqual(before);
     });
 });
 

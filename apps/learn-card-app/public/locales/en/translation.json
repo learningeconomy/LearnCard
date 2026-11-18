@@ -10648,6 +10648,10 @@
             "youStopped": "You stopped sharing with {{app}}",
             "appStopped": "{{app}} stopped using your info",
             "ended": "Sharing with {{app}} ended",
+            "youRead": "You looked up your info",
+            "appRead": "{{app}} saw your {{categories}}",
+            "appReadNothing": "{{app}} looked in your {{categories}} and found nothing",
+            "appDenied": "{{app}} asked for info it isn't allowed to see and got nothing",
             "more": "Show more",
             "emptyTitle": "No activity yet",
             "emptyBody": "When you or an app uses your info, you'll see it here."

@@ -148,12 +148,26 @@ const smoke = async (): Promise<void> => {
     if (denied !== 'scope-denied') throw new Error('agent could still read after revoke');
 
     const { events } = await mine.audit.list.query({ limit: 50 });
+    // The brain's LearnCard read-denied event type is a URI; show its last segment.
+    const label = (eventType: string) => eventType.split('/').at(-1)!;
     step(
         `activity: ${events
-            .map(e => e.eventType)
+            .map(e => label(e.eventType))
             .reverse()
             .join(' → ')}`
     );
+    // LC-2422: the agent's read is in the person's log, with what it disclosed.
+    const agentRead = events.find(
+        e => e.eventType === 'context.read' && e.grantId === grant.grantId
+    );
+    if (!agentRead) throw new Error("the agent's read is missing from the activity log");
+    step(
+        `logged read: ${agentRead.disclosed?.length ?? 0} entries disclosed in ${agentRead.categories.join(', ')}`
+    );
+    if ((agentRead.disclosed?.length ?? 0) !== seen.length)
+        throw new Error('the logged read does not match what the agent received');
+    if (!events.some(e => label(e.eventType) === 'read-denied' && e.grantId === grant.grantId))
+        throw new Error('the refused read after stop is missing from the activity log');
     step(`active grants left: ${(await mine.grants.list.query({ status: 'active' })).length}`);
 };
 

@@ -14,6 +14,7 @@ import { appRouter, createContext } from '../src/app';
 import { getClient, getUser } from './helpers/getClient';
 
 const PURPOSE = 'https://purpose.example/tutoring';
+const READ_DENIED = 'https://learncard.com/hcp/v1/events/read-denied' as const;
 const GENERAL = 'https://hcp.example/spec/profiles/general-context/2.0';
 const BADGES = 'https://learncard.com/hcp/categories/badges';
 const LABELS = [
@@ -246,12 +247,87 @@ describe('HCP v1 router (hcp.v1.*)', () => {
             'context.created',
             'context.created',
             'grant.issued',
+            'context.read',
+            READ_DENIED, // health_context is outside the grant
             'context.revised',
             'context.withdrawn',
+            READ_DENIED, // get of the withdrawn entry
             'context.exported',
             'grant.revoked',
+            READ_DENIED, // query under the revoked grant
         ]);
         await expect(asAgent.audit.list({})).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    });
+
+    it("shows an agent's reads and refusals to the subject in audit.list (LC-2422)", async () => {
+        const subjectDid = subject.learnCard.id.did();
+        const agentDid = agent.learnCard.id.did();
+        const own = subject.clients.fullAuth.hcp.v1;
+        const asAgent = agent.clients.fullAuth.hcp.v1;
+
+        const created = (await own.entries.create(
+            entry(subjectDid, 'Learns best with examples')
+        )) as { id: string };
+        const { grantId } = await own.grants.create({
+            client: { id: agentDid, name: 'Demo Tutor' },
+            access: [
+                {
+                    actions: ['read'],
+                    categories: ['education_learner_profile', 'goals_and_constraints'],
+                    purposes: [{ code: PURPOSE, description: 'Tutoring' }],
+                },
+            ],
+        });
+
+        const result = await asAgent.entries.query({
+            grantId,
+            query: 'examples',
+            purpose: PURPOSE,
+            purposeDescription: 'Plan a lesson',
+        });
+        const ref = (result.entries[0] as { ref: string }).ref;
+        const got = await asAgent.entries.get({ grantId, ref, purpose: PURPOSE });
+        await expect(
+            asAgent.entries.query({
+                grantId,
+                query: 'x',
+                purpose: 'https://purpose.example/advertising',
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN', hcp: { type: 'scope-denied' } });
+
+        const reads = await own.audit.list({ eventTypes: ['context.read'] });
+        expect(reads.events).toHaveLength(2);
+        const [getRead, queryRead] = reads.events;
+        expect(queryRead).toMatchObject({
+            participants: {
+                initiator: { role: 'context-client', id: agentDid },
+                retrievalId: result.retrievalId,
+            },
+            categories: ['education_learner_profile'],
+            purpose: PURPOSE,
+            purposeDescription: 'Plan a lesson',
+            grantId,
+            disclosed: [{ entryId: created.id, version: 1 }],
+            data: {
+                maxEntries: 5,
+                categoriesSearched: ['goals_and_constraints', 'education_learner_profile'],
+            },
+        });
+        expect(getRead).toMatchObject({
+            entryId: created.id,
+            participants: { retrievalId: got.retrievalId },
+            disclosed: [{ entryId: created.id, version: 1 }],
+        });
+        expect(JSON.stringify(reads)).not.toContain(ref);
+
+        const denials = await own.audit.list({ eventTypes: [READ_DENIED] });
+        expect(denials.events).toEqual([
+            expect.objectContaining({
+                grantId,
+                purpose: 'https://purpose.example/advertising',
+                data: { operation: 'query', grantStatus: 'active' },
+            }),
+        ]);
     });
 
     it('rejects malformed requests at the boundary', async () => {
@@ -393,7 +469,8 @@ describe('HCP v1 router (hcp.v1.*)', () => {
                 HcpV1EntryVersion: 2,
                 HcpV1EntryRef: 1,
                 HcpV1Grant: 1,
-                HcpV1Event: 3,
+                // created, revised, grant.issued, and the agent's context.read
+                HcpV1Event: 4,
             });
             const theirsBefore = await hcpNodes(theirsDid, [theirsGrant]);
             expect(theirsBefore).toEqual(before);

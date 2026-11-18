@@ -365,6 +365,40 @@ export const describeHcpV1StoreContract = (
             expect(window.map(e => e.eventId)).toEqual(['urn:uuid:ev2']);
         });
 
+        it('round-trips access-log members, and leaves them absent where unset (LC-2422)', async () => {
+            const read = event('urn:uuid:read', 1, {
+                eventType: 'context.read',
+                initiator: { role: 'context-client', id: 'did:key:z6MkClient' },
+                categories: ['goals_and_constraints'],
+                purpose: 'https://purpose.example/assist',
+                purposeDescription: 'Plan my week',
+                grantId: 'urn:uuid:g1',
+                retrievalId: 'urn:uuid:r1',
+                disclosed: [
+                    { entryId: 'urn:uuid:e1', version: 2, useUntil: at(61) },
+                    { entryId: 'urn:uuid:e2', version: 1 },
+                ],
+                data: { maxEntries: 5, categoriesSearched: ['goals_and_constraints'] },
+            });
+            const empty = event('urn:uuid:read-empty', 2, {
+                eventType: 'context.read',
+                retrievalId: 'urn:uuid:r2',
+                disclosed: [],
+            });
+            const lifecycle = event('urn:uuid:created', 3);
+            for (const e of [read, empty, lifecycle]) await store.appendEvent(e);
+
+            expect(await store.listEvents(SUBJECT, {}, { limit: 10 })).toEqual([
+                lifecycle,
+                empty,
+                read,
+            ]);
+            const [stored] = await store.listEvents(SUBJECT, {}, { limit: 1 });
+            expect(stored).not.toHaveProperty('disclosed');
+            expect(stored).not.toHaveProperty('retrievalId');
+            expect(stored).not.toHaveProperty('purposeDescription');
+        });
+
         describe('writes each lifecycle change and its event atomically', () => {
             const DUP = 'urn:uuid:dup';
             const dup = (): StoredEvent => event(DUP, 0);

@@ -13,6 +13,7 @@ import type {
     GrantSource,
     GrantStatus,
     AuditEventType,
+    DisclosedEntry,
     InitiatorRole,
     Provenance,
 } from '../schemas';
@@ -75,6 +76,10 @@ export type StoredEvent = {
     purpose: string | null;
     grantId: string | null;
     data: Record<string, unknown>;
+    /** Access-log members (Draft 3 §8.2); absent on lifecycle events. */
+    purposeDescription?: string;
+    retrievalId?: string;
+    disclosed?: DisclosedEntry[];
 };
 
 export type EventFilter = {

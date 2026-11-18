@@ -153,6 +153,25 @@ export const appNames = (grants: readonly HcpGrant[], events: readonly HcpEvent[
     return names;
 };
 
+/**
+ * The brain's LearnCard event type for a refused read (hcp/v1/schemas.ts
+ * READ_DENIED_EVENT). The switch below fails to compile if the brain renames it.
+ */
+export const READ_DENIED_EVENT = 'https://learncard.com/hcp/v1/events/read-denied';
+
+const stringList = (value: unknown): string[] =>
+    Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
+/** A read: what an app saw, or where it looked and found nothing (Draft 3 §8.1 `context.read`). */
+const readSentence = (event: HcpEvent, app: string, byApp: boolean): string => {
+    if (!byApp) return m['hcp.activity.youRead']();
+    if (event.categories.length > 0)
+        return m['hcp.activity.appRead']({ app, categories: categoryList(event.categories) });
+    // A client query always searches at least one category its grant reads.
+    const searched = stringList(event.data.categoriesSearched);
+    return m['hcp.activity.appReadNothing']({ app, categories: categoryList(searched) });
+};
+
 /** One plain sentence for an audit event. */
 export const activitySentence = (event: HcpEvent, names: ReadonlyMap<string, string>): string => {
     const app = (event.grantId && names.get(event.grantId)) || m['hcp.activity.anApp']();
@@ -173,6 +192,10 @@ export const activitySentence = (event: HcpEvent, names: ReadonlyMap<string, str
                 : m['hcp.activity.youRemoved']({ categories });
         case 'context.expired':
             return m['hcp.activity.expired']({ categories });
+        case 'context.read':
+            return readSentence(event, app, byApp);
+        case READ_DENIED_EVENT:
+            return m['hcp.activity.appDenied']({ app });
         case 'context.exported':
             return m['hcp.activity.exported']();
         case 'grant.issued':

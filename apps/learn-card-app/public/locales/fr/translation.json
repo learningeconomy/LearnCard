@@ -10585,6 +10585,10 @@
             "youStopped": "Vous avez arrêté le partage avec {{app}}",
             "appStopped": "{{app}} n'utilise plus vos infos",
             "ended": "Le partage avec {{app}} a pris fin",
+            "youRead": "Vous avez consulté vos infos",
+            "appRead": "{{app}} a vu {{categories}}",
+            "appReadNothing": "{{app}} a cherché dans {{categories}} sans rien trouver",
+            "appDenied": "{{app}} a demandé des infos auxquelles il n'a pas accès et n'a rien reçu",
             "more": "Voir plus",
             "emptyTitle": "Aucune activité",
             "emptyBody": "Quand vous ou une appli utilisez vos infos, cela apparaît ici."

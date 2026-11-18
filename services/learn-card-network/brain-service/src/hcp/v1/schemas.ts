@@ -468,11 +468,21 @@ export type Grant = z.infer<typeof GrantSchema>;
 // ---------------------------------------------------------------------------
 
 /**
- * Lifecycle events v1 records. TODO(LC-2422): `context.read` and denial events
- * belong to the access log and are recorded through the same ActivitySink.
+ * LearnCard extension event type: a Context Client's read refused for its grant
+ * (expired or revoked, a category or purpose it does not cover, or an entry out of
+ * reach). Draft 3 §8.1 names no denial event, so the type is an absolute URI under
+ * a LearnCard domain, as §A.3 asks of custom values. Records nothing about what
+ * the request would have returned.
+ */
+export const READ_DENIED_EVENT = 'https://learncard.com/hcp/v1/events/read-denied';
+
+/**
+ * Event types v1 records (Draft 3 §8.1). State changes commit with their event;
+ * `context.read`, `context.exported` and read denials go through the ActivitySink.
  */
 export const AuditEventTypeSchema = z.enum([
     'context.created',
+    'context.read',
     'context.revised',
     'context.withdrawn',
     'context.expired',
@@ -480,11 +490,24 @@ export const AuditEventTypeSchema = z.enum([
     'grant.issued',
     'grant.revoked',
     'grant.expired',
+    READ_DENIED_EVENT,
 ]);
 export type AuditEventType = z.infer<typeof AuditEventTypeSchema>;
 
 export const InitiatorRoleSchema = z.enum(['management-client', 'context-client', 'hcp-provider']);
 export type InitiatorRole = z.infer<typeof InitiatorRoleSchema>;
+
+/**
+ * One entry a retrieval disclosed (Draft 3 §8.2 `disclosed`), named by its stable
+ * id, never the client's ref. `useUntil` is present only on disclosures to a
+ * Context Client; the subject reading their own entry receives no copy limit.
+ */
+export const DisclosedEntrySchema = z.object({
+    entryId: z.string(),
+    version: z.number().int(),
+    useUntil: z.string().optional(),
+});
+export type DisclosedEntry = z.infer<typeof DisclosedEntrySchema>;
 
 export const AuditEventSchema = z.object({
     eventId: z.string(),
@@ -494,11 +517,16 @@ export const AuditEventSchema = z.object({
         initiator: z.object({ role: InitiatorRoleSchema, id: z.string() }),
         authorizingPrincipal: z.object({ id: z.string() }),
         provider: z.object({ id: z.string() }),
+        /** Present on `context.read` (Draft 3 §3.9): the result's retrievalId. */
+        retrievalId: z.string().optional(),
     }),
     entryId: z.string().nullable(),
     categories: z.array(z.string()),
     purpose: z.string().nullable(),
+    purposeDescription: z.string().nullable(),
     grantId: z.string().nullable(),
+    /** Present on `context.read` only (Draft 3 §8.2). */
+    disclosed: z.array(DisclosedEntrySchema).optional(),
     data: z.record(z.string(), z.unknown()),
 });
 export type AuditEvent = z.infer<typeof AuditEventSchema>;

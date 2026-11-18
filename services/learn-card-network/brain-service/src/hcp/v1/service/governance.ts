@@ -27,11 +27,14 @@ const toAuditEvent = (event: StoredEvent): AuditEvent => ({
         initiator: event.initiator,
         authorizingPrincipal: { id: event.subjectDid },
         provider: { id: event.providerId },
+        ...(event.retrievalId === undefined ? {} : { retrievalId: event.retrievalId }),
     },
     entryId: event.entryId,
     categories: event.categories,
     purpose: event.purpose,
+    purposeDescription: event.purposeDescription ?? null,
     grantId: event.grantId,
+    ...(event.disclosed === undefined ? {} : { disclosed: event.disclosed }),
     data: event.data,
 });
 

@@ -187,6 +187,9 @@ const eventProps = (e: StoredEvent): Props => ({
     purpose: e.purpose,
     grantId: e.grantId,
     data: json(e.data),
+    purposeDescription: e.purposeDescription ?? null,
+    retrievalId: e.retrievalId ?? null,
+    disclosed: e.disclosed === undefined ? null : json(e.disclosed),
 });
 
 const toEvent = (p: Props): StoredEvent => ({
@@ -204,6 +207,9 @@ const toEvent = (p: Props): StoredEvent => ({
     purpose: strOrNull(p.purpose),
     grantId: strOrNull(p.grantId),
     data: parse(p.data),
+    ...(p.purposeDescription == null ? {} : { purposeDescription: str(p.purposeDescription) }),
+    ...(p.retrievalId == null ? {} : { retrievalId: str(p.retrievalId) }),
+    ...(p.disclosed == null ? {} : { disclosed: parse(p.disclosed) }),
 });
 
 const toRecord = (row: { get(key: string): unknown }): EntryRecord => ({

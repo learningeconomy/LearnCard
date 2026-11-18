@@ -148,8 +148,33 @@ together or not at all, and a change that does not happen (`false`) writes no ev
 This covers create, revise, withdraw, lazy entry expiry, grant issue, revoke and
 lazy grant expiry. The memory store checks the event before it mutates anything.
 `ActivitySink` is only for events with no state change of their own:
-`context.exported` today, and the LC-2422 access log (`context.read`, denials)
-later. Lifecycle events never go through it.
+`context.exported` and the access log (`context.read` and read denials, below).
+Lifecycle events never go through it.
+
+### Access log (LC-2422)
+
+Every query and get entry appends a Draft 3 §8.1 `context.read` before the result
+is returned, the subject's own reads included (§8.1 says "any query or get entry";
+the app's My info uses `entries.list`, which is not a §5.2 read and logs nothing).
+v1 declares synchronous audit durability (§8.4), so if the event cannot be
+recorded, the read fails and returns nothing.
+
+A `context.read` carries the §8.2 members: `participants.retrievalId` (the result's),
+`purpose`, `purposeDescription`, `grantId`, `entryId` (get only), `categories` (those
+disclosed; to a client, only those its grant covers), and `disclosed`: each entry's
+stable `id`, `version` and, for a client, `useUntil`. `data` holds `maxEntries` and
+`categoriesSearched` (query) and `directives` (always empty in v1). The log names
+entries by id, never the client's `ref`, and never records the query text.
+
+Draft 3 has no denial event. When a client is refused a read under a grant issued
+to it (expired or revoked grant, a category or purpose the grant does not cover, an
+entry out of reach), v1 appends the LearnCard extension event
+`https://learncard.com/hcp/v1/events/read-denied` (`READ_DENIED_EVENT`; a URI, as
+§A.3 asks of custom values) with `purpose`, `purposeDescription`, the requested
+`categories`, `entryId` where the `ref` names one under that grant, and `data`
+`{ operation: 'query' | 'get', grantStatus }`. The response is the same
+`scope-denied`. A caller with no grant, or presenting another client's grant, is
+refused with no event: it names no subject whose log should hold it.
 
 ### Profile delete
 
@@ -199,11 +224,10 @@ src/hcp/
 
 ## Seams (stubbed, not built)
 
-| Seam           | Where              | Today                                                          | Follow-up                                    |
-| -------------- | ------------------ | -------------------------------------------------------------- | -------------------------------------------- |
-| `WritePolicy`  | `service/seams.ts` | always `{ kind: 'write' }`                                     | LC-2423 suggest vs write                     |
-| `ActivitySink` | `service/seams.ts` | records events with no state change (`context.exported`)       | LC-2422 access log (`context.read`, denials) |
-| grant `source` | `schemas.ts`       | `{ type: 'direct' }` only; `consentflow` is typed and rejected | LC-2421 consent-flow versioning              |
+| Seam           | Where              | Today                                                          | Follow-up                       |
+| -------------- | ------------------ | -------------------------------------------------------------- | ------------------------------- |
+| `WritePolicy`  | `service/seams.ts` | always `{ kind: 'write' }`                                     | LC-2423 suggest vs write        |
+| grant `source` | `schemas.ts`       | `{ type: 'direct' }` only; `consentflow` is typed and rejected | LC-2421 consent-flow versioning |
 
 ## Decisions
 
@@ -224,10 +248,9 @@ src/hcp/
 ## Not in v1
 
 Out of scope by decision: consent-flow templates, semantic search, identity proofs.
-Not implemented yet (Draft 3 has them): `context.read` audit events (LC-2422). Until
-they ship, an agent's reads do not show in the app's Activity tab. The remaining gaps are
-Idempotency-Key (§9.6), onward sharing and `context.shared` (§5.2.8), standing rules
-and directives (§6.3, §6.4), confirmation (§3.8), recategorize and restrict purposes,
+Not implemented yet (Draft 3 has them): Idempotency-Key (§9.6), onward sharing and
+`context.shared` (§5.2.8), standing rules and directives (§6.3, §6.4), confirmation
+(§3.8), recategorize and restrict purposes,
 hard delete and import (§5.4), narrowed grants (§6.1.5.1), the `provenance` action
 (§7.4.1), relationships and conflicts (§4.2.3, §4.7), VC evidence ingest (§14),
 the MCP binding. Relevance ordering is `lexical` (§7.3).
@@ -331,13 +354,15 @@ Then, with `HCP_BRAIN_URL` and `HCP_APP_URL` set to your brain and app (defaults
     An agent can't list its own grants (Draft 3 §5.4), so `read` needs the id. The
     screens don't show grant ids; copy `grantId` from the `hcp.v1.grants.list` response
     in the browser's network tab. The agent sees only Goals and Learning, so `[]` means
-    nothing is saved under those two yet. The read does not show in Activity until
-    LC-2422.
+    nothing is saved under those two yet. Activity then shows "Demo Tutor saw your Goals
+    and Learning", or "Demo Tutor looked in your Goals and Learning and found nothing".
 
 5. Choose Stop sharing. Activity then shows "You stopped sharing with Demo Tutor", and
-   `read` now fails with `scope-denied`.
+   `read` now fails with `scope-denied`. That refused read shows in Activity as "Demo
+   Tutor asked for info it isn't allowed to see and got nothing".
 
-`bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts smoke` runs the same flow over the API with a throwaway person.
+`bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts smoke` runs the same flow over the API with a throwaway person,
+and fails unless the person's log holds the agent's `context.read` (matching what it received) and the refused read after Stop sharing.
 The script refuses any brain that is not on localhost.
 
 ## Tests
