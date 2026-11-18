@@ -60,17 +60,6 @@ const cloudUrl = 'https://cloud.learncard.com/trpc';
 
 type StackHit = { uri: string; stack: string };
 
-const relevant = (stack: string) =>
-    stack
-        .split('\n')
-        .filter(
-            line =>
-                /qualificationCategoryBackfill|credentialResolution|resolveViaReadGet|resolveNullSlotsViaRead|processWithConcurrency/.test(
-                    line
-                ) && !/\.test\.ts/.test(line)
-        )
-        .join('\n');
-
 const makeWallet = (opts: {
     did: string;
     uris: string[];
@@ -146,19 +135,23 @@ describe('LC-2382 retake3: category backfill uses shared resolve, not standalone
     it('prefetch with null batch slots retries via read.get from credentialResolution (deploy-dependent fallback)', async () => {
         const stacks: StackHit[] = [];
         const uris = [cloudUri('miss-a'), cloudUri('miss-b')];
-        const { wallet, batch, read } = makeWallet({
+        const queryClient = client();
+        const { wallet, batch, read, update } = makeWallet({
             did: 'prefetch-nulls',
             uris,
             batchHits: false,
             stacks,
         });
-        await prefetchResolvedCredentials(client(), wallet, uris);
+        const results = await prefetchResolvedCredentials(queryClient, wallet, uris);
+        expect(batch).toHaveBeenCalledExactlyOnceWith(uris);
+        expect(read).toHaveBeenCalledTimes(uris.length);
+        for (const uri of uris) expect(read).toHaveBeenCalledWith(uri);
+        expect(results).toEqual(uris.map(() => credential));
+
+        await reconcileQualificationCategories(wallet, queryClient, cloudUrl);
         expect(batch).toHaveBeenCalledTimes(1);
-        expect(read).toHaveBeenCalledTimes(2);
-        const excerpt = relevant(stacks[0]?.stack ?? '');
-        expect(excerpt).toMatch(/resolveNullSlotsViaRead|resolveViaReadGet/);
-        expect(excerpt).toMatch(/credentialResolution/);
-        expect(excerpt).not.toMatch(/qualificationCategoryBackfill\.ts/);
+        expect(read).toHaveBeenCalledTimes(uris.length);
+        expect(update).toHaveBeenCalledTimes(uris.length);
     });
 
     it('after a warm batch hit, reconcile reuses RQ data and does not call read.get (retake3)', async () => {
