@@ -195,7 +195,10 @@ export const activitySentence = (event: HcpEvent, names: ReadonlyMap<string, str
         case 'context.read':
             return readSentence(event, app, byApp);
         case READ_DENIED_EVENT:
-            return m['hcp.activity.appDenied']({ app });
+            // Events before the stranger log carry no reason: they were the grant's own client.
+            return event.data.reason === 'not-grant-client'
+                ? m['hcp.activity.strangerDenied']({ app })
+                : m['hcp.activity.appDenied']({ app });
         case 'context.exported':
             return m['hcp.activity.exported']();
         case 'grant.issued':

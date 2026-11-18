@@ -334,11 +334,12 @@ const recordRead = async (
     });
 
 /**
- * Runs a read. When a Context Client is refused under a grant issued to it, the
- * refusal is recorded in the subject's log before the error is returned
- * (READ_DENIED_EVENT, a LearnCard extension). A caller presenting no grant, or a
- * grant issued to another client, is refused without an event. The response is
- * the same `scope-denied` either way (Draft 3 §5.5).
+ * Runs a read. When a caller presenting a grant is refused, the refusal is recorded
+ * in that grant's subject's log before the error is returned (READ_DENIED_EVENT, a
+ * LearnCard extension): `data.reason` is `outside-grant` for the grant's own client
+ * and `not-grant-client` for any other DID. No grant, an unknown grant, or the
+ * subject presenting their own grant records nothing. The response is the same
+ * `scope-denied` either way (Draft 3 §5.5).
  */
 const loggingDenials = async <T>(
     deps: HcpV1Deps,
@@ -356,12 +357,14 @@ const loggingDenials = async <T>(
         )
             throw error;
         const grant = await deps.store.getGrant(request.grantId);
-        if (!grant || grant.client.id !== caller.did) throw error;
+        if (!grant || caller.subjectDid === grant.subjectDid) throw error;
+        const ownClient = grant.client.id === caller.did;
 
+        // Only the grant's own client holds refs under it; a stranger's ref names nothing.
         const entryId =
-            request.ref === undefined
-                ? null
-                : await deps.store.resolveRef(grant.grantId, request.ref);
+            ownClient && request.ref !== undefined
+                ? await deps.store.resolveRef(grant.grantId, request.ref)
+                : null;
         await deps.activity.record({
             ...accessEvent(deps, request, deps.now().toISOString()),
             eventType: READ_DENIED_EVENT,
@@ -370,7 +373,11 @@ const loggingDenials = async <T>(
             entryId,
             categories: request.categories ? orderCategories(request.categories) : [],
             grantId: grant.grantId,
-            data: { operation: request.operation, grantStatus: grant.status },
+            data: {
+                operation: request.operation,
+                reason: ownClient ? 'outside-grant' : 'not-grant-client',
+                grantStatus: grant.status,
+            },
         });
         throw error;
     }

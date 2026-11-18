@@ -172,9 +172,17 @@ entry out of reach), v1 appends the LearnCard extension event
 `https://learncard.com/hcp/v1/events/read-denied` (`READ_DENIED_EVENT`; a URI, as
 §A.3 asks of custom values) with `purpose`, `purposeDescription`, the requested
 `categories`, `entryId` where the `ref` names one under that grant, and `data`
-`{ operation: 'query' | 'get', grantStatus }`. The response is the same
-`scope-denied`. A caller with no grant, or presenting another client's grant, is
-refused with no event: it names no subject whose log should hold it.
+`{ operation: 'query' | 'get', reason: 'outside-grant', grantStatus }`. The
+response is the same `scope-denied`.
+
+A caller presenting a grant id that exists but was issued to another client is
+logged the same way in that grant's subject's log, with the caller's DID as the
+`context-client` initiator and `data.reason: 'not-grant-client'`. Its `ref` is not
+resolved (a stranger holds no refs under the grant), so `entryId` is null. The
+response is the same `scope-denied`, so the caller learns nothing about the grant.
+A caller with no grant or an unknown grant id is refused with no event: it names no
+subject whose log should hold it. Nor is the subject presenting their own grant id
+logged; they are refused as any other non-client caller.
 
 ### Profile delete
 

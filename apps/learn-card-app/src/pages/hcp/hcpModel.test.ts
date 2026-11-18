@@ -147,6 +147,26 @@ describe('HCP activity sentences', () => {
         );
         expect(
             activitySentence(
+                event({
+                    ...byApp,
+                    eventType: READ_DENIED_EVENT,
+                    data: { reason: 'outside-grant' },
+                }),
+                names
+            )
+        ).toBe("Demo Tutor asked for info it isn't allowed to see and got nothing");
+        expect(
+            activitySentence(
+                event({
+                    ...byApp,
+                    eventType: READ_DENIED_EVENT,
+                    data: { reason: 'not-grant-client' },
+                }),
+                names
+            )
+        ).toBe("An app you haven't shared with tried to use Demo Tutor's access and got nothing");
+        expect(
+            activitySentence(
                 event({ eventType: 'context.read', grantId: null, categories: ['work_context'] }),
                 names
             )

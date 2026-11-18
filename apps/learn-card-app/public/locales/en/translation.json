@@ -10652,6 +10652,7 @@
             "appRead": "{{app}} saw your {{categories}}",
             "appReadNothing": "{{app}} looked in your {{categories}} and found nothing",
             "appDenied": "{{app}} asked for info it isn't allowed to see and got nothing",
+            "strangerDenied": "An app you haven't shared with tried to use {{app}}'s access and got nothing",
             "more": "Show more",
             "emptyTitle": "No activity yet",
             "emptyBody": "When you or an app uses your info, you'll see it here."

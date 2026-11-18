@@ -8,6 +8,7 @@ import { revokeGrant } from './grants';
 import type { HcpV1Deps } from './deps';
 import {
     CLIENT_DID,
+    OTHER_CLIENT_DID,
     OTHER_PURPOSE,
     PURPOSE,
     SUBJECT_DID,
@@ -235,7 +236,7 @@ describe('HCP v1 access log: read denials (LearnCard extension)', () => {
             purpose: OTHER_PURPOSE,
             purposeDescription: 'Sell ads',
             grantId,
-            data: { operation: 'query', grantStatus: 'active' },
+            data: { operation: 'query', reason: 'outside-grant', grantStatus: 'active' },
         });
         expect(byCategory).toMatchObject({ categories: ['health_context'] });
         // A ref from another grant names no entry under this one.
@@ -268,17 +269,54 @@ describe('HCP v1 access log: read denials (LearnCard extension)', () => {
         ]);
     });
 
-    it('records nothing for a caller with no grant, or with a grant issued to another client', async () => {
+    it("records a stranger's attempt with another client's grant, with the same response", async () => {
+        const h = makeHarness();
+        const created = await subjectCreate(h);
+        const grantId = await issueGrant(h.deps);
+        const [found] = (await queryEntries(h.deps, client, query({ grantId })))
+            .entries as Disclosure[];
+
+        const stranger = await queryEntries(h.deps, otherClient, query({ grantId })).catch(
+            (error: unknown) => error
+        );
+        const own = await queryEntries(
+            h.deps,
+            client,
+            query({ grantId, purpose: OTHER_PURPOSE })
+        ).catch((error: unknown) => error);
+        // Identical to the caller: same error type and detail (Draft 3 §5.5).
+        expect(stranger).toMatchObject(DENIED);
+        expect(stranger).toEqual(own);
+        await expect(
+            getEntry(h.deps, otherClient, { grantId, ref: found!.ref, purpose: PURPOSE })
+        ).rejects.toMatchObject(DENIED);
+
+        const [byGet, , byQuery] = await audit(h, [READ_DENIED_EVENT]);
+        expect(byQuery).toMatchObject({
+            participants: { initiator: { role: 'context-client', id: OTHER_CLIENT_DID } },
+            grantId,
+            entryId: null,
+            data: { operation: 'query', reason: 'not-grant-client', grantStatus: 'active' },
+        });
+        // A stranger's ref names nothing, even one that is valid under the grant.
+        expect(byGet).toMatchObject({
+            entryId: null,
+            data: { operation: 'get', reason: 'not-grant-client' },
+        });
+        expect(JSON.stringify(byGet)).not.toContain(created.id);
+    });
+
+    it('records nothing for no grant, an unknown grant, or the subject presenting their own grant', async () => {
         const h = makeHarness();
         const grantId = await issueGrant(h.deps);
 
-        await expect(queryEntries(h.deps, otherClient, query({ grantId }))).rejects.toMatchObject(
-            DENIED
-        );
         await expect(queryEntries(h.deps, client, query())).rejects.toMatchObject(DENIED);
         await expect(
             queryEntries(h.deps, client, query({ grantId: 'urn:uuid:no-such-grant' }))
         ).rejects.toMatchObject(DENIED);
+        await expect(queryEntries(h.deps, subject, query({ grantId }))).rejects.toMatchObject(
+            DENIED
+        );
 
         expect(await audit(h, [READ_DENIED_EVENT, 'context.read'])).toEqual([]);
     });

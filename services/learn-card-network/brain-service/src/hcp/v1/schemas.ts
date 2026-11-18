@@ -468,11 +468,13 @@ export type Grant = z.infer<typeof GrantSchema>;
 // ---------------------------------------------------------------------------
 
 /**
- * LearnCard extension event type: a Context Client's read refused for its grant
- * (expired or revoked, a category or purpose it does not cover, or an entry out of
- * reach). Draft 3 §8.1 names no denial event, so the type is an absolute URI under
- * a LearnCard domain, as §A.3 asks of custom values. Records nothing about what
- * the request would have returned.
+ * LearnCard extension event type: a read refused under an existing grant.
+ * `data.reason` is `outside-grant` when the grant's own client asked for more than
+ * it covers (expired or revoked, a category or purpose it does not cover, an entry
+ * out of reach), or `not-grant-client` when another DID presented the grant.
+ * Draft 3 §8.1 names no denial event, so the type is an absolute URI under a
+ * LearnCard domain, as §A.3 asks of custom values. Records nothing about what the
+ * request would have returned.
  */
 export const READ_DENIED_EVENT = 'https://learncard.com/hcp/v1/events/read-denied';
 

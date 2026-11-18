@@ -247,6 +247,7 @@ describe('HCP v1 router (hcp.v1.*)', () => {
             'context.created',
             'context.created',
             'grant.issued',
+            READ_DENIED, // otherAgent presented the agent's grant
             'context.read',
             READ_DENIED, // health_context is outside the grant
             'context.revised',
@@ -320,12 +321,44 @@ describe('HCP v1 router (hcp.v1.*)', () => {
         });
         expect(JSON.stringify(reads)).not.toContain(ref);
 
+        // Another DID presenting the grant: same response, logged as a stranger.
+        const strangerError = await otherAgent.clients.fullAuth.hcp.v1.entries
+            .query({ grantId, query: 'x', purpose: PURPOSE })
+            .catch((error: { code?: string; message?: string; data?: { hcp?: unknown } }) => error);
+        const ownError = await asAgent.entries
+            .query({ grantId, query: 'x', purpose: 'https://purpose.example/advertising' })
+            .catch((error: { code?: string; message?: string; data?: { hcp?: unknown } }) => error);
+        expect(strangerError).toMatchObject({ code: 'FORBIDDEN' });
+        expect({
+            code: (strangerError as { data?: { code?: string } }).data?.code,
+            message: (strangerError as { message?: string }).message,
+            hcp: (strangerError as { data?: { hcp?: unknown } }).data?.hcp,
+        }).toEqual({
+            code: (ownError as { data?: { code?: string } }).data?.code,
+            message: (ownError as { message?: string }).message,
+            hcp: (ownError as { data?: { hcp?: unknown } }).data?.hcp,
+        });
+
         const denials = await own.audit.list({ eventTypes: [READ_DENIED] });
         expect(denials.events).toEqual([
             expect.objectContaining({
                 grantId,
+                data: { operation: 'query', reason: 'outside-grant', grantStatus: 'active' },
+            }),
+            expect.objectContaining({
+                grantId,
+                participants: expect.objectContaining({
+                    initiator: {
+                        role: 'context-client',
+                        id: otherAgent.learnCard.id.did(),
+                    },
+                }),
+                data: { operation: 'query', reason: 'not-grant-client', grantStatus: 'active' },
+            }),
+            expect.objectContaining({
+                grantId,
                 purpose: 'https://purpose.example/advertising',
-                data: { operation: 'query', grantStatus: 'active' },
+                data: { operation: 'query', reason: 'outside-grant', grantStatus: 'active' },
             }),
         ]);
     });

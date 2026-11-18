@@ -138,6 +138,16 @@ const smoke = async (): Promise<void> => {
     if (seen.some(s => s.categories.includes('general_preferences')))
         throw new Error('agent saw a category it was not granted');
 
+    // LC-2422: another app presenting this grant gets the same refusal, and is logged.
+    const stranger = await wallet(randomBytes(32).toString('hex'));
+    const strangerResult = await read(stranger.invoke.getLCNClient().hcp.v1, grant.grantId).then(
+        () => 'allowed (unexpected)',
+        (error: { data?: { hcp?: { type?: string } } }) => error.data?.hcp?.type ?? 'error'
+    );
+    step(`another app using the grant: ${strangerResult}`);
+    if (strangerResult !== 'scope-denied')
+        throw new Error("another app could use the agent's grant");
+
     await mine.grants.revoke.mutate({ grantId: grant.grantId });
     step('stopped sharing');
     const denied = await read(hcp, grant.grantId).then(
@@ -168,6 +178,15 @@ const smoke = async (): Promise<void> => {
         throw new Error('the logged read does not match what the agent received');
     if (!events.some(e => label(e.eventType) === 'read-denied' && e.grantId === grant.grantId))
         throw new Error('the refused read after stop is missing from the activity log');
+    const strangerDid = stranger.id.did();
+    const strangerLogged = events.find(
+        e =>
+            label(e.eventType) === 'read-denied' &&
+            e.participants.initiator.id === strangerDid &&
+            e.data.reason === 'not-grant-client'
+    );
+    if (!strangerLogged) throw new Error("another app's attempt is missing from the activity log");
+    step(`logged another app's attempt as ${String(strangerLogged.data.reason)}`);
     step(`active grants left: ${(await mine.grants.list.query({ status: 'active' })).length}`);
 };
 
