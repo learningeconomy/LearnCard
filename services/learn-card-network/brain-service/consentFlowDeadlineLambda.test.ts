@@ -97,7 +97,7 @@ it('boots from the secrets bundle and keeps warm deadline work independent of se
     // The forwarded context must prevent database writes after a slow cold start.
     await expect(
         consentFlowDeadlineHandler({}, { getRemainingTimeInMillis: () => 1_000 } as Context)
-    ).resolves.toEqual({ suspended: 0, expired: 0 });
+    ).resolves.toEqual({ suspended: 0, expired: 0, shareUntilPassed: 0 });
     expect(databaseRun).not.toHaveBeenCalled();
     expect(loadedEnvironment).toHaveBeenCalledExactlyOnceWith(expect.objectContaining(secrets));
 
@@ -106,7 +106,7 @@ it('boots from the secrets bundle and keeps warm deadline work independent of se
         consentFlowDeadlineHandler({ now: '2099-01-01T00:00:00.000Z' }, {
             getRemainingTimeInMillis: () => 30_000,
         } as Context)
-    ).resolves.toEqual({ suspended: 2, expired: 0 });
+    ).resolves.toEqual({ suspended: 2, expired: 0, shareUntilPassed: 0 });
     const now = '2026-01-02T00:00:00.000Z';
     const callsMatching = (text: string): unknown[][] =>
         databaseRun.mock.calls.filter(([query]) => String(query).includes(text));
@@ -125,6 +125,10 @@ it('boots from the secrets bundle and keeps warm deadline work independent of se
         ]);
     }
     expect(callsMatching('WHERE state.through IS NULL OR state.through < $now')).toHaveLength(1);
+    // The share-until scan reads only the indexed range, up to the server's own clock.
+    expect(callsMatching('USING INDEX terms:ConsentFlowTerms(nextShareUntil)')).toEqual([
+        [expect.any(String), expect.objectContaining({ now })],
+    ]);
     // No statement may contain a line comment: the query runner collapses whitespace.
     for (const [query] of databaseRun.mock.calls) expect(String(query)).not.toContain('//');
     expect(send).toHaveBeenCalledOnce();

@@ -63,6 +63,7 @@ export const toIntegrationEvent = (record: Record<string, unknown>): Integration
     const requestId = optionalString(record.requestId);
     const externalReferenceId = optionalString(record.externalReferenceId);
     const reason = optionalString(record.reason);
+    const category = optionalString(record.category);
 
     return IntegrationEventValidator.parse({
         eventId: record.eventId,
@@ -77,6 +78,7 @@ export const toIntegrationEvent = (record: Record<string, unknown>): Integration
         ...(requestId ? { requestId } : {}),
         ...(externalReferenceId ? { externalReferenceId } : {}),
         ...(reason ? { reason } : {}),
+        ...(category ? { category } : {}),
         role: record.role,
         occurredAt: record.occurredAt,
     });
@@ -336,6 +338,7 @@ const fanOutEvent = async (event: Record<string, unknown>): Promise<number> => {
                     type: type.data,
                     termsUri: role === 'requester' ? undefined : termsUri,
                     reason: optionalString(event.reason),
+                    category: optionalString(event.category),
                 }
             );
             if (wasCreated) created++;

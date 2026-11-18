@@ -2227,6 +2227,8 @@ export const IntegrationEventValidator = z.object({
     requestId: z.string().optional(),
     externalReferenceId: z.string().optional(),
     reason: z.string().optional(),
+    /** Credential category the event is about. Set for `reason: "share_until_passed"`. */
+    category: z.string().optional(),
     role: IntegrationEventRoleValidator,
     occurredAt: z.string(),
 });
