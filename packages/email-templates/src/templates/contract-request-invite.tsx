@@ -101,13 +101,16 @@ export const ContractRequestInvite: React.FC<ContractRequestInviteProps> = ({
     locale,
 }) => {
     const s = STRINGS[resolveCatalogLocale(locale)];
-    const named = names({ referrer, contractOwner });
+    const named = names({
+        ...(referrer ? { referrer } : {}),
+        ...(contractOwner ? { contractOwner } : {}),
+    });
     const body = named
         ? interpolate(s.named, { ...named, brandName: branding.brandName })
         : interpolate(s.unnamed, { brandName: branding.brandName });
 
     return (
-        <Layout branding={branding} locale={locale} preview={body}>
+        <Layout branding={branding} {...(locale ? { locale } : {})} preview={body}>
             <Text style={heading}>{s.heading}</Text>
 
             <Text style={paragraph}>{body}</Text>
@@ -130,7 +133,7 @@ export const ContractRequestInvite: React.FC<ContractRequestInviteProps> = ({
                 })}
             </Text>
 
-            <LinkFallback href={inviteUrl} locale={locale} />
+            <LinkFallback href={inviteUrl} {...(locale ? { locale } : {})} />
         </Layout>
     );
 };
