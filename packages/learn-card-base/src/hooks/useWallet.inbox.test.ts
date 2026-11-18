@@ -82,6 +82,7 @@ vi.mock('learn-card-base/constants/aiPassport', () => ({
 }));
 import { InfiniteQueryObserver, QueryClient, QueryObserver } from '@tanstack/react-query';
 import { useWallet } from './useWallet';
+import { CREDENTIAL_INDEX_STALE_TIME } from '../react-query/queries/credentialIndexCache';
 import {
     addCredentialSummary,
     clearCredentialFacts,
@@ -614,7 +615,10 @@ it.each([
         expect(observer.getCurrentResult().isFetching).toBe(true);
         expect(pages).toEqual([undefined]);
         expect(mocks.getConsentedContracts).toHaveBeenCalled();
-        expect(client.getQueryData(['useGetCredentialCount', '', 'Achievement', reader])).toBe(1);
+        // No count was fetched, so the claim must not invent one (goblincore r4617931433).
+        expect(
+            client.getQueryData(['useGetCredentialCount', '', 'Achievement', reader])
+        ).toBeUndefined();
         expect(
             client.getQueryData(['useGetCredentialList', '', 'Achievement', reader])
         ).toMatchObject({
@@ -820,6 +824,57 @@ it('refreshes the unfiltered credential count for the claiming reader after addV
     } finally {
         unsubscribes.forEach(unsubscribe => unsubscribe());
         observers.forEach(observer => observer.destroy());
+    }
+});
+
+const claimingCategoryCountKey = [
+    'useGetCredentialCount',
+    '',
+    'Achievement',
+    'did:example:claiming-account',
+] as const;
+const observeCategoryCount = (queryFn: () => Promise<number>) => {
+    const observer = new QueryObserver(mocks.queryClient!, {
+        queryKey: claimingCategoryCountKey,
+        queryFn,
+        staleTime: CREDENTIAL_INDEX_STALE_TIME,
+    });
+    const unsubscribe = observer.subscribe(() => undefined);
+    return { observer, stop: () => (unsubscribe(), observer.destroy()) };
+};
+
+it('does not invent a category count when the count was never fetched before a claim', async () => {
+    // goblincore r4617931433: 20 existing records, category count unmounted during the claim.
+    await useWallet().storeAndAddVCToWallet(credential);
+    expect(mocks.queryClient!.getQueryData(claimingCategoryCountKey)).toBeUndefined();
+
+    const serverCount = vi.fn().mockResolvedValue(21);
+    const { observer, stop } = observeCategoryCount(serverCount);
+    try {
+        await vi.waitFor(() => expect(observer.getCurrentResult().data).toBe(21));
+        expect(serverCount).toHaveBeenCalledTimes(1);
+    } finally {
+        stop();
+    }
+});
+
+it('bumps an unmounted cached category count but lets the next observer refetch the real total', async () => {
+    const serverCount = vi.fn().mockResolvedValueOnce(20).mockResolvedValue(21);
+    const first = observeCategoryCount(serverCount);
+    await vi.waitFor(() => expect(first.observer.getCurrentResult().data).toBe(20));
+    first.stop();
+
+    await useWallet().storeAndAddVCToWallet(credential);
+    expect(mocks.queryClient!.getQueryData(claimingCategoryCountKey)).toBe(21);
+    expect(serverCount).toHaveBeenCalledTimes(1);
+
+    const next = observeCategoryCount(serverCount);
+    try {
+        await vi.waitFor(() => expect(serverCount).toHaveBeenCalledTimes(2));
+        await vi.waitFor(() => expect(next.observer.getCurrentResult().isFetching).toBe(false));
+        expect(next.observer.getCurrentResult().data).toBe(21);
+    } finally {
+        next.stop();
     }
 });
 

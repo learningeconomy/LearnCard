@@ -223,13 +223,17 @@ export const useWallet = () => {
                 };
             });
 
-            await queryClient.cancelQueries({
-                queryKey: ['useGetCredentialCount', profileDid, category, readerDid],
-            });
-            queryClient.setQueryData<number>(
-                ['useGetCredentialCount', profileDid, category, readerDid],
-                currentCount => (currentCount ?? 0) + recordsByCategory.get(category)!.length
-            );
+            const countKey = ['useGetCredentialCount', profileDid, category, readerDid];
+            await queryClient.cancelQueries({ queryKey: countKey, exact: true });
+            // Only bump a count the server already returned. With nothing cached, `0 + added`
+            // would be a made-up total that CREDENTIAL_INDEX_STALE_TIME then treats as fresh.
+            const currentCount = queryClient.getQueryData(countKey);
+            if (typeof currentCount === 'number') {
+                queryClient.setQueryData<number>(
+                    countKey,
+                    currentCount + recordsByCategory.get(category)!.length
+                );
+            }
         }
 
         // Optimistic writes must settle before claim completion, but a background
@@ -239,7 +243,9 @@ export const useWallet = () => {
                 queryKey: [...listPrefix, category, readerDid],
                 exact: true,
             });
-            void queryClient.refetchQueries({
+            // Invalidate rather than refetch: mounted counts refetch now, and an unmounted
+            // (possibly bumped) count stays stale so its next observer reads the real total.
+            void queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialCount', profileDid, category, readerDid],
                 exact: true,
             });
