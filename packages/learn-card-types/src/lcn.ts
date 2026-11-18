@@ -1043,12 +1043,18 @@ export const ContractRequestFieldsValidator = ConsentFlowReferralValidator.parti
 });
 export type ContractRequestFields = z.infer<typeof ContractRequestFieldsValidator>;
 
-export const SendContractRequestValidator = z.object({
-    contractUri: z.string(),
-    targetProfileId: z.string(),
-    externalReferenceId: z.string().trim().min(1).max(256).optional(),
-    message: z.string().trim().max(500).optional(),
-});
+/** Send to a profile (`targetProfileId`, a profile ID or DID) or to an email (`targetEmail`). */
+export const SendContractRequestValidator = z
+    .object({
+        contractUri: z.string(),
+        targetProfileId: z.string().optional(),
+        targetEmail: z.string().trim().email().max(320).optional(),
+        externalReferenceId: z.string().trim().min(1).max(256).optional(),
+        message: z.string().trim().max(500).optional(),
+    })
+    .refine(value => Boolean(value.targetProfileId) !== Boolean(value.targetEmail), {
+        message: 'Provide exactly one of targetProfileId or targetEmail',
+    });
 export type SendContractRequest = z.infer<typeof SendContractRequestValidator>;
 
 export const ConsentFlowWebhookMetadataValidator = z.object({
@@ -2233,6 +2239,7 @@ export const IntegrationEventTypeValidator = z.enum([
     'request_accepted',
     'request_denied',
     'request_cancelled',
+    'request_expired',
     'consent_created',
     'consent_updated',
     'consent_withdrawn',

@@ -7,6 +7,7 @@ import {
     LCNProfileValidator,
     LCNPublicProfileValidator,
     SendContractRequestResultValidator,
+    SendContractRequestValidator,
 } from './lcn';
 
 const baseProfile = {
@@ -117,5 +118,35 @@ describe('contract request result and view validators', () => {
                 target: { email: 'person@example.com' },
             })
         ).not.toHaveProperty('profile');
+    });
+});
+
+describe('SendContractRequestValidator targets', () => {
+    const contractUri = 'lc:network:example.com/trpc:contract:1';
+
+    it('accepts exactly one of targetProfileId and targetEmail', () => {
+        expect(
+            SendContractRequestValidator.safeParse({ contractUri, targetProfileId: 'learner' })
+                .success
+        ).toBe(true);
+        expect(
+            SendContractRequestValidator.parse({ contractUri, targetEmail: ' Person@Example.com ' })
+                .targetEmail
+        ).toBe('Person@Example.com');
+        expect(SendContractRequestValidator.safeParse({ contractUri }).success).toBe(false);
+        expect(
+            SendContractRequestValidator.safeParse({
+                contractUri,
+                targetProfileId: 'learner',
+                targetEmail: 'person@example.com',
+            }).success
+        ).toBe(false);
+    });
+
+    it('rejects a malformed email', () => {
+        expect(
+            SendContractRequestValidator.safeParse({ contractUri, targetEmail: 'not-an-email' })
+                .success
+        ).toBe(false);
     });
 });

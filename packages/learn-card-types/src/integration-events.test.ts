@@ -29,12 +29,13 @@ const fullEvent = {
 };
 
 describe('IntegrationEventTypeValidator', () => {
-    it('lists exactly the thirteen event types', () => {
+    it('lists exactly the fourteen event types', () => {
         expect(IntegrationEventTypeValidator.options).toEqual([
             'request_sent',
             'request_accepted',
             'request_denied',
             'request_cancelled',
+            'request_expired',
             'consent_created',
             'consent_updated',
             'consent_withdrawn',

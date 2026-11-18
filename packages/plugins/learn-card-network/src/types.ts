@@ -886,7 +886,11 @@ export type LearnCardNetworkPluginMethods = {
         removedSharedUris: number;
     }>;
 
-    /** Sends one attributed request; an identical pending retry returns the same request ID. */
+    /**
+     * Sends one attributed request to a profile (`targetProfileId`) or to an email address
+     * (`targetEmail`); pass exactly one. An identical pending retry returns the same request ID.
+     * A send to an email always answers `pending`, whether or not the email has an account.
+     */
     sendContractRequest: (request: SendContractRequest) => Promise<SendContractRequestResult>;
     /** Reads one request by the ID that sendContractRequest returned. */
     getContractRequest: (contractUri: string, requestId: string) => Promise<ContractRequest>;

@@ -93,7 +93,7 @@ describe('decision notifications for email-addressed requests', () => {
         }
     });
 
-    it('hides the target when the target cancels, but not when the sender cancels', async () => {
+    it('hides the target when the target cancels, and notifies nobody when the sender cancels', async () => {
         const first = await create();
         await markAddressedByEmail(first, (await send(first)).requestId);
         await learner.clients.fullAuth.contracts.cancelContractRequest({
@@ -117,8 +117,8 @@ describe('decision notifications for email-addressed requests', () => {
             requestId,
         });
         await flush(second);
-        const bySender = decisions('request_cancelled');
-        expect(bySender.map(n => n.to.profileId)).toEqual([owner.profileId]);
-        expect(bySender[0]!.from.profileId).toBe(recipient.profileId);
+        // Cancelling an unattached invite notifies nobody, so cancelling an attached one must not
+        // either: a notification would show that the email has an account.
+        expect(decisions('request_cancelled')).toEqual([]);
     });
 });

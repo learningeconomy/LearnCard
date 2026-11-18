@@ -6,6 +6,10 @@ import {
     runIntegrationEventPass,
 } from '@helpers/integration-events.helpers';
 import { runConsentFlowDeadlinePass } from '@helpers/consentflow-deadline.helpers';
+import {
+    deliverContractRequestInvites,
+    expireContractRequestInvites,
+} from '@helpers/contract-request-invites.helpers';
 import { configureInboxBatchBodyLimit } from '@helpers/inbox-batch-http.helpers';
 import { environment } from '@environment';
 import Fastify from 'fastify';
@@ -64,12 +68,19 @@ const INTEGRATION_EVENT_PURGE_INTERVAL_MS = 24 * 60 * 60_000;
 // A run stays short so shutdown (which waits for it) fits an orchestrator's grace period.
 const INTEGRATION_EVENT_PURGE_BUDGET_MS = 20_000;
 const INTEGRATION_EVENT_PURGE_CONTINUE_MS = 60_000;
+let inviteExpiryTimer: NodeJS.Timeout | undefined;
+let inviteExpiryPass: Promise<unknown> | null = null;
+let inviteExpiryStopped = false;
 
 const runContractEventPass = (): void => {
     if (contractEventsStopped) return;
     contractEventPass = runIntegrationEventPass()
         .catch(() => {
             console.warn('integration_events: pass_failed');
+        })
+        .then(() => deliverContractRequestInvites())
+        .catch(() => {
+            console.warn('contract_request_invite: delivery_pending');
         })
         .then(() => dispatchContractEvents())
         .catch(() => {
@@ -122,10 +133,27 @@ const runIntegrationEventPurgePass = (): void => {
         });
 };
 
+/** Docker has no daily scheduler, so overdue contract request invites are expired hourly. */
+const runInviteExpiryPass = (): void => {
+    if (inviteExpiryStopped) return;
+    inviteExpiryPass = expireContractRequestInvites()
+        .catch(() => {
+            console.warn('contract_request_invite: expiry_pending');
+        })
+        .finally(() => {
+            inviteExpiryPass = null;
+            if (!inviteExpiryStopped)
+                inviteExpiryTimer = setTimeout(runInviteExpiryPass, 60 * 60_000);
+        });
+};
+
 server.addHook('onClose', async () => {
     integrationEventPurgeStopped = true;
     clearTimeout(integrationEventPurgeTimer);
     await integrationEventPurgePass;
+    inviteExpiryStopped = true;
+    clearTimeout(inviteExpiryTimer);
+    await inviteExpiryPass;
     contractEventsStopped = true;
     if (contractEventTimer) clearTimeout(contractEventTimer);
     await contractEventPass;
@@ -262,6 +290,7 @@ server.register(campaignUnsubscribeFastifyPlugin);
         contractEventTimer = setTimeout(runContractEventPass, 60_000);
         consentDeadlineTimer = setTimeout(runConsentDeadlinePass, 60_000);
         integrationEventPurgeTimer = setTimeout(runIntegrationEventPurgePass, 60_000);
+        inviteExpiryTimer = setTimeout(runInviteExpiryPass, 60_000);
 
         // Explicit startup after readiness. Disabled/invalid config stays inert.
         const maintenanceRuntime = createShareLinkMaintenanceRuntime();

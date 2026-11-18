@@ -15,6 +15,15 @@ import {
     canManageContractRequests,
     resolveContractRequest,
 } from '@helpers/contract-requests.helpers';
+import {
+    sendContractRequestToEmail,
+    contractRequestFromInvite,
+    attachContractRequestInvitesForProfile,
+} from '@helpers/contract-request-invites.helpers';
+import {
+    getContractRequestInvite,
+    getUnattachedContractRequestInvites,
+} from '@accesslayer/contract-request-invite/read';
 import { environment } from '@environment';
 import {
     smartResumeFingerprint,
@@ -24,7 +33,7 @@ import { uploadSmartResume } from '@helpers/smartResume.helpers';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, profileRoute, openRoute, guardianGatedRoute } from '@routes';
+import { t, profileRoute, credentialProfileRoute, openRoute, guardianGatedRoute } from '@routes';
 
 import {
     CONTRACT_APPROVAL_REQUIRED,
@@ -2285,7 +2294,9 @@ export const contractsRouter = t.router({
             return true;
         }),
 
-    sendContractRequest: profileRoute
+    // Same auth chain as profileRoute, but the input (which can carry targetEmail) is never
+    // attached to Sentry.
+    sendContractRequest: credentialProfileRoute
         .meta({
             requiredScope: 'contracts:write',
             openapi: {
@@ -2294,12 +2305,16 @@ export const contractsRouter = t.router({
                 path: '/consent-flow-contracts/request',
                 tags: ['Contracts'],
                 summary: 'Send an attributed contract request',
+                description:
+                    'Send to a profile (targetProfileId) or to an email address (targetEmail), never both. Returns the request ID. An email-addressed send always answers pending.',
             },
         })
         .input(SendContractRequestValidator)
         .output(SendContractRequestResultValidator)
         .mutation(async ({ ctx, input }) =>
-            sendGenericContractRequest(input, ctx.user.profile, ctx.domain)
+            input.targetEmail
+                ? sendContractRequestToEmail(input, ctx.user.profile, ctx.domain, ctx.tenant)
+                : sendGenericContractRequest(input, ctx.user.profile, ctx.domain)
         ),
 
     getContractRequest: profileRoute
@@ -2325,8 +2340,19 @@ export const contractsRouter = t.router({
                 input.requestId,
                 ctx.user.profile.profileId
             );
-            if (!request)
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract request not found' });
+            if (!request) {
+                const invite = await getContractRequestInvite(
+                    contract.id,
+                    input.requestId,
+                    ctx.user.profile.profileId
+                );
+                if (!invite || invite.attachedProfileId)
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Contract request not found',
+                    });
+                return contractRequestFromInvite(invite);
+            }
             return {
                 requestId: request.requestId,
                 status: request.status,
@@ -2560,7 +2586,7 @@ export const contractsRouter = t.router({
 
             const requests = await getRequestedForList(contractByUri.id, profile.profileId);
 
-            return requests.map(request => {
+            const rows = requests.map(request => {
                 const { addressedByEmail, email, profile: targetProfile, ...row } = request;
                 const target = contractRequestTarget(ctx.domain, {
                     addressedByEmail,
@@ -2572,6 +2598,27 @@ export const contractsRouter = t.router({
                     ? { ...row, target, profile: target.profile }
                     : // The read state would reveal that the email belongs to an account.
                       { ...row, readStatus: null, target };
+            });
+            // Invites with no profile yet. They have the same fields as the redacted rows above.
+            const invites = await getUnattachedContractRequestInvites(
+                contractByUri.id,
+                profile.profileId
+            );
+            // One list in send order. Listing invites after requests would reveal which
+            // emails already belong to an account.
+            return [
+                ...rows,
+                ...invites.map(invite => ({
+                    ...contractRequestFromInvite(invite),
+                    requestedBy: invite.requestedBy,
+                    ...(invite.message ? { message: invite.message } : {}),
+                    readStatus: null,
+                })),
+            ].sort((a, b) => {
+                const [left, right] = [a.requestedAt ?? '', b.requestedAt ?? ''];
+                if (left !== right) return left < right ? -1 : 1;
+                const [leftId, rightId] = [a.requestId ?? '', b.requestId ?? ''];
+                return leftId < rightId ? -1 : leftId > rightId ? 1 : 0;
             });
         }),
 
@@ -2644,6 +2691,8 @@ export const contractsRouter = t.router({
             );
 
             if (!requests?.[0]) return null;
+            // An expired email-addressed request is gone for everyone, its target included.
+            if (requests[0].status === 'expired') return null;
             // This route is keyed by profile ID. Answering for an email-addressed request
             // would confirm which profile owns the invited email, so answer as if none exists.
             if (
@@ -2902,7 +2951,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Get all contract requests for a target profile',
                 description:
-                    'Gets all contract requests from all contracts for a specified target profile. Users can query their own requests.',
+                    'Gets all contract requests from all contracts for a specified target profile. Users can query their own requests. Requests that were sent to a verified email of the profile are attached first (at most 20 per call).',
             },
         })
         .input(
@@ -2946,6 +2995,10 @@ export const contractsRouter = t.router({
                     message: 'You can only query your own contract requests.',
                 });
             }
+
+            // Safety net: convert pending invites addressed to this profile's verified emails
+            // (at most 20 per call). Never throws; a failure leaves the invite pending.
+            await attachContractRequestInvitesForProfile(profile, ctx.domain);
 
             const requests = await getAllRequestsForTargetProfile(resolvedTargetProfileId);
 
