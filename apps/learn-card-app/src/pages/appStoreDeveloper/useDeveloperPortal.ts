@@ -29,9 +29,11 @@ const log = getLogger('use-developer-portal');
 /** A webhook signing secret that was just returned. It is shown once, then dismissed. */
 export type RevealedWebhookSecret = { secret: string; previousSecretExpiresAt?: string };
 
-// The secret lives in the in-memory query cache only, so it outlives the Webhooks tab (tabs
-// unmount when you switch) without ever being written to web storage or logged. The key is
-// deliberately outside ['developer', 'integration', id], which the mutations invalidate.
+// The secret lives in the query cache so it outlives the Webhooks tab (tabs unmount when you
+// switch). The app persists that cache to IndexedDB/SQLite, so createQueryPersister strips
+// this key on every write and restore (withoutRevealedWebhookSecrets): keep the two in step.
+// It is never logged. The key is deliberately outside ['developer', 'integration', id],
+// which the mutations invalidate.
 const revealedWebhookSecretKey = (integrationId: string) =>
     ['developer', 'revealed-webhook-secret', integrationId] as const;
 
@@ -261,6 +263,9 @@ export const useDeveloperPortal = () => {
                 return wallet.invoke.getIntegrationWebhook(integrationId);
             },
             enabled: !!integrationId,
+            // Health changes on the server (deliveries, retries), so keep it fresh while the
+            // tab is open. React Query pauses this while the window is in the background.
+            refetchInterval: 30_000,
         });
     };
 

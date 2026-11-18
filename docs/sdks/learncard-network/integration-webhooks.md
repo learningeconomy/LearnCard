@@ -101,7 +101,7 @@ const result = await learnCard.invoke.sendIntegrationTestEvent(integrationId);
 // { delivered: false, latencyMs: 6001, error: 'timeout' }
 // { delivered: false, latencyMs: 12, error: 'network_error' }
 // { delivered: false, httpStatus: 302, latencyMs: 40, error: 'redirect' }
-// { delivered: false, error: 'invalid_webhook' | 'no_webhook' }
+// { delivered: false, error: 'invalid_webhook' }
 // { delivered: false, error: 'no_webhook' }
 ```
 
@@ -433,15 +433,15 @@ global without sharing class LearnCardWebhook {
             return;
         }
 
-        Map<String, Object> event =
-            (Map<String, Object>) JSON.deserializeUntyped(body.toString());
+        String rawBody = body.toString();
+        Map<String, Object> event = (Map<String, Object>) JSON.deserializeUntyped(rawBody);
 
         // Delivery_Key__c is a unique External ID, so a retry updates the same row.
         LearnCard_Event__c row = new LearnCard_Event__c(
             Delivery_Key__c = (String) event.get('deliveryKey'),
             Sequence__c = Decimal.valueOf(String.valueOf(event.get('sequence'))),
             Type__c = (String) event.get('type'),
-            Payload__c = body.toString()
+            Payload__c = rawBody
         );
         upsert row Delivery_Key__c;
 

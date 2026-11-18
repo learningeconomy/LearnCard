@@ -127,6 +127,8 @@ const getTestFailureText = (result: IntegrationTestEventResult): string => {
             return m['developerPortal.dashboards.tabs.webhooks.testFailedNetwork']();
         case 'invalid_webhook':
             return m['developerPortal.dashboards.tabs.webhooks.testFailedInvalid']();
+        // Not reachable from the button (it is disabled with no saved URL), but the API
+        // returns it if the URL was removed elsewhere after this tab loaded.
         case 'no_webhook':
             return m['developerPortal.dashboards.tabs.webhooks.testFailedNoWebhook']();
         default:
@@ -188,7 +190,8 @@ export const WebhooksTab: React.FC<WebhooksTabProps> = ({ integration }) => {
 
         try {
             // The secret returned by the first registration is stored by the mutation hook,
-            // so it survives this tab unmounting. It is never logged or written to web storage.
+            // so it survives this tab unmounting. It is never logged, and the query persister
+            // strips it so it is never written to IndexedDB/SQLite.
             await setWebhook.mutateAsync({
                 id: integration.id,
                 webhookUrl: trimmedUrl,

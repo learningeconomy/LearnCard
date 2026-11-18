@@ -368,9 +368,12 @@ EXPECTED_NETWORK_DID = os.environ.get('EXPECTED_NETWORK_DID', 'did:web:network.l
 # LearnCard Network DID. There is no shared secret and no signature header here.
 def verify_learncard_request(auth_header: str) -> int:
     """Return 200 when the request is from the LearnCard Network, else the status to reply with."""
-    token = auth_header.removeprefix('Bearer ').strip()
-    # Verify the DID-JWT signature with your JWT/DID library of choice
-    if not token or not verify_did_jwt(token):
+    # The scheme is case-insensitive, so "bearer <token>" is accepted too.
+    scheme, _, token = auth_header.strip().partition(' ')
+    token = token.strip()
+    # TODO: verify_did_jwt is NOT defined in this sample. Implement it with your
+    # JWT/DID library so it returns True only for a valid DID-JWT signature.
+    if scheme.lower() != 'bearer' or not token or not verify_did_jwt(token):
         return 401
 
     # A valid signature only proves SOME DID signed it, so also pin the issuer.

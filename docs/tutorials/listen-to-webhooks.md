@@ -68,6 +68,10 @@ Pass `options.webhookUrl` when you send a credential to an email or phone number
 
 Save this next to `send.mjs` as `webhook.mjs`. It verifies the DID-signed bearer token on each request (and, once you set `EXPECTED_NETWORK_DID`, that it was issued by the LearnCard Network), acknowledges fast, logs the fields you care about, and de-duplicates by `${type}:${issuanceId}` — LearnCard retries on failure, so you will occasionally see the same event twice.
 
+{% hint style="warning" %}
+This demo accepts a token signed by any DID until you set `EXPECTED_NETWORK_DID`. That is fine for trying it out, but not for production: see [Verify the Request Is From LearnCard](#verify-the-request-is-from-learncard) below, which pins the issuer to the LearnCard Network's DID by default.
+{% endhint %}
+
 <!-- snippet: cli/webhook.mjs -->
 
 ```javascript
