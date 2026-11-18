@@ -318,7 +318,18 @@ export const specification = workspace => {
     ) {
         throw new Error('Untracked SDK cache input');
     }
-    const files = tracked.filter(selected);
+    // These files feed the app and the published registry. Include them again if
+    // either SDK consumer starts compiling their project, directly or transitively.
+    const files = tracked.filter(file => {
+        if (!selected(file)) return false;
+        if (
+            file.startsWith('packages/learn-card-base/src/') ||
+            file === 'packages/learn-card-registries/trusted/registry.json'
+        ) {
+            return builtPlan.sourceRoots.some(root => file.startsWith(`${root}/`));
+        }
+        return true;
+    });
     const trackedSet = new Set(tracked);
     for (const directory of ['', ...builtPlan.sourceRoots]) {
         for (const name of fs.readdirSync(path.join(workspace, directory))) {
