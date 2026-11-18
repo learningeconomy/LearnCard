@@ -281,8 +281,12 @@ You need a brain, a Neo4j it can use, and the app. Two ways to get them:
     #    In public/tenant-config.json set apis.brainService to
     #    http://localhost:4324/trpc and apis.brainServiceApi to http://localhost:4324/api.
     bun run i18n:compile
-    npx vite --port 3324 --strictPort --host 127.0.0.1
+    bun --conditions=development ../../node_modules/vite/bin/vite.js --port 3324 --strictPort --host 127.0.0.1
     ```
+
+    Plain `npx vite` can't load the app config unless `@learncard/helpers` has a built
+    `dist/`. Either run Vite under `bun --conditions=development` as above, or build
+    helpers first with `bunx nx build helpers`.
 
     `docker-entry.ts` listens on `0.0.0.0`, so the brain is reachable from your LAN.
     Keep only test data in it. Other services (cloud, AI) are not needed for these
