@@ -303,13 +303,23 @@ describe('Consent external grant issuance fence', () => {
     describe.each(['withdraw', 'revision bump'] as const)(
         'concurrent route contention: %s',
         mutation => {
-            const wins = { write: 0, mutation: 0, violations: 0 };
-            afterAll(() =>
-                console.log('EXTERNAL_GRANT_CONTENTION', mutation, JSON.stringify(wins))
-            );
-            it.each(Array.from({ length: 20 }, (_, i) => i + 1))(
+            const iterations = Number(process.env.CONTRACT_CONTENTION_ITERATIONS ?? 20);
+            const failures: unknown[] = [];
+            const wins = {
+                completed: 0,
+                write: 0,
+                mutation: 0,
+                violations: 0,
+                unexpected: 0,
+                serverErrors: 0,
+            };
+            afterAll(() => {
+                console.log('EXTERNAL_GRANT_CONTENTION', mutation, JSON.stringify(wins));
+                expect(wins.unexpected, JSON.stringify(failures)).toBe(0);
+            });
+            it.each(Array.from({ length: iterations }, (_, i) => i + 1))(
                 'preserves commit-order invariant %i',
-                async () => {
+                async iteration => {
                     const fixture = await setupConsent();
                     const before = (await getContractTermsByUri(fixture.termsUri))!.terms;
                     // Sign before launching either route, so crypto does not serialize the race.
@@ -341,10 +351,46 @@ describe('Consent external grant issuance fence', () => {
                                       terms: { ...normalFullTerms, externalGrant: bumpedGrant },
                                   }),
                         ]);
-                        expect(change.status).toBe('fulfilled');
+                        for (const [operation, result] of [
+                            ['write', write],
+                            ['change', change],
+                        ] as const) {
+                            if (result.status === 'fulfilled') continue;
+                            if (
+                                operation === 'write' &&
+                                ['FORBIDDEN', 'CONFLICT'].includes(result.reason.code)
+                            )
+                                continue;
+                            wins.unexpected += 1;
+                            if (result.reason.code === 'INTERNAL_SERVER_ERROR')
+                                wins.serverErrors += 1;
+                            const chain: {
+                                name: string;
+                                code: string;
+                                message: string;
+                                stack: string;
+                            }[] = [];
+                            let current: unknown = result.reason;
+                            for (
+                                let depth = 0;
+                                depth < 6 && current && typeof current === 'object';
+                                depth += 1
+                            ) {
+                                chain.push({
+                                    name: String(Reflect.get(current, 'name') ?? ''),
+                                    code: String(Reflect.get(current, 'code') ?? ''),
+                                    message: String(Reflect.get(current, 'message') ?? ''),
+                                    stack: String(Reflect.get(current, 'stack') ?? ''),
+                                });
+                                current = Reflect.get(current, 'cause');
+                            }
+                            failures.push({ iteration, operation, chain });
+                        }
                         const current = (await getContractTermsByUri(fixture.termsUri))!.terms;
-                        if (mutation === 'withdraw') expect(current.status).toBe('withdrawn');
-                        else expect(current.terms.externalGrant).toEqual(bumpedGrant);
+                        if (change.status === 'fulfilled') {
+                            if (mutation === 'withdraw') expect(current.status).toBe('withdrawn');
+                            else expect(current.terms.externalGrant).toEqual(bumpedGrant);
+                        }
                         const delivered = await neogma.queryRunner.run(
                             `MATCH (credential:Credential)-[:ISSUED_VIA_TRANSACTION]->(transaction:ConsentFlowTransaction)-[:IS_FOR]->(:ConsentFlowTerms {id:$id})
                      RETURN transaction.consentMutationVersion AS version,
@@ -358,23 +404,25 @@ describe('Consent external grant issuance fence', () => {
                             expect(Number(delivered.records[0]!.get('version'))).toBe(
                                 Number(before.mutationVersion ?? 0)
                             );
-                            expect(Number(delivered.records[0]!.get('version'))).toBeLessThan(
-                                Number(current.mutationVersion)
-                            );
+                            if (change.status === 'fulfilled')
+                                expect(Number(delivered.records[0]!.get('version'))).toBeLessThan(
+                                    Number(current.mutationVersion)
+                                );
                             expect(Number(delivered.records[0]!.get('revision'))).toBe(0);
                             expect(delivered.records[0]!.get('hash')).toBe(externalGrant.hash);
                             expect(await Credential.findMany({ where: {} })).toHaveLength(1);
                             wins.write += 1;
                         } else {
-                            expect(['FORBIDDEN', 'CONFLICT']).toContain(write.reason.code);
                             await expectNoDelivery(fixture.termsUri);
                             wins.mutation += 1;
                         }
-                        await expect(
-                            writeCredential('direct', fixture, expectedGrant)
-                        ).rejects.toMatchObject({
-                            code: mutation === 'withdraw' ? 'FORBIDDEN' : 'CONFLICT',
-                        });
+                        if (change.status === 'fulfilled') {
+                            await expect(
+                                writeCredential('direct', fixture, expectedGrant)
+                            ).rejects.toMatchObject({
+                                code: mutation === 'withdraw' ? 'FORBIDDEN' : 'CONFLICT',
+                            });
+                        }
                         const orphaned = await neogma.queryRunner.run(
                             'MATCH (credential:Credential) WHERE NOT (credential)-[:ISSUED_VIA_TRANSACTION]->() RETURN count(credential) AS count'
                         );
@@ -382,6 +430,7 @@ describe('Consent external grant issuance fence', () => {
                         expect(await Credential.findMany({ where: {} })).toHaveLength(
                             write.status === 'fulfilled' ? 1 : 0
                         );
+                        wins.completed += 1;
                     } catch (error) {
                         wins.violations += 1;
                         throw error;
