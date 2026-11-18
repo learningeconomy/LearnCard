@@ -48,7 +48,7 @@ def prepare(role):
 def evidence(role):
     graph = read(TMP / "full-graph.json")["tasks"]["tasks"]
     tasks = {}
-    for event in read(TMP / "shard-trace.json"):
+    for event in read("shard-trace.json"):
         if event.get("ph") == "X" and event.get("args", {}).get("target", {}).get("project"):
             name = event["name"]
             require(name not in tasks and event["args"]["status"] == "success", "Missing fresh success: " + name)

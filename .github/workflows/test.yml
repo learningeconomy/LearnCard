@@ -78,7 +78,7 @@ jobs:
             - name: Execute selected tasks
               timeout-minutes: 35
               env:
-                  NX_PROFILE: ${{ runner.temp }}/shard-trace.json
+                  NX_PROFILE: shard-trace.json
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/test-reports
                   LC_CI_TEST_RETRY: '1'
                   APP_REPLAY_FILES: ${{ runner.temp }}/app-cases.json
@@ -98,6 +98,17 @@ jobs:
               run: |-
                   node scripts/ci-test-retries/summary.cjs
                   python3 "$RUNNER_TEMP/ci-app-shards/replay.py" evidence "$ROLE"
+            - name: Preserve benchmark diagnostics on verification failure
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: app-split-diagnostics-${{ matrix.role }}
+                  path: |
+                      shard-trace.json
+                      ${{ runner.temp }}/app-cases.json
+                      ${{ runner.temp }}/full-graph.json
+                      ${{ runner.temp }}/test-reports/vitest-*/report.json
+                  retention-days: 3
             - uses: actions/upload-artifact@v4
               with:
                   name: app-split-${{ github.run_attempt }}-${{ matrix.role }}
@@ -174,7 +185,7 @@ jobs:
             - name: Execute selected tasks
               timeout-minutes: 35
               env:
-                  NX_PROFILE: ${{ runner.temp }}/shard-trace.json
+                  NX_PROFILE: shard-trace.json
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/test-reports
                   LC_CI_TEST_RETRY: '1'
                   APP_REPLAY_FILES: ${{ runner.temp }}/app-cases.json
@@ -194,6 +205,17 @@ jobs:
               run: |-
                   node scripts/ci-test-retries/summary.cjs
                   python3 "$RUNNER_TEMP/ci-app-shards/replay.py" evidence "$ROLE"
+            - name: Preserve benchmark diagnostics on verification failure
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: app-split-diagnostics-${{ matrix.role }}
+                  path: |
+                      shard-trace.json
+                      ${{ runner.temp }}/app-cases.json
+                      ${{ runner.temp }}/full-graph.json
+                      ${{ runner.temp }}/test-reports/vitest-*/report.json
+                  retention-days: 3
             - uses: actions/upload-artifact@v4
               with:
                   name: app-split-${{ github.run_attempt }}-${{ matrix.role }}
@@ -236,7 +258,7 @@ jobs:
             - name: Execute selected tasks
               timeout-minutes: 35
               env:
-                  NX_PROFILE: ${{ runner.temp }}/shard-trace.json
+                  NX_PROFILE: shard-trace.json
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/test-reports
                   LC_CI_TEST_RETRY: '1'
                   APP_REPLAY_FILES: ${{ runner.temp }}/app-cases.json
@@ -256,6 +278,17 @@ jobs:
               run: |-
                   node scripts/ci-test-retries/summary.cjs
                   python3 "$RUNNER_TEMP/ci-app-shards/replay.py" evidence "$ROLE"
+            - name: Preserve benchmark diagnostics on verification failure
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: app-split-diagnostics-${{ matrix.role }}
+                  path: |
+                      shard-trace.json
+                      ${{ runner.temp }}/app-cases.json
+                      ${{ runner.temp }}/full-graph.json
+                      ${{ runner.temp }}/test-reports/vitest-*/report.json
+                  retention-days: 3
             - uses: actions/upload-artifact@v4
               with:
                   name: app-split-${{ github.run_attempt }}-${{ matrix.role }}
