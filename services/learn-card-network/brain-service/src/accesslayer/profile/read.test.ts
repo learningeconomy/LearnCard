@@ -17,6 +17,13 @@ describe('localUsersProfileId', () => {
         );
     });
 
+    it.each([
+        'did:web:localhost%3A3000:users:local-user',
+        'did:web:localhost:3000:users:local-user',
+    ])('resolves local development DID form %s', did => {
+        expect(localUsersProfileId(did)).toBe('local-user');
+    });
+
     it('does not resolve a foreign users DID to a local profile id', () => {
         expect(localUsersProfileId('did:web:evil.example:users:local-user')).toBeNull();
     });

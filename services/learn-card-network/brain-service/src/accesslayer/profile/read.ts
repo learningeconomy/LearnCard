@@ -41,14 +41,23 @@ export const getProfilesByProfileIds = async (profileIds: string[]): Promise<Pro
 };
 
 export const localUsersProfileId = (did: string): string | null => {
-    const match = /^did:web:([^:]+):users:([^:]+)$/.exec(did);
+    const match = /^did:web:(.+):users:([^:]+)$/.exec(did);
     if (!match) return null;
 
+    const canonicalDomain = (domain: string): string => {
+        try {
+            return encodeURIComponent(decodeURIComponent(domain));
+        } catch {
+            return domain;
+        }
+    };
     const localDomains = new Set(
-        [environment.DOMAIN_NAME, `localhost%3A${environment.PORT}`].filter(Boolean)
+        [environment.DOMAIN_NAME, `localhost%3A${environment.PORT}`]
+            .filter(Boolean)
+            .map(canonicalDomain)
     );
 
-    return localDomains.has(match[1]!) ? match[2]! : null;
+    return localDomains.has(canonicalDomain(match[1]!)) ? match[2]! : null;
 };
 
 export const getProfileByDid = async (did: string): Promise<ProfileType | null> => {
