@@ -29,6 +29,27 @@ import type { ProfileType } from 'types/profile';
 import { authorizeContractRequestSend, createRequestForProfile } from './contract-requests.helpers';
 import { tryFanOutContractIntegrationEvents } from './contract-events.helpers';
 
+/**
+ * Turns one invite into a request for one profile. False when the request rules do not pass
+ * (the invite stays pending); throws when the write itself fails.
+ */
+const attachInviteToProfile = async (
+    contractId: string,
+    invite: ContractRequestInviteType,
+    profileId: string,
+    domain: string
+): Promise<boolean> =>
+    (await createRequestForProfile({
+        contractId,
+        targetProfileId: profileId,
+        senderProfileId: invite.requestedBy,
+        requestId: invite.id,
+        externalReferenceId: invite.externalReferenceId,
+        message: invite.message,
+        domain,
+        inviteId: invite.id,
+    })) !== null;
+
 /** The most invites one call converts. Bounds the work done inside a request. */
 export const CONTRACT_REQUEST_INVITE_ATTACH_LIMIT = 20;
 
@@ -48,17 +69,8 @@ export const attachContractRequestInvitesForProfile = async (
         const pending = await getPendingContractRequestInvitesForProfile(profile.profileId, limit);
         for (const { contractId, invite } of pending) {
             try {
-                const request = await createRequestForProfile({
-                    contractId,
-                    targetProfileId: profile.profileId,
-                    senderProfileId: invite.requestedBy,
-                    requestId: invite.id,
-                    externalReferenceId: invite.externalReferenceId,
-                    message: invite.message,
-                    domain,
-                    inviteId: invite.id,
-                });
-                if (request) attached += 1;
+                if (await attachInviteToProfile(contractId, invite, profile.profileId, domain))
+                    attached += 1;
             } catch {
                 console.warn('contract_request_invite: attach_failed');
             }
@@ -212,7 +224,8 @@ const inviteDeliveryDelayMs = (attempts: number): number =>
  * Worker pass for new email-addressed sends. For each invite that is due it attaches the invite
  * to the profiles that have the email verified, or, when there are none, sends the invite email
  * (at most 3 per contract and address in 24 hours). A failed email is retried with backoff and
- * given up after INVITE_DELIVERY_MAX_ATTEMPTS. Never throws for one invite. Returns how many
+ * given up after INVITE_DELIVERY_MAX_ATTEMPTS. A failed attach write, or any failure after the
+ * email was claimed, is retried the same way. Never throws for one invite. Returns how many
  * invites it finished.
  */
 export const deliverContractRequestInvites = async ({
@@ -223,44 +236,55 @@ export const deliverContractRequestInvites = async ({
     let finished = 0;
     for (const { contractId, invite } of await getDueContractRequestInviteDeliveries(limit)) {
         if (Date.now() - startedAt > budgetMs) break;
+        const finish = async (): Promise<void> => {
+            await finishContractRequestInviteDelivery(invite.id);
+            finished += 1;
+        };
+        let claimed = false;
         try {
             if (invite.status !== 'pending' || invite.attachedProfileId) {
-                await finishContractRequestInviteDelivery(invite.id);
-                finished += 1;
+                await finish();
                 continue;
             }
             const domain = invite.domain ?? defaultDomain();
             const profileIds = await getProfileIdsWithVerifiedEmail(invite.email);
             if (profileIds.length > 0) {
+                // A write failure throws and is retried below; rules that do not pass end delivery.
                 for (const profileId of profileIds)
-                    await attachContractRequestInvitesForProfile({ profileId }, domain);
-                await finishContractRequestInviteDelivery(invite.id);
-                finished += 1;
+                    if (await attachInviteToProfile(contractId, invite, profileId, domain)) break;
+                await finish();
                 continue;
             }
+            // Everything that can fail before the send is read before the claim.
+            const referrerName = (await getProfileByProfileId(invite.requestedBy))?.displayName;
+            const contractOwnerName = await getContractOwnerDisplayName(contractId);
+            const branding = invite.emailBranding ? JSON.parse(invite.emailBranding) : undefined;
             if (!(await claimContractRequestInviteEmail(contractId, invite.id))) {
                 // Already emailed, or the address reached its limit: nothing more to send.
-                await finishContractRequestInviteDelivery(invite.id);
-                finished += 1;
+                await finish();
                 continue;
             }
+            claimed = true;
             const sent = await sendContractRequestInviteEmail({
                 email: invite.email,
-                referrerName: (await getProfileByProfileId(invite.requestedBy))?.displayName,
-                contractOwnerName: await getContractOwnerDisplayName(contractId),
-                ...(invite.emailBranding ? { branding: JSON.parse(invite.emailBranding) } : {}),
+                referrerName,
+                contractOwnerName,
+                ...(branding ? { branding } : {}),
             });
             if (sent) {
-                await finishContractRequestInviteDelivery(invite.id);
-                finished += 1;
+                await finish();
                 continue;
             }
-            await releaseContractRequestInviteEmail(contractId, invite.id);
+        } catch {
+            console.warn('contract_request_invite: delivery_failed');
+        }
+        // The attach or the email failed: release the claim and try again later.
+        try {
+            if (claimed) await releaseContractRequestInviteEmail(contractId, invite.id);
             const attempts = toNumber(invite.deliveryAttempts) + 1;
             if (attempts >= INVITE_DELIVERY_MAX_ATTEMPTS) {
                 console.warn('contract_request_invite: delivery_abandoned');
-                await finishContractRequestInviteDelivery(invite.id);
-                finished += 1;
+                await finish();
             } else {
                 await retryContractRequestInviteDelivery(
                     invite.id,
@@ -268,6 +292,7 @@ export const deliverContractRequestInvites = async ({
                 );
             }
         } catch {
+            // The claim lease and the due time make a later pass pick this invite up again.
             console.warn('contract_request_invite: delivery_failed');
         }
     }

@@ -12,7 +12,9 @@ import cache from '@cache';
 import { neogma } from '@instance';
 import { getContractRequestInvite } from '@accesslayer/contract-request-invite/read';
 import * as notifications from '@helpers/notifications.helpers';
+import * as inviteReads from '@accesslayer/contract-request-invite/read';
 import * as requestReads from '@accesslayer/consentflowcontract/read';
+import * as requestHelpers from '@helpers/contract-requests.helpers';
 import { deliverContractRequestInvites } from '@helpers/contract-request-invites.helpers';
 
 const actor = async (role: string) => {
@@ -227,6 +229,71 @@ describe('sendContractRequest with targetEmail', () => {
         const invite = await getContractRequestInvite(id(contractUri), requestId);
         expect(invite?.emailSentAt).toEqual(expect.any(String));
         expect(invite?.deliveryPending ?? null).toBeNull();
+    });
+
+    const makeDue = (requestId: string) =>
+        neogma.queryRunner.run(
+            'MATCH (i:ContractRequestInvite {id: $requestId}) SET i.deliveryNextAt = $past',
+            { requestId, past: '2000-01-01T00:00:00.000Z' }
+        );
+
+    it('retries the invite email when a read before the send fails', async () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        vi.spyOn(inviteReads, 'getContractOwnerDisplayName').mockRejectedValueOnce(
+            new Error('synthetic read failure')
+        );
+        const { requestId } = await send(randomEmail());
+        expect(mocks.send).not.toHaveBeenCalled();
+        const failed = await getContractRequestInvite(id(contractUri), requestId);
+        expect(failed?.emailSentAt ?? null).toBeNull();
+        expect(failed?.deliveryPending).toBe(true);
+        expect(Number(failed?.deliveryAttempts)).toBe(1);
+
+        await makeDue(requestId);
+        await deliverContractRequestInvites();
+        expect(mocks.send).toHaveBeenCalledTimes(1);
+        expect(
+            (await getContractRequestInvite(id(contractUri), requestId))?.deliveryPending ?? null
+        ).toBeNull();
+    });
+
+    it('sends again when a worker stopped after claiming the email', async () => {
+        const { requestId } = await recipient.clients.fullAuth.contracts.sendContractRequest({
+            contractUri,
+            targetEmail: randomEmail(),
+        });
+        await neogma.queryRunner.run(
+            `MATCH (i:ContractRequestInvite {id: $requestId})
+             SET i.emailSentAt = $claimedAt, i.deliveryNextAt = $past`,
+            {
+                requestId,
+                claimedAt: new Date(Date.now() - 10 * 60_000).toISOString(),
+                past: '2000-01-01T00:00:00.000Z',
+            }
+        );
+        await deliverContractRequestInvites();
+        expect(mocks.send).toHaveBeenCalledTimes(1);
+        expect(
+            (await getContractRequestInvite(id(contractUri), requestId))?.deliveryPending ?? null
+        ).toBeNull();
+    });
+
+    it('retries an attach that failed instead of dropping it from the queue', async () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const email = randomEmail();
+        await addEmail(learner.profileId, email);
+        vi.spyOn(requestHelpers, 'createRequestForProfile').mockRejectedValueOnce(
+            new Error('synthetic write failure')
+        );
+        const { requestId } = await send(email);
+        expect(await learnerRequest()).toBeNull();
+        expect((await getContractRequestInvite(id(contractUri), requestId))?.deliveryPending).toBe(
+            true
+        );
+
+        await makeDue(requestId);
+        await deliverContractRequestInvites();
+        expect(await learnerRequest()).toMatchObject({ requestId, status: 'pending' });
     });
 
     it('gives a resend after expiry a new request, whether or not the first invite attached', async () => {

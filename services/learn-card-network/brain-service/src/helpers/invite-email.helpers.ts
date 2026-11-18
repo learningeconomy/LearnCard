@@ -4,6 +4,8 @@ export const CONTRACT_REQUEST_INVITE_TTL_MS = 30 * 24 * 60 * 60_000;
 /** At most this many invite emails per contract and email address inside the window. */
 export const CONTRACT_REQUEST_INVITE_EMAIL_LIMIT = 3;
 export const CONTRACT_REQUEST_INVITE_EMAIL_WINDOW_MS = 24 * 60 * 60_000;
+/** How long the delivery worker holds an email claim before another pass may take it. */
+export const CONTRACT_REQUEST_INVITE_EMAIL_CLAIM_MS = 5 * 60_000;
 
 /**
  * The stored and compared form of an invite email: trimmed and lower case.

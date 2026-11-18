@@ -9,15 +9,19 @@ import {
 import {
     CONTRACT_REQUEST_INVITE_EMAIL_LIMIT,
     CONTRACT_REQUEST_INVITE_EMAIL_WINDOW_MS,
+    CONTRACT_REQUEST_INVITE_EMAIL_CLAIM_MS,
 } from '@helpers/invite-email.helpers';
 import { defaultDomain } from '@helpers/integration-events.helpers';
 import { inviteIntegrationEventCypher } from './events';
 import type { ContractRequestInviteType } from './read';
 
 /**
- * Reserves the right to send the invite email, under the contract lock.
- * True at most once per invite, and at most CONTRACT_REQUEST_INVITE_EMAIL_LIMIT times per
- * contract and email address inside the window. The caller sends the email only when true.
+ * Reserves the right to send the invite email, under the contract lock, and pushes the invite's
+ * next delivery attempt to the end of a short lease. True at most
+ * CONTRACT_REQUEST_INVITE_EMAIL_LIMIT times per contract and email address inside the window.
+ * The caller sends the email only when true, then finishes delivery or releases the claim.
+ * A claim the worker never finished or released (it stopped mid-send) can be taken again once
+ * the lease has passed, so an interrupted send is retried rather than lost.
  */
 export const claimContractRequestInviteEmail = async (
     contractId: string,
@@ -32,18 +36,25 @@ export const claimContractRequestInviteEmail = async (
                 since: new Date(
                     now.getTime() - CONTRACT_REQUEST_INVITE_EMAIL_WINDOW_MS
                 ).toISOString(),
+                staleBefore: new Date(
+                    now.getTime() - CONTRACT_REQUEST_INVITE_EMAIL_CLAIM_MS
+                ).toISOString(),
+                leaseUntil: new Date(
+                    now.getTime() + CONTRACT_REQUEST_INVITE_EMAIL_CLAIM_MS
+                ).toISOString(),
                 limit: int(CONTRACT_REQUEST_INVITE_EMAIL_LIMIT),
             })
         ),
         contractId
     ).raw(`
         MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite {id: $inviteId})
-        WHERE invite.status = 'pending' AND invite.emailSentAt IS NULL
+        WHERE invite.status = 'pending' AND (invite.emailSentAt IS NULL OR
+            (invite.deliveryPending = true AND invite.emailSentAt <= $staleBefore))
         OPTIONAL MATCH (contract)-[:HAS_REQUEST_INVITE]->(sent:ContractRequestInvite)
-            WHERE sent.email = invite.email AND sent.emailSentAt > $since
+            WHERE sent <> invite AND sent.email = invite.email AND sent.emailSentAt > $since
         WITH invite, count(sent) AS recent
         WHERE recent < $limit
-        SET invite.emailSentAt = $now
+        SET invite.emailSentAt = $now, invite.deliveryNextAt = $leaseUntil
         RETURN invite.id AS id
     `);
     return (await runAudienceMutation(query)).records.length > 0;
