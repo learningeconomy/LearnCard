@@ -381,6 +381,22 @@ platform :ios do
       profile_name: profile_name
     )
 
+    # The generated project forces iPhone Distribution for iphoneos builds.
+    # Match development only installs an Apple Development certificate, so the
+    # smoke archive has to sign with that identity and the development profile.
+    project = Xcodeproj::Project.open(ENV["XCODE_PROJECT"])
+    app_target = project.targets.find { |target| target.name == "App" }
+    UI.user_error!("App target not found in #{ENV['XCODE_PROJECT']}") unless app_target
+    app_target.build_configurations.each do |config|
+      config.build_settings["CODE_SIGN_STYLE"] = "Manual"
+      config.build_settings["DEVELOPMENT_TEAM"] = ENV["TEAM_ID"]
+      config.build_settings["CODE_SIGN_IDENTITY"] = "Apple Development"
+      config.build_settings["CODE_SIGN_IDENTITY[sdk=iphoneos*]"] = "Apple Development"
+      config.build_settings["PROVISIONING_PROFILE_SPECIFIER"] = profile_name
+      config.build_settings["PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]"] = profile_name
+    end
+    project.save
+
     output_dir = ENV["SMOKE_OUTPUT_DIR"] || File.expand_path("smoke-ipa", Dir.pwd)
     FileUtils.mkdir_p(output_dir)
     profiles = {}
@@ -394,7 +410,7 @@ platform :ios do
       destination: "generic/platform=iOS",
       output_directory: output_dir,
       output_name: "LearnCard-smoke.ipa",
-      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM='#{ENV["TEAM_ID"]}' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}'",
+      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM='#{ENV["TEAM_ID"]}' CODE_SIGN_IDENTITY='Apple Development'",
       export_options: {
         method: "development",
         signingStyle: "manual",
