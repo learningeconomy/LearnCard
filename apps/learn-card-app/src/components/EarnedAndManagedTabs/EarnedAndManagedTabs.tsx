@@ -94,7 +94,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
 
     return (
         <IonRow
-            className={`relative pt-[50px] px-[5px] flex gap-[10px] w-full items-center justify-center max-w-[600px] mx-auto overflow-hidden ${containerClassName}`}
+            className={`relative pt-[50px] px-[5px] flex gap-[10px] w-full items-center justify-center max-w-[600px] mx-auto ${containerClassName}`}
         >
             <IonCol className="flex items-center justify-between w-full p-0 min-w-0">
                 {!isSearchActive && (
@@ -160,20 +160,8 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                                 ? m['boost.browseEarnedPlaceholder']()
                                                 : m['boost.browseManagedPlaceholder']()
                                         }
-                                        className={`rounded-[10px] pl-4 w-full h-[44px] pr-[34px] font-notoSans text-[14px] outline-hidden placeholder:text-grayscale-400 focus-visible:ring-2 focus-visible:ring-emerald-500 ${tabColor}`}
+                                        className={`rounded-[10px] px-4 w-full h-[44px] font-notoSans text-[14px] text-grayscale-900 outline-hidden placeholder:text-grayscale-900 placeholder:opacity-100 focus-visible:ring-2 focus-visible:ring-emerald-500 ${tabColor}`}
                                     />
-                                    {searchString && (
-                                        <button
-                                            type="button"
-                                            aria-label={m['common.clear']()}
-                                            className="absolute right-[10px] top-[12px] z-10 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                            onClick={() =>
-                                                credentialSearchStore.set.searchString('')
-                                            }
-                                        >
-                                            <X className="h-[20px] w-[20px] text-grayscale-900" />
-                                        </button>
-                                    )}
                                 </div>
                             )}
                         </div>
