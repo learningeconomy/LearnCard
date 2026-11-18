@@ -4,7 +4,19 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'path';
 import { paraglideLazyLocales } from './src/i18n/paraglideLazyLocales';
 import { createVitestConfig, happyDomPreset } from '../../vitest.shared';
+import { BenchmarkReporter } from '../../scripts/ci-worker-benchmark/reporter';
 import type { LearnCardAppEnvironment } from './src/config/buildEnvironment';
+
+const benchmarkWorkers = process.env.LC_BENCH_APP_WORKERS;
+const benchmarkReport = process.env.LC_WORKER_BENCHMARK_REPORT;
+if (
+    (benchmarkWorkers || benchmarkReport) &&
+    (process.env.LC_WORKER_BENCHMARK !== '1' ||
+        !['3', '4'].includes(benchmarkWorkers ?? '') ||
+        !benchmarkReport)
+) {
+    throw new Error('Incomplete app worker benchmark configuration.');
+}
 
 const TEST_BUILD_ENVIRONMENT = {
     MODE: 'test',
@@ -35,6 +47,12 @@ export default createVitestConfig(happyDomPreset, {
         paraglideLazyLocales('en', path.resolve(__dirname, 'src/paraglide/messages')),
     ],
     test: {
+        ...(benchmarkWorkers && benchmarkReport
+            ? {
+                  maxWorkers: Number(benchmarkWorkers),
+                  reporters: ['default' as const, new BenchmarkReporter(benchmarkReport)],
+              }
+            : {}),
         // DOMPurify's SVG sanitization and computed CSS serialization require jsdom semantics.
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],

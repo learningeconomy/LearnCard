@@ -11,6 +11,10 @@ on:
                 description: 'Branch to test'
                 required: true
                 default: 'changeset-release/main'
+            worker_benchmark:
+                description: 'Run sequential worker benchmarks in the Test job only'
+                type: boolean
+                default: false
 
 permissions:
     contents: read
@@ -22,6 +26,7 @@ concurrency:
 jobs:
     integration-selection:
         name: Select integration tests
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.worker_benchmark }}
         runs-on: ubuntu-latest
         outputs:
             brain: ${{ steps.selection.outputs.brain }}
@@ -150,14 +155,20 @@ jobs:
 
             - name: Run tests
               id: tests
-              timeout-minutes: 20
+              timeout-minutes: ${{ inputs.worker_benchmark && 120 || 20 }}
               run: |
-                  if [ "$LC_NX_PILOT_ACTIVE" = 'true' ]; then
+                  if [ "$LC_WORKER_BENCHMARK" = 'true' ]; then
+                    LC_WORKER_BENCHMARK=1 \
+                      NX_BASE=1fe2450d45aa1f5e038b7bbb02f61965e72671fc \
+                      NX_HEAD=154941805bd8e2aa626afe3582e7794921debd27 \
+                      node scripts/ci-worker-benchmark/run.cjs
+                  elif [ "$LC_NX_PILOT_ACTIVE" = 'true' ]; then
                     node scripts/nx-artifact-cache/run.mjs consume
                   else
                     bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"
                   fi
               env:
+                  LC_WORKER_BENCHMARK: ${{ github.event_name == 'workflow_dispatch' && inputs.worker_benchmark }}
                   LC_NX_PILOT_ACTIVE: ${{ steps.nx-pilot.outputs.active }}
                   LC_NX_PILOT_BASE: ${{ github.event.merge_group.base_sha }}
                   NX_BASE: ${{ steps.test-range.outputs.base }}
@@ -178,11 +189,20 @@ jobs:
                   retention-days: 7
 
             - name: Summarize test retries
-              if: always()
+              if: ${{ always() && !(github.event_name == 'workflow_dispatch' && inputs.worker_benchmark) }}
               env:
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   LC_CI_NX_OUTCOME: ${{ steps.tests.outcome }}
               run: node scripts/ci-test-retries/summary.cjs
+
+            - name: Upload worker benchmark evidence
+              if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.worker_benchmark }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: worker-benchmark-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: ${{ runner.temp }}/ci-worker-benchmark
+                  if-no-files-found: error
+                  retention-days: 14
 
             - name: Record queue test proof
               id: queue-proof
@@ -207,7 +227,7 @@ jobs:
         name: Escrow integration (lca-api)
         needs: integration-selection
         # Only an explicit, successful skip decision can avoid allocating a runner.
-        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.escrow != 'false') }}
+        if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || !inputs.worker_benchmark) && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.escrow != 'false') }}
         runs-on: ubuntu-latest
         timeout-minutes: 20
         permissions:
@@ -331,7 +351,7 @@ jobs:
     brain-graph:
         name: Brain graph integration
         needs: integration-selection
-        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false') }}
+        if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || !inputs.worker_benchmark) && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false') }}
         uses: ./.github/workflows/brain-integration.yml
         with:
             group: graph
@@ -345,7 +365,7 @@ jobs:
     brain-delivery:
         name: Inbox and campaigns integration
         needs: integration-selection
-        if: ${{ !cancelled() && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false' || needs.integration-selection.outputs.campaigns != 'false') }}
+        if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || !inputs.worker_benchmark) && (needs.integration-selection.result != 'success' || needs.integration-selection.outputs.brain != 'false' || needs.integration-selection.outputs.campaigns != 'false') }}
         uses: ./.github/workflows/brain-integration.yml
         with:
             group: delivery
@@ -360,7 +380,7 @@ jobs:
     # Remove after one sprint of stable GitHub-hosted E2E operation.
     e2e-tests:
         name: EC2 E2E fallback (manual)
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && !inputs.worker_benchmark
         concurrency:
             group: learncard-e2e-ec2
             cancel-in-progress: false
