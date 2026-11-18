@@ -87,7 +87,7 @@ const request = await referrer.invoke.getContractRequest(contractUri, requestId)
 - If no account has verified that email, LearnCard sends one invitation email with the branding of the tenant that made the call. At most 3 invitation emails go to one address per contract in 24 hours. The email does not contain your `message`.
 - When a profile verifies that email (at sign-up or later), the invitation becomes an ordinary request with the same `requestId`, and the person gets the usual in-app `request_sent` notification. If the normal request rules do not pass (for example the person already has a request or active consent for this contract), the invitation stays `pending` and expires. You cannot tell this apart from no response.
 - An identical retry (same contract, email, sender, reference and message) while the first is pending returns the same `requestId` and sends nothing.
-- An invitation expires 30 days after it was sent if it has not become a request. Its status is then `expired`. A request that reached a profile does not expire.
+- An invitation expires 30 days after it was sent unless the person has accepted it. Its status is then `expired`, whether or not it reached a profile, and it can no longer be accepted, declined or cancelled (cancelling answers `CONFLICT`). The person can still consent to the contract on their own; that consent carries no referral.
 - Emails are compared without regard to letter case.
 
 **What you can see.** Until the status is `accepted`, an email-addressed request shows `target: { email }` and no profile, DID or read state in `getContractRequest` and `getContractSentRequests`. `getRequestStatusForProfile` returns `null` for it, and `cancelContractRequest` with a profile ID answers as if no request existed; use the `requestId`. A `request_denied` or `request_cancelled` notification caused by the invited person names the contract owner as sender, not the person. The person's DID reaches you through the consent event on acceptance, together with your `externalReferenceId`.
@@ -119,7 +119,7 @@ stateDiagram-v2
     pending --> accepted: Consent committed
     pending --> denied: Target declines
     pending --> cancelled: Authorized cancellation
-    pending --> expired: Email invitation not attached to a profile within 30 days
+    pending --> expired: Email invitation not accepted within 30 days
 ```
 
 Denied and cancelled generic requests retain their correlation fields. Withdrawing consent retains an accepted generic request and the referral captured on consent history. It revokes current data access; it does not reset a terminal request to pending. If the learner later consents again, the original referral remains attached to the consent and subsequent transactions. This does not reopen the request or send another acceptance decision to a requester outside the audience. A legacy AI request cannot replace an attributed request; it returns `CONFLICT`.

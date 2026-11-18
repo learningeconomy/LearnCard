@@ -207,7 +207,12 @@ export const startDemo = async ({
                       status: found.status,
                       target: found.target,
                   }))
-                  .catch(() => undefined)
+                  .catch((error: unknown) => {
+                      // Only a request this referrer may no longer see is expected here.
+                      if ((error as { data?: { code?: string } }).data?.code === 'NOT_FOUND')
+                          return undefined;
+                      throw error;
+                  })
             : undefined;
         return {
             ready: true,

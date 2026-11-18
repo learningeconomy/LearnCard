@@ -209,7 +209,7 @@ describe('Docs: contract request integrator snippets', () => {
         });
         const listed = await referrer.invoke.getContractSentRequests(contractUri);
         expect(listed).toHaveLength(1);
-        expect(listed[0]).not.toHaveProperty('profile');
+        expect(listed[0]?.target).toEqual({ email });
 
         expect(await cancelReferral(referrer, { contractUri, requestId: sent.requestId })).toBe(
             true
