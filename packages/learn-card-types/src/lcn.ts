@@ -2099,6 +2099,11 @@ export const LCNIntegrationValidator = z.object({
     publishableKey: z.string(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
 
+    // Contract event webhook and change feed (LC-2370). Encrypted secrets are never exposed.
+    webhookUrl: z.string().optional(),
+    hasWebhookSecret: z.boolean().optional(),
+    contractEventsEnabledAt: z.string().optional(),
+
     // Setup/onboarding status
     status: LCNIntegrationStatusEnum.default('setup'),
     guideType: z.string().optional(),
@@ -2120,11 +2125,38 @@ export const LCNIntegrationCreateValidator = z.object({
 
 export type LCNIntegrationCreateType = z.infer<typeof LCNIntegrationCreateValidator>;
 
+/**
+ * URL of an Integration's contract-event webhook: an absolute URL whose scheme is exactly
+ * `http` or `https`, at most 2048 characters, without a username or password (the delivery
+ * transport refuses those, so they would be stored and then never delivered).
+ */
+export const IntegrationWebhookUrlValidator = z
+    .url({ protocol: /^https?$/ })
+    .max(2048)
+    .refine(
+        value => {
+            try {
+                const url = new URL(value);
+
+                return url.username === '' && url.password === '';
+            } catch {
+                return false;
+            }
+        },
+        { message: 'Webhook URL must not contain a username or password' }
+    );
+
 export const LCNIntegrationUpdateValidator = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).optional(),
     rotatePublishableKey: z.boolean().optional(),
+
+    // Contract event change feed (LC-2370). The webhook URL is set with setIntegrationWebhook.
+    contractEventsEnabled: z
+        .boolean()
+        .optional()
+        .describe('true enables the contract event feed without a webhook; false disables it.'),
 
     // Setup/onboarding updates
     status: LCNIntegrationStatusEnum.optional(),
@@ -2151,6 +2183,163 @@ export const PaginatedLCNIntegrationsValidator = PaginationResponseValidator.ext
 });
 
 export type PaginatedLCNIntegrationsType = z.infer<typeof PaginatedLCNIntegrationsValidator>;
+
+// Integration change feed and signed webhooks (LC-2370)
+export const IntegrationEventTypeValidator = z.enum([
+    'request_sent',
+    'request_accepted',
+    'request_denied',
+    'request_cancelled',
+    'consent_created',
+    'consent_updated',
+    'consent_withdrawn',
+    'credentials_synced',
+    'contract_retired',
+    'consent_paused',
+    'consent_suspended',
+    'consent_expired',
+    'integration.test',
+]);
+export type IntegrationEventType = z.infer<typeof IntegrationEventTypeValidator>;
+
+export const IntegrationEventRoleValidator = z.enum(['owner', 'writer', 'recipient', 'requester']);
+export type IntegrationEventRole = z.infer<typeof IntegrationEventRoleValidator>;
+
+export const IntegrationEventSubjectValidator = z.object({
+    profileId: z.string(),
+    did: z.string(),
+    didKey: z.string(),
+});
+export type IntegrationEventSubject = z.infer<typeof IntegrationEventSubjectValidator>;
+
+/**
+ * One record in an integration's change feed. The same object is the exact body of the signed
+ * webhook. It carries identifiers only: no shared credentials and no personal fields.
+ */
+export const IntegrationEventValidator = z.object({
+    eventId: z.string(),
+    deliveryKey: z.string(),
+    sequence: z.number().int().nonnegative(),
+    type: IntegrationEventTypeValidator,
+    contractUri: z.string(),
+    termsUri: z.string().optional(),
+    subject: IntegrationEventSubjectValidator.optional(),
+    requestId: z.string().optional(),
+    externalReferenceId: z.string().optional(),
+    reason: z.string().optional(),
+    /** Credential category the event is about. Set for `reason: "share_until_passed"`. */
+    category: z.string().optional(),
+    role: IntegrationEventRoleValidator,
+    occurredAt: z.string(),
+});
+export type IntegrationEvent = z.infer<typeof IntegrationEventValidator>;
+
+export const IntegrationEventsResponseValidator = z.object({
+    records: IntegrationEventValidator.array(),
+    cursor: z.string().optional(),
+    latestCursor: z.string(),
+    hasMore: z.boolean(),
+});
+export type IntegrationEventsResponse = z.infer<typeof IntegrationEventsResponseValidator>;
+
+/**
+ * Result of setting, replacing or removing an Integration's webhook URL. `secret` is the
+ * plaintext signing secret and is only present when this call created the Integration's first
+ * secret; it is never returned again.
+ */
+export const IntegrationWebhookRegistrationValidator = z.object({
+    webhookUrl: z.string().nullable(),
+    secret: z.string().optional(),
+    contractEventsEnabledAt: z.string().optional(),
+});
+export type IntegrationWebhookRegistration = z.infer<
+    typeof IntegrationWebhookRegistrationValidator
+>;
+
+export const IntegrationWebhookStateValidator = z.enum(['active', 'failing', 'disabled']);
+export type IntegrationWebhookState = z.infer<typeof IntegrationWebhookStateValidator>;
+
+/**
+ * Configuration and delivery health of an Integration's webhook. Never contains a secret.
+ *
+ * `state` is `disabled` when there is no webhook URL or contract events are disabled,
+ * `failing` when the most recent delivery attempt failed, and `active` otherwise.
+ * `lastFailureReason` is a short fixed code such as `http_500`, `timeout`, `network_error` or
+ * `redirect` (the endpoint answered with a redirect, which is not followed) or
+ * `invalid_webhook` (the address was refused before any request); it never contains a URL or a
+ * response body.
+ */
+export const IntegrationWebhookStatusValidator = z.object({
+    webhookUrl: z.string().nullable(),
+    state: IntegrationWebhookStateValidator,
+    contractEventsEnabledAt: z.string().optional(),
+    hasSecret: z.boolean(),
+    secretVersion: z
+        .number()
+        .int()
+        .describe('0 without a secret, 1 for the first secret, plus 1 for every rotation.'),
+    previousSecretExpiresAt: z.string().optional(),
+    lastSuccessAt: z.string().optional(),
+    lastFailureAt: z.string().optional(),
+    lastFailureReason: z.string().optional(),
+    pendingDeliveries: z
+        .number()
+        .int()
+        .describe('Feed records waiting for their first delivery attempt.'),
+    retryingDeliveries: z
+        .number()
+        .int()
+        .describe('Feed records that were attempted at least once and will be tried again.'),
+});
+export type IntegrationWebhookStatus = z.infer<typeof IntegrationWebhookStatusValidator>;
+
+export const IntegrationWebhookSecretRotationValidator = z.object({
+    secret: z.string(),
+    previousSecretExpiresAt: z.string().optional(),
+});
+export type IntegrationWebhookSecretRotation = z.infer<
+    typeof IntegrationWebhookSecretRotationValidator
+>;
+
+/**
+ * Result of one synchronous test ping. `httpStatus` is present when the receiver answered,
+ * `latencyMs` when a request was made (not for `invalid_webhook` or `no_webhook`), and `error` is a
+ * short fixed code (`http_<status>`, `timeout`, `network_error`, `redirect`, `invalid_webhook`,
+ * `no_webhook`) when it was not delivered. `redirect` means the endpoint answered with a
+ * redirect, which is never followed: `httpStatus` is its 3xx code. `invalid_webhook` means the
+ * address was refused before any request was sent.
+ */
+export const IntegrationTestEventResultValidator = z.object({
+    delivered: z.boolean(),
+    httpStatus: z.number().optional(),
+    latencyMs: z.number().optional(),
+    error: z.string().optional(),
+});
+export type IntegrationTestEventResult = z.infer<typeof IntegrationTestEventResultValidator>;
+
+export const ContractConnectionStatusValidator = z.enum(['live', 'needs_reconsent', 'suspended']);
+export type ContractConnectionStatus = z.infer<typeof ContractConnectionStatusValidator>;
+
+/**
+ * One current connection (consenter) of a contract, as returned by the connections snapshot.
+ * Identifiers only, the same as an integration event: no shared credentials or personal fields.
+ */
+export const ContractConnectionValidator = z.object({
+    profileId: z.string(),
+    did: z.string(),
+    didKey: z.string(),
+    termsUri: z.string(),
+    status: ContractConnectionStatusValidator,
+    requestId: z.string().optional(),
+    externalReferenceId: z.string().optional(),
+    updatedAt: z.string(),
+});
+export type ContractConnection = z.infer<typeof ContractConnectionValidator>;
+
+export const PaginatedContractConnectionsValidator = PaginationResponseValidator.extend({
+    records: ContractConnectionValidator.array(),
+});
+export type PaginatedContractConnections = z.infer<typeof PaginatedContractConnectionsValidator>;
 
 export const ClaimTokenValidator = z.object({
     token: z.string(),

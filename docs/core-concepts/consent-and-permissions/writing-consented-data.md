@@ -68,6 +68,20 @@ The consenting user calls `syncCredentialsToContract(termsUri, categories)`, whe
 
 The terms must belong to the caller, remain live, and not be expired. Categories must exist in the contract's read definition. Sync adds and deduplicates URIs in the shared arrays, records a `sync` transaction, and returns a boolean.
 
+Automatic delivery calls `syncCredentialsToContract(termsUri, categories, audienceVersion, true)` (the HTTP input field is `automatic: true`). The server checks that every category still has `sharing` and `shareAll` enabled and an unexpired `shareUntil` at the database write. A changed consent snapshot is rejected without appending credentials. Refresh consent before retrying. Omit the fourth argument for intentionally selected credentials; selective sharing does not require `shareAll`.
+
+An absent, null, empty, or whitespace-only category `shareUntil` means no category expiry. A nonblank expiry must still be in the future; blank legacy values do not disable automatic sharing.
+
+LearnCard App keeps pending delivery in this browser's account-scoped queue, shared across tabs. Reloading preserves acknowledged destinations. Abandoned attempts become eligible again after a 60-second lease; delivery can repeat if a tab closes before a successful network request is acknowledged.
+
+The app awaits a durable retry handoff when browser storage is working. If queue persistence fails after a credential save or consent has committed, that primary operation still succeeds and the storage failure is logged. The retry job may be missing; a successful save alone does not prove that sharing completed.
+
+Newly queued jobs from older tabs are imported on storage changes or refresh. Imported legacy snapshots are removed only after persistence, without resurrecting deliveries already removed from the durable queue. Personal uploads queued under a key identity remain eligible when that same account resolves its network identity, but not under a switched profile.
+
+A newer unfinished legacy delivery can replace a retained completed job with the same identity. Older snapshots cannot reopen completed work or overwrite an unfinished durable delivery.
+
+Progress and acknowledgment updates touch their own job rather than rescanning all deliveries. A tab skips locks held by another tab and continues other ready jobs. An attempt that loses its lease stops future sharing calls; a request already in flight cannot be recalled.
+
 ### The send convenience method
 
 `send()` supports a **top-level** `contractUri` alongside `type: 'boost'`, `recipient`, and the template or signed credential. `SendOptionsValidator` has **no** `contractUri` field: do not put it inside `options`.

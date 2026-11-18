@@ -11,6 +11,8 @@ import SideMenu from './components/sidemenu/SideMenu';
 import NewMyData from './components/new-my-data/NewMyData';
 import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
 import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
+import { preloadRoutes } from './components/mobile-nav-bar/RoutesOutlet';
+import { afterFirstScreen } from 'learn-card-base/helpers/firstScreen';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
@@ -54,7 +56,7 @@ import { useFirebase } from './hooks/useFirebase';
 import { useKeycloakRedirect } from './auth/useKeycloakRedirect';
 import { assertCurrentKeycloakReauth } from './auth/keycloakReauth';
 import MyLearnCardModal from './components/learncard/MyLearnCardModal';
-import { useSentryIdentify } from './constants/sentry';
+import { useSentryIdentify } from './constants/useSentryIdentify';
 
 import { Modals, getLogger } from 'learn-card-base';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
@@ -71,6 +73,7 @@ import { useTranscriptPrompt } from './hooks/useTranscriptPrompt';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
 import { runCredentialIndexBackfills } from 'learn-card-base/helpers/credentialVisibilityBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
+import { observeDashboardLongTasks, useDashboardPathMark } from './helpers/dashboardPathMarks';
 
 const log = getLogger('app-router');
 
@@ -117,6 +120,7 @@ const AppRouter: React.FC = () => {
             coordinatorState.status === 'needs_recovery' ||
             coordinatorState.status === 'error'
         );
+    useDashboardPathMark('shell_commit', !showOfflineBootGate && !initLoading);
 
     // Native splash bridge. The Capacitor splash is configured with
     // launchAutoHide=false so it stays visible during the entire JS bootstrap
@@ -398,12 +402,21 @@ const AppRouter: React.FC = () => {
     // (side menu, mobile nav, wallet squares, deep link) lands on a warm cache
     // and never hits the Suspense fallback. AI routes are skipped when the
     // user doesn't have AI access — no point downloading what they can't use.
+    // Waits for the first dashboard paint so ~100 chunks don't share a slow link with the wallet's
+    // WASM and the dashboard chunk (see helpers/firstScreen).
     useEffect(() => {
         if (!enablePrefetch) return;
-        // Lazy-import to avoid a circular import on the Routes module graph.
-        import('./Routes')
-            .then(m => m.prefetchRoutes({ aiEnabled: isAiEnabled }))
+        let cancelled = false;
+        afterFirstScreen()
+            .then(() => {
+                if (cancelled) return;
+                // Lazy-import to avoid a circular import on the Routes module graph.
+                return import('./Routes').then(m => m.prefetchRoutes({ aiEnabled: isAiEnabled }));
+            })
             .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
     }, [enablePrefetch, isAiEnabled]);
 
     // Warm the landing chunks immediately — while the boot loader or login
@@ -415,6 +428,9 @@ const AppRouter: React.FC = () => {
     // routes: the default landing pages plus wherever the URL already points.
     const initialPathRef = useRef(window.location.pathname);
     useEffect(() => {
+        observeDashboardLongTasks();
+        // Lets the shell mount Routes without suspending once the wallet is ready.
+        preloadRoutes().catch(() => undefined);
         import('./Routes')
             .then(m => {
                 void m.ROUTE_PRELOAD['/dashboard']?.();

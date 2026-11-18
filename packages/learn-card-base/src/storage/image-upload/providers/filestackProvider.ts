@@ -1,6 +1,6 @@
 import localForage from 'localforage';
 
-import { client, type UploadOptions } from '../../../filestack/ReactFileStackClient';
+import type { UploadOptions } from '../../../filestack/ReactFileStackClient';
 import {
     DefaultMetadata,
     getUrlsFromSrcSet,
@@ -19,6 +19,10 @@ import type {
 } from '../types';
 
 const log = getLogger('filestack-provider');
+
+type FilestackClient = ReturnType<
+    (typeof import('../../../filestack/ReactFileStackClient'))['client']['init']
+>;
 
 const normalizeDomain = (domain: string): string => {
     const normalized = domain.replace(/\/+$/, '');
@@ -44,7 +48,16 @@ export const createFilestackProvider = (storage: TenantStorageConfig): ImageUplo
     if (!isFilestackConfig(storage))
         throw new Error('Filestack provider requires filestack storage config.');
 
-    const filestack = client.init(storage.apiKey, { sessionCache: false });
+    // filestack-js (~5% of the entry chunk) is only needed to upload, so load it on first upload
+    // instead of at startup. One shared client per provider; a failed load is retried next time.
+    let filestackClient: Promise<FilestackClient> | undefined;
+    const getFilestack = (): Promise<FilestackClient> =>
+        (filestackClient ??= import('../../../filestack/ReactFileStackClient')
+            .then(({ client }) => client.init(storage.apiKey, { sessionCache: false }))
+            .catch(error => {
+                filestackClient = undefined;
+                throw error;
+            }));
     const cdnBase = normalizeDomain(storage.cdnDomain);
     const apiBase = normalizeDomain(storage.apiDomain);
     const cdnHost = new URL(cdnBase).host;
@@ -192,16 +205,16 @@ export const createFilestackProvider = (storage: TenantStorageConfig): ImageUplo
     };
 
     const upload = (file: File, options?: ImageUploadOptions): Promise<UploadRes> =>
-        filestack
-            .upload(file, options as UploadOptions)
+        getFilestack()
+            .then(filestack => filestack.upload(file, options as UploadOptions))
             .then(res => normalizeUploadRes(res as FilestackUploadResponse));
 
     const multiupload = (
         files: FileList | File[],
         options?: ImageUploadOptions
     ): Promise<UploadRes> =>
-        filestack
-            .multiupload(Array.from(files), options as UploadOptions)
+        getFilestack()
+            .then(filestack => filestack.multiupload(Array.from(files), options as UploadOptions))
             .then(res => normalizeUploadRes(res as FilestackUploadResponse));
 
     const uploadFromUrl = async (

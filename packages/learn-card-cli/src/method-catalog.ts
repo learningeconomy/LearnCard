@@ -188,6 +188,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'getConsentStatus',
     'getConsentedContracts',
     'getContract',
+    'getContractConnections',
     'getContractSentRequests',
     'getContractVersions',
     'getContracts',
@@ -211,7 +212,9 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'getIncomingPresentations',
     'getInstalledApps',
     'getIntegration',
+    'getIntegrationEvents',
     'getIntegrationForListing',
+    'getIntegrationWebhook',
     'getIntegrations',
     'getKey',
     'getLCNClient',
@@ -333,6 +336,7 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'revokeAuthGrant',
     'revokeBoostRecipient',
     'revokeShareLink',
+    'rotateIntegrationWebhookSecret',
     'searchFrameworkSkills',
     'searchProfiles',
     'searchSkillsAvailableForBoost',
@@ -350,8 +354,10 @@ export const STATIC_INVOKE_METHODS: readonly string[] = [
     'sendCredentialsViaInboxAndWait',
     'sendGuardianApprovalEmail',
     'sendGuardianChallenge',
+    'sendIntegrationTestEvent',
     'sendPresentation',
     'sendRefreshableCredential',
+    'setIntegrationWebhook',
     'setPrimaryContactMethod',
     'setPrimaryRegisteredSigningAuthority',
     'signIdToken',
@@ -481,6 +487,10 @@ export const SECRET_METHODS: ReadonlySet<string> = new Set([
     // OpenID4VP end to end: returns the signed vp_token and, when requested, the SIOPv2 id_token.
     'presentCredentials',
     'presentSdJwtVc',
+    // The two places an integration's webhook signing secret is returned: a rotation, and the
+    // registration that creates the first secret.
+    'rotateIntegrationWebhookSecret',
+    'setIntegrationWebhook',
     'signIdToken',
     'signPresentation',
 ]);

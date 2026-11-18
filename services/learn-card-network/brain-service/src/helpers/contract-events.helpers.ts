@@ -26,6 +26,7 @@ import { sanitizeProfileForTier, stripSensitiveProfileListFields } from './profi
 import { getStoredContractRequest } from '@accesslayer/consentflowcontract/read';
 import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 import { ensureContractEventMaintenance } from './contract-event-maintenance.helpers';
+import { fanOutIntegrationEvents } from './integration-events.helpers';
 import { updateDidForProfile } from './did.helpers';
 import { buildContractUpdatePreview } from '@learncard/helpers';
 
@@ -38,6 +39,8 @@ const INITIAL_RETRY_DELAY_MS = 60_000;
 const MAX_RETRY_DELAY_MS = 60 * 60_000;
 // At most 50 data recipients, the owner, and a requester outside the data audience.
 const MAX_INLINE_EVENT_DELIVERIES = 50 + 1 + 1;
+// Inline integration fan-out stops here or after one second; the worker continues.
+const MAX_INLINE_INTEGRATION_FANOUT = 50;
 
 export type ContractEventDispatchSummary = {
     delivered: number;
@@ -106,6 +109,7 @@ export const appendConsentEvent = (
         CREATE (event:ConsentFlowEvent {id: transaction.id, contractId: contract.id, termsId: terms.id,
             fromId: $eventConsenter, ownerId: owner.profileId, domain: $eventDomain,
             kind: $eventKind, requestAccepted: requestAccepted, messageKey: $eventMessageKey, payload: $eventPayload, cleanupPending: true,
+            integrationFanoutPending: true,
             createdAt: transaction.date, requestId: terms.\`referral.requestId\`,
             requestedBy: terms.\`referral.requestedBy\`, externalReferenceId: terms.\`referral.externalReferenceId\`})
         WITH contract, terms, transaction, event, owner,
@@ -131,7 +135,8 @@ export const requestEventCypher = `
     ON CREATE SET event += {contractId: contract.id, fromId: $eventFrom,
         ownerId: owner.profileId, domain: $domain, kind: $eventKind, createdAt: $now,
         requestId: request.requestId, requestedBy: request.requestedBy,
-        externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false, cleanupPending: true}
+        externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false, cleanupPending: true,
+        targetId: target.profileId, integrationFanoutPending: true}
     WITH request, event, owner, target,
         CASE WHEN coalesce(event.fanoutCreated, false) THEN []
             WHEN $eventKind = 'request_sent' THEN [target.profileId]
@@ -568,5 +573,32 @@ export const tryDispatchContractEvent = async (eventId: string): Promise<void> =
         });
     } catch {
         console.warn('contract_events: dispatch_pending');
+    }
+    // Integrations are told in the same request when possible; the worker retries otherwise.
+    // Older events of the same contract that are still waiting go first, to keep feed order.
+    try {
+        await fanOutIntegrationEvents({
+            eventId,
+            limit: MAX_INLINE_INTEGRATION_FANOUT,
+            budgetMs: 1_000,
+        });
+    } catch {
+        console.warn('integration_events: fanout_pending');
+    }
+};
+
+/**
+ * Inline fan-out of a contract's integration-only events (retirement, re-consent pause) right
+ * after the mutation that wrote them committed. Bounded; the worker finishes what is left.
+ */
+export const tryFanOutContractIntegrationEvents = async (contractId: string): Promise<void> => {
+    try {
+        await fanOutIntegrationEvents({
+            contractId,
+            limit: MAX_INLINE_INTEGRATION_FANOUT,
+            budgetMs: 1_000,
+        });
+    } catch {
+        console.warn('integration_events: fanout_pending');
     }
 };

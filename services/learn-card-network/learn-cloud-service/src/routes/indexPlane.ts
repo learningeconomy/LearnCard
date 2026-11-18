@@ -35,6 +35,10 @@ import {
     setCachedIndexPageForDid,
 } from '@cache/indexPlane';
 import { getAllDidsForDid } from '@accesslayer/user/read';
+import { MAX_INDEX_PAGE_LIMIT } from 'src/constants/limits';
+import { withInternalError } from '@helpers/error.helpers';
+
+const INDEX_READ_ERROR = 'Could not read index';
 
 export const indexRouter = t.router({
     get: didAndChallengeRoute
@@ -64,7 +68,9 @@ export const indexRouter = t.router({
         )
         .output(PaginatedEncryptedCredentialRecordsValidator.or(JWEValidator))
         .query(async ({ ctx, input }) => {
-            const { query: _query, encrypt, limit, cursor, includeAssociatedDids, sort } = input;
+            const { query: _query, encrypt, cursor, includeAssociatedDids, sort } = input;
+            // Clamped, so the page and its cache entry stay small whatever the client asks for.
+            const limit = Math.min(input.limit, MAX_INDEX_PAGE_LIMIT);
             const {
                 user: { did },
             } = ctx;
@@ -84,13 +90,16 @@ export const indexRouter = t.router({
                 return encrypt ? encryptObject(cachedResponse, ctx.domain, [did]) : cachedResponse;
             }
 
-            const rawResults = await getCredentialRecordsForDid(
-                did,
-                query,
-                sort,
-                cursor,
-                limit + 1,
-                includeAssociatedDids
+            // Throws on a failed read, so only a real result reaches the cache below.
+            const rawResults = await withInternalError(INDEX_READ_ERROR, () =>
+                getCredentialRecordsForDid(
+                    did,
+                    query,
+                    sort,
+                    cursor,
+                    limit + 1,
+                    includeAssociatedDids
+                )
             );
             const results = rawResults.map(record => {
                 const {
@@ -159,7 +168,9 @@ export const indexRouter = t.router({
 
             if (isEncrypted(query)) query = await decryptObject(query as JWE);
 
-            const count = await countCredentialRecordsForDid(did, query, includeAssociatedDids);
+            const count = await withInternalError(INDEX_READ_ERROR, () =>
+                countCredentialRecordsForDid(did, query, includeAssociatedDids)
+            );
 
             if (encrypt) return encryptObject(count, ctx.domain, [did]);
 

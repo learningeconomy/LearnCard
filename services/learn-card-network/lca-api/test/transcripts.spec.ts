@@ -157,6 +157,11 @@ describe('transcript requests', () => {
         };
         expect((await caller().getStatus()).issuerDid).toBe('did:web:district.example');
     });
+    it('reports the issuer record type only when configured', async () => {
+        expect((await caller().getStatus()).recordType).toBeUndefined();
+        issuerRegistry.default!.recordType = 'unofficial';
+        expect((await caller().getStatus()).recordType).toBe('unofficial');
+    });
     it('leaves issuer identity unset when no default or override is configured', async () => {
         delete issuerRegistry.default!.did;
         expect((await caller().getStatus()).issuerDid).toBeUndefined();

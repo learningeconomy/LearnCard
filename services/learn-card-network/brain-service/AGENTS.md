@@ -680,6 +680,61 @@ getRevokedCredentials: profileRoute
 | `test/revoke-credential.spec.ts`      | Revocation tests                                                                           |
 | `test/claim-hooks.spec.ts`            | Claim hook tests                                                                           |
 
+## Integration Events (webhooks and change feed)
+
+A second delivery channel for contract events, addressed to an `Integration` instead of a profile. It is separate from profile notification webhooks (`ConsentFlowEvent` deliveries, `notificationsWebhook`). Client-facing behaviour is documented in `docs/sdks/learncard-network/integration-webhooks.md`.
+
+### Data model
+
+- `Integration` stores `webhookUrl`, `webhookSecretEnc`, `webhookSecretPrevEnc` + `webhookSecretPrevExpiresAt` (previous secret, valid 24 hours after a rotation), `contractEventsEnabledAt` (`null` = disabled), `eventSeq` (last sequence allocated), `eventPurgedThroughSeq` (highest sequence removed by retention), `webhookSecretVersion` (1 for the first secret, +1 per rotation; a secret without a stored version counts as 1) and delivery health (`webhookLastSuccessAt`, `webhookLastFailureAt`, `webhookLastFailureReason`). Only `webhookUrl`, `hasWebhookSecret` and `contractEventsEnabledAt` are on the public Integration (`PRIVATE_INTEGRATION_PROPERTIES` in `integrations.helpers.ts` lists the rest); health and the secret version are returned only by `getIntegrationWebhook`; encrypted secrets never leave the access layer.
+- `IntegrationEvent`: one node per Integration and source event. `id` is `${eventId}:${integrationId}` (unique constraint) and is the public `deliveryKey`. The acceptance record uses `${eventId}:accepted:${integrationId}`. Public fields are the feed record and the exact webhook body (`toIntegrationEvent`). Bookkeeping fields (`deliveryState`: `none | pending | delivered | failed | rejected`, `attempts`, `nextAttemptAt`, `lease`, `leaseUntil`, `lastStatus`, `failureReason`, `purgeAt`) are never returned.
+- Indexes and the constraint are created by `ensureContractEventMaintenance` (`src/helpers/contract-event-maintenance.helpers.ts`).
+
+### Flow
+
+1. **Emit.** Every site that creates a `ConsentFlowEvent` sets `integrationFanoutPending = true` on it. Events that only integrations see (`contract_retired`, `consent_paused`, `consent_suspended`, `consent_expired`, and `consent_withdrawn` with reason `contract_retired`) are `ConsentFlowEvent` nodes with no profile deliveries. A new emit site must set the flag or integrations will never see the event.
+2. **Fan-out pass** (`fanOutIntegrationEvents`). For each flagged event: find the audience (consent and lifecycle events: owner, `CAN_WRITE` writers and current `SHARES_DATA_WITH` recipients, the same rule as profile notifications, so a requester removed as a recipient gets none; request events and the extra `request_accepted` record: owner and requester), find their Integrations with `contractEventsEnabledAt <= event.createdAt`, allocate the next `eventSeq` under a lock on the Integration node, `MERGE` the `IntegrationEvent` by id, then remove the flag. Safe to retry and to run concurrently. `externalReferenceId` is written only for contract managers and the requester. An Integration is not tied to contracts: it gets the events of every contract where its owner profile is owner, writer or recipient (and request events where it is the requester), each with its own `sequence`, so Integrations of different customers must not share a profile. Order is kept per contract: an event is not fanned out while an older flagged event of the same contract is waiting, due or in backoff, so a newer event never gets an earlier `sequence`; other contracts are unaffected. An event that keeps failing to fan out is retried with a backoff (60 seconds doubling to 1 hour, `MAX_FANOUT_ATTEMPTS` = 80, about three days) and then abandoned, which unblocks its contract and leaves a gap for that event. `consent_updated` with reason `expiry_extended` is written by the non-breaking contract update (`versions.ts`) for a consent that had expired and now sits on an unexpired version.
+3. **Signed delivery** (`dispatchIntegrationWebhooks`). Records start as `pending` when the Integration has a `webhookUrl`, otherwise `none`. The worker claims due records with a 60-second lease and POSTs them with `fetchNotificationWebhook` (no SQS, no `sendNotification`). Headers: `X-LearnCard-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, t + "." + body)>` (a second `v1=` while the previous secret is valid), `X-LearnCard-Event-Id`, `X-LearnCard-Delivery`. Up to 12 attempts within 24 hours, 60 s doubling to 1 hour; a 4xx other than 408/425/429 is `rejected`. Each pass claims at most 5 due records per Integration and interleaves Integrations round-robin, so a slow endpoint slows only itself. Webhook configuration is read at send time, so a disable, URL change or removal, or secret rotation applies to the next delivery. `webhookUrl` must be exactly `http` or `https` and carry no username or password (`lcn.ts` validator). A failed delivery never removes the record from the feed. Records of an Integration whose contract events are disabled (or were disabled after the record's event) become final `rejected` with `failureReason` `disabled` and are not sent.
+4. **Webhook health** (`getIntegrationWebhook` → `readIntegrationWebhookStatus`). `state` is `disabled` (no URL or events disabled), `failing` (latest attempt failed) or `active` (`deriveIntegrationWebhookState`). The dispatcher remembers the latest success and failure per Integration during a pass and writes them once after the loop (`recordIntegrationWebhookOutcomes`: at most one write per Integration per pass, values only move forward); `sendIntegrationTestEvent` records its result the same way. Only attempts that reached the send step count: `no_webhook`, `disabled`, `retry_expired` and `retry_exhausted` do not change health. A changed URL clears health. `pendingDeliveries` (`pending`, 0 attempts) and `retryingDeliveries` (`pending`, ≥1 attempt) are counted from the `IntegrationEvent(integrationId, deliveryState, attempts)` index; the route has no `USING INDEX` hint because read routes do not run schema setup (the index is created at service start via `models/index.ts` and by every worker pass).
+5. **Feed** (`getIntegrationEvents`). Ordered by `sequence`; the cursor is an opaque encoding of the sequence bound to one Integration. A malformed cursor, one from another Integration, or one ahead of `eventSeq` is `BAD_REQUEST` (HTTP 400). A `since` below `eventPurgedThroughSeq` is rejected with tRPC `CONFLICT` (HTTP 409) and a message starting `CURSOR_EXPIRED: ` — tRPC cannot return 410 (`src/constants/integration-events.ts`).
+6. **Retention** (`purgeExpiredIntegrationEvents`). Records are deleted 30 days after they are written (`purgeAt`), in batches, and `eventPurgedThroughSeq` advances.
+
+`getContractConnections` (`src/accesslayer/consentflowcontract/relationships/connections.ts`) is the snapshot a feed client pairs with the feed.
+
+### Where the jobs run
+
+| Job                | Lambda                                                                                                                                          | Docker (`src/docker-entry.ts`)                                                                  |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Fan-out, inline    | `tryDispatchContractEvent` in `contract-events.helpers.ts` (one event, 1-second budget)                                                         | Same code path                                                                                  |
+| Fan-out + delivery | `contractEventsLambdaApp.ts`: `runIntegrationEventPass` runs first with at most a third of the budget (15 s cap), then `dispatchContractEvents` | The 60-second contract-event timer runs `runIntegrationEventPass` then `dispatchContractEvents` |
+| Retention          | `inboxMaintenanceHandler` in `lambdaApp.ts` (daily)                                                                                             | Its own 24-hour timer, first run 60 seconds after start                                         |
+
+A failure of the integration pass is caught and logged; it must never stop profile notifications.
+
+### Rules
+
+- **Import restriction.** `src/helpers/integration-events.helpers.ts` is loaded by the slim `contractEvents` Lambda and by `contract-events.helpers.ts`. Keep its static imports light: `uri.helpers`, `did.helpers` and `@accesslayer/integration/webhook` (which decrypts secrets and pulls in the wallet stack) are loaded with dynamic `import()` inside the functions that need them. Do not turn them into top-level imports, and do not add other static imports that reach the wallet stack.
+- **Never log** webhook URLs, secrets, subject identifiers or reference ids. Log lines are fixed strings such as `integration_events: delivery_failed`.
+- **The secret is returned in two places only, once each:** `setIntegrationWebhook` when it creates the Integration's first secret, and `rotateIntegrationWebhookSecret`. The webhook URL is written only by `setIntegrationWebhook` (`updateIntegration` does not accept it). No read route returns a secret, encrypted or not.
+- `sendIntegrationTestEvent` posts an `integration.test` event synchronously, returns `{ delivered, httpStatus, latencyMs, error }`, never writes it to the feed, works while events are disabled, and is limited to 10 per Integration per minute with `enforceRateLimits` (Redis fixed window, key `integration-webhook-test:<id>`, fails closed).
+- `consent_expired` is keyed by the expiry instant (`${termsId}:expired:${expiresAt}`, instants remembered in `terms.expiredEventFor`), so a renewed consent that expires again emits again. A category's `shareUntil` passing emits `consent_updated` with `reason: 'share_until_passed'` (id `${termsId}:share_until:${category}:${shareUntilIso}`, integration-only): every terms write sets `terms.nextShareUntil` (earliest future `shareUntil` among shared categories, ISO string, `consent-share-until.helpers.ts`; the sync/prune writes do not change dates and leave it alone), and `emitShareUntilPassedEvents` finds `nextShareUntil <= now` through its index, emits, and advances the field in the same statement. `backfillNextShareUntil` (cursor in `ConsentFlowJobState` `share-until-backfill-v1`, `completedAt` when finished) fills it for consents that predate the field. The connection stays live; only that category's data reads stop.
+- Routes authorize with `isIntegrationAssociatedWithProfile`: the caller must own the Integration.
+
+### Key Files
+
+| File                                                   | Purpose                                                    |
+| ------------------------------------------------------ | ---------------------------------------------------------- |
+| `src/routes/integrations.ts`                           | Webhook set/read (health), rotation, test event, feed      |
+| `src/accesslayer/integration/webhook.ts`               | Stores config and secrets; delivery config; health read    |
+| `src/accesslayer/integration-event/read.ts`            | Feed reads and sequence state                              |
+| `src/helpers/integration-events.helpers.ts`            | Fan-out, signed delivery, retention, worker pass           |
+| `src/helpers/integration-webhook-signature.helpers.ts` | Signature header                                           |
+| `src/helpers/integration-webhook-secret.helpers.ts`    | Secret generation and encryption                           |
+| `src/helpers/integration-event-cursor.helpers.ts`      | Feed cursor encoding                                       |
+| `src/constants/integration-events.ts`                  | Retention, previous-secret TTL, `CURSOR_EXPIRED` constants |
+
+---
+
 ## App Notifications
 
 Apps can send notifications to users via the `APP_NOTIFICATION` type. There are two delivery paths:

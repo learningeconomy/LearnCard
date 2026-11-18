@@ -46,6 +46,7 @@ import { FlatBoostType } from 'types/boost';
 import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { areTermsValid, shouldIncludeCategory } from '@helpers/contract.helpers';
+import { isConsentExpiryActive, isConsentUnexpired } from '@helpers/consent-expiry.helpers';
 import { isServiceProfileExemptFromGuardianship } from '@helpers/profile.helpers';
 import { ProfileType } from 'types/profile';
 import { CredentialType } from 'types/credential';
@@ -783,13 +784,6 @@ export const getConsentedDataForContract = async (
     options: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
 ): Promise<ConsentedDataPage> => getPermittedContractData(viewerProfileId, options, id);
 
-// Empty expiry values historically mean no expiry. Invalid nonempty values never authorize access.
-const isConsentExpiryActive = (expiresAt: string | undefined, now: number): boolean => {
-    if (!expiresAt?.trim()) return true;
-    const expiry = Date.parse(expiresAt);
-    return Number.isFinite(expiry) && expiry > now;
-};
-
 export type ConsentedDataForDidPage = {
     records: ConsentFlowContractDataForDid[];
     hasMore: boolean;
@@ -908,9 +902,17 @@ AND ${contractWhereClause}
             const acceptedVersion = acceptedVersions.get(
                 `${contract.id}:${Number(term.consentedVersion ?? 1)}`
             );
+            // The expiry rule shared with the connections snapshot and the consent_expired scan.
             if (
                 !acceptedVersion ||
-                !isConsentExpiryActive(acceptedVersion.expiresAt, now) ||
+                !isConsentUnexpired(
+                    {
+                        termsExpiresAt: term.expiresAt,
+                        hasAcceptedVersion: true,
+                        acceptedVersionExpiresAt: acceptedVersion.expiresAt,
+                    },
+                    now
+                ) ||
                 !areTermsValid(term.terms, acceptedVersion.contract)
             )
                 continue;

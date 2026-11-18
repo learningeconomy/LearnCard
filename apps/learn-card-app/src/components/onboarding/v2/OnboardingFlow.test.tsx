@@ -1,7 +1,7 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import OnboardingFlow from './OnboardingFlow';
+import OnboardingFlow from './OnboardingFlowContent';
 import * as m from '../../../paraglide/messages.js';
 import {
     setClassLinkDisplayName,

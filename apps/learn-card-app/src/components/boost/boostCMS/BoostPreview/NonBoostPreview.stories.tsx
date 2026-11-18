@@ -60,10 +60,18 @@ const meta: Meta<typeof NonBoostPreview> = {
 export default meta;
 type Story = StoryObj<typeof NonBoostPreview>;
 
+// NonBoostPreview loads its body on first render (lazyModalContent), so allow longer than
+// findBy's default 1 s for that chunk on a slow capture worker.
+const LAZY_BODY = { timeout: 10_000 };
+
 /** Actual unsigned preview: neutral footer, two links, and a separate award date. */
 export const UnsignedBadge: Story = {
     play: async ({ canvasElement }) => {
-        const card = await within(canvasElement).findByRole('group', { name: 'Web Foundations' });
+        const card = await within(canvasElement).findByRole(
+            'group',
+            { name: 'Web Foundations' },
+            LAZY_BODY
+        );
         const pane = card.closest('.boost-cms-preview');
         if (!pane) throw new Error('Credential preview pane is missing');
         const cardBox = card.getBoundingClientRect();
@@ -81,7 +89,7 @@ export const UnsignedCertificate: Story = {
     args: { credential: { ...credential, display: { displayType: 'certificate' } } as VC },
     play: async ({ canvasElement }) => {
         const canvas = within(canvasElement);
-        const card = await canvas.findByRole('group', { name: 'Web Foundations' });
+        const card = await canvas.findByRole('group', { name: 'Web Foundations' }, LAZY_BODY);
         const heading = within(card).getByRole('heading', { name: 'Web Foundations' });
         const imageFrame = card.firstElementChild?.firstElementChild;
         if (!(imageFrame instanceof HTMLElement)) throw new Error('Certificate image is missing');

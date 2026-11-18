@@ -30,7 +30,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const learner = useClrLearnerIdentity(model.header.learnerName?.value);
     const issuerLogo = getClrIssuerLogo(model);
-    const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
+    const transcriptTitle = model.header.title?.value || 'Academic Transcript';
     const scrollToCourseHistory = () => {
         document.getElementById('course-history')?.scrollIntoView({
             behavior: 'smooth',

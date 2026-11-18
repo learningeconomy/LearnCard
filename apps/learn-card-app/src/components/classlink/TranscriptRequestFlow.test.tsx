@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
     earnedCard: vi.fn(),
     openPreview: vi.fn(),
     track: vi.fn(),
+    recordType: undefined as 'official' | 'unofficial' | undefined,
 }));
 
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
@@ -34,6 +35,7 @@ vi.mock('learn-card-base', () => ({
             eligible: true,
             issuerDid: 'did:issuer',
             issuerProfileId: 'issuer-profile',
+            recordType: mocks.recordType,
             stateDisplayName: 'Example',
             latest: mocks.latest,
         },
@@ -103,6 +105,7 @@ beforeEach(() => {
     mocks.track.mockReset();
     mocks.earnedCard.mockReset();
     mocks.openPreview.mockReset();
+    mocks.recordType = undefined;
 });
 afterEach(() => {
     cleanup();
@@ -114,6 +117,16 @@ describe('TranscriptRequestFlow', () => {
         renderFlow();
         expect(screen.getByTestId('transcript-flow-ask')).toBeTruthy();
         expect(screen.getByTestId('onboarding-transcript-get')).toHaveProperty('disabled', true);
+    });
+
+    it.each([
+        [undefined, 'Your transcript, in your pocket.'],
+        ['official', 'Your official transcript, in your pocket.'],
+        ['unofficial', 'Your unofficial transcript, in your pocket.'],
+    ] as const)('titles the request for %s records', (recordType, title) => {
+        mocks.recordType = recordType;
+        renderFlow();
+        expect(screen.getByText(title)).toBeTruthy();
     });
 
     it('stays on screen after requesting and shows live progress', async () => {

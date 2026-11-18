@@ -39,7 +39,6 @@
         "url": "https://github.com/learningeconomy/LearnCard/issues"
     },
     "devDependencies": {
-        "@learncard/learn-cloud-service": "workspace:^",
         "@learncard/types": "workspace:*",
         "@types/lodash": "^4.14.191",
         "@types/node": "^17.0.31",

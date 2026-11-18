@@ -86,11 +86,8 @@ vi.mock('@sentry/react', () => ({
 }));
 
 import { init } from '@sentry/react';
-import {
-    initSentryFromTenant,
-    setSentryOptionalTelemetryEnabled,
-    useSentryIdentify,
-} from './sentry';
+import { initSentryFromTenant, setSentryOptionalTelemetryEnabled } from './sentry';
+import { useSentryIdentify } from './useSentryIdentify';
 
 afterEach(cleanup);
 

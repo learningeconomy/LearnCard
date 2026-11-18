@@ -1,6 +1,12 @@
 import type { CampaignAudienceResult } from '@learncard/types';
 import type {
     SendContractRequest,
+    IntegrationWebhookRegistration,
+    IntegrationWebhookSecretRotation,
+    IntegrationWebhookStatus,
+    IntegrationTestEventResult,
+    IntegrationEventsResponse,
+    PaginatedContractConnections,
     ConsentFlowContractRequestForProfile,
     GuardianApprovalRequestStatus,
 } from '@learncard/types';
@@ -867,7 +873,9 @@ export type LearnCardNetworkPluginMethods = {
     syncCredentialsToContract: (
         termsUri: string,
         categories: Record<string, string[]>,
-        audienceVersion?: number
+        audienceVersion?: number,
+        /** Require current category-wide consent for automatic delivery. Omit for explicit selections. */
+        automatic?: boolean
     ) => Promise<boolean>;
 
     deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{
@@ -929,6 +937,15 @@ export type LearnCardNetworkPluginMethods = {
 
     markContractRequestAsSeen: (contractUri: string, targetProfileId: string) => Promise<boolean>;
     cancelContractRequest: (contractUri: string, targetProfileId: string) => Promise<boolean>;
+    /**
+     * Snapshot of a contract's current connections (consenters whose terms are live,
+     * needs_reconsent or suspended, and not expired). Owner or data recipient only.
+     * Pair it with getIntegrationEvents: read latestCursor, take the snapshot, then follow the feed.
+     */
+    getContractConnections: (
+        contractUri: string,
+        options?: { limit?: number; cursor?: string }
+    ) => Promise<PaginatedContractConnections>;
 
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
     getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;
@@ -1121,6 +1138,41 @@ export type LearnCardNetworkPluginMethods = {
     countIntegrations: (options?: { query?: LCNIntegrationQueryType }) => Promise<number>;
     updateIntegration: (id: string, updates: LCNIntegrationUpdateType) => Promise<boolean>;
     deleteIntegration: (id: string) => Promise<boolean>;
+    /**
+     * Sets, replaces or removes (`null`) the webhook URL of an integration. The first time a URL
+     * is set, the signing secret is created and returned once in `secret`; store it then, it
+     * cannot be read again. Setting a URL also enables contract events.
+     */
+    setIntegrationWebhook: (
+        id: string,
+        webhookUrl: string | null
+    ) => Promise<IntegrationWebhookRegistration>;
+    /**
+     * Reads the webhook configuration and delivery health of an integration: URL, state
+     * (`active`, `failing`, `disabled`), last success and failure with a fixed failure code,
+     * pending and retrying delivery counts, and the secret version. Never a secret.
+     */
+    getIntegrationWebhook: (id: string) => Promise<IntegrationWebhookStatus>;
+    /**
+     * Replaces the webhook signing secret and returns the new one once. The secret it replaces
+     * stays valid for 24 hours. The first secret comes from setIntegrationWebhook.
+     */
+    rotateIntegrationWebhookSecret: (id: string) => Promise<IntegrationWebhookSecretRotation>;
+    /**
+     * Sends one signed `integration.test` event to the integration's webhook URL right away
+     * and returns `{ delivered, httpStatus, latencyMs, error }`. Limited to 10 per integration
+     * per minute.
+     */
+    sendIntegrationTestEvent: (id: string) => Promise<IntegrationTestEventResult>;
+    /**
+     * Reads the ordered change feed of contract events for an integration. Pass the returned
+     * cursor as `since` to continue. A cursor older than the 30-day retention window is
+     * rejected with a CONFLICT error whose message starts with `CURSOR_EXPIRED: `.
+     */
+    getIntegrationEvents: (
+        id: string,
+        options?: { since?: string; limit?: number }
+    ) => Promise<IntegrationEventsResponse>;
     associateListingWithSigningAuthority: (
         listingId: string,
         endpoint: string,
