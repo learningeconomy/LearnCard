@@ -115,8 +115,11 @@ bun run --cwd examples/credential-viewer dev
    delivered to establish real revocation/suspension bindings; lifecycle
    notifications may appear. A failed batch lists any transcripts already sent.
    Check those before retrying: another attempt creates new issuers and examples.
-5. In the recipient's normal LearnCard app, open **Alerts**, claim the demo
-   transcripts, and open **Studies**. If asked to connect with the publisher,
+5. In the recipient's normal LearnCard app, open **Alerts**. Five transcript alerts
+   are intentional: each is a separate verification case. Open an alert and check
+   that it shows the transcript layout and included-record verification, not a
+   generic certificate. Claim it, then open the same transcript in
+   **Passport → Studies** and compare. If asked to connect with the publisher,
    **Skip for Now** is sufficient. Each batch has a unique suffix:
 
     | Transcript            | Expected result                                                        |
