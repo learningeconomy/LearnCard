@@ -375,16 +375,21 @@ platform :ios do
     profile_name = profile_mapping[ENV["APP_ID"]]
     UI.user_error!("No development provisioning profile for #{ENV['APP_ID']}. The smoke IPA assumes the existing match development profile.") unless profile_name
 
+    # Resolve from this Fastfile. `Dir.pwd` during the lane is the parent of
+    # `fastlane/`, so a raw relative XCODE_PROJECT opens the wrong directory.
+    xcode_project = File.expand_path(ENV.fetch("XCODE_PROJECT"), __dir__)
+    UI.message("Smoke Xcode project: #{xcode_project}")
+
     update_code_signing_settings(
       use_automatic_signing: false,
-      path: ENV["XCODE_PROJECT"],
+      path: xcode_project,
       profile_name: profile_name
     )
 
     # The generated project forces iPhone Distribution for iphoneos builds.
     # Match development only installs an Apple Development certificate, so the
     # smoke archive has to sign with that identity and the development profile.
-    project = Xcodeproj::Project.open(ENV["XCODE_PROJECT"])
+    project = Xcodeproj::Project.open(xcode_project)
     app_target = project.targets.find { |target| target.name == "App" }
     UI.user_error!("App target not found in #{ENV['XCODE_PROJECT']}") unless app_target
     app_target.build_configurations.each do |config|

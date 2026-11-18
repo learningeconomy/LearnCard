@@ -15,7 +15,13 @@ androidWebViewHierarchy: devtools
 - extendedWaitUntil:
       visible: Passport
       timeout: 120000
+- scrollUntilVisible:
+      element: "Credential card"
+      direction: DOWN
+      timeout: 90000
+      speed: 40
+      visibilityPercentage: 20
 - extendedWaitUntil:
-      visible: 'Credential card'
-      timeout: 120000
+      visible: "Credential card"
+      timeout: 30000
 - takeScreenshot: wallet-loaded
