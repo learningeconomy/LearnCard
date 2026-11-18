@@ -19,6 +19,7 @@ export type HcpEvent = Awaited<ReturnType<HcpClient['audit']['list']['query']>>[
 export type HcpGrantRequest = Parameters<HcpClient['grants']['create']['mutate']>[0];
 export type HcpEntryRequest = Parameters<HcpClient['entries']['create']['mutate']>[0];
 export type HcpReviseRequest = Parameters<HcpClient['entries']['revise']['mutate']>[0];
+export type HcpContractOffer = Awaited<ReturnType<HcpClient['grants']['offer']['query']>>;
 
 export type HcpChange =
     | { kind: 'add'; input: Omit<HcpEntryRequest, 'subject' | 'grantId'> }
@@ -55,6 +56,17 @@ export const useHcpGrants = (status: HcpGrantStatus = 'active') => {
     return useQuery({
         queryKey: [...key, 'grants', status],
         queryFn: async () => (await client()).grants.list.query({ status }),
+    });
+};
+
+/** What allowing a contract's agents would grant, resolved by the brain (LC-2421). */
+export const useHcpContractOffer = (contractUri: string | null) => {
+    const key = useHcpKey();
+    const client = useHcpClient();
+    return useQuery({
+        queryKey: [...key, 'contract-offer', contractUri],
+        queryFn: async () => (await client()).grants.offer.query({ contractUri: contractUri! }),
+        enabled: contractUri !== null,
     });
 };
 

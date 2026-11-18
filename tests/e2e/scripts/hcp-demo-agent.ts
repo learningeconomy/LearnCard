@@ -8,10 +8,14 @@
  *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts link            # print a consent link
  *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts read <grantId>  # read as the agent
  *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts smoke           # whole flow, no app
+ *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts contract        # contract consent link (LC-2421)
+ *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts contract-smoke  # contract flow, no app
  *
  * The agent's did:key comes from a random seed made on first run and kept in a 0600
  * file in $TMPDIR, so `link` and `read` are the same agent only with the same $TMPDIR.
- * The seed is never printed.
+ * The seed is never printed. `contract` makes a throwaway operator (a fresh seed,
+ * never saved or printed) with a LearnCard profile that owns a ConsentFlow contract
+ * whose HCP section names this agent.
  * Env: HCP_BRAIN_URL (default http://localhost:4000/trpc), HCP_APP_URL (default
  * http://localhost:3000).
  */
@@ -190,6 +194,116 @@ const smoke = async (): Promise<void> => {
     step(`active grants left: ${(await mine.grants.list.query({ status: 'active' })).length}`);
 };
 
+/** LC-2421: the HCP section an operator's contract offers, naming the agent. */
+const hcpSection = (agentDid: string, categories = CATEGORIES) => ({
+    agents: [agentDid],
+    categories,
+    actions: ['read' as const],
+    purposes: [PURPOSE],
+    duration: '1h' as const,
+});
+
+/** A throwaway operator profile that owns a contract naming the agent. */
+const operatorContract = async (agentDid: string) => {
+    const operator = await wallet(randomBytes(32).toString('hex'));
+    const profileId = `hcp-operator-${randomBytes(4).toString('hex')}`;
+    await operator.invoke.createProfile({
+        profileId,
+        displayName: 'Demo Tutor Co',
+        shortBio: '',
+        bio: '',
+    });
+    const uri = await operator.invoke.createContract({
+        name: NAME,
+        contract: { hcp: hcpSection(agentDid) },
+    });
+    return { operator, profileId, uri };
+};
+
+export const contractLink = (contractUri: string): string =>
+    `${APP}/hcp/connect?${new URLSearchParams({ contract: contractUri })}`;
+
+const contractSmoke = async (): Promise<void> => {
+    const step = (text: string) => console.log(`- ${text}`);
+    const person = await wallet(randomBytes(32).toString('hex'));
+    await person.invoke.createProfile({
+        profileId: `hcp-demo-${randomBytes(4).toString('hex')}`,
+        displayName: 'HCP Demo Person',
+        shortBio: '',
+        bio: '',
+    });
+    const mine = await person.invoke.getHcpClient();
+    const { subject } = await mine.entries.list.query({});
+    const add = (value: string, category: string) =>
+        mine.entries.create.mutate({
+            schema: ENTRY_SCHEMA,
+            subject,
+            content: { profile: GENERAL, value },
+            classification: { categories: [category] },
+            assertion: { declarationType: 'person-declared' },
+            record: { provenance: { source: 'hcp-demo-agent' } },
+        });
+    await add('I learn best with short worked examples', 'education_learner_profile');
+    await add('Pass my algebra final in June', 'goals_and_constraints');
+    await add('Prefers email over calls', 'general_preferences');
+
+    const { did, hcp } = await agentHcp();
+    const { operator, profileId, uri } = await operatorContract(did);
+    step(`operator ${profileId} owns contract ${uri.split(':').at(-1)} naming the agent`);
+
+    const offer = await mine.grants.offer.query({ contractUri: uri });
+    step(`offer v${offer.version}: "${offer.name}" by ${offer.owner.displayName}`);
+    const allow = (version: number) =>
+        mine.grants.create.mutate({
+            client: { id: did },
+            source: { type: 'consentflow', contractUri: uri, contractVersion: version },
+        });
+    const categoriesOf = async (grantId: string) =>
+        [...new Set((await read(hcp, grantId)).flatMap(entry => entry.categories))].sort();
+
+    const first = await allow(offer.version);
+    step(
+        `allowed: grant pinned to v${first.source.type === 'consentflow' ? first.source.contractVersion : '?'}, client name "${first.client.name}"`
+    );
+    step(`agent reads ${(await categoriesOf(first.grantId)).join(', ')}`);
+
+    await operator.invoke.updateContract(uri, {
+        contract: { hcp: hcpSection(did, ['education_learner_profile']) },
+    });
+    const narrowed = await categoriesOf(first.grantId);
+    step(`operator narrowed (v2, relaxed): agent reads ${narrowed.join(', ')}`);
+    if (narrowed.includes('goals_and_constraints'))
+        throw new Error('a narrowing version did not reach the existing grant');
+
+    await operator.invoke.updateContract(
+        uri,
+        { contract: { hcp: hcpSection(did, [...CATEGORIES, 'general_preferences']) } },
+        { reason: 'Adds your preferences' }
+    );
+    const pinned = await categoriesOf(first.grantId);
+    step(`operator widened (v3): existing grant still reads ${pinned.join(', ')}`);
+    if (pinned.includes('general_preferences'))
+        throw new Error('a widening version reached the existing grant without consent');
+
+    const second = await allow(3);
+    const widened = await categoriesOf(second.grantId);
+    step(`person allowed v3: new grant reads ${widened.join(', ')}`);
+    if (!widened.includes('general_preferences'))
+        throw new Error('re-consent did not grant the wider access');
+    const old = await mine.grants.get.query({ grantId: first.grantId });
+    step(`earlier grant is ${old.status}`);
+    if (old.status !== 'revoked') throw new Error('the earlier grant was not replaced');
+
+    const stranger = await wallet(randomBytes(32).toString('hex'));
+    const strangerResult = await read(stranger.invoke.getLCNClient().hcp.v1, second.grantId).then(
+        () => 'allowed (unexpected)',
+        (error: { data?: { hcp?: { type?: string } } }) => error.data?.hcp?.type ?? 'error'
+    );
+    step(`another DID using the contract grant: ${strangerResult}`);
+    if (strangerResult !== 'scope-denied') throw new Error('another DID used the contract grant');
+    step(`contract link for the app: ${contractLink(uri)}`);
+};
+
 const main = async (): Promise<void> => {
     assertLocal();
     const [command, grantId] = process.argv.slice(2);
@@ -201,9 +315,14 @@ const main = async (): Promise<void> => {
         console.log(JSON.stringify(await read(hcp, grantId), null, 2));
     } else if (command === 'smoke') {
         await smoke();
+    } else if (command === 'contract') {
+        const { did } = await agentHcp();
+        console.log(contractLink((await operatorContract(did)).uri));
+    } else if (command === 'contract-smoke') {
+        await contractSmoke();
     } else {
         console.log(
-            'Usage: bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts <link | read <grantId> | smoke>'
+            'Usage: bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts <link | read <grantId> | smoke | contract | contract-smoke>'
         );
         process.exitCode = 1;
     }

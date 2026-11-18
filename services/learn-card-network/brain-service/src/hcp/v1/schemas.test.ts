@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { CategorySchema, CreateEntryInputSchema, orderCategories } from './schemas';
+import {
+    CategorySchema,
+    CreateEntryInputSchema,
+    CreateGrantInputSchema,
+    orderCategories,
+} from './schemas';
 import { entryInput } from './service/test-harness';
 
 describe('HCP v1 category identifiers (Draft 3 §4.5)', () => {
@@ -59,5 +64,46 @@ describe('HCP v1 category identifiers (Draft 3 §4.5)', () => {
             'https://a.learncard.com/x',
             'https://b.learncard.com/x',
         ]);
+    });
+});
+
+describe('HCP v1 grant input forms (LC-2421)', () => {
+    const access = [
+        {
+            actions: ['read'],
+            categories: ['general_preferences'],
+            purposes: [{ code: 'https://purpose.example/a', description: 'A' }],
+        },
+    ];
+
+    it('requires a direct grant to name its client and access', () => {
+        expect(
+            CreateGrantInputSchema.safeParse({ client: { id: 'did:key:z6MkA' }, access }).success
+        ).toBe(false);
+        expect(
+            CreateGrantInputSchema.safeParse({ client: { id: 'did:key:z6MkA', name: 'A' } }).success
+        ).toBe(false);
+        expect(
+            CreateGrantInputSchema.parse({ client: { id: 'did:key:z6MkA', name: 'A' }, access })
+                .source
+        ).toEqual({ type: 'direct' });
+    });
+
+    it('accepts a contract grant with only the agent and the reviewed version', () => {
+        const source = {
+            type: 'consentflow',
+            contractUri: 'lc:network:x/trpc:contract:c',
+            contractVersion: 2,
+        };
+        expect(CreateGrantInputSchema.parse({ client: { id: 'did:key:z6MkA' }, source })).toEqual({
+            client: { id: 'did:key:z6MkA' },
+            source,
+        });
+        expect(
+            CreateGrantInputSchema.safeParse({
+                client: { id: 'did:key:z6MkA' },
+                source: { ...source, contractVersion: '2' },
+            }).success
+        ).toBe(false);
     });
 });

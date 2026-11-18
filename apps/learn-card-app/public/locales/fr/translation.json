@@ -10590,6 +10590,7 @@
             "appReadNothing": "{{app}} a cherché dans {{categories}} sans rien trouver",
             "appDenied": "{{app}} a demandé des infos auxquelles il n'a pas accès et n'a rien reçu",
             "strangerDenied": "Une appli avec laquelle vous ne partagez rien a essayé d'utiliser l'accès de {{app}} et n'a rien reçu",
+            "replaced": "L'accès précédent de {{app}} a été remplacé quand vous l'avez de nouveau autorisé",
             "more": "Voir plus",
             "emptyTitle": "Aucune activité",
             "emptyBody": "Quand vous ou une appli utilisez vos infos, cela apparaît ici."
@@ -10611,7 +10612,8 @@
             "deny": "Ne pas autoriser",
             "badTitle": "Ce lien ne fonctionne pas",
             "badBody": "Demandez un nouveau lien à l'appli et réessayez.",
-            "unverified": "N'autorisez que les applis en qui vous avez confiance. LearnCard ne peut pas confirmer qui a créé ce lien."
+            "unverified": "N'autorisez que les applis en qui vous avez confiance. LearnCard ne peut pas confirmer qui a créé ce lien.",
+            "offeredBy": "Proposé par le compte LearnCard de {{owner}}."
         },
         "error": {
             "title": "Un problème est survenu",

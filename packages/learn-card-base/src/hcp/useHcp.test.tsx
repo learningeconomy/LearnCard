@@ -10,7 +10,7 @@ vi.mock('../stores/walletStore', () => ({
     switchedProfileStore: { use: { switchedDid: () => host.switchedDid } },
 }));
 
-import { useHcpChange, useHcpEntries } from './useHcp';
+import { useHcpChange, useHcpContractOffer, useHcpEntries } from './useHcp';
 
 const SUBJECT = 'did:key:z6MkSubject';
 
@@ -28,6 +28,7 @@ const makeHcp = () => ({
     grants: {
         list: { query: vi.fn().mockResolvedValue([]) },
         create: { mutate: vi.fn().mockResolvedValue({ grantId: 'g1' }) },
+        offer: { query: vi.fn().mockResolvedValue({ contractUri: 'lc:c', version: 2 }) },
         revoke: { mutate: vi.fn().mockResolvedValue({ grantId: 'g1', status: 'revoked' }) },
     },
 });
@@ -122,5 +123,15 @@ describe('HCP hooks', () => {
         expect(
             client.getQueryState(['hcp', 'did:web:child', 'grants', 'active'])?.isInvalidated
         ).toBe(false);
+    });
+
+    it('resolves a contract offer through the brain, and waits without a contract (LC-2421)', async () => {
+        const { hcp, wrapper } = setup();
+        const idle = renderHook(() => useHcpContractOffer(null), { wrapper });
+        expect(idle.result.current.fetchStatus).toBe('idle');
+        const { result } = renderHook(() => useHcpContractOffer('lc:c'), { wrapper });
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(hcp.grants.offer.query).toHaveBeenCalledWith({ contractUri: 'lc:c' });
+        expect(result.current.data).toEqual({ contractUri: 'lc:c', version: 2 });
     });
 });

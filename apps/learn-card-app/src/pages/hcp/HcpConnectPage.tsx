@@ -2,12 +2,59 @@ import React, { useMemo } from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { useHcpChange } from 'learn-card-base/hcp/useHcp';
+import { useHcpChange, useHcpContractOffer } from 'learn-card-base/hcp/useHcp';
 import * as m from '../../paraglide/messages.js';
 import ConsentScreen from './ConsentScreen';
-import { grantRequestFor, parseConsentLink } from './consentLink';
+import {
+    contractGrantRequest,
+    grantRequestFor,
+    parseConsentLink,
+    requestFromOffer,
+} from './consentLink';
 import { HcpHeader } from './HcpPage';
 import HcpProfileGate from './HcpProfileGate';
+import { HcpLoading } from './HcpStates';
+
+const BadLink: React.FC = () => (
+    <div role="alert" className="p-4 bg-red-50 border border-red-100 rounded-2xl">
+        <p className="text-sm font-medium text-red-700">{m['hcp.connect.badTitle']()}</p>
+        <p className="text-sm text-red-700">{m['hcp.connect.badBody']()}</p>
+    </div>
+);
+
+/** LC-2421: the brain resolves the contract; Allow grants under the version shown. */
+const ContractConsent: React.FC<{ contractUri: string; client: string | null }> = ({
+    contractUri,
+    client,
+}) => {
+    const history = useHistory();
+    const change = useHcpChange();
+    const offer = useHcpContractOffer(contractUri);
+
+    if (offer.isPending) return <HcpLoading />;
+    const request = offer.data ? requestFromOffer(offer.data, client) : null;
+    if (!offer.data || !request) return <BadLink />;
+    const data = offer.data;
+
+    return (
+        <ConsentScreen
+            request={request}
+            pending={change.isPending}
+            failed={change.isError}
+            onAllow={() =>
+                change.mutate(
+                    { kind: 'allow', input: contractGrantRequest(data, request.client.id) },
+                    {
+                        onSuccess: () => history.replace('/hcp?tab=apps'),
+                        // The contract may have changed since it loaded: show the current one.
+                        onError: () => void offer.refetch(),
+                    }
+                )
+            }
+            onDeny={() => history.replace('/hcp')}
+        />
+    );
+};
 
 /** `/hcp/connect?...`: an app asks to see some of the person's info. */
 const HcpConnectPage: React.FC = () => {
@@ -23,15 +70,12 @@ const HcpConnectPage: React.FC = () => {
                     <HcpHeader title={m['hcp.connect.heading']()} />
                     <HcpProfileGate>
                         {parsed.kind === 'bad' ? (
-                            <div
-                                role="alert"
-                                className="p-4 bg-red-50 border border-red-100 rounded-2xl"
-                            >
-                                <p className="text-sm font-medium text-red-700">
-                                    {m['hcp.connect.badTitle']()}
-                                </p>
-                                <p className="text-sm text-red-700">{m['hcp.connect.badBody']()}</p>
-                            </div>
+                            <BadLink />
+                        ) : parsed.kind === 'contract' ? (
+                            <ContractConsent
+                                contractUri={parsed.contractUri}
+                                client={parsed.client}
+                            />
                         ) : (
                             <ConsentScreen
                                 request={parsed.request}

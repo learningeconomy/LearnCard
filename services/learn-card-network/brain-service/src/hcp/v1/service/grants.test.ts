@@ -84,23 +84,6 @@ describe('HCP v1 grants', () => {
         expect(() => grantInput({ categories: ['work_context', 'work_context'] })).toThrow();
     });
 
-    it('accepts only direct grants until consent flows land (LC-2421)', async () => {
-        const h = makeHarness();
-        await expect(
-            createGrant(
-                h.deps,
-                subject,
-                grantInput({
-                    source: {
-                        type: 'consentflow',
-                        contractUri: 'lc:contract',
-                        termsUri: 'lc:terms',
-                    },
-                })
-            )
-        ).rejects.toMatchObject({ type: 'malformed-request' });
-    });
-
     it('is governance: a caller without a profile cannot issue or list grants', async () => {
         const h = makeHarness();
         await expect(createGrant(h.deps, client, grantInput())).rejects.toMatchObject(DENIED);

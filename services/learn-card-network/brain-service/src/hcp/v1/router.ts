@@ -12,8 +12,10 @@ import { z } from 'zod';
 
 import { openRoute, privateScopedRoute, t } from '@routes';
 
-import { providerId } from './ports';
+import { contracts, providerId } from './ports';
 import {
+    ContractOfferInputSchema,
+    ContractOfferSchema,
     CreateEntryInputSchema,
     CreateGrantInputSchema,
     EntryViewSchema,
@@ -39,7 +41,7 @@ import type { HcpV1Caller, HcpV1Deps } from './service/deps';
 import { createEntry, getEntry, queryEntries, reviseEntry, withdrawEntry } from './service/entries';
 import { HcpV1Error, type HcpV1ErrorType } from './service/errors';
 import { exportContext, listAudit, listOwnEntries } from './service/governance';
-import { createGrant, getGrant, listGrants, revokeGrant } from './service/grants';
+import { createGrant, getContractOffer, getGrant, listGrants, revokeGrant } from './service/grants';
 import { hcpV1Meta } from './service/meta';
 import { createStoreActivitySink, directWritePolicy } from './service/seams';
 import { createNeo4jHcpV1Store } from './store/neo4j';
@@ -49,6 +51,7 @@ const activity = createStoreActivitySink(store);
 
 const depsFor = (): HcpV1Deps => ({
     store,
+    contracts,
     activity,
     writePolicy: directWritePolicy,
     providerId: providerId(),
@@ -272,6 +275,25 @@ const grantsRouter = t.router({
         .input(ListGrantsInputSchema)
         .output(z.array(GrantSchema))
         .query(({ ctx, input }) => listGrants(depsFor(), callerOf(ctx.user), input.status)),
+
+    offer: hcpRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/hcp/v1/contract-offer',
+                tags: TAGS,
+                summary: "Read a contract's HCP offer",
+                description:
+                    "LearnCard addition (LC-2421). Context Subject only. What allowing a ConsentFlow contract's agents would grant, resolved from the contract's HCP section, with the contract's name and owner profile.",
+            },
+            requiredScope: READ,
+        })
+        .input(ContractOfferInputSchema)
+        .output(ContractOfferSchema)
+        .query(({ ctx, input }) =>
+            getContractOffer(depsFor(), callerOf(ctx.user), input.contractUri)
+        ),
 
     get: hcpRoute
         .meta({

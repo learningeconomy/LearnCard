@@ -204,6 +204,8 @@ export const activitySentence = (event: HcpEvent, names: ReadonlyMap<string, str
         case 'grant.issued':
             return m['hcp.activity.allowed']({ app, categories });
         case 'grant.revoked':
+            // LC-2421: allowing a contract again replaces the earlier grant.
+            if (event.data.reason === 'superseded') return m['hcp.activity.replaced']({ app });
             return byApp
                 ? m['hcp.activity.appStopped']({ app })
                 : m['hcp.activity.youStopped']({ app });

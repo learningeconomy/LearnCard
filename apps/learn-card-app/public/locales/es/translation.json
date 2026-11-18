@@ -10590,6 +10590,7 @@
             "appReadNothing": "{{app}} buscó en tu {{categories}} y no encontró nada",
             "appDenied": "{{app}} pidió información que no puede ver y no recibió nada",
             "strangerDenied": "Una app con la que no compartes intentó usar el acceso de {{app}} y no recibió nada",
+            "replaced": "El acceso anterior de {{app}} se reemplazó cuando lo volviste a permitir",
             "more": "Mostrar más",
             "emptyTitle": "Aún no hay actividad",
             "emptyBody": "Cuando tú o una app usen tu información, lo verás aquí."
@@ -10611,7 +10612,8 @@
             "deny": "No permitir",
             "badTitle": "Este enlace no funciona",
             "badBody": "Pide a la app un enlace nuevo e inténtalo de nuevo.",
-            "unverified": "Permite solo apps en las que confíes. LearnCard no puede confirmar quién creó este enlace."
+            "unverified": "Permite solo apps en las que confíes. LearnCard no puede confirmar quién creó este enlace.",
+            "offeredBy": "Ofrecido por la cuenta de LearnCard de {{owner}}."
         },
         "error": {
             "title": "Algo salió mal",

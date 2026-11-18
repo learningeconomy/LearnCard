@@ -10,12 +10,16 @@ import {
     isRegisteredCategory,
     orderCategories,
     type AccessDetail,
+    type ContractGrantInput,
+    type ContractOffer,
     type CreateGrantInput,
+    type DirectGrantInput,
     type Grant,
     type GrantStatus,
 } from '../schemas';
+import { contractAccess, DURATION_MS, earlier, effectiveGrant, usableContract } from './contracts';
 import { urn, type HcpV1Caller, type HcpV1Deps } from './deps';
-import { malformed, scopeDenied } from './errors';
+import { contractChanged, malformed, scopeDenied } from './errors';
 
 const HOUR_MS = 60 * 60 * 1000;
 /** Draft 3 §6.1.3. */
@@ -24,7 +28,7 @@ export const TEMPORARY_GRANT_MAX_MS = 24 * HOUR_MS;
 
 const unique = <T>(values: readonly T[]): T[] => [...new Set(values)];
 
-const normalizeAccess = (access: AccessDetail[]): AccessDetail[] =>
+export const normalizeAccess = (access: AccessDetail[]): AccessDetail[] =>
     access.map(detail => ({
         type: detail.type,
         actions: detail.actions,
@@ -62,8 +66,8 @@ export const toGrant = (grant: StoredGrant): Grant => ({
     source: grant.source,
 });
 
-const expiryFor = (input: CreateGrantInput, now: Date): string | null => {
-    if (input.grantType === 'persistent') {
+const expiryFor = (input: DirectGrantInput, now: Date): string | null => {
+    if ((input.grantType ?? 'temporary') === 'persistent') {
         if (input.expiresAt !== undefined)
             throw malformed('A persistent grant has no expiresAt (Draft 3 §6.1.5).');
         return null;
@@ -78,31 +82,86 @@ const expiryFor = (input: CreateGrantInput, now: Date): string | null => {
     return new Date(expiresAt).toISOString();
 };
 
+type GrantTerms = Pick<StoredGrant, 'client' | 'access' | 'grantType' | 'expiresAt' | 'source'>;
+
+const directTerms = (input: DirectGrantInput, now: Date): GrantTerms => ({
+    client: input.client,
+    access: normalizeAccess(input.access),
+    grantType: input.grantType ?? 'temporary',
+    expiresAt: expiryFor(input, now),
+    source: input.source,
+});
+
+const NO_HCP_OFFER = 'The contract does not offer HCP access.';
+
+/**
+ * LC-2421: the grant a contract's HCP section gives the named client. Access,
+ * duration and the client's name come from the contract, never from the request;
+ * the request only says which agent and which version the person reviewed.
+ */
+const contractTerms = async (
+    deps: HcpV1Deps,
+    input: ContractGrantInput,
+    now: Date
+): Promise<GrantTerms> => {
+    const contract = usableContract(await deps.contracts.current(input.source.contractUri), now);
+    const access = contract && contractAccess(contract.hcp);
+    if (!contract || !access) throw malformed(NO_HCP_OFFER);
+    if (contract.version !== input.source.contractVersion) throw contractChanged();
+    if (!contract.hcp.agents.includes(input.client.id))
+        throw malformed('The contract does not name this client.');
+
+    const ms = DURATION_MS[contract.hcp.duration];
+    return {
+        client: { id: input.client.id, name: contract.name },
+        access: normalizeAccess(access),
+        grantType: ms === null ? 'persistent' : 'temporary',
+        // Capped by the contract's expiry. A persistent grant has none (Draft 3 §6.1.5);
+        // the contract's expiry still ends its access when it passes.
+        expiresAt:
+            ms === null
+                ? null
+                : earlier(new Date(now.getTime() + ms).toISOString(), contract.expiresAt),
+        source: {
+            type: 'consentflow',
+            contractUri: contract.uri,
+            contractVersion: contract.version,
+        },
+    };
+};
+
+const termsFor = async (
+    deps: HcpV1Deps,
+    input: CreateGrantInput,
+    now: Date
+): Promise<GrantTerms> => {
+    const { source, client, access } = input;
+    if (source.type === 'consentflow') return contractTerms(deps, { ...input, source }, now);
+    // The schema requires both for direct grants; this narrows the type.
+    if (!client.name || !access) throw malformed('A direct grant names its client and access.');
+    return directTerms(
+        { ...input, client: { id: client.id, name: client.name }, access, source },
+        now
+    );
+};
+
 export const createGrant = async (
     deps: HcpV1Deps,
     caller: HcpV1Caller,
     input: CreateGrantInput
 ): Promise<Grant> => {
     const subjectDid = requireSubject(caller);
-    if (input.source.type !== 'direct')
-        // TODO(LC-2421): issue grants from consent-flow terms.
-        throw malformed(
-            'Only direct grants are supported; consent-flow grants arrive with LC-2421.'
-        );
-
     const now = deps.now();
+    const terms = await termsFor(deps, input, now);
+
     const issuedAt = now.toISOString();
     const grant: StoredGrant = {
         grantId: urn(deps.newId()),
         subjectDid,
-        client: input.client,
-        access: normalizeAccess(input.access),
-        grantType: input.grantType,
+        ...terms,
         issuedAt,
-        expiresAt: expiryFor(input, now),
         status: 'active',
         statusChangedAt: null,
-        source: input.source,
     };
 
     await deps.store.insertGrant(grant, {
@@ -125,8 +184,74 @@ export const createGrant = async (
             source: grant.source,
         },
     });
+    if (grant.source.type === 'consentflow') await supersede(deps, caller, grant);
     return toGrant(grant);
 };
+
+/**
+ * Allowing a contract again replaces the subject's earlier grants to the same client
+ * under the same contract: they are revoked, naming the grant that replaced them.
+ */
+const supersede = async (
+    deps: HcpV1Deps,
+    caller: HcpV1Caller,
+    replacement: StoredGrant
+): Promise<void> => {
+    const { source } = replacement;
+    if (source.type !== 'consentflow') return;
+    const earlierGrants = (await deps.store.listGrants(replacement.subjectDid, 'active')).filter(
+        grant =>
+            grant.grantId !== replacement.grantId &&
+            grant.client.id === replacement.client.id &&
+            grant.source.type === 'consentflow' &&
+            grant.source.contractUri === source.contractUri
+    );
+    for (const grant of earlierGrants) {
+        const at = deps.now().toISOString();
+        await deps.store.transitionGrantStatus(grant.grantId, 'revoked', at, {
+            eventId: urn(deps.newId()),
+            eventType: 'grant.revoked',
+            timestamp: at,
+            subjectDid: grant.subjectDid,
+            providerId: deps.providerId,
+            initiator: { role: 'management-client', id: caller.did },
+            entryId: null,
+            categories: [],
+            purpose: null,
+            grantId: grant.grantId,
+            data: { reason: 'superseded', supersededBy: replacement.grantId },
+        });
+    }
+};
+
+/**
+ * LearnCard addition (LC-2421): what allowing a contract's agents would grant, for
+ * the consent screen. Context Subject only.
+ */
+export const getContractOffer = async (
+    deps: HcpV1Deps,
+    caller: HcpV1Caller,
+    contractUri: string
+): Promise<ContractOffer> => {
+    requireSubject(caller);
+    const contract = usableContract(await deps.contracts.current(contractUri), deps.now());
+    const access = contract && contractAccess(contract.hcp);
+    if (!contract || !access) throw malformed(NO_HCP_OFFER);
+    return {
+        contractUri: contract.uri,
+        version: contract.version,
+        name: contract.name,
+        owner: contract.owner,
+        agents: contract.hcp.agents,
+        access: normalizeAccess(access),
+        duration: contract.hcp.duration,
+        expiresAt: contract.expiresAt,
+    };
+};
+
+/** The grant as it stands now: narrowed by its contract (LC-2421), expiry settled. */
+const asItStands = async (deps: HcpV1Deps, grant: StoredGrant): Promise<StoredGrant> =>
+    settleGrantExpiry(deps, await effectiveGrant(deps, grant));
 
 /** Lists the subject's grants by status, settling any that lapsed (default `active`). */
 export const listGrants = async (
@@ -138,8 +263,8 @@ export const listGrants = async (
     if (status !== 'active') return (await deps.store.listGrants(subjectDid, status)).map(toGrant);
 
     const settled = await Promise.all(
-        (await deps.store.listGrants(subjectDid, 'active')).map(grant =>
-            settleGrantExpiry(deps, grant)
+        (await deps.store.listGrants(subjectDid, 'active')).map(async grant =>
+            asItStands(deps, grant)
         )
     );
     return settled.filter(grant => grant.status === 'active').map(toGrant);
@@ -156,9 +281,9 @@ const grantForParty = async (
     const stored = await deps.store.getGrant(grantId);
     if (!stored) throw scopeDenied();
     if (caller.subjectDid !== null && stored.subjectDid === caller.subjectDid)
-        return { grant: await settleGrantExpiry(deps, stored), role: 'management-client' };
+        return { grant: await asItStands(deps, stored), role: 'management-client' };
     if (stored.client.id === caller.did)
-        return { grant: await settleGrantExpiry(deps, stored), role: 'context-client' };
+        return { grant: await asItStands(deps, stored), role: 'context-client' };
     throw scopeDenied();
 };
 

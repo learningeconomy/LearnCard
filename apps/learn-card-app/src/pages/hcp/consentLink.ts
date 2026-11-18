@@ -1,4 +1,4 @@
-import type { HcpGrantRequest } from 'learn-card-base/hcp/useHcp';
+import type { HcpContractOffer, HcpGrantRequest } from 'learn-card-base/hcp/useHcp';
 import { isCustomCategory, isRegisteredCategory } from './hcpModel';
 
 export const DEFAULT_PURPOSE_CODE = 'https://learncard.com/hcp/purposes/app-access';
@@ -7,19 +7,23 @@ export type Duration = (typeof DURATIONS)[number];
 const isDuration = (value: string): value is Duration => DURATIONS.some(item => item === value);
 
 /**
- * What an app asks for. LC-2421 can produce this from a consent-flow request; the
- * screen only consumes this shape.
+ * What an app asks for: from a direct link, or from a contract's HCP offer (LC-2421).
+ * The screen only consumes this shape.
  */
 export type AccessRequest = {
     client: { id: string; name: string };
     categories: [string, ...string[]];
     purpose: { code: string; description: string };
     duration: Duration;
+    /** The contract owner's LearnCard profile name, when a contract stands behind it. */
+    offeredBy?: string;
 };
 
-export type LinkProblem = 'app' | 'name' | 'categories' | 'purpose' | 'duration';
+export type LinkProblem = 'app' | 'name' | 'categories' | 'purpose' | 'duration' | 'contract';
 export type ParsedLink =
-    { kind: 'ok'; request: AccessRequest } | { kind: 'bad'; problem: LinkProblem };
+    | { kind: 'ok'; request: AccessRequest }
+    | { kind: 'contract'; contractUri: string; client: string | null }
+    | { kind: 'bad'; problem: LinkProblem };
 
 const DID = /^did:[a-z0-9]+:\S+$/;
 const HOUR = 60 * 60 * 1000;
@@ -42,8 +46,25 @@ const FIELD_PROBLEM = {
     duration: 'duration',
 } as const satisfies Record<string, LinkProblem>;
 
+/**
+ * `/hcp/connect?contract=<uri>[&client=<did>]` (LC-2421): the brain resolves what the
+ * contract offers. `client` picks one agent when the contract names several.
+ */
+const parseContractLink = (params: URLSearchParams): ParsedLink => {
+    if (params.getAll('contract').length > 1 || params.getAll('client').length > 1)
+        return { kind: 'bad', problem: 'contract' };
+    const contractUri = params.get('contract')?.trim() ?? '';
+    const client = params.get('client')?.trim() || null;
+    if (!contractUri.startsWith('lc:network:') || contractUri.length > 2048)
+        return { kind: 'bad', problem: 'contract' };
+    if (client !== null && (!DID.test(client) || client.length > 2048))
+        return { kind: 'bad', problem: 'app' };
+    return { kind: 'contract', contractUri, client };
+};
+
 export const parseConsentLink = (search: string): ParsedLink => {
     const params = new URLSearchParams(search);
+    if (params.has('contract')) return parseContractLink(params);
     // A repeated field is ambiguous: refuse it rather than pick one copy.
     const repeated = (Object.keys(FIELD_PROBLEM) as (keyof typeof FIELD_PROBLEM)[]).find(
         field => params.getAll(field).length > 1
@@ -96,4 +117,36 @@ export const grantRequestFor = (request: AccessRequest, now: Date): HcpGrantRequ
                   now.getTime() + Number.parseInt(request.duration, 10) * HOUR
               ).toISOString(),
           }),
+});
+
+/**
+ * The request a contract offers to one agent: the only one it names, or the one the
+ * link picked. Null when the link names an agent the contract does not.
+ */
+export const requestFromOffer = (
+    offer: HcpContractOffer,
+    client: string | null
+): AccessRequest | null => {
+    const agent = client ?? (offer.agents.length === 1 ? offer.agents[0] : undefined);
+    if (agent === undefined || !offer.agents.includes(agent)) return null;
+    const categories = [...new Set(offer.access.flatMap(detail => detail.categories))];
+    const purpose = offer.access[0]?.purposes[0];
+    const [first, ...rest] = categories;
+    if (first === undefined || !purpose) return null;
+    return {
+        client: { id: agent, name: offer.name },
+        categories: [first, ...rest],
+        purpose,
+        duration: offer.duration,
+        offeredBy: offer.owner.displayName,
+    };
+};
+
+/** Allow under the contract version the person reviewed; the brain fills in the rest. */
+export const contractGrantRequest = (
+    offer: HcpContractOffer,
+    clientDid: string
+): HcpGrantRequest => ({
+    client: { id: clientDid },
+    source: { type: 'consentflow', contractUri: offer.contractUri, contractVersion: offer.version },
 });

@@ -1,6 +1,7 @@
 import type {
     ConsentFlowContract,
     ConsentFlowContractChangeKind,
+    ConsentFlowContractHcp,
     ConsentFlowContractDetailChange,
     ConsentFlowContractDiff,
     ConsentFlowContractScope,
@@ -171,6 +172,42 @@ export const classifyContractChange = (
     if (expandedOptional) return 'expanded_optional';
     return 'relaxed';
 };
+
+const HCP_DURATION_HOURS: Record<ConsentFlowContractHcp['duration'], number> = {
+    '1h': 1,
+    '4h': 4,
+    '24h': 24,
+    ongoing: Number.POSITIVE_INFINITY,
+};
+
+const widens = (before: readonly string[], after: readonly string[]): boolean =>
+    after.some(value => !before.includes(value));
+
+/**
+ * Classifies a change to a contract's HCP section (LC-2421) in the LC-2194 change
+ * kinds. Kept apart from `classifyContractChange`: HCP grants are not ConsentFlow
+ * terms, so an HCP change never moves terms holders. Anything that reaches further
+ * (a new agent, category, action or purpose, a changed purpose description, a
+ * longer duration, or a section that did not exist) is `requires_consent`; HCP has
+ * no optional access, so `expanded_optional` never applies. Narrowing, or removing
+ * the section, is `relaxed`.
+ */
+export const classifyHcpChange = (
+    prev: ConsentFlowContractHcp | undefined,
+    next: ConsentFlowContractHcp | undefined
+): ConsentFlowContractChangeKind => {
+    if (!next) return 'relaxed';
+    if (!prev) return 'requires_consent';
+    const descriptions = new Map(prev.purposes.map(p => [p.code, p.description]));
+    const reaches =
+        widens(prev.agents, next.agents) ||
+        widens(prev.categories, next.categories) ||
+        widens(prev.actions, next.actions) ||
+        next.purposes.some(p => descriptions.get(p.code) !== p.description) ||
+        HCP_DURATION_HOURS[next.duration] > HCP_DURATION_HOURS[prev.duration];
+    return reaches ? 'requires_consent' : 'relaxed';
+};
+
 const CANONICAL_SCOPE_COPY: Record<
     string,
     { messageKey: string; label: string; description: string }

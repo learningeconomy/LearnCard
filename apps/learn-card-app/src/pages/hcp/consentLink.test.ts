@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_PURPOSE_CODE, grantRequestFor, parseConsentLink } from './consentLink';
+import {
+    DEFAULT_PURPOSE_CODE,
+    contractGrantRequest,
+    grantRequestFor,
+    parseConsentLink,
+    requestFromOffer,
+} from './consentLink';
 
 const CLIENT = 'did:key:z6MkDemoTutor';
 const link = (params: Record<string, string>) => `?${new URLSearchParams(params).toString()}`;
@@ -79,5 +85,74 @@ describe('HCP consent links', () => {
             grantType: 'persistent',
         });
         expect(grantRequestFor(parsed.request, new Date())).not.toHaveProperty('expiresAt');
+    });
+});
+
+describe('HCP contract links (LC-2421)', () => {
+    const CONTRACT = 'lc:network:localhost%3A4324/trpc:contract:tutor';
+    const offer = {
+        contractUri: CONTRACT,
+        version: 2,
+        name: 'Demo Tutor',
+        owner: { profileId: 'tutor-co', displayName: 'Tutor Co' },
+        agents: [CLIENT, 'did:key:z6MkOther'],
+        access: [
+            {
+                type: 'https://hcp.example/spec/authorization/context-access' as const,
+                actions: ['read' as const],
+                categories: ['goals_and_constraints'],
+                purposes: [{ code: 'https://purpose.example/tutoring', description: 'Tutoring' }],
+            },
+        ],
+        duration: '4h' as const,
+        expiresAt: null,
+    };
+
+    it('parses a contract link, which wins over the direct fields', () => {
+        expect(parseConsentLink(link({ contract: CONTRACT }))).toEqual({
+            kind: 'contract',
+            contractUri: CONTRACT,
+            client: null,
+        });
+        expect(parseConsentLink(link({ ...valid, contract: CONTRACT }))).toEqual({
+            kind: 'contract',
+            contractUri: CONTRACT,
+            client: CLIENT,
+        });
+    });
+
+    it('refuses a contract link that is not a LearnCard contract URI, or repeats a field', () => {
+        expect(parseConsentLink(link({ contract: 'https://evil.example' }))).toEqual({
+            kind: 'bad',
+            problem: 'contract',
+        });
+        expect(parseConsentLink(`?contract=${CONTRACT}&contract=${CONTRACT}`)).toEqual({
+            kind: 'bad',
+            problem: 'contract',
+        });
+        expect(parseConsentLink(link({ contract: CONTRACT, client: 'nope' }))).toEqual({
+            kind: 'bad',
+            problem: 'app',
+        });
+    });
+
+    it('needs the link to pick an agent when the contract names several', () => {
+        expect(requestFromOffer(offer, null)).toBeNull();
+        expect(requestFromOffer(offer, 'did:key:z6MkStranger')).toBeNull();
+        expect(requestFromOffer(offer, CLIENT)).toEqual({
+            client: { id: CLIENT, name: 'Demo Tutor' },
+            categories: ['goals_and_constraints'],
+            purpose: { code: 'https://purpose.example/tutoring', description: 'Tutoring' },
+            duration: '4h',
+            offeredBy: 'Tutor Co',
+        });
+        expect(requestFromOffer({ ...offer, agents: [CLIENT] }, null)?.client.id).toBe(CLIENT);
+    });
+
+    it('allows under the reviewed version only', () => {
+        expect(contractGrantRequest(offer, CLIENT)).toEqual({
+            client: { id: CLIENT },
+            source: { type: 'consentflow', contractUri: CONTRACT, contractVersion: 2 },
+        });
     });
 });

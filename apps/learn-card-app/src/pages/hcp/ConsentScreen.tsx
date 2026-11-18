@@ -62,7 +62,11 @@ const ConsentScreen: React.FC<{
             </div>
         </section>
         <p className="text-xs text-grayscale-500">{m['hcp.connect.stopAnytime']()}</p>
-        <p className="text-xs text-grayscale-500">{m['hcp.connect.unverified']()}</p>
+        <p className="text-xs text-grayscale-500">
+            {request.offeredBy
+                ? m['hcp.connect.offeredBy']({ owner: request.offeredBy })
+                : m['hcp.connect.unverified']()}
+        </p>
         {failed && (
             <div
                 role="alert"

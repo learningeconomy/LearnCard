@@ -854,6 +854,33 @@ export type ConsentFlowContractNotificationData = z.infer<
     typeof ConsentFlowContractNotificationDataValidator
 >;
 
+/**
+ * Optional HCP (Human Context Protocol) section of a ConsentFlow contract (LC-2421).
+ * The contract owner names the agent DIDs that may act under it and the HCP access a
+ * person grants when they allow it. HCP grants are separate from ConsentFlow terms:
+ * consenting to this section never creates terms, and changing it never moves them.
+ */
+export const ConsentFlowContractHcpValidator = z.object({
+    /** DIDs of the agents (Context Clients) allowed to act under this contract. */
+    agents: z.array(z.string().min(1).max(2048)).min(1).max(50),
+    /** HCP categories: registered ids or custom absolute URIs. */
+    categories: z.array(z.string().min(1).max(2048)).min(1).max(20),
+    /** Read only for now. */
+    actions: z.array(z.enum(['read'])).min(1),
+    purposes: z
+        .array(
+            z.object({
+                code: z.string().min(1).max(2048),
+                description: z.string().min(1).max(1000),
+            })
+        )
+        .min(1)
+        .max(50),
+    /** How long a grant lasts: 1h/4h/24h temporary, or ongoing (persistent). */
+    duration: z.enum(['1h', '4h', '24h', 'ongoing']),
+});
+export type ConsentFlowContractHcp = z.infer<typeof ConsentFlowContractHcpValidator>;
+
 export const ConsentFlowContractValidator = z.object({
     read: z
         .object({
@@ -912,6 +939,7 @@ export const ConsentFlowContractValidator = z.object({
                 .default({}),
         })
         .prefault({ credentials: { categories: {} }, personal: {} }),
+    hcp: ConsentFlowContractHcpValidator.optional(),
 });
 export type ConsentFlowContract = z.infer<typeof ConsentFlowContractValidator>;
 export type ConsentFlowContractInput = z.input<typeof ConsentFlowContractValidator>;
@@ -955,6 +983,8 @@ export const ConsentFlowContractChangesValidator = z.object({
                         .optional(),
                 })
                 .optional(),
+            /** Replaces the whole HCP section; null removes it. */
+            hcp: ConsentFlowContractHcpValidator.nullable().optional(),
         })
         .optional(),
     name: z.string().optional(),

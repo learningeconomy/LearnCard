@@ -9,8 +9,9 @@ import {
     type Category,
     type CreateEntryInput,
     type CreateGrantInput,
+    type DirectGrantInput,
 } from '../schemas';
-import type { HcpV1Caller, HcpV1Deps } from './deps';
+import type { HcpContract, HcpV1Caller, HcpV1Deps } from './deps';
 import { createGrant } from './grants';
 import { createStoreActivitySink, directWritePolicy, type WritePolicy } from './seams';
 
@@ -26,6 +27,8 @@ export const otherClient: HcpV1Caller = { did: OTHER_CLIENT_DID, subjectDid: nul
 
 export type Harness = {
     deps: HcpV1Deps;
+    /** Contracts the memory `deps.contracts` serves, by URI (LC-2421). */
+    contracts: Map<string, HcpContract>;
     store: HcpV1Store;
     advance: (ms: number) => void;
     snapshot: () => Promise<unknown>;
@@ -35,8 +38,10 @@ export const makeHarness = (overrides: { writePolicy?: WritePolicy } = {}): Harn
     let now = new Date('2026-11-16T20:00:00.000Z');
     let counter = 0;
     const store = createMemoryHcpV1Store();
+    const contracts = new Map<string, HcpContract>();
     const deps: HcpV1Deps = {
         store,
+        contracts: { current: async uri => contracts.get(uri) ?? null },
         activity: createStoreActivitySink(store),
         writePolicy: overrides.writePolicy ?? directWritePolicy,
         providerId: 'did:web:brain.test',
@@ -46,6 +51,7 @@ export const makeHarness = (overrides: { writePolicy?: WritePolicy } = {}): Harn
 
     return {
         deps,
+        contracts,
         store,
         advance: ms => {
             now = new Date(now.getTime() + ms);
@@ -80,7 +86,7 @@ export const entryInput = (
 };
 
 export const grantInput = (
-    overrides: Partial<Record<keyof CreateGrantInput, unknown>> & {
+    overrides: Partial<Record<keyof DirectGrantInput, unknown>> & {
         actions?: ('read' | 'write')[];
         categories?: Category[];
         purposes?: string[];

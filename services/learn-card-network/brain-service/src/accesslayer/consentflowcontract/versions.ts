@@ -3,6 +3,7 @@ import { getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject } from '@helpers/objects.helpers';
 import {
     classifyContractChange,
+    classifyHcpChange,
     diffContractChange,
     buildContractUpdatePreview,
 } from '@learncard/helpers';
@@ -139,7 +140,13 @@ const mergeConsentFlowContractPatch = (
               personal: mergeScopePatch(current.write.personal, patch.write.personal),
           }
         : current.write;
-    return ConsentFlowContractValidator.parse({ ...current, read, write });
+    // The HCP section is replaced whole (LC-2421); null removes it.
+    // Leave the key out when absent: an undefined key would fail the deep-equal no-op check.
+    const hcp = patch?.hcp === undefined ? current.hcp : (patch.hcp ?? undefined);
+    const merged: ConsentFlowContractType = { ...current, read, write };
+    delete merged.hcp;
+    if (hcp) merged.hcp = hcp;
+    return ConsentFlowContractValidator.parse(merged);
 };
 export const getConsentFlowContractVersionRecord = async (
     contractId: string,
@@ -522,7 +529,10 @@ export const updateConsentFlowContractVersion = async (
             message: 'Reason must be at most 140 characters',
         });
     }
-    if (kind === 'requires_consent' && !reason) {
+    // HCP grants are not terms: an HCP change never moves terms holders, so it stays out
+    // of `kind`. Asking agents' grantees for more still needs a reason (LC-2421).
+    const hcpKind = classifyHcpChange(current.contract.hcp, next.contract.hcp);
+    if ((kind === 'requires_consent' || hcpKind === 'requires_consent') && !reason) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'A reason is required when asking users for more access',

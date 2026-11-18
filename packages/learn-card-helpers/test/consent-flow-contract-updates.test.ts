@@ -1,6 +1,7 @@
 import { ConsentFlowContractChangesValidator } from '@learncard/types';
 import { describe, expect, it } from 'vitest';
 import {
+    classifyHcpChange,
     buildContractUpdatePreview,
     classifyContractChange,
     diffContractChange,
@@ -394,5 +395,45 @@ describe('optional proposal window', () => {
         ['acknowledged', undefined, false],
     ] as const)('handles the %s state', (_state, deadline, expected) => {
         expect(hasOpenNewOptionsWindow(deadline, now)).toBe(expected);
+    });
+});
+
+describe('classifyHcpChange', () => {
+    const base = {
+        agents: ['did:key:agent'],
+        categories: ['goals_and_constraints', 'education_learner_profile'],
+        actions: ['read' as const],
+        purposes: [{ code: 'https://purpose.example/tutor', description: 'Tutoring' }],
+        duration: '4h' as const,
+    };
+
+    it('treats narrowing, and removing the section, as relaxed', () => {
+        expect(classifyHcpChange(base, base)).toBe('relaxed');
+        expect(classifyHcpChange(base, { ...base, categories: ['goals_and_constraints'] })).toBe(
+            'relaxed'
+        );
+        expect(classifyHcpChange(base, { ...base, duration: '1h' })).toBe('relaxed');
+        expect(classifyHcpChange(base, undefined)).toBe('relaxed');
+        expect(classifyHcpChange(undefined, undefined)).toBe('relaxed');
+    });
+
+    it('asks for consent for anything that reaches further', () => {
+        expect(classifyHcpChange(undefined, base)).toBe('requires_consent');
+        expect(
+            classifyHcpChange(base, { ...base, agents: [...base.agents, 'did:key:other'] })
+        ).toBe('requires_consent');
+        expect(
+            classifyHcpChange(base, {
+                ...base,
+                categories: [...base.categories, 'general_preferences'],
+            })
+        ).toBe('requires_consent');
+        expect(
+            classifyHcpChange(base, {
+                ...base,
+                purposes: [{ code: 'https://purpose.example/tutor', description: 'Ads' }],
+            })
+        ).toBe('requires_consent');
+        expect(classifyHcpChange(base, { ...base, duration: 'ongoing' })).toBe('requires_consent');
     });
 });

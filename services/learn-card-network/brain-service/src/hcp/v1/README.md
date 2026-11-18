@@ -32,6 +32,7 @@ Mounted once in `src/app.ts` as `hcp`; every procedure is `hcp.v1.<area>.<op>`.
 | `hcp.v1.entries.revise`   | `POST /hcp/v1/entries/revisions`  | §5.2.4 Revise                   | subject; client with `write` on every category of the entry     |
 | `hcp.v1.entries.withdraw` | `POST /hcp/v1/entries/withdraw`   | §5.2.5 Withdraw                 | subject; client with `write` on every category of the entry     |
 | `hcp.v1.grants.create`    | `POST /hcp/v1/grants`             | §6.1.5 grant                    | subject only                                                    |
+| `hcp.v1.grants.offer`     | `GET /hcp/v1/contract-offer`      | none (LearnCard addition)       | subject only                                                    |
 | `hcp.v1.grants.list`      | `GET /hcp/v1/grants`              | §5.4 List grants                | subject only                                                    |
 | `hcp.v1.grants.get`       | `GET /hcp/v1/grants/{grantId}`    | §5.2.6 Read own grant           | subject, or the grant's client                                  |
 | `hcp.v1.grants.revoke`    | `DELETE /hcp/v1/grants/{grantId}` | §6.2 Revoke / §5.2.7 Relinquish | subject, or the grant's client                                  |
@@ -184,6 +185,46 @@ A caller with no grant or an unknown grant id is refused with no event: it names
 subject whose log should hold it. Nor is the subject presenting their own grant id
 logged; they are refused as any other non-client caller.
 
+### Contract grants (LC-2421)
+
+A ConsentFlow contract may carry an optional HCP section (`contract.hcp`, typed as
+`ConsentFlowContractHcpValidator` in `@learncard/types`):
+`{ agents, categories, actions: ['read'], purposes, duration: '1h' | '4h' | '24h' | 'ongoing' }`.
+The contract is owned by the operator's LearnCard profile; `agents` names the DIDs
+that may act under it. `actions` is read only for now (LC-2423 adds `suggest`).
+
+- `grants.offer({ contractUri })` returns what allowing would grant, resolved by the
+  brain: the contract's name, owner profile, version, agents, access and duration.
+  The consent screen shows that name and owner instead of a self-asserted name.
+- `grants.create({ client: { id }, source: { type: 'consentflow', contractUri,
+contractVersion } })` issues the grant. Only the agent DID and the version the
+  person reviewed come from the request; access, duration and the client name come
+  from the contract. A contract that moved past that version is `version-conflict`;
+  an agent the contract does not name, or a contract without an HCP section (gone,
+  retired or expired), is `malformed-request`.
+- The grant stores the resolved access, `source.contractUri` and
+  `source.contractVersion` (its pin). `ongoing` is `persistent`; the others are
+  `temporary`, capped by the contract's `expiresAt`.
+- Every use narrows the pinned access by the contract's current section
+  (`service/contracts.ts` `effectiveGrant`, from `resolveActor` and the grant views):
+  categories, actions and purposes are intersected, a shorter duration or the
+  contract expiry pulls in the end, and a contract that is gone, retired, expired,
+  without its section, or no longer naming the agent leaves no access. So a narrowing
+  (`relaxed`) version applies to existing grants at once, and a widening version
+  reaches no further than the pin. A later version that adds back something the pin
+  already held reaches the grant again: the person allowed it.
+- Allowing the contract again issues a new grant pinned to the current version and
+  revokes the earlier ones for that agent and contract (`grant.revoked` with
+  `data: { reason: 'superseded', supersededBy }`).
+- Versioning reuses LC-2194: an HCP change creates a contract version like any
+  other. `classifyHcpChange` (`@learncard/helpers`) classifies it; anything that
+  reaches further (new agent, category, action or purpose, a changed purpose
+  description, a longer duration) needs a `reason`, as asking for more does today.
+- HCP grants are not ConsentFlow terms: allowing creates no terms, and an HCP change
+  stays out of the version's `kind`, so it never moves terms holders to
+  `needs_reconsent`. An HCP-only change still bumps the version and records the usual
+  update for terms holders, with an empty scope diff.
+
 ### Profile delete
 
 Deleting a profile deletes all of that person's HCP data, keyed by the profile DID
@@ -232,10 +273,9 @@ src/hcp/
 
 ## Seams (stubbed, not built)
 
-| Seam           | Where              | Today                                                          | Follow-up                       |
-| -------------- | ------------------ | -------------------------------------------------------------- | ------------------------------- |
-| `WritePolicy`  | `service/seams.ts` | always `{ kind: 'write' }`                                     | LC-2423 suggest vs write        |
-| grant `source` | `schemas.ts`       | `{ type: 'direct' }` only; `consentflow` is typed and rejected | LC-2421 consent-flow versioning |
+| Seam          | Where              | Today                      | Follow-up                |
+| ------------- | ------------------ | -------------------------- | ------------------------ |
+| `WritePolicy` | `service/seams.ts` | always `{ kind: 'write' }` | LC-2423 suggest vs write |
 
 ## Decisions
 
@@ -280,8 +320,12 @@ URI>,…&purpose=<why, plain text>[&purposeCode=<URI>][&duration=1h|4h|24h|ongoi
       `temporary` for the duration (default `1h`), or `persistent` for `ongoing`.
     - The purpose code defaults to `https://learncard.com/hcp/purposes/app-access`. An
       agent must query with the same code.
-    - `parseConsentLink` yields an `AccessRequest`. LC-2421 can build that type from a
-      consent-flow request instead.
+    - `parseConsentLink` yields an `AccessRequest`. This link stays for agents
+      without an operator profile (the demo agent's `link`).
+- Contract link (LC-2421): `/hcp/connect?contract=<contract URI>[&client=<agent DID>]`.
+  The screen loads `grants.offer`, shows the contract's name and "Offered by <owner>'s
+  LearnCard account" in place of the unverified warning, and Allow grants under the
+  version shown. `client` is needed only when the contract names several agents.
 
 ## Try it locally
 
@@ -372,6 +416,22 @@ Then, with `HCP_BRAIN_URL` and `HCP_APP_URL` set to your brain and app (defaults
 `bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts smoke` runs the same flow over the API with a throwaway person,
 and fails unless the person's log holds the agent's `context.read` (matching what it received) and the refused read after Stop sharing.
 The script refuses any brain that is not on localhost.
+
+Contract consent (LC-2421), with the same env:
+
+1. `bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts contract` makes a
+   throwaway operator profile ("Demo Tutor Co", seed never saved or printed) that owns
+   a contract whose HCP section names the agent, and prints its link:
+   `http://localhost:3324/hcp/connect?contract=lc%3Anetwork%3A…%3Acontract%3A<id>`.
+2. Open it signed in. The screen says "Demo Tutor would like to see some of your info"
+   and "Offered by Demo Tutor Co's LearnCard account." Choose Allow; Demo Tutor shows
+   under Apps with access.
+3. `read '<grantId>'` reads as the agent, as above.
+
+`... hcp-demo-agent.ts contract-smoke` runs the contract flow over the API: allow,
+narrow the contract (the existing grant loses a category at once), widen it (the
+existing grant keeps its pin), allow again (the new grant gets the wider access and
+the old one is revoked), and a DID the grant was not issued to gets `scope-denied`.
 
 ## Tests
 

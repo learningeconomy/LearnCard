@@ -6,6 +6,7 @@
  *
  * There is one grant truth: the stored grant. Nothing is cached in a token.
  */
+import { effectiveGrant } from './service/contracts';
 import type { HcpV1Caller, HcpV1Deps } from './service/deps';
 import { urn } from './service/deps';
 import { scopeDenied } from './service/errors';
@@ -66,8 +67,9 @@ export const resolveActor = async (
     const stored = await deps.store.getGrant(grantId);
     if (!stored || stored.client.id !== caller.did) throw scopeDenied();
 
-    const grant = await settleGrantExpiry(deps, stored);
-    if (grant.status !== 'active') throw scopeDenied();
+    // A contract grant (LC-2421) is narrowed by its contract's current HCP section.
+    const grant = await settleGrantExpiry(deps, await effectiveGrant(deps, stored));
+    if (grant.status !== 'active' || grant.access.length === 0) throw scopeDenied();
 
     return { kind: 'client', did: caller.did, subjectDid: grant.subjectDid, grant };
 };

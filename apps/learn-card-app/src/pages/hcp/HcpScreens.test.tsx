@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup as cleanupScreen, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HcpEntry, HcpGrant } from 'learn-card-base/hcp/useHcp';
@@ -22,6 +22,9 @@ const state = vi.hoisted(() => ({
     refetch: vi.fn(),
     auth: { tag: 'ready', profile: { tag: 'present' } } as unknown,
     presentProfileSetup: vi.fn(),
+    offer: undefined as unknown,
+    offerPending: false,
+    offerRefetch: vi.fn(),
 }));
 
 vi.mock('learn-card-base', async () => {
@@ -40,6 +43,11 @@ vi.mock('../../components/network-prompts/hooks/useJoinLCNetworkModal', () => ({
 }));
 
 vi.mock('learn-card-base/hcp/useHcp', () => ({
+    useHcpContractOffer: () => ({
+        isPending: state.offerPending,
+        data: state.offer,
+        refetch: state.offerRefetch,
+    }),
     useHcpChange: () => ({ mutate: state.mutate, isPending: false, isError: state.changeFailed }),
     useHcpGrants: () => ({
         isPending: false,
@@ -102,6 +110,9 @@ beforeEach(() => {
     state.refetch.mockReset();
     state.auth = { tag: 'ready', profile: { tag: 'present' } };
     state.presentProfileSetup.mockReset();
+    state.offer = undefined;
+    state.offerPending = false;
+    state.offerRefetch.mockReset();
 });
 
 describe('HCP consent screen', () => {
@@ -145,6 +156,74 @@ describe('HCP consent screen', () => {
 
     it('explains a bad link without offering Allow', () => {
         renderAt('/hcp/connect?client=nope&name=X&categories=goals_and_constraints&purpose=Y');
+        expect(screen.getByRole('alert').textContent).toContain("This link doesn't work");
+        expect(screen.queryByRole('button', { name: 'Allow' })).toBeNull();
+    });
+});
+
+describe('HCP contract consent (LC-2421)', () => {
+    const CONTRACT = 'lc:network:localhost%3A4324/trpc:contract:tutor';
+    const offer = {
+        contractUri: CONTRACT,
+        version: 3,
+        name: 'Demo Tutor',
+        owner: { profileId: 'tutor-co', displayName: 'Tutor Co' },
+        agents: [CLIENT],
+        access: [
+            {
+                type: 'https://hcp.example/spec/authorization/context-access',
+                actions: ['read'],
+                categories: ['goals_and_constraints', 'education_learner_profile'],
+                purposes: [{ code: 'https://purpose.example/tutoring', description: 'Tutoring' }],
+            },
+        ],
+        duration: 'ongoing',
+        expiresAt: null,
+    };
+    const contractUrl = `/hcp/connect?${new URLSearchParams({ contract: CONTRACT })}`;
+
+    it("shows the contract's name and owner instead of the unverified warning", () => {
+        state.offer = offer;
+        renderAt(contractUrl);
+        expect(screen.getByText('Demo Tutor would like to see some of your info')).toBeTruthy();
+        expect(screen.getByText("Offered by Tutor Co's LearnCard account.")).toBeTruthy();
+        expect(screen.queryByText(/can't confirm who made this link/)).toBeNull();
+        expect(screen.getByText('Goals')).toBeTruthy();
+        expect(screen.getByText('Tutoring')).toBeTruthy();
+        expect(screen.getByText('Until you stop sharing')).toBeTruthy();
+    });
+
+    it('Allow grants under the contract version shown, with nothing self-asserted', () => {
+        state.offer = offer;
+        renderAt(contractUrl);
+        fireEvent.click(screen.getByRole('button', { name: 'Allow' }));
+        const [change] = state.mutate.mock.calls[0];
+        expect(change).toEqual({
+            kind: 'allow',
+            input: {
+                client: { id: CLIENT },
+                source: { type: 'consentflow', contractUri: CONTRACT, contractVersion: 3 },
+            },
+        });
+    });
+
+    it('waits for the contract, and refuses one it cannot resolve or an agent it does not name', () => {
+        state.offerPending = true;
+        const { unmount } = render(
+            <MemoryRouter initialEntries={[contractUrl]}>
+                <Route exact path="/hcp/connect" component={HcpConnectPage} />
+            </MemoryRouter>
+        );
+        expect(screen.getByRole('status')).toBeTruthy();
+        unmount();
+
+        state.offerPending = false;
+        renderAt(contractUrl);
+        expect(screen.getByRole('alert').textContent).toContain("This link doesn't work");
+        cleanupScreen();
+
+        state.offer = offer;
+        renderAt(`${contractUrl}&client=did:key:z6MkSomeoneElse`);
         expect(screen.getByRole('alert').textContent).toContain("This link doesn't work");
         expect(screen.queryByRole('button', { name: 'Allow' })).toBeNull();
     });

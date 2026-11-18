@@ -142,6 +142,12 @@ describe('HCP activity sentences', () => {
                 names
             )
         ).toBe('Demo Tutor looked in your Goals and found nothing');
+        expect(
+            activitySentence(
+                event({ eventType: 'grant.revoked', data: { reason: 'superseded' } }),
+                names
+            )
+        ).toBe("Demo Tutor's earlier access was replaced when you allowed it again");
         expect(activitySentence(event({ ...byApp, eventType: READ_DENIED_EVENT }), names)).toBe(
             "Demo Tutor asked for info it isn't allowed to see and got nothing"
         );

@@ -29,3 +29,10 @@ export const malformed = (detail: string): HcpV1Error =>
 
 export const versionConflict = (): HcpV1Error =>
     new HcpV1Error('version-conflict', "expectedVersion is not the entry's current version.");
+
+/** LC-2421: the contract moved on from the version the person reviewed. */
+export const contractChanged = (): HcpV1Error =>
+    new HcpV1Error(
+        'version-conflict',
+        'The contract changed since it was reviewed; review it again before allowing.'
+    );

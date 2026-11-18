@@ -363,6 +363,134 @@ describe('HCP v1 router (hcp.v1.*)', () => {
         ]);
     });
 
+    it('issues grants from a ConsentFlow contract HCP section and follows its versions (LC-2421)', async () => {
+        await neogma.queryRunner.run(
+            'MATCH (n) WHERE n:ConsentFlowContract OR n:ConsentFlowContractVersion DETACH DELETE n'
+        );
+        const operator = await getUser('f'.repeat(64));
+        await operator.clients.fullAuth.profile.createProfile({
+            profileId: 'hcp-operator',
+            displayName: 'Tutor Co',
+        });
+        const own = subject.clients.fullAuth.hcp.v1;
+        const asAgent = agent.clients.fullAuth.hcp.v1;
+        const agentDid = agent.learnCard.id.did();
+        const { subject: id } = await own.entries.list({});
+        await own.entries.create(entry(id.id, 'My study plan for June'));
+        await own.entries.create(
+            entry(id.id, 'Exam plan: pass algebra', {
+                classification: { categories: ['goals_and_constraints'] },
+            })
+        );
+        await own.entries.create(
+            entry(id.id, 'Morning plan person', {
+                classification: { categories: ['general_preferences'] },
+            })
+        );
+
+        const hcp = {
+            agents: [agentDid],
+            categories: ['education_learner_profile', 'goals_and_constraints'],
+            actions: ['read' as const],
+            purposes: [{ code: PURPOSE, description: 'Tutoring' }],
+            duration: '4h' as const,
+        };
+        const contractUri = await operator.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Demo Tutor',
+            contract: { hcp },
+        });
+        const update = (next: typeof hcp | Record<string, unknown>, reason?: string) =>
+            operator.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: contractUri,
+                changes: { contract: { hcp: next as typeof hcp } },
+                ...(reason ? { reason } : {}),
+            });
+        const read = (grantId: string, client = asAgent) =>
+            client.entries
+                .query({ grantId, query: 'plan', purpose: PURPOSE })
+                .then(result => result.categoriesSearched);
+
+        const offer = await own.grants.offer({ contractUri });
+        expect(offer).toMatchObject({
+            version: 1,
+            name: 'Demo Tutor',
+            owner: { profileId: 'hcp-operator', displayName: 'Tutor Co' },
+            agents: [agentDid],
+            duration: '4h',
+        });
+
+        const first = await own.grants.create({
+            client: { id: agentDid },
+            source: { type: 'consentflow', contractUri, contractVersion: 1 },
+        });
+        expect(first).toMatchObject({
+            client: { id: agentDid, name: 'Demo Tutor' },
+            grantType: 'temporary',
+            source: { type: 'consentflow', contractUri, contractVersion: 1 },
+        });
+        expect(await read(first.grantId)).toEqual([
+            'goals_and_constraints',
+            'education_learner_profile',
+        ]);
+
+        // A DID the grant was not issued to gets nothing, even with the grant id.
+        await expect(read(first.grantId, otherAgent.clients.fullAuth.hcp.v1)).rejects.toMatchObject(
+            { hcp: { type: 'scope-denied' } }
+        );
+
+        // relaxed: narrowing applies to the existing grant at once.
+        const relaxed = await update({ ...hcp, categories: ['education_learner_profile'] });
+        expect(relaxed.version).toBe(2);
+        expect(await read(first.grantId)).toEqual(['education_learner_profile']);
+
+        // Widening needs a reason, and does not reach the existing grant.
+        const wider = {
+            ...hcp,
+            categories: [
+                'education_learner_profile',
+                'goals_and_constraints',
+                'general_preferences',
+            ],
+        };
+        await expect(update(wider)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect((await update(wider, 'Adds your preferences')).version).toBe(3);
+        // The grant reaches no further than its v1 pin: goals again, never preferences.
+        expect(await read(first.grantId)).toEqual([
+            'goals_and_constraints',
+            'education_learner_profile',
+        ]);
+
+        // Allowing the reviewed version needs that version; then the new grant replaces the old.
+        await expect(
+            own.grants.create({
+                client: { id: agentDid },
+                source: { type: 'consentflow', contractUri, contractVersion: 2 },
+            })
+        ).rejects.toMatchObject({ hcp: { type: 'version-conflict' } });
+        const second = await own.grants.create({
+            client: { id: agentDid },
+            source: { type: 'consentflow', contractUri, contractVersion: 3 },
+        });
+        expect(await read(second.grantId)).toEqual([
+            'general_preferences',
+            'goals_and_constraints',
+            'education_learner_profile',
+        ]);
+        expect((await own.grants.get({ grantId: first.grantId })).status).toBe('revoked');
+        await expect(read(first.grantId)).rejects.toMatchObject({ hcp: { type: 'scope-denied' } });
+
+        // Dropping the agent from the contract ends its access.
+        // (Naming a new agent asks for more, so it needs a reason too.)
+        await update({ ...wider, agents: [otherAgent.learnCard.id.did()] }, 'New tutor agent');
+        await expect(read(second.grantId)).rejects.toMatchObject({ hcp: { type: 'scope-denied' } });
+
+        // No ConsentFlow terms were created for the person.
+        const terms = await neogma.queryRunner.run(
+            'MATCH (t:ConsentFlowTerms)-[:CONSENTS_TO]->(c:ConsentFlowContract) RETURN count(t) AS n'
+        );
+        expect(Number(terms.records[0]?.get('n'))).toBe(0);
+    });
+
     it('rejects malformed requests at the boundary', async () => {
         const subjectDid = subject.learnCard.id.did();
         const own = subject.clients.fullAuth.hcp.v1;
@@ -548,6 +676,7 @@ describe('HCP v1 router (hcp.v1.*)', () => {
         );
         expect(paths.sort()).toEqual([
             '/hcp/v1/audit',
+            '/hcp/v1/contract-offer',
             '/hcp/v1/entries',
             '/hcp/v1/entries/get',
             '/hcp/v1/entries/list',

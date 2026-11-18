@@ -415,16 +415,16 @@ export const AccessDetailSchema = z.object({
 export type AccessDetail = z.infer<typeof AccessDetailSchema>;
 
 /**
- * LearnCard addition: where a grant came from. Only `direct` is accepted today.
- * TODO(LC-2421): accept `consentflow` once consent-flow versioning lands.
+ * LearnCard addition: where a grant came from. `consentflow` grants (LC-2421) were
+ * issued from a ConsentFlow contract's HCP section and pin the contract version the
+ * person allowed. They are not ConsentFlow terms: no terms are created for them.
  */
 export const GrantSourceSchema = z.discriminatedUnion('type', [
     z.object({ type: z.literal('direct') }),
     z.object({
         type: z.literal('consentflow'),
         contractUri: z.string().min(1).max(2048),
-        termsUri: z.string().min(1).max(2048),
-        contractVersion: z.string().min(1).max(256).optional(),
+        contractVersion: z.number().int().positive(),
     }),
 ]);
 export type GrantSource = z.infer<typeof GrantSourceSchema>;
@@ -433,15 +433,70 @@ export const GrantTypeSchema = z.enum(['temporary', 'persistent']);
 export const GrantStatusSchema = z.enum(['active', 'revoked', 'expired']);
 export type GrantStatus = z.infer<typeof GrantStatusSchema>;
 
-export const CreateGrantInputSchema = z.object({
-    client: z.object({ id: Did, name: z.string().min(1).max(200) }),
-    access: z.array(AccessDetailSchema).min(1).max(20),
-    grantType: GrantTypeSchema.default('temporary'),
-    /** Temporary grants only. Defaults to 4 hours; at most 24 hours (Draft 3 §6.1.3). */
-    expiresAt: IsoDateTime.optional(),
-    source: GrantSourceSchema.default({ type: 'direct' }),
-});
+const ContractUri = z.string().min(1).max(2048);
+
+/**
+ * One object (the OpenAPI adapter needs a ZodObject), two forms by `source.type`:
+ *  - `direct`: the subject names the client, its access and duration.
+ *  - `consentflow` (LC-2421): allow an agent named by a contract's HCP section. Only
+ *    `client.id` and `source` are read; the brain resolves access, duration and the
+ *    client name from the contract. `contractVersion` is the version the person
+ *    reviewed, so a contract that changed since is refused.
+ */
+export const CreateGrantInputSchema = z
+    .object({
+        client: z.object({ id: Did, name: z.string().min(1).max(200).optional() }),
+        access: z.array(AccessDetailSchema).min(1).max(20).optional(),
+        /** Direct grants. Defaults to temporary. */
+        grantType: GrantTypeSchema.optional(),
+        /** Direct temporary grants. Defaults to 4 hours; at most 24 hours (Draft 3 §6.1.3). */
+        expiresAt: IsoDateTime.optional(),
+        source: z
+            .discriminatedUnion('type', [
+                z.object({ type: z.literal('direct') }),
+                z.object({
+                    type: z.literal('consentflow'),
+                    contractUri: ContractUri,
+                    contractVersion: z.number().int().positive(),
+                }),
+            ])
+            .default({ type: 'direct' }),
+    })
+    .superRefine((input, ctx) => {
+        if (input.source.type !== 'direct') return;
+        if (!input.client.name)
+            ctx.addIssue({ code: 'custom', path: ['client', 'name'], message: 'Required' });
+        if (!input.access) ctx.addIssue({ code: 'custom', path: ['access'], message: 'Required' });
+    });
 export type CreateGrantInput = z.infer<typeof CreateGrantInputSchema>;
+
+export type DirectGrantInput = Omit<CreateGrantInput, 'client' | 'access' | 'source'> & {
+    client: { id: string; name: string };
+    access: AccessDetail[];
+    source: { type: 'direct' };
+};
+export type ContractGrantInput = CreateGrantInput & {
+    source: Extract<CreateGrantInput['source'], { type: 'consentflow' }>;
+};
+
+export const ContractOfferInputSchema = z.object({ contractUri: ContractUri });
+
+/**
+ * LearnCard addition (LC-2421): what allowing a contract's agents would grant, as the
+ * brain resolves it. `name` and `owner` come from the contract and its owner's
+ * LearnCard profile, not from the agent.
+ */
+export const ContractOfferSchema = z.object({
+    contractUri: z.string(),
+    version: z.number().int().positive(),
+    name: z.string(),
+    owner: z.object({ profileId: z.string(), displayName: z.string() }),
+    agents: z.array(z.string()),
+    access: z.array(AccessDetailSchema),
+    duration: z.enum(['1h', '4h', '24h', 'ongoing']),
+    expiresAt: z.string().nullable(),
+});
+export type ContractOffer = z.infer<typeof ContractOfferSchema>;
 
 export const GrantIdInputSchema = z.object({ grantId: Id });
 export const ListGrantsInputSchema = z
