@@ -9,6 +9,8 @@ import {
     CONTRACT_REQUEST_INVITE_TTL_MS,
     normalizeInviteEmail,
 } from '@helpers/invite-email.helpers';
+import { defaultDomain } from '@helpers/integration-events.helpers';
+import { inviteIntegrationEventCypher } from './events';
 import type { ContractRequestInviteType } from './read';
 
 export type CreateContractRequestInviteInput = {
@@ -18,6 +20,8 @@ export type CreateContractRequestInviteInput = {
     externalReferenceId?: string | null;
     message?: string | null;
     tenantId?: string | null;
+    /** Domain that integration event URIs are built on. Defaults to this service's domain. */
+    domain?: string;
 };
 
 /**
@@ -25,7 +29,8 @@ export type CreateContractRequestInviteInput = {
  * A retry is identical when contract, email, sender, reference and message match and the earlier
  * invite is still pending, or is attached to a request that is still pending. That keeps the
  * answer the same whether or not the email belongs to an account.
- * Returns null when the sender has no role on the contract or the contract has expired.
+ * A new invite also records the integration `request_sent` event (no subject), in the same
+ * statement. Returns null when the sender has no role on the contract or the contract has expired.
  */
 export const createContractRequestInvite = async (
     input: CreateContractRequestInviteInput
@@ -40,6 +45,7 @@ export const createContractRequestInvite = async (
                 externalReferenceId: input.externalReferenceId ?? null,
                 message: input.message ?? null,
                 tenantId: input.tenantId ?? null,
+                eventDomain: input.domain ?? defaultDomain(),
                 now: now.toISOString(),
                 expiresAt: new Date(now.getTime() + CONTRACT_REQUEST_INVITE_TTL_MS).toISOString(),
             })
@@ -68,6 +74,8 @@ export const createContractRequestInvite = async (
         WITH contract, existing
         MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
             WHERE invite.id = coalesce(existing.id, $id)
+        FOREACH (_ IN CASE WHEN existing IS NULL THEN [1] ELSE [] END |
+            ${inviteIntegrationEventCypher('request_sent', 'invited')})
         RETURN properties(invite) AS invite, existing IS NULL AS created
     `);
     const record = (await runAudienceMutation(query)).records[0];

@@ -9,6 +9,8 @@ import {
     CONTRACT_REQUEST_INVITE_EMAIL_LIMIT,
     CONTRACT_REQUEST_INVITE_EMAIL_WINDOW_MS,
 } from '@helpers/invite-email.helpers';
+import { defaultDomain } from '@helpers/integration-events.helpers';
+import { inviteIntegrationEventCypher } from './events';
 import type { ContractRequestInviteType } from './read';
 
 /**
@@ -49,16 +51,24 @@ export const claimContractRequestInviteEmail = async (
 /**
  * Cancels a pending invite. Allowed for contract managers (owner, writers) and for the sender
  * while it is a data recipient. Cancelling an already cancelled invite succeeds again.
- * Returns false when there is no such invite, it is not pending, or the actor may not cancel.
+ * The first cancel records the integration `request_cancelled` event (no subject) in the same
+ * statement. Returns false when there is no such invite, it is not pending, or the actor may not
+ * cancel.
  */
 export const cancelContractRequestInvite = async (
     contractId: string,
     inviteId: string,
-    actorProfileId: string
+    actorProfileId: string,
+    domain: string = defaultDomain()
 ): Promise<boolean> => {
     const query = lockContractAudience(
         new QueryBuilder(
-            new BindParam({ inviteId, actorProfileId, now: new Date().toISOString() })
+            new BindParam({
+                inviteId,
+                actorProfileId,
+                eventDomain: domain,
+                now: new Date().toISOString(),
+            })
         ),
         contractId
     ).raw(`
@@ -68,13 +78,15 @@ export const cancelContractRequestInvite = async (
              (invite.requestedBy = $actorProfileId AND EXISTS {
                 MATCH (contract)-[:SHARES_DATA_WITH]->(:Profile {profileId: $actorProfileId}) }))
         SET invite.status = 'cancelled', invite.cancelledAt = coalesce(invite.cancelledAt, $now)
+        ${inviteIntegrationEventCypher('request_cancelled', 'cancelled')}
         RETURN invite.id AS id
     `);
     return (await runAudienceMutation(query)).records.length > 0;
 };
 
 /**
- * Marks one overdue pending invite expired, under the contract lock.
+ * Marks one overdue pending invite expired, under the contract lock, and records the
+ * integration `request_expired` event (no subject) in the same statement.
  * Returns the invite, or null when it is no longer pending or not overdue.
  */
 export const expireContractRequestInvite = async (
@@ -82,12 +94,15 @@ export const expireContractRequestInvite = async (
     inviteId: string
 ): Promise<ContractRequestInviteType | null> => {
     const query = lockContractAudience(
-        new QueryBuilder(new BindParam({ inviteId, now: new Date().toISOString() })),
+        new QueryBuilder(
+            new BindParam({ inviteId, eventDomain: defaultDomain(), now: new Date().toISOString() })
+        ),
         contractId
     ).raw(`
         MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite {id: $inviteId})
         WHERE invite.status = 'pending' AND invite.expiresAt <= $now
         SET invite.status = 'expired', invite.expiredAt = $now
+        ${inviteIntegrationEventCypher('request_expired', 'expired')}
         RETURN properties(invite) AS invite
     `);
     return (await runAudienceMutation(query)).records[0]?.get('invite') ?? null;

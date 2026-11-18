@@ -20,6 +20,7 @@ import { getDeliveryService } from '@services/delivery/delivery.factory';
 import { getPendingContractRequestInvitesForProfile } from '@accesslayer/contract-request-invite/read';
 import type { ProfileType } from 'types/profile';
 import { authorizeContractRequestSend, createRequestForProfile } from './contract-requests.helpers';
+import { tryFanOutContractIntegrationEvents } from './contract-events.helpers';
 
 /** The most invites one call converts. Bounds the work done inside a request. */
 export const CONTRACT_REQUEST_INVITE_ATTACH_LIMIT = 20;
@@ -118,12 +119,17 @@ export const sendContractRequestToEmail = async (
         externalReferenceId: input.externalReferenceId,
         message: input.message,
         tenantId: tenant?.id,
+        domain,
     });
     if (!result)
         throw new TRPCError({
             code: 'CONFLICT',
             message: 'The contract changed. Review it and try again.',
         });
+
+    // The invite's integration request_sent event goes out before an attach can add its own
+    // request events, which keeps the feed in order. The worker retries what this misses.
+    if (result.created) await tryFanOutContractIntegrationEvents(contract.id);
 
     // An identical pending retry returns the same request ID and sends nothing.
     if (result.created) {

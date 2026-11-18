@@ -307,6 +307,7 @@ The record carries identifiers only. It never contains shared credentials or per
 | `request_accepted`   | Owner, requester            | The target consented with that request. Written just before the consent event                                                    |
 | `request_denied`     | Owner, requester            | The target declined                                                                                                              |
 | `request_cancelled`  | Owner, requester            | The request was cancelled                                                                                                        |
+| `request_expired`    | Owner, requester            | A request sent to an email address expired before anyone with that email signed in (30 days)                                     |
 | `consent_created`    | Owner, writers, recipients  | New consent. The connection is live                                                                                              |
 | `consent_updated`    | Owner, writers, recipients  | Terms changed or consent was given again. `reason` is `"expiry_extended"` or `"share_until_passed"` in the cases explained below |
 | `consent_withdrawn`  | Owner, writers, recipients  | Consent ended. `reason: "contract_retired"` when the contract was retired                                                        |
@@ -316,6 +317,8 @@ The record carries identifiers only. It never contains shared credentials or per
 | `consent_expired`    | Owner, writers, recipients  | The consent expired (see [Expiry](#expiry)). Can occur again after a renewal                                                     |
 | `contract_retired`   | Owner, writers, recipients  | The contract was retired. One `consent_withdrawn` per active consent is sent as well                                             |
 | `integration.test`   | The Integration you tested  | Test delivery only. Never in the feed                                                                                            |
+
+For a request sent to an email address (`targetEmail`), `request_sent`, `request_denied`, `request_cancelled` and `request_expired` carry no `subject*` fields, and `request_sent` is sent once, when the request is made, whether or not the email belongs to an account. The subject appears from `request_accepted` on.
 
 The requester is the profile that sent the referral. It receives the request events of its own requests. It receives consent events only while it is also the contract owner, a writer or a data recipient: a profile that has been removed as a data recipient stops receiving them, even for people it referred.
 

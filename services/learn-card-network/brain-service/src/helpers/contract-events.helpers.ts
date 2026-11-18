@@ -127,7 +127,12 @@ export const appendConsentEvent = (
     `);
 };
 
-/** Shared Cypher for request creation/decisions; caller holds the contract lock. */
+/**
+ * Shared Cypher for request creation/decisions; caller holds the contract lock.
+ * For a request addressed to an email, integration records carry no subject, and the
+ * request_sent written when the invite attaches is not fanned out: integrations already got one,
+ * without a subject, when the invite was created.
+ */
 export const requestEventCypher = `
     WITH contract, request, target
     MATCH (contract)-[:CREATED_BY]->(owner:Profile)
@@ -136,7 +141,9 @@ export const requestEventCypher = `
         ownerId: owner.profileId, domain: $domain, kind: $eventKind, createdAt: $now,
         requestId: request.requestId, requestedBy: request.requestedBy,
         externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false, cleanupPending: true,
-        targetId: target.profileId, integrationFanoutPending: true,
+        targetId: target.profileId,
+        integrationFanoutPending: CASE WHEN $eventKind = 'request_sent' AND coalesce(request.addressedByEmail, false) THEN null ELSE true END,
+        subjectHidden: CASE WHEN coalesce(request.addressedByEmail, false) THEN true ELSE null END,
         hideActor: coalesce(request.addressedByEmail, false) AND $eventFrom = target.profileId}
     WITH request, event, owner, target,
         CASE WHEN coalesce(event.fanoutCreated, false) THEN []

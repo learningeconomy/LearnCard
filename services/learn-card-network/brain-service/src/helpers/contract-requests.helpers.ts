@@ -19,7 +19,11 @@ import {
 import { getProfileIdFromString } from './did.helpers';
 import { userHasRequiredScopes } from './auth-grant.helpers';
 import { enforceRateLimits } from './rateLimit.helpers';
-import { requestEventCypher, tryDispatchContractEvent } from './contract-events.helpers';
+import {
+    requestEventCypher,
+    tryDispatchContractEvent,
+    tryFanOutContractIntegrationEvents,
+} from './contract-events.helpers';
 import type { ProfileType } from 'types/profile';
 import type { DbContractType } from 'types/consentflowcontract';
 
@@ -283,7 +287,10 @@ export const cancelContractRequestById = async ({
     const targetProfileId: string | undefined = result.records[0]?.get('targetProfileId');
     if (!targetProfileId) {
         // No profile yet: the request is still an invite addressed to an email.
-        if (await cancelContractRequestInvite(contract.id, requestId, actorProfileId)) return true;
+        if (await cancelContractRequestInvite(contract.id, requestId, actorProfileId, domain)) {
+            await tryFanOutContractIntegrationEvents(contract.id);
+            return true;
+        }
         throw notFound;
     }
     try {

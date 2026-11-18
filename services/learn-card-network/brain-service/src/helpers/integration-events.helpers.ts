@@ -30,7 +30,7 @@ export {
     encodeIntegrationEventCursor,
 } from './integration-event-cursor.helpers';
 
-const defaultDomain = (): string => environment.DOMAIN_NAME ?? 'network.learncard.com';
+export const defaultDomain = (): string => environment.DOMAIN_NAME ?? 'network.learncard.com';
 
 const optionalString = (value: unknown): string | undefined =>
     typeof value === 'string' && value.length > 0 ? value : undefined;
@@ -155,6 +155,7 @@ const REQUEST_EVENT_TYPES: IntegrationEventType[] = [
     'request_sent',
     'request_denied',
     'request_cancelled',
+    'request_expired',
 ];
 
 const unique = (values: (string | undefined | null)[]): string[] => [

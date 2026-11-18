@@ -2239,6 +2239,7 @@ export const IntegrationEventTypeValidator = z.enum([
     'request_accepted',
     'request_denied',
     'request_cancelled',
+    'request_expired',
     'consent_created',
     'consent_updated',
     'consent_withdrawn',
