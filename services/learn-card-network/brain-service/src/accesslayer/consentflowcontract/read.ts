@@ -87,24 +87,32 @@ const requestingRecipientWhere = `r.requestedBy = $viewerProfileId AND EXISTS {
 }`;
 
 export const getRequestedForList = async (id: string, viewerProfileId: string) => {
-    const query = new QueryBuilder(new BindParam({ viewerProfileId }))
-        .match({
-            model: ConsentFlowContract,
-            identifier: 'c',
-            where: { id },
-        })
-        .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
-        .where(`${requestManagerWhere} OR (${requestingRecipientWhere})`);
-    const result = await query.return(['p', 'r']).run();
+    const result = await neogma.queryRunner.run(
+        `MATCH (c:ConsentFlowContract {id: $id})-[r:REQUESTED_FOR]->(p:Profile)
+         WHERE ${requestManagerWhere} OR (${requestingRecipientWhere})
+         OPTIONAL MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
+             WHERE invite.id = r.requestId
+         RETURN r, p, invite.email AS email, invite.expiresAt AS expiresAt`,
+        { id, viewerProfileId }
+    );
 
     return result.records.map(rec => {
-        const { p, r } = rec.toObject();
+        const request = rec.get('r').properties;
+        const email: string | null = rec.get('email');
+        const expiresAt: string | null = rec.get('expiresAt');
 
         return {
-            ...requestFields(r.properties),
-            profile: p.properties,
-            status: r.properties?.status ?? null,
-            readStatus: r.properties?.readStatus ?? null,
+            ...requestFields(request),
+            profile: rec.get('p').properties as ProfileType,
+            status: (request?.status ?? null) as NonNullable<
+                StoredContractRequest['status']
+            > | null,
+            readStatus: (request?.readStatus ?? null) as NonNullable<
+                StoredContractRequest['readStatus']
+            > | null,
+            addressedByEmail: request?.addressedByEmail === true,
+            ...(email ? { email } : {}),
+            ...(expiresAt ? { expiresAt } : {}),
         };
     });
 };
@@ -215,6 +223,7 @@ export const getRequestedForForUser = async (
             profile: p.properties,
             status: r.properties?.status ?? null,
             readStatus: r.properties?.readStatus ?? null,
+            addressedByEmail: r.properties?.addressedByEmail === true,
         };
     });
 };
@@ -243,9 +252,52 @@ export const getAllRequestsForTargetProfile = async (targetProfileId: string) =>
     });
 };
 
+export type StoredContractRequestById = {
+    requestId: string;
+    status: 'pending' | 'accepted' | 'denied' | 'cancelled';
+    externalReferenceId?: string;
+    requestedAt?: string;
+    expiresAt?: string;
+    addressedByEmail: boolean;
+    email?: string;
+    profile: ProfileType;
+};
+
+/** Reads one attributed request by its ID. Visible to contract managers and to its sender. */
+export const getContractRequestById = async (
+    contractId: string,
+    requestId: string,
+    viewerProfileId: string
+): Promise<StoredContractRequestById | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (c:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR]->(p:Profile)
+         WHERE r.requestId = $requestId AND (${requestManagerWhere} OR (${requestingRecipientWhere}))
+         OPTIONAL MATCH (c)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
+             WHERE invite.id = r.requestId
+         RETURN r, p, invite.email AS email, invite.expiresAt AS expiresAt`,
+        { contractId, requestId, viewerProfileId }
+    );
+    const record = result.records[0];
+    if (!record) return null;
+    const request = record.get('r').properties;
+    return {
+        requestId: request.requestId,
+        status: request.status,
+        ...(request.externalReferenceId
+            ? { externalReferenceId: request.externalReferenceId }
+            : {}),
+        ...(request.requestedAt ? { requestedAt: request.requestedAt } : {}),
+        ...(record.get('expiresAt') ? { expiresAt: record.get('expiresAt') } : {}),
+        addressedByEmail: request.addressedByEmail === true,
+        ...(record.get('email') ? { email: record.get('email') } : {}),
+        profile: record.get('p').properties,
+    };
+};
+
 export type StoredContractRequest = ContractRequestFields & {
     status?: 'pending' | 'accepted' | 'denied' | 'cancelled' | null;
     readStatus?: 'unseen' | 'seen' | null;
+    addressedByEmail?: boolean;
 };
 
 export const getStoredContractRequest = async (

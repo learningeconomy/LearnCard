@@ -1,7 +1,15 @@
-import { SendContractRequestValidator, ContractRequestFieldsValidator } from '@learncard/types';
+import {
+    SendContractRequestValidator,
+    SendContractRequestResultValidator,
+    ContractRequestFieldsValidator,
+    ContractRequestValidator,
+    ContractSentRequestValidator,
+    type ContractRequestTarget,
+} from '@learncard/types';
 import {
     sendGenericContractRequest,
     decideGenericContractRequest,
+    cancelContractRequestById,
     markGenericContractRequestSeen,
     assertGenericRequestWriteScope,
     canManageContractRequests,
@@ -77,6 +85,7 @@ import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import {
     getContractByUri,
     getStoredContractRequest,
+    getContractRequestById,
     getRequestedForList,
     getRequestedForForUser,
     getContractById,
@@ -96,6 +105,7 @@ import {
     updateTerms,
     pruneDeletedUrisFromConsentTerms,
     upsertRequestedForRelationship,
+    markLegacyContractRequestSeen,
     withdrawTerms,
 } from '@accesslayer/consentflowcontract/relationships/update';
 import { consentToContract } from '@accesslayer/consentflowcontract/relationships/create';
@@ -144,6 +154,27 @@ const resolveRecipientProfileId = async (identifier: string, domain: string): Pr
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid recipient identifier' });
     return profileId;
 };
+
+/** An email-addressed request shows only its email to other parties until it is accepted. */
+const contractRequestTarget = (
+    domain: string,
+    request: {
+        addressedByEmail?: boolean;
+        status?: string | null;
+        email?: string;
+        profile?: ProfileType;
+    }
+): ContractRequestTarget =>
+    request.profile && !(request.addressedByEmail && request.status !== 'accepted')
+        ? {
+              profile: stripSensitiveProfileListFields(
+                  sanitizeProfileForTier(
+                      updateDidForProfile(domain, request.profile),
+                      'authenticated'
+                  )
+              ),
+          }
+        : { email: request.email ?? '' };
 
 const LATEST_CONTRACT_APPROVAL_REQUIRED =
     'User has not yet approved the latest version of this contract';
@@ -2266,10 +2297,47 @@ export const contractsRouter = t.router({
             },
         })
         .input(SendContractRequestValidator)
-        .output(z.boolean())
+        .output(SendContractRequestResultValidator)
         .mutation(async ({ ctx, input }) =>
             sendGenericContractRequest(input, ctx.user.profile, ctx.domain)
         ),
+
+    getContractRequest: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/consent-flow-contracts/request',
+                tags: ['Contracts'],
+                summary: 'Get one contract request by its request ID',
+                description:
+                    'Returns the status of a request sent with sendContractRequest. A request addressed to an email shows only that email until it is accepted.',
+            },
+        })
+        .input(z.object({ contractUri: z.string(), requestId: z.string() }))
+        .output(ContractRequestValidator)
+        .query(async ({ ctx, input }) => {
+            const contract = await getContractByUri(input.contractUri);
+            if (!contract)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+            const request = await getContractRequestById(
+                contract.id,
+                input.requestId,
+                ctx.user.profile.profileId
+            );
+            if (!request)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract request not found' });
+            return {
+                requestId: request.requestId,
+                status: request.status,
+                ...(request.externalReferenceId
+                    ? { externalReferenceId: request.externalReferenceId }
+                    : {}),
+                ...(request.requestedAt ? { requestedAt: request.requestedAt } : {}),
+                ...(request.expiresAt ? { expiresAt: request.expiresAt } : {}),
+                target: contractRequestTarget(ctx.domain, request),
+            };
+        }),
 
     denyContractRequest: profileRoute
         .meta({
@@ -2461,7 +2529,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Get requests sent for a given contract',
                 description:
-                    'Gets a list of users and their request statuses for a given contract.',
+                    'Gets a list of requests and their statuses for a given contract. A request addressed to an email has no profile and shows target.email until it is accepted.',
             },
         })
         .input(
@@ -2469,15 +2537,7 @@ export const contractsRouter = t.router({
                 contractUri: z.string(),
             })
         )
-        .output(
-            z.array(
-                ContractRequestFieldsValidator.extend({
-                    profile: LCNProfileValidator,
-                    status: z.enum(['pending', 'accepted', 'denied', 'cancelled']).nullable(),
-                    readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
-                })
-            )
-        )
+        .output(z.array(ContractSentRequestValidator))
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { contractUri } = input;
@@ -2500,17 +2560,19 @@ export const contractsRouter = t.router({
 
             const requests = await getRequestedForList(contractByUri.id, profile.profileId);
 
-            return Promise.all(
-                requests.map(async request => {
-                    const updatedProfile = updateDidForProfile(ctx.domain, request.profile);
-                    return {
-                        ...request,
-                        profile: stripSensitiveProfileListFields(
-                            sanitizeProfileForTier(updatedProfile, 'authenticated')
-                        ),
-                    };
-                })
-            );
+            return requests.map(request => {
+                const { addressedByEmail, email, profile: targetProfile, ...row } = request;
+                const target = contractRequestTarget(ctx.domain, {
+                    addressedByEmail,
+                    status: row.status,
+                    email,
+                    profile: targetProfile,
+                });
+                return 'profile' in target
+                    ? { ...row, target, profile: target.profile }
+                    : // The read state would reveal that the email belongs to an account.
+                      { ...row, readStatus: null, target };
+            });
         }),
 
     getRequestStatusForProfile: profileRoute
@@ -2522,7 +2584,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Get request status for a specific profile under a contract',
                 description:
-                    'Returns the request status and read status for a given profile in a specific contract.',
+                    'Returns the request status and read status for a given profile in a specific contract. A request addressed to an email is returned only to its target until it is accepted; use getContractRequest with the request ID instead.',
             },
         })
         .input(
@@ -2582,6 +2644,14 @@ export const contractsRouter = t.router({
             );
 
             if (!requests?.[0]) return null;
+            // This route is keyed by profile ID. Answering for an email-addressed request
+            // would confirm which profile owns the invited email, so answer as if none exists.
+            if (
+                requests[0].addressedByEmail &&
+                requests[0].status !== 'accepted' &&
+                !isCheckingOwnStatus
+            )
+                return null;
 
             const updatedProfile = updateDidForProfile(ctx.domain, requests[0].profile);
 
@@ -2633,9 +2703,21 @@ export const contractsRouter = t.router({
                 contractByUri.id,
                 resolvedTargetProfileId
             );
+            const isTarget = profile.profileId === resolvedTargetProfileId;
+            // To anyone but the target, an email-addressed request does not exist until it is
+            // accepted: answer exactly as the no-request branch below would, and change nothing.
+            if (!isTarget && request?.addressedByEmail === true && request.status !== 'accepted') {
+                const writers = await getWritersForContract(contractByUri);
+                if (!writers.some(w => w.profileId === profile.profileId))
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message: 'You do not have permissions to update this contract',
+                    });
+                return true;
+            }
             if (request?.requestId) {
                 assertGenericRequestWriteScope(ctx.user.scope);
-                if (profile.profileId !== resolvedTargetProfileId)
+                if (!isTarget)
                     throw new TRPCError({
                         code: 'UNAUTHORIZED',
                         message: 'Only the target can mark this request seen',
@@ -2664,13 +2746,10 @@ export const contractsRouter = t.router({
                 });
             }
 
+            // A writer only updates a legacy request that already exists. Creating one here would
+            // let a writer tell an unrequested profile apart from one holding a hidden email request.
             try {
-                await upsertRequestedForRelationship(
-                    contractByUri.id,
-                    resolvedTargetProfileId,
-                    undefined,
-                    'seen'
-                );
+                await markLegacyContractRequestSeen(contractByUri.id, resolvedTargetProfileId);
             } catch (error) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
@@ -2690,19 +2769,42 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Cancels/removes a contract request',
                 description:
-                    'Cancels a pending generic request while retaining its history. Owner/writers, the requesting recipient, or the target may cancel. Legacy requests retain deletion behavior.',
+                    'Cancels a pending generic request while retaining its history. Owner/writers, the requesting recipient, or the target may cancel. Pass requestId, or targetProfileId for a request addressed to a profile. Legacy requests retain deletion behavior.',
             },
         })
         .input(
-            z.object({
-                contractUri: z.string(),
-                targetProfileId: z.string(),
-            })
+            z
+                .object({
+                    contractUri: z.string(),
+                    targetProfileId: z.string().optional(),
+                    requestId: z.string().optional(),
+                })
+                .refine(value => Boolean(value.targetProfileId) !== Boolean(value.requestId), {
+                    message: 'Provide exactly one of targetProfileId or requestId',
+                })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { contractUri, targetProfileId } = input;
+            const { contractUri, targetProfileId, requestId } = input;
+
+            if (requestId) {
+                assertGenericRequestWriteScope(ctx.user.scope);
+                const contract = await getContractByUri(contractUri);
+                if (!contract)
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+                return cancelContractRequestById({
+                    contract,
+                    requestId,
+                    actorProfileId: profile.profileId,
+                    domain: ctx.domain,
+                });
+            }
+            if (!targetProfileId)
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'targetProfileId is required',
+                });
 
             const resolvedTargetProfileId = await getProfileIdFromString(
                 targetProfileId,
@@ -2721,6 +2823,26 @@ export const contractsRouter = t.router({
                 contractByUri.id,
                 resolvedTargetProfileId
             );
+            if (
+                request?.requestId &&
+                request.addressedByEmail &&
+                request.status !== 'accepted' &&
+                profile.profileId !== resolvedTargetProfileId
+            ) {
+                // Answer exactly as if no request existed, so the caller cannot link the
+                // email it invited to this profile. It must cancel by request ID instead.
+                const managers = await getWritersForContract(contractByUri);
+                if (!managers.some(manager => manager.profileId === profile.profileId))
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message:
+                            'You do not have permission to view this request status. You must be a contract writer or checking your own status.',
+                    });
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'No request found for this user',
+                });
+            }
             if (request?.requestId) {
                 assertGenericRequestWriteScope(ctx.user.scope);
                 return decideGenericContractRequest({

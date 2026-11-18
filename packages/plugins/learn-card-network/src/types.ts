@@ -7,6 +7,9 @@ import type {
     IntegrationTestEventResult,
     IntegrationEventsResponse,
     PaginatedContractConnections,
+    SendContractRequestResult,
+    ContractRequest,
+    ContractSentRequest,
     ConsentFlowContractRequestForProfile,
     GuardianApprovalRequestStatus,
 } from '@learncard/types';
@@ -883,8 +886,10 @@ export type LearnCardNetworkPluginMethods = {
         removedSharedUris: number;
     }>;
 
-    /** Sends one attributed request; identical pending retries are idempotent. */
-    sendContractRequest: (request: SendContractRequest) => Promise<boolean>;
+    /** Sends one attributed request; an identical pending retry returns the same request ID. */
+    sendContractRequest: (request: SendContractRequest) => Promise<SendContractRequestResult>;
+    /** Reads one request by the ID that sendContractRequest returned. */
+    getContractRequest: (contractUri: string, requestId: string) => Promise<ContractRequest>;
     /** Target-only denial preserves the request and its referral reference. */
     denyContractRequest: (contractUri: string) => Promise<boolean>;
 
@@ -900,9 +905,8 @@ export type LearnCardNetworkPluginMethods = {
         childProfileId?: string
     ) => Promise<boolean>;
 
-    getContractSentRequests: (
-        contractUri: string
-    ) => Promise<ConsentFlowContractRequestForProfile[]>;
+    /** A request addressed to an email has no `profile` until it is accepted. */
+    getContractSentRequests: (contractUri: string) => Promise<ContractSentRequest[]>;
 
     getRequestStatusForProfile: (
         targetProfileId: string,
@@ -936,7 +940,11 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<boolean>;
 
     markContractRequestAsSeen: (contractUri: string, targetProfileId: string) => Promise<boolean>;
-    cancelContractRequest: (contractUri: string, targetProfileId: string) => Promise<boolean>;
+    /** Cancel by target profile ID (a string) or by request ID (`{ requestId }`). */
+    cancelContractRequest: (
+        contractUri: string,
+        target: string | { requestId: string }
+    ) => Promise<boolean>;
     /**
      * Snapshot of a contract's current connections (consenters whose terms are live,
      * needs_reconsent or suspended, and not expired). Owner or data recipient only.

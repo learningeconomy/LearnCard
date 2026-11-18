@@ -985,6 +985,25 @@ export const pruneDeletedUrisFromConsentTerms = async (
     return result.summary.counters.containsUpdates() ? removedSharedUris : 0;
 };
 
+/**
+ * Marks an existing legacy (unattributed) request seen. Never creates a relationship, so a
+ * contract writer's call has the same effect whether or not the profile holds a request.
+ */
+export const markLegacyContractRequestSeen = async (
+    id: string,
+    profileId: string
+): Promise<void> => {
+    await neogma.queryRunner.run(
+        `MATCH (contract:ConsentFlowContract {id: $id})
+        SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1
+        WITH contract
+        MATCH (contract)-[r:REQUESTED_FOR]->(:Profile {profileId: $profileId})
+        WHERE r.requestId IS NULL
+        SET r.readStatus = 'seen'`,
+        { id, profileId }
+    );
+};
+
 export const upsertRequestedForRelationship = async (
     id: string,
     profileId: string,

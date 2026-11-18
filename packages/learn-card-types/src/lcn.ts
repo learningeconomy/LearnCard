@@ -1009,9 +1009,17 @@ export const ConsentFlowContractDetailsValidator = z.object({
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
 
-export const ConsentFlowContractRequestStatusValidator = z
-    .enum(['pending', 'accepted', 'denied', 'cancelled'])
-    .nullable();
+export const ContractRequestStatusValueValidator = z.enum([
+    'pending',
+    'accepted',
+    'denied',
+    'cancelled',
+    'expired',
+]);
+export type ContractRequestStatusValue = z.infer<typeof ContractRequestStatusValueValidator>;
+
+export const ConsentFlowContractRequestStatusValidator =
+    ContractRequestStatusValueValidator.nullable();
 export type ConsentFlowContractRequestStatus = z.infer<
     typeof ConsentFlowContractRequestStatusValidator
 >;
@@ -1080,6 +1088,41 @@ export const ConsentFlowContractRequestForProfileListValidator = z.array(
 export type ConsentFlowContractRequestForProfileList = z.infer<
     typeof ConsentFlowContractRequestForProfileListValidator
 >;
+
+/** Result of `sendContractRequest`. Email-addressed sends always answer `pending`. */
+export const SendContractRequestResultValidator = z.object({
+    requestId: z.string(),
+    status: ContractRequestStatusValueValidator,
+});
+export type SendContractRequestResult = z.infer<typeof SendContractRequestResultValidator>;
+
+/** Who a request is addressed to. An email-addressed request shows only the email until accepted. */
+export const ContractRequestTargetValidator = z.union([
+    z.object({ email: z.string() }),
+    z.object({ profile: LCNProfileValidator }),
+]);
+export type ContractRequestTarget = z.infer<typeof ContractRequestTargetValidator>;
+
+/** One request read by its request ID. */
+export const ContractRequestValidator = z.object({
+    requestId: z.string(),
+    status: ContractRequestStatusValueValidator,
+    externalReferenceId: z.string().optional(),
+    requestedAt: z.string().optional(),
+    expiresAt: z.string().optional(),
+    target: ContractRequestTargetValidator,
+});
+export type ContractRequest = z.infer<typeof ContractRequestValidator>;
+
+/** A row of `getContractSentRequests`. `profile` is absent for email-addressed requests until accepted. */
+export const ContractSentRequestValidator = ContractRequestFieldsValidator.extend({
+    profile: LCNProfileValidator.optional(),
+    target: ContractRequestTargetValidator.optional(),
+    expiresAt: z.string().optional(),
+    status: ConsentFlowContractRequestStatusValidator,
+    readStatus: ConsentFlowContractRequestReadStatusValidator.optional(),
+});
+export type ContractSentRequest = z.infer<typeof ContractSentRequestValidator>;
 
 export const PaginatedConsentFlowContractsValidator = PaginationResponseValidator.extend({
     records: ConsentFlowContractDetailsValidator.omit({ owner: true }).array(),

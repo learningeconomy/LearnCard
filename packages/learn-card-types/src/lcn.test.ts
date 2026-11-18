@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { CredentialDisplayValidator, LCNProfileValidator, LCNPublicProfileValidator } from './lcn';
+import {
+    ConsentFlowContractRequestStatusValidator,
+    ContractRequestValidator,
+    ContractSentRequestValidator,
+    CredentialDisplayValidator,
+    LCNProfileValidator,
+    LCNPublicProfileValidator,
+    SendContractRequestResultValidator,
+} from './lcn';
 
 const baseProfile = {
     profileId: 'issuer-org',
@@ -62,5 +70,52 @@ describe('CredentialDisplayValidator image URL', () => {
 
     it('allows image to be omitted', () => {
         expect(CredentialDisplayValidator.parse({})).not.toHaveProperty('image');
+    });
+});
+
+describe('contract request result and view validators', () => {
+    const profile = { profileId: 'learner', did: 'did:web:example.com:users:learner' };
+
+    it('accepts expired as a request status', () => {
+        expect(ConsentFlowContractRequestStatusValidator.parse('expired')).toBe('expired');
+        expect(ConsentFlowContractRequestStatusValidator.parse(null)).toBeNull();
+    });
+
+    it('parses a send result', () => {
+        expect(
+            SendContractRequestResultValidator.parse({ requestId: 'r1', status: 'pending' })
+        ).toEqual({ requestId: 'r1', status: 'pending' });
+        expect(SendContractRequestResultValidator.safeParse(true).success).toBe(false);
+    });
+
+    it('parses a request addressed to an email or to a profile', () => {
+        expect(
+            ContractRequestValidator.parse({
+                requestId: 'r1',
+                status: 'pending',
+                target: { email: 'person@example.com' },
+            }).target
+        ).toEqual({ email: 'person@example.com' });
+        expect(
+            ContractRequestValidator.parse({
+                requestId: 'r2',
+                status: 'accepted',
+                target: { profile },
+            }).target
+        ).toMatchObject({ profile: { profileId: 'learner' } });
+        expect(
+            ContractRequestValidator.safeParse({ requestId: 'r3', status: 'pending', target: {} })
+                .success
+        ).toBe(false);
+    });
+
+    it('allows a sent request without a profile', () => {
+        expect(
+            ContractSentRequestValidator.parse({
+                requestId: 'r1',
+                status: 'expired',
+                target: { email: 'person@example.com' },
+            })
+        ).not.toHaveProperty('profile');
     });
 });
