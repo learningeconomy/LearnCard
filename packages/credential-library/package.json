@@ -30,7 +30,7 @@
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/init": "workspace:*",
         "@types/node": "^17.0.38",
-        "esbuild": "^0.27.1",
+        "esbuild": "^0.28.2",
         "jose": "^5.9.6",
         "shx": "^0.3.4",
         "typescript": "5.6.2",
@@ -40,7 +40,7 @@
         "@learncard/sd-jwt-vc-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "@sd-jwt/sd-jwt-vc": "^0.19.0",
-        "zod": "4.6.6"
+        "zod": "4.6.7"
     },
     "types": "./dist/index.d.ts",
     "sideEffects": false,

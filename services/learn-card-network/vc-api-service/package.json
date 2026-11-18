@@ -19,16 +19,16 @@
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
     "devDependencies": {
-        "@types/aws-lambda": "^8.10.106",
+        "@types/aws-lambda": "^8.10.164",
         "@types/cors": "^2.8.13",
         "@types/express": "^4.17.15",
         "@types/node": "^18.0.0",
-        "esbuild": "^0.27.1",
+        "esbuild": "^0.28.2",
         "serverless": "3.40.0",
         "serverless-certificate-creator": "1.6.0",
         "serverless-domain-manager": "6.3.1",
         "serverless-esbuild": "1.55.0",
-        "serverless-offline": "^14.4.0",
+        "serverless-offline": "^14.8.4",
         "shx": "^0.3.4"
     },
     "dependencies": {
