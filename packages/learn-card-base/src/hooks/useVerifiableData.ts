@@ -113,7 +113,7 @@ const storeVerifiableData = async <T>(
 
     if (existingRecords?.length > 0) {
         // Update the existing index record in place
-        await wallet.index.LearnCloud.update(indexId, {
+        await wallet.index.LearnCloud.update<{ verifiableData?: unknown }>(indexId, {
             uri,
             category,
             title: `VerifiableData: ${key}`,
