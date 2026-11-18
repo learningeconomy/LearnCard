@@ -20,6 +20,7 @@ jobs:
         steps:
             - uses: actions/checkout@v7
               with:
+                  ref: 2aeb0c12862b6ff616c91a343c1d8c4c1d890ee5
                   persist-credentials: false
 
             - uses: actions/setup-node@v6
@@ -53,6 +54,38 @@ jobs:
             - name: Snapshot successful SDK builds
               if: ${{ steps.lookup.outputs.cache-hit != 'true' }}
               run: node scripts/e2e-hosted/sdk-build-cache.mjs snapshot "$RUNNER_TEMP/sdk-producer-spec.json" "$RUNNER_TEMP/e2e-sdk-snapshot"
+
+            - name: Restore the producer snapshot after consumer-only edits
+              run: |
+                  set -euo pipefail
+                  test "$(git rev-parse HEAD)" = 2aeb0c12862b6ff616c91a343c1d8c4c1d890ee5
+                  script=scripts/e2e-hosted/sdk-build-cache.mjs
+                  spec="$RUNNER_TEMP/sdk-producer-spec.json"
+                  next="$RUNNER_TEMP/sdk-consumer-spec.json"
+                  cache="$RUNNER_TEMP/e2e-sdk-snapshot"
+                  original=$(node -p 'require(process.argv[1]).key' "$spec")
+                  echo >> packages/learn-card-base/src/index.ts
+                  test "$(node "$script" key "$next")" = "$original"
+                  echo >> packages/learn-card-registries/trusted/registry.json
+                  test "$(node "$script" key "$next")" = "$original"
+                  node --input-type=module - "$next" <<'JS'
+                  import fs from 'node:fs';
+                  import {safeOutput} from './scripts/e2e-hosted/sdk-build-cache.mjs';
+                  for (const root of JSON.parse(fs.readFileSync(process.argv[2])).roots) {
+                      fs.rmSync(safeOutput(root), {recursive:true});
+                  }
+                  JS
+                  node "$script" restore "$next" "$cache"
+                  node --input-type=module - "$spec" "$cache" <<'JS'
+                  import assert from 'node:assert/strict';
+                  import fs from 'node:fs';
+                  import {inventory} from './scripts/e2e-hosted/sdk-build-cache.mjs';
+                  const roots=JSON.parse(fs.readFileSync(process.argv[2])).roots;
+                  for (const root of roots) assert.deepEqual(inventory(root), inventory(process.argv[3] + '/payload/' + root));
+                  console.log(roots.length + ' restored roots match producer bytes and modes');
+                  JS
+                  echo >> packages/learn-card-types/package.json
+                  test "$(node "$script" key "$next")" != "$original"
 
             # Feature-branch dispatches exercise the producer without publishing.
             # Only main can make a shared snapshot; no PR consumer writes one.
