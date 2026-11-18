@@ -47,8 +47,7 @@
     },
     "types": "./dist/index.d.ts",
     "dependencies": {
-        "@learncard/core": "workspace:*",
-        "isomorphic-webcrypto": "^2.3.8"
+        "@learncard/core": "workspace:*"
     },
     "sideEffects": false
 }

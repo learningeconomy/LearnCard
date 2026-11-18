@@ -1,4 +1,5 @@
 /// <reference lib="es2024.promise" />
+import 'fake-indexeddb/auto';
 
 import { webcrypto } from 'node:crypto';
 import { getCredentialPayloadRecordId } from '../helpers/credentialStorageIdentity';
@@ -84,6 +85,11 @@ import { InfiniteQueryObserver, QueryClient, QueryObserver } from '@tanstack/rea
 import { useWallet } from './useWallet';
 import { CREDENTIAL_INDEX_STALE_TIME } from '../react-query/queries/credentialIndexCache';
 import {
+    clearPendingContractSyncJob,
+    hydratePendingContractSyncJobs,
+    pendingContractSyncStore,
+} from '../stores/pendingContractSyncStore';
+import {
     addCredentialSummary,
     clearCredentialFacts,
     loadCredentialFacts,
@@ -109,6 +115,10 @@ let records: { id: string; uri: string; inboxDeliveryId?: string }[];
 
 beforeEach(async () => {
     vi.clearAllMocks();
+    await hydratePendingContractSyncJobs();
+    await Promise.all(
+        Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
+    );
     clearInAppMessageEvents();
     await clearCredentialFacts();
     vi.stubGlobal('crypto', webcrypto);
@@ -177,7 +187,14 @@ it('keeps a staged collection save successful when later sharing refresh fails',
             record: { id: records[0]!.id, uri: 'existing-uri', category: 'Achievement' },
             category: 'Achievement',
         })
-    ).rejects.toBe(refreshError);
+    ).resolves.toBe(false);
+    expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+        expect.objectContaining({
+            profileDid: 'did:example:claiming-account',
+            record: expect.objectContaining({ uri: 'existing-uri', category: 'Achievement' }),
+            status: 'queued',
+        }),
+    ]);
     expect(records).toEqual([expect.objectContaining({ uri: 'existing-uri' })]);
 });
 
@@ -322,7 +339,13 @@ it.each([
     async (_name, claim) => {
         mocks.getConsentedContracts.mockRejectedValueOnce(new Error('sync failed'));
 
-        await expect(claim()).rejects.toThrow('sync failed');
+        await expect(claim()).resolves.toBeTruthy();
+        expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+            expect.objectContaining({
+                profileDid: 'did:example:claiming-account',
+                status: 'queued',
+            }),
+        ]);
 
         expect(await loadCredentialFacts('did:example:claiming-account')).toEqual([
             expect.objectContaining({ issuer: 'did:key:issuer', category: 'Achievement' }),
@@ -753,7 +776,7 @@ it('refreshes persisted bulk writes when contract sync fails and the reader init
             { ...credential, id: 'urn:sync-failure:one' },
             { ...credential, id: 'urn:sync-failure:two' },
         ])
-    ).rejects.toThrow('contract sync failed');
+    ).resolves.toEqual([true, true]);
 
     expect(records).toHaveLength(2);
     expect(calls.get('category')).toBe(1);
@@ -895,18 +918,27 @@ it('retries failed contracts without repeating acknowledged contract mutations',
         return true;
     });
     const hooks = useWallet();
-    const completed = new Set<string>();
     const input: Parameters<typeof hooks.syncCredentialToContracts>[0] = {
         record: { id: 'record', uri: 'credential', category: 'Achievement' },
         category: 'Achievement',
     };
-    await expect(hooks.syncCredentialToContracts(input, undefined, completed)).rejects.toThrow(
-        'Some consented contracts could not be synced'
-    );
-    expect(completed).toEqual(new Set(['terms-a']));
+    await expect(hooks.syncCredentialToContracts(input)).resolves.toBe(false);
+    const [job] = Object.values(pendingContractSyncStore.get.jobs());
+    expect(job.kind).toBe('credential');
+    if (job.kind !== 'credential') throw new Error('Expected a credential retry');
+    expect(job.syncedTermsUris).toEqual(['terms-a']);
+    expect(job.failedContractUris).toEqual(['contract-terms-b']);
+    const completed = new Set(job.syncedTermsUris);
     expect(mocks.syncContract).toHaveBeenCalledTimes(2);
+    expect(mocks.syncContract.mock.calls.every(call => call[3] === true)).toBe(true);
     mocks.syncContract.mockResolvedValue(true);
-    await expect(hooks.syncCredentialToContracts(input, undefined, completed)).resolves.toBe(true);
+    const failedDestinations = vi.fn();
+    await expect(
+        hooks.syncCredentialToContracts(input, undefined, completed, {
+            onContractsFailed: failedDestinations,
+        })
+    ).resolves.toBe(true);
+    expect(failedDestinations).toHaveBeenCalledWith([]);
     expect(completed).toEqual(new Set(['terms-a', 'terms-b']));
     expect(mocks.syncContract.mock.calls.map(([uri]) => uri)).toEqual([
         'terms-a',
@@ -941,5 +973,181 @@ it('does not mark unavailable shared credentials as successfully synced', async 
     expect(completed.size).toBe(0);
     expect(mocks.syncContract).not.toHaveBeenCalled();
     await expect(hooks.syncCredentialToContracts(input, undefined, completed)).resolves.toBe(true);
+
     expect(completed).toEqual(new Set(['terms-a']));
 });
+
+it('rechecks the staged lease after audience materialization before network mutation', async () => {
+    mocks.getConsentedContracts.mockResolvedValue([
+        {
+            uri: 'terms-a',
+            status: 'live',
+            contract: { uri: 'contract-a', owner: { did: 'did:key:owner' } },
+            terms: {
+                read: {
+                    credentials: { categories: { Achievement: { shareAll: true, sharing: true } } },
+                },
+            },
+        },
+    ]);
+    const hooks = useWallet();
+    const beforeSync = vi
+        .fn()
+        .mockImplementationOnce(() => undefined)
+        .mockImplementationOnce(() => {
+            throw new Error('lease lost');
+        });
+    await expect(
+        hooks.syncCredentialToContracts(
+            {
+                record: { id: 'record', uri: 'credential', category: 'Achievement' },
+                category: 'Achievement',
+            },
+            undefined,
+            new Set(),
+            { beforeSync }
+        )
+    ).rejects.toMatchObject({
+        errors: [expect.objectContaining({ message: 'lease lost' })],
+    });
+    expect(mocks.sharedUri).toHaveBeenCalledOnce();
+    expect(mocks.syncContract).not.toHaveBeenCalled();
+});
+
+it('queues Partner Connect sharing after the index write without waiting for network delivery', async () => {
+    mocks.getConsentedContracts.mockImplementationOnce(() => new Promise(() => {}));
+    const saved = await useWallet().storeAndAddVCToWallet(
+        credential,
+        {
+            title: 'Partner badge',
+            imgUrl: 'https://example.com/badge.png',
+            networkUri: 'network-vc',
+        },
+        'LearnCloud',
+        true
+    );
+    expect(saved).toMatchObject({ result: true, credentialUri: 'encrypted-uri' });
+    expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
+    expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+        expect.objectContaining({
+            profileDid: 'did:example:claiming-account',
+            record: {
+                id: expect.any(String),
+                uri: saved.credentialUri,
+                category: 'Achievement',
+            },
+        }),
+    ]);
+    await Promise.all(
+        Object.keys(pendingContractSyncStore.get.jobs()).map(clearPendingContractSyncJob)
+    );
+    mocks.getConsentedContracts.mockClear();
+    mocks.add.mockResolvedValueOnce(false);
+    expect(
+        await useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true)
+    ).toMatchObject({
+        result: false,
+    });
+    expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
+    expect(pendingContractSyncStore.get.jobs()).toEqual({});
+});
+
+it('keeps a Partner Connect save successful when durable queue persistence rejects', async () => {
+    vi.spyOn(pendingContractSyncStore.set, 'enqueueContractSyncJob').mockRejectedValueOnce(
+        new Error('queue unavailable')
+    );
+    const saved = await useWallet().storeAndAddVCToWallet(
+        credential,
+        { title: 'Partner badge' },
+        'LearnCloud',
+        true
+    );
+    expect(saved).toMatchObject({ result: true, credentialUri: 'encrypted-uri' });
+    expect(mocks.add).toHaveBeenCalledOnce();
+});
+
+it('keeps direct-sync fallback successful when retry persistence rejects', async () => {
+    mocks.getConsentedContracts.mockRejectedValueOnce(new Error('contract lookup unavailable'));
+    vi.spyOn(pendingContractSyncStore.set, 'enqueueContractSyncJob').mockRejectedValueOnce(
+        new Error('queue unavailable')
+    );
+    await expect(
+        useWallet().syncCredentialToContracts({
+            record: { id: 'record', uri: 'credential', category: 'Achievement' },
+            category: 'Achievement',
+        })
+    ).resolves.toBe(false);
+});
+it('does not queue automatic sharing when a caller explicitly defers it', async () => {
+    const saved = await useWallet().storeAndAddVCToWallet(
+        credential,
+        { deferContractSync: true },
+        'LearnCloud',
+        true
+    );
+    expect(saved).toMatchObject({ result: true });
+    expect(pendingContractSyncStore.get.jobs()).toEqual({});
+    expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
+});
+
+it('queues an unavailable shared copy without expanding beyond live category-wide consent', async () => {
+    const contracts = [
+        ['eligible', 'live', { shareAll: true, sharing: true }],
+        ['once', 'live', { shareAll: false, sharing: true }],
+        ['denied', 'live', { shareAll: true, sharing: false }],
+        ['withdrawn', 'withdrawn', { shareAll: true, sharing: true }],
+        ['expired', 'live', { shareAll: true, sharing: true, shareUntil: '2000-01-01' }],
+    ].map(([uri, status, config]) => ({
+        uri,
+        status,
+        contract: { uri: `contract-${uri}`, owner: { did: 'did:key:owner' } },
+        terms: { read: { credentials: { categories: { Achievement: config } } } },
+    }));
+    mocks.getConsentedContracts.mockResolvedValue(contracts);
+    mocks.sharedUri.mockResolvedValueOnce(false);
+    expect(
+        await useWallet().syncCredentialToContracts({
+            record: { id: 'saved', uri: 'credential', category: 'Achievement' },
+            category: 'Achievement',
+        })
+    ).toBe(false);
+    expect(mocks.sharedUri).toHaveBeenCalledTimes(1);
+    expect(mocks.syncContract).not.toHaveBeenCalled();
+    expect(Object.values(pendingContractSyncStore.get.jobs())).toEqual([
+        expect.objectContaining({ record: expect.objectContaining({ uri: 'credential' }) }),
+    ]);
+});
+
+it.each(['', '   '])(
+    'shares with category-wide consent when legacy expiry is %j',
+    async shareUntil => {
+        mocks.getConsentedContracts.mockResolvedValue([
+            {
+                uri: 'terms-legacy-expiry',
+                status: 'live',
+                contract: { uri: 'contract-legacy-expiry', owner: { did: 'did:key:owner' } },
+                terms: {
+                    read: {
+                        credentials: {
+                            categories: {
+                                Achievement: { shareAll: true, sharing: true, shareUntil },
+                            },
+                        },
+                    },
+                },
+            },
+        ]);
+        await expect(
+            useWallet().syncCredentialToContracts({
+                record: { id: 'saved', uri: 'credential', category: 'Achievement' },
+                category: 'Achievement',
+            })
+        ).resolves.toBe(true);
+        expect(mocks.syncContract).toHaveBeenCalledWith(
+            'terms-legacy-expiry',
+            { Achievement: ['shared-uri'] },
+            expect.any(Number),
+            true
+        );
+    }
+);

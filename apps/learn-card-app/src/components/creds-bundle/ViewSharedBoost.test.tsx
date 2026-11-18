@@ -121,7 +121,7 @@ vi.mock('../../paraglide/messages.js', () => ({
     'issue.suspended': () => 'Suspended',
 }));
 
-import ViewSharedBoost from './ViewSharedBoost';
+import ViewSharedBoost from './ViewSharedBoostContent';
 
 describe('ViewSharedBoost', () => {
     beforeEach(() => {

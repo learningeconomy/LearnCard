@@ -234,7 +234,8 @@ export const useSyncConsentContractsMutation = () => {
                         await learnCard.invoke.syncCredentialsToContract(
                             termsUri,
                             categoryMap as Record<string, string[]>,
-                            audience.audienceVersion
+                            audience.audienceVersion,
+                            true
                         );
                         if (isLearnCardAiPassportContractUri(contract.uri)) {
                             await queueAiInsightCredentialRefresh({

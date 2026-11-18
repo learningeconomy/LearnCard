@@ -303,35 +303,43 @@ const WebhookEndpointStep: React.FC<{
                 snippets={{
                     typescript: `// Express.js webhook handler
 import express from 'express';
-import crypto from 'crypto';
+import { initLearnCard } from '@learncard/init';
 
 const app = express();
 app.use(express.json());
 
-// Verify webhook signature
-function verifyWebhookSignature(
-    payload: string,
-    signature: string,
-    secret: string
-): boolean {
-    const expectedSig = crypto
-        .createHmac('sha256', secret)
-        .update(payload)
-        .digest('hex');
-    
-    return crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expectedSig)
-    );
+// A seedless instance is enough to verify signatures
+const verifier = await initLearnCard();
+
+// Notification webhooks carry "Authorization: Bearer <DID-JWT>", signed by the
+// LearnCard Network DID. There is no shared secret and no signature header here.
+// (Signed integration webhooks are a separate channel: see your integration's Webhooks tab.)
+
+// Use the DID of the network you are connected to (production shown).
+const EXPECTED_NETWORK_DID = process.env.EXPECTED_NETWORK_DID ?? 'did:web:network.learncard.com';
+
+// Returns 200 when the request is from the LearnCard Network, otherwise the status to reply with.
+async function verifyLearnCardRequest(authHeader?: string): Promise<number> {
+    const token = authHeader?.replace(/^Bearer\\s+/i, '');
+    if (!token) return 401;
+
+    try {
+        const result = await verifier.invoke.verifyPresentation(token, { proofFormat: 'jwt' });
+        if (result.errors.length !== 0) return 401;
+
+        // A valid signature only proves SOME DID signed it, so also pin the issuer.
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+        return payload.iss === EXPECTED_NETWORK_DID ? 200 : 403;
+    } catch {
+        return 401;
+    }
 }
 
-app.post('${webhookUrl || '/webhooks/learncard'}', (req, res) => {
-    const signature = req.headers['x-learncard-signature'] as string;
-    const payload = JSON.stringify(req.body);
-    
+app.post('${webhookUrl || '/webhooks/learncard'}', async (req, res) => {
     // Verify the request is from LearnCard
-    if (!verifyWebhookSignature(payload, signature, process.env.WEBHOOK_SECRET!)) {
-        return res.status(401).json({ error: 'Invalid signature' });
+    const status = await verifyLearnCardRequest(req.headers.authorization);
+    if (status !== 200) {
+        return res.status(status).json({ error: 'Invalid token' });
     }
     
     // Handle the event
@@ -345,26 +353,43 @@ app.post('${webhookUrl || '/webhooks/learncard'}', (req, res) => {
     processEvent(event);
 });`,
                     python: `# Flask webhook handler
+import base64
+import json
+import os
+
 from flask import Flask, request, jsonify
-import hmac
-import hashlib
 
 app = Flask(__name__)
 
-def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
-    expected = hmac.new(
-        secret.encode(),
-        payload,
-        hashlib.sha256
-    ).hexdigest()
-    return hmac.compare_digest(expected, signature)
+# Use the DID of the network you are connected to (production shown).
+EXPECTED_NETWORK_DID = os.environ.get('EXPECTED_NETWORK_DID', 'did:web:network.learncard.com')
+
+# Notification webhooks carry "Authorization: Bearer <DID-JWT>", signed by the
+# LearnCard Network DID. There is no shared secret and no signature header here.
+def verify_learncard_request(auth_header: str) -> int:
+    """Return 200 when the request is from the LearnCard Network, else the status to reply with."""
+    # The scheme is case-insensitive, so "bearer <token>" is accepted too.
+    scheme, _, token = auth_header.strip().partition(' ')
+    token = token.strip()
+    # TODO: verify_did_jwt is NOT defined in this sample. Implement it with your
+    # JWT/DID library so it returns True only for a valid DID-JWT signature.
+    if scheme.lower() != 'bearer' or not token or not verify_did_jwt(token):
+        return 401
+
+    # A valid signature only proves SOME DID signed it, so also pin the issuer.
+    try:
+        segment = token.split('.')[1]
+        payload = json.loads(base64.urlsafe_b64decode(segment + '=' * (-len(segment) % 4)))
+    except (IndexError, ValueError):
+        return 401
+
+    return 200 if payload.get('iss') == EXPECTED_NETWORK_DID else 403
 
 @app.route('${webhookUrl || '/webhooks/learncard'}', methods=['POST'])
 def webhook():
-    signature = request.headers.get('X-LearnCard-Signature', '')
-    
-    if not verify_signature(request.data, signature, WEBHOOK_SECRET):
-        return jsonify({'error': 'Invalid signature'}), 401
+    status = verify_learncard_request(request.headers.get('Authorization', ''))
+    if status != 200:
+        return jsonify({'error': 'Invalid token'}), status
     
     event = request.json
     print(f"Received event: {event['type']}")

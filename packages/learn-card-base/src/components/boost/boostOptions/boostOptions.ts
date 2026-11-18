@@ -646,7 +646,6 @@ export const defaultIDCardImage =
     'https://cdn.filestackcontent.com/rotate=deg:exif/resize=width:600/auto_image/CH8dyPGwSyChmczTdIY4';
 
 export const defaultCategoryThumbImages = [
-    // 'https://cdn.filestackcontent.com/wmy95gChQOmUXVBI24wV', // old badge
     'https://cdn.filestackcontent.com/hnnK9FFQL6XjlKdkd8Hs', // new badge
     'https://cdn.filestackcontent.com/EHl1PKEQTPuErCax48Uy',
     'https://cdn.filestackcontent.com/PCIwcDr5QgiiHPv5GYvY',

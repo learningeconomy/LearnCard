@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import moment from 'moment';
-import 'moment/locale/ar';
-import 'moment/locale/es';
-import 'moment/locale/fr';
+import 'moment/dist/locale/ar';
+import 'moment/dist/locale/es';
+import 'moment/dist/locale/fr';
 import { useHistory } from 'react-router-dom';
 
 import {

@@ -198,7 +198,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
         description?: string;
         criteria?: string;
         image?: string;
-        type: any;
+        type: (typeof AchievementTypes)[keyof typeof AchievementTypes];
     }[];
 } = {
     [BoostCategoryOptionsEnum.achievement]: [
@@ -1649,16 +1649,6 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
 
 export const defaultIDCardImage = 'https://svgur.com/i/w0y.svg';
 export const defaultIssuerThumbnail = 'https://svgur.com/i/19Ma.svg';
-
-export const defaultCategoryThumbImages = [
-    'https://cdn.filestackcontent.com/wmy95gChQOmUXVBI24wV',
-    'https://cdn.filestackcontent.com/EHl1PKEQTPuErCax48Uy',
-    'https://cdn.filestackcontent.com/PCIwcDr5QgiiHPv5GYvY',
-    'https://cdn.filestackcontent.com/2eR985mSrur9mK4V4mzQ',
-    'https://cdn.filestackcontent.com/Otl66rNhTFu66mGf96Iq',
-    'https://cdn.filestackcontent.com/9lKwrJdoRPmv9chLFJQv',
-    'https://cdn.filestackcontent.com/EwXi4MnoT6eDgM6cmJuH',
-];
 
 export const BOOST_CATEGORY_TO_WALLET_ROUTE = {
     ['ID']: 'ids',

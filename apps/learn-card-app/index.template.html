@@ -16,6 +16,29 @@
         <meta name="format-detection" content="telephone=no" />
         <meta name="msapplication-tap-highlight" content="no" />
 
+        <!-- The first screen (login) renders Poppins 400/500/700 latin; fetch them with the CSS. -->
+        <link
+            rel="preload"
+            as="font"
+            type="font/woff2"
+            crossorigin
+            href="/src/assets/fonts/self-hosted/poppins-latin-400-normal.woff2"
+        />
+        <link
+            rel="preload"
+            as="font"
+            type="font/woff2"
+            crossorigin
+            href="/src/assets/fonts/self-hosted/poppins-latin-500-normal.woff2"
+        />
+        <link
+            rel="preload"
+            as="font"
+            type="font/woff2"
+            crossorigin
+            href="/src/assets/fonts/self-hosted/poppins-latin-700-normal.woff2"
+        />
+
         <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
 
         <link rel="shortcut icon" type="image/png" href="/assets/icon/favicon.png" />

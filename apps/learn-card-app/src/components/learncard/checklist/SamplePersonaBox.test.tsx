@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
     newModal: vi.fn(),
     presentToast: vi.fn(),
     queueAiInsightCredentialRefresh: vi.fn(),
+    refetchConsentedContracts: vi.fn(),
     refetchQueries: vi.fn(),
     removeCreds: vi.fn(),
     useConsentedContracts: vi.fn(),
@@ -171,7 +172,12 @@ describe('SamplePersonaBox', () => {
             },
             isLoading: false,
         });
-        mocks.useConsentedContracts.mockReturnValue({ data: [], isLoading: false });
+        mocks.useConsentedContracts.mockReturnValue({
+            data: [],
+            isLoading: false,
+            refetch: mocks.refetchConsentedContracts,
+        });
+        mocks.refetchConsentedContracts.mockResolvedValue({ data: [] });
         mocks.useGetCredentialsFromContracts.mockReturnValue({ data: [], isLoading: false });
         mocks.confirm.mockResolvedValue(true);
         mocks.consentToContract.mockResolvedValue({ termsUri: currentTermsUri });
@@ -336,6 +342,10 @@ describe('SamplePersonaBox', () => {
         mocks.useConsentedContracts.mockReturnValue({
             data: [currentConsent, legacyConsent],
             isLoading: false,
+            refetch: mocks.refetchConsentedContracts,
+        });
+        mocks.refetchConsentedContracts.mockResolvedValue({
+            data: [currentConsent, legacyConsent],
         });
         mocks.useGetCredentialsFromContracts.mockReturnValue({
             data: [currentCredential, legacyCredential],
@@ -373,11 +383,32 @@ describe('SamplePersonaBox', () => {
         });
     });
 
+    it('refreshes consents before removal when the restored cache is stale', async () => {
+        mocks.useConsentedContracts.mockReturnValue({
+            data: [],
+            isLoading: false,
+            refetch: mocks.refetchConsentedContracts,
+        });
+        mocks.refetchConsentedContracts.mockResolvedValue({ data: [currentConsent] });
+        mocks.useGetCredentialsFromContracts.mockReturnValue({
+            data: [currentCredential],
+            isLoading: false,
+        });
+
+        render(<SamplePersonaBox />);
+        fireEvent.click(screen.getByRole('button', { name: 'Remove sample credentials' }));
+
+        await waitFor(() => expect(mocks.withdrawConsent).toHaveBeenCalledWith(currentTermsUri));
+        expect(mocks.refetchConsentedContracts).toHaveBeenCalledWith({ throwOnError: true });
+    });
+
     it('keeps removal successful when AI insight refresh fails afterward', async () => {
         mocks.useConsentedContracts.mockReturnValue({
             data: [currentConsent],
             isLoading: false,
+            refetch: mocks.refetchConsentedContracts,
         });
+        mocks.refetchConsentedContracts.mockResolvedValue({ data: [currentConsent] });
         mocks.useGetCredentialsFromContracts.mockReturnValue({
             data: [currentCredential],
             isLoading: false,
@@ -431,6 +462,7 @@ describe('SamplePersonaBox', () => {
         mocks.useConsentedContracts.mockReturnValue({
             data: [currentConsent],
             isLoading: false,
+            refetch: mocks.refetchConsentedContracts,
         });
         mocks.useGetCredentialsFromContracts.mockReturnValue({ data: undefined, isLoading: true });
 

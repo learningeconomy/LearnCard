@@ -5,6 +5,7 @@ import { sqliteStore } from '../stores/sqliteStore';
 import { markSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
 import { markSQLiteReloadedOnOpen } from './connection';
 import { getLogger } from '../logging/logger';
+import { afterFirstScreen } from '../helpers/firstScreen';
 
 const log = getLogger('use-sqlite-init-web');
 const INIT_WEBSTORE_TIMEOUT_MS = 3000;
@@ -67,14 +68,13 @@ export const useSQLiteInitWeb = () => {
                 if (!stopped) markSQLiteReady();
             }
         };
-        if (document.readyState === 'loading') {
-            window.addEventListener('DOMContentLoaded', initialize, { once: true });
-        } else {
-            void initialize();
-        }
+        // Optional on web (wallet and key storage do not wait for it): fetch and start jeep-sqlite after the
+        // first screen paints instead of competing with the wallet WASM and startup chunks for bandwidth.
+        void afterFirstScreen().then(() => {
+            if (!stopped) void initialize();
+        });
         return () => {
             stopped = true;
-            window.removeEventListener('DOMContentLoaded', initialize);
             element?.remove();
             // Never close a connection published by another owner.
             if (sqlite && sqliteStore.get.sqlite() === sqlite) {

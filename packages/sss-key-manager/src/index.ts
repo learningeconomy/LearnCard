@@ -113,8 +113,9 @@ export type {
     EscrowAuthorityState,
     VerifiedEscrowMutation,
 } from './escrow-authority.types';
-export { verifyNitroAttestationDocument, NitroAttestationError } from './escrow-nitro-attestation';
-export type { NitroAttestationReason } from './escrow-nitro-attestation';
+export { verifyNitroAttestationDocument } from './escrow-nitro-attestation.lazy';
+export { NitroAttestationError } from './nitro-attestation-error';
+export type { NitroAttestationReason } from './nitro-attestation-error';
 export type {
     EscrowAttestationPolicy,
     EscrowHoldStatus,

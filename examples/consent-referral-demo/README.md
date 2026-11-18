@@ -41,3 +41,7 @@ bun run --cwd examples/consent-referral-demo typecheck
 ```
 
 The integration tests use a separate in-memory demo on ports 8920/8921 and leave the interactive session alone. They check selected fields, outcome issuance and decryption, signed update correlation, permission narrowing, withdrawal, recipient removal, dismissal recovery, denial, cancellation during review, and local action protection. They create synthetic history in the local databases.
+
+## Email invitation
+
+In the **Hire Heroes USA** view, **Invite by email** sends a referral to a synthetic email address that has no account (`sendContractRequest` with `targetEmail`). The answer is always `{ requestId, status: 'pending' }`. The **Email invitation** row shows what the referrer can read with `getContractRequest`: the email and the status, and no profile or DID. With the local APIs the invitation email is written to the brain-service log instead of being sent.

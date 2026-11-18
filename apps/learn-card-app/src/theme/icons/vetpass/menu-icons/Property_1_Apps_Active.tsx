@@ -33,4 +33,3 @@ const SvgProperty1AppsActive = (props: SVGProps<SVGSVGElement>) => (
     </svg>
 );
 export default SvgProperty1AppsActive;
-
