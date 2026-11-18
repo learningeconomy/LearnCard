@@ -1,12 +1,17 @@
 /**
  * Local-only HCP demo agent (LC-2424). Never point it at a hosted brain.
  *
- *   bun tests/e2e/scripts/hcp-demo-agent.ts link            # print a consent link for the app
- *   bun tests/e2e/scripts/hcp-demo-agent.ts read <grantId>  # read under the grant, as the agent
- *   bun tests/e2e/scripts/hcp-demo-agent.ts smoke           # whole flow over the API, no app
+ * Run from the repo root. `--conditions=development` is required: it loads the
+ * workspace packages from source, since their dist/ is not built in a fresh checkout.
+ * Plain `bun run` fails with "Cannot find module '@learncard/init'".
+ *
+ *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts link            # print a consent link
+ *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts read <grantId>  # read as the agent
+ *   bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts smoke           # whole flow, no app
  *
  * The agent's did:key comes from a random seed made on first run and kept in a 0600
- * file in the OS temp dir, so `link` and `read` are the same agent. It is never printed.
+ * file in $TMPDIR, so `link` and `read` are the same agent only with the same $TMPDIR.
+ * The seed is never printed.
  * Env: HCP_BRAIN_URL (default http://localhost:4000/trpc), HCP_APP_URL (default
  * http://localhost:3000).
  */
@@ -165,7 +170,7 @@ const main = async (): Promise<void> => {
         await smoke();
     } else {
         console.log(
-            'Usage: bun tests/e2e/scripts/hcp-demo-agent.ts <link | read <grantId> | smoke>'
+            'Usage: bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts <link | read <grantId> | smoke>'
         );
         process.exitCode = 1;
     }

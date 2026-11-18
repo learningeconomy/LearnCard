@@ -304,9 +304,13 @@ Then, with `HCP_BRAIN_URL` and `HCP_APP_URL` set to your brain and app (defaults
       bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts link
     ```
 
+    `--conditions=development` is required. Without it, Bun looks for the packages'
+    unbuilt `dist/` and fails with `Cannot find module '@learncard/init'`.
+
     The agent's did:key comes from a random seed. The seed is created on first run and
-    kept in `$TMPDIR/lc-hcp-demo-agent.seed` (mode 0600). It is never printed. The
-    command prints the full link, which looks like:
+    kept in `$TMPDIR/lc-hcp-demo-agent.seed` (mode 0600). It is never printed. Run
+    `link` and `read` with the same `$TMPDIR`, or `read` is a different agent and gets
+    `scope-denied`. The command prints the full link, which looks like:
 
     ```
     http://localhost:3324/hcp/connect?client=did%3Akey%3Az6Mk…&name=Demo+Tutor&categories=goals_and_constraints%2Ceducation_learner_profile&purpose=Help+you+study&purposeCode=https%3A%2F%2Fdemo-tutor.example%2Fpurposes%2Fstudy-help&duration=1h
@@ -317,14 +321,23 @@ Then, with `HCP_BRAIN_URL` and `HCP_APP_URL` set to your brain and app (defaults
 
 3. Open the link and choose Allow. Demo Tutor then shows under Apps with access, and
    Activity shows "You let Demo Tutor see your Goals and Learning".
-4. Optional: read as the agent with `… hcp-demo-agent.ts read <grantId>`. The screens
-   don't show grant ids; copy it from the `hcp.v1.grants.list` response in the browser's
-   network tab. The agent sees only Goals and Learning. The read does not show in
-   Activity until LC-2422.
+4. Optional: read as the agent, with the same env as step 2:
+
+    ```
+    HCP_BRAIN_URL=http://localhost:4324/trpc \
+      bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts read '<grantId>'
+    ```
+
+    An agent can't list its own grants (Draft 3 §5.4), so `read` needs the id. The
+    screens don't show grant ids; copy `grantId` from the `hcp.v1.grants.list` response
+    in the browser's network tab. The agent sees only Goals and Learning, so `[]` means
+    nothing is saved under those two yet. The read does not show in Activity until
+    LC-2422.
+
 5. Choose Stop sharing. Activity then shows "You stopped sharing with Demo Tutor", and
    `read` now fails with `scope-denied`.
 
-`… hcp-demo-agent.ts smoke` runs the same flow over the API with a throwaway person.
+`bun --conditions=development tests/e2e/scripts/hcp-demo-agent.ts smoke` runs the same flow over the API with a throwaway person.
 The script refuses any brain that is not on localhost.
 
 ## Tests
