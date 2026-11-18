@@ -353,6 +353,64 @@ platform :ios do
       file.puts("ios_app_url=#{url}")
     end
   end
+
+  desc "Build a development-signed device IPA for BrowserStack smoke tests"
+  lane :smoke_ipa do
+    setup_ci if ENV['CI']
+
+    app_store_connect_api_key(
+      key_id: ENV['APP_STORE_CONNECT_KEY_ID'],
+      issuer_id: ENV['APP_STORE_CONNECT_ISSUER_ID'],
+      is_key_content_base64: true,
+      key_content: ENV['APP_STORE_CONNECT_KEY_CONTENT'],
+      duration: 500,
+      in_house: false
+    )
+
+    # Same match development profile as the certificates lane and upload_to_appetize.
+    # Readonly so a smoke run does not create or rotate certificates.
+    sync_code_signing(type: "development", generate_apple_certs: false, readonly: true)
+
+    profile_mapping = Actions.lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
+    profile_name = profile_mapping[ENV["APP_ID"]]
+    UI.user_error!("No development provisioning profile for #{ENV['APP_ID']}. The smoke IPA assumes the existing match development profile.") unless profile_name
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: ENV["XCODE_PROJECT"],
+      profile_name: profile_name
+    )
+
+    output_dir = ENV["SMOKE_OUTPUT_DIR"] || File.expand_path("smoke-ipa", Dir.pwd)
+    FileUtils.mkdir_p(output_dir)
+    profiles = {}
+    profiles[ENV["APP_ID"]] = profile_name
+
+    build_app(
+      scheme: "App",
+      workspace: ENV["XCODE_WORKSPACE"],
+      configuration: "Debug",
+      export_method: "development",
+      destination: "generic/platform=iOS",
+      output_directory: output_dir,
+      output_name: "LearnCard-smoke.ipa",
+      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM='#{ENV["TEAM_ID"]}' PROVISIONING_PROFILE_SPECIFIER='#{profile_name}'",
+      export_options: {
+        method: "development",
+        signingStyle: "manual",
+        teamID: ENV["TEAM_ID"],
+        provisioningProfiles: profiles
+      }
+    )
+
+    ipa_path = lane_context[SharedValues::IPA_OUTPUT_PATH]
+    UI.message("Smoke IPA: #{ipa_path}")
+    if ENV['GITHUB_OUTPUT']
+      File.open(ENV['GITHUB_OUTPUT'], 'a') do |file|
+        file.puts("ipa_path=#{ipa_path}")
+      end
+    end
+  end
 end
 
 
@@ -500,6 +558,23 @@ platform :android do
     url = lane_context[SharedValues::APPETIZE_APP_URL]
     File.open(ENV['GITHUB_OUTPUT'], 'a') do |file|
       file.puts("android_app_url=#{url}")
+    end
+  end
+
+  desc "Build a debug APK for BrowserStack smoke tests"
+  lane :smoke_apk do
+    gradle(
+      task: 'assemble',
+      build_type: 'Debug',
+      project_dir: ENV['GRADLE_PROJECT_DIRECTORY'],
+    )
+
+    apk_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
+    UI.message("Smoke APK: #{apk_path}")
+    if ENV['GITHUB_OUTPUT']
+      File.open(ENV['GITHUB_OUTPUT'], 'a') do |file|
+        file.puts("apk_path=#{apk_path}")
+      end
     end
   end
 end

@@ -1,0 +1,21 @@
+# LC-2362 PoC track A. The CI binary is baked with --stage staging.
+# demo@learningeconomy.io short-circuits in EmailForm.handleDemoLogin (no OTP).
+appId: com.learncard.app
+androidWebViewHierarchy: devtools
+---
+- launchApp:
+      clearState: true
+- extendedWaitUntil:
+      visible: '(?i)sign in with email'
+      timeout: 90000
+- tapOn:
+      id: login-email
+- inputText: demo@learningeconomy.io
+- tapOn: '(?i)sign in with email'
+- extendedWaitUntil:
+      visible: Passport
+      timeout: 120000
+- extendedWaitUntil:
+      visible: 'Credential card'
+      timeout: 120000
+- takeScreenshot: wallet-loaded

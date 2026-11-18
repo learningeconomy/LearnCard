@@ -1,0 +1,288 @@
+# LC-2362 PoC track A. Dispatch-only BrowserStack Maestro smoke of the LearnCard
+# Capacitor app. This workflow does not gate release, deploy, or Capgo promotion.
+#
+# How to run: Actions → Native smoke (BrowserStack Maestro) → Run workflow.
+# `stage` is the tenant overlay baked into the binary (default staging).
+# `signing_environment` only supplies the existing match/Xcode vars. It defaults
+# to learn-card-app-production because that environment already signs the
+# Appetize development build. The binary still targets `stage`.
+#
+# iOS signing reuses the match development profile (certificates lane and the
+# Appetize lane). That reuse is unverified by the profile owner: BrowserStack
+# re-signs the IPA, and a readonly match checkout will fail if the development
+# profile is not already in the certificates repo.
+#
+# Slack is not posted. No webhook was provided for this PoC.
+
+name: Native smoke (BrowserStack Maestro)
+
+on:
+    workflow_dispatch:
+        inputs:
+            signing_environment:
+                description: 'GitHub Environment with the existing match and Xcode vars'
+                required: true
+                default: learn-card-app-production
+                type: environment
+            stage:
+                description: 'Tenant stage baked into the binary'
+                required: true
+                default: staging
+                type: choice
+                options:
+                    - staging
+                    - production
+            runs:
+                description: 'Repeats per device (flake rate)'
+                required: true
+                default: '1'
+                type: choice
+                options: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
+            android_device:
+                description: 'BrowserStack Android device (Device-OS)'
+                required: true
+                default: Samsung Galaxy S25-15.0
+                type: string
+            ios_device:
+                description: 'BrowserStack iPhone (Device-OS), iOS 16.4 or newer'
+                required: true
+                default: iPhone 16-18
+                type: string
+
+concurrency:
+    group: native-smoke-${{ github.ref }}
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+
+env:
+    MONGOMS_DISABLE_POSTINSTALL: '1'
+    TENANT: learncard
+
+jobs:
+    android:
+        name: Android Maestro smoke
+        runs-on: macos-15
+        timeout-minutes: 360
+        environment: ${{ inputs.signing_environment }}
+        env:
+            STAGE: ${{ inputs.stage }}
+        steps:
+            - uses: actions/checkout@v7
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.4
+
+            - name: Setup Bun cache
+              uses: actions/cache@v6
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
+
+            - name: Install workspace dependencies
+              run: bun install --frozen-lockfile && bunx nx build learn-card-app
+
+            - name: Install app dependencies
+              working-directory: apps/learn-card-app
+              run: bun install --frozen-lockfile
+
+            - name: Prepare tenant config
+              working-directory: apps/learn-card-app
+              run: bunx tsx scripts/prepare-native-config.ts learncard --stage "$STAGE"
+
+            - name: Build web app
+              working-directory: apps/learn-card-app
+              run: bun run build
+              env:
+                  NODE_ENV: ${{ vars.NODE_ENV }}
+                  VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+                  VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
+                  VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+
+            - name: Sync Capacitor Android project
+              working-directory: apps/learn-card-app
+              run: bunx cap sync android
+
+            - name: Re-patch tenant config
+              working-directory: apps/learn-card-app
+              run: bunx tsx scripts/prepare-native-config.ts learncard --stage "$STAGE"
+
+            - name: Keep the baked staging bundle and WebView debugging
+              run: bun apps/learn-card-app/scripts/browserstack-maestro-smoke.ts patch-native-config
+
+            - name: Setup JDK
+              uses: actions/setup-java@v4
+              with:
+                  distribution: corretto
+                  java-version: '21'
+
+            - name: Setup Ruby + Bundler
+              uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: '3.3'
+                  bundler-cache: true
+                  working-directory: tools/fastlane
+
+            - name: Build debug APK
+              id: apk
+              working-directory: tools/fastlane/fastlane
+              run: bundle exec fastlane android smoke_apk --verbose
+              env:
+                  GRADLE_PROJECT_DIRECTORY: ${{ vars.GRADLE_PROJECT_DIRECTORY }}
+
+            - name: Run Maestro on BrowserStack
+              env:
+                  SMOKE_PLATFORM: android
+                  SMOKE_DEVICE: ${{ inputs.android_device }}
+                  SMOKE_RUNS: ${{ inputs.runs }}
+                  SMOKE_APP: ${{ steps.apk.outputs.apk_path }}
+                  SMOKE_FLOW: ${{ github.workspace }}/apps/learn-card-app/maestro/smoke-signin-wallet.yaml
+                  SMOKE_OUT: ${{ runner.temp }}/native-smoke-results.json
+                  BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+                  BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+              run: bun apps/learn-card-app/scripts/browserstack-maestro-smoke.ts run
+
+            - name: Upload device results
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: native-smoke-android
+                  path: ${{ runner.temp }}/native-smoke-results.json
+                  if-no-files-found: ignore
+
+    ios:
+        name: iOS Maestro smoke
+        runs-on: macos-15
+        timeout-minutes: 360
+        environment: ${{ inputs.signing_environment }}
+        env:
+            STAGE: ${{ inputs.stage }}
+        steps:
+            - uses: actions/checkout@v7
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.4
+
+            - name: Setup Bun cache
+              uses: actions/cache@v6
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
+
+            - name: Install workspace dependencies
+              run: bun install --frozen-lockfile && bunx nx build learn-card-app
+
+            - name: Install app dependencies
+              working-directory: apps/learn-card-app
+              run: bun install --frozen-lockfile
+
+            - name: Prepare tenant config
+              working-directory: apps/learn-card-app
+              run: bunx tsx scripts/prepare-native-config.ts learncard --stage "$STAGE"
+
+            - name: Build web app
+              working-directory: apps/learn-card-app
+              run: bun run build
+              env:
+                  NODE_ENV: ${{ vars.NODE_ENV }}
+                  VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+                  VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
+                  VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+
+            - name: Sync Capacitor iOS project
+              working-directory: apps/learn-card-app
+              run: bunx cap sync ios
+
+            - name: Re-patch tenant config
+              working-directory: apps/learn-card-app
+              run: bunx tsx scripts/prepare-native-config.ts learncard --stage "$STAGE"
+
+            - name: Keep the baked staging bundle
+              run: bun apps/learn-card-app/scripts/browserstack-maestro-smoke.ts patch-native-config
+
+            - name: Select Xcode 26.x
+              uses: maxim-lobanov/setup-xcode@v1
+              with:
+                  xcode-version: '26'
+
+            - name: Setup Ruby + Bundler
+              uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: '3.3'
+                  bundler-cache: true
+                  working-directory: tools/fastlane
+
+            - name: Build development IPA
+              id: ipa
+              working-directory: tools/fastlane/fastlane
+              run: bundle exec fastlane ios smoke_ipa --verbose
+              env:
+                  MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+                  MATCH_GIT_DEPLOY_KEY: ${{ secrets.MATCH_GIT_DEPLOY_KEY }}
+                  APP_ID: ${{ vars.APP_ID }}
+                  TEAM_NAME: ${{ vars.TEAM_NAME }}
+                  TEAM_ID: ${{ vars.TEAM_ID }}
+                  APPLE_ID: ${{ vars.APPLE_ID }}
+                  MATCH_GIT_BRANCH: ${{ vars.MATCH_GIT_BRANCH }}
+                  XCODE_PROJECT: ${{ vars.XCODE_PROJECT }}
+                  XCODE_WORKSPACE: ${{ vars.XCODE_WORKSPACE }}
+                  CODE_SIGNING_TYPE: development
+                  CODE_SIGNING_APP_IDENTIFIER: ${{ vars.CODE_SIGNING_APP_IDENTIFIER }}
+                  APP_STORE_CONNECT_KEY_ID: ${{ vars.APP_STORE_CONNECT_KEY_ID }}
+                  APP_STORE_CONNECT_ISSUER_ID: ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
+                  APP_STORE_CONNECT_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
+                  SMOKE_OUTPUT_DIR: ${{ runner.temp }}/smoke-ipa
+
+            - name: Run Maestro on BrowserStack
+              env:
+                  SMOKE_PLATFORM: ios
+                  SMOKE_DEVICE: ${{ inputs.ios_device }}
+                  SMOKE_RUNS: ${{ inputs.runs }}
+                  SMOKE_APP: ${{ steps.ipa.outputs.ipa_path }}
+                  SMOKE_FLOW: ${{ github.workspace }}/apps/learn-card-app/maestro/smoke-signin-wallet.yaml
+                  SMOKE_OUT: ${{ runner.temp }}/native-smoke-results.json
+                  BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+                  BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+              run: bun apps/learn-card-app/scripts/browserstack-maestro-smoke.ts run
+
+            - name: Upload device results
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: native-smoke-ios
+                  path: ${{ runner.temp }}/native-smoke-results.json
+                  if-no-files-found: ignore
+
+    report:
+        name: Smoke summary
+        needs: [android, ios]
+        if: always()
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.4
+
+            - name: Download device results
+              uses: actions/download-artifact@v4
+              continue-on-error: true
+              with:
+                  pattern: native-smoke-*
+                  path: smoke-results
+
+            - name: Write the job summary and fail if either device failed
+              run: bun apps/learn-card-app/scripts/browserstack-maestro-smoke.ts summarize smoke-results
