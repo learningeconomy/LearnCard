@@ -2,7 +2,9 @@ import { int } from 'neo4j-driver';
 
 import { neogma } from '@instance';
 
-export type ContractRequestInviteStatus = 'pending' | 'attached' | 'cancelled' | 'expired';
+/** `closed`: attached, and its request was decided before the invite expiry passed. */
+export type ContractRequestInviteStatus =
+    'pending' | 'attached' | 'cancelled' | 'expired' | 'closed';
 
 /** Properties of a ContractRequestInvite node. `id` is the request ID the sender receives. */
 export type ContractRequestInviteType = {
@@ -18,6 +20,8 @@ export type ContractRequestInviteType = {
     emailSentAt?: string | null;
     attachedProfileId?: string | null;
     attachedAt?: string | null;
+    /** Domain of the send, used for the invite's integration events. */
+    domain?: string | null;
 };
 
 const inviteViewerWhere = `($viewerProfileId IS NULL OR EXISTS {
@@ -51,7 +55,7 @@ export const getUnattachedContractRequestInvites = async (
 ): Promise<ContractRequestInviteType[]> => {
     const result = await neogma.queryRunner.run(
         `MATCH (c:ConsentFlowContract {id: $contractId})-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
-         WHERE invite.status <> 'attached' AND ${inviteViewerWhere}
+         WHERE invite.attachedProfileId IS NULL AND ${inviteViewerWhere}
          RETURN properties(invite) AS invite ORDER BY invite.requestedAt, invite.id`,
         { contractId, viewerProfileId }
     );
@@ -86,6 +90,15 @@ export const getPendingContractRequestInvitesForProfile = async (
          WHERE invite.email IN emails AND invite.status = 'pending' AND invite.expiresAt > $now
              AND invite.requestedBy <> $profileId
              AND NOT EXISTS { MATCH (contract)-[:REQUESTED_FOR]->(profile) }
+             AND (contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' OR datetime(contract.expiresAt) > datetime($now))
+             AND EXISTS {
+                MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: invite.requestedBy})
+             }
+             AND NOT EXISTS {
+                MATCH (profile)-[:CREATED_BY]->(terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
+                WHERE (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true)) AND
+                    (terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' OR datetime(terms.expiresAt) > datetime($now))
+             }
          RETURN contract.id AS contractId, properties(invite) AS invite
          ORDER BY invite.requestedAt, invite.id LIMIT $limit`,
         { profileId, now: new Date().toISOString(), limit: int(limit) }
@@ -108,13 +121,13 @@ export const getContractOwnerDisplayName = async (
     return result.records[0]?.get('displayName') ?? undefined;
 };
 
-/** Pending invites whose expiry has passed, oldest first. */
+/** Pending and attached invites whose expiry has passed, oldest first. */
 export const getOverdueContractRequestInvites = async (
     limit: number
 ): Promise<{ contractId: string; inviteId: string }[]> => {
     const result = await neogma.queryRunner.run(
         `MATCH (contract:ConsentFlowContract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
-         WHERE invite.status = 'pending' AND invite.expiresAt <= $now
+         WHERE invite.status IN ['pending', 'attached'] AND invite.expiresAt <= $now
          RETURN contract.id AS contractId, invite.id AS inviteId
          ORDER BY invite.expiresAt, invite.id LIMIT $limit`,
         { now: new Date().toISOString(), limit: int(limit) }

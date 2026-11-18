@@ -13,6 +13,7 @@ vi.mock('@helpers/oidc-jwt.helpers', async importOriginal => ({
 import { getUser } from './helpers/getClient';
 import { normalContract } from './helpers/contract';
 import * as notifications from '@helpers/notifications.helpers';
+import type { VP } from '@learncard/types';
 
 const actor = async (role: string) => {
     const user = await getUser(randomBytes(32).toString('hex'));
@@ -111,6 +112,41 @@ describe('contract request invites attach when an email is verified', () => {
         expect(await requestOf(learner)).toBeNull();
         await learner.clients.fullAuth.contactMethods.verifyContactMethod({
             token: verification.templateModel.verificationToken,
+        });
+
+        expect(await requestOf(learner)).toMatchObject({ requestId, status: 'pending' });
+    });
+
+    it('attaches when an inbox claim link verifies the email', async () => {
+        const email = randomEmail();
+        const requestId = await invite(email);
+        const learner = await actor('learner');
+
+        await owner.clients.fullAuth.inbox.issue({
+            recipient: { type: 'email', value: recase(email) },
+            credential: await owner.learnCard.invoke.issueCredential(
+                await owner.learnCard.invoke.getTestVc()
+            ),
+        });
+        const claimUrl: string = mocks.send.mock.calls
+            .map(call => call[0])
+            .find(notification => notification.templateModel?.claimUrl)?.templateModel.claimUrl;
+        expect(claimUrl).toBeTruthy();
+        expect(await requestOf(learner)).toBeNull();
+
+        const localExchangeId = new URL(claimUrl).pathname.split('/').pop()!;
+        const start = await learner.clients.fullAuth.workflows.participateInExchange({
+            localWorkflowId: 'inbox-claim',
+            localExchangeId,
+        });
+        const vp = (await learner.learnCard.invoke.getDidAuthVp({
+            challenge: start.verifiablePresentationRequest?.challenge,
+            domain: start.verifiablePresentationRequest?.domain,
+        })) as VP;
+        await learner.clients.fullAuth.workflows.participateInExchange({
+            localWorkflowId: 'inbox-claim',
+            localExchangeId,
+            verifiablePresentation: vp,
         });
 
         expect(await requestOf(learner)).toMatchObject({ requestId, status: 'pending' });

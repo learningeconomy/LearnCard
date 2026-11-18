@@ -84,21 +84,24 @@ export const appendConsentEvent = (
         WITH contract, terms, transaction
         MATCH (consenter:Profile {profileId: $eventConsenter})
         OPTIONAL MATCH (contract)-[request:REQUESTED_FOR]->(consenter)
-        SET terms.\`referral.requestId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (request.status = 'pending' AND $eventKind IN ['consent_created', 'consent_updated']))
+        WITH contract, terms, transaction, consenter, request,
+            request.status = 'pending' AND (request.expiresAt IS NULL OR request.expiresAt > transaction.date) AS requestOpen
+        SET terms.\`referral.requestId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
             THEN request.requestId ELSE terms.\`referral.requestId\` END,
-            terms.\`referral.requestedBy\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (request.status = 'pending' AND $eventKind IN ['consent_created', 'consent_updated']))
+            terms.\`referral.requestedBy\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
             THEN request.requestedBy ELSE terms.\`referral.requestedBy\` END,
-            terms.\`referral.externalReferenceId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (request.status = 'pending' AND $eventKind IN ['consent_created', 'consent_updated']))
+            terms.\`referral.externalReferenceId\` = CASE WHEN request.requestId IS NOT NULL AND (request.status = 'accepted' OR (requestOpen AND $eventKind IN ['consent_created', 'consent_updated']))
             THEN request.externalReferenceId ELSE terms.\`referral.externalReferenceId\` END,
             transaction.\`referral.requestId\` = terms.\`referral.requestId\`,
             transaction.\`referral.requestedBy\` = terms.\`referral.requestedBy\`,
             transaction.\`referral.externalReferenceId\` = terms.\`referral.externalReferenceId\`
         WITH contract, terms, transaction, consenter, request,
-            request.requestId IS NOT NULL AND request.status = 'pending' AND $eventKind IN ['consent_created', 'consent_updated'] AS requestAccepted
+            request.requestId IS NOT NULL AND coalesce(requestOpen, false) AND $eventKind IN ['consent_created', 'consent_updated'] AS requestAccepted
         FOREACH (_ IN CASE WHEN $eventKind = 'consent_created' THEN [1] ELSE [] END |
             MERGE (contract)-[accepted:REQUESTED_FOR]->(consenter)
             ON CREATE SET accepted.status = 'accepted', accepted.readStatus = 'unseen'
-            SET accepted.status = CASE WHEN accepted.requestId IS NULL OR accepted.status = 'pending'
+            SET accepted.status = CASE WHEN accepted.requestId IS NULL OR (accepted.status = 'pending' AND
+                (accepted.expiresAt IS NULL OR accepted.expiresAt > transaction.date))
                 THEN 'accepted' ELSE accepted.status END)
         FOREACH (_ IN CASE WHEN requestAccepted THEN [1] ELSE [] END |
             SET request.status = 'accepted')
@@ -147,6 +150,8 @@ export const requestEventCypher = `
         hideActor: coalesce(request.addressedByEmail, false) AND $eventFrom = target.profileId}
     WITH request, event, owner, target,
         CASE WHEN coalesce(event.fanoutCreated, false) THEN []
+            WHEN $eventKind = 'request_cancelled' AND coalesce(request.addressedByEmail, false)
+                AND $eventFrom <> target.profileId THEN []
             WHEN $eventKind = 'request_sent' THEN [target.profileId]
             ELSE [owner.profileId] + CASE WHEN request.requestedBy <> owner.profileId
                 THEN [request.requestedBy] ELSE [] END END AS deliveries

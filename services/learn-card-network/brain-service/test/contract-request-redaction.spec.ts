@@ -44,11 +44,12 @@ describe('redaction of email-addressed contract requests', () => {
     /** Simulates a request that was created from an email invite. */
     const markAddressedByEmail = (contractUri: string, requestId: string, email: string) =>
         neogma.queryRunner.run(
-            `MATCH (c:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR]->(:Profile)
+            `MATCH (c:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR]->(p:Profile)
              WHERE r.requestId = $requestId
              SET r.addressedByEmail = true
              MERGE (c)-[:HAS_REQUEST_INVITE]->(i:ContractRequestInvite {id: $requestId})
-             SET i.email = $email, i.status = 'attached', i.expiresAt = $expiresAt`,
+             SET i.email = $email, i.status = 'attached', i.expiresAt = $expiresAt,
+                 i.attachedProfileId = p.profileId`,
             {
                 contractId: id(contractUri),
                 requestId,

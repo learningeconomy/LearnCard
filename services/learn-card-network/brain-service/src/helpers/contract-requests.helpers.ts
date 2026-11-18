@@ -157,7 +157,8 @@ export const createRequestForProfile = async (
         ON CREATE SET request += {requestId: $requestId, requestedBy: $senderProfileId,
             externalReferenceId: $externalReferenceId, message: $message,
             requestedAt: coalesce(invite.requestedAt, $now), status: 'pending', readStatus: 'unseen',
-            addressedByEmail: CASE WHEN $inviteId IS NULL THEN null ELSE true END}
+            addressedByEmail: CASE WHEN $inviteId IS NULL THEN null ELSE true END,
+            expiresAt: invite.expiresAt}
         FOREACH (_ IN CASE WHEN invite IS NULL THEN [] ELSE [1] END |
             SET invite.status = 'attached', invite.attachedProfileId = target.profileId,
                 invite.attachedAt = $now)
@@ -248,6 +249,7 @@ export const decideGenericContractRequest = async ({
         ).raw(`
         MATCH (contract)-[request:REQUESTED_FOR]->(target:Profile {profileId: $targetProfileId})
         WHERE request.requestId IS NOT NULL AND request.status IN ['pending', $status]
+            AND (request.status = $status OR request.expiresAt IS NULL OR request.expiresAt > $now)
             AND ($actorProfileId = $targetProfileId OR ($status = 'cancelled' AND
                 (EXISTS { MATCH (contract)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId: $actorProfileId}) } OR
                  (request.requestedBy = $actorProfileId AND EXISTS {
@@ -278,20 +280,37 @@ export const cancelContractRequestById = async ({
     domain: string;
 }): Promise<boolean> => {
     const notFound = new TRPCError({ code: 'NOT_FOUND', message: 'Contract request not found' });
-    const result = await neogma.queryRunner.run(
-        `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR]->(target:Profile)
-         WHERE request.requestId = $requestId
-         RETURN target.profileId AS targetProfileId`,
-        { contractId: contract.id, requestId }
-    );
-    const targetProfileId: string | undefined = result.records[0]?.get('targetProfileId');
+    const findTarget = async (): Promise<string | undefined> =>
+        (
+            await neogma.queryRunner.run(
+                `MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR]->(target:Profile)
+                 WHERE request.requestId = $requestId
+                 RETURN target.profileId AS targetProfileId`,
+                { contractId: contract.id, requestId }
+            )
+        ).records[0]?.get('targetProfileId');
+    let targetProfileId = await findTarget();
     if (!targetProfileId) {
         // No profile yet: the request is still an invite addressed to an email.
-        if (await cancelContractRequestInvite(contract.id, requestId, actorProfileId, domain)) {
+        const outcome = await cancelContractRequestInvite(
+            contract.id,
+            requestId,
+            actorProfileId,
+            domain
+        );
+        if (outcome === 'cancelled') {
             await tryFanOutContractIntegrationEvents(contract.id);
             return true;
         }
-        throw notFound;
+        // Same answer as an attached request that can no longer be cancelled.
+        if (outcome === 'expired')
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Request already decided or permission changed',
+            });
+        // The invite may have attached between the two reads.
+        targetProfileId = await findTarget();
+        if (!targetProfileId) throw notFound;
     }
     try {
         return await decideGenericContractRequest({

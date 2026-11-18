@@ -225,4 +225,131 @@ describe('integration events for contract request invites', () => {
             }),
         ]);
     });
+
+    /** Moves the invite (and its attached request, if any) past its expiry. */
+    const age = (requestId: string) =>
+        neogma.queryRunner.run(
+            `MATCH (c:ConsentFlowContract)-[:HAS_REQUEST_INVITE]->(i:ContractRequestInvite {id: $requestId})
+             SET i.expiresAt = $past
+             WITH c, i
+             OPTIONAL MATCH (c)-[r:REQUESTED_FOR]->(:Profile) WHERE r.requestId = i.id
+             FOREACH (_ IN CASE WHEN r IS NULL THEN [] ELSE [1] END | SET r.expiresAt = $past)`,
+            { requestId, past: '2000-01-01T00:00:00.000Z' }
+        );
+    const outcome = (promise: Promise<unknown>) =>
+        promise.then(
+            () => 'ok',
+            (error: { message?: string }) => error.message
+        );
+
+    it('expires an attached and an unattached request the same way', async () => {
+        const knownEmail = randomEmail();
+        await addEmail(learner.profileId, knownEmail);
+        const known = await send(knownEmail);
+        const unknown = await send(randomEmail());
+        await Promise.all([age(known.requestId), age(unknown.requestId)]);
+
+        for (const { requestId } of [known, unknown]) {
+            expect(
+                await recipient.clients.fullAuth.contracts.getContractRequest({
+                    contractUri,
+                    requestId,
+                })
+            ).toMatchObject({ status: 'expired' });
+        }
+        await expireContractRequestInvites();
+        await expireContractRequestInvites();
+
+        for (const { requestId } of [known, unknown]) {
+            expect(
+                await recipient.clients.fullAuth.contracts.getContractRequest({
+                    contractUri,
+                    requestId,
+                })
+            ).toMatchObject({ status: 'expired' });
+            expect(
+                (await feed(ownerIntegration, requestId)).map(record => [
+                    record.type,
+                    record.eventId,
+                    record.subjectProfileId,
+                ])
+            ).toEqual([
+                ['request_sent', `${requestId}:invited`, undefined],
+                ['request_expired', `${requestId}:expired`, undefined],
+            ]);
+        }
+        const sent = await recipient.clients.fullAuth.contracts.getContractSentRequests({
+            contractUri,
+        });
+        expect(sent.map(row => row.status)).toEqual(['expired', 'expired']);
+        expect(
+            await learner.clients.fullAuth.contracts.getAllContractRequestsForProfile({
+                targetProfileId: learner.profileId,
+            })
+        ).toEqual([]);
+    });
+
+    it('refuses to cancel an overdue request the same way whether or not it attached', async () => {
+        const knownEmail = randomEmail();
+        await addEmail(learner.profileId, knownEmail);
+        const known = await send(knownEmail);
+        const unknown = await send(randomEmail());
+        await Promise.all([age(known.requestId), age(unknown.requestId)]);
+
+        const cancel = (requestId: string) =>
+            outcome(
+                recipient.clients.fullAuth.contracts.cancelContractRequest({
+                    contractUri,
+                    requestId,
+                })
+            );
+        expect(await cancel(known.requestId)).toBe(await cancel(unknown.requestId));
+        expect(await cancel(unknown.requestId)).toBe(
+            'Request already decided or permission changed'
+        );
+    });
+
+    it('does not accept an overdue attached request when the person consents', async () => {
+        const email = randomEmail();
+        await addEmail(learner.profileId, email);
+        const { requestId } = await send(email);
+        await age(requestId);
+        await learner.clients.fullAuth.contracts.consentToContract({
+            contractUri,
+            terms: normalFullTerms,
+            audienceVersion: (
+                await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri })
+            ).audienceVersion,
+        });
+
+        expect((await feed(ownerIntegration, requestId)).map(record => record.type)).not.toContain(
+            'request_accepted'
+        );
+        expect(
+            await recipient.clients.fullAuth.contracts.getContractRequest({
+                contractUri,
+                requestId,
+            })
+        ).toMatchObject({ status: 'expired' });
+    });
+
+    it('notifies no profile when the sender cancels, whether or not the request attached', async () => {
+        const knownEmail = randomEmail();
+        await addEmail(learner.profileId, knownEmail);
+        const known = await send(knownEmail);
+        const unknown = await send(randomEmail());
+        for (const { requestId } of [known, unknown])
+            await recipient.clients.fullAuth.contracts.cancelContractRequest({
+                contractUri,
+                requestId,
+            });
+
+        const deliveries = await neogma.queryRunner.run(
+            `MATCH (e:ConsentFlowEvent)-[:HAS_DELIVERY]->(d:ConsentFlowEventDelivery)
+             WHERE e.id IN $eventIds
+             RETURN count(d) AS count`,
+            { eventIds: [known, unknown].map(({ requestId }) => `${requestId}:cancelled`) }
+        );
+        expect(deliveries.records[0]?.get('count').toNumber()).toBe(0);
+    });
 });

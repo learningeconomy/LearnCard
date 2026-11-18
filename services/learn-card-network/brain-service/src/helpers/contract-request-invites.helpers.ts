@@ -185,7 +185,8 @@ const INVITE_EXPIRY_BATCH_SIZE = 200;
 const INVITE_EXPIRY_MAX_BATCHES = 10;
 
 /**
- * Daily maintenance: marks overdue pending invites expired. Attached invites never expire.
+ * Daily maintenance: expires overdue invites, and attached email-addressed requests that are
+ * still pending past the same date. Each records `request_expired` for integrations.
  * Bounded per run; what is left is handled by the next run. Returns the number expired.
  */
 export const expireContractRequestInvites = async (): Promise<number> => {
@@ -193,16 +194,18 @@ export const expireContractRequestInvites = async (): Promise<number> => {
     for (let batch = 0; batch < INVITE_EXPIRY_MAX_BATCHES; batch += 1) {
         const overdue = await getOverdueContractRequestInvites(INVITE_EXPIRY_BATCH_SIZE);
         let expiredInBatch = 0;
+        let handledInBatch = 0;
         for (const { contractId, inviteId } of overdue) {
             try {
                 const invite = await expireContractRequestInvite(contractId, inviteId);
+                handledInBatch += 1;
                 if (invite) expiredInBatch += 1;
             } catch {
                 console.warn('contract_request_invite: expire_failed');
             }
         }
         expired += expiredInBatch;
-        if (overdue.length < INVITE_EXPIRY_BATCH_SIZE || expiredInBatch === 0) break;
+        if (overdue.length < INVITE_EXPIRY_BATCH_SIZE || handledInBatch === 0) break;
     }
     return expired;
 };

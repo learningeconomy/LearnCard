@@ -181,7 +181,8 @@ describe('ContractRequestInvite access layer', () => {
             ).toBeNull();
         }
         await neogma.queryRunner.run(
-            `MATCH (i:ContractRequestInvite {id: $inviteId}) SET i.status = 'attached'`,
+            `MATCH (i:ContractRequestInvite {id: $inviteId})
+             SET i.status = 'attached', i.attachedProfileId = 'synthetic-attached-profile'`,
             { inviteId }
         );
         expect(await getUnattachedContractRequestInvites(contractId, owner.profileId)).toEqual([]);

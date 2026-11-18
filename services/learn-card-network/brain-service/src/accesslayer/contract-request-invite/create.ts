@@ -70,7 +70,8 @@ export const createContractRequestInvite = async (
             CREATE (contract)-[:HAS_REQUEST_INVITE]->(created:ContractRequestInvite {id: $id})
             SET created += {email: $email, requestedBy: $senderProfileId,
                 externalReferenceId: $externalReferenceId, message: $message,
-                requestedAt: $now, expiresAt: $expiresAt, tenantId: $tenantId, status: 'pending'})
+                requestedAt: $now, expiresAt: $expiresAt, tenantId: $tenantId, domain: $eventDomain,
+                status: 'pending'})
         WITH contract, existing
         MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite)
             WHERE invite.id = coalesce(existing.id, $id)

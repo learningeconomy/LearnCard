@@ -48,19 +48,22 @@ export const claimContractRequestInviteEmail = async (
     return (await runAudienceMutation(query)).records.length > 0;
 };
 
+/** What cancelling an invite did. */
+export type ContractRequestInviteCancelOutcome = 'cancelled' | 'expired' | 'missing';
+
 /**
  * Cancels a pending invite. Allowed for contract managers (owner, writers) and for the sender
- * while it is a data recipient. Cancelling an already cancelled invite succeeds again.
+ * while it is a data recipient. Cancelling an already cancelled invite succeeds again. An invite
+ * past its expiry is `expired` and stays as it is, like an attached request past the same date.
  * The first cancel records the integration `request_cancelled` event (no subject) in the same
- * statement. Returns false when there is no such invite, it is not pending, or the actor may not
- * cancel.
+ * statement. `missing`: there is no such unattached invite, or the actor may not cancel it.
  */
 export const cancelContractRequestInvite = async (
     contractId: string,
     inviteId: string,
     actorProfileId: string,
     domain: string = defaultDomain()
-): Promise<boolean> => {
+): Promise<ContractRequestInviteCancelOutcome> => {
     const query = lockContractAudience(
         new QueryBuilder(
             new BindParam({
@@ -73,21 +76,28 @@ export const cancelContractRequestInvite = async (
         contractId
     ).raw(`
         MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite {id: $inviteId})
-        WHERE invite.status IN ['pending', 'cancelled'] AND
+        WHERE invite.status IN ['pending', 'cancelled', 'expired'] AND
             (EXISTS { MATCH (contract)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId: $actorProfileId}) } OR
              (invite.requestedBy = $actorProfileId AND EXISTS {
                 MATCH (contract)-[:SHARES_DATA_WITH]->(:Profile {profileId: $actorProfileId}) }))
-        SET invite.status = 'cancelled', invite.cancelledAt = coalesce(invite.cancelledAt, $now)
-        ${inviteIntegrationEventCypher('request_cancelled', 'cancelled')}
-        RETURN invite.id AS id
+        WITH contract, invite,
+            invite.status = 'expired' OR (invite.status = 'pending' AND invite.expiresAt <= $now) AS overdue
+        FOREACH (_ IN CASE WHEN overdue THEN [] ELSE [1] END |
+            SET invite.status = 'cancelled', invite.cancelledAt = coalesce(invite.cancelledAt, $now)
+            ${inviteIntegrationEventCypher('request_cancelled', 'cancelled')})
+        RETURN CASE WHEN overdue THEN 'expired' ELSE 'cancelled' END AS outcome
     `);
-    return (await runAudienceMutation(query)).records.length > 0;
+    const outcome = (await runAudienceMutation(query)).records[0]?.get('outcome');
+    return outcome === 'cancelled' || outcome === 'expired' ? outcome : 'missing';
 };
 
 /**
- * Marks one overdue pending invite expired, under the contract lock, and records the
- * integration `request_expired` event (no subject) in the same statement.
- * Returns the invite, or null when it is no longer pending or not overdue.
+ * Handles one invite past its expiry, under the contract lock. A pending invite, and an attached
+ * one whose request is still pending, become `expired` (the request too) and record the
+ * integration `request_expired` event (no subject) in the same statement, so the outcome does
+ * not depend on whether the invite reached an account. An attached invite whose request was
+ * already decided is marked `closed`, so the daily scan does not see it again.
+ * Returns the invite when it expired, or null.
  */
 export const expireContractRequestInvite = async (
     contractId: string,
@@ -100,10 +110,19 @@ export const expireContractRequestInvite = async (
         contractId
     ).raw(`
         MATCH (contract)-[:HAS_REQUEST_INVITE]->(invite:ContractRequestInvite {id: $inviteId})
-        WHERE invite.status = 'pending' AND invite.expiresAt <= $now
-        SET invite.status = 'expired', invite.expiredAt = $now
-        ${inviteIntegrationEventCypher('request_expired', 'expired')}
-        RETURN properties(invite) AS invite
+        WHERE invite.status IN ['pending', 'attached'] AND invite.expiresAt <= $now
+        OPTIONAL MATCH (contract)-[request:REQUESTED_FOR]->(:Profile)
+            WHERE invite.status = 'attached' AND request.requestId = invite.id
+        WITH contract, invite, request,
+            invite.status = 'pending' OR coalesce(request.status = 'pending', false) AS expires
+        SET invite.status = CASE WHEN expires THEN 'expired' ELSE 'closed' END,
+            invite.expiredAt = CASE WHEN expires THEN $now ELSE invite.expiredAt END
+        FOREACH (_ IN CASE WHEN expires AND request IS NOT NULL THEN [1] ELSE [] END |
+            SET request.status = 'expired', request.expiredAt = $now)
+        FOREACH (_ IN CASE WHEN expires THEN [1] ELSE [] END |
+            ${inviteIntegrationEventCypher('request_expired', 'expired')})
+        RETURN properties(invite) AS invite, expires
     `);
-    return (await runAudienceMutation(query)).records[0]?.get('invite') ?? null;
+    const record = (await runAudienceMutation(query)).records[0];
+    return record?.get('expires') === true ? record.get('invite') : null;
 };

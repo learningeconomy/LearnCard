@@ -51,7 +51,7 @@ describe('expireContractRequestInvites', () => {
     const status = async (inviteId: string): Promise<string | undefined> =>
         (await getContractRequestInvite(contractId, inviteId))?.status;
 
-    it('expires overdue pending invites only', async () => {
+    it('expires overdue pending invites, and closes attached ones with no pending request', async () => {
         const email = randomEmail();
         const overdue = await invite(email, 'overdue');
         const current = await invite(email, 'current');
@@ -65,7 +65,8 @@ describe('expireContractRequestInvites', () => {
 
         expect(await status(overdue)).toBe('expired');
         expect(await status(current)).toBe('pending');
-        expect(await status(attached)).toBe('attached');
+        // Attached, but there is no pending request left to expire.
+        expect(await status(attached)).toBe('closed');
         expect(await status(cancelled)).toBe('cancelled');
         expect(await getContractRequestInvite(contractId, overdue)).toMatchObject({
             expiredAt: expect.any(String),

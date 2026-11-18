@@ -2346,7 +2346,7 @@ export const contractsRouter = t.router({
                     input.requestId,
                     ctx.user.profile.profileId
                 );
-                if (!invite || invite.status === 'attached')
+                if (!invite || invite.attachedProfileId)
                     throw new TRPCError({
                         code: 'NOT_FOUND',
                         message: 'Contract request not found',
@@ -2691,6 +2691,8 @@ export const contractsRouter = t.router({
             );
 
             if (!requests?.[0]) return null;
+            // An expired email-addressed request is gone for everyone, its target included.
+            if (requests[0].status === 'expired') return null;
             // This route is keyed by profile ID. Answering for an email-addressed request
             // would confirm which profile owns the invited email, so answer as if none exists.
             if (

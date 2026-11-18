@@ -55,6 +55,22 @@ const requestFields = (properties: ContractRequestFields): ContractRequestFields
     ...(properties.message ? { message: properties.message } : {}),
 });
 
+/**
+ * The status a request shows. An email-addressed request whose invite expiry has passed reads as
+ * expired until it is accepted, before the daily job marks it, so the answer does not depend on
+ * whether the invite reached an account.
+ */
+export const effectiveRequestStatus = <S extends string | null | undefined>(
+    status: S,
+    request: { addressedByEmail?: boolean; expiresAt?: string | null }
+): S | 'expired' =>
+    request.addressedByEmail === true &&
+    status === 'pending' &&
+    typeof request.expiresAt === 'string' &&
+    request.expiresAt <= new Date().toISOString()
+        ? 'expired'
+        : status;
+
 /** Referral management is distinct from permission to receive consented data. */
 export const getContractRequestAccess = async (
     contractId: string,
@@ -99,14 +115,15 @@ export const getRequestedForList = async (id: string, viewerProfileId: string) =
     return result.records.map(rec => {
         const request = rec.get('r').properties;
         const email: string | null = rec.get('email');
-        const expiresAt: string | null = rec.get('expiresAt');
+        const expiresAt: string | null = request?.expiresAt ?? rec.get('expiresAt');
 
         return {
             ...requestFields(request),
             profile: rec.get('p').properties as ProfileType,
-            status: (request?.status ?? null) as NonNullable<
-                StoredContractRequest['status']
-            > | null,
+            status: effectiveRequestStatus(
+                (request?.status ?? null) as NonNullable<StoredContractRequest['status']> | null,
+                { addressedByEmail: request?.addressedByEmail === true, expiresAt }
+            ),
             readStatus: (request?.readStatus ?? null) as NonNullable<
                 StoredContractRequest['readStatus']
             > | null,
@@ -221,7 +238,7 @@ export const getRequestedForForUser = async (
         return {
             ...requestFields(r.properties),
             profile: p.properties,
-            status: r.properties?.status ?? null,
+            status: effectiveRequestStatus(r.properties?.status ?? null, r.properties ?? {}),
             readStatus: r.properties?.readStatus ?? null,
             addressedByEmail: r.properties?.addressedByEmail === true,
         };
@@ -229,13 +246,18 @@ export const getRequestedForForUser = async (
 };
 
 export const getAllRequestsForTargetProfile = async (targetProfileId: string) => {
-    const result = await new QueryBuilder(new BindParam({ targetProfileId }))
+    const result = await new QueryBuilder(
+        new BindParam({ targetProfileId, now: new Date().toISOString() })
+    )
         .match({
             model: ConsentFlowContract,
             identifier: 'c',
         })
         .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
-        .where('p.profileId = $targetProfileId')
+        .where(
+            `p.profileId = $targetProfileId AND coalesce(r.status, '') <> 'expired' AND
+             NOT (r.status = 'pending' AND r.expiresAt IS NOT NULL AND r.expiresAt <= $now)`
+        )
         .return(['c', 'p', 'r'])
         .run();
 
@@ -254,7 +276,7 @@ export const getAllRequestsForTargetProfile = async (targetProfileId: string) =>
 
 export type StoredContractRequestById = {
     requestId: string;
-    status: 'pending' | 'accepted' | 'denied' | 'cancelled';
+    status: 'pending' | 'accepted' | 'denied' | 'cancelled' | 'expired';
     externalReferenceId?: string;
     requestedAt?: string;
     expiresAt?: string;
@@ -280,14 +302,18 @@ export const getContractRequestById = async (
     const record = result.records[0];
     if (!record) return null;
     const request = record.get('r').properties;
+    const expiresAt: string | null = request.expiresAt ?? record.get('expiresAt');
     return {
         requestId: request.requestId,
-        status: request.status,
+        status: effectiveRequestStatus(request.status, {
+            addressedByEmail: request.addressedByEmail === true,
+            expiresAt,
+        }),
         ...(request.externalReferenceId
             ? { externalReferenceId: request.externalReferenceId }
             : {}),
         ...(request.requestedAt ? { requestedAt: request.requestedAt } : {}),
-        ...(record.get('expiresAt') ? { expiresAt: record.get('expiresAt') } : {}),
+        ...(expiresAt ? { expiresAt } : {}),
         addressedByEmail: request.addressedByEmail === true,
         ...(record.get('email') ? { email: record.get('email') } : {}),
         profile: record.get('p').properties,
@@ -295,9 +321,11 @@ export const getContractRequestById = async (
 };
 
 export type StoredContractRequest = ContractRequestFields & {
-    status?: 'pending' | 'accepted' | 'denied' | 'cancelled' | null;
+    status?: 'pending' | 'accepted' | 'denied' | 'cancelled' | 'expired' | null;
     readStatus?: 'unseen' | 'seen' | null;
     addressedByEmail?: boolean;
+    /** Copied from the invite when an email-addressed request attaches. */
+    expiresAt?: string;
 };
 
 export const getStoredContractRequest = async (

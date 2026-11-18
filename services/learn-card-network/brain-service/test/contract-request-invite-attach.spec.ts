@@ -169,4 +169,31 @@ describe('attachContractRequestInvitesForProfile', () => {
             attachContractRequestInvitesForProfile({ profileId: 'missing-profile' }, DOMAIN)
         ).resolves.toBe(0);
     });
+
+    it('skips invites that can never attach, so they do not block newer ones', async () => {
+        const email = randomEmail();
+        const deadContractUri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Synthetic short referral',
+            contract: normalContract,
+            recipients: [recipient.profileId],
+        });
+        await createContractRequestInvite({
+            contractId: id(deadContractUri),
+            email,
+            senderProfileId: recipient.profileId,
+        });
+        await neogma.queryRunner.run(
+            'MATCH (c:ConsentFlowContract {id: $contractId}) SET c.expiresAt = $past',
+            { contractId: id(deadContractUri), past: '2000-01-01T00:00:00.000Z' }
+        );
+        const requestId = await invite(email);
+        await addEmail(learner.profileId, email);
+
+        expect(await attachContractRequestInvitesForProfile(learner, 'localhost%3A3000', 1)).toBe(
+            1
+        );
+        expect(await getContractRequestInvite(id(contractUri), requestId)).toMatchObject({
+            status: 'attached',
+        });
+    });
 });
