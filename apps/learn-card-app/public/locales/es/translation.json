@@ -10614,6 +10614,11 @@
             "save": "No se pudo guardar. Inténtalo de nuevo.",
             "allow": "No se pudo permitir el acceso. Inténtalo de nuevo.",
             "remove": "No se pudo eliminar. Inténtalo de nuevo."
+        },
+        "profile": {
+            "title": "Primero configura tu perfil",
+            "body": "Tu información está vinculada a tu perfil de LearnCard. Configúralo y luego vuelve aquí.",
+            "setUp": "Configurar perfil"
         }
     }
 }

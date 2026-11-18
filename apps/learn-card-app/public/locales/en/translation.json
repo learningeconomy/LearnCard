@@ -10677,6 +10677,11 @@
             "save": "Couldn't save that. Please try again.",
             "allow": "Couldn't allow access. Please try again.",
             "remove": "Couldn't remove that. Please try again."
+        },
+        "profile": {
+            "title": "Set up your profile first",
+            "body": "Your info is tied to your LearnCard profile. Set it up, then come back here.",
+            "setUp": "Set up profile"
         }
     }
 }

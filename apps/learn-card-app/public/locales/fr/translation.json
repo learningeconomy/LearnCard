@@ -10614,6 +10614,11 @@
             "save": "Enregistrement impossible. Veuillez réessayer.",
             "allow": "Impossible d'autoriser l'accès. Veuillez réessayer.",
             "remove": "Impossible de supprimer. Veuillez réessayer."
+        },
+        "profile": {
+            "title": "Configurez d'abord votre profil",
+            "body": "Vos informations sont liées à votre profil LearnCard. Configurez-le, puis revenez ici.",
+            "setUp": "Configurer le profil"
         }
     }
 }

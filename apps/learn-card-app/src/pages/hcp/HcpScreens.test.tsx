@@ -6,6 +6,7 @@ import type { HcpEntry, HcpGrant } from 'learn-card-base/hcp/useHcp';
 
 import AppsSection from './AppsSection';
 import HcpConnectPage from './HcpConnectPage';
+import HcpPage from './HcpPage';
 import MyInfoSection from './MyInfoSection';
 import { DEFAULT_PURPOSE_CODE } from './consentLink';
 
@@ -17,6 +18,23 @@ const state = vi.hoisted(() => ({
     changeFailed: false,
     loadFailed: false,
     refetch: vi.fn(),
+    auth: { tag: 'ready', profile: { tag: 'present' } } as unknown,
+    presentProfileSetup: vi.fn(),
+}));
+
+vi.mock('learn-card-base', async () => {
+    const real = await vi.importActual<typeof import('learn-card-base/auth-status/authStatus')>(
+        'learn-card-base/auth-status/authStatus'
+    );
+    return {
+        shouldPromptProfileOnboarding: real.shouldPromptProfileOnboarding,
+        useAuthStatus: () => state.auth,
+        useGetProfile: () => ({ refetch: vi.fn() }),
+    };
+});
+
+vi.mock('../../components/network-prompts/hooks/useJoinLCNetworkModal', () => ({
+    default: () => ({ handlePresentJoinNetworkModal: state.presentProfileSetup }),
 }));
 
 vi.mock('learn-card-base/hcp/useHcp', () => ({
@@ -72,6 +90,8 @@ beforeEach(() => {
     state.changeFailed = false;
     state.loadFailed = false;
     state.refetch.mockReset();
+    state.auth = { tag: 'ready', profile: { tag: 'present' } };
+    state.presentProfileSetup.mockReset();
 });
 
 describe('HCP consent screen', () => {
@@ -212,5 +232,54 @@ describe('HCP my info', () => {
             expect.objectContaining({ onSuccess: expect.any(Function) })
         );
         expect(screen.getByRole('alert').textContent).toContain("Couldn't remove that");
+    });
+});
+
+describe('HCP without a LearnCard profile', () => {
+    const renderRoute = (url: string) =>
+        render(
+            <MemoryRouter initialEntries={[url]}>
+                <Route exact path="/hcp" component={HcpPage} />
+                <Route exact path="/hcp/connect" component={HcpConnectPage} />
+            </MemoryRouter>
+        );
+
+    beforeEach(() => {
+        state.auth = { tag: 'ready', profile: { tag: 'absent' } };
+        state.loadFailed = true; // what the HCP calls would do without a profile
+    });
+
+    it('asks for profile setup on /hcp instead of the error', () => {
+        renderRoute('/hcp');
+        expect(screen.getByText('Set up your profile first')).toBeTruthy();
+        expect(screen.queryByText('Something went wrong')).toBeNull();
+        expect(screen.queryByRole('tablist')).toBeNull();
+    });
+
+    it('opens the existing profile setup from its one button', () => {
+        renderRoute('/hcp');
+        fireEvent.click(screen.getByRole('button', { name: 'Set up profile' }));
+        expect(state.presentProfileSetup).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it('asks for profile setup on a consent link, with no Allow', () => {
+        renderRoute(consentUrl);
+        expect(screen.getByText('Set up your profile first')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Allow' })).toBeNull();
+        expect(screen.queryByText(/would like to see/)).toBeNull();
+    });
+
+    it('still shows the error state for a real failure', () => {
+        state.auth = { tag: 'ready', profile: { tag: 'present' } };
+        renderRoute('/hcp');
+        expect(screen.getByText('Something went wrong')).toBeTruthy();
+        expect(screen.queryByText('Set up your profile first')).toBeNull();
+    });
+
+    it('waits while the profile is loading', () => {
+        state.auth = { tag: 'ready', profile: { tag: 'loading' } };
+        renderRoute(consentUrl);
+        expect(screen.getByRole('status')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Allow' })).toBeNull();
     });
 });

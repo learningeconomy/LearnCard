@@ -6,6 +6,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 import * as m from '../../paraglide/messages.js';
 import ActivitySection from './ActivitySection';
 import AppsSection from './AppsSection';
+import HcpProfileGate from './HcpProfileGate';
 import MyInfoSection from './MyInfoSection';
 
 export const HCP_TABS = ['info', 'apps', 'activity'] as const;
@@ -61,32 +62,34 @@ const HcpPage: React.FC = () => {
             <IonContent fullscreen>
                 <div className="font-poppins mx-auto w-full max-w-[640px] px-5 pt-[max(24px,calc(var(--ion-safe-area-top,0px)+12px))] pb-14">
                     <HcpHeader title={m['hcp.title']()} subtitle={m['hcp.subtitle']()} />
-                    <div
-                        role="tablist"
-                        className="flex gap-1 p-1 mb-5 bg-grayscale-100 rounded-[20px]"
-                    >
-                        {HCP_TABS.map(item => (
-                            <button
-                                key={item}
-                                type="button"
-                                role="tab"
-                                aria-selected={item === tab}
-                                onClick={() => setTab(item)}
-                                className={`flex-1 py-2 rounded-[20px] text-sm font-medium transition-colors ${
-                                    item === tab
-                                        ? 'bg-white text-grayscale-900 shadow-sm'
-                                        : 'text-grayscale-600'
-                                }`}
-                            >
-                                {tabLabel(item)}
-                            </button>
-                        ))}
-                    </div>
-                    <div role="tabpanel">
-                        {tab === 'info' && <MyInfoSection />}
-                        {tab === 'apps' && <AppsSection />}
-                        {tab === 'activity' && <ActivitySection />}
-                    </div>
+                    <HcpProfileGate>
+                        <div
+                            role="tablist"
+                            className="flex gap-1 p-1 mb-5 bg-grayscale-100 rounded-[20px]"
+                        >
+                            {HCP_TABS.map(item => (
+                                <button
+                                    key={item}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={item === tab}
+                                    onClick={() => setTab(item)}
+                                    className={`flex-1 py-2 rounded-[20px] text-sm font-medium transition-colors ${
+                                        item === tab
+                                            ? 'bg-white text-grayscale-900 shadow-sm'
+                                            : 'text-grayscale-600'
+                                    }`}
+                                >
+                                    {tabLabel(item)}
+                                </button>
+                            ))}
+                        </div>
+                        <div role="tabpanel">
+                            {tab === 'info' && <MyInfoSection />}
+                            {tab === 'apps' && <AppsSection />}
+                            {tab === 'activity' && <ActivitySection />}
+                        </div>
+                    </HcpProfileGate>
                 </div>
             </IonContent>
         </IonPage>
