@@ -1,5 +1,5 @@
-# LC-2362 PoC track A. BrowserStack Maestro smoke of the LearnCard Capacitor app.
-# This workflow does not gate release, deploy, or Capgo promotion.
+# LC-2362 PoC track A. Dispatch-only BrowserStack Maestro smoke of the LearnCard
+# Capacitor app. This workflow does not gate release, deploy, or Capgo promotion.
 #
 # How to run: Actions → Native smoke (BrowserStack Maestro) → Run workflow.
 # `stage` is the tenant overlay baked into the binary (default staging).
@@ -48,11 +48,6 @@ on:
                 required: true
                 default: iPhone 16-18
                 type: string
-    # Temporary for the LC-2362 PoC so this branch can run before the workflow
-    # exists on main. Remove this push trigger before the PR is ready for review.
-    push:
-        branches:
-            - cursor/lc-2362-browserstack-maestro-smoke-f5eb
 
 concurrency:
     group: native-smoke-${{ github.ref }}
@@ -70,14 +65,11 @@ jobs:
         name: Android Maestro smoke
         runs-on: macos-15
         timeout-minutes: 360
-        environment: ${{ github.event_name == 'push' && 'learn-card-app-production' || inputs.signing_environment }}
+        environment: ${{ inputs.signing_environment }}
         env:
-            STAGE: ${{ github.event_name == 'push' && 'staging' || inputs.stage }}
+            STAGE: ${{ inputs.stage }}
         steps:
             - uses: actions/checkout@v7
-
-            - name: Smoke run settings
-              run: echo "event=${{ github.event_name }} stage=$STAGE runs=${{ github.event_name == 'push' && '10' || inputs.runs }} device=${{ github.event_name == 'push' && 'Samsung Galaxy S25-15.0' || inputs.android_device }}"
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
@@ -147,8 +139,8 @@ jobs:
             - name: Run Maestro on BrowserStack
               env:
                   SMOKE_PLATFORM: android
-                  SMOKE_DEVICE: ${{ github.event_name == 'push' && 'Samsung Galaxy S25-15.0' || inputs.android_device }}
-                  SMOKE_RUNS: ${{ github.event_name == 'push' && '10' || inputs.runs }}
+                  SMOKE_DEVICE: ${{ inputs.android_device }}
+                  SMOKE_RUNS: ${{ inputs.runs }}
                   SMOKE_APP: ${{ steps.apk.outputs.apk_path }}
                   SMOKE_FLOW: ${{ github.workspace }}/apps/learn-card-app/maestro/smoke-signin-wallet.yaml
                   SMOKE_OUT: ${{ runner.temp }}/native-smoke-results.json
@@ -185,14 +177,11 @@ jobs:
         name: iOS Maestro smoke
         runs-on: macos-15
         timeout-minutes: 360
-        environment: ${{ github.event_name == 'push' && 'learn-card-app-production' || inputs.signing_environment }}
+        environment: ${{ inputs.signing_environment }}
         env:
-            STAGE: ${{ github.event_name == 'push' && 'staging' || inputs.stage }}
+            STAGE: ${{ inputs.stage }}
         steps:
             - uses: actions/checkout@v7
-
-            - name: Smoke run settings
-              run: echo "event=${{ github.event_name }} stage=$STAGE runs=${{ github.event_name == 'push' && '10' || inputs.runs }} device=${{ github.event_name == 'push' && 'iPhone 16-18' || inputs.ios_device }}"
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
@@ -275,8 +264,8 @@ jobs:
             - name: Run Maestro on BrowserStack
               env:
                   SMOKE_PLATFORM: ios
-                  SMOKE_DEVICE: ${{ github.event_name == 'push' && 'iPhone 16-18' || inputs.ios_device }}
-                  SMOKE_RUNS: ${{ github.event_name == 'push' && '10' || inputs.runs }}
+                  SMOKE_DEVICE: ${{ inputs.ios_device }}
+                  SMOKE_RUNS: ${{ inputs.runs }}
                   SMOKE_APP: ${{ steps.ipa.outputs.ipa_path }}
                   SMOKE_FLOW: ${{ github.workspace }}/apps/learn-card-app/maestro/smoke-signin-wallet.yaml
                   SMOKE_OUT: ${{ runner.temp }}/native-smoke-results.json
